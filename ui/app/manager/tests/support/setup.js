@@ -3,6 +3,7 @@ const { ChromiumBroswer } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
 const { env } = require("process");
+const { expect } = require("@playwright/test");
 require('dotenv').config();
 
 /**
@@ -73,13 +74,19 @@ class CustomWorld {
      */
 
     /**
-     * navigate to a page where if for the desired realm
+     * Go to page
+     * @param {String} realm Realm type(admin or other)
+     */
+    async goToPage(realm) {
+        await this.page.goto(realm == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
+    }
+
+    /**
+     * open broswer and navigate to a realm page
      * @param { } realm String : Realm type (admin or other)
      */
-
     async navigate(realm) {
         let context
-        let URL = realm == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity"
         if (fs.existsSync('storageState.json')) {
             context = await global.browser.newContext({
                 storageState: 'storageState.json',
@@ -90,12 +97,12 @@ class CustomWorld {
 
         }
         this.page = await context.newPage();
-        await this.page.goto(URL);
+        await this.goToPage(realm)
     }
 
     /**
-     * 
-     * @param { } user String : User type (admin or other)
+     * login into realm as user
+     * @param {String} user  User type (admin or other)
      */
     async login(user) {
         if (!fs.existsSync('storageState.json')) {
@@ -113,28 +120,32 @@ class CustomWorld {
     }
 
     /**
-     * 
-     * @param { } button STRING, selector for an element
+     * click on the button
+     * @param {String} button selector for an element
      */
     async click(button) {
         await this.page?.locator(button).click()
     }
 
     /**
-     * 
-     * @param { } key String: location of selector
+     * press the key (keyboard)
+     * @param {String} key location of selector
      */
     async press(key) {
         await this.page?.keyboard.press(key)
     }
 
     /**
-     * Check and uncheck
-     * @param {*} checkbox String: location of checkbox
+     * Check  
+     * @param {String} checkbox location of checkbox
      */
     async check(checkbox) {
         await this.page?.check(checkbox)
     }
+    /**
+     * uncheck
+     * @param {String} checkbox 
+     */
     async uncheck(checkbox) {
         await this.page?.uncheck(checkbox)
     }
@@ -153,18 +164,26 @@ class CustomWorld {
     }
 
     /**
-     * 
-     * @param { } locate String : location of selector 
-     * @param { } value String : value
+     * fill into a input box
+     * @param {String} locate location of selector 
+     * @param {String} value value
      */
     async fill(locate, value) {
         await this.page?.locator(locate).fill(value)
     }
 
     /**
+     * hover on an element
+     * @param {String} locate location of selector
+     */
+    async hover(locate) {
+        await this.page?.locator(locate).hover()
+    }
+
+    /**
      * drag to position_x and position_y
-     * @param {*} position_x coordinator of screen pixel
-     * @param {*} position_y coordinator of screen pixel
+     * @param {Int} position_x coordinator of screen pixel
+     * @param {Int} position_y coordinator of screen pixel
      */
     async drag(position_x, position_y) {
         await this.page.mouse.down()
@@ -172,16 +191,23 @@ class CustomWorld {
         await this.page.mouse.up()
     }
 
+    /**
+     * start dragging from origin and end at destination
+     * @param {String} origin start point (a selector)
+     * @param {String} destination end point (a selector)
+     */
     async dragAndDrop(origin, destination) {
         await this.page.dragAndDrop(origin, destination)
     }
 
     /**
      * wait for millisecond
-     * @param {*} millisecond number
+     * @param {Int} millisecond 
      */
     async wait(millisecond) {
-        await this.page?.waitForTimeout(millisecond)
+        return new Promise(function (resolve) {
+            setTimeout(resolve, millisecond)
+        });
     }
 
     /**
@@ -191,7 +217,7 @@ class CustomWorld {
     /**
      * navigate to a setting page inside the manager 
      * for the setting list menu at the top right
-     * @param {*} setting STRING, name of the setting menu item
+     * @param {Sting} setting name of the setting menu item
      */
     async navigateTo(setting) {
         await this.click('button[id="menu-btn-desktop"]');
@@ -200,14 +226,15 @@ class CustomWorld {
 
     /**
      * navigate to a ceratin tab page
-     * @param {*} tab STRING, tab name
+     * @param {String} tab tab name
      */
     async navigateToTab(tab) {
         await this.click(`#desktop-left a:has-text("${tab}")`)
     }
 
     /**
-     *  create Realm
+     *  create Realm with name
+     * @param {String} name realm name
      */
     async addRealm(name) {
         if (!await this.page?.locator('[aria-label="attribute list"] span:has-text("smartcity")').isVisible()) {
@@ -223,7 +250,7 @@ class CustomWorld {
 
     /**
      * switch to a new manager realms by giving URL
-     * @param {*} name String: name of custom realm
+     * @param {String} name name of custom realm
      */
     async switchRealmByURL(name) {
         await this.logout()
@@ -234,16 +261,15 @@ class CustomWorld {
 
     /**
      * switch to a realm in the manager's realm picker
-     * @param {*} name String: name of custom realm
+     * @param {String} name name of custom realm
      */
-    async switchToRealmBySelector(name) {
+    async switchToRealmByRealmPicker(name) {
         await this.click('#realm-picker');
         await this.click(`li[role="menuitem"]:has-text("${name}")`);
     }
 
     /**
-     *  Create User
-     * @param { } isRealmAdded Boolen
+     *  Create User (default as smartcity)
      */
     async addUser() {
         /**
@@ -271,13 +297,12 @@ class CustomWorld {
             await this.click('button:has-text("create")')
         }
         else {
-            console.log("user exsits")
         }
     }
 
     /**
      * create new empty assets
-     * @param {*} update Boolean: for checking if updating values is needed
+     * @param {Boolen} update for checking if updating values is needed
      */
     async addAssets(update) {
 
@@ -334,17 +359,10 @@ class CustomWorld {
     }
 
     /**
-     *  Select assets
-     */
-    async selectAssets(name) {
-        await this.click(`text=${name}`)
-    }
-
-    /**
      * update asset in the general panel
-     * @param {*} attr STRING
-     * @param {*} type STRING
-     * @param {*} value STRING
+     * @param {String} attr attribute's name
+     * @param {String} type attribute's input type
+     * @param {String} value input value
      */
     async updateAssets(attr, type, value) {
         await this.fill(`#field-${attr} input[type="${type}"]`, value)
@@ -353,9 +371,9 @@ class CustomWorld {
 
     /**
      * update the data in the modify mode
-     * @param {*} attr STRING
-     * @param {*} type STRING
-     * @param {*} value STRING
+     * @param {String} attr attribute's name
+     * @param {String} type attribute's input type
+     * @param {String} value input value
      */
     async updateInModify(attr, type, value) {
         await this.fill(`text=${attr} ${type} >> input[type="number"]`, value)
@@ -363,8 +381,8 @@ class CustomWorld {
 
     /**
      * update location so we can see in the map
-     * @param {*} location_x int
-     * @param {*} location_y int
+     * @param {Int} location_x horizental coordinator (start from left edge)
+     * @param {Int} location_y vertail coordinator (start from top edge)
      */
     async updateLocation(location_x, location_y) {
         await this.click('text=location GEO JSON point >> button span')
@@ -374,14 +392,13 @@ class CustomWorld {
 
     /**
      * select two config items for an attribute
-     * @param {*} item_1 STRING
-     * @param {*} item_2 STRING
-     * @param {*} attr STRING
+     * @param {String} item_1 the first config item
+     * @param {String} item_2 the second config item
+     * @param {String} attr attribute's name
      */
     async configItem(item_1, item_2, attr) {
-
         await this.click(`td:has-text("${attr} ") >> nth=0`)
-        await this.wait(400)
+        await this.wait(300)
         await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
         await this.click(`li[role="checkbox"]:has-text("${item_1}")`)
         await this.click(`li[role="checkbox"]:has-text("${item_2}")`)
@@ -391,29 +408,39 @@ class CustomWorld {
 
     /**
      * set config item for rule and insight to use
-     * @param {*} item1 STRING
-     * @param {*} item2 STRING
-     * @param {*} attr STRING
+     * @param {String} item1 the first config item
+     * @param {String} item2 the second config item
+     * @param {String} attr attribute's name
      */
     async setConfigItem(item_1, item_2, attr_1, attr_2) {
         await this.configItem(item_1, item_2, attr_1)
         await this.configItem(item_1, item_2, attr_2)
     }
 
+    /**
+     * deleteRealm. It's the most used clean up movement
+     */
     async deleteRealm() {
         await this.click('[aria-label="attribute list"] span:has-text("smartcity")')
         await this.click('button:has-text("Delete")')
         await this.fill('div[role="alertdialog"] input[type="text"]', 'smartcity')
-        await Promise.all([
-            await this.click('button:has-text("OK")'),
-        ])
-        await this.wait(100)
-        await this.page.reload()
+        await this.click('button:has-text("OK")')
+
+        // wait for backend to response
+        await this.wait(1000)
+
+        try {
+            const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
+            expect(count).toBe(0)
+        } catch (e) {
+            console.log(e)
+        }
     }
 
     /**
      * delete all the assets
      * right now it's deleting all the assets in the array
+     * future improvement will be retrieving all the assets from backend to replace the array
      */
     async deleteAssets() {
         await this.click('#desktop-left a:nth-child(2)')
@@ -429,22 +456,6 @@ class CustomWorld {
         }
     }
 
-
-    /**
-     * delete all the rule
-     * right now it's deleting all the rules in the array
-     * i expect it to be possible to delete accroding to the UI 
-     * (like detect all the rules in the rule tree and then delete)
-     */
-    async deleteRules() {
-        await this.click('#desktop-left a:nth-child(3)')
-
-        for (let rule of rules) {
-            await this.click(`text=${rule.name}`)
-            await this.click('.mdi-delete')
-            await this.click('button:has-text("Delete")')
-        }
-    }
 
 
     /**
@@ -467,18 +478,25 @@ class CustomWorld {
         *          *******          ********            *                 * * *               *
         *              
         */
-    async setup(realm, level) {
+
+    /**
+     *  setup the testing envrioment by giving the realm name and setup level
+     *  // lv0 is no setup at all
+     *  // lv1 is to create a realm
+     *  // lv2 is to create a user
+     *  // lv3 is to create empty assets
+     *  // lv4 is to set the values for assets
+     * @param {String} realm realm name
+     * @param {String} level level (lv0, lv1, etc.)
+     */
+    async setup(realm_name, level) {
 
         // clean storage
         if (fs.existsSync('storageState.json')) {
             fs.unlinkSync('storageState.json')
         }
 
-        // lv0 is no setup at all
-        // lv1 is to create a realm
-        // lv2 is to create a user
-        // lv3 is to create empty assets
-        // lv4 is to set the values for assets
+
         if (!(level === "lv0")) {
             await this.navigate("admin")
             await this.login("admin")
@@ -486,9 +504,9 @@ class CustomWorld {
             await this.wait(400)
             if (!await this.page?.locator('#realm-picker').isVisible()) {
                 await this.navigateTo("Realms")
-                await this.addRealm(realm)
+                await this.addRealm(realm_name)
             }
-            await this.switchToRealmBySelector(realm)
+            await this.switchToRealmByRealmPicker(realm_name)
 
             const update = level == "lv4" ? true : false
             // add user
@@ -496,7 +514,7 @@ class CustomWorld {
                 await this.addUser()
                 // add assets
                 if (level >= 'lv3') {
-                    await this.switchRealmByURL(realm)
+                    await this.switchRealmByURL(realm_name)
                     await this.addAssets(update)
                 }
             }
@@ -525,18 +543,23 @@ class CustomWorld {
 
         // ensure login as admin into master
         await this.logout()
-        await this.page.goto(process.env.URL + "master");
+
+        await this.goToPage("admin")
+
         await this.login("admin")
-        await this.wait(400)
-        // switch to master realm to ensure being able to delete custom realm
-        await this.switchToRealmBySelector("master")
+        
+        // must wait for the realm picker to be rendered
+        await this.wait(500)
+        if (await this.page?.locator('#realm-picker').isVisible()) {
+            // switch to master realm to ensure being able to delete custom realm
+            await this.switchToRealmByRealmPicker("master")
 
-        // delete realms
-        // should delete everything and set the envrioment to beginning
-        await this.navigateTo("Realms")
-        await this.deleteRealm()
+            // delete realms
+            // should delete everything and set the envrioment to beginning
+            await this.navigateTo("Realms")
+            await this.deleteRealm()
+        }
     }
-
 }
 
 
@@ -547,7 +570,7 @@ class CustomWorld {
 // launch broswer
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
-        headless: true,
+        headless: false,
         slowMo: 50
     });
 })

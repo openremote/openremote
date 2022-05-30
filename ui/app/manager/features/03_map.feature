@@ -9,5 +9,5 @@ Feature: Map
         When Login OpenRemote as "smartcity"
         Then Navigate to "map" tab
         When Check "Battery" on map
-        Then Click and nevigate to "Battery" page
+        Then Click and nevigate
         Then We are at "Battery" page

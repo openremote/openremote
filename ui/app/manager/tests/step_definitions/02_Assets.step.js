@@ -1,17 +1,10 @@
 const { When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
-const { expectExtension } = require("../support/expect_extension")
 
-
-When('Switch to {string}', async function (string) {
-    await this.switchRealm("smartcity")
-});
 /**
  * add new asset
  */
 Then('Create a {string} with name of {string}', async function (asset, name) {
-    const { page } = this;
-
     await this.click('.mdi-plus')
     await this.click(`text=${asset}`)
     await this.fill('#name-input input[type="text"]', name)
@@ -28,7 +21,6 @@ Then('Go to modify mode', async function () {
 })
 
 Then('Give {string} to the {string} with type of {string}', async function (value, attribute, type) {
-
     await this.fill(`text=${attribute} ${type} >> input[type="number"]`, value)
 })
 
@@ -36,7 +28,6 @@ Then('Save', async function () {
 
     // press enter to enable the save button (could be any other action) (or this will be fixed then no pre-action needed)
     await this.click('#edit-container')
-
     await this.click('button:has-text("Save")')
 })
 
@@ -54,7 +45,7 @@ When('Select the {string}', async function (name) {
 
 Then('We see the {string} page', async function (name) {
     const { page } = this;
-    await expect(page.waitForSelector('div[id="view-container"]')).not.toBeNull()
+    await expect(await page.waitForSelector(`#asset-header >> text=${name}`)).not.toBeNull()
 })
 
 /**
@@ -73,7 +64,7 @@ Then('Update {int} and {int}', async function (location_x, location_y) {
 
     // location_x and location_y are given by the example data
     // currently it's not implmented as dragging the map and clicking on a random place (could be possible in the future)
-    await page.mouse.click(location_x, location_y, { delay: 7000 })
+    await page.mouse.click(location_x, location_y, { delay: 700 })
     await this.click('button:has-text("OK")')
 })
 
@@ -81,24 +72,26 @@ Then('Update {int} and {int}', async function (location_x, location_y) {
  * read only
  */
 Then('Uncheck on readonly of {string}', async function (attribute) {
-    const { page } = this;
+    await this.click(`td:has-text("${attribute}") >> nth=0`)
 
-    await page.locator(`td:has-text("${attribute}")`).first().click()
-    // very bad solution
+    // bad solution 
+    // nth number is decided by the default state
+    // if default stete changes, please change the nth number
     if (attribute == "energyLevel")
-        await page.locator('text=Read only').nth(2).click()
+        await this.click('text=Read only >> nth=2')
     else
-        await page.locator('text=Read only').nth(1).click()
+        await this.click('text=Read only >> nth=1')
 })
 
 Then('Check on readonly of {string}', async function (attribute) {
-    const { page } = this;
 
     await this.click(`td:has-text("${attribute}")`)
 
     // bad solution
+    // in this case, i assume that the config items are as the beginning state, namely default state
+    // if the default state changes, the following nth-chlid should change as well
     if (attribute == "efficiencyExport")
-        await page.locator('.item-add or-mwc-input #component').first().click()
+        await this.click('.item-add or-mwc-input #component >> nth=0')
     else
         await this.click('tr:nth-child(14) td .meta-item-container div .item-add or-mwc-input #component')
     await this.click('li[role="checkbox"]:has-text("Read only")')
@@ -118,8 +111,8 @@ Then('We should see a button on the right of {string}', async function (attribut
 
 Then('No button on the right of {string}', async function (attribute) {
     const { page } = this;
-
-    await expect.null(page.waitForSelector(`#field-${attribute} button`))
+    const count = await page.locator(`#field-${attribute} button`).count()
+    expect(count).toBe(0)
 })
 
 /**
@@ -128,13 +121,10 @@ Then('No button on the right of {string}', async function (attribute) {
 Then('Select {string} and {string} on {string}', async function (item1, item2, attribute) {
     const { page } = this;
 
-    await page.locator(`td:has-text("${attribute}")`).first().click()
+    await this.click(`td:has-text("${attribute}") >> nth=0`)
     await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
     await this.click(`li[role="checkbox"]:has-text("${item1}")`)
     await this.click(`li[role="checkbox"]:has-text("${item2}")`)
     await this.click('div[role="alertdialog"] button:has-text("Add")')
-    await page.locator(`td:has-text("${attribute}")`).first().click()
+    await this.click(`td:has-text("${attribute}") >> nth=0`)
 })
-
-
-// TODO: improve the code on detecting element

@@ -32,7 +32,6 @@ Feature: Assets
         Examples:
             | asset                     | name    |
             | Electricity battery asset | Battery |
-            | PV solar asset            | Solar   |
 
     @Desktop @update
     Scenario Outline: Update asset

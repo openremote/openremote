@@ -10,7 +10,7 @@ Feature: Delete
         Then Switch to "smartcity" realm
         When Navigate to "Realms" page
         Then Delete realm
-        Then We should not see the Realm selector
+        Then We should not see the Realm picker
 
     @Desktop @delete_role
     Scenario: Delete role

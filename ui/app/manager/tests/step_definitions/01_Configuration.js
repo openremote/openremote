@@ -1,12 +1,11 @@
-const { Given, When, Then } = require("@cucumber/cucumber");
+const { When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
-require('dotenv').config();
 
 /**
  * add new user
  */
 Then('Switch to {string} realm', async function (realm) {
-    await this.switchToRealmBySelector(realm)
+    await this.switchToRealmByRealmPicker(realm)
 })
 
 Then("Add a new user", async function () {
@@ -42,7 +41,7 @@ Then('Create a new role', async function () {
     await this.click('text=Add Role')
 
     // get total number of current roles
-    var rows = await page.$$('.mdc-data-table__row')
+    let rows = await page.$$('.mdc-data-table__row')
     const count = await rows.length
 
     await page.locator(`#attribute-meta-row-${count - 1} input[type="text"]`).first().fill('Custom');
@@ -63,7 +62,8 @@ Then('Select the new role and unselect others', async function () {
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
     await this.click('li[role="menuitem"]:has-text("Custom")')
-    await page.keyboard.press("Enter")
+    await this.wait(300)
+    await this.press("Enter")
 })
 
 Then('We should see assets permission are selected', async function () {
@@ -93,7 +93,8 @@ Then('Switch back to origin', async function () {
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
     await this.click('li[role="menuitem"]:has-text("Custom")')
-    await page.keyboard.press("Enter")
+    await this.wait(200)
+    await this.press("Enter")
 })
 
 /**
@@ -103,6 +104,3 @@ When('Logout', async function () {
     await this.logout();
 })
 
-
-// TODO: add steps to check if there is any element (like asset, realm, user) having the same name.
-// If yes, then skip. Low priority

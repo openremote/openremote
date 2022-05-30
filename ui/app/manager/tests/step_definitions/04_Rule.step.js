@@ -1,6 +1,5 @@
 const { When, Then } = require("@cucumber/cucumber");
-const { default: TestStepHookDefinition } = require("@cucumber/cucumber/lib/models/test_step_hook_definition");
-const { test, expect } = require('@playwright/test');
+const { expect } = require('@playwright/test');
 
 /**
  * General
@@ -72,25 +71,25 @@ Then('Drag in the elements', { timeout: 10000 }, async function () {
 
     // page.dragAndDrop(source, target[, options]) is an alternative 
     // move all the elements
-    await page.locator('text=Read attribute').hover()
+    await this.hover('text=Read attribute')
     await this.drag(450, 250)
 
-    await page.locator('text=Number').first().hover()
+    await this.hover('text=Number >> nth=0')
     await this.drag(450, 350)
 
-    await page.locator('text=Number').first().hover()
+    await this.hover('text=Number >> nth=0')
     await this.drag(450, 500)
 
-    await page.locator('text=Number').first().hover()
+    await this.hover('text=Number >> nth=0')
     await this.drag(450, 600)
 
-    await page.locator('text=>').hover()
+    await this.hover('text=>')
     await this.drag(650, 300)
 
-    await page.locator('text=Number switch').hover()
+    await this.hover('text=Number switch')
     await this.drag(800, 425)
 
-    await page.locator('text=Write attribute').hover()
+    await this.hover('text=Write attribute')
     await this.drag(1000, 425)
 })
 
@@ -100,7 +99,7 @@ Then('Set value', async function () {
     await this.click('div[role="alertdialog"] >> text=Solar')
     await this.click('or-translate:has-text("Power") >> nth=1')
     await this.click('button:has-text("Add")')
-    
+
     await this.click('button:has-text("Attribute") >> nth=0')   // write
     await this.click('div[role="alertdialog"] >> text=Solar')
     await this.click('or-translate:has-text("Power forecast")')
@@ -119,6 +118,6 @@ Then('Connect elements', { timeout: 10000 }, async function () {
     await this.dragAndDrop('flow-node:nth-child(3) .socket-side flow-node-socket .socket', 'flow-node:nth-child(6) .socket-side.inputs flow-node-socket:nth-child(2)')
     await this.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
     await this.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
-    await this.wait(600)
+    await this.wait(500)
 })
 

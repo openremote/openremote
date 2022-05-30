@@ -6,14 +6,18 @@ const { expect } = require("@playwright/test");
  */
 
 Then('Delete realm', async function () {
-  await this.switchToRealmBySelector("master")
+  await this.switchToRealmByRealmPicker("master")
   await this.deleteRealm()
 })
 
-Then('We should not see the Realm selector', async function () {
-  const { page } = this
-  await page.reload()
-  expect(await this.page?.locator('#realm-picker').isVisible()).toBeFalsy()
+Then('We should not see the Realm picker', async function () {
+  await this.goToPage("admin")
+
+   // must wait for the realm picker to be rendered
+  await this.wait(500)
+  const isVisible = await this.page?.locator('#realm-picker').isVisible()
+  await expect(isVisible).toBeFalsy()
+  await console.log("finished")
 })
 
 /**
@@ -21,8 +25,12 @@ Then('We should not see the Realm selector', async function () {
  */
 Then('Delete role', async function () {
 
+  // reproduce the preparation steps to start from the beginnning
+  await this.navigateToTab("Map")
+  await this.navigateTo("Roles")
+
   // delete roles
-  await this.click('td:has-text("Custom") >> nth=0')
+  await this.click('text=Custom')
 
   // can't find a way to locate the delete button 
   // since the sorting of the role is random everytime 
@@ -37,11 +45,13 @@ Then('Delete role', async function () {
   }
   await this.press('Enter')
   await this.click('div[role="alertdialog"] button:has-text("Delete")')
+  await this.wait(200)
 })
 
 Then('We should not see the Custom role', async function () {
   const { page } = this
-  await expect.null(page.waitForSelector('td:has-text("Custom") >> nth=0'))
+  const count = await page.locator('text=Custom').count()
+  await expect(count).toEqual(0)
 })
 
 
@@ -54,11 +64,14 @@ Then('Delete user', async function () {
   await this.click('td:has-text("smartcity")')
   await this.click('button:has-text("delete")')
   await this.click('div[role="alertdialog"] button:has-text("Delete")')
+
+  await this.wait(300)
 })
 
-Then('We should see an empty use page',async function(){
+Then('We should see an empty use page', async function () {
   const { page } = this
-  await expect.null(page.waitForSelector('td:has-text("smartcity")'))
+  const count = await page.locator('td:has-text("smartcity")').count()
+  await expect(count).toEqual(0)
 })
 
 /**
@@ -66,12 +79,20 @@ Then('We should see an empty use page',async function(){
  */
 Then('Delete assets', async function () {
   await this.deleteAssets()
+
+  // must wait to confirm that assets have been deleted
+  await this.wait(300)
 })
 
-Then('We should see an empty asset column',async function(){
+Then('We should see an empty asset column', async function () {
   const { page } = this
-  await expect.null(page.waitForSelector('text=Solar'))
-  await expect.null(page.waitForSelector('text=Battery'))
+
+  const count_console = await page.locator('text=Console').count()
+  const count_solar = await page.locator('text=Solar').count()
+  const count_battery = await page.locator('text=Battery').count()
+  await expect(count_console).toEqual(1)
+  await expect(count_solar).toEqual(0)
+  await expect(count_battery).toEqual(0)
 })
 
 
