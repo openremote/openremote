@@ -1622,8 +1622,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     public _onDragEnd(ev: any): void {
-        if (this._dragDropParentId && this.selectedIds) {
-            this.dispatchEvent(new OrAssetTreeChangeParentEvent(this._dragDropParentId, this.selectedIds));
+        if (this.selectedIds) {
+            this.dispatchEvent(new OrAssetTreeChangeParentEvent(!this._dragDropParentId ? undefined : this._dragDropParentId, this.selectedIds));
         }
     }
 
@@ -1709,6 +1709,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         return html`
             <li class="asset-list-element" ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
+                <div class="in-between-element" node-asset-id="${treeNode.parent ? (treeNode.parent.asset ? treeNode.parent.asset.id : '' ) : undefined}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
                 <div class="node-container" node-asset-id="${treeNode.asset ? treeNode.asset.id : ''}" draggable="true" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}" style="padding-left: ${level * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>

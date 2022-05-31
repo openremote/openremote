@@ -263,7 +263,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
         let parentId: string | undefined = newParentId.parentId;
         let assetsIds: string[] = newParentId.assetsIds;
 
-        if (newParentId) {
+        if (parentId) {
             await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
         } else {
             //So need to remove parent from all the selected assets

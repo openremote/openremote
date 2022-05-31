@@ -124,6 +124,10 @@ export const style = css`
         background-color: ${unsafeCSS(DefaultColor5)};
     }
     
+    .in-between-element {
+        height: 3px;
+    }
+    
     .node-container {
         display: flex;
         border-left: 4px solid transparent;
