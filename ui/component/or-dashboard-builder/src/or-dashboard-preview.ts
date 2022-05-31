@@ -21,7 +21,7 @@ import {
 } from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {until} from "lit/directives/until.js";
-import {GridStack, GridStackElement, GridStackNode} from "gridstack";
+import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {ORGridStackNode} from "./or-dashboard-editor";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -112,6 +112,9 @@ export class OrDashboardPreview extends LitElement {
     @property() // Optional alternative for template
     protected readonly dashboardId?: string;
 
+    @property({type: Object})
+    protected selectedWidget: DashboardWidget | undefined;
+
     @property()
     protected editMode: boolean = false;
 
@@ -161,6 +164,24 @@ export class OrDashboardPreview extends LitElement {
             console.log("Setting up a new Grid..");
             this.setupGrid(true, false)
         }
+
+        if(changedProperties.has("selectedWidget")) {
+            if(this.selectedWidget != undefined) {
+                if(changedProperties.get("selectedWidget") != undefined) { // if previous selected state was a different widget
+                    this.dispatchEvent(new CustomEvent("deselected", { detail: changedProperties.get("selectedWidget") as DashboardWidget }));
+                }
+                const foundItem = this.grid?.getGridItems().find((item) => { return item.gridstackNode?.id == this.selectedWidget?.gridItem?.id});
+                if(foundItem != null) { this.selectGridItem(foundItem); }
+                this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedWidget }));
+
+            } else {
+                // Checking whether the mainGrid is not destroyed and there are Items to deselect..
+                if(this.grid?.el != undefined && this.grid?.getGridItems() != null) { this.deselectGridItems(this.grid.getGridItems()); }
+                this.dispatchEvent(new CustomEvent("deselected", { detail: changedProperties.get("selectedWidget") as DashboardWidget }));
+            }
+        }
+
+
         if(changedProperties.has("editMode") && changedProperties.has("fullscreen")) {
             console.log("Completely deleting and creating a new grid..");
             this.setupGrid(true, true);
@@ -184,6 +205,28 @@ export class OrDashboardPreview extends LitElement {
             this.previewWidth = getWidthByPreviewSize(this.previewSize);
             this.previewHeight = getHeightByPreviewSize(this.previewSize);
         }
+    }
+
+    selectGridItem(gridItem: GridItemHTMLElement) {
+        if(this.grid != null) {
+            this.deselectGridItems(this.grid.getGridItems()); // deselecting all other items
+            console.log(gridItem);
+            gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
+                console.log(item);
+                item.classList.add('grid-stack-item-content__active'); // Apply active CSS class
+            });
+        }
+    }
+    deselectGridItem(gridItem: GridItemHTMLElement) {
+        gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
+            item.classList.remove('grid-stack-item-content__active'); // Remove active CSS class
+        });
+    }
+
+    deselectGridItems(gridItems: GridItemHTMLElement[]) {
+        gridItems.forEach(item => {
+            this.deselectGridItem(item);
+        })
     }
 
 
@@ -229,6 +272,17 @@ export class OrDashboardPreview extends LitElement {
             this.grid.on('change', (event: Event, items: any) => {
                 if(this.template != null && this.template.widgets != null) {
                     console.log("Noticed a change in movement/sizing!");
+                    (items as GridStackNode[]).forEach(node => {
+                        const widget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
+                        if(widget != null && widget.gridItem != null) {
+                            // console.log("Updating properties of " + widget.displayName);
+                            widget.gridItem.x = node.x;
+                            widget.gridItem.y = node.y;
+                            widget.gridItem.w = node.w;
+                            widget.gridItem.h = node.h;
+                            widget.gridItem.content = node.content;
+                        }
+                    });
                     this.requestUpdate();
                     this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
                 }
@@ -254,6 +308,16 @@ export class OrDashboardPreview extends LitElement {
         tempTemplate?.widgets?.push(widget);
         this.template = Object.assign({}, tempTemplate); // Force property update
         return widget;
+    }
+
+    itemSelect(gridItem: DashboardGridItem) {
+        if(this.selectedWidget?.gridItem?.id == gridItem.id) {
+            this.selectedWidget = undefined;
+        } else {
+            this.selectedWidget = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
+        }
+        console.log(this.selectedWidget);
+        this.requestUpdate();
     }
 
     // Render
@@ -304,7 +368,7 @@ export class OrDashboardPreview extends LitElement {
                                     </div>
                                     ${this.template?.widgets?.map((widget) => {
                                         return html`
-                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}">
+                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${(event: MouseEvent) => { this.itemSelect(widget.gridItem!); }}">
                                                 <div class="grid-stack-item-content">
                                                     ${until(this.getWidgetContent(widget).then((content) => {
                                                         return content;
@@ -363,24 +427,10 @@ export class OrDashboardPreview extends LitElement {
                             return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
                         }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
                     }
-                    const mockData: any[] = [];
-                    if(this.editMode) {
-                        widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
-                            mockData.push({
-                                backgroundColor: ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"][mockData.length],
-                                borderColor: ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"][mockData.length],
-                                data: this.generateMockData(widget.widgetType!, 20),
-                                fill: false,
-                                label: 'Test label 1',
-                                pointRadius: 2
-                            });
-                        });
-                    }
                     return html`
                         <div class="gridItem">
-                            <or-chart .assets="${assets}" .activeAsset="${assets[0]}" .period="${widget.widgetConfig?.period}" ._data="${(this.editMode ? mockData : undefined)}"
+                            <or-chart .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, timeUnits: any, stepSize: number) => { return this.generateMockData(widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
                                       showLegend="${widget.widgetConfig?.showLegend}" .realm="${manager.displayRealm}" .showControls="${widget.widgetConfig?.showTimestampControls}" style="height: 100%"
-                                      containsMockData="${this.editMode}"
                             ></or-chart>
                         </div>
                     `
@@ -399,21 +449,45 @@ export class OrDashboardPreview extends LitElement {
         return html`<span>Error!</span>`;
     }
 
-    protected generateMockData(widgetType: DashboardWidgetType, amount: number): any[] {
-        switch (widgetType) {
+    protected generateMockData(widget: DashboardWidget, startOfPeriod: number, endOfPeriod: number, amount: number = 10): any {
+        switch (widget.widgetType) {
             case DashboardWidgetType.CHART: {
-                const mockTime: number = Date.now();
+                const mockTime: number = startOfPeriod;
+                const chartData: any[] = [];
+                const interval = (Date.now() - startOfPeriod) / amount;
+
+                console.log(widget);
+                console.log(widget.widgetConfig?.attributeRefs);
+
+                // Generating random coordinates on the chart
                 let data: any[] = [];
-                let prevValue: number = 100;
-                for(let i = 0; i < amount; i++) {
-                    const value = Math.floor(Math.random() * ((prevValue + 2) - (prevValue - 2)) + (prevValue - 2))
-                    data.push({
-                        x: (mockTime - (i * 5 * 60000)),
-                        y: value
+                widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
+                    let valueEntries: any[] = [];
+                    let prevValue: number = 100;
+                    for(let i = 0; i < amount; i++) {
+                        const value = Math.floor(Math.random() * ((prevValue + 2) - (prevValue - 2)) + (prevValue - 2))
+                        valueEntries.push({
+                            x: (mockTime + (i * interval)),
+                            y: value
+                        });
+                        prevValue = value;
+                    }
+                    data.push(valueEntries);
+                })
+
+                // Making a line for each attribute
+                widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
+                    chartData.push({
+                        backgroundColor: ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"][chartData.length],
+                        borderColor: ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"][chartData.length],
+                        data: data[chartData.length],
+                        fill: false,
+                        label: 'Test label 1',
+                        pointRadius: 2
                     });
-                    prevValue = value;
-                }
-                return data;
+                });
+                console.log(chartData);
+                return chartData;
             }
         }
         return [];

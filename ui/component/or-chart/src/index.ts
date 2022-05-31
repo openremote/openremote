@@ -365,9 +365,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     public panelName?: string;
 
     @property()
-    public containsMockData: boolean = false;
-
-    @property()
     public showControls: boolean = true;
 
     @property()
@@ -429,7 +426,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         const reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp")
             || changedProperties.has("timestamp") || changedProperties.has("assetAttributes") || changedProperties.has("realm");
 
-        if (reloadData && !this.shouldUseMockData()) {
+        if (reloadData) {
             console.log("Reloading data!");
             this._data = undefined;
             if (this._chart) {
@@ -439,7 +436,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loadData();
         }
 
-        if (!this._data && !this.shouldUseMockData()) {
+        if (!this._data) {
             console.log("No data! Returning...")
             console.log(this._data);
             return;
@@ -542,7 +539,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 (this._chart.options!.scales!.x! as TimeScaleOptions).time!.stepSize = this._stepSize!;
                 (this._chart.options!.plugins!.annotation!.annotations! as AnnotationOptions<"line">[])[0].xMin = now;
                 (this._chart.options!.plugins!.annotation!.annotations! as AnnotationOptions<"line">[])[0].xMax = now;
-                // this._chart.data.datasets = this._data;
+                this._chart.data.datasets = this._data;
                 this._chart.update();
             }
         }
@@ -559,10 +556,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     shouldShowLegend(): boolean {
         // console.log((this.showLegend && this.showLegend.toString() == "true"));
         return (this.showLegend && this.showLegend.toString() == "true");
-    }
-    shouldUseMockData(): boolean {
-        // console.log(this.useMockData);
-        return (this.containsMockData && this.containsMockData.toString() == "true");
     }
 
     render() {
@@ -1006,7 +999,16 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected async _loadData() {
 
-        if (this._loading || this._data || !this.assetAttributes || !this.assets || this.assets.length === 0 || this.assetAttributes.length === 0 || !this.period || !this.timestamp) {
+        console.log(this._loading);
+        console.log(this._data);
+        console.log(!this.assetAttributes);
+        console.log(!this.assets);
+        console.log(this.assets.length === 0 && !this.dataProvider);
+        console.log(this.assetAttributes.length === 0 && !this.dataProvider);
+        console.log(!this.period);
+        console.log(!this.timestamp);
+        if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.period || !this.timestamp) {
+            console.error("Some attributes are missing! Cancelling _loadData..")
             return;
         }
 
@@ -1047,6 +1049,15 @@ export class OrChart extends translate(i18next)(LitElement) {
         let predictedFromTimestamp = now < this._startOfPeriod ? this._startOfPeriod : now;
 
         const data: ChartDataset<"line", ScatterDataPoint[]>[] = [];
+
+        if(this.dataProvider) {
+            console.log(this.dataProvider);
+            await this.dataProvider(this._startOfPeriod, this._endOfPeriod, this._timeUnits, this._stepSize).then((dataset) => {
+                dataset.forEach((set) => { data.push(set); });
+            });
+        }
+        console.log(data);
+
         const promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
             const asset = this.assets[assetIndex];

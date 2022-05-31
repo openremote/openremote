@@ -527,8 +527,10 @@ export class OrDashboardBuilder extends LitElement {
                                                          @rerender="${(event: CustomEvent) => { this.rerenderPending = false; }}"
                                     ></or-dashboard-editor>-->
                                     <or-dashboard-preview class="editor" style="background: transparent;"
-                                                          .template="${this.currentTemplate}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
+                                                          .template="${this.currentTemplate}" .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
                                                           .previewSize="${this.previewSize}"
+                                                          @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
+                                                          @deselected="${(event: CustomEvent) => { this.deselectWidget(); }}"
                                     ></or-dashboard-preview>
                                 ` : html`
                                     <div style="justify-content: center; display: flex; align-items: center; height: 100%;">
