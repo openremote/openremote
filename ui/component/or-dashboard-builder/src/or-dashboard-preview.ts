@@ -22,7 +22,6 @@ import {
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {until} from "lit/directives/until.js";
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
-import {ORGridStackNode} from "./or-dashboard-editor";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -98,6 +97,10 @@ const editorStyling = css`
 `
 
 /* -------------------------------------------------- */
+
+export interface ORGridStackNode extends GridStackNode {
+    widgetType: DashboardWidgetType;
+}
 
 @customElement("or-dashboard-preview")
 export class OrDashboardPreview extends LitElement {
@@ -501,7 +504,7 @@ export class OrDashboardPreview extends LitElement {
                                       .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, timeUnits: any, stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
                                       showLegend="${_widget.widgetConfig?.showLegend}" .realm="${manager.displayRealm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="position: absolute; height: 100%"
                             ></or-chart>
-                            ${this.editMode ? html`
+                            ${/*this.editMode*/ false ? html`
                                 <div style="position: absolute; right: 0; bottom: 0; padding: 4px;">
                                     <span style="font-style: italic;">Uses fake data</span>
                                 </div>

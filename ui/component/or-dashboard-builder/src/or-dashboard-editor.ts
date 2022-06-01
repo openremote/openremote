@@ -1,3 +1,4 @@
+/*
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
@@ -26,27 +27,27 @@ const extracss = require('gridstack/dist/gridstack-extra.css');
 
 //language=css
 const editorStyling = css`
-    
+
     #view-options {
         padding: 24px;
         display: flex;
         justify-content: center;
         align-items: center;
     }
-    /* Margins on view options */
+    /!* Margins on view options *!/
     #view-preset-select { margin-left: 20px; }
     #width-input { margin-left: 20px; }
     #height-input { margin-left: 10px; }
     #rotate-btn { margin-left: 10px; }
-    
+
     .maingrid {
         border: 3px solid #909090;
         background: #FFFFFF;
         border-radius: 8px;
         overflow-x: hidden;
         overflow-y: scroll;
-        height: 540px; /* TODO: Should be set according to input */
-        width: 960px; /* TODO: Should be set according to input */
+        height: 540px; /!* TODO: Should be set according to input *!/
+        width: 960px; /!* TODO: Should be set according to input *!/
         padding: 4px;
         position: absolute;
         z-index: 0;
@@ -60,7 +61,7 @@ const editorStyling = css`
         height: auto;
         width: 100%;
         padding: 4px;
-        /*pointer-events: none;*/
+        /!*pointer-events: none;*!/
         position: relative;
         z-index: 0;
     }
@@ -76,14 +77,14 @@ const editorStyling = css`
         overflow: hidden;
     }
     .grid-stack-item-content__active {
-        border: 2px solid ${unsafeCSS(DefaultColor4)};    
+        border: 2px solid ${unsafeCSS(DefaultColor4)};
     }
     .gridItem {
         height: 100%;
         overflow: hidden;
     }
-    
-    /* Grid lines on the background of the grid */
+
+    /!* Grid lines on the background of the grid *!/
     .grid-element {
         background-image:
                 linear-gradient(90deg, #E0E0E0, transparent 1px),
@@ -137,7 +138,7 @@ export class OrDashboardEditor extends LitElement{
     protected resizeObserver: ResizeObserver | undefined;
 
 
-    /* ---------------- */
+    /!* ---------------- *!/
 
     constructor() {
         super();
@@ -157,14 +158,14 @@ export class OrDashboardEditor extends LitElement{
             const maingrid = this.shadowRoot?.querySelector(".maingrid");
             if(maingrid != null) {
                 // this.setupResizeObserver(maingrid);
-                /*this.mainGrid?.getGridItems().forEach((gridItem) => {
+                /!*this.mainGrid?.getGridItems().forEach((gridItem) => {
                     console.log(gridItem);
-                })*/
+                })*!/
             }
         })
     }
 
-    /* ------------------------------------- */
+    /!* ------------------------------------- *!/
 
 
     // Listening to property changes (main controller method)
@@ -227,9 +228,9 @@ export class OrDashboardEditor extends LitElement{
                 const gridHTML = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
                 gridHTML.style.width = (this.width + 'px');
                 gridHTML.style.height = (this.fullscreen ? 'auto' : (this.height + 'px'));
-                /*if(this.mainGrid != null) {
+                /!*if(this.mainGrid != null) {
                     this.updateGridSize(true);
-                }*/
+                }*!/
             }
             if(this.width == 1920 && this.height == 1080) { this.previewSize = DashboardSizeOption.LARGE; }
             else if(this.width == 1280 && this.height == 720) { this.previewSize = DashboardSizeOption.MEDIUM; }
@@ -280,15 +281,15 @@ export class OrDashboardEditor extends LitElement{
         }
     }
 
-    /* -------------------------------------------------------- */
+    /!* -------------------------------------------------------- *!/
 
-    /*getColumns(activePreset: DashboardScreenPreset, columns?: number): number {
+    /!*getColumns(activePreset: DashboardScreenPreset, columns?: number): number {
         if(activePreset.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) {
             return 2;
         } else {
             return (columns != undefined ? columns : 12);
         }
-    }*/
+    }*!/
 
     createGrid(activePreset: DashboardScreenPreset, gridElement?: HTMLElement | null, gridItems?: DashboardGridItem[]): GridStack | null {
         console.log("Creating a new Grid..");
@@ -340,7 +341,7 @@ export class OrDashboardEditor extends LitElement{
 
         if(gridItems != null) {
             // console.log(gridItems);
-            /*grid.load(gridItems);
+            /!*grid.load(gridItems);
             if(this.editMode && activePreset.scalingPreset != DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) {
                 grid.getGridItems().forEach((htmlElement) => {
                     const gridItem = htmlElement.gridstackNode as DashboardGridItem;
@@ -349,7 +350,7 @@ export class OrDashboardEditor extends LitElement{
             }
             if(activePreset.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) {
                 grid.compact();
-            }*/
+            }*!/
         }
 
         if(this.editMode) {
@@ -466,7 +467,7 @@ export class OrDashboardEditor extends LitElement{
     }
 
 
-    /* --------------------- */
+    /!* --------------------- *!/
 
 
     // Adding HTML event listeners (for example selecting/deselecting)
@@ -474,11 +475,11 @@ export class OrDashboardEditor extends LitElement{
         if(htmlElement.onclick == null) {
             htmlElement.onclick = (event) => {
                 this.itemSelect(gridItem);
-                /*if(this.selected?.gridItem?.id == gridItem.id) {
+                /!*if(this.selected?.gridItem?.id == gridItem.id) {
                     this.selected = undefined;
                 } else {
                     this.selected = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
-                }*/
+                }*!/
             };
         }
     }
@@ -517,7 +518,7 @@ export class OrDashboardEditor extends LitElement{
     }
 
 
-    /* ------------------------------ */
+    /!* ------------------------------ *!/
 
     async loadWidget(widget: DashboardWidget): Promise<DashboardWidget> {
         const _widget = Object.assign({}, widget);
@@ -556,13 +557,13 @@ export class OrDashboardEditor extends LitElement{
                         </div>
                     `
                     console.log(_widget.gridItem.content);
-                    /*_widget.gridItem.content = "<div class='gridItem'><or-chart" +
+                    /!*_widget.gridItem.content = "<div class='gridItem'><or-chart" +
                         " assets='" + JSON.stringify(assets) +
                         "' activeAsset='" + JSON.stringify(assets[0]) +
                         "' assetAttributes='" + JSON.stringify(attributes) +
                         "' period='" + widget.widgetConfig?.period +
                         "' showLegend='" + JSON.stringify(widget.widgetConfig?.showLegend) +
-                        "' realm='" + manager.displayRealm + "' showControls='false' style='height: 100%;'></or-chart></div>";*/
+                        "' realm='" + manager.displayRealm + "' showControls='false' style='height: 100%;'></or-chart></div>";*!/
                     break;
                 }
 
@@ -630,7 +631,7 @@ export class OrDashboardEditor extends LitElement{
                             </div>
                         </div>
                     ` : html`
-                        <div id="container" style="display: flex; justify-content: center; height: 100%;">  
+                        <div id="container" style="display: flex; justify-content: center; height: 100%;">
                             ${activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                                 <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
                             ` : undefined}
@@ -720,3 +721,4 @@ export class OrDashboardEditor extends LitElement{
         return activePreset;
     }
 }
+*/

@@ -9,7 +9,7 @@ import "./or-dashboard-boardsettings";
 import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
-import {ORGridStackNode} from "./or-dashboard-editor";
+import {ORGridStackNode} from "./or-dashboard-preview";
 import {Dashboard, DashboardGridItem, DashboardScalingPreset,
     DashboardScreenPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor5 } from "@openremote/core";
