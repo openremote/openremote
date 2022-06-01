@@ -281,7 +281,7 @@ export class OrDashboardPreview extends LitElement {
                             widget.gridItem.y = node.y;
                             widget.gridItem.w = node.w;
                             widget.gridItem.h = node.h;
-                            widget.gridItem.content = node.content;
+                            // widget.gridItem.content = node.content;
                         }
                     });
                     // this.requestUpdate(); was required for or-chart since it does not show chart after moving it on the grid.
@@ -527,15 +527,12 @@ export class OrDashboardPreview extends LitElement {
     }
 
     protected generateMockData(widget: DashboardWidget, startOfPeriod: number, endOfPeriod: number, amount: number = 10): any {
-        console.log("Generating mock data..");
+        /*console.log("Generating mock data..");*/
         switch (widget.widgetType) {
             case DashboardWidgetType.CHART: {
                 const mockTime: number = startOfPeriod;
                 const chartData: any[] = [];
                 const interval = (Date.now() - startOfPeriod) / amount;
-
-                console.log(widget);
-                console.log(widget.widgetConfig?.attributeRefs);
 
                 // Generating random coordinates on the chart
                 let data: any[] = [];
@@ -564,7 +561,7 @@ export class OrDashboardPreview extends LitElement {
                         pointRadius: 2
                     });
                 });
-                console.log(chartData);
+                /*console.log(chartData);*/
                 return chartData;
             }
         }

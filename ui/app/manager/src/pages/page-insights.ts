@@ -139,16 +139,16 @@ export class PageInsights extends Page<AppStateKeyed>  {
     }
 
     protected render(): TemplateResult | void {
-        const template = {
+       /* const template = {
             columns: 8,
             maxScreenWidth: 400,
             screenPresets: [],
             widgets: [
-                {widgetType: DashboardWidgetType.CHART, gridItem: { id: 'item1', x: 0, y: 0, w: 2, h: 2, content: "<span>Widget 1</span>" }},
-                {widgetType: DashboardWidgetType.CHART, gridItem: { id: 'item2', x: 5, y: 0, w: 2, h: 2, content: "<span>Widget 2</span>" }},
-                {widgetType: DashboardWidgetType.MAP, gridItem: { id: 'item3', x: 2, y: 0, w: 3, h: 3, content: "<span>Widget 3</span>" }},
+                {widgetType: DashboardWidgetType.CHART, gridItem: { id: 'item1', x: 0, y: 0, w: 2, h: 2 }},
+                {widgetType: DashboardWidgetType.CHART, gridItem: { id: 'item2', x: 5, y: 0, w: 2, h: 2 }},
+                {widgetType: DashboardWidgetType.MAP, gridItem: { id: 'item3', x: 2, y: 0, w: 3, h: 3 }},
             ]
-        } as DashboardTemplate;
+        } as DashboardTemplate;*/
         return html`
             <div style="width: 100%;">
                 <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}"

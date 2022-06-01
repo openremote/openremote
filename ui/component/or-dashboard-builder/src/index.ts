@@ -423,11 +423,11 @@ export class OrDashboardBuilder extends LitElement {
             this.isLoading = true;
 
             // Replace content to not save a long HTML string in the Database (which gets generated on each load anyway)
-            this.selectedDashboard.template?.widgets?.forEach((widget) => {
+            /*this.selectedDashboard.template?.widgets?.forEach((widget) => {
                 if(widget.gridItem != null) {
                     widget.gridItem.content = "<span>Content</span>";
                 }
-            })
+            })*/
 
             // Saving object into the database
             manager.rest.api.DashboardResource.update(this.selectedDashboard).then((response) => {
@@ -603,7 +603,7 @@ export class OrDashboardBuilder extends LitElement {
             noResize: false,
             noMove: false,
             locked: false,
-            content: this.getWidgetContent(gridstackNode.widgetType, displayName)
+            // content: this.getWidgetContent(gridstackNode.widgetType, displayName)
         }
     }
     generateWidgetDisplayName(widgetType: DashboardWidgetType): string | undefined {
@@ -620,16 +620,6 @@ export class OrDashboardBuilder extends LitElement {
         switch (widgetType) {
             case DashboardWidgetType.CHART: return 2;
             case DashboardWidgetType.MAP: return 4;
-        }
-    }
-
-    getWidgetContent(widgetType: DashboardWidgetType, displayName: string): string {
-        switch (widgetType) {
-            case DashboardWidgetType.CHART: {
-                return ('<div class="gridItem"><or-chart></or-chart></div>');
-            } case DashboardWidgetType.MAP: {
-                return ('<div class="gridItem"><or-map center="5.454250, 51.445990" zoom="5" style="height: 500px; width: 100%;"></or-map></div>');
-            }
         }
     }
 

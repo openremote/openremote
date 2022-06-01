@@ -20,5 +20,5 @@ public class DashboardGridItem {
     protected boolean noResize;
     protected boolean noMove;
     protected boolean locked;
-    protected Object content;
+    /*protected Object content;*/
 }
