@@ -293,7 +293,7 @@ export class OrDashboardPreview extends LitElement {
                             // widget.gridItem.content = node.content;
                         }
                     });
-                    // this.requestUpdate(); was required for or-chart since it does not show chart after moving it on the grid.
+                    this.requestUpdate(); // is required for or-chart since it does not show chart after moving it on the grid.
                     this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
                 }
             });
