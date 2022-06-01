@@ -19,6 +19,8 @@ import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_P
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
+import static org.openremote.model.rules.Ruleset.Lang.JAVASCRIPT
+import static org.openremote.model.rules.Ruleset.Lang.JSON
 import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST
 
 class BasicRulesetResourceTest extends Specification implements ManagerContainerTrait {
@@ -459,7 +461,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a realm ruleset is created in the authenticated realm"
-        def realmRuleset = new RealmRuleset(MASTER_REALM, "Test realm definition", GROOVY, "SomeRulesCode")
+        def realmRuleset = new RealmRuleset(MASTER_REALM, "Test realm definition", Ruleset.Lang.JSON, "SomeRulesCode")
         rulesetResource.createRealmRuleset(null, realmRuleset)
         def rulesetId = rulesetResource.getRealmRulesets(null, MASTER_REALM, null, false)[1].id
         realmRuleset = rulesetResource.getRealmRuleset(null, rulesetId)
@@ -541,8 +543,16 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
             assert deployment == null
         }
 
+        when: "a groovy realm ruleset is created"
+        realmRuleset = new RealmRuleset(MASTER_REALM, "Test realm definition", GROOVY, "SomeRulesCode")
+        rulesetResource.createRealmRuleset(null, realmRuleset)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
         when: "a realm ruleset is created in a non-authenticated realm"
-        realmRuleset = new RealmRuleset(keycloakTestSetup.realmBuilding.name, "Test realm definition", GROOVY, "SomeRulesCode")
+        realmRuleset = new RealmRuleset(keycloakTestSetup.realmBuilding.name, "Test realm definition", JAVASCRIPT, "SomeRulesCode")
         rulesetResource.createRealmRuleset(null, realmRuleset)
 
         then: "access should be forbidden"
@@ -550,7 +560,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "an asset ruleset is created in the authenticated realm"
-        def assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", GROOVY, "SomeRulesCode")
+        def assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", JAVASCRIPT, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
         rulesetId = rulesetResource.getAssetRulesets(null, managerTestSetup.smartOfficeId, null, false)[0].id
         assetRuleset = rulesetResource.getAssetRuleset(null, rulesetId)
@@ -632,7 +642,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         }
 
         when: "an asset ruleset is created in a non-authenticated realm"
-        assetRuleset = new AssetRuleset(managerTestSetup.apartment2Id, "Test asset definition", GROOVY, "SomeRulesCode")
+        assetRuleset = new AssetRuleset(managerTestSetup.apartment2Id, "Test asset definition", JSON, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
 
         then: "access should be forbidden"
@@ -906,7 +916,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "a realm ruleset is created in a non-authenticated realm"
-        realmRuleset = new RealmRuleset(keycloakTestSetup.realmCity.name, "Test realm definition", GROOVY, "SomeRulesCode")
+        realmRuleset = new RealmRuleset(keycloakTestSetup.realmCity.name, "Test realm definition", JAVASCRIPT, "SomeRulesCode")
         rulesetResource.createRealmRuleset(null, realmRuleset)
 
         then: "access should be forbidden"
@@ -917,7 +927,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def assetRuleset = new AssetRuleset(
             managerTestSetup.apartment1Id,
             "Test asset definition",
-            GROOVY, "SomeRulesCode")
+            JAVASCRIPT, "SomeRulesCode")
         assetRuleset.getMeta().add(new MetaItem<>(MetaItemType.SHOW_ON_DASHBOARD, true))
         rulesetResource.createAssetRuleset(null, assetRuleset)
         def rulesetId = rulesetResource.getAssetRulesets(null, managerTestSetup.apartment1Id, null, false)[1].id
@@ -1009,7 +1019,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         }
 
         when: "an asset ruleset is created in the authenticated realm but on a forbidden asset"
-        assetRuleset = new AssetRuleset(managerTestSetup.apartment3Id, "Test asset definition", GROOVY, "SomeRulesCode")
+        assetRuleset = new AssetRuleset(managerTestSetup.apartment3Id, "Test asset definition", JAVASCRIPT, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
 
         then: "access should be forbidden"
@@ -1017,7 +1027,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "an asset ruleset is created in a non-authenticated realm"
-        assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", GROOVY, "SomeRulesCode")
+        assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", JAVASCRIPT, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
 
         then: "access should be forbidden"
