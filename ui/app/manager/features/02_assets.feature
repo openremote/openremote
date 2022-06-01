@@ -14,11 +14,12 @@ Feature: Assets
         Then Give "<value_1>" to the "<attribute_1>" with type of "<A1_type>"
         Then Give "<value_2>" to the "<attribute_2>" with type of "<A2_type>"
         Then Save
+        Then We see the asset with name of "<name>"
 
         Examples:
-            | asset                     | name    | attribute_1 | A1_type          | attribute_2 | A2_type | value_1 | value_2 |
-            | Electricity battery asset | Battery | energyLevel | Positive number  | power       | Number  | 30      | 50      |
-            | PV solar asset            | Solar   | panelPitch  | Positive integer | power       | Number  | 30      | 70      |
+            | asset                     | name         | attribute_1 | A1_type          | attribute_2 | A2_type | value_1 | value_2 |
+            | Electricity battery asset | Battery      | energyLevel | Positive number  | power       | Number  | 30      | 50      |
+            | PV solar asset            | Solar panel  | panelPitch  | Positive integer | power       | Number  | 30      | 70      |
 
     @Desktop @select
     Scenario Outline: Select asset
@@ -45,9 +46,9 @@ Feature: Assets
         Then Save
 
         Examples:
-            | asset                     | name    | attribute     | type   | value | location_x | location_y |
-            | Electricity battery asset | Battery | powerSetpoint | number | 70    | 705        | 210        |
-            | PV solar asset            | Solar   | powerForecast | number | 100   | 600        | 200        |
+            | asset                     | name         | attribute     | type   | value | location_x | location_y |
+            | Electricity battery asset | Battery      | powerSetpoint | number | 70    | 705        | 210        |
+            | PV solar asset            | Solar panel  | powerForecast | number | 100   | 600        | 200        |
 
     @Desktop @readonly
     Scenario Outline: Set and cancel read-only
@@ -64,9 +65,9 @@ Feature: Assets
         And No button on the right of "<attribute_2>"
 
         Examples:
-            | name    | attribute_1 | attribute_2      |
-            | Battery | energyLevel | efficiencyExport |
-            | Solar   | power       | panelPitch       |
+            | name         | attribute_1 | attribute_2      |
+            | Battery      | energyLevel | efficiencyExport |
+            | Solar panel  | power       | panelPitch       |
 
 
     @Desktop @set_conf_item
@@ -81,6 +82,6 @@ Feature: Assets
         Then Save
 
         Examples:
-            | name    | attribute_1 | attribute_2   | item_1     | item_2            |
-            | Battery | energyLevel | power         | Rule state | Store data points |
-            | Solar   | power       | powerForecast | Rule state | Store data points |
+            | name         | attribute_1 | attribute_2   | item_1     | item_2            |
+            | Battery      | energyLevel | power         | Rule state | Store data points |
+            | Solar panel  | power       | powerForecast | Rule state | Store data points |

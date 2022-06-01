@@ -63,6 +63,14 @@ Then('Save rule', async function () {
     await this.click('or-mwc-input:has-text("Save")')
 })
 
+
+Then('We see the rule with name of {string}', async function (name) {
+    const { page } = this
+
+    await this.wait(300)
+    const count = await page.locator(`text=${name}`).count()
+    await expect(count).toBe(1)
+})
 /**
  *  Flow editor
  */
@@ -119,5 +127,14 @@ Then('Connect elements', { timeout: 10000 }, async function () {
     await this.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
     await this.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
     await this.wait(500)
+})
+
+Then('We see the flow rule with name of {string}', async function (name) {
+    const { page } = this
+
+    await this.wait(300)
+    // name with FLOW can ensuring that it's a flow rule
+    const count = await page.locator(`text=${name}FLOW`).count()
+    await expect(count).toBe(1)
 })
 

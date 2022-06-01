@@ -2,7 +2,6 @@ const { setWorldConstructor, BeforeAll, AfterAll, After } = require("@cucumber/c
 const { ChromiumBroswer } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
-const { env } = require("process");
 const { expect } = require("@playwright/test");
 require('dotenv').config();
 
@@ -64,9 +63,6 @@ const assets = [
     }
 ]
 
-const rules = [{ name: "Energy" }, { name: "Solar" }]
-
-
 class CustomWorld {
 
     /**
@@ -119,6 +115,20 @@ class CustomWorld {
         }
     }
 
+    
+    /**
+     * Logout and delete login certification
+     */
+     async logout() {
+        if (fs.existsSync('storageState.json')) {
+            fs.unlinkSync('storageState.json')
+        }
+        if (await this.page?.locator('#menu-btn-desktop').isVisible()) {
+            await this.click('#menu-btn-desktop');
+            await this.click('text=Log out');
+        }
+    }
+
     /**
      * click on the button
      * @param {String} button selector for an element
@@ -148,19 +158,6 @@ class CustomWorld {
      */
     async uncheck(checkbox) {
         await this.page?.uncheck(checkbox)
-    }
-
-    /**
-     * Logout and delete login certification
-     */
-    async logout() {
-        if (fs.existsSync('storageState.json')) {
-            fs.unlinkSync('storageState.json')
-        }
-        if (await this.page?.locator('#menu-btn-desktop').isVisible()) {
-            await this.click('#menu-btn-desktop');
-            await this.click('text=Log out');
-        }
     }
 
     /**
@@ -306,7 +303,7 @@ class CustomWorld {
      */
     async addAssets(update) {
 
-        await this.wait(1000)
+        await this.wait(600)
 
         // Goes to asset page
         await this.click('#desktop-left a:nth-child(2)')
@@ -559,6 +556,10 @@ class CustomWorld {
             await this.navigateTo("Realms")
             await this.deleteRealm()
         }
+
+        await this.goToPage("admin")
+        const isRealmDeleted = await this.page?.locator('#realm-picker').isVisible()
+        await expect(isRealmDeleted).toBeFalsy()
     }
 }
 

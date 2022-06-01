@@ -31,6 +31,17 @@ Then('Save', async function () {
     await this.click('button:has-text("Save")')
 })
 
+Then('We see the asset with name of {string}', async function (name) {
+    const {page} = this
+
+    const count =  await page.locator(`text=${name}`).count()
+
+    // reason why it's 1 is because that this scnario runs in a outline
+    // each time only one set of data will be used in one run of outlines
+    // thus, only one asset will be added and removed in one run and next time will start with the empty envrioment
+    await expect(count).toBe(1)
+})
+
 /**
  * select an asset
  */

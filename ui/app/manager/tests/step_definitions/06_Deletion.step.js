@@ -17,7 +17,6 @@ Then('We should not see the Realm picker', async function () {
   await this.wait(500)
   const isVisible = await this.page?.locator('#realm-picker').isVisible()
   await expect(isVisible).toBeFalsy()
-  await console.log("finished")
 })
 
 /**

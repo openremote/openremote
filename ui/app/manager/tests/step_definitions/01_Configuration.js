@@ -31,6 +31,13 @@ Then("Add a new user", async function () {
     await this.click('button:has-text("create")')
 })
 
+Then('We see a new user', async function () {
+    const { page } = this
+    await this.wait(300)
+    const count = await page.locator('td:has-text("smartcity")').count()
+    await expect(count).toBe(1)
+})
+
 /**
  * add role
  */
@@ -51,6 +58,14 @@ Then('Create a new role', async function () {
     await this.click('button:has-text("create")')
 })
 
+
+Then('We see a new role', async function () {
+    const { page } = this;
+    await this.wait(300)
+    const count = await page.locator('text=Custom').count()
+    await expect(count).toBe(1)
+})
+
 /**
  * apply new role
  */
@@ -66,7 +81,7 @@ Then('Select the new role and unselect others', async function () {
     await this.press("Enter")
 })
 
-Then('We should see assets permission are selected', async function () {
+Then('We see that assets permission are selected', async function () {
 
     //we expect to see two checkbox selected and disabled
 
