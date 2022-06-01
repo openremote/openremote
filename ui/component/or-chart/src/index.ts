@@ -168,6 +168,7 @@ const style = css`
         display: flex;
         min-width: 0;
         flex-direction: row;
+        height: 100%;
     }
        
     #msg {
@@ -284,13 +285,14 @@ const style = css`
     #chart-container {
         flex: 1 1 0;
         position: relative;
-        overflow: auto;
-        min-height: 400px;
-        max-height: 550px;
+        overflow: hidden;
+        /*min-height: 400px;
+        max-height: 550px;*/
     }
 
     canvas {
         width: 100% !important;
+        height: 100%; !important;
     }
 
     @media screen and (max-width: 1280px) {
