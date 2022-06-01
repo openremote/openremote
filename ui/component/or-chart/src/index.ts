@@ -561,6 +561,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     render() {
         const disabled = this._loading;
         const endDateInputType = this.getInputType();
+        console.log(this.assetAttributes);
         return html`
             <div id="container">
                 <div id="chart-container">
@@ -636,8 +637,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div id="attribute-list" style="min-height: 50px; min-width: 150px; flex: 0 1 0px; padding: 12px;">
                         ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                             const colourIndex = index % this.colors.length;
+                            /*console.log(assetIndex);
+                            console.log(attr);
+                            console.log(this.assets[assetIndex]);*/
                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
+                            // console.log(descriptors);
                             const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
+                            // console.log(label);
                             const bgColor = this.colors[colourIndex] || "";
                             return html`
                                 <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
@@ -790,6 +796,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             } as AssetQuery;
 
             try {
+                console.log("Querying assets in loadSettings()");
                 const response = await manager.rest.api.AssetResource.queryAssets(query);
                 const assets = response.data || [];
                 view.attributeRefs = view.attributeRefs.filter((attrRef) => !!assets.find((asset) => asset.id === attrRef.id && asset.attributes && asset.attributes.hasOwnProperty(attrRef.name!)));
@@ -868,6 +875,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this.assetAttributes = [];
         for (const attrRef of selectedAttrs) {
+            console.log("Pulling attributes after adding a new Attribute..");
             const response = await manager.rest.api.AssetResource.get(attrRef.id!);
             this.activeAsset = response.data;
             if (this.activeAsset) {
@@ -999,14 +1007,14 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected async _loadData() {
 
-        console.log(this._loading);
+        /*console.log(this._loading);
         console.log(this._data);
         console.log(!this.assetAttributes);
         console.log(!this.assets);
         console.log(this.assets.length === 0 && !this.dataProvider);
         console.log(this.assetAttributes.length === 0 && !this.dataProvider);
         console.log(!this.period);
-        console.log(!this.timestamp);
+        console.log(!this.timestamp);*/
         if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.period || !this.timestamp) {
             console.error("Some attributes are missing! Cancelling _loadData..")
             return;
@@ -1049,53 +1057,55 @@ export class OrChart extends translate(i18next)(LitElement) {
         let predictedFromTimestamp = now < this._startOfPeriod ? this._startOfPeriod : now;
 
         const data: ChartDataset<"line", ScatterDataPoint[]>[] = [];
+        let promises;
 
         if(this.dataProvider) {
             console.log(this.dataProvider);
             await this.dataProvider(this._startOfPeriod, this._endOfPeriod, this._timeUnits, this._stepSize).then((dataset) => {
                 dataset.forEach((set) => { data.push(set); });
             });
+        } else {
+            promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
+
+                const asset = this.assets[assetIndex];
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
+                const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
+                const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
+                const colourIndex = index % this.colors.length;
+                let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], interval, this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
+                (dataset as any).assetId = asset.id;
+                (dataset as any).attrName = attribute.name;
+                (dataset as any).unit = unit;
+                data.push(dataset);
+
+                dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));
+                data.push(dataset);
+
+                if (this.compareTimestamp) {
+                    const startOfPeriod = moment(this.compareTimestamp).startOf(this.period!).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+                    const endOfPeriod = moment(this.compareTimestamp).endOf(this.period!).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+                    const offset =  this._startOfPeriod! - startOfPeriod;
+
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, startOfPeriod, endOfPeriod, false,  asset.name + " " + label + " " + i18next.t("compare"));
+                    dataset.data.forEach((dp) => dp.x += offset);
+                    dataset.borderDash = [10, 10];
+                    (dataset as any).isComparisonDataset = true;
+                    data.push(dataset);
+
+                    predictedFromTimestamp = now < startOfPeriod ? startOfPeriod : now;
+                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, startOfPeriod, endOfPeriod, true,  asset.name + " " + label + " " + i18next.t("compare") + " " + i18next.t("predicted"));
+                    dataset.data.forEach((dp) => dp.x += offset);
+                    dataset.borderDash = [6, 8];
+                    (dataset as any).isComparisonDataset = true;
+                    data.push(dataset);
+                }
+            });
         }
-        console.log(data);
-
-        const promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
-
-            const asset = this.assets[assetIndex];
-            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
-            const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
-            const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
-            const colourIndex = index % this.colors.length;
-            let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], interval, this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
-            (dataset as any).assetId = asset.id;
-            (dataset as any).attrName = attribute.name;
-            (dataset as any).unit = unit;
-            data.push(dataset);
-
-            dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));
-            data.push(dataset);
-
-            if (this.compareTimestamp) {
-                const startOfPeriod = moment(this.compareTimestamp).startOf(this.period!).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-                const endOfPeriod = moment(this.compareTimestamp).endOf(this.period!).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-                const offset =  this._startOfPeriod! - startOfPeriod;
-
-                dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, startOfPeriod, endOfPeriod, false,  asset.name + " " + label + " " + i18next.t("compare"));
-                dataset.data.forEach((dp) => dp.x += offset);
-                dataset.borderDash = [10, 10];
-                (dataset as any).isComparisonDataset = true;
-                data.push(dataset);
-
-                predictedFromTimestamp = now < startOfPeriod ? startOfPeriod : now;
-                dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, startOfPeriod, endOfPeriod, true,  asset.name + " " + label + " " + i18next.t("compare") + " " + i18next.t("predicted"));
-                dataset.data.forEach((dp) => dp.x += offset);
-                dataset.borderDash = [6, 8];
-                (dataset as any).isComparisonDataset = true;
-                data.push(dataset);
-            }
-        });
 
         this._loading = false;
-        await Promise.all(promises);
+        if(promises) {
+            await Promise.all(promises);
+        }
         this._data = data;
     }
 
@@ -1148,12 +1158,14 @@ export class OrChart extends translate(i18next)(LitElement) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
 
             if (!predicted) {
+                console.log("Loading the not predicted datapoints..");
                 response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                     asset.id,
                     attribute.name,
                     queryParams
                 );
             } else {
+                console.log("Loading the predicted datapoints..");
                 response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
                     asset.id,
                     attribute.name,
