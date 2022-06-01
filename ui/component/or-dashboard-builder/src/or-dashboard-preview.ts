@@ -121,14 +121,14 @@ export class OrDashboardPreview extends LitElement {
     @property()
     protected editMode: boolean = false;
 
-    @property() // Makes it fullscreen or shows controls for editing the size
-    protected fullscreen: boolean = true;
+/*    @property() // Makes it fullscreen or shows controls for editing the size
+    protected fullscreen: boolean = true;*/
 
     @property()
-    protected previewWidth?: number;
+    protected previewWidth?: string;
 
     @property()
-    protected previewHeight?: number;
+    protected previewHeight?: string;
 
     @property() // Optional alternative for previewWidth/previewHeight
     protected previewSize?: DashboardSizeOption;
@@ -158,24 +158,22 @@ export class OrDashboardPreview extends LitElement {
         }
 
         // When switching from fullscreen and back the width/height needs to be set correctly
-        if(changedProperties.has("fullscreen")) {
+        /*if(changedProperties.has("fullscreen")) {
             if(this.fullscreen) {
-                /*const element = this.shadowRoot?.firstElementChild as HTMLElement;
-                this.previewWidth = element.clientWidth - 8; // - 8px of padding
-                this.previewHeight = element.clientHeight - 8; // - 8px of padding*/
+                this.previewSize = DashboardSizeOption.FULLSCREEN;
             } else {
                 this.previewSize = DashboardSizeOption.MEDIUM;
             }
 
             const mainGridContainer = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
             if(mainGridContainer != null) {
-                if(this.fullscreen) {
+                if(this.previewSize == DashboardSizeOption.FULLSCREEN) {
                     mainGridContainer.classList.add("maingrid__fullscreen");
                 } else if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
                     mainGridContainer.classList.remove("maingrid__fullscreen");
                 }
             }
-        }
+        }*/
 
         if(changedProperties.has("template")) {
             console.log("Setting up a new Grid..");
@@ -218,12 +216,23 @@ export class OrDashboardPreview extends LitElement {
 
         if(changedProperties.has("previewWidth") || changedProperties.has("previewHeight")) {
             const gridHTML = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
-            gridHTML.style.width = (this.fullscreen ? '100%' : this.previewWidth + 'px');
-            gridHTML.style.height = (this.fullscreen ? 'auto' : (this.previewHeight + 'px'));
+            gridHTML.style.width = this.previewWidth!;
+            gridHTML.style.height = this.previewHeight!;
+            console.log("[" + this.previewWidth + " " + this.previewHeight + "]");
+            console.log("[" + gridHTML.style.width + " " + gridHTML.style.height + "]");
             this.previewSize = getPreviewSizeByPx(this.previewWidth, this.previewHeight);
+            console.log(this.previewSize);
         }
 
         if(changedProperties.has("previewSize") && this.previewSize != DashboardSizeOption.CUSTOM) {
+            const mainGridContainer = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
+            if(mainGridContainer != null) {
+                if(this.previewSize == DashboardSizeOption.FULLSCREEN) {
+                    mainGridContainer.classList.add("maingrid__fullscreen");
+                } else if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
+                    mainGridContainer.classList.remove("maingrid__fullscreen");
+                }
+            }
             console.log("Preview Size has been changed!");
             this.previewWidth = getWidthByPreviewSize(this.previewSize);
             this.previewHeight = getHeightByPreviewSize(this.previewSize);
@@ -360,11 +369,11 @@ export class OrDashboardPreview extends LitElement {
                             <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" .value="${sizeOptionToString(this.previewSize!)}" .options="${[sizeOptionToString(DashboardSizeOption.LARGE), sizeOptionToString(DashboardSizeOption.MEDIUM), sizeOptionToString(DashboardSizeOption.SMALL), sizeOptionToString(DashboardSizeOption.CUSTOM)]}" style="min-width: 220px;"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = stringToSizeOption(event.detail.value); }}"
                             ></or-mwc-input>
-                            <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="Width" min="100" .value="${this.previewWidth}" style="width: 90px"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewWidth = event.detail.value as number; }}"
+                            <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="Width" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }}"
                             ></or-mwc-input>
-                            <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="Height" min="100" .value="${this.previewHeight}" style="width: 90px;"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewHeight = event.detail.value as number; }}"
+                            <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="Height" min="100" .value="${this.previewHeight?.replace('px', '')}" style="width: 90px;"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewHeight = event.detail.value + 'px'; }}"
                             ></or-mwc-input>
                             <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"
                                           @or-mwc-input-changed="${() => { const newWidth = this.previewHeight; const newHeight = this.previewWidth; this.previewWidth = newWidth; this.previewHeight = newHeight; }}">
@@ -380,7 +389,7 @@ export class OrDashboardPreview extends LitElement {
                     <div id="container" style="display: flex; justify-content: center; height: 100%;">
                         <div class="maingrid">
                             <!-- Gridstack element on which the Grid will be rendered -->
-                            <div id="gridElement" class="grid-stack ${this.fullscreen ? undefined : 'grid-element'}">
+                            <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
                                 <!--<div class="grid-stack-item">
                                     <div class="grid-stack-item-content">
                                         <span>Temporary content</span>

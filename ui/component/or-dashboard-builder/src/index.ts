@@ -124,7 +124,7 @@ export interface DashboardBuilderConfig {
     // no configuration built yet
 }
 export enum DashboardSizeOption {
-    LARGE, MEDIUM, SMALL, CUSTOM
+    LARGE, MEDIUM, SMALL, FULLSCREEN, CUSTOM
 }
 
 // Enum to Menu String method
@@ -167,6 +167,7 @@ export function stringToSizeOption(sizeOption: string): DashboardSizeOption {
 }
 export function sizeOptionToString(sizeOption: DashboardSizeOption): string {
     switch (sizeOption) {
+        case DashboardSizeOption.FULLSCREEN: { return "Fullscreen"; }
         case DashboardSizeOption.LARGE: { return "Large"; }
         case DashboardSizeOption.MEDIUM: { return "Medium"; }
         case DashboardSizeOption.SMALL: { return "Small"; }
@@ -188,32 +189,35 @@ export function sortScreenPresets(presets: DashboardScreenPreset[], largetosmall
     });
 }
 
-export function getWidthByPreviewSize(sizeOption?: DashboardSizeOption): number {
+export function getWidthByPreviewSize(sizeOption?: DashboardSizeOption): string {
     switch (sizeOption) {
-        case DashboardSizeOption.LARGE: return 1920;
-        case DashboardSizeOption.MEDIUM: return 1280;
-        case DashboardSizeOption.SMALL: return 480;
-        default: return 900;
+        case DashboardSizeOption.FULLSCREEN: return '100%';
+        case DashboardSizeOption.LARGE: return '1920px';
+        case DashboardSizeOption.MEDIUM: return '1280px';
+        case DashboardSizeOption.SMALL: return '480px';
+        default: return '900px';
     }
 }
 
-export function getHeightByPreviewSize(sizeOption?: DashboardSizeOption): number {
+export function getHeightByPreviewSize(sizeOption?: DashboardSizeOption): string {
     switch (sizeOption) {
-        case DashboardSizeOption.LARGE: return 1080;
-        case DashboardSizeOption.MEDIUM: return 720;
-        case DashboardSizeOption.SMALL: return 640;
-        default: return 540;
+        case DashboardSizeOption.FULLSCREEN: return 'auto';
+        case DashboardSizeOption.LARGE: return '1080px';
+        case DashboardSizeOption.MEDIUM: return '720px';
+        case DashboardSizeOption.SMALL: return '640px';
+        default: return '540px';
     }
 }
 
-export function getPreviewSizeByPx(width?: number, height?: number, previewSize?: DashboardSizeOption): DashboardSizeOption {
+export function getPreviewSizeByPx(width?: string, height?: string, previewSize?: DashboardSizeOption): DashboardSizeOption {
     console.log(previewSize);
     if(width == null && height == null) {
         console.error("Neither the previewWidth, nor previewHeight, nor previewSize attributes have been specified!"); return DashboardSizeOption.CUSTOM;
     } else {
-        if(width == 1920 && height == 1080) { return DashboardSizeOption.LARGE; }
-        else if(width == 1280 && height == 720) { return DashboardSizeOption.MEDIUM; }
-        else if(width == 480 && height == 640) { return DashboardSizeOption.SMALL; }
+        if(width == '100%' && height == 'auto') { return DashboardSizeOption.FULLSCREEN; }
+        else if(width == '1920px' && height == '1080px') { return DashboardSizeOption.LARGE; }
+        else if(width == '1280px' && height == '720px') { return DashboardSizeOption.MEDIUM; }
+        else if(width == '480px' && height == '640px') { return DashboardSizeOption.SMALL; }
         else { return DashboardSizeOption.CUSTOM; }
     }
 }
@@ -340,6 +344,11 @@ export class OrDashboardBuilder extends LitElement {
         }
         if(changedProperties.has("editMode")) {
             this.showDashboardTree = true;
+            if(!this.editMode) {
+                this.previewSize = DashboardSizeOption.FULLSCREEN;
+            } else {
+                this.previewSize = DashboardSizeOption.MEDIUM;
+            }
         }
     }
 
