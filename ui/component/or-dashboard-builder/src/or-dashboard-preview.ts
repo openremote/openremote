@@ -63,7 +63,7 @@ const editorStyling = css`
         overflow-y: auto;
         height: auto;
         width: 100%;
-        padding: 0;
+        padding: 4px;
         /*pointer-events: none;*/
         position: relative;
         z-index: 0;
@@ -77,7 +77,7 @@ const editorStyling = css`
         box-sizing: border-box;
         border: 2px solid #E0E0E0;
         border-radius: 4px;
-        overflow: hidden;
+        overflow: hidden !important;
     }
     .grid-stack-item-content__active {
         border: 2px solid ${unsafeCSS(DefaultColor4)};    
@@ -157,9 +157,9 @@ export class OrDashboardPreview extends LitElement {
         // When switching from fullscreen and back the width/height needs to be set correctly
         if(changedProperties.has("fullscreen")) {
             if(this.fullscreen) {
-                const element = this.shadowRoot?.firstElementChild as HTMLElement;
-                this.previewWidth = element.clientWidth; // - 8px of padding
-                this.previewHeight = element.clientHeight; // - 8px of padding
+                /*const element = this.shadowRoot?.firstElementChild as HTMLElement;
+                this.previewWidth = element.clientWidth - 8; // - 8px of padding
+                this.previewHeight = element.clientHeight - 8; // - 8px of padding*/
             } else {
                 this.previewSize = DashboardSizeOption.MEDIUM;
             }
@@ -215,7 +215,7 @@ export class OrDashboardPreview extends LitElement {
 
         if(changedProperties.has("previewWidth") || changedProperties.has("previewHeight")) {
             const gridHTML = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
-            gridHTML.style.width = (this.previewWidth + 'px');
+            gridHTML.style.width = (this.fullscreen ? '100%' : this.previewWidth + 'px');
             gridHTML.style.height = (this.fullscreen ? 'auto' : (this.previewHeight + 'px'));
             this.previewSize = getPreviewSizeByPx(this.previewWidth, this.previewHeight);
         }
@@ -281,7 +281,7 @@ export class OrDashboardPreview extends LitElement {
                             widget.gridItem.content = node.content;
                         }
                     });
-                    this.requestUpdate();
+                    // this.requestUpdate(); was required for or-chart since it does not show chart after moving it on the grid.
                     this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
                 }
             });
@@ -334,13 +334,15 @@ export class OrDashboardPreview extends LitElement {
     }
 
     onGridItemClick(gridItem: DashboardGridItem) {
-        if(this.selectedWidget?.gridItem?.id == gridItem.id) {
-            this.selectedWidget = undefined;
-        } else {
-            this.selectedWidget = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
+        if(this.editMode) {
+            if(this.selectedWidget?.gridItem?.id == gridItem.id) {
+                this.selectedWidget = undefined;
+            } else {
+                this.selectedWidget = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
+            }
+            console.log(this.selectedWidget);
+            this.requestUpdate();
         }
-        console.log(this.selectedWidget);
-        this.requestUpdate();
     }
 
     // Render
@@ -376,11 +378,11 @@ export class OrDashboardPreview extends LitElement {
                         <div class="maingrid">
                             <!-- Gridstack element on which the Grid will be rendered -->
                             <div id="gridElement" class="grid-stack ${this.fullscreen ? undefined : 'grid-element'}">
-                                <div class="grid-stack-item">
+                                <!--<div class="grid-stack-item">
                                     <div class="grid-stack-item-content">
                                         <span>Temporary content</span>
                                     </div>
-                                </div>
+                                </div>-->
                                 ${this.template?.widgets?.map((widget) => {
                                     return html`
                                         <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${(event: MouseEvent) => { this.onGridItemClick(widget.gridItem!); }}">
@@ -460,8 +462,8 @@ export class OrDashboardPreview extends LitElement {
 
 
     async getWidgetContent(widget: DashboardWidget): Promise<TemplateResult> {
-        console.log("Getting widget content for widget " + widget.id);
-        console.log(widget);
+        /*console.log("Getting widget content for widget " + widget.id);
+        console.log(widget);*/
         const _widget = Object.assign({}, widget);
         if(_widget.gridItem) {
             switch (_widget.widgetType) {
@@ -469,8 +471,7 @@ export class OrDashboardPreview extends LitElement {
                 case DashboardWidgetType.CHART: {
                     let assets: Asset[] = [];
                     let attributes: [number, Attribute<any>][] = [];
-                   /* console.log(_widget.widgetConfig?.attributeRefs);
-                    if(true) {
+                    if(!this.editMode) {
                         const response = await manager.rest.api.AssetResource.queryAssets({
                             ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
                         });
@@ -481,19 +482,17 @@ export class OrDashboardPreview extends LitElement {
                             const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                             return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
                         }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                    } else {
+                        _widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
+                            if(!assets.find((asset: Asset) => { return asset.id == attrRef.id; })) {
+                                assets.push({ id: attrRef.id, name: "Asset X", type: "ThingAsset" });
+                            }
+                        });
+                        attributes = [];
+                        _widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
+                            attributes.push([0, { name: attrRef.name }]);
+                        });
                     }
-                    console.log(assets);
-                    console.log(attributes);*/
-                    assets = [];
-                    _widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
-                        if(!assets.find((asset: Asset) => { return asset.id == attrRef.id; })) {
-                            assets.push({ id: attrRef.id, name: "Asset X", type: "ThingAsset" });
-                        }
-                    });
-                    attributes = [];
-                    _widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
-                        attributes.push([0, { name: attrRef.name }]);
-                    });
                     /*console.log(assets);
                     console.log(attributes);*/
                     return html`
@@ -502,9 +501,11 @@ export class OrDashboardPreview extends LitElement {
                                       .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, timeUnits: any, stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
                                       showLegend="${_widget.widgetConfig?.showLegend}" .realm="${manager.displayRealm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="position: absolute; height: 100%"
                             ></or-chart>
-                            <div style="position: absolute; right: 0; bottom: 0; padding: 4px;">
-                                <span style="font-style: italic;">Uses fake data</span>
-                            </div>
+                            ${this.editMode ? html`
+                                <div style="position: absolute; right: 0; bottom: 0; padding: 4px;">
+                                    <span style="font-style: italic;">Uses fake data</span>
+                                </div>
+                            ` : undefined}
                         </div>
                     `;
                 }

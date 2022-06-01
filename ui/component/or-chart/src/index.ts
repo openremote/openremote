@@ -413,11 +413,10 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
-        console.log(changedProperties);
+        // console.log(changedProperties);
 
         if (changedProperties.has("realm")) {
             if(changedProperties.get("realm") != undefined) { // Checking whether it was undefined previously, to prevent loading 2 times and resetting attribute properties.
-                console.log("The realm has changed! Delete the list of assets!");
                 this.assets = [];
                 this.loadSettings(true);
             }
@@ -427,7 +426,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             || changedProperties.has("timestamp") || changedProperties.has("assetAttributes") || changedProperties.has("realm");
 
         if (reloadData) {
-            console.log("Reloading data!");
             this._data = undefined;
             if (this._chart) {
                 this._chart.destroy();
@@ -437,15 +435,12 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         if (!this._data) {
-            console.log("No data! Returning...")
-            console.log(this._data);
             return;
         }
 
         const now = moment().toDate().getTime();
 
         if (!this._chart) {
-            console.log("Creating options..");
             const options = {
                 type: "line",
                 data: {
@@ -528,7 +523,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     }
                 }
             } as ChartConfiguration<"line", ScatterDataPoint[]>;
-            console.log(options);
 
             this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
         } else {
@@ -550,18 +544,15 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     shouldShowControls(): boolean {
-        // console.log((this.showControls && this.showControls.toString() == "true"));
         return (this.showControls && this.showControls.toString() == "true");
     }
     shouldShowLegend(): boolean {
-        // console.log((this.showLegend && this.showLegend.toString() == "true"));
         return (this.showLegend && this.showLegend.toString() == "true");
     }
 
     render() {
         const disabled = this._loading;
         const endDateInputType = this.getInputType();
-        console.log(this.assetAttributes);
         return html`
             <div id="container">
                 <div id="chart-container">
@@ -637,13 +628,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div id="attribute-list" style="min-height: 50px; min-width: 150px; flex: 0 1 0px; padding: 12px;">
                         ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                             const colourIndex = index % this.colors.length;
-                            /*console.log(assetIndex);
-                            console.log(attr);
-                            console.log(this.assets[assetIndex]);*/
                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
-                            // console.log(descriptors);
                             const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
-                            // console.log(label);
                             const bgColor = this.colors[colourIndex] || "";
                             return html`
                                 <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
@@ -796,7 +782,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             } as AssetQuery;
 
             try {
-                console.log("Querying assets in loadSettings()");
                 const response = await manager.rest.api.AssetResource.queryAssets(query);
                 const assets = response.data || [];
                 view.attributeRefs = view.attributeRefs.filter((attrRef) => !!assets.find((asset) => asset.id === attrRef.id && asset.attributes && asset.attributes.hasOwnProperty(attrRef.name!)));
@@ -875,7 +860,6 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this.assetAttributes = [];
         for (const attrRef of selectedAttrs) {
-            console.log("Pulling attributes after adding a new Attribute..");
             const response = await manager.rest.api.AssetResource.get(attrRef.id!);
             this.activeAsset = response.data;
             if (this.activeAsset) {
@@ -1006,15 +990,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-
-        /*console.log(this._loading);
-        console.log(this._data);
-        console.log(!this.assetAttributes);
-        console.log(!this.assets);
-        console.log(this.assets.length === 0 && !this.dataProvider);
-        console.log(this.assetAttributes.length === 0 && !this.dataProvider);
-        console.log(!this.period);
-        console.log(!this.timestamp);*/
         if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.period || !this.timestamp) {
             console.error("Some attributes are missing! Cancelling _loadData..")
             return;
@@ -1060,7 +1035,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         let promises;
 
         if(this.dataProvider) {
-            console.log(this.dataProvider);
             await this.dataProvider(this._startOfPeriod, this._endOfPeriod, this._timeUnits, this._stepSize).then((dataset) => {
                 dataset.forEach((set) => { data.push(set); });
             });
@@ -1158,14 +1132,12 @@ export class OrChart extends translate(i18next)(LitElement) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
 
             if (!predicted) {
-                console.log("Loading the not predicted datapoints..");
                 response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                     asset.id,
                     attribute.name,
                     queryParams
                 );
             } else {
-                console.log("Loading the predicted datapoints..");
                 response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
                     asset.id,
                     attribute.name,
