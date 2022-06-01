@@ -35,6 +35,7 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 
 import javax.ws.rs.BeanParam;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -255,6 +256,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             LOG.info("Forbidden access for user '" + getUsername() + "': " + realm);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+
+        // Only super users can create/modify groovy rules
+        // TODO: Implement robust groovy sandbox
+        if (ruleset.getLang() == Ruleset.Lang.GROOVY && !isSuperUser()) {
+            throw new ForbiddenException("Only super users can create/modify groovy rules for security reasons");
+        }
         ruleset = rulesetStorageService.merge(ruleset);
         return ruleset.getId();
     }
@@ -296,6 +303,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!existingRuleset.getRealm().equals(ruleset.getRealm())) {
             throw new WebApplicationException("Requested realm and existing ruleset realm must match", BAD_REQUEST);
         }
+
+        // Only super users can create/modify groovy rules
+        // TODO: Implement robust groovy sandbox
+        if (ruleset.getLang() == Ruleset.Lang.GROOVY && !isSuperUser()) {
+            throw new ForbiddenException("Only super users can create/modify groovy rules for security reasons");
+        }
         rulesetStorageService.merge(ruleset);
     }
 
@@ -312,6 +325,13 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isRealmActiveAndAccessible(realm) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+
+        // Only super users can create/modify groovy rules
+        // TODO: Implement robust groovy sandbox
+        if (ruleset.getLang() == Ruleset.Lang.GROOVY && !isSuperUser()) {
+            throw new ForbiddenException("Only super users can create/modify groovy rules for security reasons");
+        }
+
         rulesetStorageService.delete(RealmRuleset.class, id);
     }
 
@@ -333,6 +353,13 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+
+        // Only super users can create/modify groovy rules
+        // TODO: Implement robust groovy sandbox
+        if (ruleset.getLang() == Ruleset.Lang.GROOVY && !isSuperUser()) {
+            throw new ForbiddenException("Only super users can create/modify groovy rules for security reasons");
+        }
+
         ruleset = rulesetStorageService.merge(ruleset);
         return ruleset.getId();
     }
@@ -379,6 +406,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException("Can't update asset ID, delete and create the ruleset to reassign",
                                               BAD_REQUEST);
         }
+
+        // Only super users can create/modify groovy rules
+        // TODO: Implement robust groovy sandbox
+        if (ruleset.getLang() == Ruleset.Lang.GROOVY && !isSuperUser()) {
+            throw new ForbiddenException("Only super users can create/modify groovy rules for security reasons");
+        }
         rulesetStorageService.merge(ruleset);
     }
 
@@ -398,6 +431,13 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+
+        // Only super users can create/modify groovy rules
+        // TODO: Implement robust groovy sandbox
+        if (ruleset.getLang() == Ruleset.Lang.GROOVY && !isSuperUser()) {
+            throw new ForbiddenException("Only super users can create/modify groovy rules for security reasons");
+        }
+
         rulesetStorageService.delete(AssetRuleset.class, id);
     }
 
