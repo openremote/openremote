@@ -11,7 +11,7 @@ Then('Create a {string} with name of {string}', async function (asset, name) {
     await this.click('#add-btn')
 })
 
-When('Go to asset {string} info page', async function (name) {
+When('Go to asset {string} info page', { timeout: 7000 }, async function (name) {
     await this.unSelectAll()
     await this.click(`text=${name}`)
 })
@@ -32,9 +32,9 @@ Then('Save', async function () {
 })
 
 Then('We see the asset with name of {string}', async function (name) {
-    const {page} = this
+    const { page } = this
 
-    const count =  await page.locator(`text=${name}`).count()
+    const count = await page.locator(`text=${name}`).count()
 
     // reason why it's 1 is because that this scnario runs in a outline
     // each time only one set of data will be used in one run of outlines

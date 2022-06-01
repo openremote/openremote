@@ -1,8 +1,9 @@
-const { setWorldConstructor, BeforeAll, AfterAll, After } = require("@cucumber/cucumber");
+const { setWorldConstructor, BeforeAll, AfterAll, After, Status } = require("@cucumber/cucumber");
 const { ChromiumBroswer } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
 const { expect } = require("@playwright/test");
+const { join } = require('path');
 require('dotenv').config();
 
 /**
@@ -12,14 +13,12 @@ require('dotenv').config();
  * command for running certain test/tests with the "tag"(@OpenRemote) 
  *         yarn run tags "tag" (yarn run tags "@OpenRemote")
  * 
- * command for viewing the reports
- *         yarn run report
- * 
  * command for more.....
  */
 
 const global = {
     browser: ChromiumBroswer,
+    name: 1
 }
 
 const assets = [
@@ -90,7 +89,6 @@ class CustomWorld {
         }
         else {
             context = await global.browser.newContext();
-
         }
         this.page = await context.newPage();
         await this.goToPage(realm)
@@ -102,6 +100,7 @@ class CustomWorld {
      */
     async login(user) {
         if (!fs.existsSync('storageState.json')) {
+            await this.wait(300)
             if (user == "admin") {
                 await this.page?.fill('input[name="username"]', process.env.MASTER_ID)
                 await this.page?.fill('input[name="password"]', process.env.MASTER_PASSWORD)
@@ -115,11 +114,11 @@ class CustomWorld {
         }
     }
 
-    
+
     /**
      * Logout and delete login certification
      */
-     async logout() {
+    async logout() {
         if (fs.existsSync('storageState.json')) {
             fs.unlinkSync('storageState.json')
         }
@@ -234,14 +233,22 @@ class CustomWorld {
      * @param {String} name realm name
      */
     async addRealm(name) {
+
+        await this.wait(300)
+
         if (!await this.page?.locator('[aria-label="attribute list"] span:has-text("smartcity")').isVisible()) {
             await this.click('text=Add Realm');
             await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
+
+            await console.log("input filled")
+
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await Promise.all([
                 this.page?.waitForNavigation(`${process.env.URL.slice(0, -7)}#/realms`),
                 this.click('button:has-text("create")')
             ]);
+            await console.log("added")
+            await this.wait(300)
         }
     }
 
@@ -276,7 +283,7 @@ class CustomWorld {
         // go to user page
         await this.click('#menu-btn-desktop');
         await this.click('text=Users');
-        await this.wait(400)
+        await this.wait(300)
         // add user if not exsit
         if (!await this.page?.locator('main[role="main"] >> text=smartcity').isVisible()) {
 
@@ -328,7 +335,7 @@ class CustomWorld {
                         await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
                         await this.save()
 
-                        await this.wait(400)
+                        await this.wait(300)
                     }
                     await this.unSelectAll()
                 }
@@ -498,7 +505,7 @@ class CustomWorld {
             await this.navigate("admin")
             await this.login("admin")
             // add realm
-            await this.wait(400)
+            await this.wait(300)
             if (!await this.page?.locator('#realm-picker').isVisible()) {
                 await this.navigateTo("Realms")
                 await this.addRealm(realm_name)
@@ -541,23 +548,27 @@ class CustomWorld {
         // ensure login as admin into master
         await this.logout()
 
-        await this.goToPage("admin")
+        await console.log("log out")
 
+        await this.goToPage("admin")
         await this.login("admin")
-        
+
+        await console.log("loged in")
         // must wait for the realm picker to be rendered
-        await this.wait(500)
+        await this.wait(300)
+        console.log("ready for delete")
         if (await this.page?.locator('#realm-picker').isVisible()) {
             // switch to master realm to ensure being able to delete custom realm
             await this.switchToRealmByRealmPicker("master")
-
             // delete realms
             // should delete everything and set the envrioment to beginning
             await this.navigateTo("Realms")
             await this.deleteRealm()
         }
 
+        await console.log("ready for final check")
         await this.goToPage("admin")
+        await this.wait(300)
         const isRealmDeleted = await this.page?.locator('#realm-picker').isVisible()
         await expect(isRealmDeleted).toBeFalsy()
     }
@@ -571,15 +582,21 @@ class CustomWorld {
 // launch broswer
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
-        headless: false,
-        slowMo: 50
+        headless: true,
     });
 })
 
 // delete realm when a senario ends
 // delete a realm should be able to delete everything inside
 // close page
-After({ timeout: 10000 }, async function () {
+After({ timeout: 20000 }, async function (testCase) {
+
+    // if test fail then take a screenshot
+    if (testCase.result.status === Status.FAILED) {
+        await this.page?.screenshot({ path: join('screenshots', `${global.name}.png`) });
+        await global.name++
+    }
+
     await this.cleanUp()
     await this.page?.close()
 })

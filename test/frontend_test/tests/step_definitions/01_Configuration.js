@@ -25,7 +25,7 @@ Then("Add a new user", async function () {
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
     await this.click('div[role="button"]:has-text("Roles")')
-    await this.wait(400)
+    await this.wait(500)
 
     //create
     await this.click('button:has-text("create")')
@@ -33,7 +33,7 @@ Then("Add a new user", async function () {
 
 Then('We see a new user', async function () {
     const { page } = this
-    await this.wait(300)
+    await this.wait(500)
     const count = await page.locator('td:has-text("smartcity")').count()
     await expect(count).toBe(1)
 })
@@ -61,7 +61,7 @@ Then('Create a new role', async function () {
 
 Then('We see a new role', async function () {
     const { page } = this;
-    await this.wait(300)
+    await this.wait(500)
     const count = await page.locator('text=Custom').count()
     await expect(count).toBe(1)
 })
@@ -70,7 +70,6 @@ Then('We see a new role', async function () {
  * apply new role
  */
 Then('Select the new role and unselect others', async function () {
-    const { page } = this;
 
     await this.click('td:has-text("smartcity")')
     await this.click('div[role="button"]:has-text("Roles")');

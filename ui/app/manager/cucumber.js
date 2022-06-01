@@ -1,7 +1,7 @@
 module.exports = {
     default: `
-    --require tests/step_definitions/*.js
-    --require tests/support/*.js
+    --require ../../../test/frontend_test/tests/step_definitions/*.js
+    --require ../../../test/frontend_test/tests/support/*.js
     --format summary 
     --format progress-bar 
     --format @cucumber/pretty-formatter

@@ -23,14 +23,12 @@
     "serve": "npx tsc -b --clean && npx shx rm -rf dist && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "test": "cucumber-js",
-    "tags": "cucumber-js --tags",
-    "report": "node report.js"
+    "tags": "cucumber-js --tags"
   },
   "dependencies": {
     "@cucumber/cucumber": "^7.3.2",
     "@openremote/or-app": "^1.0.4",
     "@playwright/test": "^1.19.2",
-    "cucumber-html-reporter": "^5.5.0",
     "dotenv": "^16.0.0",
     "playwright": "^1.19.1",
     "playwright-expect": "^0.1.2"
@@ -38,7 +36,6 @@
   "devDependencies": {
     "@cucumber/pretty-formatter": "^1.0.0-alpha.1",
     "@openremote/util": "workspace:*",
-    "cucumber-pretty": "^1.5.2",
-    "jest": "^27.5.1"
+    "cucumber-pretty": "^1.5.2"
   }
 }

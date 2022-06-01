@@ -29,7 +29,7 @@ When('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) {
  */
 When('Navigate to {string} page', async function (name) {
     await this.navigateTo(name)
-    await this.wait(200)
+    await this.wait(100)
 })
 
 /**
@@ -37,20 +37,13 @@ When('Navigate to {string} page', async function (name) {
  */
 When('Navigate to {string} tab', async function (tab) {
     await this.navigateToTab(tab)
-    await this.wait(200)
+    await this.wait(100)
 });
 
 
 /**
  * snapshots
  */
-Then('Snapshot', async function () {
-    const { page } = this;
-    const image = await page?.screenshot();
-    image && (await this.attach(image, 'image/png'));
-});
-
-
 Then('Snapshot {string}', async function (string) {
     const { page } = this;
     await page?.screenshot({ path: join('screenshots', `${string}.png`) });

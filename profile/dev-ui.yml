@@ -27,7 +27,7 @@ services:
         condition: service_healthy
     environment:
       # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
-      KEYCLOAK_FRONTEND_URL: http://${HOST:-localhost:8080}/auth
+      KEYCLOAK_FRONTEND_URL: http://${OR_HOSTNAME:-localhost}:8080/auth
 
   postgresql:
     extends:
@@ -43,14 +43,15 @@ services:
     extends:
       file: deploy.yml
       service: manager
+    image: openremote/manager:${MANAGER_VERSION:-develop}
     depends_on:
       postgresql:
         condition: service_healthy
     volumes:
       - temp-data:/tmp
     environment:
-      SETUP_CLEAN_ON_RESTART: "true"
-      EXTERNAL_URL: http://${HOST:-localhost:8080}
-      DEV_MODE: "true"
+      OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-true}
+      OR_DEV_MODE: ${OR_DEV_MODE:-true}
+      KEYCLOAK_FRONTEND_URL:
     ports:
       - "8080:8080"
