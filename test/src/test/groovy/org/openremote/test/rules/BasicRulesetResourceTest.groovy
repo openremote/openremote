@@ -11,7 +11,6 @@ import org.openremote.model.value.MetaItemType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
