@@ -22,7 +22,7 @@ Feature: Assets
             | PV solar asset            | Solar panel  | panelPitch  | Positive integer | power       | Number  | 30      | 70      |
 
     @Desktop @select
-    Scenario Outline: Select asset
+    Scenario Outline: Search and select asset
         Given Setup "lv3"
         When Login OpenRemote as "smartcity"
         Then Navigate to "asset" tab

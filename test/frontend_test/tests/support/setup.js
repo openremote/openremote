@@ -43,7 +43,7 @@ const assets = [
     },
     {
         asset: "PV solar asset",
-        name: "Solar",
+        name: "Solar Panel",
         attr_1: "panelPitch",
         attr_2: "power",
         attr_3: "powerForecast",
@@ -200,10 +200,13 @@ class CustomWorld {
      * wait for millisecond
      * @param {Int} millisecond 
      */
+    // async wait(millisecond) {
+    //     return new Promise(function (resolve) {
+    //         setTimeout(resolve, millisecond)
+    //     });
+    // }
     async wait(millisecond) {
-        return new Promise(function (resolve) {
-            setTimeout(resolve, millisecond)
-        });
+        await this.page.waitForTimeout(millisecond);
     }
 
     /**
@@ -240,14 +243,12 @@ class CustomWorld {
             await this.click('text=Add Realm');
             await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
 
-            await console.log("input filled")
-
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await Promise.all([
                 this.page?.waitForNavigation(`${process.env.URL.slice(0, -7)}#/realms`),
                 this.click('button:has-text("create")')
             ]);
-            await console.log("added")
+            await console.log("    Realm: " + name + " added")
             await this.wait(300)
         }
     }
@@ -268,8 +269,13 @@ class CustomWorld {
      * @param {String} name name of custom realm
      */
     async switchToRealmByRealmPicker(name) {
+        // close the attribute selector window if it opens
+        // if (await this.page?.locator('text=Cancel').isVisible()) {
+        //     await this.click('text=Cancel')
+        // }
         await this.click('#realm-picker');
-        await this.click(`li[role="menuitem"]:has-text("${name}")`);
+        await this.wait(300)
+        await this.click(`li[role="menuitem"]:has-text("${name}")`)
     }
 
     /**
@@ -299,6 +305,7 @@ class CustomWorld {
             await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
             // create user
             await this.click('button:has-text("create")')
+            console.log("    User added")
         }
         else {
         }
@@ -323,6 +330,8 @@ class CustomWorld {
                     await this.click(`text=${asset.asset}`)
                     await this.fill('#name-input input[type="text"]', asset.name)
                     await this.click('#add-btn')
+                    await this.unSelectAll()
+                    await this.click(`text=${asset.name}`)
                     if (update) {
                         // update value in general panel
                         await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3)
@@ -338,6 +347,7 @@ class CustomWorld {
                         await this.wait(300)
                     }
                     await this.unSelectAll()
+                    console.log("    Asset: " + asset.name + " added")
                 }
             }
             catch (error) {
@@ -360,6 +370,7 @@ class CustomWorld {
         if (await this.page?.locator('.mdi-close').first().isVisible()) {
             await this.page?.locator('.mdi-close').first().click()
         }
+        await this.wait(300)
     }
 
     /**
@@ -401,12 +412,16 @@ class CustomWorld {
      * @param {String} attr attribute's name
      */
     async configItem(item_1, item_2, attr) {
+        await this.wait(300)
         await this.click(`td:has-text("${attr} ") >> nth=0`)
         await this.wait(300)
         await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
         await this.click(`li[role="checkbox"]:has-text("${item_1}")`)
         await this.click(`li[role="checkbox"]:has-text("${item_2}")`)
         await this.click('div[role="alertdialog"] button:has-text("Add")')
+        await this.wait(300)
+
+        // close attribute menu
         await this.click(`td:has-text("${attr}") >> nth=0`)
     }
 
@@ -418,6 +433,7 @@ class CustomWorld {
      */
     async setConfigItem(item_1, item_2, attr_1, attr_2) {
         await this.configItem(item_1, item_2, attr_1)
+        await this.wait(500)
         await this.configItem(item_1, item_2, attr_2)
     }
 
@@ -431,11 +447,15 @@ class CustomWorld {
         await this.click('button:has-text("OK")')
 
         // wait for backend to response
-        await this.wait(1000)
-
+        await this.wait(1500)
         try {
             const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
             expect(count).toBe(0)
+
+            await this.goToPage("admin")
+            await this.wait(500)
+            const isVisible = await await this.page?.locator('#realm-picker').isVisible()
+            expect(isVisible).toBeFalsy()
         } catch (e) {
             console.log(e)
         }
@@ -483,16 +503,17 @@ class CustomWorld {
         *              
         */
 
+
     /**
-     *  setup the testing envrioment by giving the realm name and setup level
-     *  // lv0 is no setup at all
-     *  // lv1 is to create a realm
-     *  // lv2 is to create a user
-     *  // lv3 is to create empty assets
-     *  // lv4 is to set the values for assets
-     * @param {String} realm realm name
-     * @param {String} level level (lv0, lv1, etc.)
-     */
+    *  setup the testing envrioment by giving the realm name and setup level
+    *  // lv0 is no setup at all
+    *  // lv1 is to create a realm
+    *  // lv2 is to create a user
+    *  // lv3 is to create empty assets
+    *  // lv4 is to set the values for assets
+    * @param {String} realm realm name
+    * @param {String} level level (lv0, lv1, etc.)
+    */
     async setup(realm_name, level) {
 
         // clean storage
@@ -548,15 +569,11 @@ class CustomWorld {
         // ensure login as admin into master
         await this.logout()
 
-        await console.log("log out")
 
         await this.goToPage("admin")
         await this.login("admin")
-
-        await console.log("loged in")
         // must wait for the realm picker to be rendered
-        await this.wait(300)
-        console.log("ready for delete")
+        await this.wait(600)
         if (await this.page?.locator('#realm-picker').isVisible()) {
             // switch to master realm to ensure being able to delete custom realm
             await this.switchToRealmByRealmPicker("master")
@@ -565,12 +582,7 @@ class CustomWorld {
             await this.navigateTo("Realms")
             await this.deleteRealm()
         }
-
-        await console.log("ready for final check")
-        await this.goToPage("admin")
-        await this.wait(300)
-        const isRealmDeleted = await this.page?.locator('#realm-picker').isVisible()
-        await expect(isRealmDeleted).toBeFalsy()
+        await console.log("    Realm：smartcity deleted")
     }
 }
 
@@ -583,13 +595,14 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: true,
+        slowMo: 30
     });
 })
 
 // delete realm when a senario ends
 // delete a realm should be able to delete everything inside
 // close page
-After({ timeout: 20000 }, async function (testCase) {
+After({ timeout: 25000 }, async function (testCase) {
 
     // if test fail then take a screenshot
     if (testCase.result.status === Status.FAILED) {

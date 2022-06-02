@@ -1,10 +1,10 @@
-@OpenRemote @setup
+@OpenRemote @add_realm
 Feature: Setup
 
     Background: Setup
         Given Setup "lv0"
 
-    @Desktop @add_realm
+    @Desktop
     Scenario: Add new Realm
         When Login OpenRemote as "admin"
         When Navigate to "Realms" page

@@ -20,7 +20,7 @@ Feature: Add_Settings
         When Navigate to "Roles" page
         Then Create a new role
         Then We see a new role
-        When Navigate to "Map" tab
+        When Navigate to "asset" tab
         When Navigate to "Users" page
         Then Select the new role and unselect others
         Then We see that assets permission are selected

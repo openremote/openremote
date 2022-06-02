@@ -104,12 +104,12 @@ Then('Drag in the elements', { timeout: 10000 }, async function () {
 Then('Set value', async function () {
     // set read and write
     await this.click('button:has-text("Attribute") >> nth=0')   // read 
-    await this.click('div[role="alertdialog"] >> text=Solar')
+    await this.click('div[role="alertdialog"] >> text=Solar Panel')
     await this.click('or-translate:has-text("Power") >> nth=1')
     await this.click('button:has-text("Add")')
 
     await this.click('button:has-text("Attribute") >> nth=0')   // write
-    await this.click('div[role="alertdialog"] >> text=Solar')
+    await this.click('div[role="alertdialog"] >> text=Solar Panel')
     await this.click('or-translate:has-text("Power forecast")')
     await this.click('button:has-text("Add")')
 
@@ -132,7 +132,7 @@ Then('Connect elements', { timeout: 10000 }, async function () {
 Then('We see the flow rule with name of {string}', async function (name) {
     const { page } = this
 
-    await this.wait(300)
+    await this.wait(500)
     // name with FLOW can ensuring that it's a flow rule
     const count = await page.locator(`text=${name}FLOW`).count()
     await expect(count).toBe(1)

@@ -1,4 +1,4 @@
-@OpenRemote @Delete
+@OpenRemote @delete
 Feature: Delete
 
     Background: Navigation

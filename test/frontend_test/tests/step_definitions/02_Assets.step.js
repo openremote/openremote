@@ -11,12 +11,13 @@ Then('Create a {string} with name of {string}', async function (asset, name) {
     await this.click('#add-btn')
 })
 
-When('Go to asset {string} info page', { timeout: 7000 }, async function (name) {
+When('Go to asset {string} info page', { timeout: 10000 }, async function (name) {
     await this.unSelectAll()
     await this.click(`text=${name}`)
+    await this.wait(300)
 })
 
-Then('Go to modify mode', async function () {
+Then('Go to modify mode', { timeout: 10000 }, async function () {
     await this.click('button:has-text("Modify")')
 })
 
@@ -62,13 +63,13 @@ Then('We see the {string} page', async function (name) {
 /**
  * update
  */
-Then('Update {string} to the {string} with type of {string}', async function (value, attribute, type) {
+Then('Update {string} to the {string} with type of {string}', { timeout: 7000 }, async function (value, attribute, type) {
 
     await this.fill(`#field-${attribute} input[type="${type}"]`, value)
     await this.click(`#field-${attribute} #send-btn span`)
 })
 
-Then('Update {int} and {int}', async function (location_x, location_y) {
+Then('Update {int} and {int}', { timeout: 8000 }, async function (location_x, location_y) {
     const { page } = this;
 
     await this.click('text=location GEO JSON point >> button span')
@@ -130,12 +131,5 @@ Then('No button on the right of {string}', async function (attribute) {
  * set configure item
  */
 Then('Select {string} and {string} on {string}', async function (item1, item2, attribute) {
-    const { page } = this;
-
-    await this.click(`td:has-text("${attribute}") >> nth=0`)
-    await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
-    await this.click(`li[role="checkbox"]:has-text("${item1}")`)
-    await this.click(`li[role="checkbox"]:has-text("${item2}")`)
-    await this.click('div[role="alertdialog"] button:has-text("Add")')
-    await this.click(`td:has-text("${attribute}") >> nth=0`)
+    await this.configItem(item1, item2, attribute)
 })

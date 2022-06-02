@@ -13,7 +13,7 @@ Then('Delete realm', async function () {
 Then('We should not see the Realm picker', async function () {
   await this.goToPage("admin")
 
-   // must wait for the realm picker to be rendered
+  // must wait for the realm picker to be rendered
   await this.wait(500)
   const isVisible = await this.page?.locator('#realm-picker').isVisible()
   await expect(isVisible).toBeFalsy()
@@ -22,7 +22,7 @@ Then('We should not see the Realm picker', async function () {
 /**
  * delete role
  */
-Then('Delete role', async function () {
+Then('Delete role', { timeout: 12000 }, async function () {
 
   // reproduce the preparation steps to start from the beginnning
   await this.navigateToTab("Map")
@@ -76,18 +76,18 @@ Then('We should see an empty use page', async function () {
 /**
  * delete assets
  */
-Then('Delete assets', async function () {
+Then('Delete assets', { timeout: 8000 }, async function () {
   await this.deleteAssets()
 
   // must wait to confirm that assets have been deleted
-  await this.wait(300)
+  await this.wait(500)
 })
 
 Then('We should see an empty asset column', async function () {
   const { page } = this
 
   const count_console = await page.locator('text=Console').count()
-  const count_solar = await page.locator('text=Solar').count()
+  const count_solar = await page.locator('text=Solar Panel').count()
   const count_battery = await page.locator('text=Battery').count()
   await expect(count_console).toEqual(1)
   await expect(count_solar).toEqual(0)
