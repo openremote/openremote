@@ -45,6 +45,7 @@ const style = css`
     
     .panel {
         position: relative;
+        height: 100%;
     }
     .panel.panel-empty {
         display: flex;
@@ -60,7 +61,7 @@ const style = css`
     }
     
     .panel-content-wrapper {
-        height: 200px;
+        height: 100%;
         display: flex;
         flex-direction: column;
     }
@@ -68,7 +69,7 @@ const style = css`
     .panel-title {
         display: flex;
         align-items: center;
-        margin: -15px -15px 0 0; /* compensate for the click-space of the plusminus button */
+        /*margin: -15px -15px 0 0;*/ /* compensate for the click-space of the plusminus button */
         font-weight: bolder;
         line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
@@ -87,6 +88,7 @@ const style = css`
         display: flex;
         flex-direction: column;
         width: 100%;
+        justify-content: space-evenly;
         flex: 1;
     }
     
@@ -100,8 +102,9 @@ const style = css`
     
     .graph-wrapper {
         width: 100%;
+        height: 60%;
         display: flex;
-        flex: 1;
+        /*flex: 1;*/
         align-items: center;
     }
     
@@ -160,7 +163,7 @@ const style = css`
     
     .period-selector {
         position: absolute;
-        right: -16px;
+        right: -12px;
         bottom: 0;
     }
     
@@ -202,6 +205,8 @@ export class OrAttributeCard extends LitElement {
     private deltaPlus: string = "";
     @property()
     private deltaFormat: "absolute" | "percentage" = "absolute";
+    @property()
+    public showControls: boolean = true;
     @property()
     protected _loading: boolean = false;
 
@@ -328,6 +333,10 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
+    shouldShowControls(): boolean { // Checking for string input as well since that was not working
+        return (this.showControls && this.showControls.toString() == "true");
+    }
+
     protected render() {
 
         if (!this.assets || !this.assetAttributes || this.assetAttributes.length === 0) {
@@ -335,7 +344,12 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ${this.shouldShowControls() ? html`
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ` : html`
+                                <span>No Attributes connected.</span>
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                            `}
                         </div>
                     </div>
                 </div>
@@ -348,7 +362,11 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ${this.shouldShowControls() ? html`
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ` : html`
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                            `}
                         </div>
                     </div>
                 </div>
@@ -360,7 +378,7 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
                         <span class="panel-title-text">${this.assets[0].name + " - " + i18next.t(this.assetAttributes[0][1].name!)}</span>
-                        ${getContentWithMenuTemplate(html`
+                        ${this.shouldShowControls() ? getContentWithMenuTemplate(html`
                             <or-mwc-input icon="dots-vertical" type="button"></or-mwc-input>
                         `,
                         [
@@ -382,7 +400,7 @@ export class OrAttributeCard extends LitElement {
                             }
                         ],
                         undefined,
-                        (option) => this.handleMenuSelect(option as ContextMenuOption))}
+                        (option) => this.handleMenuSelect(option as ContextMenuOption)) : undefined}
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
@@ -398,17 +416,21 @@ export class OrAttributeCard extends LitElement {
                                 <span class="delta">${this.delta ? this.deltaPlus + (this.delta.val !== undefined && this.delta.val !== null ? this.delta.val : "") + (this.delta.unit || "") : ""}</span>
                             </div>
                             
-                            <div class="period-selector-wrapper">
-                                ${getContentWithMenuTemplate(
-            html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
-            [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}]
-                .map((option) => {
-                    option.text = i18next.t(option.value);
-                    return option;
-                }),
-            this.period,
-            (value) => this._setPeriodOption(value))}
-                            </div>
+                            ${this.shouldShowControls() ? html`
+                                <div class="period-selector-wrapper">
+                                    ${getContentWithMenuTemplate(
+                                        html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
+                                        [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}].map((option) => {
+                                            option.text = i18next.t(option.value);
+                                            return option;
+                                        }),
+                                        this.period,
+                                        (value) => this._setPeriodOption(value)
+                                    )}
+                                </div>
+                            ` : html`
+                                <or-mwc-input class="period-selector" .type="${InputType.BUTTON}" disabled .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>
+                            `}
                         </div>
                     </div>
                 </div>

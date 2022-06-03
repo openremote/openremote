@@ -357,9 +357,9 @@ export class OrDashboardBuilder extends LitElement {
     // Method for creating Widgets (reused at many places)
     createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
         const randomId = (Math.random() + 1).toString(36).substring(2);
-        let displayName = this.generateWidgetDisplayName(gridStackNode.widgetType);
+        let displayName = generateWidgetDisplayName(this.currentTemplate!, gridStackNode.widgetType);
         if(displayName == undefined) { displayName = "Widget #" + randomId; } // If no displayName, set random ID as name.
-        const gridItem: DashboardGridItem = this.generateGridItem(gridStackNode, displayName);
+        const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
 
         const widget = {
             id: randomId,
@@ -598,40 +598,38 @@ export class OrDashboardBuilder extends LitElement {
 
     /* ======================== */
 
-    // Generating the Grid Item details like X and Y coordinates for GridStack to work.
-    generateGridItem(gridstackNode: ORGridStackNode, displayName: string): DashboardGridItem {
-        const randomId = (Math.random() + 1).toString(36).substring(2);
-        return {
-            id: randomId,
-            x: gridstackNode.x,
-            y: gridstackNode.y,
-            w: 2,
-            h: 2,
-            minW: this.getWidgetMinWidth(gridstackNode.widgetType),
-            minH: this.getWidgetMinWidth(gridstackNode.widgetType),
-            noResize: false,
-            noMove: false,
-            locked: false,
-            // content: this.getWidgetContent(gridstackNode.widgetType, displayName)
-        }
+}
+
+// Generating the Grid Item details like X and Y coordinates for GridStack to work.
+export function generateGridItem(gridstackNode: ORGridStackNode, displayName: string): DashboardGridItem {
+    const randomId = (Math.random() + 1).toString(36).substring(2);
+    return {
+        id: randomId,
+        x: gridstackNode.x,
+        y: gridstackNode.y,
+        w: 2,
+        h: 2,
+        minW: getWidgetMinWidth(gridstackNode.widgetType),
+        minH: getWidgetMinWidth(gridstackNode.widgetType),
+        noResize: false,
+        noMove: false,
+        locked: false,
+        // content: this.getWidgetContent(gridstackNode.widgetType, displayName)
     }
-    generateWidgetDisplayName(widgetType: DashboardWidgetType): string | undefined {
-        if(this.selectedDashboard != null && this.currentTemplate != null && this.currentTemplate.widgets != null) {
-            const filteredWidgets: DashboardWidget[] = this.currentTemplate.widgets.filter((x) => { return x.widgetType == widgetType; });
-            switch (widgetType) {
-                case DashboardWidgetType.MAP: return "Map #" + (filteredWidgets.length + 1);
-                case DashboardWidgetType.CHART: return "Chart #" + (filteredWidgets.length + 1);
-            }
-        }
-        return undefined;
-    }
-    getWidgetMinWidth(widgetType: DashboardWidgetType): number {
+}
+export function generateWidgetDisplayName(template: DashboardTemplate, widgetType: DashboardWidgetType): string | undefined {
+    if(template.widgets != null) {
+        const filteredWidgets: DashboardWidget[] = template.widgets.filter((x) => { return x.widgetType == widgetType; });
         switch (widgetType) {
-            case DashboardWidgetType.CHART: return 2;
-            case DashboardWidgetType.MAP: return 4;
+            case DashboardWidgetType.KPI: return "KPI #" + (filteredWidgets.length + 1);
+            case DashboardWidgetType.CHART: return "Chart #" + (filteredWidgets.length + 1);
         }
     }
-
-    /* ----------------- */
-
+    return undefined;
+}
+export function getWidgetMinWidth(widgetType: DashboardWidgetType): number {
+    switch (widgetType) {
+        case DashboardWidgetType.CHART: return 2;
+        case DashboardWidgetType.KPI: return 1;
+    }
 }

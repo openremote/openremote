@@ -8,6 +8,7 @@ import {OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-a
 import {style} from './style';
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import {DefaultColor5, manager } from "@openremote/core";
+import i18next from "i18next";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -105,6 +106,11 @@ interface MapWidgetConfig {
     center?: LngLatLike;
     zoom?: number;
 }
+interface KPIWidgetConfig {
+    displayName: string;
+    attributeRefs: AttributeRef[];
+    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
+}
 
 /* ------------------------------------ */
 
@@ -134,8 +140,8 @@ export class OrDashboardWidgetsettings extends LitElement {
                 case DashboardWidgetType.CHART: {
                     this.expandedPanels = ['Attributes', 'Display']; break;
                 }
-                case DashboardWidgetType.MAP: {
-                    this.expandedPanels = ['Display']; break;
+                case DashboardWidgetType.KPI: {
+                    this.expandedPanels = ['Attributes', 'Display']; break;
                 }
             }
         })
@@ -172,9 +178,11 @@ export class OrDashboardWidgetsettings extends LitElement {
                     showLegend: true
                 } as ChartWidgetConfig
             }
-            case DashboardWidgetType.MAP: {
+            case DashboardWidgetType.KPI: {
                 return {
-                    displayName: widget.displayName
+                    displayName: widget.displayName,
+                    attributeRefs: [],
+                    period: "day"
                 } as MapWidgetConfig
             }
             default: {
@@ -254,7 +262,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                                         ` : undefined;
                                     }) : undefined}
                                 </div>
-                                <or-mwc-input .type="${InputType.BUTTON}" label="Attribute" icon="plus" style="margin-top: 16px;" @or-mwc-input-changed="${() => this.openDialog()}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" label="Attribute" icon="plus" style="margin-top: 16px;" @or-mwc-input-changed="${() => this.openDialog(chartConfig.attributeRefs, true)}"></or-mwc-input>
                             </div>
                         ` : null}
                     </div>
@@ -307,15 +315,48 @@ export class OrDashboardWidgetsettings extends LitElement {
                 break;
             }
 
-            case DashboardWidgetType.MAP: {
+            case DashboardWidgetType.KPI: {
+                const kpiConfig = widgetConfig as KPIWidgetConfig;
                 htmlContent = html`
+                    <div>
+                        ${this.generateExpandableHeader('Attributes')}
+                    </div>
+                    <div>
+                        ${this.expandedPanels.includes('Attributes') ? html`
+                            <div style="padding: 12px;">
+                                <!--<span>Attribute</span>-->
+                                ${(kpiConfig.attributeRefs && kpiConfig.attributeRefs.length > 0) ? html`
+                                    <div id="attribute-list">
+                                        <div class="attribute-list-item">
+                                            ${(this.loadedAssets![0] != null) ? html`
+                                                <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.loadedAssets![0].type), undefined, undefined)}</span>
+                                                <div class="attribute-list-item-label">
+                                                    <span>${this.loadedAssets![0].name}</span>
+                                                    <span style="font-size:14px; color:grey;">${kpiConfig.attributeRefs[0].name}</span>
+                                                </div>
+                                                <button class="button-clear" @click="${() => this.removeWidgetAttribute(kpiConfig.attributeRefs[0])}">
+                                                    <or-icon icon="close-circle" ></or-icon>
+                                                </button>
+                                            ` : undefined}
+                                        </div>
+                                    </div>
+                                ` : html`
+                                    <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this.openDialog(kpiConfig.attributeRefs, true)}"></or-mwc-input>
+                                `}
+                            </div>
+                        ` : null}
+                    </div>
                     <div>
                         ${this.generateExpandableHeader('Display')}
                     </div>
                     <div>
                         ${this.expandedPanels.includes('Display') ? html`
-                            <div style="padding: 12px;">
-                                <span>Setting 2</span>
+                            <div style="padding: 24px 24px 48px 24px;">
+                                <div>
+                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" .value="${kpiConfig.period}" label="Default timeframe"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as KPIWidgetConfig).period = event.detail.value; this.forceParentUpdate(); }}"
+                                    ></or-mwc-input>
+                                </div>
                             </div>
                         ` : null}
                     </div>
@@ -359,6 +400,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     setWidgetAttributes(selectedAttrs?: AttributeRef[]) {
         if(this.selectedWidget?.widgetConfig != null) {
             this.selectedWidget.widgetConfig.attributeRefs = selectedAttrs;
+            this.fetchAssets();
             this.requestUpdate("selectedWidget");
             this.forceParentUpdate();
         }
@@ -367,6 +409,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     removeWidgetAttribute(attributeRef: AttributeRef) {
         if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
             this.selectedWidget.widgetConfig.attributeRefs.splice(this.selectedWidget.widgetConfig.attributeRefs.indexOf(attributeRef), 1);
+            this.fetchAssets();
             this.requestUpdate("selectedWidget");
             this.forceParentUpdate();
         }
@@ -388,12 +431,12 @@ export class OrDashboardWidgetsettings extends LitElement {
     }
 
     // Opening the attribute picker dialog, and listening to its result. (UI related)
-    openDialog() {
+    openDialog(attributeRefs: AttributeRef[], multi: boolean) {
         let dialog: OrAttributePicker;
-        if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.widgetConfig?.attributeRefs)); //.setShowOnlyDatapointAttrs(true)) //.setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.dataConfig?.attributes))
+        if(attributeRefs != null) {
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs)); //.setShowOnlyDatapointAttrs(true)) //.setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.dataConfig?.attributes))
         } else {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(true))
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi))
         }
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
             this.setWidgetAttributes(event.detail);

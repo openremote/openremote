@@ -55,7 +55,7 @@ export class OrDashboardBrowser extends LitElement {
                     {x: 0, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span class="itemText">Line Chart</span></div>'},
 /*                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
                     {x: 0, y: 2, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},*/
-                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.MAP, locked: true, content: '<div class="sidebarItem"><or-icon icon="map"></or-icon><span class="itemText">Map</span></div>'},
+                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.KPI, locked: true, content: '<div class="sidebarItem"><or-icon icon="label"></or-icon><span class="itemText">KPI</span></div>'},
                     //{x: 2, y: 3, w: 2, h: 2, locked: true, noMove: true, content: 'w'} // Invisible widget
                 ];
                 const sidebarGrid = GridStack.init({

@@ -12,7 +12,8 @@ import {
     DashboardWidgetType
 } from "@openremote/model";
 import {
-    DashboardSizeOption,
+    DashboardSizeOption, generateGridItem,
+    generateWidgetDisplayName,
     getHeightByPreviewSize,
     getPreviewSizeByPx,
     getWidthByPreviewSize,
@@ -84,6 +85,8 @@ const editorStyling = css`
     .gridItem {
         height: 100%;
         overflow: hidden;
+        box-sizing: border-box;
+        padding: 8px;
     }
     
     /* Grid lines on the background of the grid */
@@ -218,10 +221,7 @@ export class OrDashboardPreview extends LitElement {
             const gridHTML = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
             gridHTML.style.width = this.previewWidth!;
             gridHTML.style.height = this.previewHeight!;
-            console.log("[" + this.previewWidth + " " + this.previewHeight + "]");
-            console.log("[" + gridHTML.style.width + " " + gridHTML.style.height + "]");
             this.previewSize = getPreviewSizeByPx(this.previewWidth, this.previewHeight);
-            console.log(this.previewSize);
         }
 
         if(changedProperties.has("previewSize") && this.previewSize != DashboardSizeOption.CUSTOM) {
@@ -233,7 +233,6 @@ export class OrDashboardPreview extends LitElement {
                     mainGridContainer.classList.remove("maingrid__fullscreen");
                 }
             }
-            console.log("Preview Size has been changed!");
             this.previewWidth = getWidthByPreviewSize(this.previewSize);
             this.previewHeight = getHeightByPreviewSize(this.previewSize);
         }
@@ -303,9 +302,9 @@ export class OrDashboardPreview extends LitElement {
     // Method for creating Widgets (reused at many places)
     createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
         const randomId = (Math.random() + 1).toString(36).substring(2);
-        let displayName = this.generateWidgetDisplayName(gridStackNode.widgetType);
+        let displayName = generateWidgetDisplayName(this.template!, gridStackNode.widgetType);
         if(displayName == undefined) { displayName = "Widget #" + randomId; } // If no displayName, set random ID as name.
-        const gridItem: DashboardGridItem = this.generateGridItem(gridStackNode, displayName);
+        const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
 
         const widget = {
             id: randomId,
@@ -326,9 +325,7 @@ export class OrDashboardPreview extends LitElement {
     selectGridItem(gridItem: GridItemHTMLElement) {
         if(this.grid != null) {
             this.deselectGridItems(this.grid.getGridItems()); // deselecting all other items
-            console.log(gridItem);
             gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
-                console.log(item);
                 item.classList.add('grid-stack-item-content__active'); // Apply active CSS class
             });
         }
@@ -352,7 +349,6 @@ export class OrDashboardPreview extends LitElement {
             } else {
                 this.selectedWidget = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
             }
-            console.log(this.selectedWidget);
             this.requestUpdate();
         }
     }
@@ -426,47 +422,6 @@ export class OrDashboardPreview extends LitElement {
         return this.resizeObserver;
     }
 
-
-    /* ------------------------------ */
-
-    generateWidgetDisplayName(widgetType: DashboardWidgetType): string | undefined {
-        if(this.template?.widgets != null) {
-            const filteredWidgets: DashboardWidget[] = this.template.widgets.filter((x) => { return x.widgetType == widgetType; });
-            switch (widgetType) {
-                case DashboardWidgetType.MAP: return "Map #" + (filteredWidgets.length + 1);
-                case DashboardWidgetType.CHART: return "Chart #" + (filteredWidgets.length + 1);
-            }
-        }
-        return undefined;
-    }
-
-    // Generating the Grid Item details like X and Y coordinates for GridStack to work.
-    generateGridItem(gridstackNode: ORGridStackNode, displayName: string): DashboardGridItem {
-        const randomId = (Math.random() + 1).toString(36).substring(2);
-        return {
-            id: randomId,
-            x: gridstackNode.x,
-            y: gridstackNode.y,
-            w: 2,
-            h: 2,
-            minW: this.getWidgetMinWidth(gridstackNode.widgetType),
-            minH: this.getWidgetMinWidth(gridstackNode.widgetType),
-            noResize: false,
-            noMove: false,
-            locked: false,
-            // content: this.getWidgetContent(gridstackNode.widgetType, displayName)
-        }
-    }
-    getWidgetMinWidth(widgetType: DashboardWidgetType): number {
-        switch (widgetType) {
-            case DashboardWidgetType.CHART: return 2;
-            case DashboardWidgetType.MAP: return 4;
-        }
-    }
-
-
-
-
     /* --------------------------------------- */
 
     // Widget related methods such as getting Widget HTML,
@@ -478,23 +433,29 @@ export class OrDashboardPreview extends LitElement {
         console.log(widget);*/
         const _widget = Object.assign({}, widget);
         if(_widget.gridItem) {
-            switch (_widget.widgetType) {
+            let assets: Asset[] = [];
+            let attributes: [number, Attribute<any>][] = [];
 
+            // Pulling data from database, however only when in editMode!!
+            // KPI widgetType does use real data in EDIT mode as well, so separate check
+            if(!this.editMode || _widget.widgetType == DashboardWidgetType.KPI) {
+                const response = await manager.rest.api.AssetResource.queryAssets({
+                    ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
+                });
+                console.error("Getting attribute data from database!");
+                assets = response.data;
+                attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
+                    const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
+                    const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
+                    return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
+                }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+            }
+
+            switch (_widget.widgetType) {
                 case DashboardWidgetType.CHART: {
-                    let assets: Asset[] = [];
-                    let attributes: [number, Attribute<any>][] = [];
-                    if(!this.editMode) {
-                        const response = await manager.rest.api.AssetResource.queryAssets({
-                            ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
-                        });
-                        console.error("Getting attribute data from database!");
-                        assets = response.data;
-                        attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
-                            const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
-                            const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                            return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
-                        }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                    } else {
+
+                    // Generation of fake data when in editMode.
+                    if(this.editMode) {
                         _widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
                             if(!assets.find((asset: Asset) => { return asset.id == attrRef.id; })) {
                                 assets.push({ id: attrRef.id, name: "Asset X", type: "ThingAsset" });
@@ -511,7 +472,7 @@ export class OrDashboardPreview extends LitElement {
                         <div class="gridItem">
                             <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
                                       .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, timeUnits: any, stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
-                                      showLegend="${_widget.widgetConfig?.showLegend}" .realm="${manager.displayRealm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="position: absolute; height: 100%"
+                                      showLegend="${_widget.widgetConfig?.showLegend}" .realm="${manager.displayRealm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
                             ></or-chart>
                             ${/*this.editMode*/ false ? html`
                                 <div style="position: absolute; right: 0; bottom: 0; padding: 4px;">
@@ -523,10 +484,13 @@ export class OrDashboardPreview extends LitElement {
                 }
 
                 // TODO: Should depend on custom properties set in widgetsettings.
-                case DashboardWidgetType.MAP: {
+                case DashboardWidgetType.KPI: {
                     return html`
-                        <div class='gridItem'>
-                            <or-map center='5.454250, 51.445990' zoom='5' style='height: 100%; width: 100%;'></or-map>
+                        <div class='gridItem' style="display: flex;">
+                            <!--<or-map center='5.454250, 51.445990' zoom='5' style='height: 100%; width: 100%;'></or-map>-->
+                            <or-attribute-card .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}"
+                                               showControls="${false}" .realm="${manager.displayRealm}" style="height: 100%;"
+                            ></or-attribute-card>
                         </div>
                     `;
                 }
