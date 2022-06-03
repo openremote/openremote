@@ -33,9 +33,8 @@ Then('Save', async function () {
 })
 
 Then('We see the asset with name of {string}', async function (name) {
-    const { page } = this
-
-    const count = await page.locator(`text=${name}`).count()
+    const count = await this.count(`text=${name}`)
+    //const count = await page.locator(`text=${name}`).count()
 
     // reason why it's 1 is because that this scnario runs in a outline
     // each time only one set of data will be used in one run of outlines
@@ -69,7 +68,7 @@ Then('Update {string} to the {string} with type of {string}', { timeout: 7000 },
     await this.click(`#field-${attribute} #send-btn span`)
 })
 
-Then('Update {int} and {int}', { timeout: 8000 }, async function (location_x, location_y) {
+Then('Update location of {int} and {int}', { timeout: 8000 }, async function (location_x, location_y) {
     const { page } = this;
 
     await this.click('text=location GEO JSON point >> button span')
@@ -122,8 +121,8 @@ Then('We should see a button on the right of {string}', async function (attribut
 })
 
 Then('No button on the right of {string}', async function (attribute) {
-    const { page } = this;
-    const count = await page.locator(`#field-${attribute} button`).count()
+    const count = await this.count(`#field-${attribute} button`)
+    //const count = await page.locator(`#field-${attribute} button`).count()
     expect(count).toBe(0)
 })
 

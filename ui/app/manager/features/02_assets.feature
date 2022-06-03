@@ -42,7 +42,7 @@ Feature: Assets
         When Select the "<name>"
         Then Update "<value>" to the "<attribute>" with type of "<type>"
         When Go to modify mode
-        Then Update <location_x> and <location_y>
+        Then Update location of <location_x> and <location_y>
         Then Save
 
         Examples:

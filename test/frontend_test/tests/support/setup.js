@@ -4,6 +4,7 @@ const playwright = require('playwright');
 const fs = require('fs');
 const { expect } = require("@playwright/test");
 const { join } = require('path');
+const { isBigInt64Array } = require("util/types");
 require('dotenv').config();
 
 /**
@@ -122,7 +123,8 @@ class CustomWorld {
         if (fs.existsSync('storageState.json')) {
             fs.unlinkSync('storageState.json')
         }
-        if (await this.page?.locator('#menu-btn-desktop').isVisible()) {
+        const isMenuBtnVisible = await this.isVisible('#menu-btn-desktop')
+        if (isMenuBtnVisible) {
             await this.click('#menu-btn-desktop');
             await this.click('text=Log out');
         }
@@ -210,6 +212,24 @@ class CustomWorld {
     }
 
     /**
+     * @param {String} element check how many elements are there in the page
+     * @returns {Int} number of elements
+     */
+    async count(element) {
+        return await this.page.locator(element).count()
+    }
+
+    /**
+     * 
+     * @param {String} element check if the element is visibile in the page
+     * Note that this element should be the only one in the page
+     * @returns {Boolean} if the element if visible 
+     */
+    async isVisible(element) {
+        return await this.page.locator(element).isVisible()
+    }
+
+    /**
      *  Repeatable actions
      */
 
@@ -238,8 +258,8 @@ class CustomWorld {
     async addRealm(name) {
 
         await this.wait(300)
-
-        if (!await this.page?.locator('[aria-label="attribute list"] span:has-text("smartcity")').isVisible()) {
+        const isVisible = await this.isVisible('[aria-label="attribute list"] span:has-text("smartcity")')
+        if (!isVisible) {
             await this.click('text=Add Realm');
             await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
 
@@ -248,7 +268,7 @@ class CustomWorld {
                 this.page?.waitForNavigation(`${process.env.URL.slice(0, -7)}#/realms`),
                 this.click('button:has-text("create")')
             ]);
-            await console.log("    Realm: " + name + " added")
+            await console.log("         Realm: " + name + " added")
             await this.wait(300)
         }
     }
@@ -290,8 +310,9 @@ class CustomWorld {
         await this.click('#menu-btn-desktop');
         await this.click('text=Users');
         await this.wait(300)
+        const isVisible = await this.isVisible('main[role="main"] >> text=smartcity')
         // add user if not exsit
-        if (!await this.page?.locator('main[role="main"] >> text=smartcity').isVisible()) {
+        if (!isVisible) {
 
             await this.click('.mdi-plus >> nth=0')
             await this.fill('input[type="text"] >> nth=0', 'smartcity')
@@ -305,7 +326,7 @@ class CustomWorld {
             await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
             // create user
             await this.click('button:has-text("create")')
-            console.log("    User added")
+            console.log("         User added")
         }
         else {
         }
@@ -313,7 +334,7 @@ class CustomWorld {
 
     /**
      * create new empty assets
-     * @param {Boolen} update for checking if updating values is needed
+     * @param {Boolean} update for checking if updating values is needed
      */
     async addAssets(update) {
 
@@ -324,8 +345,9 @@ class CustomWorld {
 
         // create assets accroding to assets array
         for (let asset of assets) {
+            let isAssetVisible = await this.isVisible(`text=${asset.name}`)
             try {
-                if (!await this.page?.locator(`text=${asset.name}`).isVisible()) {
+                if (!isAssetVisible) {
                     await this.click('.mdi-plus')
                     await this.click(`text=${asset.asset}`)
                     await this.fill('#name-input input[type="text"]', asset.name)
@@ -347,7 +369,7 @@ class CustomWorld {
                         await this.wait(300)
                     }
                     await this.unSelectAll()
-                    console.log("    Asset: " + asset.name + " added")
+                    console.log("         Asset: " + asset.name + " added")
                 }
             }
             catch (error) {
@@ -362,13 +384,16 @@ class CustomWorld {
     async unSelectAll() {
         await this.wait(200)
         // leave modify mode
-        if (await this.page?.locator('button:has-text("View")').isVisible()) {
+        const isViewVisible = await this.isVisible('button:has-text("View")')
+        const isCloseVisible = await this.isVisible('.mdi-close >> nth=0')
+        if (isViewVisible) {
             await this.click('button:has-text("View")')
         }
 
         // unselect the asset
-        if (await this.page?.locator('.mdi-close').first().isVisible()) {
-            await this.page?.locator('.mdi-close').first().click()
+        if (isCloseVisible) {
+            //await this.page?.locator('.mdi-close').first().click()
+            await this.click('.mdi-close >> nth=0')
         }
         await this.wait(300)
     }
@@ -449,12 +474,13 @@ class CustomWorld {
         // wait for backend to response
         await this.wait(1500)
         try {
-            const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
+            const count = await this.count('[aria-label="attribute list"] span:has-text("smartcity")')
+            //const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
             expect(count).toBe(0)
 
             await this.goToPage("admin")
             await this.wait(500)
-            const isVisible = await await this.page?.locator('#realm-picker').isVisible()
+            const isVisible = await this.isVisible('#realm-picker')
             expect(isVisible).toBeFalsy()
         } catch (e) {
             console.log(e)
@@ -470,7 +496,8 @@ class CustomWorld {
         await this.click('#desktop-left a:nth-child(2)')
 
         for (let asset of assets) {
-            if (await this.page?.locator(`text=${asset.name}`).count() > 0) {
+            let assetSelected = await this.count(`text=${asset.name}`)
+            if (assetSelected > 0) {
                 await this.click(`text=${asset.name}`)
                 await this.click('.mdi-delete')
                 await Promise.all([
@@ -527,7 +554,8 @@ class CustomWorld {
             await this.login("admin")
             // add realm
             await this.wait(300)
-            if (!await this.page?.locator('#realm-picker').isVisible()) {
+            const isPickerVisible = await this.isVisible('#realm-picker')
+            if (!isPickerVisible) {
                 await this.navigateTo("Realms")
                 await this.addRealm(realm_name)
             }
@@ -574,7 +602,8 @@ class CustomWorld {
         await this.login("admin")
         // must wait for the realm picker to be rendered
         await this.wait(600)
-        if (await this.page?.locator('#realm-picker').isVisible()) {
+        const isPickerVisible = await this.isVisible('#realm-picker')
+        if (isPickerVisible) {
             // switch to master realm to ensure being able to delete custom realm
             await this.switchToRealmByRealmPicker("master")
             // delete realms
@@ -582,7 +611,7 @@ class CustomWorld {
             await this.navigateTo("Realms")
             await this.deleteRealm()
         }
-        await console.log("    Realm：smartcity deleted")
+        await console.log("         Realm: smartcity deleted")
     }
 }
 
@@ -604,7 +633,7 @@ BeforeAll(async function () {
 // close page
 After({ timeout: 25000 }, async function (testCase) {
 
-    // if test fail then take a screenshot
+    // if test fails then take a screenshot
     if (testCase.result.status === Status.FAILED) {
         await this.page?.screenshot({ path: join('screenshots', `${global.name}.png`) });
         await global.name++
