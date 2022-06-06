@@ -331,6 +331,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     private _dragDropParentId: string | null = null;
     protected _expandTimer?: number = undefined;
+    private _latestSelected: UiAssetTreeNode | undefined = undefined;
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -675,6 +676,63 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
+    private _buildPaths(node: UiAssetTreeNode): string[] {
+        let paths: string[] = [];
+
+        if (node.asset) {
+            if (node.asset.id) {
+                paths.push(node.asset.id);
+
+                if (node.children.length > 0 && node.expanded) {
+                    node.children.forEach((child: UiAssetTreeNode) => {
+                        paths = paths.concat(this._buildPaths(child));
+                    });
+                }
+
+                return paths;
+            }
+
+            return [];
+        }
+
+        return [];
+    }
+
+    private _findNode(n: UiAssetTreeNode, assetId: string): UiAssetTreeNode | undefined {
+        if (n.asset && n.asset.id) {
+            if (n.asset.id === assetId) {
+                return n;
+            } else if (n.children.length > 0 && n.expanded) {
+                let foundNode: UiAssetTreeNode | undefined = undefined;
+                n.children.forEach((n: UiAssetTreeNode) => {
+                    if (!foundNode) {
+                        foundNode = this._findNode(n, assetId);
+                    }
+                });
+                return foundNode;
+            }
+
+            return undefined;
+        }
+    }
+
+    private _findNodeFromAssetId(assetId: string) : UiAssetTreeNode | undefined {
+        if (this._nodes) {
+            let foundNode: UiAssetTreeNode | undefined = undefined;
+
+            this._nodes.forEach((n: UiAssetTreeNode) => {
+                if (!foundNode) {
+                    foundNode = this._findNode(n, assetId);
+                }
+            });
+
+            return foundNode;
+        } else {
+            return undefined;
+        }
+
+    }
+
     protected _onNodeClicked(evt: MouseEvent | null, node: UiAssetTreeNode | null) {
         if (evt && evt.defaultPrevented) {
             return;
@@ -731,14 +789,61 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         : selectedNodes.filter(n => !childNodes.map(cn => cn.asset!.id).includes(n.asset!.id));
 
                 } else if (deselectOthers) {
+                    this._latestSelected = Object.assign({}, node);
                     selectedNodes = [node];
                 } else if (select) {
                     if (index < 0) {
-                        selectedNodes = [...this.selectedNodes];
-                        selectedNodes.push(node);
+                        if (evt && evt.shiftKey) {
+                            let hierarchy: string[] = [];
+                            this._nodes?.forEach((n: UiAssetTreeNode) => {
+                                hierarchy = hierarchy.concat(this._buildPaths(n));
+                            });
+
+                            if (this._latestSelected && this._latestSelected.asset && this._latestSelected.asset.id && node.asset && node.asset.id) {
+                                let latestSelectedAssetId: string = this._latestSelected.asset.id;
+                                let newlySelectedAssetId: string = node.asset.id;
+
+                                let previousIndex: number = hierarchy.findIndex((val: string) => { return val.includes(latestSelectedAssetId); });
+                                let newIndex: number = hierarchy.findIndex((val: string) => { return val.includes(newlySelectedAssetId); });
+
+                                let startIndex: number = -1;
+                                let endIndex: number = -1;
+
+                                if (previousIndex > newIndex) {
+                                    startIndex = newIndex;
+                                    endIndex = previousIndex;
+                                } else {
+                                    startIndex = previousIndex;
+                                    endIndex = newIndex;
+                                }
+
+                                let assetIdsToSelect: string[] = hierarchy.slice(startIndex, endIndex + 1 );
+
+                                let foundNodes: UiAssetTreeNode[] = [];
+
+                                assetIdsToSelect.forEach((assetIdToSelect: string) => {
+                                    let foundNode: UiAssetTreeNode | undefined = this._findNodeFromAssetId(assetIdToSelect);
+
+                                    if (foundNode) {
+                                        foundNodes.push(foundNode);
+                                    }
+                                });
+
+                                selectedNodes = [...this.selectedNodes];
+                                selectedNodes = selectedNodes.concat(foundNodes);
+                            }
+                        } else {
+                            selectedNodes = [...this.selectedNodes];
+                            selectedNodes.push(node);
+                        }
+
+                        this._latestSelected = Object.assign({}, node);
                     }
                 } else if (index >= 0) {
                     selectedNodes = [...this.selectedNodes];
+                    if (selectedNodes.length === 1) {
+                        this._latestSelected = undefined;
+                    }
                     selectedNodes.splice(index, 1);
                 }
             }
