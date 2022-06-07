@@ -492,18 +492,18 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         if (descriptor.assetImport) {
             content = html`
                 <div id="fileupload"> 
-                    <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @click="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
+                    <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
                         <input id="fileupload-elem" name="configfile" type="file" accept=".json, .knxproj, .vlp" @change="${() => updateFileName()}"/>
                     </or-mwc-input>
                     <or-mwc-input id="filename-elem" .type="${InputType.TEXT}" disabled></or-mwc-input>
-                    <or-mwc-input id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @click="${() => fileToBase64()}" disabled></or-mwc-input>
+                    <or-mwc-input id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => fileToBase64()}" disabled></or-mwc-input>
                 </div>
             `;
         }
         else if (descriptor.assetDiscovery) {
             content = html`
-                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @click="${() => discoverAssets()}"></or-mwc-input>
-                <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}" @click="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
+                <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
             `;
         } else {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
@@ -1401,6 +1401,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         }
                     });
                 }
+
+                grid.addEventListener('scroll', (event: any) => {
+                    const header = shadowRoot.querySelector('#asset-header');
+                    if (header) {
+                        if (event.target.scrollTop > 0) {
+                            header.classList.add('scrolled')
+                        } else {
+                            header.classList.remove('scrolled')
+                        }
+                    }
+                });
             }
         }
     }

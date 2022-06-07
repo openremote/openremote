@@ -33,7 +33,7 @@ import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
@@ -83,10 +83,10 @@ public class ManagerTestSetup extends ManagerSetup {
     public String apartment2LivingroomId;
     public String apartment2BathroomId;
     public String apartment3LivingroomId;
-    public String masterRealm;
-    public String realmBuildingTenant;
-    public String realmCityTenant;
-    public String realmEnergyTenant;
+    public String realmMasterName;
+    public String realmBuildingName;
+    public String realmCityName;
+    public String realmEnergyName;
     public String smartCityServiceAgentId;
     public String area1Id;
     public String microphone1Id;
@@ -107,18 +107,18 @@ public class ManagerTestSetup extends ManagerSetup {
         super.onStart();
 
         KeycloakTestSetup keycloakTestSetup = setupService.getTaskOfType(KeycloakTestSetup.class);
-        Tenant masterTenant = keycloakTestSetup.masterTenant;
-        Tenant tenantBuilding = keycloakTestSetup.tenantBuilding;
-        Tenant tenantCity = keycloakTestSetup.tenantCity;
-        masterRealm = masterTenant.getRealm();
-        this.realmBuildingTenant = tenantBuilding.getRealm();
-        this.realmCityTenant = tenantCity.getRealm();
-        this.realmEnergyTenant = keycloakTestSetup.energyTenant.getRealm();
+        Realm realmMaster = keycloakTestSetup.realmMaster;
+        Realm realmBuilding = keycloakTestSetup.realmBuilding;
+        Realm realmCity = keycloakTestSetup.realmCity;
+        realmMasterName = realmMaster.getName();
+        realmBuildingName = realmBuilding.getName();
+        realmCityName = realmCity.getName();
+        realmEnergyName = keycloakTestSetup.realmEnergy.getName();
 
         // ################################ Assets for 'master' realm ###################################
 
         BuildingAsset smartOffice = new BuildingAsset("Smart office");
-        smartOffice.setRealm(masterRealm);
+        smartOffice.setRealm(realmMasterName);
         smartOffice.getAttributes().addOrReplace(
                 new Attribute<>(Asset.LOCATION, SMART_OFFICE_LOCATION),
                 new Attribute<>(BuildingAsset.STREET, "Torenallee 20"),
@@ -205,7 +205,7 @@ public class ManagerTestSetup extends ManagerSetup {
         // ################################ Assets for 'energy' realm ###################################
         EnergyOptimisationAsset electricityOptimisationAsset = new EnergyOptimisationAsset("Optimisation");
         electricityOptimisationAsset.setIntervalSize(3d);
-        electricityOptimisationAsset.setRealm(keycloakTestSetup.energyTenant.getRealm());
+        electricityOptimisationAsset.setRealm(keycloakTestSetup.realmEnergy.getName());
         electricityOptimisationAsset.setFinancialWeighting(100);
         electricityOptimisationAsset = assetStorageService.merge(electricityOptimisationAsset);
         electricityOptimisationAssetId = electricityOptimisationAsset.getId();
@@ -288,7 +288,7 @@ public class ManagerTestSetup extends ManagerSetup {
         // ################################ Assets for 'building' realm ###################################
 
         BuildingAsset smartBuilding = new BuildingAsset("Smart building");
-        smartBuilding.setRealm(this.realmBuildingTenant);
+        smartBuilding.setRealm(this.realmBuildingName);
         smartBuilding.getAttributes().addOrReplace(
                 new Attribute<>(Asset.LOCATION, SMART_BUILDING_LOCATION),
                 new Attribute<>(BuildingAsset.STREET, "Kastanjelaan 500"),
@@ -438,7 +438,7 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
-        apartment2Id = UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm() + "Apartment 2");
+        apartment2Id = UniqueIdentifierGenerator.generateId(realmBuilding.getName() + "Apartment 2");
         BuildingAsset apartment2 = new BuildingAsset("Apartment 2");
         apartment2.setId(apartment2Id);
         apartment2.setParent(smartBuilding);
@@ -567,45 +567,45 @@ public class ManagerTestSetup extends ManagerSetup {
         // ################################ Link users and assets ###################################
 
         assetStorageService.storeUserAssetLinks(Arrays.asList(
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.testuser3Id,
                 apartment1Id),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.testuser3Id,
                 apartment1LivingroomId),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.testuser3Id,
                 apartment1KitchenId),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.testuser3Id,
                 apartment1Bedroom1Id),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.testuser3Id,
                 apartment1BathroomId),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.testuser3Id,
                 apartment1HallwayId)));
 
         assetStorageService.storeUserAssetLinks(Arrays.asList(
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.buildingUserId,
                 apartment2Id),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.buildingUserId,
                 apartment2LivingroomId),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.buildingUserId,
                 apartment2BathroomId)));
 
         // ################################ Make users restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
-        identityProvider.updateUserRealmRoles(tenantBuilding.getRealm(), keycloakTestSetup.testuser3Id, identityProvider.addRealmRoles(tenantBuilding.getRealm(), keycloakTestSetup.testuser3Id, RESTRICTED_USER_REALM_ROLE));
-        identityProvider.updateUserRealmRoles(tenantBuilding.getRealm(), keycloakTestSetup.buildingUserId, identityProvider.addRealmRoles(tenantBuilding.getRealm(), keycloakTestSetup.buildingUserId, RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), keycloakTestSetup.testuser3Id, identityProvider.addRealmRoles(realmBuilding.getName(), keycloakTestSetup.testuser3Id, RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), keycloakTestSetup.buildingUserId, identityProvider.addRealmRoles(realmBuilding.getName(), keycloakTestSetup.buildingUserId, RESTRICTED_USER_REALM_ROLE));
 
         // ################################ Realm smartcity ###################################
 
         CityAsset smartCity = new CityAsset("Smart city");
-        smartCity.setRealm(this.realmCityTenant);
+        smartCity.setRealm(this.realmCityName);
         smartCity.addOrReplaceAttributes(
                 new Attribute<>(Asset.LOCATION, SMART_CITY_LOCATION),
                 new Attribute<>(CityAsset.CITY, "Eindhoven"),

@@ -38,7 +38,7 @@ import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
  */
 @Entity
 @Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
-public class Tenant {
+public class Realm {
 
     protected static Field[] propertyFields;
 
@@ -46,7 +46,7 @@ public class Tenant {
     protected String id;
 
     @Column(name = "NAME")
-    protected String realm;
+    protected String name;
 
     @Formula("(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')")
     protected String displayName;
@@ -97,12 +97,12 @@ public class Tenant {
     @JoinColumn(name = "REALM_ID")
     protected Set<RealmRole> realmRoles;
 
-    public Tenant() {
+    public Realm() {
     }
 
-    public Tenant(String id, String realm, String displayName, Boolean enabled) {
+    public Realm(String id, String name, String displayName, Boolean enabled) {
         this.id = id;
-        this.realm = realm;
+        this.name = name;
         this.displayName = displayName;
         this.enabled = enabled;
     }
@@ -115,25 +115,25 @@ public class Tenant {
         this.id = id;
     }
 
-    @NotNull(message = "{Tenant.realm.NotNull}")
-    @Size(min = 3, max = 255, message = "{Tenant.realm.Size}")
-    @Pattern(regexp = "[a-zA-Z0-9\\-_]+", message = "{Tenant.realm.Pattern}")
-    public String getRealm() {
-        return realm;
+    @NotNull(message = "{Realm.realm.NotNull}")
+    @Size(min = 3, max = 255, message = "{Realm.realm.Size}")
+    @Pattern(regexp = "[a-zA-Z0-9\\-_]+", message = "{Realm.realm.Pattern}")
+    public String getName() {
+        return name;
     }
 
-    public Tenant setRealm(String realm) {
-        this.realm = realm;
+    public Realm setName(String name) {
+        this.name = name;
         return this;
     }
 
-    @NotNull(message = "{Tenant.displayName.NotNull}")
-    @Size(min = 3, max = 255, message = "{Tenant.displayName.Size}")
+    @NotNull(message = "{Realm.displayName.NotNull}")
+    @Size(min = 3, max = 255, message = "{Realm.displayName.Size}")
     public String getDisplayName() {
         return displayName;
     }
 
-    public Tenant setDisplayName(String displayName) {
+    public Realm setDisplayName(String displayName) {
         this.displayName = displayName;
         return this;
     }
@@ -142,7 +142,7 @@ public class Tenant {
         return enabled;
     }
 
-    public Tenant setEnabled(Boolean enabled) {
+    public Realm setEnabled(Boolean enabled) {
         this.enabled = enabled;
         return this;
     }
@@ -151,7 +151,7 @@ public class Tenant {
         return notBefore;
     }
 
-    public Tenant setNotBefore(Double notBefore) {
+    public Realm setNotBefore(Double notBefore) {
         this.notBefore = notBefore;
         return this;
     }
@@ -161,7 +161,7 @@ public class Tenant {
         return resetPasswordAllowed != null ? resetPasswordAllowed : true;
     }
 
-    public Tenant setResetPasswordAllowed(Boolean resetPasswordAllowed) {
+    public Realm setResetPasswordAllowed(Boolean resetPasswordAllowed) {
         this.resetPasswordAllowed = resetPasswordAllowed;
         return this;
     }
@@ -170,7 +170,7 @@ public class Tenant {
         return duplicateEmailsAllowed != null && duplicateEmailsAllowed;
     }
 
-    public Tenant setDuplicateEmailsAllowed(Boolean duplicateEmailsAllowed) {
+    public Realm setDuplicateEmailsAllowed(Boolean duplicateEmailsAllowed) {
         this.duplicateEmailsAllowed = duplicateEmailsAllowed;
         return this;
     }
@@ -179,7 +179,7 @@ public class Tenant {
         return verifyEmail != null && verifyEmail;
     }
 
-    public Tenant setVerifyEmail(Boolean verifyEmail) {
+    public Realm setVerifyEmail(Boolean verifyEmail) {
         this.verifyEmail = verifyEmail;
         return this;
     }
@@ -188,7 +188,7 @@ public class Tenant {
         return loginWithEmail != null && loginWithEmail;
     }
 
-    public Tenant setLoginWithEmail(Boolean loginWithEmail) {
+    public Realm setLoginWithEmail(Boolean loginWithEmail) {
         this.loginWithEmail = loginWithEmail;
         return this;
     }
@@ -197,7 +197,7 @@ public class Tenant {
         return accessTokenLifespan;
     }
 
-    public Tenant setAccessTokenLifespan(Integer accessTokenLifespan) {
+    public Realm setAccessTokenLifespan(Integer accessTokenLifespan) {
         this.accessTokenLifespan = accessTokenLifespan;
         return this;
     }
@@ -206,7 +206,7 @@ public class Tenant {
         return rememberMe != null && rememberMe;
     }
 
-    public Tenant setRememberMe(Boolean rememberMe) {
+    public Realm setRememberMe(Boolean rememberMe) {
         this.rememberMe = rememberMe;
         return this;
     }
@@ -215,7 +215,7 @@ public class Tenant {
         return registrationAllowed != null && registrationAllowed;
     }
 
-    public Tenant setRegistrationAllowed(Boolean registrationAllowed) {
+    public Realm setRegistrationAllowed(Boolean registrationAllowed) {
         this.registrationAllowed = registrationAllowed;
         return this;
     }
@@ -224,7 +224,7 @@ public class Tenant {
         return registrationEmailAsUsername != null && registrationEmailAsUsername;
     }
 
-    public Tenant setRegistrationEmailAsUsername(Boolean registrationEmailAsUsername) {
+    public Realm setRegistrationEmailAsUsername(Boolean registrationEmailAsUsername) {
         this.registrationEmailAsUsername = registrationEmailAsUsername;
         return this;
     }
@@ -238,7 +238,7 @@ public class Tenant {
         return loginTheme;
     }
 
-    public Tenant setLoginTheme(String loginTheme) {
+    public Realm setLoginTheme(String loginTheme) {
         this.loginTheme = loginTheme;
         return this;
     }
@@ -247,7 +247,7 @@ public class Tenant {
         return accountTheme;
     }
 
-    public Tenant setAccountTheme(String accountTheme) {
+    public Realm setAccountTheme(String accountTheme) {
         this.accountTheme = accountTheme;
         return this;
     }
@@ -256,7 +256,7 @@ public class Tenant {
         return adminTheme;
     }
 
-    public Tenant setAdminTheme(String adminTheme) {
+    public Realm setAdminTheme(String adminTheme) {
         this.adminTheme = adminTheme;
         return this;
     }
@@ -265,7 +265,7 @@ public class Tenant {
         return emailTheme;
     }
 
-    public Tenant setEmailTheme(String emailTheme) {
+    public Realm setEmailTheme(String emailTheme) {
         this.emailTheme = emailTheme;
         return this;
     }
@@ -276,21 +276,21 @@ public class Tenant {
 
     @JsonIgnore
     public Set<RealmRole> getNormalisedRealmRoles() {
-        Set<RealmRole> tempSet = new LinkedHashSet<>(getDefaultRealmRoles(getRealm()));
+        Set<RealmRole> tempSet = new LinkedHashSet<>(getDefaultRealmRoles(getName()));
         if (realmRoles != null) {
             tempSet.addAll(realmRoles);
         }
         return tempSet;
     }
 
-    public Tenant setRealmRoles(Set<RealmRole> realmRoles) {
+    public Realm setRealmRoles(Set<RealmRole> realmRoles) {
         this.realmRoles = realmRoles;
         return this;
     }
 
     public static Field[] getPropertyFields() {
         if (propertyFields == null) {
-            propertyFields = Arrays.stream(Tenant.class.getDeclaredFields())
+            propertyFields = Arrays.stream(Realm.class.getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(JoinColumn.class) || field.isAnnotationPresent(Formula.class))
                 .toArray(Field[]::new);
         }
@@ -321,7 +321,7 @@ public class Tenant {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
-            ", realm='" + realm + '\'' +
+            ", realm='" + name + '\'' +
             ", displayName='" + displayName + '\'' +
             ", enabled=" + enabled +
             ", notBefore=" + notBefore +

@@ -32,10 +32,10 @@ import java.util.Date;
  * realm, and can only modify asset data in a particular realm.
  */
 @Entity
-@Table(name = "TENANT_RULESET")
-public class TenantRuleset extends Ruleset {
+@Table(name = "REALM_RULESET")
+public class RealmRuleset extends Ruleset {
 
-    public static final String TYPE = "tenant";
+    public static final String TYPE = "realm";
 
     @Column(name = "REALM", nullable = false)
     protected String realm;
@@ -43,9 +43,9 @@ public class TenantRuleset extends Ruleset {
     @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
     protected boolean accessPublicRead;
 
-    public TenantRuleset() {}
+    public RealmRuleset() {}
 
-    public TenantRuleset(String realm, String name, Lang language, String rules) {
+    public RealmRuleset(String realm, String name, Lang language, String rules) {
         super(name, language, rules);
         this.realm = realm;
     }
@@ -54,7 +54,7 @@ public class TenantRuleset extends Ruleset {
         return realm;
     }
 
-    public TenantRuleset setRealm(String realm) {
+    public RealmRuleset setRealm(String realm) {
         this.realm = realm;
         return this;
     }
@@ -63,91 +63,91 @@ public class TenantRuleset extends Ruleset {
         return accessPublicRead;
     }
 
-    public TenantRuleset setAccessPublicRead(boolean accessPublicRead) {
+    public RealmRuleset setAccessPublicRead(boolean accessPublicRead) {
         this.accessPublicRead = accessPublicRead;
         return this;
     }
 
     @Override
-    public TenantRuleset setId(Long id) {
+    public RealmRuleset setId(Long id) {
         super.setId(id);
         return this;
     }
 
     @Override
-    public TenantRuleset setVersion(long version) {
+    public RealmRuleset setVersion(long version) {
         super.setVersion(version);
         return this;
     }
 
     @Override
-    public TenantRuleset setCreatedOn(Date createdOn) {
+    public RealmRuleset setCreatedOn(Date createdOn) {
         super.setCreatedOn(createdOn);
         return this;
     }
 
     @Override
-    public TenantRuleset setLastModified(Date lastModified) {
+    public RealmRuleset setLastModified(Date lastModified) {
         super.setLastModified(lastModified);
         return this;
     }
 
     @Override
-    public TenantRuleset setName(String name) {
+    public RealmRuleset setName(String name) {
         super.setName(name);
         return this;
     }
 
     @Override
-    public TenantRuleset setEnabled(boolean enabled) {
+    public RealmRuleset setEnabled(boolean enabled) {
         super.setEnabled(enabled);
         return this;
     }
 
     @Override
-    public TenantRuleset setRules(String rules) {
+    public RealmRuleset setRules(String rules) {
         super.setRules(rules);
         return this;
     }
 
     @Override
-    public TenantRuleset setLang(Lang lang) {
+    public RealmRuleset setLang(Lang lang) {
         super.setLang(lang);
         return this;
     }
 
     @Override
-    public TenantRuleset setMeta(MetaMap meta) {
+    public RealmRuleset setMeta(MetaMap meta) {
         super.setMeta(meta);
         return this;
     }
 
     @Override
-    public TenantRuleset setStatus(RulesetStatus status) {
+    public RealmRuleset setStatus(RulesetStatus status) {
         super.setStatus(status);
         return this;
     }
 
     @Override
-    public TenantRuleset setError(String error) {
+    public RealmRuleset setError(String error) {
         super.setError(error);
         return this;
     }
 
     @Override
-    public TenantRuleset setContinueOnError(boolean continueOnError) {
+    public RealmRuleset setContinueOnError(boolean continueOnError) {
         super.setContinueOnError(continueOnError);
         return this;
     }
 
     @Override
-    public TenantRuleset setValidity(CalendarEvent calendarEvent) {
+    public RealmRuleset setValidity(CalendarEvent calendarEvent) {
         super.setValidity(calendarEvent);
         return this;
     }
 
     @Override
-    public TenantRuleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
+    public RealmRuleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
         super.setTriggerOnPredictedData(triggerOnPredictedData);
         return this;
     }

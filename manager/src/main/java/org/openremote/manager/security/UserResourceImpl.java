@@ -25,7 +25,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.*;
 
 import javax.ws.rs.*;
@@ -64,7 +64,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         if (!authContext.isSuperUser()) {
             // Force realm to match users
-            query.tenant(new TenantPredicate(authContext.getAuthenticatedRealm()));
+            query.realm(new RealmPredicate(authContext.getAuthenticatedRealmName()));
 
             // Hide system service accounts from non super users
             if (query.select == null) {
@@ -106,7 +106,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         if (!isAuthenticated()) {
             throw new ForbiddenException("Must be authenticated");
         }
-        return get(requestParams, getRequestRealm(), getUserId());
+        return get(requestParams, getRequestRealmName(), getUserId());
     }
 
     @Override
@@ -173,7 +173,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             throw new ForbiddenException("Must be authenticated");
         }
 
-        return getUserClientRoles(requestParams, getRequestRealm(), getUserId(), clientId);
+        return getUserClientRoles(requestParams, getRequestRealmName(), getUserId(), clientId);
     }
 
     @Override
@@ -182,7 +182,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             throw new ForbiddenException("Must be authenticated");
         }
 
-        return getUserRealmRoles(requestParams, getRequestRealm(), getUserId());
+        return getUserRealmRoles(requestParams, getRequestRealmName(), getUserId());
     }
 
     @Override

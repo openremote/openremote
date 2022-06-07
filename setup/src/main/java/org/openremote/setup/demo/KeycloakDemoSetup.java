@@ -23,7 +23,7 @@ import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.security.ClientRole;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 
 import java.util.Arrays;
@@ -42,8 +42,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     private static final Logger LOG = Logger.getLogger(KeycloakDemoSetup.class.getName());
 
     public String smartCityUserId;
-    public Tenant masterTenant;
-    public Tenant tenantCity;
+    public Realm realmMaster;
+    public Realm realmCity;
 
     public KeycloakDemoSetup(Container container) {
         super(container);
@@ -53,9 +53,9 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public void onStart() throws Exception {
         super.onStart();
 
-        // Tenants
-        masterTenant = identityService.getIdentityProvider().getTenant(Constants.MASTER_REALM);
-        tenantCity = createTenant("smartcity", "Smart City", true);
+        // Realms
+        realmMaster = identityService.getIdentityProvider().getRealm(Constants.MASTER_REALM);
+        realmCity = createRealm("smartcity", "Smart City", true);
         removeManageAccount("smartcity");
 
         // Don't allow demo users to write assets
@@ -64,8 +64,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
             .toArray(ClientRole[]::new);
 
         // Users
-        User smartCityUser = createUser(tenantCity.getRealm(), "smartcity", "smartcity", "Smart", "City", null, true, demoUserRoles);
+        User smartCityUser = createUser(realmCity.getName(), "smartcity", "smartcity", "Smart", "City", null, true, demoUserRoles);
         this.smartCityUserId = smartCityUser.getId();
-        keycloakProvider.updateUserRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
+        keycloakProvider.updateUserRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
     }
 }

@@ -132,7 +132,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 <div id="errors">
                     ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}
                 </div>
-                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${(ev: MouseEvent) => this._showJson(ev)}"></or-mwc-input></div>
+                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @or-mwc-input-changed="${(ev: Event) => this._showJson(ev)}"></or-mwc-input></div>
             </div>
         `;
 
@@ -172,7 +172,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
                 ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
                         <div id="footer">
-                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addParameter")}" icon="plus" @click="${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addParameter")}" icon="plus" @or-mwc-input-changed="${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
                         </div>`}
             </div>
         `;
@@ -248,7 +248,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         `;
     }
 
-    protected _showJson(ev: MouseEvent) {
+    protected _showJson(ev: Event) {
         ev.stopPropagation();
 
         showJsonEditor(this.title || this.schema.title || "", this.data, (newValue) => {
