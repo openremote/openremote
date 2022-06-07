@@ -147,7 +147,7 @@ export interface ValueInputProvider {
 
 export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
 
-export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | AttributeDescriptor | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 function inputTypeSupportsButton(inputType: InputType): boolean {
     return inputType === InputType.NUMBER
@@ -332,7 +332,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     if (patternConstraint) {
         pattern = patternConstraint.regexp;
     }
-    if (notNullConstraint) {
+    if (notNullConstraint || (valueHolderDescriptor && "optional" in valueHolderDescriptor && valueHolderDescriptor.optional === false)) {
         required = true;
     }
     if (notBlankConstraint && !pattern) {
@@ -389,7 +389,6 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
-
         return html`<or-mwc-input ${ref(inputRef)} id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
