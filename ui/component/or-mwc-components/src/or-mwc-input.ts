@@ -389,7 +389,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
-        
+
         return html`<or-mwc-input ${ref(inputRef)} id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
