@@ -24,7 +24,7 @@ import org.openremote.agent.protocol.velbus.VelbusTCPAgent;
 import org.openremote.container.util.MapAccess;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 
 import java.util.logging.Logger;
 
@@ -32,15 +32,15 @@ public class ManagerDemoAgentSetup extends ManagerSetup {
 
     private static final Logger LOG = Logger.getLogger(ManagerDemoAgentSetup.class.getName());
 
-    public static final String SETUP_IMPORT_DEMO_AGENT_KNX = "SETUP_IMPORT_DEMO_AGENT_KNX";
-    public static final String SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP = "SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP";
-    public static final String SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP = "SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP";
+    public static final String OR_SETUP_IMPORT_DEMO_AGENT_KNX = "OR_SETUP_IMPORT_DEMO_AGENT_KNX";
+    public static final String OR_SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP = "OR_SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP";
+    public static final String OR_SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP = "OR_SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP";
 
-    public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS = "SETUP_IMPORT_DEMO_AGENT_VELBUS";
-    public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST = "SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST";
-    public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT = "SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT";
+    public static final String OR_SETUP_IMPORT_DEMO_AGENT_VELBUS = "OR_SETUP_IMPORT_DEMO_AGENT_VELBUS";
+    public static final String OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST = "OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST";
+    public static final String OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT = "OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT";
 
-    public String masterRealm;
+    public String realmMasterName;
 
     final protected boolean knx;
     final protected String knxGatewayIp;
@@ -53,13 +53,13 @@ public class ManagerDemoAgentSetup extends ManagerSetup {
     public ManagerDemoAgentSetup(Container container) {
         super(container);
 
-        this.knx = MapAccess.getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_KNX, false);
-        this.knxGatewayIp = MapAccess.getString(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP, "localhost");
-        this.knxLocalIp = MapAccess.getString(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP, "localhost");
+        this.knx = MapAccess.getBoolean(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_KNX, false);
+        this.knxGatewayIp = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP, "localhost");
+        this.knxLocalIp = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP, "localhost");
 
-        this.velbus = MapAccess.getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_VELBUS, false);
-        this.velbusHost = MapAccess.getString(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST, "localhost");
-        this.velbusPort = MapAccess.getInteger(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT, 6000);
+        this.velbus = MapAccess.getBoolean(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_VELBUS, false);
+        this.velbusHost = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST, "localhost");
+        this.velbusPort = MapAccess.getInteger(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT, 6000);
     }
 
     @Override
@@ -67,14 +67,14 @@ public class ManagerDemoAgentSetup extends ManagerSetup {
         super.onStart();
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
-        Tenant masterTenant = keycloakDemoSetup.masterTenant;
-        masterRealm = masterTenant.getRealm();
+        Realm realmMaster = keycloakDemoSetup.realmMaster;
+        realmMasterName = realmMaster.getName();
 
         if (knx) {
             LOG.info("Enable KNX demo agent, gateway/local IP: " + knxGatewayIp + "/" + knxLocalIp);
 
             KNXAgent agent = new KNXAgent("Demo KNX agent")
-                .setRealm(masterRealm)
+                .setRealm(realmMasterName)
                 .setHost(knxGatewayIp)
                 .setBindHost(knxLocalIp);
 
@@ -85,7 +85,7 @@ public class ManagerDemoAgentSetup extends ManagerSetup {
             LOG.info("Enable Velbus demo agent, host/port: " + velbusHost + "/" + velbusPort);
 
             VelbusTCPAgent agent = new VelbusTCPAgent("Demo VELBUS agent")
-                .setRealm(masterRealm)
+                .setRealm(realmMasterName)
                 .setHost(velbusHost)
                 .setPort(velbusPort);
 

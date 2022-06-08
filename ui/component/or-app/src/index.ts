@@ -15,16 +15,15 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, OREvent, normaliseConfig, Manager} from "@openremote/core";
+import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, normaliseConfig, Manager} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
-import {ThunkMiddleware} from "redux-thunk";
+import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
-import { Tenant } from "@openremote/model";
+import { Realm } from "@openremote/model";
 
 const DefaultLogo = require("../images/logo.svg");
 const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -97,8 +96,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @state()
     protected _activeMenu?: string;
 
-    protected _realms!: Tenant[];
-    protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
+    protected _realms!: Realm[];
+    protected _store: Store<S, AnyAction>;
     protected _storeUnsubscribe!: Unsubscribe;
 
     // language=CSS
@@ -150,7 +149,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         `;
     }
 
-    constructor(store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>) {
+    constructor(store: Store<S, AnyAction>) {
         super();
         this._store = store;
 
@@ -224,7 +223,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
 
                 // Load available realm info
-                const response = await manager.rest.api.TenantResource.getAccessible();
+                const response = await manager.rest.api.RealmResource.getAccessible();
                 this._realms = response.data;
                 let realm: string | null | undefined = undefined;
 
@@ -232,7 +231,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 if (manager.isSuperUser()) {
                     // Look in session storage
                     realm = window.sessionStorage.getItem("realm");
-                    if (realm && !this._realms.some(r => r.realm === realm)) {
+                    if (realm && !this._realms.some(r => r.name === realm)) {
                         realm = undefined;
                     }
                 }
@@ -380,9 +379,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         showDialog(new OrMwcDialog()
             .setHeading("language")
             .setDismissAction(null)
+            .setStyles(html`<style>.selected { color: ${unsafeCSS(DefaultColor4)} }</style>`)
             .setActions(Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES).map(([key, value]) => {
                 return {
-                    content: i18next.t(value),
+                    content: html`<span class="${(key === manager.language) ? 'selected' : ''}">${i18next.t(value)}</span>`,
                     actionName: key,
                     action: () => {
                         manager.language = key;

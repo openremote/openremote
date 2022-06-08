@@ -13,7 +13,6 @@ import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.*
-import android.text.TextUtils
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -31,6 +30,8 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.messaging.FirebaseMessaging
+import io.openremote.orlib.ORConstants
+import io.openremote.orlib.ORConstants.BASE_URL_KEY
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
 import io.openremote.orlib.models.ORAppConfig
@@ -44,21 +45,29 @@ import java.util.logging.Logger
 
 open class OrMainActivity : Activity() {
 
+    private val LOG = Logger.getLogger(
+        OrMainActivity::class.java.name
+    )
+
     private lateinit var binding: ActivityOrMainBinding
+    private lateinit var sharedPreferences: SharedPreferences
+
+
     private var mapper = jacksonObjectMapper()
     private val connectivityChangeReceiver: ConnectivityChangeReceiver =
         ConnectivityChangeReceiver()
     private var timeOutHandler: Handler? = null
     private var timeOutRunnable: Runnable? = null
     private var progressBar: ProgressBar? = null
-    private var webViewTimeout = WEBVIEW_LOAD_TIMEOUT_DEFAULT
+    private var webViewTimeout = ORConstants.WEBVIEW_LOAD_TIMEOUT_DEFAULT
     private var webViewLoaded = false
-    private var sharedPreferences: SharedPreferences? = null
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
     private var consoleId: String? = null
-    protected var appConfig: ORAppConfig? = null
-    private var onDownloadCompleteReciever: BroadcastReceiver = object : BroadcastReceiver() {
+    private var appConfig: ORAppConfig? = null
+    private var baseUrl: String? = null
+
+    private var onDownloadCompleteReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctxt: Context, intent: Intent) {
             val action = intent.action
             if (DownloadManager.ACTION_DOWNLOAD_COMPLETE == action) {
@@ -72,10 +81,23 @@ open class OrMainActivity : Activity() {
         get() {
             var returnValue: String? = null
 
-            sharedPreferences?.let { pref ->
-                pref.getString("project", null)?.let { projectName ->
-                    pref.getString("realm", null)?.let { realmName ->
-                        returnValue = "https://${projectName}.openremote.io/api/$realmName"
+            if (appConfig != null) {
+                if (URLUtil.isValidUrl(appConfig!!.initialUrl)) {
+                    return appConfig!!.initialUrl
+                } else {
+                    sharedPreferences.let { pref ->
+                        pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
+                            return host.plus(appConfig!!.initialUrl)
+                        }
+                    }
+                }
+            }
+
+
+            sharedPreferences.let { pref ->
+                pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
+                    pref.getString(ORConstants.REALM_KEY, null)?.let { realm ->
+                        returnValue = host.plus("/api/${realm}")
                     }
                 }
             }
@@ -114,21 +136,26 @@ open class OrMainActivity : Activity() {
         progressBar?.max = 100
         progressBar?.progress = 1
 
-        if (intent.hasExtra(APP_CONFIG_KEY)) {
+        if (intent.hasExtra(ORConstants.APP_CONFIG_KEY)) {
             appConfig = mapper.readValue(
-                intent.getStringExtra(APP_CONFIG_KEY),
+                intent.getStringExtra(ORConstants.APP_CONFIG_KEY),
                 ORAppConfig::class.java
             )
+        }
+        
+        if (intent.hasExtra(BASE_URL_KEY)) {
+            baseUrl = intent.getStringExtra(BASE_URL_KEY)
         }
 
         if (appConfig == null) {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-            val project = sharedPreferences!!.getString("project", null)
-            val realm = sharedPreferences!!.getString("realm", null)
+            val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
+            val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
 
-            if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
-                val apiManager = ApiManager("https://${project}.openremote.io/api/$realm")
+            if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
+                val url = host.plus("/api/${realm}")
+                val apiManager = ApiManager(url)
                 apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
                     if (statusCode in 200..299) {
                         this.appConfig = appConfig
@@ -239,10 +266,6 @@ open class OrMainActivity : Activity() {
                 LOG.fine("Loading web view: $url")
                 loadUrl(url)
             }
-            appConfig != null -> {
-                LOG.fine("Loading web view: ${appConfig!!.initialUrl}")
-                loadUrl(appConfig!!.initialUrl)
-            }
             else -> {
                 var url = clientUrl
                 val intentUrl = intent.getStringExtra("appUrl")
@@ -266,7 +289,7 @@ open class OrMainActivity : Activity() {
             IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         )
         registerReceiver(
-            onDownloadCompleteReciever,
+            onDownloadCompleteReceiver,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         )
     }
@@ -274,7 +297,7 @@ open class OrMainActivity : Activity() {
     override fun onPause() {
         super.onPause()
         unregisterReceiver(connectivityChangeReceiver)
-        unregisterReceiver(onDownloadCompleteReciever)
+        unregisterReceiver(onDownloadCompleteReceiver)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -311,7 +334,6 @@ open class OrMainActivity : Activity() {
         LOG.fine("Initializing web view")
         val webAppInterface = WebAppInterface(this)
         binding.webView.apply {
-            clearCache(true)
             addJavascriptInterface(webAppInterface, "MobileInterface")
             settings.javaScriptEnabled = true
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
@@ -336,8 +358,7 @@ open class OrMainActivity : Activity() {
                     handleError(
                         errorResponse.statusCode,
                         errorResponse.reasonPhrase,
-                        request.url.toString(),
-                        request.isForMainFrame
+                        request.url.toString()
                     )
                 }
 
@@ -356,8 +377,7 @@ open class OrMainActivity : Activity() {
                     handleError(
                         error.errorCode,
                         error.description.toString(),
-                        request.url.toString(),
-                        request.isForMainFrame
+                        request.url.toString()
                     )
                 }
 
@@ -365,7 +385,7 @@ open class OrMainActivity : Activity() {
                     progressBar!!.visibility = View.VISIBLE
                     timeOutRunnable = Runnable {
                         if (!webViewLoaded) {
-                            handleError(ERROR_TIMEOUT, "Connection timed out", url, true)
+                            handleError(ERROR_TIMEOUT, "Connection timed out", url)
                         }
                     }
                     timeOutHandler = Looper.myLooper()?.let { Handler(it) }
@@ -390,6 +410,11 @@ open class OrMainActivity : Activity() {
                         startActivity(i)
                         return true
                     }
+                    if (!request.url.isAbsolute && baseUrl?.isNotEmpty()!!) {
+                        view.loadUrl("${baseUrl}/${request.url}")
+                        return true
+                    }
+
                     return super.shouldOverrideUrlLoading(view, request)
                 }
             }
@@ -442,7 +467,7 @@ open class OrMainActivity : Activity() {
                     // Write permission has not been granted yet, request it.
                     requestPermissions(
                         arrayOf(writePermission),
-                        WRITE_PERMISSION_FOR_DOWNLOAD
+                        ORConstants.WRITE_PERMISSION_FOR_DOWNLOAD
                     )
                 } else {
                     val request = DownloadManager.Request(Uri.parse(url))
@@ -479,33 +504,39 @@ open class OrMainActivity : Activity() {
     private fun handleError(
         errorCode: Int,
         description: String,
-        failingUrl: String?,
-        isForMainFrame: Boolean
+        failingUrl: String?
     ) {
         LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
-
+        //TODO should we always ignore image errors?
+        if (failingUrl != null && (failingUrl.endsWith("png")
+                    || failingUrl.endsWith("jpg")
+                    || failingUrl.endsWith("ico"))
+        ) {
+            LOG.info("Ignoring error loading image resource")
+            return
+        }
+        //TODO should we always ignore image errors and locale json files?
+        if (failingUrl != null && (failingUrl.endsWith("png")
+                    || failingUrl.endsWith("jpg")
+                    || failingUrl.endsWith("ico") ||
+                    failingUrl.contains("locales"))
+        ) {
+            LOG.info("Ignoring error loading image resource")
+            return
+        }
         // This will be the URL loaded into the webview itself (false for images etc. of the main page)
-        if (isForMainFrame) {
-
-            // Check page load error URL
-            val errorUrl = getString(R.string.OR_CONSOLE_LOAD_ERROR_URL)
-            if (!TextUtils.isEmpty(errorUrl) && failingUrl != errorUrl) {
-                LOG.info("Loading error URL: $errorUrl")
-                loadUrl(errorUrl)
-                return
-            }
+        // Check page load error URL
+        if (clientUrl != null) {
+            loadUrl(clientUrl)
+            Toast.makeText(this, description, Toast.LENGTH_LONG).show()
         } else {
-            if (java.lang.Boolean.parseBoolean(getString(R.string.OR_CONSOLE_IGNORE_PAGE_ERRORS))) {
-                return
-            }
-
-            //TODO should we always ignore image errors?
-            if (failingUrl != null && (failingUrl.endsWith("png")
-                        || failingUrl.endsWith("jpg")
-                        || failingUrl.endsWith("ico"))
-            ) {
-                LOG.info("Ignoring error loading image resource")
-                return
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                startActivity(launchIntent)
+                finish()
+                Toast.makeText(applicationContext, description, Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, description, Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -521,7 +552,7 @@ open class OrMainActivity : Activity() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        if (requestCode == WRITE_PERMISSION_FOR_DOWNLOAD) {
+        if (requestCode == ORConstants.WRITE_PERMISSION_FOR_DOWNLOAD) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(applicationContext, R.string.downloading_file, Toast.LENGTH_LONG)
                     .show()
@@ -606,14 +637,7 @@ open class OrMainActivity : Activity() {
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
                     val consoleId = data.getString("consoleId")
                     (activity as OrMainActivity).consoleId = consoleId
-                    val baseUrl = sharedPreferences?.let { pref ->
-                        pref.getString("project", null)?.let { projectName ->
-                            pref.getString("realm", null)?.let { realmName ->
-                                "https://${projectName}.openremote.io/api/$realmName"
-                            }
-                        }
-                    } ?: ""
-                    geofenceProvider?.enable(this@OrMainActivity, baseUrl,
+                    geofenceProvider?.enable(this@OrMainActivity, clientUrl ?: "",
                         consoleId, object : GeofenceProvider.GeofenceCallback {
                             override fun accept(responseData: Map<String, Any>) {
                                 notifyClient(responseData)
@@ -653,7 +677,7 @@ open class OrMainActivity : Activity() {
                     response["provider"] = "push"
                     response["version"] = "fcm"
                     response["enabled"] = false
-                    response["disabled"] = sharedPreferences!!.contains(PUSH_PROVIDER_DISABLED_KEY)
+                    response["disabled"] = sharedPreferences.contains(ORConstants.PUSH_PROVIDER_DISABLED_KEY)
                     response["requiresPermission"] = false
                     response["hasPermission"] = true
                     response["success"] = true
@@ -661,9 +685,9 @@ open class OrMainActivity : Activity() {
                 }
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
                     val consoleId = data.getString("consoleId")
-                    sharedPreferences!!.edit()
-                        .putString(GeofenceProvider.Companion.consoleIdKey, consoleId)
-                        .remove(PUSH_PROVIDER_DISABLED_KEY)
+                    sharedPreferences.edit()
+                        .putString(ORConstants.CONSOLE_ID_KEY, consoleId)
+                        .remove(ORConstants.PUSH_PROVIDER_DISABLED_KEY)
                         .apply()
                     // TODO: Implement topic support
                     FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
@@ -687,7 +711,7 @@ open class OrMainActivity : Activity() {
                     val response: MutableMap<String, Any?> = HashMap()
                     response["action"] = "PROVIDER_DISABLE"
                     response["provider"] = "push"
-                    sharedPreferences!!.edit().putBoolean(PUSH_PROVIDER_DISABLED_KEY, true).apply()
+                    sharedPreferences.edit().putBoolean(ORConstants.PUSH_PROVIDER_DISABLED_KEY, true).apply()
                     notifyClient(response)
                 }
             }
@@ -757,10 +781,10 @@ open class OrMainActivity : Activity() {
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
 
                     qrScannerProvider?.enable(object : QrScannerProvider.ScannerCallback {
-                            override fun accept(responseData: Map<String, Any>) {
-                                notifyClient(responseData)
-                            }
-                        })
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
                 }
                 action.equals("PROVIDER_DISABLE", ignoreCase = true) -> {
                     val response = qrScannerProvider?.disable()
@@ -795,7 +819,7 @@ open class OrMainActivity : Activity() {
     }
 
     private fun storeData(key: String?, data: String?) {
-        val editor = sharedPreferences!!.edit()
+        val editor = sharedPreferences.edit()
         if (data == null) {
             editor.remove(key)
         } else {
@@ -805,7 +829,7 @@ open class OrMainActivity : Activity() {
     }
 
     private fun retrieveData(key: String?): Any? {
-        var str = sharedPreferences!!.getString(key, null) ?: return null
+        val str = sharedPreferences.getString(key, null) ?: return null
         // Parse data JSON
         return try {
             mapper.readTree(str)
@@ -829,18 +853,5 @@ open class OrMainActivity : Activity() {
             val activeNetwork = cm.activeNetworkInfo
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting)
         }
-    }
-
-    companion object {
-        private val LOG = Logger.getLogger(
-            OrMainActivity::class.java.name
-        )
-        private const val WRITE_PERMISSION_FOR_DOWNLOAD = 999
-        private const val WRITE_PERMISSION_FOR_LOGGING = 1000
-        private const val WEBVIEW_LOAD_TIMEOUT_DEFAULT = 5000
-        const val ACTION_BROADCAST = "ACTION_BROADCAST"
-        const val PUSH_PROVIDER_DISABLED_KEY = "PushProviderDisabled"
-        const val CONSOLE_ID_KEY = "consoleId"
-        const val APP_CONFIG_KEY = "APP_CONFIG_KEY"
     }
 }

@@ -33,7 +33,7 @@ import java.util.Set;
  */
 public enum ClientRole {
 
-    READ_ADMIN(Constants.READ_ADMIN_ROLE, "Read system settings, tenants, and users"),
+    READ_ADMIN(Constants.READ_ADMIN_ROLE, "Read system settings, realms, and users"),
     READ_LOGS(Constants.READ_LOGS_ROLE, "Read logs and log settings"),
     READ_USERS(Constants.READ_USERS_ROLE, "Read limited set of user details for use in rules etc."),
     READ_MAP(Constants.READ_MAP_ROLE, "View map"),
@@ -41,7 +41,7 @@ public enum ClientRole {
     READ_RULES(Constants.READ_RULES_ROLE, "Read rulesets"),
 
     WRITE_USER(Constants.WRITE_USER_ROLE, "Write data of the authenticated user"),
-    WRITE_ADMIN(Constants.WRITE_ADMIN_ROLE, "Write system settings, tenants, and users"),
+    WRITE_ADMIN(Constants.WRITE_ADMIN_ROLE, "Write system settings, realms, and users"),
     WRITE_LOGS(Constants.WRITE_LOGS_ROLE, "Write log settings"),
     WRITE_ASSETS(Constants.WRITE_ASSETS_ROLE, "Write asset data"),
     WRITE_ATTRIBUTES(Constants.WRITE_ATTRIBUTES_ROLE, "Write attribute data"),

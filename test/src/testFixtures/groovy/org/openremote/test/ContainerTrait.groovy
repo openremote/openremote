@@ -27,6 +27,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
@@ -53,9 +54,10 @@ import org.openremote.model.query.RulesetQuery
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TenantRuleset
+import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.security.User
 
+import javax.persistence.TypedQuery
 import javax.websocket.ClientEndpointConfig
 import javax.websocket.Endpoint
 import javax.websocket.Session
@@ -67,7 +69,7 @@ import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
+import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
 
 trait ContainerTrait {
 
@@ -88,7 +90,7 @@ trait ContainerTrait {
                 if (currentConfig.size() == config.size()) {
                     configsMatch = currentConfig.entrySet().stream().allMatch{entry ->
                         // ignore webserver port config
-                        if (entry.key == WEBSERVER_LISTEN_PORT) {
+                        if (entry.key == OR_WEBSERVER_LISTEN_PORT) {
                             return true
                         }
                         entry.value == config.get(entry.key)
@@ -135,7 +137,7 @@ trait ContainerTrait {
                     // Reset rulesets
                     if (container.hasService(RulesetStorageService.class) && container.hasService(RulesService.class)) {
                         def globalRulesets = getRulesets(GlobalRuleset.class)
-                        def tenantRulesets = getRulesets(TenantRuleset.class)
+                        def realmRulesets = getRulesets(RealmRuleset.class)
                         def assetRulesets = getRulesets(AssetRuleset.class)
                         def rulesService = container.getService(RulesService.class)
                         def rulesetStorageService = container.getService(RulesetStorageService.class)
@@ -155,14 +157,14 @@ trait ContainerTrait {
                                 }
                             }
                         }
-                        if (!tenantRulesets.isEmpty()) {
-                            println("Purging ${tenantRulesets.size()} tenant ruleset(s)")
-                            tenantRulesets.forEach {
-                                rulesetStorageService.delete(TenantRuleset.class, it.id)
-                                def tenantEngine = rulesService.tenantEngines.get(((TenantRuleset) it).realm)
+                        if (!realmRulesets.isEmpty()) {
+                            println("Purging ${realmRulesets.size()} realm ruleset(s)")
+                            realmRulesets.forEach {
+                                rulesetStorageService.delete(RealmRuleset.class, it.id)
+                                def realmEngine = rulesService.realmEngines.get(((RealmRuleset) it).realm)
                                 def rulesStopped = false
-                                while (tenantEngine != null && !rulesStopped) {
-                                    rulesStopped = !tenantEngine.deployments.containsKey(it.id)
+                                while (realmEngine != null && !rulesStopped) {
+                                    rulesStopped = !realmEngine.deployments.containsKey(it.id)
                                     if (counter++ > 100) {
                                         throw new IllegalStateException("Failed to purge ruleset: " + it.name)
                                     }
@@ -190,7 +192,7 @@ trait ContainerTrait {
                         counter = 0
                         def enginesStopped = false
                         while (!enginesStopped) {
-                            enginesStopped = (rulesService.tenantEngines == null || rulesService.tenantEngines.isEmpty()) && (rulesService.assetEngines == null || rulesService.assetEngines.isEmpty())
+                            enginesStopped = (rulesService.realmEngines == null || rulesService.realmEngines.isEmpty()) && (rulesService.assetEngines == null || rulesService.assetEngines.isEmpty())
                             if (counter++ > 100) {
                                 throw new IllegalStateException("Rule engines have failed to stop")
                             }
@@ -241,9 +243,9 @@ trait ContainerTrait {
                             println("Re-inserting ${TestFixture.assetRulesets.size()} asset ruleset(s)")
                             TestFixture.assetRulesets.forEach { rulesetStorageService.merge(it) }
                         }
-                        if (!TestFixture.tenantRulesets.isEmpty()) {
-                            println("Re-inserting ${TestFixture.tenantRulesets.size()} tenant ruleset(s)")
-                            TestFixture.tenantRulesets.forEach { rulesetStorageService.merge(it) }
+                        if (!TestFixture.realmRulesets.isEmpty()) {
+                            println("Re-inserting ${TestFixture.realmRulesets.size()} realm ruleset(s)")
+                            TestFixture.realmRulesets.forEach { rulesetStorageService.merge(it) }
                         }
                         if (!TestFixture.globalRulesets.isEmpty()) {
                             println("Re-inserting ${TestFixture.globalRulesets.size()} global ruleset(s)")
@@ -273,7 +275,7 @@ trait ContainerTrait {
 
             // Track rules (very basic)
             TestFixture.globalRulesets = getRulesets(GlobalRuleset.class)
-            TestFixture.tenantRulesets = getRulesets(TenantRuleset.class)
+            TestFixture.realmRulesets = getRulesets(RealmRuleset.class)
             TestFixture.assetRulesets = getRulesets(AssetRuleset.class)
 
             // Track assets
@@ -312,13 +314,13 @@ trait ContainerTrait {
             }
             println("Global rulesets are deployed")
 
-            println("Waiting for tenant rulesets to be deployed")
+            println("Waiting for realm rulesets to be deployed")
             i=0
-            while (i < 100 && TestFixture.tenantRulesets.stream().filter { it.enabled }.any { !rulesService.tenantEngines.containsKey(it.realm) || !rulesService.tenantEngines.get(it.realm).deployments.containsKey(it.id) }) {
+            while (i < 100 && TestFixture.realmRulesets.stream().filter { it.enabled }.any { !rulesService.realmEngines.containsKey(it.realm) || !rulesService.realmEngines.get(it.realm).deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
                 i++
             }
-            println("Tenant rulesets are deployed")
+            println("Realm rulesets are deployed")
 
             println("Waiting for asset rulesets to be deployed")
             i=0
@@ -358,12 +360,12 @@ trait ContainerTrait {
         return rulesetStorageService.findAll(clazz, new RulesetQuery().setFullyPopulate(true))
     }
 
-    List<TenantRuleset> getTenantRulesets() {
+    List<RealmRuleset> getRealmRulesets() {
         if (!container.hasService(RulesService.class)) {
             return Collections.emptyList()
         }
         RulesService rulesService = container.getService(RulesService.class)
-        return rulesService.tenantEngines.values().collect {it.deployments.values()}.flatten {it.ruleset}
+        return rulesService.realmEngines.values().collect {it.deployments.values()}.flatten {it.ruleset}
     }
 
     List<AssetRuleset> getAssetRulesets() {
@@ -371,7 +373,7 @@ trait ContainerTrait {
             return Collections.emptyList()
         }
         RulesService rulesService = container.getService(RulesService.class)
-        return rulesService.tenantEngines.values().collect {it.deployments.values()}.flatten {it.ruleset}
+        return rulesService.realmEngines.values().collect {it.deployments.values()}.flatten {it.ruleset}
     }
 
     List<Asset> getAssets() {
@@ -385,7 +387,10 @@ trait ContainerTrait {
         if (!container.hasService(AssetStorageService.class)) {
             return Collections.emptyList()
         }
-        container.getService(AssetStorageService.class).findUserAssetLinks(null, null, null)
+        return container.getService(PersistenceService.class).doReturningTransaction {
+            TypedQuery<UserAssetLink> query = it.createQuery("select ua from UserAssetLink ua", UserAssetLink.class)
+            return query.getResultList()
+        }
     }
 
     List<GatewayConnection> getGatewayConnections() {
@@ -417,7 +422,7 @@ trait ContainerTrait {
 
     int getServerPort() {
         if (container != null) {
-            return MapAccess.getInteger(container.getConfig(), WEBSERVER_LISTEN_PORT, 0)
+            return MapAccess.getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, 0)
         }
         return 0
     }

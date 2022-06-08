@@ -250,7 +250,7 @@ export class OrEditAssetPanel extends LitElement {
                         <tr class="mdc-data-table__row">
                             <td colspan="4">
                                 <div class="item-add-attribute">
-                                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._addAttribute()}"></or-mwc-input>
+                                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._addAttribute()}"></or-mwc-input>
                                 </div>
                             </td>
                         </tr>
@@ -298,7 +298,11 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
-                    <or-attribute-input ${ref(attributeInputRef)} compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
+                    <or-attribute-input ${ref(attributeInputRef)} 
+                                        .comfortable="${true}" .assetType="${assetType}" .label=${null} 
+                                        .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
+                                        disableWrite disableSubscribe disableButton compact 
+                                        @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
             </tr>
@@ -310,7 +314,7 @@ export class OrEditAssetPanel extends LitElement {
                                 ${metaTemplatesAndValidators.map((metaTemplateAndValidator) => metaTemplateAndValidator.template)}
                             </div>
                             <div class="item-add">
-                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @or-mwc-input-changed="${() => this._addMetaItems(attribute)}"></or-mwc-input>
                             </div>
                         </div>
                     </div>                     
@@ -409,8 +413,12 @@ export class OrEditAssetPanel extends LitElement {
         const asset = this.asset!;
         let attr: Attribute<any>;
 
+        const isDisabled = (attribute: Attribute<any>) => {
+            return !(attribute && attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
+        }
+
         const onAttributeChanged = (attribute: Attribute<any>) => {
-            const addDisabled = !(attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
+            const addDisabled = isDisabled(attribute);
             const addBtn = dialog!.shadowRoot!.getElementById("add-btn") as OrMwcInput;
             addBtn!.disabled = addDisabled;
             attr = attribute;
@@ -442,10 +450,13 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        this.asset.attributes![attr.name!] = attr;
-                        this._onModified();
+                        if (attr) {
+                            this.asset.attributes![attr.name!] = attr;
+                            this._onModified();
+                        }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"
+                                    @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));
@@ -485,6 +496,10 @@ export class OrEditAssetPanel extends LitElement {
                     
                     #meta-creator > or-mwc-list {
                         height: 100%;
+                    }
+
+                    .mdc-dialog .mdc-dialog__content {
+                        padding: 0 !important;
                     }
                 </style>
             `)

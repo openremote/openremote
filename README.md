@@ -16,7 +16,7 @@ base is 100% open source then the applications are limitless. Here's an architec
 
 You can quickly try the online demo with restricted access, login credentials are `smartcity:smartcity`:
 
-[Online demo](https://demo.openremote.io/manager/?realm=smartcity)
+[Online demo](https://demo.openremote.app/manager/?realm=smartcity)
 
 The quickest way to get your own environment with full access is to make use of our docker images (both `amd64` and `arm64` are supported). 
 1. Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed (v18+). 
@@ -36,32 +36,20 @@ Username: admin
 Password: secret
 
 ### Changing host and/or port
-The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM or want to run on a different port then you will need to set the `EXTERNAL_URL` environment variable and if changing ports you'll need to update your docker compose profile, so if for example you will be accessing using `https://192.168.1.1:8443` then update your `docker-compose.yml` file:
-
-```
-  proxy:
-    ...
-    ports:
-      - "8000:80"
-      - "8443:443"
-      - "8883:8883"
-```
-
-Then use the following startup command:
-
-
+The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM or want to run on a different port then you will need to set the `OR_HOSTNAME` amd `OR_SSL_PORT` environment variables, so if for example you will be accessing using `https://192.168.1.1:8443` then use the following startup command:
 
 BASH: 
 ```
-EXTERNAL_URL=https://192.168.1.1:8443 docker-compose -p openremote up -d
+OR_HOSTNAME=192.168.1.1 OR_SSL_PORT=8443 docker-compose -p openremote up -d
 ```
 or
 
 CMD:
 ```
-cmd /C "set EXTERNAL_URL=https://192.168.1.1:8443 && docker-compose -p openremote up -d"
+cmd /C "set OR_HOSTNAME=192.168.1.1 && set OR_SSL_PORT=8443 && docker-compose -p openremote up -d"
 ```
 
+***NOTE: When chaning `OR_SSL_PORT` you will need to alter the `KEYCLOAK_FRONTEND_URL` in the docker-compose.yml file (see comments in the file for details)***
 
 ## What next
 Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote/wiki) for more information, some things to try:
@@ -80,9 +68,13 @@ If you want to create a backup of your installation, just make a copy of this vo
 
 ## Contributing to OpenRemote
 
-We work with Java, Groovy, TypeScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests, ensure that code is covered by tests and that the full test suite passes.
+For information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 
-For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
+We work with Java, Groovy, TypeScript, Gradle, Docker, and a wide range of APIs and protocol implementations.
+
+We follow the [Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow) workflow with tags and releases for published versions of our components; when working on the codebase create descriptive branch names (e.g. `feature/cool_feature_x`, `hotfix/flux_capacitor`, `issue/123`, etc.).
+
+When your changes are complete then create a Pull Request ensuring that your branch is up-to-date with the source branch and that code changes are covered by tests and that the full test suite passes.
 
 ## Discuss OpenRemote
 

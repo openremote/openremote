@@ -3,7 +3,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
-import {InputType} from "./or-mwc-input";
+import {InputType, OrMwcInput} from "./or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {Util} from "@openremote/core";
 
@@ -278,7 +278,7 @@ export class OrMwcDialog extends LitElement {
                 @MDCDialog:opened="${() => this._onDialogOpened()}"
                 @MDCDialog:closed="${(evt: any) => this._onDialogClosed(evt.detail.action)}">
                 <div class="mdc-dialog__container">
-                    <div class="mdc-dialog__surface">
+                    <div class="mdc-dialog__surface" tabindex="0">
 						${typeof(this.heading) === "string" ? html`<h2 class="mdc-dialog__title" id="dialog-title"><or-translate value="${this.heading}"></or-translate></h2>`
                             : this.heading ? html`<span class="mdc-dialog__title" id="dialog-title">${this.heading}</span>` : ``}
                         ${this.content ? html` 
@@ -289,7 +289,7 @@ export class OrMwcDialog extends LitElement {
                                 ${this.actions ? this.actions.map((action) => {
                                     return html`
                                     <div class="mdc-button mdc-dialog__button" ?data-mdc-dialog-button-default="${action.default}" data-mdc-dialog-action="${action.actionName}">
-                                        ${typeof(action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
+                                        ${typeof(action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" @or-mwc-input-changed="${(ev: Event) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
                                     </div>`;
                                 }) : ``}
                             </footer>

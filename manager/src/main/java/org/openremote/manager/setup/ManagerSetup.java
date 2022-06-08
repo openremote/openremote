@@ -55,8 +55,8 @@ import static org.openremote.container.util.MapAccess.getString;
 
 public class ManagerSetup implements Setup {
 
-    public static final String PROVISIONING_DOCROOT = "PROVISIONING_DOCROOT";
-    public static final String PROVISIONING_DOCROOT_DEFAULT = "deployment/manager/provisioning";
+    public static final String OR_PROVISIONING_DOCROOT = "OR_PROVISIONING_DOCROOT";
+    public static final String OR_PROVISIONING_DOCROOT_DEFAULT = "deployment/manager/provisioning";
 
     protected Path provisionDocRoot;
 
@@ -82,7 +82,7 @@ public class ManagerSetup implements Setup {
         this.rulesetStorageService = container.getService(RulesetStorageService.class);
         this.setupService = container.getService(SetupService.class);
 
-        provisionDocRoot = Paths.get(getString(container.getConfig(), PROVISIONING_DOCROOT, PROVISIONING_DOCROOT_DEFAULT));
+        provisionDocRoot = Paths.get(getString(container.getConfig(), OR_PROVISIONING_DOCROOT, OR_PROVISIONING_DOCROOT_DEFAULT));
     }
 
     @Override

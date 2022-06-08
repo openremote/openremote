@@ -1,3 +1,4 @@
+# ---------------------------------------------------------------------------------------------------------------------
 # This workflow handles all CI/CD related tasks and can be re-used in custom projects
 # (https://github.com/openremote/custom-project i.e. has openremote submodule) or forks of this repo, it handles:
 #
@@ -19,8 +20,7 @@
 #
 # - '.ci_cd/env/.env'
 # - '.ci_cd/env/{ENVIRONMENT}.env'
-# - secrets without '_' prefix
-# - secrets with '_{ENVIRONMENT}_' prefix (secrets with any other '_' prefix will be excluded)
+# - secrets
 # - inputs (from manual trigger using workflow_dispatch)
 #
 # The above variables are output to 'temp/env' file for each requested deployment. If a secret called 'SSH_PASSWORD' is
@@ -39,13 +39,18 @@
 #
 # - ENVIRONMENT           - Which environment to deploy (equivalent to deploy/environment in '.ci_cd/ci_cd.json')
 # - MANAGER_TAG           - Which manager docker tag to deploy (equivalent to deploy/managerTags in '.ci_cd/ci_cd.json')
-# - CLEAN_INSTALL
-# - COMMIT
-# - HOST
-# - SSH_USER
-# - SSH_PASSWORD
-# - SSH_PORT
-# - SETUP_ADMIN_PASSWORD
+#                           leave empty to build a manager image from the repo (must be an openremote repo or have
+#                           an openremote submodule).
+# - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
+#                           assets, rules, etc.)
+# - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
+# - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
+# - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
+# - SSH_PASSWORD          - Set/override the SSH password to use for SSH/SCP commands (SSH key should be preferred)
+# - SSH_PORT              - Set/override the SSH port to use for SSH/SCP commands
+# - OR_ADMIN_PASSWORD     - The admin password to set for clean installs
+# ---------------------------------------------------------------------------------------------------------------------
+
 
 name: CI/CD
 
@@ -56,10 +61,6 @@ on:
         - '**'
     tags-ignore:
       - '*.*'
-    paths-ignore:
-      - '.github/**'
-      - '.ci_cd/**'
-      - '**/*.md'
 
   # When a release is published
   release:
@@ -77,15 +78,9 @@ on:
         type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
-      HOST:
-        description: 'Host to deploy to'
-      SSH_PORT:
-        description: 'SSH port'
-      SSH_USER:
-        description: 'SSH Username'
-      SSH_PASSWORD:
-        description: 'SSH password'
-      SETUP_ADMIN_PASSWORD:
+      OR_HOSTNAME:
+        description: 'Host to deploy to (e.g. demo.openremote.app)'
+      OR_ADMIN_PASSWORD:
         description: 'Admin password override'
 
   workflow_call:
@@ -104,7 +99,7 @@ jobs:
 
     steps:
     
-      - name: Cancel Previous Runs
+      - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
@@ -165,12 +160,28 @@ jobs:
         uses: haythem/public-ip@v1.2
                
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
           ref: ${{ steps.inputs-and-secrets.outputs.COMMIT }}
+          fetch-depth: 0
           submodules: recursive
-        
+
+      # We use this to exit workflow if only CI/CD files have changed
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v20
+        with:
+          files_ignore: |
+            .ci_cd/**
+            **/*.md
+            **/*.yml
+
+      - name: Set skip flag if only CI/CD files have changed
+        id: skip-cicd
+        if: github.event_name == 'push' && steps.changed-files.outputs.any_modified != 'true'
+        run: echo "::set-output name=value::true"
+
       - name: Make cache dirs and set file permissions
         run: |
           chmod +x gradlew
@@ -253,7 +264,7 @@ jobs:
         
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.2
         id: manager-tag-cache
         with:
           path: |
@@ -378,6 +389,7 @@ jobs:
           cp -r . ~/manager-tags-old/
           
       - name: Sanitize deployments value
+        if: steps.skip-cicd.outputs.value != 'true'
         id: deployments
         run: |
           deployments=$DEPLOYMENTS
@@ -385,7 +397,7 @@ jobs:
           if [ "$EVENT_NAME" == 'workflow_dispatch' ]; then
             tag="$INPUT_MANAGER_TAG"
             if [ -z "$INPUT_MANAGER_TAG" ]; then
-              tag="$ref"
+              tag='#ref'
             fi
             deployments="$INPUT_ENVIRONMENT:$tag"
           fi
@@ -398,16 +410,17 @@ jobs:
 
       - name: Define backend test command
         id: test-backend-command
-        if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
+        if: ${{ github.event_name == 'push' && steps.skip-cicd.outputs.value != 'true' }}
         run: echo "::set-output name=value::./gradlew -p test test"
           
       - name: Define UI test command
         id: test-ui-command
-        if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
+        if: ${{ github.event_name == 'push' && steps.skip-cicd.outputs.value != 'true' }}
         run: echo ""
       
       - name: Define manager docker build command
         id: manager-docker-command
+        if: ${{ steps.skip-cicd.outputs.value != 'true' }}
         shell: bash
         run: |
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
@@ -420,10 +433,11 @@ jobs:
             commitShaShort=$(git rev-parse --short HEAD)
           fi
             
-          if [ ! -z "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ ! -z "$TEST_UI_CMD" ]; then
+          if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
             
-            if [ ! -z "$MANAGER_TAGS" ]; then
+            if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
+              echo "::set-output name=pushRequired::true"
             else
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
             fi
@@ -440,6 +454,7 @@ jobs:
           
       - name: Define deployment docker build command
         id: deployment-docker-command
+        if: ${{ steps.skip-cicd.outputs.value != 'true' }}
         shell: bash
         run: |
           if [ "$DEPLOYMENT_DOCKERFILE_EXISTS" == 'true' ]; then
@@ -454,7 +469,7 @@ jobs:
             echo "::set-output name=buildPath::$buildPath"
             echo "::set-output name=refTag::$commitShaShort"
             
-            if [ ! -z "$DEPLOYMENTS" ]; then
+            if [ -n "$DEPLOYMENTS" ]; then
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
               echo "::set-output name=value::$command"
             fi
@@ -466,11 +481,12 @@ jobs:
           
       - name: Define installDist command
         id: install-command
+        if: steps.skip-cicd.outputs.value != 'true'
         shell: bash
         run: |
-          if [ ! -z "$MANAGER_DOCKER_CMD" ]; then
+          if [ -n "$MANAGER_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew installDist"
-          elif [ ! -z "$DEPLOYMENT_DOCKER_CMD" ]; then
+          elif [ -n "$DEPLOYMENT_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew -p deployment installDist"
           fi
         env:
@@ -490,7 +506,70 @@ jobs:
         env:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
 
+      - name: Login to DockerHub
+        if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
+        uses: docker/login-action@v1
+        with:
+          username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER || steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
+          password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD || steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
+          
+      - name: set up QEMU
+        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: linux/amd64,linux/aarch64
+
+      - name: install buildx
+        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+
+      - name: Set up JDK 17 and gradle cache
+        id: java
+        if: steps.skip-cicd.outputs.value != 'true'
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+      - name: Yarn cache
+        uses: actions/cache@v3.0.2
+        if: steps.skip-cicd.outputs.value != 'true'
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn---
+            
+      - name: Docker image cache
+        uses: actions/cache@v3.0.2
+        if: steps.test-backend-command.outputs.value != ''
+        id: docker-cache
+        with:
+          path:  |
+            ~/image-cache
+          key: ${{ runner.os }}-docker---${{ hashFiles(steps.dev-testing-path.outputs.value) }}
+          restore-keys: |
+            ${{ runner.os }}-docker---
+
+      - name: Load cached docker images
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: |
+          docker load < ~/image-cache/keycloak.tar.gz
+          docker load < ~/image-cache/postgres.tar.gz
+
+
       - name: Output info
+        if: steps.skip-cicd.outputs.value != 'true'
         run: |
           echo "************************************************************"
           echo "**************            INFO           *******************"
@@ -516,65 +595,6 @@ jobs:
           echo 'Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}'
           echo "************************************************************"
           echo "************************************************************"
-      
-      - name: Login to DockerHub
-        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        uses: docker/login-action@v1
-        with:
-          username: ${{ steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
-          password: ${{ steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
-          
-      - name: set up QEMU
-        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        uses: docker/setup-qemu-action@v1
-        with:
-          platforms: linux/amd64,linux/aarch64
-
-      - name: install buildx
-        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          version: latest
-          install: true
-
-      - name: Set up JDK 17 and gradle cache
-        id: java
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-
-      - name: Yarn cache
-        uses: actions/cache@v2
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn---
-            
-      - name: Docker image cache
-        uses: actions/cache@v2
-        if: steps.test-backend-command.outputs.value != ''
-        id: docker-cache
-        with:
-          path:  |
-            ~/image-cache
-          key: ${{ runner.os }}-docker---${{ hashFiles(steps.dev-testing-path.outputs.value) }}
-          restore-keys: |
-            ${{ runner.os }}-docker---
-
-      - name: Load cached docker images
-        if: steps.docker-cache.outputs.cache-hit == 'true'
-        run: |
-          docker load < ~/image-cache/keycloak.tar.gz
-          docker load < ~/image-cache/postgres.tar.gz
 
       - name: Pull docker images
         if: ${{ steps.test-backend-command.outputs.value != '' && steps.docker-cache.outputs.cache-hit != 'true' }}
@@ -598,7 +618,7 @@ jobs:
         if: steps.test-backend-command.outputs.value != ''
         run: ${{ steps.test-backend-command.outputs.value }}
         timeout-minutes: 20
-        continue-on-error: true
+        #continue-on-error: true
         
       - name: Start docker frontend test services
         if: steps.test-ui-command.outputs.value != ''
@@ -612,7 +632,41 @@ jobs:
 
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
-        run: ${{ steps.install-command.outputs.value }}
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+          import subprocess
+          
+          inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
+          
+          # Output inputs and secrets as environment variables for build
+          for key, value in inputsAndSecrets.items():
+            if "." in key:
+              continue
+
+            # Look for temp and env prefixed keys
+            if key.startswith("_"):
+              if key.startswith("_TEMP_"):
+                key = key.replace("_TEMP_", "")
+                envFile = "temp.env"
+              else:
+                continue
+              
+            os.system(f"echo 'Setting environment variable {key}...'")
+            os.putenv(key, value)
+                    
+          buildCmd = os.getenv("CMD")
+          result = subprocess.run(f"bash {buildCmd}", shell=True)
+            
+          if result.returncode != 0:
+            os.system("echo 'installDist failed'")
+            sys.exit(result.returncode)
+
+        env:
+          CMD: ${{ steps.install-command.outputs.value }}
+          INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 10
         
       - name: Run manager docker command
@@ -620,22 +674,6 @@ jobs:
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
 
-      - name: Determine deploy script command
-        id: deploy-script-command
-        if: ${{ steps.deployments.outputs.value != '' && steps.check_deployment_script.outputs.files_exists != 'true' }}
-        shell: bash
-        run: |
-          if [ -f ".ci_cd/deploy.sh" ]; then
-            echo "::set-output name=value::bash .ci_cd/deploy.sh"
-          elif [ "$IS_CUSTOM_PROJECT" == 'true' -a -f "openremote/.ci_cd/deploy.sh" ]; then
-            echo "::set-output name=value::bash openremote/.ci_cd/deploy.sh"
-          else
-            echo "Cannot find deploy bash script"
-            exit 1
-          fi
-        env:
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
-        
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
         run: |
@@ -655,11 +693,23 @@ jobs:
           deployments = deployments.split(";")
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
-          deployScriptCmd = os.getenv("DEPLOY_SCRIPT_COMMAND")
+          isCustomProject = os.getenv("IS_CUSTOM_PROJECT")
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
+          ipv4 = os.getenv("IPV4")
+          ipv6 = os.getenv("IPV6")
           
           failure = False
           
+          # Determine deploy script to use
+          deployScript = ".ci_cd/deploy.sh"
+          
+          if not os.path.exists(deployScript) and isCustomProject == 'true':
+            deployScript = "openremote/.ci_cd/deploy.sh"
+          
+          if not os.path.exists(deployScript):
+            os.system(f"Deploy script not found '{deployScript}'")
+            sys.exit(1)
+
           for deployment in deployments:
             dep = deployment.split(":")
             env = dep[0]
@@ -670,7 +720,7 @@ jobs:
             os.putenv("ENVIRONMENT", env)
                       
             # Clean stale ssh credentials and temp files
-            os.system("rm ssh.env 2>/dev/null")
+            os.system("rm temp.env 2>/dev/null")
             os.system("rm ssh.key 2>/dev/null")
             os.system("rm -r temp 2>/dev/null")
             os.system("mkdir temp")
@@ -678,10 +728,6 @@ jobs:
             # ------------------------------------------------------
             # Output env variables to temp env file for POSIX shell
             # ------------------------------------------------------
-            
-            # Output default values for environment variables
-            os.system("echo 'SSH_PORT=\"22\"' >> temp/env")
-            os.system("echo 'SSH_USER=\"root\"' >> temp/env")
             
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):
@@ -693,53 +739,52 @@ jobs:
               os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
               os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
             
-            # Output inputs and secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
-            # _ENV_ prefixed keys are output last (to override any non env specific keys)
+            # Output inputs and secrets (spacial handling for SSH_KEY and some other variables)
+            # _$ENV_ prefixed keys are output last (to override any non env specific keys)
+            environment = (env if env else "").upper()
+            prefix = "_" + environment + "_"
+          
             for key, value in inputsAndSecrets.items():
               if "." in key:
                 continue
-              if key.startswith("_"):
-                continue
-              os.system(f"echo 'Secret found {key}...'")
-              if key == "SSH_KEY":
-                os.system(f"echo \"{value}\" > ssh.key")
-              elif key == "SSH_PASSWORD":
-                os.system(f"echo '{key}=\"{value}\"' > ssh.env")
-              else:
-                lines = len(value.split("\n"))
-                if lines > 1:
-                    os.system(f"echo '{key}=\"' >> temp/env")
-                    os.system(f"echo '{value}\"' >> temp/env")
-                else:
-                    os.system(f"echo '{key}=\"{value}\"' >> temp/env")
 
-            for key, value in inputsAndSecrets.items():
-              if "." in key:
-                continue
-              if not key.startswith("_"):
-                continue
-              environment = (env if env else "").upper()
-              prefix = "_" + environment + "_"
-              if not key.startswith(prefix):
-                continue
-              else:
-                key = key.replace(prefix, "")
-              os.system(f"echo 'Secret found {key}...'")
-              if key == "SSH_KEY":
-                os.system(f"echo \"{value}\" > ssh.key")
-              elif key == "SSH_PASSWORD":
-                os.system(f"echo '{key}=\"{value}\"' > ssh.env")
-              else:
-                lines = len(value.split("\n"))
-                if lines > 1:
-                    os.system(f"echo '{key}=\"' >> temp/env")
-                    os.system(f"echo '{value}\"' >> temp/env")
+              envFile = "temp/env"
+
+              # Look for temp and env prefixed keys
+              if key.startswith("_"):
+                if key.startswith("_TEMP_"):
+                  key = key.replace("_TEMP_", "")
+                  envFile = "temp.env"
+                elif key.startswith(prefix):
+                  key = key.replace(prefix, "")
                 else:
-                    os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+                  continue
+
+              if key == "github_token":
+                continue
+              else:                
+                os.system(f"echo 'Secret found {key}...'")
+                if key == "SSH_KEY":
+                  os.system(f"echo \"{value}\" > ssh.key")
+                else:
+                  lines = len(value.split("\n"))
+                  if lines > 1:
+                      os.system(f"echo '{key}=\"' >> {envFile}")
+                      os.system(f"echo '{value}\"' >> {envFile}")
+                  else:
+                      os.system(f"echo '{key}=\"{value}\"' >> {envFile}")
             
-            # Execute deploy script            
+            # Set CIDR environment variable
+            if ipv4 is not None and ipv4 != '':
+              os.putenv("CIDR", ipv4 + '/32')
+            elif ipv6 is not None and ipv6 != '':
+              os.putenv("CIDR", ipv6 + '/64')
+            
+            # Execute deploy script
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
-            result = subprocess.run(deployScriptCmd, shell=True)
+            # Uncomment this in combination with the SSH debug step afterwards to debug deployment script
+            #sys.exit(0)
+            result = subprocess.run(f"bash {deployScript}", shell=True)
             
             if result.returncode != 0:
               os.system(f"echo 'Deployment failed: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
@@ -750,6 +795,7 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           REPO_NAME: ${{ github.repository }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
@@ -757,6 +803,11 @@ jobs:
           MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
-          DEPLOY_SCRIPT_COMMAND: ${{ steps.deploy-script-command.outputs.value }}
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
+
+#       - name: Setup upterm session
+#         uses: lhotari/action-upterm@v1
+#         with:
+#           ## limits ssh access and adds the ssh public keys of the listed GitHub users
+#           limit-access-to-actor: true

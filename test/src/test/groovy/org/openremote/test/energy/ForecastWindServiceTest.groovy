@@ -26,7 +26,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 
-import static org.openremote.manager.energy.ForecastWindService.OPEN_WEATHER_API_APP_ID
+import static org.openremote.manager.energy.ForecastWindService.OR_OPEN_WEATHER_API_APP_ID
 
 @Ignore
 class ForecastWindServiceTest extends Specification implements ManagerContainerTrait {
@@ -640,7 +640,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def config = defaultConfig()
-        config << [(OPEN_WEATHER_API_APP_ID): "test-key"]
+        config << [(OR_OPEN_WEATHER_API_APP_ID): "test-key"]
 
         if (!ForecastWindService.resteasyClient.configuration.isRegistered(mockServer)) {
             ForecastWindService.resteasyClient.register(mockServer, Integer.MAX_VALUE)
@@ -667,7 +667,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         when: "an asset is added with includeForecastWindService set to true"
         def newWindAsset = new ElectricityProducerWindAsset("WindAsset")
         newWindAsset.setParentId(managerTestSetup.electricityOptimisationAssetId)
-        newWindAsset.setRealm(managerTestSetup.realmEnergyTenant)
+        newWindAsset.setRealm(managerTestSetup.realmEnergyName)
         newWindAsset.setWindSpeedMax(18d);
         newWindAsset.setWindSpeedMin(2d);
         newWindAsset.setWindSpeedReference(12d);
@@ -691,7 +691,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         when: "an asset is added with includeForecastWindService set to false"
         def newWindAsset2 = new ElectricityProducerWindAsset("WindAsset2")
         newWindAsset2.setParentId(managerTestSetup.electricityOptimisationAssetId)
-        newWindAsset2.setRealm(managerTestSetup.realmEnergyTenant)
+        newWindAsset2.setRealm(managerTestSetup.realmEnergyName)
         newWindAsset2.setWindSpeedMax(18d);
         newWindAsset2.setWindSpeedMin(2d);
         newWindAsset2.setWindSpeedReference(12d);
@@ -740,7 +740,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         when: "an asset is added with includeForecastWindService set to true but no location"
         def newWindAsset3 = new ElectricityProducerWindAsset("WindAsset3")
         newWindAsset3.setParentId(managerTestSetup.electricityOptimisationAssetId)
-        newWindAsset3.setRealm(managerTestSetup.realmEnergyTenant)
+        newWindAsset3.setRealm(managerTestSetup.realmEnergyName)
         newWindAsset3.setWindSpeedMax(18d);
         newWindAsset3.setWindSpeedMin(2d);
         newWindAsset3.setWindSpeedReference(12d);

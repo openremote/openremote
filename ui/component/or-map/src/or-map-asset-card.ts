@@ -178,7 +178,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                 </div>
                 ${cardConfig && cardConfig.hideViewAsset ? html`` : html`
                     <div id="footer">
-                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("viewAsset")}" @click="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("viewAsset")}" @or-mwc-input-changed="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>
                     </div>
                 `}
             </div>
@@ -201,8 +201,10 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
             const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
-            // check if range
-            return (typeof color === 'string') ? color : color![0].colour;
+            if (color) {
+                // check if range
+                return (typeof color === 'string') ? color : color![0].colour;
+            }
         }
     }
 }

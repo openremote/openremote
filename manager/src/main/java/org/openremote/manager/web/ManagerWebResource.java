@@ -22,7 +22,7 @@ package org.openremote.manager.web;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 
 public class ManagerWebResource extends WebResource {
 
@@ -38,20 +38,20 @@ public class ManagerWebResource extends WebResource {
         return isAuthenticated() && identityService.getIdentityProvider().isRestrictedUser(getAuthContext());
     }
 
-    public Tenant getAuthenticatedTenant() {
-        return identityService.getIdentityProvider().getTenant(getAuthenticatedRealm());
+    public Realm getAuthenticatedRealm() {
+        return identityService.getIdentityProvider().getRealm(getAuthenticatedRealmName());
     }
 
-    public Tenant getRequestTenant() {
-        return identityService.getIdentityProvider().getTenant(getRequestRealm());
+    public Realm getRequestRealm() {
+        return identityService.getIdentityProvider().getRealm(getRequestRealmName());
     }
 
-    public boolean isTenantActiveAndAccessible(String realm) {
-        return identityService.getIdentityProvider().isTenantActiveAndAccessible(this, realm);
+    public boolean isRealmActiveAndAccessible(String realm) {
+        return identityService.getIdentityProvider().isRealmActiveAndAccessible(this, realm);
     }
 
-    public boolean isTenantActiveAndAccessible(Tenant tenant) {
-        return identityService.getIdentityProvider().isTenantActiveAndAccessible(this, tenant);
+    public boolean isRealmActiveAndAccessible(Realm realm) {
+        return identityService.getIdentityProvider().isRealmActiveAndAccessible(this, realm);
     }
 
 }

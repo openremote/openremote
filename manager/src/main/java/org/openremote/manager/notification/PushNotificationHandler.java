@@ -46,8 +46,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
-import org.openremote.model.query.filter.PathPredicate;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -70,7 +69,7 @@ import static org.openremote.model.notification.PushNotificationMessage.TargetTy
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
 
     private static final Logger LOG = Logger.getLogger(PushNotificationHandler.class.getName());
-    public static final String FIREBASE_CONFIG_FILE = "FIREBASE_CONFIG_FILE";
+    public static final String OR_FIREBASE_CONFIG_FILE = "OR_FIREBASE_CONFIG_FILE";
     public static final int CONNECT_TIMEOUT_MILLIS = 3000;
     public static final int READ_TIMEOUT_MILLIS = 3000;
     public static final String FCM_PROVIDER_NAME = "fcm";
@@ -93,15 +92,15 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         this.gatewayService = container.getService(GatewayService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
-        String firebaseConfigFilePath = container.getConfig().get(FIREBASE_CONFIG_FILE);
+        String firebaseConfigFilePath = container.getConfig().get(OR_FIREBASE_CONFIG_FILE);
 
         if (TextUtil.isNullOrEmpty(firebaseConfigFilePath)) {
-            LOG.warning(FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
+            LOG.warning(OR_FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
             return;
         }
 
         if (!Files.isReadable(Paths.get(firebaseConfigFilePath))) {
-            LOG.warning(FIREBASE_CONFIG_FILE + " invalid path or file not readable: " + firebaseConfigFilePath);
+            LOG.warning(OR_FIREBASE_CONFIG_FILE + " invalid path or file not readable: " + firebaseConfigFilePath);
             return;
         }
 
@@ -200,6 +199,27 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         if (targets != null) {
 
+            // Filter out console targets
+            String[] assetTargets = targets.stream().filter(target -> target.getType() == Notification.TargetType.ASSET)
+                    .map(Notification.Target::getId).toArray(String[]::new);
+
+            if (assetTargets.length > 0) {
+                List<String> consoleAssets = assetStorageService.findAll(new AssetQuery().ids(assetTargets)
+                        .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class))
+                    .stream().map(Asset::getId).toList();
+
+                if (!consoleAssets.isEmpty()) {
+                    targets = targets.stream()
+                        .filter(target -> {
+                            boolean isConsoleAsset = consoleAssets.contains(target.getId());
+                            if (isConsoleAsset) {
+                                mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
+                            }
+                            return !isConsoleAsset;
+                        }).collect(Collectors.toList());
+                }
+            }
+
             targets.forEach(target -> {
 
                 Notification.TargetType targetType = target.getType();
@@ -210,9 +230,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE)));
 
                 switch (targetType) {
-                    case TENANT ->
+                    case REALM ->
                         // Any console assets in the target realm
-                        assetQuery.tenant(new TenantPredicate(targetId));
+                        assetQuery.realm(new RealmPredicate(targetId));
                     case USER ->
                         // Any console assets linked to the target user
                         assetQuery.userIds(targetId);
@@ -267,6 +287,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     mappedTargets.addAll(
                         consoleAssetIds
                             .stream()
+                            .filter(id -> mappedTargets.stream().noneMatch(t -> t.getId().equals(id)))
                             .map(id -> new Notification.Target(Notification.TargetType.ASSET, id))
                             .toList());
                 }

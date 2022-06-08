@@ -73,7 +73,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def assets = assetStorageService.findAll(
                 new AssetQuery()
                         .types(Agent.class)
-                        .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                        .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
         )
 
         then: "agent assets should be retrieved"
@@ -83,7 +83,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].name == "Demo Agent"
         assets[0].type == SimulatorAgent.DESCRIPTOR.name
         assets[0].parentId == managerTestSetup.lobbyId
-        assets[0].realm == managerTestSetup.masterRealm
+        assets[0].realm == managerTestSetup.realmMasterName
 
         when: "a user filtering query is executed"
         assets = assetStorageService.findAll(
@@ -162,7 +162,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         apartment1.type == BuildingAsset.DESCRIPTOR.getName()
         apartment1.createdOn != null
         apartment1.parentId == managerTestSetup.smartBuildingId
-        apartment1.realm == managerTestSetup.realmBuildingTenant
+        apartment1.realm == managerTestSetup.realmBuildingName
         apartment1.getAttributes().size() == 7
         apartment1.getAttribute("ventilationAuto").isPresent()
         apartment1.getAttribute("ventilationLevel").isPresent()
@@ -197,7 +197,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.name == "Smart office"
         asset.type == BuildingAsset.DESCRIPTOR.getName()
         asset.parentId == null
-        asset.realm == keycloakTestSetup.masterTenant.realm
+        asset.realm == keycloakTestSetup.realmMaster.name
         asset.attributes.size() == 0
 
         when: "a query is executed"
@@ -212,7 +212,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.name == "Smart office"
         asset.type == BuildingAsset.DESCRIPTOR.getName()
         asset.parentId == null
-        asset.realm == keycloakTestSetup.masterTenant.realm
+        asset.realm == keycloakTestSetup.realmMaster.name
         asset.path.length == 1
         asset.path[0] == managerTestSetup.smartOfficeId
         asset.getAttribute(BuildingAsset.STREET).flatMap{it.value}.orElse("") == "Torenallee 20"
@@ -222,7 +222,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
                     .parents(new ParentPredicate(null))
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
         )
 
         then: "result should match"
@@ -232,14 +232,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).name == "Smart office"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == null
-        assets.get(0).realm == keycloakTestSetup.masterTenant.realm
+        assets.get(0).realm == keycloakTestSetup.realmMaster.name
         assets.get(0).attributes.size() == 0
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
                     .parents(new ParentPredicate(null))
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
         )
 
         then: "result should match"
@@ -249,7 +249,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).name == "Smart office"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == null
-        assets.get(0).realm == keycloakTestSetup.masterTenant.realm
+        assets.get(0).realm == keycloakTestSetup.realmMaster.name
         assets.get(0).path.length == 1
         assets.get(0).path[0] == managerTestSetup.smartOfficeId
         ((BuildingAsset)assets.get(0)).getStreet().orElse("") == "Torenallee 20"
@@ -268,7 +268,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).name == "Apartment 1"
         assets.get(0).type == BuildingAsset.DESCRIPTOR.getName()
         assets.get(0).parentId == managerTestSetup.smartBuildingId
-        assets.get(0).realm == keycloakTestSetup.tenantBuilding.realm
+        assets.get(0).realm == keycloakTestSetup.realmBuilding.name
         assets.get(0).attributes.size() == 0
         assets.get(1).id == managerTestSetup.apartment2Id
         assets.get(2).id == managerTestSetup.apartment3Id
@@ -278,7 +278,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
                     .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-                    .tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
         )
 
         then: "result should match"
@@ -292,7 +292,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
                     .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-                    .tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
                     .orderBy(new OrderBy(NAME, true))
         )
 
@@ -307,7 +307,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
                     .parents(new ParentPredicate(managerTestSetup.smartBuildingId))
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
         )
 
         then: "result should match"
@@ -435,7 +435,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributes(
                         new AttributePredicate().meta(
                             new NameValuePredicate(READ_ONLY, new BooleanPredicate(true))
@@ -525,7 +525,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
                     .attributes(new AttributePredicate().meta(new NameValuePredicate(AGENT_LINK, new StringPredicate(managerTestSetup.agentId), false, new NameValuePredicate.Path("id"))))
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
         )
 
         then: "result should match"
@@ -546,7 +546,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.name == "Living Room 1"
         asset.type == RoomAsset.DESCRIPTOR.getName()
         asset.parentId != null
-        asset.realm == keycloakTestSetup.tenantBuilding.realm
+        asset.realm == keycloakTestSetup.realmBuilding.name
         asset.path != null
         asset.getAttributes().size() == 3
         asset.getAttribute("co2Level").isPresent()
@@ -570,7 +570,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.name == "Living Room 1"
         asset.type == RoomAsset.DESCRIPTOR.getName()
         asset.parentId == managerTestSetup.apartment1Id
-        asset.realm == keycloakTestSetup.tenantBuilding.realm
+        asset.realm == keycloakTestSetup.realmBuilding.name
         asset.path != null
         asset.getAttributes().size() == 1
         asset.getAttribute("co2Level").isPresent()
@@ -718,7 +718,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
                 .select(new Select().excludeAttributes())
                 .attributes(new LocationAttributePredicate(new RadialGeofencePredicate(10, 51.44541688237109d, 5.460315214821094d)))
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .orderBy(new OrderBy(NAME))
         )
 
@@ -745,7 +745,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
                 .select(new Select().excludeAttributes())
                 .attributes(new LocationAttributePredicate(new RadialGeofencePredicate(10, 51.44541688237109d, 5.460315214821094d)))
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .orderBy(new OrderBy(NAME))
         )
 
@@ -758,7 +758,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
                 .select(new Select().excludeAttributes())
                 .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44540d, 5.46031d, 51.44594d, 5.46110d)))
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .orderBy(new OrderBy(NAME))
         )
 
@@ -775,7 +775,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
                 .select(new Select().excludeAttributes())
                 .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d)))
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .orderBy(new OrderBy(NAME))
         )
 
@@ -787,7 +787,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
             new AssetQuery()
                 .select(new Select().excludeAttributes())
                 .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d).negate()))
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .orderBy(new OrderBy(NAME))
         )
 
@@ -841,7 +841,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for the correct date and time of the event"
         def assets = assetStorageService.findAll(
             new AssetQuery()
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517155200000)))) // 28/01/2018 @ 4:00pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
@@ -858,7 +858,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for future event on a correct day but wrong time"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517335200000)))) // 30/01/2018 @ 6:00pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
@@ -869,7 +869,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for a future event on a wrong day but correct time"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517238600000)))) // 29/01/2018 @ 3:10pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
@@ -880,7 +880,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed inside a valid future event date and time"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517503800000)))) // 01/02/2018 @ 4:50pm (UTC))
                 .orderBy(new OrderBy(NAME))
         )
@@ -895,7 +895,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed inside a valid future event date and time of the lobby asset"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1517849400000)))) // 05/02/2018 @ 4:50pm (UTC))
                 .orderBy(new OrderBy(NAME))
         )
@@ -908,7 +908,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a calendar event filtering query is executed for some time after the last occurrence"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                 .attributes(new AttributePredicate(new StringPredicate("test"), new CalendarEventPredicate(new Date(1518017520000)))) // 02/07/2018 @ 3:32pm (UTC)
                 .orderBy(new OrderBy(NAME))
         )
@@ -931,7 +931,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def assets = assetStorageService.findAll(
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                         "openingDate",
                         new DateTimePredicate(rangeStart.format(ISO_ZONED_DATE_TIME), rangeEnd.format(ISO_ZONED_DATE_TIME))
@@ -947,7 +947,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                         "openingDate",
                         new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_ZONED_DATE_TIME)))
@@ -962,7 +962,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                     "openingDate",
                     new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_ZONED_DATE_TIME)))
@@ -979,7 +979,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                     .select(new Select().excludeAttributes())
-                    .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
+                    .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                     "openingDate",
                     new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_ZONED_DATE_TIME)))

@@ -207,10 +207,10 @@
   "buttonTextConfirm": "Texte pour le bouton d'action",
   "buttonTextDecline": "Texte pour le bouton de refus",
   "custom": "Saisie manuelle",
-  "tenant": "Locataire",
-  "tenant_plural": "Locataires",
+  "realm": "Locataire",
+  "realm_plural": "Locataires",
   "displayName":"Nom familier",
-  "deleteTenantConfirm":"Êtes-vous sûr de vouloir supprimer ce realm?",
+  "deleteRealmConfirm":"Êtes-vous sûr de vouloir supprimer ce realm?",
   "user_plural": "Utilisateurs",
   "regularUser_plural": "Utilisateurs",
   "serviceUser_plural": "Utilisateurs de services",
@@ -435,5 +435,15 @@
     "invalidJSON": "JSON invalide",
     "invalidDate": "Date invalide",
     "keyAlreadyExists": "La clé existe déjà"
+  },
+  "yes": "Oui",
+  "no": "Non",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

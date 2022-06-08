@@ -46,7 +46,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 )
 @JsonSubTypes({
     @JsonSubTypes.Type(value = AssetRuleset.class, name = AssetRuleset.TYPE),
-    @JsonSubTypes.Type(value = TenantRuleset.class, name = TenantRuleset.TYPE),
+    @JsonSubTypes.Type(value = RealmRuleset.class, name = RealmRuleset.TYPE),
     @JsonSubTypes.Type(value = GlobalRuleset.class, name = GlobalRuleset.TYPE)
 })
 public abstract class Ruleset {

@@ -29,7 +29,7 @@ import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.util.TextUtil;
 import org.simplejavamail.email.Email;
@@ -40,10 +40,7 @@ import org.simplejavamail.mailer.Mailer;
 import org.simplejavamail.mailer.MailerBuilder;
 import org.simplejavamail.mailer.config.TransportStrategy;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -58,6 +55,7 @@ public class EmailNotificationHandler implements NotificationHandler {
     private static final Logger LOG = Logger.getLogger(EmailNotificationHandler.class.getName());
     protected String defaultFrom;
     protected Mailer mailer;
+    protected Map<String, String> headers;
     protected ManagerIdentityService managerIdentityService;
     protected AssetStorageService assetStorageService;
 
@@ -73,16 +71,26 @@ public class EmailNotificationHandler implements NotificationHandler {
         assetStorageService = container.getService(AssetStorageService.class);
 
         // Configure SMTP
-        String host = container.getConfig().getOrDefault(SETUP_EMAIL_HOST, null);
-        int port = getInteger(container.getConfig(), SETUP_EMAIL_PORT, SETUP_EMAIL_PORT_DEFAULT);
-        String user = container.getConfig().getOrDefault(SETUP_EMAIL_USER, null);
-        String password = container.getConfig().getOrDefault(SETUP_EMAIL_PASSWORD, null);
+        String host = container.getConfig().getOrDefault(OR_EMAIL_HOST, null);
+        int port = getInteger(container.getConfig(), OR_EMAIL_PORT, OR_EMAIL_PORT_DEFAULT);
+        String user = container.getConfig().getOrDefault(OR_EMAIL_USER, null);
+        String password = container.getConfig().getOrDefault(OR_EMAIL_PASSWORD, null);
 
-        defaultFrom = container.getConfig().getOrDefault(SETUP_EMAIL_FROM, SETUP_EMAIL_FROM_DEFAULT);
+        String headersStr = container.getConfig().getOrDefault(OR_EMAIL_X_HEADERS, null);
+        if (!TextUtil.isNullOrEmpty(headersStr)) {
+            headers = Arrays.stream(headersStr.split("\\R"))
+                .map(s -> s.split(":", 2))
+                .collect(Collectors.toMap(
+                    arr -> arr[0].trim(),
+                    arr -> arr.length == 2 ? arr[1].trim() : ""
+                ));
+        }
+
+        defaultFrom = container.getConfig().getOrDefault(OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT);
 
         if (!TextUtil.isNullOrEmpty(host) && !TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)) {
             MailerBuilder.MailerRegularBuilder mailerBuilder = MailerBuilder.withSMTPServer(host, port, user, password);
-            boolean startTls = getBoolean(container.getConfig(), SETUP_EMAIL_TLS, SETUP_EMAIL_TLS_DEFAULT);
+            boolean startTls = getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT);
 
             mailerBuilder.withTransportStrategy(startTls ? TransportStrategy.SMTP_TLS : TransportStrategy.SMTP);
             mailer = mailerBuilder.buildMailer();
@@ -145,14 +153,15 @@ public class EmailNotificationHandler implements NotificationHandler {
             targets.forEach(target -> {
                 Notification.TargetType targetType = target.getType();
                 String targetId = target.getId();
-                UserQuery userQuery = new UserQuery();
+                UserQuery userQuery = null;
 
                 switch (targetType) {
 
-                    case TENANT:
-                        userQuery.tenant(new TenantPredicate(targetId));
+                    case REALM:
+                        userQuery = new UserQuery().realm(new RealmPredicate(targetId));
+                        break;
                     case USER:
-                        userQuery.ids(targetId);
+                        userQuery = new UserQuery().ids(targetId);
                         break;
                     case CUSTOM:
                         // Nothing to do here
@@ -170,26 +179,32 @@ public class EmailNotificationHandler implements NotificationHandler {
                             ).ifPresent(mappedTargets::add);
                         }
 
-                        userQuery.asset(new UserAssetPredicate(targetId));
+                        userQuery = new UserQuery().asset(new UserAssetPredicate(targetId));
                         break;
                 }
 
                 // Filter users that don't have disabled email notifications attribute
-                List<Notification.Target> userTargets = Arrays.stream(managerIdentityService
-                        .getIdentityProvider()
-                        .queryUsers(userQuery))
-                    .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
-                    .filter(user -> !TextUtil.isNullOrEmpty(user.getEmail()))
-                    .map(user -> {
-                        Notification.Target emailTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
-                        emailTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
-                        return emailTarget;
-                    }).toList();
+                if (userQuery != null) {
+                    List<Notification.Target> userTargets = Arrays.stream(managerIdentityService
+                            .getIdentityProvider()
+                            .queryUsers(userQuery))
+                        .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
+                        .filter(user -> !TextUtil.isNullOrEmpty(user.getEmail()))
+                        .map(user -> {
+                            Notification.Target emailTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
+                            emailTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
+                            return emailTarget;
+                        }).toList();
 
-                if (userTargets.isEmpty()) {
-                    LOG.info("No email targets have been mapped");
-                } else {
-                    mappedTargets.addAll(userTargets);
+                    if (userTargets.isEmpty()) {
+                        LOG.info("No email targets have been mapped");
+                    } else {
+                        mappedTargets.addAll(
+                            userTargets
+                                .stream()
+                                .filter(userTarget -> mappedTargets.stream().noneMatch(t -> t.getId().equals(userTarget.getId())))
+                                .toList());
+                    }
                 }
             });
         }
@@ -322,7 +337,7 @@ public class EmailNotificationHandler implements NotificationHandler {
         return sendMessage(emailBuilder.buildEmail());
     }
 
-    public NotificationSendResult sendMessage(Email email) {
+    protected NotificationSendResult sendMessage(Email email) {
         try {
             mailer.sendMail(email);
             return NotificationSendResult.success();
@@ -338,6 +353,10 @@ public class EmailNotificationHandler implements NotificationHandler {
             .withSubject(emailNotificationMessage.getSubject())
             .withPlainText(emailNotificationMessage.getText())
             .withHTMLText(emailNotificationMessage.getHtml());
+
+        if (headers != null) {
+            emailBuilder.withHeaders(headers);
+        }
 
         if (emailNotificationMessage.getFrom() != null) {
             emailBuilder.from(convertRecipient(emailNotificationMessage.getFrom()));

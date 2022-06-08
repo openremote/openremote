@@ -2,7 +2,7 @@ import {css, html, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {NavigationControl} from "maplibre-gl";
-import {EnhancedStore} from "@reduxjs/toolkit";
+import {Store} from "@reduxjs/toolkit";
 import manager, {Util} from "@openremote/core";
 import {JsonRulesetDefinition} from "@openremote/model";
 import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@openremote/or-map";
@@ -10,7 +10,7 @@ import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@o
 export interface GeofencesConfig {
 }
 
-export function pageMobileGeofencesProvider(store: EnhancedStore<AppStateKeyed>, config?: GeofencesConfig): PageProvider<AppStateKeyed> {
+export function pageMobileGeofencesProvider(store: Store<AppStateKeyed>, config?: GeofencesConfig): PageProvider<AppStateKeyed> {
     return {
         name: "geofences",
         routes: [
@@ -202,7 +202,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
         return "mobile-geofences";
     }
 
-    constructor(store: EnhancedStore<AppStateKeyed>) {
+    constructor(store: Store<AppStateKeyed>) {
         super(store);
         this.getGeoNotifications();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
@@ -304,7 +304,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
     }
 
     protected getGeoNotifications() {
-        manager.rest.api.RulesResource.getTenantRulesets(manager.config.realm, {fullyPopulate: true}).then((response: any) => {
+        manager.rest.api.RulesResource.getRealmRulesets(manager.config.realm, {fullyPopulate: true}).then((response: any) => {
             const mapItemDefinition: JsonRulesetDefinition = {
                 rules: []
             };
@@ -361,7 +361,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
         const vectorMap = map as OrMap;
 
         manager.console.sendProviderMessage({provider: 'geofence', action: "GET_LOCATION"}, true).then(response => {
-            console.log(JSON.stringify(response));
+            console.info(JSON.stringify(response));
             if (response.data) {
                 vectorMap.flyTo({lng: response.data.longitude, lat: response.data.latitude});
             }

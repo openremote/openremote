@@ -332,7 +332,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     if (patternConstraint) {
         pattern = patternConstraint.regexp;
     }
-    if (notNullConstraint) {
+    if (notNullConstraint || (valueHolderDescriptor && (valueHolderDescriptor as any).optional === false)) {
         required = true;
     }
     if (notBlankConstraint && !pattern) {
@@ -590,6 +590,14 @@ const style = css`
     .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
         --or-icon-fill: var(--or-app-color4);
     }
+    
+    .or-label-with-icon {
+        left: 42px !important;
+    }
+    
+    .or-trailing-space {
+        width: 78%;
+    }
 `;
 
 @customElement("or-mwc-input")
@@ -688,6 +696,9 @@ export class OrMwcInput extends LitElement {
     public icon?: string;
 
     @property({type: String})
+    public iconColor?: string;
+
+    @property({type: String})
     public iconOn?: string;
 
     @property({type: String})
@@ -755,6 +766,15 @@ export class OrMwcInput extends LitElement {
 
     @property({type: Boolean})
     public resizeVertical: boolean = false;
+
+    @property({type: Boolean})
+    public trailingSpace: boolean = false;
+
+    public get nativeValue(): any {
+        if (this._mdcComponent) {
+            return (this._mdcComponent as any).value;
+        }
+    }
 
     /* TEXT INPUT STYLES END */
 
@@ -837,7 +857,7 @@ export class OrMwcInput extends LitElement {
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
             const hasValue = this.value || this.value === false;
-            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
+            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""} ${!!this.icon && this.type === InputType.TEXT && hasValue ? "or-label-with-icon" : ""}" id="label">${this.label}</span>` : undefined;
 
             switch (this.type) {
                 case InputType.RADIO:
@@ -1066,6 +1086,27 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.BUTTON:
                 case InputType.BUTTON_MOMENTARY: {
+
+                    const onMouseDown = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+
+                        if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
+                    const onMouseUp = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+
+                        isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
+                    const onClick = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+                    }
+
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;
                     let classes = {
@@ -1083,7 +1124,8 @@ export class OrMwcInput extends LitElement {
                         <button id="component" class="${classMap(classes)}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @mousedown="${() => {if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))}}" @mouseup="${() => isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))}">
+                            @click="${(ev: MouseEvent) => onClick(ev)}"
+                            @mousedown="${(ev: MouseEvent) => onMouseDown(ev)}" @mouseup="${(ev: MouseEvent) => onMouseUp(ev)}">
                             ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
                             ${this.icon ? html`<or-icon class="${isIconButton ? "" : this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                             ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}">${this.label}</span>` : ``}
@@ -1118,7 +1160,9 @@ export class OrMwcInput extends LitElement {
                                                 @change="${(e: Event) => {
                                                     let val: any[] = this.value;
                                                     if ((e.target as HTMLInputElement).checked) {
-                                                        val = [optValue,...val];
+                                                        if (!val.includes(optValue)) {
+                                                            val = [optValue,...val];
+                                                        }
                                                     } else {
                                                         val = val.filter((v: any) => v !== optValue);
                                                     }
@@ -1269,7 +1313,7 @@ export class OrMwcInput extends LitElement {
                                 @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement), (e.target as HTMLTextAreaElement).value)}">${valMinMax[0] ? valMinMax[0] : ""}</textarea>`
                             : html`
                             <input type="${type}" id="elem" aria-labelledby="${ifDefined(label ? "label" : undefined)}"
-                            class="mdc-text-field__input" ?required="${this.required}" ?readonly="${this.readonly}"
+                            class="mdc-text-field__input ${this.trailingSpace ? "or-trailing-space" : ""}" ?required="${this.required}" ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}"
                             step="${this.step ? this.step : "any"}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
@@ -1283,7 +1327,7 @@ export class OrMwcInput extends LitElement {
 
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
-                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
+                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" style="--or-icon-fill: ${this.iconColor ? "#" + this.iconColor : "unset"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                                 ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
@@ -1568,7 +1612,6 @@ export class OrMwcInput extends LitElement {
     }
 
     protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined, enterPressed?: boolean) {
-
         let previousValue = this.value;
         let errorMsg: string | undefined;
 
@@ -1622,7 +1665,7 @@ export class OrMwcInput extends LitElement {
         this.setCustomValidity(errorMsg);
         this.reportValidity();
 
-        if (newValue !== previousValue) {
+        if (this.type !== InputType.CHECKBOX_LIST && newValue !== previousValue) {
             if (this.type === InputType.RANGE) {
                 (this._mdcComponent as MDCSlider).setValue(newValue);
                 if (this._mdcComponent2) {
@@ -1638,6 +1681,10 @@ export class OrMwcInput extends LitElement {
                 this.searchableValue = undefined;
                 (searchableElement as HTMLInputElement).value = "";
             }
+        }
+
+        if (this.type === InputType.CHECKBOX_LIST && !Util.objectsEqual(newValue, previousValue, true)) {
+            this.dispatchEvent(new OrInputChangedEvent(newValue, previousValue, enterPressed));
         }
     }
 

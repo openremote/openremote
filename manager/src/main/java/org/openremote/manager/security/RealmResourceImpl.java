@@ -24,8 +24,9 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Container;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.security.Tenant;
-import org.openremote.model.security.TenantResource;
+import org.openremote.model.provisioning.ProvisioningConfig;
+import org.openremote.model.security.Realm;
+import org.openremote.model.security.RealmResource;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotAllowedException;
@@ -37,23 +38,23 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.Constants.MASTER_REALM;
 
-public class TenantResourceImpl extends ManagerWebResource implements TenantResource {
+public class RealmResourceImpl extends ManagerWebResource implements RealmResource {
 
-    private static final Logger LOG = Logger.getLogger(TenantResourceImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(RealmResourceImpl.class.getName());
     protected Container container;
 
-    public TenantResourceImpl(TimerService timerService, ManagerIdentityService identityService, Container container) {
+    public RealmResourceImpl(TimerService timerService, ManagerIdentityService identityService, Container container) {
         super(timerService, identityService);
         this.container = container;
     }
 
     @Override
-    public Tenant[] getAll(RequestParams requestParams) {
+    public Realm[] getAll(RequestParams requestParams) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            return identityService.getIdentityProvider().getTenants();
+            return identityService.getIdentityProvider().getRealms();
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -62,18 +63,18 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
     }
 
     @Override
-    public Tenant[] getAccessible(RequestParams requestParams) {
+    public Realm[] getAccessible(RequestParams requestParams) {
         try {
-            Tenant[] tenants;
+            Realm[] realms;
 
             if (isSuperUser()) {
-                tenants = identityService.getIdentityProvider().getTenants();
+                realms = identityService.getIdentityProvider().getRealms();
             } else {
-                tenants = new Tenant[] {
-                    (isAuthenticated() ? getAuthenticatedTenant() : getRequestTenant())
+                realms = new Realm[] {
+                    (isAuthenticated() ? getAuthenticatedRealm() : getRequestRealm())
                 };
             }
-            return Arrays.stream(tenants).map(tenant -> new Tenant().setRealm(tenant.getRealm()).setDisplayName(tenant.getDisplayName())).toArray(Tenant[]::new);
+            return Arrays.stream(realms).map(realm -> new Realm().setName(realm.getName()).setDisplayName(realm.getDisplayName())).toArray(Realm[]::new);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -82,29 +83,27 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
     }
 
     @Override
-    public Tenant get(RequestParams requestParams, String realm) {
-        Tenant tenant = identityService.getIdentityProvider().getTenant(realm);
-        if (tenant == null)
+    public Realm get(RequestParams requestParams, String realmName) {
+        Realm realm = identityService.getIdentityProvider().getRealm(realmName);
+        if (realm == null)
             throw new WebApplicationException(NOT_FOUND);
-        if (!isTenantActiveAndAccessible(tenant)) {
-            LOG.info("Forbidden access for user '" + getUsername() + "': " + tenant);
+        if (!isRealmActiveAndAccessible(realm)) {
+            LOG.info("Forbidden access for user '" + getUsername() + "': " + realm);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        return tenant;
+        return realm;
     }
 
     @Override
-    public void update(RequestParams requestParams, String realm, Tenant tenant) {
+    public void update(RequestParams requestParams, String realmName, Realm realm) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        throwIfIllegalMasterRealmMutation(realm, tenant);
+        throwIfIllegalMasterRealmMutation(realmName, realm);
 
         try {
-            identityService.getIdentityProvider().updateTenant(
-                tenant
-            );
+            identityService.getIdentityProvider().updateRealm(realm);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (IllegalArgumentException ex) {
@@ -115,12 +114,12 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
     }
 
     @Override
-    public void create(RequestParams requestParams, Tenant tenant) {
+    public void create(RequestParams requestParams, Realm realm) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            identityService.getIdentityProvider().createTenant(tenant);
+            identityService.getIdentityProvider().createRealm(realm);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -138,7 +137,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         throwIfIllegalMasterRealmDeletion(realm);
 
         try {
-            identityService.getIdentityProvider().deleteTenant(
+            identityService.getIdentityProvider().deleteRealm(
                 realm
             );
         } catch (ClientErrorException ex) {
@@ -155,16 +154,16 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         throw new NotAllowedException("The master realm cannot be deleted");
     }
 
-    protected void throwIfIllegalMasterRealmMutation(String realm, Tenant tenant) throws WebApplicationException {
-        if (!realm.equals(MASTER_REALM))
+    protected void throwIfIllegalMasterRealmMutation(String realmName, Realm realm) throws WebApplicationException {
+        if (!realmName.equals(MASTER_REALM))
             return;
 
-        if (tenant.getEnabled() == null || !tenant.getEnabled()) {
-            throw new NotAllowedException("The master realm cannot be disabled");
+        if (realm.getEnabled() == null || !realm.getEnabled()) {
+            throw new NotAllowedException("The master realmName cannot be disabled");
         }
 
-        if (tenant.getRealm() == null || !tenant.getRealm().equals(MASTER_REALM)) {
-            throw new NotAllowedException("The master realm identifier cannot be changed");
+        if (realm.getName() == null || !realm.getName().equals(MASTER_REALM)) {
+            throw new NotAllowedException("The master realmName identifier cannot be changed");
         }
     }
 }

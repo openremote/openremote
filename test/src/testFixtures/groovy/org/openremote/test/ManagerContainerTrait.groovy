@@ -15,7 +15,7 @@ import java.util.stream.Collectors
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.Clock.REAL
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
-import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
+import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
 import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
 
 trait ManagerContainerTrait extends ContainerTrait {
@@ -25,9 +25,9 @@ trait ManagerContainerTrait extends ContainerTrait {
             serverPort = findEphemeralPort()
         }
         [
-                (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
-                (MQTT_SERVER_LISTEN_HOST)        : "127.0.0.1", // Works best for cross platform test running
-                (TIMER_CLOCK_TYPE)               : PSEUDO.name()
+                (OR_WEBSERVER_LISTEN_PORT): Integer.toString(serverPort),
+                (MQTT_SERVER_LISTEN_HOST) : "127.0.0.1", // Works best for cross platform test running
+                (TIMER_CLOCK_TYPE)        : PSEUDO.name()
         ]
     }
 
@@ -58,7 +58,7 @@ trait ManagerContainerTrait extends ContainerTrait {
 
         def rulesService = this.container.getService(RulesService.class)
 
-        return (rulesService.globalEngine == null || rulesService.globalEngine.fireTimer == null) && rulesService.tenantEngines.values().every {it.fireTimer == null} && rulesService.assetEngines.values().every {it.fireTimer == null}
+        return (rulesService.globalEngine == null || rulesService.globalEngine.fireTimer == null) && rulesService.realmEngines.values().every {it.fireTimer == null} && rulesService.assetEngines.values().every {it.fireTimer == null}
     }
 
     /**

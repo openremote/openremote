@@ -221,10 +221,10 @@
   "buttonTextConfirm": "Text für Aktionsschaltfläche",
   "buttonTextDecline": "Text für Ablehnungsschaltfläche",
   "custom": "Manuelle Eingabe",
-  "tenant": "Tenant",
-  "tenant_plural": "Tenants",
+  "realm": "Realm",
+  "realm_plural": "Realms",
   "displayName": "Freundlicher Name",
-  "deleteTenantConfirm": "Möchten Sie diesen Realm wirklich löschen?",
+  "deleteRealmConfirm": "Möchten Sie diesen Realm wirklich löschen?",
   "user_plural": "Benutzer",
   "regularUser_plural": "Normale Benutzer",
   "serviceUser_plural": "Servicenutzer",
@@ -461,5 +461,15 @@
     "title": {
       "indexedItem": "Item {{index}}"
     }
+  },
+  "yes": "Ja",
+  "no": "Nein",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

@@ -30,7 +30,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
-import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.*;
 import org.openremote.model.apps.ConsoleAppConfig;
@@ -45,9 +44,9 @@ import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.RealmRuleset;
+import org.openremote.model.security.Realm;
 import org.openremote.model.security.RealmRole;
-import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
@@ -197,29 +196,29 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
      * database artifacts from wipe/migrate in FlywayDB...) you must have it in the 'public'
      * schema. Hence we need a different schema here.
      */
-    public static final String SETUP_CLEAN_ON_RESTART = "SETUP_CLEAN_ON_RESTART";
+    public static final String OR_SETUP_RUN_ON_RESTART = "OR_SETUP_RUN_ON_RESTART";
     public static final String PERSISTENCE_UNIT_NAME = "PERSISTENCE_UNIT_NAME";
     public static final String PERSISTENCE_UNIT_NAME_DEFAULT = "OpenRemotePU";
-    public static final String DB_VENDOR = "DB_VENDOR";
-    public static final String DB_VENDOR_DEFAULT = Database.Product.POSTGRES.name();
-    public static final String DB_HOST = "DB_HOST";
-    public static final String DB_HOST_DEFAULT = "localhost";
-    public static final String DB_PORT = "DB_PORT";
-    public static final int DB_PORT_DEFAULT = 5432;
-    public static final String DB_NAME = "DB_NAME";
-    public static final String DB_NAME_DEFAULT = "openremote";
-    public static final String DB_SCHEMA = "DB_SCHEMA";
-    public static final String DB_SCHEMA_DEFAULT = "openremote";
-    public static final String DB_USERNAME = "DB_USERNAME";
-    public static final String DB_USERNAME_DEFAULT = "postgres";
-    public static final String DB_PASSWORD = "DB_PASSWORD";
-    public static final String DB_PASSWORD_DEFAULT = "postgres";
-    public static final String DB_MIN_POOL_SIZE = "DB_MIN_POOL_SIZE";
-    public static final int DB_MIN_POOL_SIZE_DEFAULT = 5;
-    public static final String DB_MAX_POOL_SIZE = "DB_MAX_POOL_SIZE";
-    public static final int DB_MAX_POOL_SIZE_DEFAULT = 20;
-    public static final String DB_CONNECTION_TIMEOUT_SECONDS = "DB_CONNECTION_TIMEOUT_SECONDS";
-    public static final int DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
+    public static final String OR_DB_VENDOR = "OR_DB_VENDOR";
+    public static final String OR_DB_VENDOR_DEFAULT = Database.Product.POSTGRES.name();
+    public static final String OR_DB_HOST = "OR_DB_HOST";
+    public static final String OR_DB_HOST_DEFAULT = "localhost";
+    public static final String OR_DB_PORT = "OR_DB_PORT";
+    public static final int OR_DB_PORT_DEFAULT = 5432;
+    public static final String OR_DB_NAME = "OR_DB_NAME";
+    public static final String OR_DB_NAME_DEFAULT = "openremote";
+    public static final String OR_DB_SCHEMA = "OR_DB_SCHEMA";
+    public static final String OR_DB_SCHEMA_DEFAULT = "openremote";
+    public static final String OR_DB_USER = "OR_DB_USER";
+    public static final String OR_DB_USER_DEFAULT = "postgres";
+    public static final String OR_DB_PASSWORD = "OR_DB_PASSWORD";
+    public static final String OR_DB_PASSWORD_DEFAULT = "postgres";
+    public static final String OR_DB_MIN_POOL_SIZE = "OR_DB_MIN_POOL_SIZE";
+    public static final int OR_DB_MIN_POOL_SIZE_DEFAULT = 5;
+    public static final String OR_DB_MAX_POOL_SIZE = "OR_DB_MAX_POOL_SIZE";
+    public static final int OR_DB_MAX_POOL_SIZE_DEFAULT = 20;
+    public static final String OR_DB_CONNECTION_TIMEOUT_SECONDS = "OR_DB_CONNECTION_TIMEOUT_SECONDS";
+    public static final int OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
     public static final int PRIORITY = Integer.MIN_VALUE + 100;
 
     protected MessageBrokerService messageBrokerService;
@@ -250,22 +249,22 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             ? container.getService(MessageBrokerService.class)
             : null;
 
-        String dbVendor = getString(container.getConfig(), DB_VENDOR, DB_VENDOR_DEFAULT).toUpperCase(Locale.ROOT);
+        String dbVendor = getString(container.getConfig(), OR_DB_VENDOR, OR_DB_VENDOR_DEFAULT).toUpperCase(Locale.ROOT);
         LOG.info("Preparing persistence service for database: " + dbVendor);
 
         try {
             database = Database.Product.valueOf(dbVendor);
         } catch (Exception e) {
-            LOG.severe("Requested DB_VENDOR is not supported: " + dbVendor);
-            throw new UnsupportedOperationException("Requested DB_VENDOR is not supported: " + dbVendor);
+            LOG.severe("Requested OR_DB_VENDOR is not supported: " + dbVendor);
+            throw new UnsupportedOperationException("Requested OR_DB_VENDOR is not supported: " + dbVendor);
         }
 
-        String dbHost = getString(container.getConfig(), DB_HOST, DB_HOST_DEFAULT);
-        int dbPort = getInteger(container.getConfig(), DB_PORT, DB_PORT_DEFAULT);
-        String dbName = getString(container.getConfig(), DB_NAME, DB_NAME_DEFAULT);
-        String dbSchema = getString(container.getConfig(), DB_SCHEMA, DB_SCHEMA_DEFAULT);
-        String dbUsername = getString(container.getConfig(), DB_USERNAME, DB_USERNAME_DEFAULT);
-        String dbPassword = getString(container.getConfig(), DB_PASSWORD, DB_PASSWORD_DEFAULT);
+        String dbHost = getString(container.getConfig(), OR_DB_HOST, OR_DB_HOST_DEFAULT);
+        int dbPort = getInteger(container.getConfig(), OR_DB_PORT, OR_DB_PORT_DEFAULT);
+        String dbName = getString(container.getConfig(), OR_DB_NAME, OR_DB_NAME_DEFAULT);
+        String dbSchema = getString(container.getConfig(), OR_DB_SCHEMA, OR_DB_SCHEMA_DEFAULT);
+        String dbUsername = getString(container.getConfig(), OR_DB_USER, OR_DB_USER_DEFAULT);
+        String dbPassword = getString(container.getConfig(), OR_DB_PASSWORD, OR_DB_PASSWORD_DEFAULT);
         String connectionUrl = "jdbc:" + database.getConnectorName() + "://" + dbHost + ":" + dbPort + "/" + dbName;
         connectionUrl = UriBuilder.fromUri(connectionUrl).replaceQueryParam("currentSchema", dbSchema).build().toString();
 
@@ -285,7 +284,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
 
-        forceClean = getBoolean(container.getConfig(), SETUP_CLEAN_ON_RESTART, container.isDevMode());
+        forceClean = getBoolean(container.getConfig(), OR_SETUP_RUN_ON_RESTART, container.isDevMode());
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
         prepareSchema(connectionUrl, dbUsername, dbPassword, dbSchema);
@@ -297,13 +296,13 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(AssetDatapoint.class.getName());
         entityClasses.add(SentNotification.class.getName());
         entityClasses.add(AssetPredictedDatapoint.class.getName());
-        entityClasses.add(Tenant.class.getName());
+        entityClasses.add(Realm.class.getName());
         entityClasses.add(User.class.getName());
         entityClasses.add(UserAttribute.class.getName());
         entityClasses.add(RealmRole.class.getName());
         entityClasses.add(GlobalRuleset.class.getName());
         entityClasses.add(AssetRuleset.class.getName());
-        entityClasses.add(TenantRuleset.class.getName());
+        entityClasses.add(RealmRuleset.class.getName());
         entityClasses.add(SyslogEvent.class.getName());
         entityClasses.add(GatewayConnection.class.getName());
         entityClasses.add(ConsoleAppConfig.class.getName());
@@ -355,7 +354,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         }
     }
 
-    public boolean isSetupWipeCleanInstall() {
+    public boolean isCleanInstall() {
         return forceClean;
     }
 
@@ -449,7 +448,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
      * Generate {@link PersistenceEvent}s for entities not managed by JPA (i.e. Keycloak entities)
      */
     public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object entity, String[] propertyNames, Object[] currentState, Object[] previousState) {
-        // Fire persistence event although we don't use database for Tenant CUD but call Keycloak API
+        // Fire persistence event although we don't use database for Realm CUD but call Keycloak API
         PersistenceEvent<?> persistenceEvent = new PersistenceEvent<>(cause, entity, propertyNames, currentState, previousState);
 
         if (messageBrokerService.getProducerTemplate() != null) {
@@ -465,9 +464,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     protected void openDatabase(Container container, Database database, String username, String password, String connectionUrl) {
 
-        int databaseMinPoolSize = getInteger(container.getConfig(), DB_MIN_POOL_SIZE, DB_MIN_POOL_SIZE_DEFAULT);
-        int databaseMaxPoolSize = getInteger(container.getConfig(), DB_MAX_POOL_SIZE, DB_MAX_POOL_SIZE_DEFAULT);
-        int connectionTimeoutSeconds = getInteger(container.getConfig(), DB_CONNECTION_TIMEOUT_SECONDS, DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
+        int databaseMinPoolSize = getInteger(container.getConfig(), OR_DB_MIN_POOL_SIZE, OR_DB_MIN_POOL_SIZE_DEFAULT);
+        int databaseMaxPoolSize = getInteger(container.getConfig(), OR_DB_MAX_POOL_SIZE, OR_DB_MAX_POOL_SIZE_DEFAULT);
+        int connectionTimeoutSeconds = getInteger(container.getConfig(), OR_DB_CONNECTION_TIMEOUT_SECONDS, OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
         LOG.info("Opening database connection: " + connectionUrl);
         database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
     }

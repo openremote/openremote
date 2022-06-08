@@ -12,14 +12,14 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TenantRuleset
+import org.openremote.model.rules.RealmRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 import static org.openremote.model.rules.RulesetStatus.*
@@ -49,7 +49,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
 
         expect: "the rules engines to be ready"
@@ -73,71 +73,71 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
         }
 
-        when: "a new tenant rule definition is added to Building"
-        ruleset = new TenantRuleset(
-            keycloakTestSetup.tenantBuilding.realm,
-            "Some more building tenant rules",
+        when: "a new realm rule definition is added to Building"
+        ruleset = new RealmRuleset(
+            keycloakTestSetup.realmBuilding.name,
+            "Some more building realm rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         then: "Building rules engine should load this definition and restart successfully"
         conditions.eventually {
-            def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
-            assert tenantBuildingEngine != null
-            assert tenantBuildingEngine.isRunning()
-            assert tenantBuildingEngine.deployments.size() == 2
-            assert tenantBuildingEngine.deployments.values().any({ it.name == "Some building tenant demo rules" && it.status == DEPLOYED})
-            assert tenantBuildingEngine.deployments.values().any({ it.name == "Some more building tenant rules" && it.status == DEPLOYED})
+            def realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.deployments.size() == 2
+            assert realmBuildingEngine.deployments.values().any({ it.name == "Some building realm demo rules" && it.status == DEPLOYED})
+            assert realmBuildingEngine.deployments.values().any({ it.name == "Some more building realm rules" && it.status == DEPLOYED})
         }
 
-        when: "a new tenant rule definition is added to City"
-        ruleset = new TenantRuleset(
-            keycloakTestSetup.tenantCity.realm,
-            "Some more smartcity tenant rules",
+        when: "a new realm rule definition is added to City"
+        ruleset = new RealmRuleset(
+            keycloakTestSetup.realmCity.name,
+            "Some more smartcity realm rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text)
         rulesetStorageService.merge(ruleset)
 
-        then: "a tenant rules engine should be created for City and load this definition and start successfully"
+        then: "a realm rules engine should be created for City and load this definition and start successfully"
         conditions.eventually {
-            def tenantCity = rulesService.tenantEngines.get(keycloakTestSetup.tenantCity.realm)
-            assert rulesService.tenantEngines.size() == 3
-            assert tenantCity != null
-            assert tenantCity.isRunning()
-            assert tenantCity.deployments.size() == 1
-            assert tenantCity.deployments.values().any({ it.name == "Some more smartcity tenant rules" && it.status == DEPLOYED})
+            def realmCity = rulesService.realmEngines.get(keycloakTestSetup.realmCity.name)
+            assert rulesService.realmEngines.size() == 3
+            assert realmCity != null
+            assert realmCity.isRunning()
+            assert realmCity.deployments.size() == 1
+            assert realmCity.deployments.values().any({ it.name == "Some more smartcity realm rules" && it.status == DEPLOYED})
         }
 
-        when: "the disabled rule definition for Tenant B is enabled"
-        ruleset = rulesetStorageService.find(TenantRuleset.class, rulesImport.tenantCityRulesetId)
+        when: "the disabled rule definition for Realm B is enabled"
+        ruleset = rulesetStorageService.find(RealmRuleset.class, rulesImport.realmCityRulesetId)
         ruleset.setEnabled(true)
         rulesetStorageService.merge(ruleset)
 
         then: "City rule engine should load this definition and restart successfully"
         conditions.eventually {
-            def tenantCity = rulesService.tenantEngines.get(keycloakTestSetup.tenantCity.realm)
-            assert rulesService.tenantEngines.size() == 3
-            assert tenantCity != null
-            assert tenantCity.isRunning()
-            assert tenantCity.deployments.size() == 2
-            assert tenantCity.deployments.values().any({ it.name == "Some more smartcity tenant rules" && it.status == DEPLOYED})
-            assert tenantCity.deployments.values().any({ it.name == "Some smartcity tenant demo rules" && it.status == DEPLOYED})
+            def realmCity = rulesService.realmEngines.get(keycloakTestSetup.realmCity.name)
+            assert rulesService.realmEngines.size() == 3
+            assert realmCity != null
+            assert realmCity.isRunning()
+            assert realmCity.deployments.size() == 2
+            assert realmCity.deployments.values().any({ it.name == "Some more smartcity realm rules" && it.status == DEPLOYED})
+            assert realmCity.deployments.values().any({ it.name == "Some smartcity realm demo rules" && it.status == DEPLOYED})
         }
 
         when: "the enabled rule definition for City is disabled"
         // TODO: Stop instances of rule definitions being passed around as rules engine nulls the rules property
-        ruleset = rulesetStorageService.find(TenantRuleset.class, rulesImport.tenantCityRulesetId)
+        ruleset = rulesetStorageService.find(RealmRuleset.class, rulesImport.realmCityRulesetId)
         ruleset.setEnabled(false)
         rulesetStorageService.merge(ruleset)
 
         then: "City rule engine should remove it again"
         conditions.eventually {
-            def tenantCity = rulesService.tenantEngines.get(keycloakTestSetup.tenantCity.realm)
-            assert tenantCity != null
-            assert tenantCity.isRunning()
-            assert tenantCity.deployments.size() == 1
-            assert tenantCity.deployments.values().any({ it.name == "Some more smartcity tenant rules" && it.status == DEPLOYED})
+            def realmCity = rulesService.realmEngines.get(keycloakTestSetup.realmCity.name)
+            assert realmCity != null
+            assert realmCity.isRunning()
+            assert realmCity.deployments.size() == 1
+            assert realmCity.deployments.values().any({ it.name == "Some more smartcity realm rules" && it.status == DEPLOYED})
         }
 
         when: "the asset rule definition for apartment 2 is deleted"
@@ -183,18 +183,18 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED })
         }
 
-        when: "a tenant is disabled"
-        def tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
+        when: "a realm is disabled"
+        def realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
         def apartment3Engine = rulesService.assetEngines.get(managerTestSetup.apartment3Id)
-        def tenantBuildingTenant = keycloakTestSetup.tenantBuilding
-        tenantBuildingTenant.setEnabled(false)
-        identityService.getIdentityProvider().updateTenant(tenantBuildingTenant)
+        def realmBuilding = keycloakTestSetup.realmBuilding
+        realmBuilding.setEnabled(false)
+        identityService.getIdentityProvider().updateRealm(realmBuilding)
 
-        then: "the tenants rule engine should stop and all asset rule engines in this realm should also stop"
+        then: "the realms rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {
-            assert !tenantBuildingEngine.isRunning()
-            assert tenantBuildingEngine.deployments.size() == 2
-            assert rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm) == null
+            assert !realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.deployments.size() == 2
+            assert rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name) == null
             assert !apartment3Engine.isRunning()
             assert apartment3Engine.deployments.size() == 1
             assert rulesService.assetEngines.get(managerTestSetup.apartment3Id) == null
@@ -202,85 +202,85 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         and: "other rule engines should be unaffected"
         conditions.eventually {
-            assert rulesService.tenantEngines.size() == 2
+            assert rulesService.realmEngines.size() == 2
             assert rulesService.assetEngines.size() == 0
-            def masterEngine = rulesService.tenantEngines.get(keycloakTestSetup.masterTenant.realm)
-            def cityEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantCity.realm)
+            def masterEngine = rulesService.realmEngines.get(keycloakTestSetup.realmMaster.name)
+            def cityEngine = rulesService.realmEngines.get(keycloakTestSetup.realmCity.name)
             assert masterEngine != null
             assert masterEngine.isRunning()
             assert cityEngine != null
             assert cityEngine.isRunning()
         }
 
-        when: "the disabled tenant is re-enabled"
-        tenantBuildingTenant.setEnabled(true)
-        identityService.getIdentityProvider().updateTenant(tenantBuildingTenant)
+        when: "the disabled realm is re-enabled"
+        realmBuilding.setEnabled(true)
+        identityService.getIdentityProvider().updateRealm(realmBuilding)
 
-        then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
+        then: "the realms rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {
-            tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             apartment3Engine = rulesService.assetEngines.get(managerTestSetup.apartment3Id)
-            assert rulesService.tenantEngines.size() == 3
+            assert rulesService.realmEngines.size() == 3
             assert rulesService.assetEngines.size() == 1
-            assert tenantBuildingEngine != null
-            assert tenantBuildingEngine.isRunning()
-            assert tenantBuildingEngine.deployments.size() == 2
-            assert tenantBuildingEngine.deployments.values().any({ it.name == "Some building tenant demo rules" && it.status == DEPLOYED})
-            assert tenantBuildingEngine.deployments.values().any({ it.name == "Some more building tenant rules" && it.status == DEPLOYED})
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.deployments.size() == 2
+            assert realmBuildingEngine.deployments.values().any({ it.name == "Some building realm demo rules" && it.status == DEPLOYED})
+            assert realmBuildingEngine.deployments.values().any({ it.name == "Some more building realm rules" && it.status == DEPLOYED})
             assert apartment3Engine.deployments.size() == 1
             assert apartment3Engine.deployments.values().any({ it.name == "Some apartment 3 demo rules" && it.status == DEPLOYED})
         }
 
-        when: "a new tenant rule definition is added to Building"
-        ruleset = new TenantRuleset(
-            keycloakTestSetup.tenantBuilding.realm,
+        when: "a new realm rule definition is added to Building"
+        ruleset = new RealmRuleset(
+            keycloakTestSetup.realmBuilding.name,
             "Throw Failure Exception",
             GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text)
         ruleset.getMeta().add(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
         ruleset = rulesetStorageService.merge(ruleset)
 
-        then: "the tenants A rule engine should run with one deployment as error"
+        then: "the realms A rule engine should run with one deployment as error"
         conditions.eventually {
-            tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
-            assert tenantBuildingEngine != null
-            assert tenantBuildingEngine.isRunning()
-            assert tenantBuildingEngine.deployments.size() == 3
-            assert tenantBuildingEngine.deployments[ruleset.id].status == EXECUTION_ERROR
-            assert !tenantBuildingEngine.isError()
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.deployments.size() == 3
+            assert realmBuildingEngine.deployments[ruleset.id].status == EXECUTION_ERROR
+            assert !realmBuildingEngine.isError()
         }
 
-        when: "a new tenant rule definition is added to Building"
-        ruleset = new TenantRuleset(
-            keycloakTestSetup.tenantBuilding.realm,
+        when: "a new realm rule definition is added to Building"
+        ruleset = new RealmRuleset(
+            keycloakTestSetup.realmBuilding.name,
             "Looping error",
             GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
         ruleset.getMeta().add(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
         ruleset = rulesetStorageService.merge(ruleset)
 
-        then: "the tenants A rule engine should have an error"
+        then: "the realms A rule engine should have an error"
         conditions.eventually {
-            tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
-            assert tenantBuildingEngine != null
-            assert !tenantBuildingEngine.isRunning()
-            assert tenantBuildingEngine.deployments.size() == 4
-            assert tenantBuildingEngine.deployments[ruleset.id].status == LOOP_ERROR
-            assert tenantBuildingEngine.deployments[ruleset.id].error instanceof RulesLoopException
-            assert tenantBuildingEngine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
-            assert tenantBuildingEngine.isError()
-            assert tenantBuildingEngine.getError() instanceof RuntimeException
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert !realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.deployments.size() == 4
+            assert realmBuildingEngine.deployments[ruleset.id].status == LOOP_ERROR
+            assert realmBuildingEngine.deployments[ruleset.id].error instanceof RulesLoopException
+            assert realmBuildingEngine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
+            assert realmBuildingEngine.isError()
+            assert realmBuildingEngine.getError() instanceof RuntimeException
         }
 
-//TODO: Reinstate the tenant delete test once tenant delete mechanism is finalised
-//        when: "a tenant is deleted"
-//        identityService.deleteTenant(accessToken, tenantBuildingTenant.getRealm())
+//TODO: Reinstate the realm delete test once realm delete mechanism is finalised
+//        when: "a realm is deleted"
+//        identityService.deleteRealm(accessToken, realmBuilding.getName())
 //
-//        then: "the tenants rule engine should stop and all asset rule engines in this realm should also stop"
+//        then: "the realms rule engine should stop and all asset rule engines in this realm should also stop"
 //        conditions.eventually {
-//            assert tenantBuildingEngine.isRunning() == false
-//            assert tenantBuildingEngine.allRulesets.length == 0
-//            assert rulesService.tenantEngines.get(keycloakTestSetup.tenantBuildingTenant.id) == null
+//            assert realmBuildingEngine.isRunning() == false
+//            assert realmBuildingEngine.allRulesets.length == 0
+//            assert rulesService.realmEngines.get(keycloakTestSetup.realmBuildingRealm.id) == null
 //            assert smartHomeEngine.isRunning() == false
 //            assert smartHomeEngine.allRulesets.length == 0
 //            assert rulesService.assetEngines.get(managerTestSetup.smartBuildingId) == null
@@ -291,14 +291,14 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 //
 //        and: "other rule engines should be unaffected"
 //        conditions.eventually {
-//            assert rulesService.tenantEngines.size() == 2
+//            assert rulesService.realmEngines.size() == 2
 //            assert rulesService.assetEngines.size() == 0
-//            def masterEngine = rulesService.tenantEngines.get(Constants.MASTER_REALM)
-//            def tenantCity = rulesService.tenantEngines.get(keycloakTestSetup.tenantBTenant.id)
+//            def masterEngine = rulesService.realmEngines.get(Constants.MASTER_REALM)
+//            def realmCity = rulesService.realmEngines.get(keycloakTestSetup.realmBRealm.id)
 //            assert masterEngine != null
 //            assert masterEngine.isRunning()
-//            assert tenantCity != null
-//            assert tenantCity.isRunning()
+//            assert realmCity != null
+//            assert realmCity.isRunning()
 //        }
     }
 }

@@ -17,24 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.query.filter;
+package org.openremote.model.apps;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.openremote.model.http.RequestParams;
 
-public class TenantPredicate {
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
-    public String realm;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-    @JsonCreator
-    public TenantPredicate(@JsonProperty("realm") String realm) {
-        this.realm = realm;
-    }
+@Tag(name = "UI Apps")
+@Path("apps")
+public interface AppResource {
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            ", realm='" + realm + '\'' +
-            '}';
-    }
+    /**
+     * Retrieve installed console applications. Only the superuser can perform this operation,
+     * a 403 status is returned if a regular user tries to access the console applications.
+     */
+    @GET
+    @Produces(APPLICATION_JSON)
+    String[] getApps(@BeanParam RequestParams requestParams);
 }
