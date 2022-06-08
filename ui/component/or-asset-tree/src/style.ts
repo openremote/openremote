@@ -127,6 +127,10 @@ export const style = css`
     .in-between-element {
         height: 3px;
     }
+
+    .end-element {
+        height: 15px;
+    }
     
     .node-container {
         display: flex;

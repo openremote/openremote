@@ -556,6 +556,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <div id="list-container">
                         <ol id="list">
                             ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0)).filter(t => !!t)}
+                            <li class="asset-list-element">    
+                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
+                            </li>
                         </ol>
                     </div>
                 `)
