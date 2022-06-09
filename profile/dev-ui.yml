@@ -43,6 +43,7 @@ services:
     extends:
       file: deploy.yml
       service: manager
+    image: openremote/manager:${MANAGER_VERSION:-develop}
     depends_on:
       postgresql:
         condition: service_healthy

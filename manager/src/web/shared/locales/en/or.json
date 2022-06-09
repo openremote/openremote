@@ -83,7 +83,7 @@
   "orWhen": "Or when",
   "datetime": "Datetime",
   "timer": "Timer",
-  "rulesEditorAddCondition": "Add another condition",
+  "rulesEditorAddCondition": "Add condition",
   "rulesEditorAddGroup": "Add group",
   "rulesEditorAddAction": "Add action",
   "sortBy": "Sort by",
@@ -110,6 +110,7 @@
   "noAssetsFound": "No assets found",
   "filterInvite": "Filter with at least 3 characters",
   "location": "Location",
+  "longPressSetLoc": "Long press to set location",
   "hour": "Hour",
   "day": "Day",
   "week": "Week",
@@ -223,10 +224,10 @@
   "buttonTextConfirm": "Text for action button",
   "buttonTextDecline": "Text for decline button",
   "custom": "Custom attribute",
-  "tenant": "Tenant",
-  "tenant_plural": "Tenants",
+  "realm": "Realm",
+  "realm_plural": "Realms",
   "displayName":"Friendly name",
-  "deleteTenantConfirm":"Are you sure you want to delete this Realm?",
+  "deleteRealmConfirm":"Are you sure you want to delete this Realm?",
   "user_plural": "Users",
   "regularUser_plural": "Regular users",
   "serviceUser_plural": "Service users",
@@ -478,5 +479,7 @@
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value"
-  }
+  },
+  "realmDeleteConfirm": "Warning! this will delete everything in this realm, type the realm name '{{realmName}}' to confirm.",
+  "realmDeleteFailed": "Failed to delete realm"
 }

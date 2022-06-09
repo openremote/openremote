@@ -21,7 +21,6 @@ package org.openremote.manager.energy;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -30,6 +29,7 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.*;
@@ -45,8 +45,8 @@ import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.MetaItemType;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.MetaItemType;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -55,6 +55,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -92,6 +93,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     }
 
     protected static final Logger LOG = Logger.getLogger(EnergyOptimisationService.class.getName());
+    protected static final int OPTIMISATION_TIMEOUT_MILLIS = 60000*10; // 10 mins
     protected DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.from(ZoneOffset.UTC));
     protected TimerService timerService;
     protected AssetProcessingService assetProcessingService;
@@ -293,7 +295,14 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
             // Execute first optimisation at the period that started previous to now
             LOG.finer(getLogPrefix(optimisationAsset.getId()) + "Running first optimisation for time '" + formatter.format(optimisationStartTime));
-            runOptimisation(optimisationAsset.getId(), optimisationStartTime);
+
+            executorService.execute(() -> {
+                try {
+                    runOptimisation(optimisationAsset.getId(), optimisationStartTime);
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Failed to run energy optimiser for asset: " + optimisationAsset.getId(), e);
+                }
+            });
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to start energy optimiser for asset: " + optimisationAsset, e);
         }
@@ -357,11 +366,20 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         return "Optimisation '" + optimisationAssetId + "': ";
     }
 
+    protected void checkTimeoutAndThrow(String optimisationAssetId, long startTimeMillis) throws TimeoutException {
+        long runtime = timerService.getCurrentTimeMillis() - startTimeMillis;
+        if (runtime > OPTIMISATION_TIMEOUT_MILLIS) {
+            String logMsg = getLogPrefix(optimisationAssetId) + "Optimisation has been running for " + runtime + "ms, timeout is at " + OPTIMISATION_TIMEOUT_MILLIS + "ms";
+            LOG.warning(logMsg);
+            throw new TimeoutException(logMsg);
+        }
+    }
+
     /**
      * Runs the optimisation routine for the specified time; it is important that this method does not throw an
      * exception as it will cancel the scheduled task thus stopping future optimisations.
      */
-    protected void runOptimisation(String optimisationAssetId, Instant optimisationTime) {
+    protected void runOptimisation(String optimisationAssetId, Instant optimisationTime) throws Exception {
         OptimisationInstance optimisationInstance = assetOptimisationInstanceMap.get(optimisationAssetId);
 
         if (optimisationInstance == null) {
@@ -370,6 +388,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         LOG.finer(getLogPrefix(optimisationAssetId) + "Running for time '" + formatter.format(optimisationTime));
 
+        long startTimeMillis = timerService.getCurrentTimeMillis();
         EnergyOptimiser optimiser = optimisationInstance.energyOptimiser;
         int intervalCount = optimiser.get24HourIntervalCount();
         double intervalSize = optimiser.getIntervalSize();
@@ -377,14 +396,13 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         LOG.finest(getLogPrefix(optimisationAssetId) + "Fetching child assets of type '" + ElectricitySupplierAsset.class.getSimpleName() + "'");
 
         List<ElectricitySupplierAsset> supplierAssets = assetStorageService.findAll(
-            new AssetQuery()
-                .types(ElectricitySupplierAsset.class)
-                .recursive(true)
-                .parents(optimisationAssetId)
-        ).stream()
+                new AssetQuery()
+                    .types(ElectricitySupplierAsset.class)
+                    .recursive(true)
+                    .parents(optimisationAssetId)
+            ).stream()
             .filter(asset -> asset.hasAttribute(ElectricitySupplierAsset.TARIFF_IMPORT))
-            .map(asset -> (ElectricitySupplierAsset)asset)
-            .collect(Collectors.toList());
+            .map(asset -> (ElectricitySupplierAsset) asset).toList();
 
         if (supplierAssets.size() != 1) {
             LOG.warning(getLogPrefix(optimisationAssetId) + "Expected exactly one " + ElectricitySupplierAsset.class.getSimpleName() + " asset with a '" + ElectricitySupplierAsset.TARIFF_IMPORT.getName() + "' attribute but found: " + supplierAssets.size());
@@ -424,6 +442,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             .stream()
             .map(asset -> (ElectricityStorageAsset)asset)
             .collect(Collectors.toList());
+
+        checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
         List<ElectricityStorageAsset> finalOptimisableStorageAssets = optimisableStorageAssets;
         optimisableStorageAssets = optimisableStorageAssets
@@ -483,6 +503,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             .sorted(Comparator.comparingInt(asset -> asset.getEnergyLevelSchedule().map(schedule -> 0).orElse(1)))
             .collect(Collectors.toList());
 
+        checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
+
         if (optimisableStorageAssets.isEmpty()) {
             LOG.warning(getLogPrefix(optimisationAssetId) + "Expected at least one optimisable '" + ElectricityStorageAsset.class.getSimpleName() + " asset with a '" + ElectricityAsset.POWER_SETPOINT.getName() + "' attribute but found none");
             return;
@@ -512,21 +534,24 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 count.incrementAndGet();
             });
 
+        checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
+
         // Get power of storage assets that don't support neither import or export (treat them as plain consumers/producers)
         List<ElectricityStorageAsset> plainStorageAssets = assetStorageService.findAll(
-            new AssetQuery()
-                .recursive(true)
-                .parents(optimisationAssetId)
-                .types(ElectricityStorageAsset.class)
-                .attributes(
-                    new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())),
-                    new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true), true, null),
-                    new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true), true, null)
-                )
-        )
+                new AssetQuery()
+                    .recursive(true)
+                    .parents(optimisationAssetId)
+                    .types(ElectricityStorageAsset.class)
+                    .attributes(
+                        new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())),
+                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true), true, null),
+                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true), true, null)
+                    )
+            )
             .stream()
-            .map(asset -> (ElectricityStorageAsset)asset)
-            .collect(Collectors.toList());
+            .map(asset -> (ElectricityStorageAsset) asset).toList();
+
+        checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
         // Exclude chargers with a power value != 0 and a child vehicle with a power value != 0 (avoid double counting - vehicle takes priority)
         plainStorageAssets
@@ -559,6 +584,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
                 count.incrementAndGet();
             });
+
+        checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(getLogPrefix(optimisationAssetId) + "Found plain consumer and producer child assets count=" + count.get());
@@ -618,6 +645,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             boolean hasSetpoint = storageAsset.hasAttribute(ElectricityStorageAsset.POWER_SETPOINT);
             boolean supportsExport = storageAsset.isSupportsExport().orElse(false);
             boolean supportsImport = storageAsset.isSupportsImport().orElse(false);
+
+            checkTimeoutAndThrow(optimisationAssetId, startTimeMillis);
 
             LOG.finer(getLogPrefix(optimisationAssetId) + "Optimising power set points for storage asset: " + storageAsset);
 

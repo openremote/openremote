@@ -292,13 +292,13 @@ export class PageUsers extends Page<AppStateKeyed> {
             return;
         }
 
-        const tenantResponse = await manager.rest.api.TenantResource.get(manager.displayRealm);
+        const realmResponse = await manager.rest.api.RealmResource.get(manager.displayRealm);
 
-        if (!this.responseAndStateOK(stateChecker, tenantResponse, i18next.t("loadFailedRoles"))) {
+        if (!this.responseAndStateOK(stateChecker, realmResponse, i18next.t("loadFailedRoles"))) {
             return;
         }
 
-        const usersResponse = await manager.rest.api.UserResource.query({tenantPredicate: {realm: manager.displayRealm}} as UserQuery);
+        const usersResponse = await manager.rest.api.UserResource.query({realmPredicate: {name: manager.displayRealm}} as UserQuery);
 
         if (!this.responseAndStateOK(stateChecker, usersResponse, i18next.t("loadFailedUsers"))) {
             return;
@@ -306,7 +306,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
-        this._realmRoles = (tenantResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
+        this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._loading = false;

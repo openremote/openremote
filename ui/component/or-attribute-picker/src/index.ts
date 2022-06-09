@@ -145,7 +145,9 @@ export class OrAttributePicker extends OrMwcDialog {
             },
             {
                 actionName: "add",
-                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length}"></or-mwc-input>`,
+                content: html`<or-mwc-input id="add-btn" class="button" label="${i18next.t("add")}"
+                                            .type="${InputType.BUTTON}" ?disabled="${!this.selectedAttributes.length}"
+                                            @or-mwc-input-changed="${(ev: Event) => { if (!this.selectedAttributes.length) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`,
                 action: () => {
 
                     if (!this.selectedAttributes.length) {
@@ -175,13 +177,11 @@ export class OrAttributePicker extends OrMwcDialog {
 
         let selectedAttribute: ListItem | undefined = undefined;
         if (!this.multiSelect && this.selectedAttributes.length === 1 && this.selectedAttributes[0].name) {
-            console.log('here');
             selectedAttribute = {
                 text: Util.getAttributeLabel(undefined, this.selectedAttributes[0], undefined, true),
                 value: this.selectedAttributes[0].name
             };
         }
-        console.log(selectedAttribute);
 
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
@@ -249,7 +249,8 @@ export class OrAttributePicker extends OrMwcDialog {
             selectedAsset = assetResponse.data;
 
             if (selectedAsset) {
-                this.assetAttributes = Object.values(selectedAsset.attributes!).map(attr => { return {...attr, id: selectedAsset!.id!}; });
+                this.assetAttributes = Object.values(selectedAsset.attributes!).map(attr => { return {...attr, id: selectedAsset!.id!}; })
+                    .sort(Util.sortByString((attribute) => attribute.name!));
 
                 if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
                     this.assetAttributes = this.assetAttributes

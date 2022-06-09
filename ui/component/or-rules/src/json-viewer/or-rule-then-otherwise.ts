@@ -360,11 +360,11 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     ${thenAllowAdd ? html`
                         <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
-                                html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
+                                html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
+                                                   .label="${i18next.t("rulesEditorAddAction")}"></or-mwc-input>`,
                                 getActionTypesMenu(this.config, this.assetInfos),
                                 undefined,
                                 (value) => this.addAction(value as string))}
-                            <span>${i18next.t("rulesEditorAddAction")}</span>
                         </span>
                     ` : ``}
                 </or-panel>

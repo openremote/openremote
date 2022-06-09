@@ -23,7 +23,7 @@ import org.openremote.agent.protocol.knx.KNXAgent;
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 
 import java.util.logging.Logger;
 
@@ -41,7 +41,7 @@ public class ManagerTestAgentSetup extends ManagerSetup {
     public static final String SETUP_CREATE_AGENT_VELBUS_HOST = "SETUP_CREATE_AGENT_VELBUS_HOST";
     public static final String SETUP_CREATE_AGENT_VELBUS_PORT = "SETUP_CREATE_AGENT_VELBUS_PORT";
 
-    public String masterRealm;
+    public String realmMasterName;
 
     final protected boolean knx;
     final protected String knxGatewayIp;
@@ -67,14 +67,14 @@ public class ManagerTestAgentSetup extends ManagerSetup {
     public void onStart() throws Exception {
 
         KeycloakTestSetup keycloakTestSetup = setupService.getTaskOfType(KeycloakTestSetup.class);
-        Tenant masterTenant = keycloakTestSetup.masterTenant;
-        masterRealm = masterTenant.getRealm();
+        Realm realmMaster = keycloakTestSetup.realmMaster;
+        realmMasterName = realmMaster.getName();
 
         if (knx) {
             LOG.info("Enable KNX demo agent, gateway/local IP: " + knxGatewayIp + "/" + knxLocalIp);
 
             KNXAgent agent = new KNXAgent("Demo KNX agent")
-                .setRealm(masterRealm)
+                .setRealm(realmMasterName)
                 .setHost(knxGatewayIp)
                 .setBindHost(knxLocalIp);
 
@@ -85,7 +85,7 @@ public class ManagerTestAgentSetup extends ManagerSetup {
             LOG.info("Enable Velbus demo agent, COM port: " + velbusPort);
 
             VelbusTCPAgent agent = new VelbusTCPAgent("Demo VELBUS agent")
-                .setRealm(masterRealm)
+                .setRealm(realmMasterName)
                 .setHost(velbusHost)
                 .setPort(velbusPort);
 

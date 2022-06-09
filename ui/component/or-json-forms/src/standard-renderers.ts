@@ -259,7 +259,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
             // We have data that doesn't match a schema so show invalid template
             console.warn("Cannot match " + keyword + " schema to instance data");
 
-            const showJson = (ev: MouseEvent) => {
+            const showJson = (ev: Event) => {
                 ev.stopPropagation();
 
                 showJsonEditor(label, data, ((newValue) => {
@@ -268,7 +268,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
             };
 
             return html`
-                <div class="item-container no-match-container"><span>${label}:</span><b><or-translate value="validation.noSchemaMatchFound"></b><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${(ev: MouseEvent) => showJson(ev)}"></or-mwc-input></div>
+                <div class="item-container no-match-container"><span>${label}:</span><b><or-translate value="validation.noSchemaMatchFound"></b><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @or-mwc-input-changed="${(ev: Event) => showJson(ev)}"></or-mwc-input></div>
             `;
         } else {
             // We have no data so show a schema picker

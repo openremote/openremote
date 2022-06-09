@@ -196,7 +196,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                 throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                             }
 
-                            realm = authContext.getAuthenticatedRealm();
+                            realm = authContext.getAuthenticatedRealmName();
                             userId = authContext.getUserId();
                             sourceId.set(userId);
                             isSuperUser = authContext.isSuperUser();
@@ -207,7 +207,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                             isSuperUser = true;
                             break;
 
-                        case TENANT_RULESET:
+                        case REALM_RULESET:
                             realm = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
                             sourceId.set(realm);
                             break;
@@ -341,11 +341,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
         builder.append("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, tenantIds, userIds, assetIds, false);
+        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
         builder.append(" order by n.sentOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
@@ -363,12 +363,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         );
     }
 
-    public void removeNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public void removeNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, tenantIds, userIds, assetIds, true);
+        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, true);
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
@@ -378,10 +378,10 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds, boolean isRemove) {
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds, boolean isRemove) {
         boolean hasIds = ids != null && !ids.isEmpty();
         boolean hasTypes = types != null && !types.isEmpty();
-        boolean hasTenants = tenantIds != null && !tenantIds.isEmpty();
+        boolean hasRealms = realmIds != null && !realmIds.isEmpty();
         boolean hasUsers = userIds != null && !userIds.isEmpty();
         boolean hasAssets = assetIds != null && !assetIds.isEmpty();
         int counter = 0;
@@ -392,7 +392,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (hasTypes) {
             counter++;
         }
-        if (hasTenants) {
+        if (hasRealms) {
             counter++;
         }
         if (hasUsers) {
@@ -452,14 +452,14 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(Notification.TargetType.USER);
             parameters.add(userIds);
 
-        } else if (hasTenants) {
+        } else if (hasRealms) {
             builder.append(" AND n.target = ?")
                     .append(parameters.size() + 1)
                     .append(" AND n.targetId IN ?")
                     .append(parameters.size() + 2);
 
-            parameters.add(Notification.TargetType.TENANT);
-            parameters.add(tenantIds);
+            parameters.add(Notification.TargetType.REALM);
+            parameters.add(realmIds);
         }
     }
 
@@ -512,7 +512,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
             switch (target.getType()) {
 
-                case TENANT:
+                case REALM:
                     if (source == CLIENT || source == ASSET_RULESET) {
                         throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                     }
