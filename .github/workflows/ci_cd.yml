@@ -517,7 +517,7 @@ jobs:
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER || steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD || steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
