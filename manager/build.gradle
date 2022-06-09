@@ -2,6 +2,7 @@ apply plugin: "java-library"
 apply plugin: "application"
 apply plugin: "distribution"
 
+
 mainClassName = "org.openremote.manager.Main"
 
 dependencies {
