@@ -538,7 +538,7 @@ jobs:
 
       - name: Set up JDK 17 and gradle cache
         id: java
-        if: steps.install-command.outputs.value != ''
+        if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
@@ -626,8 +626,9 @@ jobs:
           # Define cleanup command
           echo "::set-output name=cleanup::docker-compose -f $composeProfile down"
           
-          # Start the stack          
-          docker-compose -f $composeProfile up -d --no-build
+          # Start the stack
+          echo "docker-compose -f ${composeProfile} up -d --no-build"
+          docker-compose -f ${composeProfile} up -d --no-build
           
           # Run the tests
           ${{ steps.test-backend-command.outputs.value }}
