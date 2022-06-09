@@ -224,6 +224,7 @@ fetch(configURL).then(async (result) => {
             Object.entries(appConfig.realms).forEach(([name, realmConfig]) => {
 
                 const normalisedConfig = {...defaultRealm,...realmConfig};
+
                 let headers = DefaultHeaderConfig;
 
                 if (normalisedConfig.headers) {
@@ -241,7 +242,11 @@ fetch(configURL).then(async (result) => {
                     });
                 }
 
-                orAppConfig.realms[name] = {...defaultRealm, header: headers,...(realmConfig as RealmAppConfig)};
+                if (normalisedConfig.language) {
+                    manager.language = normalisedConfig.language;
+                }
+
+                orAppConfig.realms[name] = { ...defaultRealm, header: headers, ...(realmConfig as RealmAppConfig) };
             });
         }
 

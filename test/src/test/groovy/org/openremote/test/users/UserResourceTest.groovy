@@ -22,7 +22,7 @@ package org.openremote.test.users
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.query.UserQuery
-import org.openremote.model.query.filter.TenantPredicate
+import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.model.security.ClientRole
 import org.openremote.model.security.Role
@@ -64,20 +64,20 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         def regularAccessToken = authenticate(
             container,
-            keycloakTestSetup.tenantBuilding.realm,
+            keycloakTestSetup.realmBuilding.name,
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
         ).token
 
         adminUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(UserResource.class)
-        regularUserResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, regularAccessToken).proxy(UserResource.class)
+        regularUserResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, regularAccessToken).proxy(UserResource.class)
     }
 
     def "User queries"() {
 
         when: "a request is made for all users by a super user"
-        def users = adminUserResource.query(null, new UserQuery().tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm)))
+        def users = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
 
         then: "all users should be returned including system users"
         users.size() == 3
@@ -85,7 +85,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users.count {!it.isServiceAccount()} == 3
 
         when: "a request is made for all users by a regular user"
-        users = regularUserResource.query(null, new UserQuery().tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm)))
+        users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
 
         then: "only non system users of the users realm should be returned"
         users.size() == 4
@@ -96,7 +96,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id} != null
 
         when: "a request is made for all users ordered by username"
-        users = regularUserResource.query(null, new UserQuery().tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+        users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
 
         then: "only non system users of the users realm should be returned in username order"
         users.size() == 4
@@ -106,7 +106,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users[3].username == "testuser3"
 
         when: "a request is made for subset of users ordered by username descending"
-        users = regularUserResource.query(null, new UserQuery().tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2))
+        users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2))
 
         then: "the correct users should be returned"
         users.size() == 2
@@ -114,7 +114,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users[1].username == "testuser2"
 
         when: "a request is made for another subset of users ordered by username descending"
-        users = regularUserResource.query(null, new UserQuery().tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2).offset(2))
+        users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2).offset(2))
 
         then: "the correct users should be returned"
         users.size() == 2
@@ -122,7 +122,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users[1].username == "building"
 
         when: "a request is made for only service users"
-        users = adminUserResource.query(null, new UserQuery().select(new UserQuery.Select().excludeRegularUsers(true)).tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm)))
+        users = adminUserResource.query(null, new UserQuery().select(new UserQuery.Select().excludeRegularUsers(true)).realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
 
         then: "only service users of the requested realm should be returned"
         users.size() == 1
@@ -133,7 +133,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
     def "Get and update roles"() {
 
         when: "a request is made for the roles in the building realm by the admin user"
-        def roles = adminUserResource.getRoles(null, keycloakTestSetup.tenantBuilding.realm)
+        def roles = adminUserResource.getRoles(null, keycloakTestSetup.realmBuilding.name)
 
         then: "the standard client roles should have been returned"
         roles.size() == ClientRole.values().length
@@ -152,7 +152,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         readAssets.compositeRoleIds == null
 
         when: "a request is made for the roles in the smart building realm by a regular user"
-        regularUserResource.getRoles(null, keycloakTestSetup.tenantBuilding.realm)
+        regularUserResource.getRoles(null, keycloakTestSetup.realmBuilding.name)
 
         then: "a not allowed exception should be thrown"
         thrown(ForbiddenException.class)
@@ -169,8 +169,8 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
                 roles.find {it.name == ClientRole.READ_MAP.value}.id
             ] as String[]
         ).setDescription("This is a test"))
-        adminUserResource.updateRoles(null, keycloakTestSetup.tenantBuilding.realm, updatedRoles as Role[])
-        roles = adminUserResource.getRoles(null, keycloakTestSetup.tenantBuilding.realm)
+        adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, updatedRoles as Role[])
+        roles = adminUserResource.getRoles(null, keycloakTestSetup.realmBuilding.name)
         def testRole = roles.find {it.name == "test"}
 
         then: "the new composite role should have been saved"
@@ -185,8 +185,8 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         writeRole.compositeRoleIds = [
             roles.find {it.name == ClientRole.READ_ASSETS.value}.id
         ]
-        adminUserResource.updateRoles(null, keycloakTestSetup.tenantBuilding.realm, roles)
-        roles = adminUserResource.getRoles(null, keycloakTestSetup.tenantBuilding.realm)
+        adminUserResource.updateRoles(null, keycloakTestSetup.realmBuilding.name, roles)
+        roles = adminUserResource.getRoles(null, keycloakTestSetup.realmBuilding.name)
         writeRole = roles.find {it.name == ClientRole.WRITE.value}
 
         then: "the write role should have been updated"

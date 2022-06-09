@@ -60,9 +60,9 @@ public interface NotificationHandler extends ContainerService {
      * Map the requested targets to one or more targets that are compatible with this handler; if there are no compatible
      * targets then return null. If the requested target is already compatible then it can just be returned; handlers
      * are free to determine how the requested target should be mapped (e.g. if requested {@link Notification.TargetType}
-     * was {@link Notification.TargetType#TENANT} and this handler only supports targets of type
+     * was {@link Notification.TargetType#REALM} and this handler only supports targets of type
      * {@link Notification.TargetType#ASSET} where the {@link Asset}s must be {@link ConsoleAsset} then the handler
-     * needs to find all console assets that belong to the specified tenant). Handlers can also add extra
+     * needs to find all console assets that belong to the specified realm). Handlers can also add extra
      * {@link org.openremote.model.notification.Notification.TargetType#CUSTOM} handlers extracted from the message.
      */
     List<Notification.Target> getTargets(Notification.Source source, String sourceId, List<Notification.Target> requestedTargets, AbstractNotificationMessage message);

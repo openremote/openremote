@@ -20,13 +20,12 @@
 package org.openremote.model.gateway;
 
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.shared.TenantScopedEvent;
+import org.openremote.model.event.shared.RealmScopedEvent;
 
 /**
  * Published by the server when a {@link GatewayConnection} status changes.
  */
-public class GatewayConnectionStatusEvent extends TenantScopedEvent {
+public class GatewayConnectionStatusEvent extends RealmScopedEvent {
 
     protected ConnectionStatus connectionStatus;
 

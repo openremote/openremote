@@ -31,7 +31,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
 import java.security.Principal;
 
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
@@ -67,7 +66,7 @@ public class WebResource implements AuthContext {
         return request.getRemoteAddr();
     }
 
-    public String getRequestRealm() {
+    public String getRequestRealmName() {
         return request.getHeader(REALM_PARAM_NAME);
     }
 
@@ -98,8 +97,8 @@ public class WebResource implements AuthContext {
     // Convenience methods
 
     @Override
-    public String getAuthenticatedRealm() {
-        return isAuthenticated() ? getAuthContext().getAuthenticatedRealm() : null;
+    public String getAuthenticatedRealmName() {
+        return isAuthenticated() ? getAuthContext().getAuthenticatedRealmName() : null;
     }
 
     @Override

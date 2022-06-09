@@ -36,7 +36,7 @@ public class AccessTokenAuthContext implements AuthContext {
     }
 
     @Override
-    public String getAuthenticatedRealm() {
+    public String getAuthenticatedRealmName() {
         return authenticatedRealm;
     }
 

@@ -25,7 +25,7 @@ import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.PathPredicate;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.security.User;
@@ -56,13 +56,13 @@ public class UsersFacade<T extends Ruleset> extends Users {
     public Stream<String> getResults(UserQuery userQuery) {
         // Do security checks to ensure correct scoping
         // No restriction for global rulesets
-        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            // Restrict tenant
-            userQuery.tenantPredicate = new TenantPredicate(
+        if (RealmRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            // Restrict realm
+            userQuery.realmPredicate = new RealmPredicate(
                 rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
             );
         } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            userQuery.tenantPredicate = null;
+            userQuery.realmPredicate = null;
             String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalArgumentException("Asset ID missing: " + rulesEngineId));
 
             // Asset<?> must be this engines asset or a child
