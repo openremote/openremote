@@ -55,12 +55,15 @@
 name: CI/CD
 
 on:
-  # Push excluding tags and workflow changes
+  # Push on master excluding tags
   push:
     branches:
-        - '**'
+        - 'master'
     tags-ignore:
       - '*.*'
+
+  # PR
+  pull_request:
 
   # When a release is published
   release:
@@ -121,7 +124,7 @@ jobs:
             inputs = json.loads(inputs)
           if secrets is not None and secrets != '':
             secrets = json.loads(secrets)          
-          if callerInputs is not None and callerInputs != 'null':
+          if eventName == 'workflow_call' and callerInputs is not None and callerInputs != 'null':
             os.system(f"echo 'Processing caller inputs'")
             inputs = json.loads(callerInputs)
             
@@ -164,28 +167,49 @@ jobs:
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
           ref: ${{ steps.inputs-and-secrets.outputs.COMMIT }}
-          fetch-depth: 0
           submodules: recursive
 
-      # We use this to exit workflow if only CI/CD files have changed
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v20
+      # Check which files have changed to only run appropriate tests and checks
+      - name: Backend files changed
+        id: backend-files-changed
+        if: github.event_name == 'pull_request'
+        uses: tj-actions/changed-files@v22.2
         with:
           files_ignore: |
             .ci_cd/**
+            console/**
+            deployment/**
+            setup/**
+            ui/**
             **/*.md
             **/*.yml
 
-      - name: Set skip flag if only CI/CD files have changed
-        id: skip-cicd
-        if: github.event_name == 'push' && steps.changed-files.outputs.any_modified != 'true'
+      # Check which files have changed to only run appropriate tests and checks
+      - name: UI files changed
+        id: ui-files-changed
+        if: github.event_name == 'pull_request'
+        uses: tj-actions/changed-files@v22.2
+        with:
+          files: |
+            ui/app/manager/**
+            ui/component/**
+          files_ignore: |
+            **/*.md
+            **/*.yml
+
+      - name: Set skip backend manager tests
+        id: skip-backend-tests
+        if: steps.backend-files-changed.outputs.any_modified != 'true'
+        run: echo "::set-output name=value::true"
+
+      - name: Set skip UI tests
+        id: skip-ui-tests
+        if: steps.ui-files-changed.outputs.any_modified != 'true'
         run: echo "::set-output name=value::true"
 
       - name: Make cache dirs and set file permissions
         run: |
           chmod +x gradlew
-          mkdir -p ~/image-cache
           mkdir -p ~/manager-tags-old
           mkdir -p ~/manager-tags-new
 
@@ -232,6 +256,8 @@ jobs:
         env:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
 
+      # For scheduled execution from custom projects we need to be able to determine if the manager docker image has
+      # changed since the last execution, we do this using a cache
       - name: Get docker tags to monitor
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
         id: monitor-tags
@@ -274,7 +300,7 @@ jobs:
             ${{ runner.os }}-manager-tags---
 
       - name: Process ci_cd.json file
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name != 'workflow_dispatch' }}
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request' }}
         id: ci-cd-output
         shell: python
         run: |
@@ -389,7 +415,6 @@ jobs:
           cp -r . ~/manager-tags-old/
           
       - name: Sanitize deployments value
-        if: steps.skip-cicd.outputs.value != 'true'
         id: deployments
         run: |
           deployments=$DEPLOYMENTS
@@ -410,17 +435,16 @@ jobs:
 
       - name: Define backend test command
         id: test-backend-command
-        if: ${{ github.event_name == 'push' && steps.skip-cicd.outputs.value != 'true' }}
+        if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
         run: echo "::set-output name=value::./gradlew -p test test"
-          
+
       - name: Define UI test command
         id: test-ui-command
-        if: ${{ github.event_name == 'push' && steps.skip-cicd.outputs.value != 'true' }}
+        if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
         run: echo ""
       
       - name: Define manager docker build command
         id: manager-docker-command
-        if: ${{ steps.skip-cicd.outputs.value != 'true' }}
         shell: bash
         run: |
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
@@ -454,7 +478,6 @@ jobs:
           
       - name: Define deployment docker build command
         id: deployment-docker-command
-        if: ${{ steps.skip-cicd.outputs.value != 'true' }}
         shell: bash
         run: |
           if [ "$DEPLOYMENT_DOCKERFILE_EXISTS" == 'true' ]; then
@@ -481,7 +504,6 @@ jobs:
           
       - name: Define installDist command
         id: install-command
-        if: steps.skip-cicd.outputs.value != 'true'
         shell: bash
         run: |
           if [ -n "$MANAGER_DOCKER_CMD" ]; then
@@ -492,19 +514,6 @@ jobs:
         env:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
-
-      - name: Define dev-testing path
-        id: dev-testing-path
-        shell: bash
-        run: |
-          if [ $IS_CUSTOM_PROJECT == 'true' ]; then
-            echo "::set-output name=value::openremote/profile/dev-testing.yml"
-          else
-            echo "::set-output name=value::profile/dev-testing.yml"
-          fi
-
-        env:
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
@@ -529,7 +538,7 @@ jobs:
 
       - name: Set up JDK 17 and gradle cache
         id: java
-        if: steps.skip-cicd.outputs.value != 'true'
+        if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
@@ -549,24 +558,6 @@ jobs:
           key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn---
-            
-      - name: Docker image cache
-        uses: actions/cache@v3.0.2
-        if: steps.test-backend-command.outputs.value != ''
-        id: docker-cache
-        with:
-          path:  |
-            ~/image-cache
-          key: ${{ runner.os }}-docker---${{ hashFiles(steps.dev-testing-path.outputs.value) }}
-          restore-keys: |
-            ${{ runner.os }}-docker---
-
-      - name: Load cached docker images
-        if: steps.docker-cache.outputs.cache-hit == 'true'
-        run: |
-          docker load < ~/image-cache/keycloak.tar.gz
-          docker load < ~/image-cache/postgres.tar.gz
-
 
       - name: Output info
         if: steps.skip-cicd.outputs.value != 'true'
@@ -591,44 +582,64 @@ jobs:
           echo "Node version: $(node -v)"
           echo 'Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}'
           echo 'Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}'
-          echo 'Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}'
           echo 'Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}'
           echo "************************************************************"
           echo "************************************************************"
 
       - name: Pull docker images
-        if: ${{ steps.test-backend-command.outputs.value != '' && steps.docker-cache.outputs.cache-hit != 'true' }}
-        run: |
-          docker-compose -f $DEV_TESTING_PATH pull
-          keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
-          postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")
-          docker save $keycloak | gzip > ~/image-cache/keycloak.tar.gz
-          docker save $postgres | gzip > ~/image-cache/postgres.tar.gz
-          ls -R ~/image-cache
+        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
+        run: |          
+          # Only need keycloak and postgres services for backend testing
+          if [ -z $TEST_UI_COMMAND ]; then
+            composeProfile='profile/dev-testing.yml'
+          else
+            composeProfile='profile/dev-ui.yml'
+          fi
+          
+          if [ $IS_CUSTOM_PROJECT == 'true' ]; then
+            composeProfile="openremote/$composeProfile"
+          fi
+          
+          # Pull the images
+          docker-compose -f $composeProfile pull
         env:
-          DEV_TESTING_PATH: ${{ steps.dev-testing-path.outputs.value }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+          TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
 
-      - name: Start docker test services
-        if: steps.test-backend-command.outputs.value != ''
-        run: docker-compose -f $DEV_TESTING_PATH up -d --no-build
-        env:
-          DEV_TESTING_PATH: ${{ steps.dev-testing-path.outputs.value }}
+      # Use docker layer caching to speed up image building
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
 
       - name: Run backend tests
-        if: steps.test-backend-command.outputs.value != ''
-        run: ${{ steps.test-backend-command.outputs.value }}
+        id: run-backend-tests
+        if: ${{ steps.test-backend-command.outputs.value != '' }}
+        run: |
+          
+          composeProfile='profile/dev-testing.yml'
+          
+          if [ $IS_CUSTOM_PROJECT == 'true' ]; then
+            composeProfile="openremote/$composeProfile"            
+          fi
+          
+          # Define cleanup command
+          echo "::set-output name=cleanup::docker-compose -f $composeProfile down"
+          
+          # Start the stack
+          echo "docker-compose -f ${composeProfile} up -d --no-build"
+          docker-compose -f ${composeProfile} up -d --no-build
+          
+          # Run the tests
+          ${{ steps.test-backend-command.outputs.value }}
+        env:
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
         timeout-minutes: 20
         #continue-on-error: true
-        
-      - name: Start docker frontend test services
-        if: steps.test-ui-command.outputs.value != ''
-        run: echo "START TEST UI SERVICES!!!! - Load manager image from cache etc."
-        
-      - name: Run frontend tests
-        if: steps.test-ui-command.outputs.value != ''
-        run: ${{ steps.test-ui-command.outputs.value }}
-        timeout-minutes: 20
-        continue-on-error: true
+
+      - name: Cleanup backend tests
+        if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}
+        run: ${{ steps.run-backend-tests.outputs.cleanup }}
 
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
@@ -669,10 +680,31 @@ jobs:
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 10
         
-      - name: Run manager docker command
+      - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
+
+      - name: Run frontend tests
+        if: steps.test-ui-command.outputs.value != ''
+        run: |
+          
+          composeProfile='profile/dev-ui.yml'
+          
+          if [ $IS_CUSTOM_PROJECT == 'true' ]; then
+            composeProfile="openremote/$composeProfile"            
+          fi
+
+          # Start the stack          
+          MANAGER_VERSION=$MANAGER_TAG docker-compose -f $composeProfile up -d --no-build
+          
+          # Run the tests
+          ${{ steps.test-ui-command.outputs.value }}
+        env:
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
+        timeout-minutes: 20
+        continue-on-error: true
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
@@ -728,17 +760,7 @@ jobs:
             # ------------------------------------------------------
             # Output env variables to temp env file for POSIX shell
             # ------------------------------------------------------
-            
-            # Output env file if exists
-            if os.path.exists(".ci_cd/env/.env"):
-              os.system(f"echo 'Outputting .ci_cd/env/.env to temp/env'")
-              os.system("cat .ci_cd/env/.env >> temp/env")
-              
-            # Output environment specific env file if exists
-            if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
-              os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
-              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
-            
+                        
             # Output inputs and secrets (spacial handling for SSH_KEY and some other variables)
             # _$ENV_ prefixed keys are output last (to override any non env specific keys)
             environment = (env if env else "").upper()
@@ -773,6 +795,16 @@ jobs:
                       os.system(f"echo '{value}\"' >> {envFile}")
                   else:
                       os.system(f"echo '{key}=\"{value}\"' >> {envFile}")
+
+            # Output env file if exists
+            if os.path.exists(".ci_cd/env/.env"):
+              os.system(f"echo 'Outputting .ci_cd/env/.env to temp/env'")
+              os.system("cat .ci_cd/env/.env >> temp/env")
+          
+            # Output environment specific env file if exists
+            if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
+              os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
+              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
             
             # Set CIDR environment variable
             if ipv4 is not None and ipv4 != '':
