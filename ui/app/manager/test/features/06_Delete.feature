@@ -6,7 +6,7 @@ Feature: Delete
 
     @Desktop @delete_realm
     Scenario: Delete realm
-        When Login OpenRemote as "admin"
+        When Login to OpenRemote "master" realm as "admin"
         Then Switch to "smartcity" realm
         When Navigate to "Realms" page
         Then Delete realm
@@ -14,7 +14,7 @@ Feature: Delete
 
     @Desktop @delete_role
     Scenario: Delete role
-        When Login OpenRemote as "admin"
+        When Login to OpenRemote "master" realm as "admin"
         Then Navigate to "Roles" page
         Then Create a new role
         Then Delete role
@@ -23,7 +23,7 @@ Feature: Delete
     @Desktop @delete_user
     Scenario: Delete user
         Given Setup "lv2"
-        When Login OpenRemote as "admin"
+        When Login to OpenRemote "master" realm as "admin"
         Then Switch to "smartcity" realm
         When Navigate to "Users" page
         Then Delete user
@@ -33,7 +33,7 @@ Feature: Delete
     @Desktop @delete_assets
     Scenario: Delete assets
         Given Setup "lv3"
-        When Login OpenRemote as "smartcity"
+        When Login to OpenRemote "smartcity" realm as "smartcity"
         When Delete assets
         Then We should see an empty asset column
 

@@ -6,7 +6,7 @@ Feature: Setup
 
     @Desktop
     Scenario: Add new Realm
-        When Login OpenRemote as "admin"
+        When Login to OpenRemote "master" realm as "admin"
         When Navigate to "Realms" page
         Then Add a new Realm
         When Select smartcity realm

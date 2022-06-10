@@ -6,7 +6,7 @@ Feature: Rules
 
     @Desktop @create_whenthen_rule
     Scenario Outline: Create a When-Then rule
-        When Login OpenRemote as "smartcity"
+        When Login to OpenRemote "smartcity" realm as "smartcity"
         Then Navigate to "Rule" tab
         When Create a new "When-Then" rule
         Then Name new rule "<name>"
@@ -22,7 +22,7 @@ Feature: Rules
 
     @Desktop @create_flow_rule
     Scenario: Create a Flow rule
-        When Login OpenRemote as "smartcity"
+        When Login to OpenRemote "smartcity" realm as "smartcity"
         Then Navigate to "Rule" tab
         When Create a new "Flow" rule
         Then Name new rule "Solar panel"

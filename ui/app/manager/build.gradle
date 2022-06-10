@@ -10,3 +10,8 @@ task installDist(type: Copy) {
     from project.buildDir
     into "${resolveProject(':manager').buildDir}/install/manager/web/${projectDir.name}"
 }
+
+task uiTest(type: Exec) {
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "test"
+}

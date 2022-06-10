@@ -12,7 +12,7 @@ Then('Delete realm', async function () {
 
 Then('We should not see the Realm picker', async function () {
   
-  await this.goToPage("admin")
+  await this.goToRealmStartPage("master")
 
   // must wait for the realm picker to be rendered
   await this.wait(500)
@@ -26,9 +26,9 @@ Then('We should not see the Realm picker', async function () {
  */
 Then('Delete role', { timeout: 15000 }, async function () {
 
-  // reproduce the preparation steps to start from the beginnning
+  // reproduce the preparation steps to start from the beginning
   await this.navigateToTab("Map")
-  await this.navigateTo("Roles")
+  await this.navigateToMenuItem("Roles")
 
   // delete roles
   await this.click('text=Custom')

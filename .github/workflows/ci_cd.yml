@@ -234,6 +234,12 @@ jobs:
         with:
           files: "deployment/Dockerfile"
 
+      - name: Check backend test gradle file
+        id: check_backend_gradle
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "test/build.gradle"
+
       - name: Check custom project
         id: check_custom_project
         uses: andstor/file-existence-action@v1
@@ -436,12 +442,17 @@ jobs:
       - name: Define backend test command
         id: test-backend-command
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
-        run: echo "::set-output name=value::./gradlew -p test test"
+        run: |
+          if [ $HAS_BACKEND_TESTS == 'true' ]; then
+            echo "::set-output name=value::./gradlew -p test test"
+          fi
+        env:
+          HAS_BACKEND_TESTS: ${{ steps.check_backend_gradle.outputs.files_exists }}
 
       - name: Define UI test command
         id: test-ui-command
         if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
-        run: echo ""
+        run: echo "::set-output name=value::./gradlew uiTest"
       
       - name: Define manager docker build command
         id: manager-docker-command
@@ -689,14 +700,14 @@ jobs:
         if: steps.test-ui-command.outputs.value != ''
         run: |
           
-          composeProfile='profile/dev-ui.yml'
+          composeProfile='docker-compose.yml'
           
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
             composeProfile="openremote/$composeProfile"            
           fi
 
           # Start the stack          
-          MANAGER_VERSION=$MANAGER_TAG docker-compose -f $composeProfile up -d --no-build
+          MANAGER_VERSION=$MANAGER_TAG OR_DEV_MODE=true docker-compose -f $composeProfile up -d --no-build
           
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}

@@ -6,7 +6,7 @@ Feature: Add_Settings
 
     @Desktop @add_user
     Scenario: Add new user
-        When Login OpenRemote as "admin"
+        When Login to OpenRemote "master" realm as "admin"
         Then Switch to "smartcity" realm
         When Navigate to "Users" page
         Then Add a new user
@@ -15,7 +15,7 @@ Feature: Add_Settings
     @Desktop @add_role
     Scenario: Add and apply new role
         Given Setup "lv2"
-        When Login OpenRemote as "admin"
+        When Login to OpenRemote "master" realm as "admin"
         Then Switch to "smartcity" realm
         When Navigate to "Roles" page
         Then Create a new role

@@ -1,10 +1,9 @@
 const { setWorldConstructor, BeforeAll, AfterAll, After, Status } = require("@cucumber/cucumber");
-const { ChromiumBroswer } = require("playwright");
+const { ChromiumBroswer: ChromiumBrowser } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
 const { expect } = require("@playwright/test");
 const { join } = require('path');
-const { isBigInt64Array } = require("util/types");
 require('dotenv').config();
 
 /**
@@ -18,8 +17,17 @@ require('dotenv').config();
  */
 
 const global = {
-    browser: ChromiumBroswer,
-    name: 1
+    browser: ChromiumBrowser,
+    name: 1,
+    getAppUrl: (realm) => {
+      const managerUrl = process.env.managerUrl || "https://localhost/";
+      const appUrl = managerUrl + "manager/?realm=";
+      return appUrl + realm;
+    },
+    passwords: {
+      admin: "secret",
+      smartcity: "smartcity"
+    }
 }
 
 const assets = [
@@ -70,48 +78,45 @@ class CustomWorld {
      */
 
     /**
-     * Go to page
-     * @param {String} realm Realm type(admin or other)
+     * Go to start page of the manager app for the specified realm
+     * @param {String} realm Realm name
      */
-    async goToPage(realm) {
-        await this.page.goto(realm == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
+    async goToRealmStartPage(realm) {
+      const url = global.getAppUrl(realm);
+      await this.page.goto(url);
     }
 
     /**
-     * open broswer and navigate to a realm page
-     * @param { } realm String : Realm type (admin or other)
+     * open browser and navigate to start page for specified realm
+     * @param {String} realm: Realm type (admin or other)
      */
-    async navigate(realm) {
-        let context
-        if (fs.existsSync('storageState.json')) {
+    async openApp(realm) {
+        let context;
+
+        if (fs.existsSync('test/storageState.json')) {
             context = await global.browser.newContext({
-                storageState: 'storageState.json',
+                storageState: 'test/storageState.json',
             });
         }
         else {
-            context = await global.browser.newContext();
+            context = await global.browser.newContext({ ignoreHTTPSErrors: true });
         }
         this.page = await context.newPage();
-        await this.goToPage(realm)
+        await this.goToRealmStartPage(realm);
     }
 
     /**
-     * login into realm as user
-     * @param {String} user  User type (admin or other)
+     * login as user
+     * @param {String} user  Username (admin or other)
      */
     async login(user) {
-        if (!fs.existsSync('storageState.json')) {
-            await this.wait(300)
-            if (user == "admin") {
-                await this.page?.fill('input[name="username"]', process.env.MASTER_ID)
-                await this.page?.fill('input[name="password"]', process.env.MASTER_PASSWORD)
-            }
-            else {
-                await this.page?.fill('input[name="username"]', process.env.SMARTCITY)
-                await this.page?.fill('input[name="password"]', process.env.SMARTCITY)
-            }
+        if (!fs.existsSync('test/storageState.json')) {
+            await this.wait(300);
+            let password = global.passwords[user];
+            await this.page?.fill('input[name="username"]', user);
+            await this.page?.fill('input[name="password"]', password);
             await this.page?.keyboard.press('Enter');
-            await this.page?.context().storageState({ path: 'storageState.json' });
+            await this.page?.context().storageState({ path: 'test/storageState.json' });
         }
     }
 
@@ -120,8 +125,8 @@ class CustomWorld {
      * Logout and delete login certification
      */
     async logout() {
-        if (fs.existsSync('storageState.json')) {
-            fs.unlinkSync('storageState.json')
+        if (fs.existsSync('test/storageState.json')) {
+            fs.unlinkSync('test/storageState.json')
         }
         const isMenuBtnVisible = await this.isVisible('#menu-btn-desktop')
         if (isMenuBtnVisible) {
@@ -238,7 +243,7 @@ class CustomWorld {
      * for the setting list menu at the top right
      * @param {Sting} setting name of the setting menu item
      */
-    async navigateTo(setting) {
+    async navigateToMenuItem(setting) {
         await this.click('button[id="menu-btn-desktop"]');
         await this.click(`text=${setting}`);
     }
@@ -265,23 +270,12 @@ class CustomWorld {
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await Promise.all([
-                this.page?.waitForNavigation(`${process.env.URL.slice(0, -7)}#/realms`),
+                this.page?.waitForNavigation(),
                 this.click('button:has-text("create")')
             ]);
-            await console.log("         Realm: " + name + " added")
+            await console.log("Realm: " + name + " added")
             await this.wait(300)
         }
-    }
-
-    /**
-     * switch to a new manager realms by giving URL
-     * @param {String} name name of custom realm
-     */
-    async switchRealmByURL(name) {
-        await this.logout()
-        let URL = name == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity"
-        await this.page?.goto(URL)
-        await this.login(name)
     }
 
     /**
@@ -299,9 +293,9 @@ class CustomWorld {
     }
 
     /**
-     *  Create User (default as smartcity)
+     *  Create User
      */
-    async addUser() {
+    async addUser(username, password) {
         /**
          * add user
          */
@@ -310,15 +304,15 @@ class CustomWorld {
         await this.click('#menu-btn-desktop');
         await this.click('text=Users');
         await this.wait(300)
-        const isVisible = await this.isVisible('main[role="main"] >> text=smartcity')
+        const isVisible = await this.isVisible('main[role="main"] >> text=' + username)
         // add user if not exsit
         if (!isVisible) {
 
             await this.click('.mdi-plus >> nth=0')
-            await this.fill('input[type="text"] >> nth=0', 'smartcity')
+            await this.fill('input[type="text"] >> nth=0', username)
             // type in password
-            await this.fill('#password-user0 input[type="password"]', 'smartcity')
-            await this.fill('#repeatPassword-user0 input[type="password"]', 'smartcity')
+            await this.fill('#password-user0 input[type="password"]', password)
+            await this.fill('#repeatPassword-user0 input[type="password"]', password)
             // select permissions
             await this.click('div[role="button"]:has-text("Roles")');
             await this.click('li[role="menuitem"]:has-text("Read")');
@@ -326,7 +320,7 @@ class CustomWorld {
             await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
             // create user
             await this.click('button:has-text("create")')
-            console.log("         User added")
+            console.log("User added")
         }
         else {
         }
@@ -369,7 +363,7 @@ class CustomWorld {
                         await this.wait(300)
                     }
                     await this.unSelectAll()
-                    console.log("         Asset: " + asset.name + " added")
+                    console.log("Asset: " + asset.name + " added")
                 }
             }
             catch (error) {
@@ -478,7 +472,7 @@ class CustomWorld {
             //const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
             expect(count).toBe(0)
 
-            await this.goToPage("admin")
+            await this.goToRealmStartPage("master")
             await this.wait(500)
             const isVisible = await this.isVisible('#realm-picker')
             expect(isVisible).toBeFalsy()
@@ -532,7 +526,7 @@ class CustomWorld {
 
 
     /**
-    *  setup the testing envrioment by giving the realm name and setup level
+    *  setup the testing environment by giving the realm name and setup level
     *  // lv0 is no setup at all
     *  // lv1 is to create a realm
     *  // lv2 is to create a user
@@ -541,38 +535,40 @@ class CustomWorld {
     * @param {String} realm realm name
     * @param {String} level level (lv0, lv1, etc.)
     */
-    async setup(realm_name, level) {
+    async setup(realm, level) {
 
         // clean storage
-        if (fs.existsSync('storageState.json')) {
-            fs.unlinkSync('storageState.json')
+        if (fs.existsSync('test/storageState.json')) {
+            fs.unlinkSync('test/storageState.json')
         }
 
-
-        if (!(level === "lv0")) {
-            await this.navigate("admin")
+        if (level !== "lv0") {
+            await this.openApp("master")
             await this.login("admin")
             // add realm
             await this.wait(300)
             const isPickerVisible = await this.isVisible('#realm-picker')
             if (!isPickerVisible) {
-                await this.navigateTo("Realms")
-                await this.addRealm(realm_name)
+                await this.navigateToMenuItem("Realms")
+                await this.addRealm(realm)
             }
-            await this.switchToRealmByRealmPicker(realm_name)
+            await this.switchToRealmByRealmPicker(realm)
 
             const update = level == "lv4" ? true : false
             // add user
             if (level >= 'lv2') {
-                await this.addUser()
+                await this.addUser("smartcity", global.passwords["smartcity"])
                 // add assets
                 if (level >= 'lv3') {
-                    await this.switchRealmByURL(realm_name)
-                    await this.addAssets(update)
+                  await this.logout();
+                  await this.goToRealmStartPage(realm);
+                  await this.login("smartcity");
+                  await this.addAssets(update);
                 }
             }
             await this.logout()
             await this.page.close()
+            this.page = undefined;
         }
     }
 
@@ -589,7 +585,7 @@ class CustomWorld {
      */
 
     /**
-     *  Clean up the enviroment
+     *  Clean up the environment
      *  Called in After() 
      */
     async cleanUp() {
@@ -598,7 +594,7 @@ class CustomWorld {
         await this.logout()
 
 
-        await this.goToPage("admin")
+        await this.goToRealmStartPage("master")
         await this.login("admin")
         // must wait for the realm picker to be rendered
         await this.wait(600)
@@ -608,16 +604,16 @@ class CustomWorld {
             await this.switchToRealmByRealmPicker("master")
             // delete realms
             // should delete everything and set the envrioment to beginning
-            await this.navigateTo("Realms")
+            await this.navigateToMenuItem("Realms")
             await this.deleteRealm()
         }
-        await console.log("         Realm: smartcity deleted")
+        await console.log("Realm: smartcity deleted")
     }
 }
 
 
 /**
- * broswer setting
+ * browser setting
  */
 
 // launch broswer
@@ -635,7 +631,7 @@ After({ timeout: 25000 }, async function (testCase) {
 
     // if test fails then take a screenshot
     if (testCase.result.status === Status.FAILED) {
-        await this.page?.screenshot({ path: join('screenshots', `${global.name}.png`) });
+        await this.page?.screenshot({ path: join("test", 'screenshots', `${global.name}.png`) });
         await global.name++
     }
 
@@ -646,8 +642,8 @@ After({ timeout: 25000 }, async function (testCase) {
 // close browser and delete authentication file
 AfterAll(async function () {
     await global.browser.close()
-    if (fs.existsSync('storageState.json')) {
-        fs.unlinkSync('storageState.json')
+    if (fs.existsSync('test/storageState.json')) {
+        fs.unlinkSync('test/storageState.json')
     }
 })
 

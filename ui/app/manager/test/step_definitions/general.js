@@ -18,8 +18,8 @@ Given('Setup {string}', { timeout: 50000 }, async function (section) {
 /**
  * Login to a realm as expected user
  */
-When('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) {
-    await this.navigate(user)
+When('Login to OpenRemote {string} realm as {string}', { timeout: 10000 }, async function (realm, user) {
+    await this.openApp(realm)
     await this.login(user)
 })
 
@@ -27,7 +27,7 @@ When('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) {
  * Setting menu
  */
 When('Navigate to {string} page', async function (name) {
-    await this.navigateTo(name)
+    await this.navigateToMenuItem(name)
     await this.wait(200)
 })
 

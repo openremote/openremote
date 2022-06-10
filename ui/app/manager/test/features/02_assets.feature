@@ -6,7 +6,7 @@ Feature: Assets
 
     @Desktop @add_asset
     Scenario Outline: Add new asset
-        When Login OpenRemote as "smartcity"
+        When Login to OpenRemote "smartcity" realm as "smartcity"
         Then Navigate to "asset" tab
         Then Create a "<asset>" with name of "<name>"
         When Go to asset "<name>" info page
@@ -24,7 +24,7 @@ Feature: Assets
     @Desktop @select
     Scenario Outline: Search and select asset
         Given Setup "lv3"
-        When Login OpenRemote as "smartcity"
+        When Login to OpenRemote "smartcity" realm as "smartcity"
         Then Navigate to "asset" tab
         When Search for the "<name>"
         When Select the "<name>"
@@ -37,7 +37,7 @@ Feature: Assets
     @Desktop @update
     Scenario Outline: Update asset
         Given Setup "lv3"
-        When Login OpenRemote as "smartcity"
+        When Login to OpenRemote "smartcity" realm as "smartcity"
         Then Navigate to "asset" tab
         When Select the "<name>"
         Then Update "<value>" to the "<attribute>" with type of "<type>"
@@ -53,7 +53,7 @@ Feature: Assets
     @Desktop @readonly
     Scenario Outline: Set and cancel read-only
         Given Setup "lv3"
-        When Login OpenRemote as "smartcity"
+        When Login to OpenRemote "smartcity" realm as "smartcity"
         Then Navigate to "asset" tab
         When Go to asset "<name>" info page
         Then Go to modify mode
@@ -73,7 +73,7 @@ Feature: Assets
     @Desktop @set_conf_item
     Scenario Outline: Set configure item for Insight and Rule
         Given Setup "lv3"
-        When Login OpenRemote as "smartcity"
+        When Login to OpenRemote "smartcity" realm as "smartcity"
         Then Navigate to "asset" tab
         When Go to asset "<name>" info page
         Then Go to modify mode
