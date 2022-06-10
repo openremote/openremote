@@ -276,14 +276,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
-        console.log('shouldUpdate history');
-        console.log(_changedProperties);
-        console.log(_changedProperties.get('_loading'));
-
         let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp") || _changedProperties.has("attribute");
 
         if (this._dataFirstLoaded && !_changedProperties.get('_loading') && !reloadData) {
-            console.log('should not !');
             return false;
         }
 
@@ -291,14 +286,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this.toTimestamp = new Date();
             return false;
         }
-
-        //let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp");
-
-        /*if (_changedProperties.has("assetId") || _changedProperties.has("attributeRef") || _changedProperties.has("attribute")) {
-            this._type = undefined;
-            this._cleanup();
-            reloadData = true;
-        }*/
 
         if (!this._type && this.attribute) {
             this._type = AssetModelUtil.getValueDescriptor(this.attribute.type) || {};
@@ -732,7 +719,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         if (response.status === 200) {
             this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
             this._dataFirstLoaded = true;
-            console.log('loaded');
         }
     }
     protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout= 300) {
