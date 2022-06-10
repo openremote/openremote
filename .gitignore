@@ -42,7 +42,6 @@ openremote.log
 dive.log
 yarn-error.log
 local.properties
-**/yarn.lock
 
 # File extensions
 *.mbtiles
