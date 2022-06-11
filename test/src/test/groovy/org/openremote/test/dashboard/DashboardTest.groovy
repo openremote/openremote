@@ -1,12 +1,12 @@
 package org.openremote.test.dashboard
 
-import org.junit.Ignore
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.dashboard.Dashboard
 import org.openremote.model.dashboard.DashboardResource
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
+import spock.lang.Ignore
 import spock.lang.Specification
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
