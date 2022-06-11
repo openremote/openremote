@@ -1,7 +1,6 @@
 package org.openremote.model.dashboard;
 
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 
 public class DashboardGridItem {
 
@@ -20,5 +19,4 @@ public class DashboardGridItem {
     protected boolean noResize;
     protected boolean noMove;
     protected boolean locked;
-    /*protected Object content;*/
 }

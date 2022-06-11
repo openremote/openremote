@@ -141,7 +141,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                     this.expandedPanels = ['Attributes', 'Display']; break;
                 }
                 case DashboardWidgetType.KPI: {
-                    this.expandedPanels = ['Attributes', 'Display']; break;
+                    this.expandedPanels = ['Attributes', 'Display', 'Settings']; break;
                 }
             }
         })
@@ -229,7 +229,7 @@ export class OrDashboardWidgetsettings extends LitElement {
 
     // UI generation of all settings fields. Depending on the WidgetType it will
     // return different HTML containing different settings.
-    generateHTML(widgetType: DashboardWidgetType, widgetConfig: any): TemplateResult {
+    generateHTML(widgetType: DashboardWidgetType, widgetConfig: any): TemplateResult { //nosonar
         let htmlContent: TemplateResult;
         switch (widgetType) {
 
@@ -250,7 +250,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                                         const asset = this.loadedAssets?.find((x: Asset) => { return x.id == attributeRef.id; }) as Asset;
                                         return (asset != null) ? html`
                                             <div class="attribute-list-item">
-                                                <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type), undefined, undefined)}</span>
+                                                <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
                                                 <div class="attribute-list-item-label">
                                                     <span>${asset.name}</span>
                                                     <span style="font-size:14px; color:grey;">${attributeRef.name}</span>
@@ -329,7 +329,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                                     <div id="attribute-list">
                                         <div class="attribute-list-item">
                                             ${(this.loadedAssets![0] != null) ? html`
-                                                <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.loadedAssets![0].type), undefined, undefined)}</span>
+                                                <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.loadedAssets![0].type))}</span>
                                                 <div class="attribute-list-item-label">
                                                     <span>${this.loadedAssets![0].name}</span>
                                                     <span style="font-size:14px; color:grey;">${kpiConfig.attributeRefs[0].name}</span>

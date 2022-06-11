@@ -27,10 +27,6 @@ public class DashboardScreenPreset {
 
     /* -------------------------------- */
 
-    public DashboardScreenPreset() {
-
-    }
-
     public void setId(@NotNull @NotEmpty String id) { this.id = id; }
     public void setDisplayName(@NotNull @NotEmpty String displayName) { this.displayName = displayName; }
     public void setBreakpoint(@NotNull int breakpoint) { this.breakpoint = breakpoint; }
@@ -47,13 +43,4 @@ public class DashboardScreenPreset {
     public int getBreakpoint() { return breakpoint; }
     public DashboardScalingPreset getScalingPreset() { return scalingPreset; }
     public String getRedirectDashboardId() { return redirectDashboardId; }
-
-
-    /*public boolean checkValidity() {
-        if(id != null && !id.isEmpty() && displayName != null && !displayName.isEmpty() && breakpoint > 0 && scalingPreset != null && !scalingPreset.toString().isEmpty()) {
-            // TODO: more validity checks such as whether the ID on redirectDashboardId exists
-            return true;
-        }
-        return false;
-    }*/
 }

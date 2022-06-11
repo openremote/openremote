@@ -31,7 +31,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     @Override
     public void configure() throws Exception {
-        System.out.println("Configuring DashboardStorageService..");
+        /* code not overridden yet */
     }
 
     @Override
@@ -50,10 +50,12 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     @Override
     public void start(Container container) throws Exception {
+        /* code not overridden yet */
     }
 
     @Override
     public void stop(Container container) throws Exception {
+        /* code not overridden yet */
 
     }
 
@@ -61,6 +63,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     /* --------------------------  */
 
     // Getting ALL dashboards from a realm
+    @SuppressWarnings("java:S2326")
     protected <T extends Dashboard> Dashboard[] findAllOfRealm(String realm) {
         Object[] result = persistenceService.doReturningTransaction(em -> {
             try {
@@ -80,11 +83,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         return Arrays.copyOf(result, result.length, Dashboard[].class);
     }
 
-
+    @SuppressWarnings("java:S2326")
     protected <T extends Dashboard> Dashboard get(String id) {
-        return persistenceService.doReturningTransaction(em -> {
-            return em.find(Dashboard.class, id);
-        });
+        return persistenceService.doReturningTransaction(em -> em.find(Dashboard.class, id));
     }
 
 

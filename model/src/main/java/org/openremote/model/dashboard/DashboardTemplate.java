@@ -26,14 +26,6 @@ public class DashboardTemplate {
 
     /* -------------------- */
 
-    // Final Properties
-    private static final int MAX_SCREEN_WIDTH_DEFAULT = 1080;
-
-
-    // Constructor
-    public DashboardTemplate() {
-    }
-
     public void setId(String id) { this.id = id; }
     public void setColumns(int columns) { this.columns = columns; }
     public void setMaxScreenWidth(int maxScreenWidth) { this.maxScreenWidth = maxScreenWidth; }

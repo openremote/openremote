@@ -25,10 +25,6 @@ public class DashboardWidget {
 
     /* ------------------------------ */
 
-    public DashboardWidget() {
-
-    }
-
     public void setId(@NotNull @NotEmpty String id) { this.id = id; }
     public void setDisplayName(@NotNull @NotEmpty String displayName) { this.displayName = displayName; }
     public void setGridItem(@NotNull DashboardGridItem gridItem) { this.gridItem = gridItem; }
@@ -40,14 +36,4 @@ public class DashboardWidget {
     public DashboardGridItem getGridItem() { return gridItem; }
     public DashboardWidgetType getWidgetType() { return widgetType; }
     public Object getWidgetConfig() { return widgetConfig; }
-
-
-
-    /*public boolean checkValidity() {
-        if(id != null && !id.isEmpty() && displayName != null && !displayName.isEmpty()) {
-            // TODO: more validity checks
-            return true;
-        }
-        return false;
-    }*/
 }

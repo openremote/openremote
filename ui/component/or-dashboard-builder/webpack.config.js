@@ -1,6 +1,6 @@
 const util = require("@openremote/util");
 
-bundles = {
+var bundles = {
     "index": {
         excludeOr: true
     },

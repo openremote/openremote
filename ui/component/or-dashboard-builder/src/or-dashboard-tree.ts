@@ -8,7 +8,7 @@ import { Dashboard, DashboardScalingPreset, DashboardScreenPreset} from "@openre
 import manager from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu"; //nosonar
 import { DashboardSizeOption } from ".";
 
 //language=css
@@ -77,7 +77,7 @@ export class OrDashboardTree extends LitElement {
         manager.rest.api.DashboardResource.create(dashboard).then((response => {
             if(response.status == 200) {
                 console.log(response); // expects a dashboard response
-                this.dashboards?.push(response.data as Dashboard);
+                this.dashboards?.push(response.data);
                 this.requestUpdate("dashboards");
                 this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data, size: size }}));
 
@@ -182,24 +182,6 @@ export class OrDashboardTree extends LitElement {
                     scalingPreset: DashboardScalingPreset.BLOCK_DEVICE
                 }];
             }
-            case DashboardSizeOption.MEDIUM: {
-                return [{
-                    id: "large",
-                    displayName: "Large",
-                    breakpoint: 1000000,
-                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
-                }, {
-                    id: "medium",
-                    displayName: "Medium",
-                    breakpoint: 1280,
-                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
-                }, {
-                    id: "small",
-                    displayName: "Small",
-                    breakpoint: 640,
-                    scalingPreset: DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN
-                }];
-            }
             case DashboardSizeOption.SMALL: {
                 return [{
                     id: "large",
@@ -218,7 +200,7 @@ export class OrDashboardTree extends LitElement {
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }];
             }
-            default: {
+            default: { // or DashboardSizeOption.MEDIUM since that is the default
                 return [{
                     id: "large",
                     displayName: "Large",

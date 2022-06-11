@@ -30,7 +30,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     @Override
     public Dashboard[] getAllRealmDashboards(RequestParams requestParams, String realm) {
 
-        System.out.println("Getting all User Dashboards...");
         try {
             if(!isRealmActiveAndAccessible(realm)) {
                 throw new WebApplicationException(FORBIDDEN);
@@ -50,7 +49,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     @Override
     public Dashboard create(RequestParams requestParams, Dashboard dashboard) {
         try {
-            System.out.println("Creating a new Dashboard..");
 
             // Check if access to realm
             if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
@@ -58,8 +56,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             }
             dashboard.setOwnerId(getUserId());
 
-            Dashboard created = this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
-            return created;
+            return this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
 
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
@@ -70,13 +67,12 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     @Override
     public void update(RequestParams requestParams, Dashboard dashboard) {
         try {
-            System.out.println("Updating a Dashboard..");
 
             // Check if access to realm
             if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            Dashboard updated = this.dashboardStorageService.save(ValueUtil.clone(dashboard));
+            this.dashboardStorageService.save(ValueUtil.clone(dashboard));
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);

@@ -1,4 +1,4 @@
-import {DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate } from "@openremote/model";
+import {DashboardScalingPreset, DashboardTemplate } from "@openremote/model";
 import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -56,7 +56,7 @@ export class OrDashboardBoardsettings extends LitElement {
 
     /* -------------------------------- */
 
-    protected render() {
+    protected render() { //nosonar
         if(this.template != null && this.template.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.template.screenPresets, true);
             return html`
@@ -123,7 +123,7 @@ export class OrDashboardBoardsettings extends LitElement {
                                     <div style="margin-bottom: 12px; display: flex; align-items: center;">
                                         <span style="min-width: 140px;">${preset.displayName} screen</span>
                                         <span style="margin-right: 8px;">${(screenPresets.indexOf(preset) == 0) ? '>' : '<'}</span>
-                                        <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${(screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}" .disabled="${(screenPresets.indexOf(preset) == 0 ? true : true)}"></or-mwc-input>
+                                        <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${(screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}" .disabled="${true}"></or-mwc-input>
                                         <span style="margin-left: 8px;">px</span>
                                     </div>
                                 `

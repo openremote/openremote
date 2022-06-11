@@ -46,8 +46,8 @@ const editorStyling = css`
         border-radius: 8px;
         overflow-x: hidden;
         overflow-y: scroll;
-        height: 540px; /!* TODO: Should be set according to input *!/
-        width: 960px; /!* TODO: Should be set according to input *!/
+        height: 540px;
+        width: 960px;
         padding: 4px;
         position: absolute;
         z-index: 0;
