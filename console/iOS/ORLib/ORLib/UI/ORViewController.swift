@@ -22,27 +22,20 @@ import Foundation
 import UIKit
 import WebKit
 import MaterialComponents.MaterialButtons
-import Popover
 
 open class ORViewcontroller : UIViewController {
     
     var data : Data?
-    public var menuButton: MDCFloatingButton?
-    var menuList: UIView?
     var myWebView : WKWebView?
     var webProgressBar: UIProgressView?
     var defaults : UserDefaults?
     var webCfg : WKWebViewConfiguration?
-    public var appConfig: ORAppConfig?
-    var popover: Popover?
     public var geofenceProvider: GeofenceProvider?
     public var pushProvider: PushNotificationProvider?
     public var storageProvider: StorageProvider?
     public var qrProvider: QrScannerProvider?
     
     public var baseUrl: String?
-
-    var popoverOptions: [PopoverOption]?
     
     open override func viewDidLoad() {
         super.viewDidLoad()
@@ -52,13 +45,8 @@ open class ORViewcontroller : UIViewController {
 
     open override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if let applicationConfig = appConfig {
-            var url = applicationConfig.initialUrl ?? applicationConfig.url
-            if !url.starts(with: "http") {
-                url = baseUrl!.appending(url)
-            }
-            loadURL(url: URL(string: url.stringByURLEncoding()!)!)
-        }
+        
+
     }
 
     func sendData(data: [String: Any?]) {
@@ -113,90 +101,6 @@ open class ORViewcontroller : UIViewController {
         webProgressBar?.trailingAnchor.constraint(equalTo: myWebView!.trailingAnchor).isActive = true
         webProgressBar?.topAnchor.constraint(equalTo: myWebView!.topAnchor, constant: -2).isActive = true
         webProgressBar?.heightAnchor.constraint(equalToConstant: 2).isActive = true
-
-        self.processAppConfig()
-    }
-    
-    public func processAppConfig() {
-        if appConfig?.menuEnabled ?? false {
-
-            let sbHeight: CGFloat
-            if #available(iOS 11.0, *) {
-                sbHeight = UIApplication.shared.keyWindow?.safeAreaInsets.top ?? UIApplication.shared.statusBarFrame.height
-            } else {
-                sbHeight = UIApplication.shared.statusBarFrame.height
-            }
-            
-            let bundle = Bundle(for: ORViewcontroller.self)
-            
-            menuButton = MDCFloatingButton(shape: .default)
-            menuButton?.backgroundColor = UIColor(hexaRGB: appConfig?.primaryColor ?? "#43A047")
-            menuButton?.translatesAutoresizingMaskIntoConstraints = false
-            menuButton?.addTarget(self, action: #selector(self.pressed(sender:)), for: .touchUpInside)
-            menuButton?.setImage(UIImage(named: "ic_menu", in: bundle, compatibleWith: nil), for: .normal)
-            menuButton?.setImage(UIImage(named: "ic_menu", in: bundle, compatibleWith: nil), for: .selected)
-            menuButton?.setImage(UIImage(named: "ic_menu", in: bundle, compatibleWith: nil), for: .highlighted)
-            menuButton?.isHidden = true
-
-            if let secondColor = appConfig?.secondaryColor {
-                menuButton?.tintColor = UIColor(hexaRGB: secondColor)
-            }
-
-            view.addSubview(menuButton!)
-            view.bringSubviewToFront(menuButton!)
-
-            let constraints: Array<NSLayoutConstraint> = {
-                if appConfig!.menuPosition == "BOTTOM_RIGHT" {
-                    self.popoverOptions = [
-                        .type(.up),
-                        .arrowSize(.zero),
-                    ]
-                    return [
-                        menuButton!.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20),
-                        menuButton!.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -20)
-                    ]
-                } else if appConfig!.menuPosition == "TOP_RIGHT" {
-                    self.popoverOptions = [
-                        .type(.down),
-                        .arrowSize(.zero),
-                    ]
-                    return [
-                        menuButton!.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20),
-                        menuButton!.topAnchor.constraint(equalTo: self.view.topAnchor, constant: sbHeight)
-                    ]
-                } else if appConfig!.menuPosition == "TOP_LEFT" {
-                    self.popoverOptions = [
-                        .type(.down),
-                        .arrowSize(.zero),
-                    ]
-                    return [
-                        menuButton!.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
-                        menuButton!.topAnchor.constraint(equalTo: self.view.topAnchor, constant: sbHeight)
-                    ]
-                }
-                self.popoverOptions = [
-                    .type(.up),
-                    .arrowSize(.zero),
-
-                ]
-                return [
-                    menuButton!.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
-                    menuButton!.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -20)
-                ]
-            }()
-
-            NSLayoutConstraint.activate(constraints)
-        }
-    }
-
-    @objc func pressed(sender: UIButton!) {
-        let linkCount = appConfig?.links?.count ?? 0
-        let tableView = UITableView(frame: CGRect(x: 0, y: 0, width: self.view.frame.width / 2, height: CGFloat(linkCount * 60)))
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.isScrollEnabled = false
-        self.popover = Popover(options: self.popoverOptions)
-        self.popover!.show(tableView, fromView: self.menuButton!)
     }
 
     public override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
@@ -233,13 +137,9 @@ open class ORViewcontroller : UIViewController {
         let alertView = UIAlertController(title: "Error", message: "Error requesting '\(failingUrl)': \(errorCode) (\(description))", preferredStyle: .alert)
         alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
 
-        if let applicationConfig = appConfig {
-            self.present(alertView, animated: true, completion: nil)
-            var url = applicationConfig.url
-            if !url.starts(with: "http") {
-                url = baseUrl!.appending(url)
-            }
-            self.myWebView?.load(URLRequest(url: URL(string: url.stringByURLEncoding()!)!))
+        if (false) {
+            //TODO need to have case to return to home url of config or go back to wizard to setup project enviroment
+//            self.myWebView?.load(URLRequest(url: URL(string: url.stringByURLEncoding()!)!))
         } else {
             if self.presentingViewController != nil {
                 self.dismiss(animated: true) {
@@ -249,31 +149,6 @@ open class ORViewcontroller : UIViewController {
                 self.present(alertView, animated: true, completion: nil)
             }
         }
-    }
-}
-
-extension ORViewcontroller: UITableViewDelegate {
-
-    public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        self.popover?.dismiss()
-        loadURL(url: URL(string: appConfig!.links![indexPath.row].pageLink.stringByURLEncoding()!)!)
-    }
-
-    public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 60
-    }
-}
-
-extension ORViewcontroller: UITableViewDataSource {
-
-    public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int{
-        return appConfig?.links?.count ?? 0
-    }
-
-    public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-        cell.textLabel?.text = appConfig!.links![indexPath.row].displayText
-        return cell
     }
 }
 
@@ -443,16 +318,6 @@ extension ORViewcontroller: WKNavigationDelegate {
                     decisionHandler(.cancel)
                 }
             } else {
-                if let config = appConfig, let button = menuButton {
-                    var url = config.url
-                    if !url.starts(with: "http") {
-                        url = baseUrl!.appending(url)
-                    }
-                    if url == navigationAction.request.url?.absoluteString {
-                        button.isHidden = false
-                    }
-                }
-
                 decisionHandler(.allow)
             }
         }

@@ -43,7 +43,7 @@ class SplashViewController: UIViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToWebView" {
             let orViewController = segue.destination as! ORViewcontroller
-            orViewController.appConfig = self.appconfig
+            
             orViewController.baseUrl = host
         }
     }
