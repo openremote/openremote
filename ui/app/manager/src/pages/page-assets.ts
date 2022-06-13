@@ -28,6 +28,7 @@ import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAssetsRoute} from "../routes";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -263,11 +264,15 @@ export class PageAssets extends Page<AppStateKeyed>  {
         let parentId: string | undefined = newParentId.parentId;
         let assetsIds: string[] = newParentId.assetsIds;
 
-        if (parentId) {
-            await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
-        } else {
-            //So need to remove parent from all the selected assets
-            await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
+        try {
+            if (parentId) {
+                await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
+            } else {
+                //So need to remove parent from all the selected assets
+                await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
+            }
+        } catch (e) {
+            showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
         }
     }
 

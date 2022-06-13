@@ -408,6 +408,7 @@
   "daysOfTheWeek": "jours de la semaine",
   "dismiss": "rejeter",
   "createAssetFailed": "Impossible de créer la ressource",
+  "moveAssetFailed": "Impossible de déplacer la ressource",
   "logCategory": {
   },
   "readPermissions": "Autorisations de lire",

@@ -416,6 +416,7 @@
   "daysOfTheWeek": "Wochentage",
   "dismiss": "entlassen",
   "createAssetFailed": "Objekt konnte nicht erstellt werden",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {},
   "readPermissions": "Leseberechtigungen",
   "writePermissions": "Schreibberechtigungen",

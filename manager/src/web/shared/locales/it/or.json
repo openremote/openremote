@@ -408,6 +408,7 @@
   "daysOfTheWeek": "Giorni della settimana",
   "dismiss": "dismiss",
   "createAssetFailed": "Fallita la creazione del asset",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "Leggi permessi",

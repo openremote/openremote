@@ -417,6 +417,7 @@
   "daysOfTheWeek": "dagen van de week",
   "dismiss": "sluiten",
   "createAssetFailed": "Asset aanmaken is niet gelukt",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "Leesrechten",

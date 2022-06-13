@@ -408,6 +408,7 @@
   "daysOfTheWeek": "Días de la semana",
   "dismiss": "despedir",
   "createAssetFailed": "No se pudo crear el activo",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "Leer permisos",

@@ -408,6 +408,7 @@
   "daysOfTheWeek": "天每周",
   "dismiss": "忽略",
   "createAssetFailed": "创建资源失败",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "读权限",

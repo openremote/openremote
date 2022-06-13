@@ -386,6 +386,7 @@
   "daysOfTheWeek": "أيام الأسبوع",
   "dismiss": "رفض",
   "createAssetFailed": "  فشل في إنشاء المكون  ",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "صلاحيات القراءة",
