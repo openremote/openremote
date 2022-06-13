@@ -655,7 +655,7 @@ jobs:
         #continue-on-error: true
 
       - name: Archive backend test results
-        if: ${{ steps.test-backend-command.outputs.value != '' }}
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: backend-test-results
@@ -741,7 +741,7 @@ jobs:
         #continue-on-error: true
 
       - name: Archive frontend test results
-        if: steps.test-ui-command.outputs.value != ''
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: frontend-test-results
