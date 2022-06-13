@@ -1,7 +1,5 @@
 build/
 node_modules/
-test/screenshots/
-test/storageState.json
 _site/
 .DS_Store
 src/**/*.d.ts

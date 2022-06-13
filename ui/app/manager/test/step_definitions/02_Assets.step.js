@@ -62,13 +62,13 @@ Then('We see the {string} page', async function (name) {
 /**
  * update
  */
-Then('Update {string} to the {string} with type of {string}', { timeout: 7000 }, async function (value, attribute, type) {
+Then('Update {string} to the {string} with type of {string}', { timeout: 10000 }, async function (value, attribute, type) {
 
     await this.fill(`#field-${attribute} input[type="${type}"]`, value)
     await this.click(`#field-${attribute} #send-btn span`)
 })
 
-Then('Update location of {int} and {int}', { timeout: 8000 }, async function (location_x, location_y) {
+Then('Update location of {int} and {int}', { timeout: 10000 }, async function (location_x, location_y) {
     const { page } = this;
 
     await this.click('text=location GEO JSON point >> button span')

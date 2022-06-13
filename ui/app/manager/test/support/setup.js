@@ -249,7 +249,7 @@ class CustomWorld {
     }
 
     /**
-     * navigate to a ceratin tab page
+     * navigate to a certain tab page
      * @param {String} tab tab name
      */
     async navigateToTab(tab) {
@@ -305,7 +305,7 @@ class CustomWorld {
         await this.click('text=Users');
         await this.wait(300)
         const isVisible = await this.isVisible('main[role="main"] >> text=' + username)
-        // add user if not exsit
+        // add user if not exist
         if (!isVisible) {
 
             await this.click('.mdi-plus >> nth=0')
@@ -317,7 +317,7 @@ class CustomWorld {
             await this.click('div[role="button"]:has-text("Roles")');
             await this.click('li[role="menuitem"]:has-text("Read")');
             await this.click('li[role="menuitem"]:has-text("Write")');
-            await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
+            await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 5000 });
             // create user
             await this.click('button:has-text("create")')
             console.log("User added")
@@ -624,10 +624,10 @@ BeforeAll(async function () {
     });
 })
 
-// delete realm when a senario ends
+// delete realm when a scenario ends
 // delete a realm should be able to delete everything inside
 // close page
-After({ timeout: 25000 }, async function (testCase) {
+After({ timeout: 40000 }, async function (testCase) {
 
     // if test fails then take a screenshot
     if (testCase.result.status === Status.FAILED) {
