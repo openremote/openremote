@@ -479,7 +479,7 @@ jobs:
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
               echo "::set-output name=pushRequired::true"
             else
-              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
             fi
             echo "::set-output name=value::$command"
           fi
@@ -720,7 +720,7 @@ jobs:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
-        continue-on-error: true
+        #continue-on-error: true
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
