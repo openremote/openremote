@@ -53,10 +53,10 @@ export class ControlInputElement extends ControlBaseElement {
 
         if (Array.isArray(schema.type)) {
             this.inputType = InputType.JSON;
-        } else if (isBooleanControl(uischema, schema)) {
+        } else if (isBooleanControl(uischema, schema, this.rootSchema)) {
             this.inputType = InputType.CHECKBOX;
-        } else if (isNumberControl(uischema, schema) || isIntegerControl(uischema, schema)) {
-            step = isNumberControl(uischema, schema) ? 0.1 : 1;
+        } else if (isNumberControl(uischema, schema, this.rootSchema) || isIntegerControl(uischema, schema, this.rootSchema)) {
+            step = isNumberControl(uischema, schema, this.rootSchema) ? 0.1 : 1;
             this.inputType = InputType.NUMBER;
             min = schema.minimum;
             max = schema.maximum;
@@ -71,17 +71,17 @@ export class ControlInputElement extends ControlBaseElement {
             }
 
         } else if (
-            isEnumControl(uischema, schema)
-            || isOneOfEnumControl(uischema, schema)
-            || isEnumArray(uischema, schema)) {
+            isEnumControl(uischema, schema, this.rootSchema)
+            || isOneOfEnumControl(uischema, schema, this.rootSchema)
+            || isEnumArray(uischema, schema, this.rootSchema)) {
 
             this.inputType = InputType.SELECT;
 
-            if (isEnumControl(uischema, schema)) {
+            if (isEnumControl(uischema, schema, this.rootSchema)) {
                 options = schema.enum!.map(enm => {
                     return [JSON.stringify(enm), String(enm)];
                 });
-            } else if (isOneOfEnumControl(uischema, schema)) {
+            } else if (isOneOfEnumControl(uischema, schema, this.rootSchema)) {
                 options = (schema.oneOf as JsonSchema[]).map(s => {
                     return [JSON.stringify(s.const), String(s.const)];
                 })
@@ -105,7 +105,7 @@ export class ControlInputElement extends ControlBaseElement {
             } else {
                 value = value !== undefined ? JSON.stringify(value) : undefined;
             }
-        } else if (isStringControl(uischema, schema)) {
+        } else if (isStringControl(uischema, schema, this.rootSchema)) {
             minLength = schema.minLength;
             maxLength = schema.maxLength;
             pattern = schema.pattern;

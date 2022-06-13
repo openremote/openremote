@@ -2,7 +2,6 @@ import {
     CombinatorKeyword,
     composeWithUi,
     ControlElement,
-    ControlProps,
     createDefaultValue,
     deriveTypes,
     getAjv,
@@ -20,7 +19,6 @@ import {
     OwnPropsOfRenderer,
     Resolve,
     resolveSchema,
-    resolveSubSchemas,
     StatePropsOfCombinator,
 } from "@jsonforms/core";
 import {DefaultColor5, Util} from "@openremote/core";
@@ -41,13 +39,14 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
     }
 
     const renderers = props.renderers || getRenderers({jsonforms: {...state}});
+    const rootSchema = state.config.rootSchema;
     const schema = props.schema;
     const uischema = props.uischema;
 
     let template: TemplateResult | undefined;
 
     if (renderers && schema && uischema) {
-        const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema)] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
+        const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema, rootSchema)] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
         const renderer = orderedRenderers && orderedRenderers.length > 0 ? orderedRenderers[0] : undefined;
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
@@ -80,12 +79,12 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
         const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema);
 
         if (schema.$ref) {
-            schema = Resolve.schema(rootSchema, schema.$ref);
+            schema = Resolve.schema(rootSchema, schema.$ref, rootSchema);
         }
 
-        if (Array.isArray(schema.allOf)) {
-            schema = resolveSubSchemas(schema, rootSchema, "allOf");
-        }
+        // if (Array.isArray(schema.allOf)) {
+        //     schema = resolveSubSchemas(schema, rootSchema, "allOf");
+        // }
 
         if (deriveTypes(schema).every(type => type === "object")) {
             const props = getSchemaObjectProperties(schema);
@@ -153,7 +152,7 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
 
     if (schema.$ref) {
         title = getLabelFromScopeOrRef(schema.$ref);
-        schema = Resolve.schema(rootSchema, schema.$ref);
+        schema = Resolve.schema(rootSchema, schema.$ref, rootSchema);
     }
 
     if (schema.title) {
@@ -161,8 +160,7 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
     }
 
     if (schema.allOf) {
-        const resolvedSchema = resolveSubSchemas(schema, rootSchema, "allOf");
-        const titledSchema = (resolvedSchema.allOf! as JsonSchema[]).find((allOfSchema) => {
+        const titledSchema = (schema.allOf! as JsonSchema[]).find((allOfSchema) => {
             return !!allOfSchema.title;
         });
         if (titledSchema) {
@@ -198,7 +196,7 @@ export function mapStateToCombinatorRendererProps(
     ownProps: OwnPropsOfControl,
     keyword: CombinatorKeyword
 ): StatePropsOfCombinator {
-    const { uischema } = ownProps;
+    const uischema = ownProps.uischema!;
     const path = composeWithUi(uischema!, ownProps.path!);
     const rootSchema = getSchema(state);
     const resolvedSchema = Resolve.schema(
@@ -206,6 +204,7 @@ export function mapStateToCombinatorRendererProps(
         uischema!.scope,
         rootSchema
     );
+    const enabled = ownProps.enabled || false;
     const visible: boolean =
         ownProps.visible === undefined || hasShowRule(uischema!)
             ? isVisible(uischema!, getData(state), ownProps.path!, getAjv(state))
@@ -216,7 +215,7 @@ export function mapStateToCombinatorRendererProps(
 
     const ajv = state.jsonforms.core!.ajv!;
     const schema = resolvedSchema || rootSchema;
-    const _schema = resolveSubSchemas(schema, rootSchema, keyword);
+    // const _schema = resolveSubSchemas(schema, rootSchema, keyword);
     const structuralKeywords = [
         'required',
         'additionalProperties',
@@ -235,13 +234,13 @@ export function mapStateToCombinatorRendererProps(
     // TODO instead of compiling the combinator subschemas we can compile the original schema
     // without the combinator alternatives and then revalidate and check the errors for the
     // element
-    for (let i = 0; i < _schema[keyword]!.length; i++) {
+    for (let i = 0; i < schema[keyword]!.length; i++) {
         try {
-            const schema = {
+            const schma = {
                 definitions: rootSchema.definitions,
-                ..._schema[keyword]![i]
+                ...schema[keyword]![i]
             } as JsonSchema;
-            const valFn = ajv.compile(schema);
+            const valFn = ajv.compile(schma);
             valFn(data);
             if (dataIsValid(valFn.errors!)) {
                 indexOfFittingSchema = i;
@@ -258,10 +257,13 @@ export function mapStateToCombinatorRendererProps(
         schema,
         rootSchema,
         visible,
+        enabled,
         id,
         indexOfFittingSchema,
         uischemas: state.jsonforms.uischemas!,
-        uischema
+        uischema,
+        label: "",
+        errors: "",
     };
 }
 
@@ -291,7 +293,7 @@ export function resolveSubSchemasRecursive(
     const combinators: string[] = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
 
     if (schema.$ref) {
-        return resolveSubSchemasRecursive(resolveSchema(rootSchema, schema.$ref), rootSchema);
+        return resolveSubSchemasRecursive(resolveSchema(rootSchema, schema.$ref, rootSchema), rootSchema);
     }
 
     combinators.forEach((combinator) => {
