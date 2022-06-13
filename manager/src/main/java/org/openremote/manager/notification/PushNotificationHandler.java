@@ -46,7 +46,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -230,9 +230,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE)));
 
                 switch (targetType) {
-                    case TENANT ->
+                    case REALM ->
                         // Any console assets in the target realm
-                        assetQuery.tenant(new TenantPredicate(targetId));
+                        assetQuery.realm(new RealmPredicate(targetId));
                     case USER ->
                         // Any console assets linked to the target user
                         assetQuery.userIds(targetId);

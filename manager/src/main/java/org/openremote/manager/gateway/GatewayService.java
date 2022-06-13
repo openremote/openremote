@@ -43,7 +43,7 @@ import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
@@ -91,7 +91,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     protected final Map<String, GatewayConnector> gatewayConnectorMap = new HashMap<>();
     protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
     protected boolean active;
-    protected List<String> tenantIds = new ArrayList<>();
+    protected List<String> realmIds = new ArrayList<>();
 
     @SuppressWarnings("unchecked")
     public static Predicate isNotForGateway(GatewayService gatewayService) {
@@ -104,17 +104,17 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 // Need to look at parent as this asset may not have been acknowledged by the gateway service yet
                 return gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId()) == null;
             }
-            if (isPersistenceEventForEntityType(Tenant.class).matches(exchange)) {
-                PersistenceEvent<Tenant> persistenceEvent = (PersistenceEvent<Tenant>)exchange.getIn().getBody(PersistenceEvent.class);
-                Tenant tenant = persistenceEvent.getEntity();
+            if (isPersistenceEventForEntityType(Realm.class).matches(exchange)) {
+                PersistenceEvent<Realm> persistenceEvent = (PersistenceEvent<Realm>)exchange.getIn().getBody(PersistenceEvent.class);
+                Realm realm = persistenceEvent.getEntity();
 
                 if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
                     // Ruleset won't exist in storage so check cache
-                    return gatewayService.tenantIds.remove(tenant.getId());
+                    return gatewayService.realmIds.remove(realm.getId());
                 }
-                Tenant localTenant = gatewayService.identityProvider.getTenant(tenant.getRealm());
-                if (localTenant != null && localTenant.getId().equals(tenant.getId())) {
-                    gatewayService.tenantIds.add(tenant.getId());
+                Realm localRealm = gatewayService.identityProvider.getRealm(realm.getName());
+                if (localRealm != null && localRealm.getId().equals(realm.getId())) {
+                    gatewayService.realmIds.add(realm.getId());
                     return true;
                 }
                 return false;

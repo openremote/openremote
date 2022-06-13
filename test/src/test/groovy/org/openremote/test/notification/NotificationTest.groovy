@@ -19,7 +19,7 @@ import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.notification.*
 import org.openremote.model.query.UserQuery
-import org.openremote.model.query.filter.TenantPredicate
+import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.util.TextUtil
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.KeycloakTestSetup
@@ -33,6 +33,8 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
+import static org.openremote.container.timer.TimerService.Clock.REAL
+import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
@@ -77,7 +79,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), mockPushNotificationHandler)
 
         and: "an authenticated test user"
-        def realm = keycloakTestSetup.tenantBuilding.realm
+        def realm = keycloakTestSetup.realmBuilding.name
         def testuser1AccessToken = authenticate(
             container,
             MASTER_REALM,
@@ -124,7 +126,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def testuser2NotificationResource = getClientApiTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(NotificationResource.class)
         def testuser3NotificationResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(NotificationResource.class)
         def adminNotificationResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(NotificationResource.class)
-        def anonymousNotificationResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm).proxy(NotificationResource.class)
+        def anonymousNotificationResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(NotificationResource.class)
         def testuser1ConsoleResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(ConsoleResource.class)
         def testuser2ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(ConsoleResource.class)
         def testuser3ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(ConsoleResource.class)
@@ -175,7 +177,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         anonymousConsole.id != null
 
         when: "the admin user sends a push notification to an entire realm"
-        notification.targets = [new Notification.Target(Notification.TargetType.TENANT, keycloakTestSetup.tenantBuilding.realm)]
+        notification.targets = [new Notification.Target(Notification.TargetType.REALM, keycloakTestSetup.realmBuilding.name)]
         adminNotificationResource.sendNotification(null, notification)
 
         then: "all consoles in that realm should have been sent a notification (excluding testuser2 as they have disabled push notifications)"
@@ -551,7 +553,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
+        def container = startContainer(defaultConfig() << [(OR_EMAIL_X_HEADERS): "Test 1: Hello World 1\nTest2: Hello World 2"], defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
@@ -574,23 +576,24 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         expect: "the demo users to be created"
         conditions.eventually {
-            def users = identityService.getIdentityProvider().queryUsers(new UserQuery().tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm)).select(new UserQuery.Select().excludeServiceUsers(true)))
+            def users = identityService.getIdentityProvider().queryUsers(new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)).select(new UserQuery.Select().excludeServiceUsers(true)))
             assert users.size() == 3
             assert users.count { !TextUtil.isNullOrEmpty(it.email)} == 3
         }
 
-        when: "an email notification is sent to a tenant through same mechanism as rules"
+        when: "an email notification is sent to a realm through same mechanism as rules"
         def notification = new Notification(
                 "Test",
                 new EmailNotificationMessage().setSubject("Test").setText("Hello world!"),
-                Collections.singletonList(new Notification.Target(Notification.TargetType.TENANT, managerTestSetup.realmBuildingTenant)), null, null)
-        notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerTestSetup.realmBuildingTenant)
+                Collections.singletonList(new Notification.Target(Notification.TargetType.REALM, managerTestSetup.realmBuildingName)), null, null)
+        notificationService.sendNotification(notification, Notification.Source.REALM_RULESET, managerTestSetup.realmBuildingName)
 
-        then: "the email should have been sent to the tenant users"
+        then: "the email should have been sent to the realm users"
         conditions.eventually {
             assert sentEmails.size() == 2
             assert sentEmails.every {it.getPlainText() == "Hello world!"}
             assert sentEmails.every {it.getSubject() == "Test"}
+            assert sentEmails.every {it.getHeaders() != null && it.getHeaders().size() == 2 && it.getHeaders().get("Test 1") == "Hello World 1" && it.getHeaders().get("Test2") == "Hello World 2" }
             assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser2@openremote.local"}
             assert !sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser3@openremote.local"}
             assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "building@openremote.local"}

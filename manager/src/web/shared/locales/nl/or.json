@@ -83,9 +83,9 @@
   "orWhen": "Of als",
   "datetime": "Datum en tijd",
   "timer": "Timer",
-  "rulesEditorAddCondition": "Voeg nog een voorwaarde toe",
+  "rulesEditorAddCondition": "Voeg voorwaarde toe",
   "rulesEditorAddGroup": "Groep",
-  "rulesEditorAddAction": "Voeg nog een actie toe",
+  "rulesEditorAddAction": "Voeg actie toe",
   "sortBy": "Sorteren op",
   "assetType": "Asset type",
   "creationDate": "Aangemaakt op",
@@ -109,6 +109,7 @@
   "loading": "Aan het laden...",
   "noAssetsFound": "Geen assets gevonden",
   "location": "Locatie",
+  "longPressSetLoc": "Druk lang op de kaart om locatie in te stellen",
   "hour": "Uur",
   "day": "Dag",
   "week": "Week",
@@ -177,6 +178,7 @@
   "matchedOfType": "Hetzelfde type: {{type}}",
   "unmatched": "Niet dezelfde",
   "wait": "Wacht",
+  "linkedUsers": "Gekoppelde gebruikers",
   "setup": "Instellingen",
   "selectFile": "Kies bestand",
   "discoverAssets": "Haal assets op",
@@ -221,10 +223,10 @@
   "buttonTextConfirm": "Tekst voor actie knop",
   "buttonTextDecline": "Tekst voor negeerknop",
   "custom": "Nieuw attribuut",
-  "tenant": "Tenant",
-  "tenant_plural": "Tenants",
+  "realm": "Realm",
+  "realm_plural": "Realms",
   "displayName":"Vriendelijke naam",
-  "deleteTenantConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
+  "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
   "user_plural": "Gebruikers",
   "regularUser_plural": "Gebruikers",
   "serviceUser_plural": "Service gebruikers",
@@ -462,5 +464,15 @@
     "title": {
       "indexedItem": "Item {{index}}"
     }
+  },
+  "yes": "Ja",
+  "no": "Nee",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

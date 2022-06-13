@@ -1,8 +1,8 @@
 package org.openremote.model.query;
 
 import org.openremote.model.query.filter.PathPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 
 import java.util.Arrays;
@@ -91,7 +91,7 @@ public class UserQuery {
     }
 
     // Restriction predicates
-    public TenantPredicate tenantPredicate;
+    public RealmPredicate realmPredicate;
     public UserAssetPredicate assetPredicate;
     public PathPredicate pathPredicate;
     public String[] ids;
@@ -104,8 +104,8 @@ public class UserQuery {
     public UserQuery() {
     }
 
-    public UserQuery tenant(TenantPredicate tenantPredicate) {
-        this.tenantPredicate = tenantPredicate;
+    public UserQuery realm(RealmPredicate realmPredicate) {
+        this.realmPredicate = realmPredicate;
         return this;
     }
 
@@ -152,7 +152,7 @@ public class UserQuery {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "tenantPredicate=" + tenantPredicate +
+            "realmPredicate=" + realmPredicate +
             ", assetPredicate=" + assetPredicate +
             ", pathPredicate=" + pathPredicate +
             ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +

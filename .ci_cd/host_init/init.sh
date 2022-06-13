@@ -17,6 +17,12 @@ else
   DIR=./
 fi
 
+if [ -n "$SUDO_USER" ]; then
+  HOME_DIR=$(eval echo "~$SUDO_USER")
+else
+  HOME_DIR=~
+fi
+
 # Clean deployment persistent files if requested
 if [ "$CLEAN_INSTALL" == 'true' ]; then
   source "${DIR}clean.sh"
@@ -26,13 +32,8 @@ fi
 if [ "$DAILY_RESTART" == 'true' ]; then
   echo "Adding daily manager restart cron job"
 
-  username=$(id -u -n)
-  if [ -n "$SUDO_USER" ]; then
-    username=$SUDO_USER
-  fi
-  dir=~
   echo '#!/bin/bash' > /etc/cron.d/or-restart
-  echo "0 5 * * * $username $dir/temp/host_init/restart.sh" >> /etc/cron.d/or-restart
+  echo "0 5 * * * root $HOME_DIR/temp/host_init/restart.sh" >> /etc/cron.d/or-restart
 else
   echo "Removing any existing daily restart cron job"
   rm -f /etc/cron.d/or-restart &>/dev/null
@@ -41,13 +42,8 @@ fi
 if [ "$DAILY_BACKUP" != 'false' ]; then
   echo "Adding daily backup cron job"
 
-  username=$(id -u -n)
-  if [ -n "$SUDO_USER" ]; then
-    username=$SUDO_USER
-  fi
-  dir=~
   echo '#!/bin/bash' > /etc/cron.d/or-backup
-  echo "0 4 * * * $username $dir/temp/host_init/backup.sh" >> /etc/cron.d/or-backup
+  echo "0 4 * * * root $HOME_DIR/temp/host_init/backup.sh" >> /etc/cron.d/or-backup
 else
   echo "Removing any existing daily backup cron job"
   rm -f /etc/cron.d/or-backup &>/dev/null

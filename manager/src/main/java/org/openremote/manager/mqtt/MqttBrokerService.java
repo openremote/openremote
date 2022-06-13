@@ -40,7 +40,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
@@ -78,7 +78,9 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
     protected MessageBrokerService messageBrokerService;
     protected ScheduledExecutorService executorService;
     protected TimerService timerService;
-    protected final Map<String, MqttConnection> clientIdConnectionMap = new HashMap<>();
+    // We store connections that get 'pushed' out by a re-connect which can occur before we are notified of the disconnect
+    private final Map<String, MqttConnection> obsoleteConnectionMap = new HashMap<>();
+    private final Map<String, MqttConnection> clientIdConnectionMap = new HashMap<>();
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
 
     protected boolean active;
@@ -201,10 +203,10 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
      */
     @Override
     public boolean checkValid(String clientId, String username, byte[] password) {
-        String realm = null;
+        String realmName = null;
         if (username != null) {
             String[] realmAndClientId = username.split(":");
-            realm = realmAndClientId[0];
+            realmName = realmAndClientId[0];
             username = realmAndClientId[1]; // This is OAuth clientId
         }
         String suppliedClientSecret = password != null ? new String(password, StandardCharsets.UTF_8) : null;
@@ -212,21 +214,21 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         // Removed client ID check as it won't execute for anonymous connections; single connection per user is more
         // important
 
-        if (TextUtil.isNullOrEmpty(realm)
+        if (TextUtil.isNullOrEmpty(realmName)
             || TextUtil.isNullOrEmpty(username)
             || TextUtil.isNullOrEmpty(suppliedClientSecret)) {
             LOG.fine("Realm, client ID and/or client secret missing so this is an anonymous session: " + clientId);
             return true;
         }
 
-        Tenant tenant = identityProvider.getTenant(realm);
+        Realm realm = identityProvider.getRealm(realmName);
 
-        if (tenant == null || !tenant.isActive(timerService.getCurrentTimeMillis())) {
-            LOG.warning("Realm not found or is inactive: " + realm);
+        if (realm == null || !realm.isActive(timerService.getCurrentTimeMillis())) {
+            LOG.warning("Realm not found or is inactive: " + realmName);
             return false;
         }
 
-        User user = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + username);
+        User user = identityProvider.getUserByUsername(realmName, User.SERVICE_ACCOUNT_PREFIX + username);
         if (user == null || user.getEnabled() == null || !user.getEnabled() || TextUtil.isNullOrEmpty(user.getSecret())) {
             LOG.warning("User not found, disabled or doesn't support client credentials grant type: username=" + username);
             return false;
@@ -261,7 +263,16 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         }
 
         synchronized (clientIdConnectionMap) {
-            MqttConnection connection = clientIdConnectionMap.remove(clientId);
+            MqttConnection connection = obsoleteConnectionMap.remove(clientId);
+
+            if (connection == null) {
+                connection = clientIdConnectionMap.remove(clientId);
+            }
+
+            if (connection != null && LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Removing connection: " + connection);
+            }
+
             if (connection != null && !connection.isCleanSession()) {
                 try {
                     SessionRegistry sessionRegistry = getSessionRegistry();
@@ -353,6 +364,14 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
 
     public void addConnection(String clientId, MqttConnection connection) {
         synchronized (clientIdConnectionMap) {
+            MqttConnection obsoleteConnection = clientIdConnectionMap.remove(clientId);
+            if (obsoleteConnection != null) {
+                obsoleteConnection.setObsolete();
+                obsoleteConnectionMap.put(clientId, obsoleteConnection);
+            }
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Adding connection: " + connection);
+            }
             clientIdConnectionMap.put(clientId, connection);
         }
     }

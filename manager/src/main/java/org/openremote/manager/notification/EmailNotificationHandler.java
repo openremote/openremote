@@ -29,7 +29,7 @@ import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.util.TextUtil;
 import org.simplejavamail.email.Email;
@@ -40,10 +40,7 @@ import org.simplejavamail.mailer.Mailer;
 import org.simplejavamail.mailer.MailerBuilder;
 import org.simplejavamail.mailer.config.TransportStrategy;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -58,6 +55,7 @@ public class EmailNotificationHandler implements NotificationHandler {
     private static final Logger LOG = Logger.getLogger(EmailNotificationHandler.class.getName());
     protected String defaultFrom;
     protected Mailer mailer;
+    protected Map<String, String> headers;
     protected ManagerIdentityService managerIdentityService;
     protected AssetStorageService assetStorageService;
 
@@ -77,6 +75,16 @@ public class EmailNotificationHandler implements NotificationHandler {
         int port = getInteger(container.getConfig(), OR_EMAIL_PORT, OR_EMAIL_PORT_DEFAULT);
         String user = container.getConfig().getOrDefault(OR_EMAIL_USER, null);
         String password = container.getConfig().getOrDefault(OR_EMAIL_PASSWORD, null);
+
+        String headersStr = container.getConfig().getOrDefault(OR_EMAIL_X_HEADERS, null);
+        if (!TextUtil.isNullOrEmpty(headersStr)) {
+            headers = Arrays.stream(headersStr.split("\\R"))
+                .map(s -> s.split(":", 2))
+                .collect(Collectors.toMap(
+                    arr -> arr[0].trim(),
+                    arr -> arr.length == 2 ? arr[1].trim() : ""
+                ));
+        }
 
         defaultFrom = container.getConfig().getOrDefault(OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT);
 
@@ -149,8 +157,8 @@ public class EmailNotificationHandler implements NotificationHandler {
 
                 switch (targetType) {
 
-                    case TENANT:
-                        userQuery = new UserQuery().tenant(new TenantPredicate(targetId));
+                    case REALM:
+                        userQuery = new UserQuery().realm(new RealmPredicate(targetId));
                         break;
                     case USER:
                         userQuery = new UserQuery().ids(targetId);
@@ -329,7 +337,7 @@ public class EmailNotificationHandler implements NotificationHandler {
         return sendMessage(emailBuilder.buildEmail());
     }
 
-    public NotificationSendResult sendMessage(Email email) {
+    protected NotificationSendResult sendMessage(Email email) {
         try {
             mailer.sendMail(email);
             return NotificationSendResult.success();
@@ -345,6 +353,10 @@ public class EmailNotificationHandler implements NotificationHandler {
             .withSubject(emailNotificationMessage.getSubject())
             .withPlainText(emailNotificationMessage.getText())
             .withHTMLText(emailNotificationMessage.getHtml());
+
+        if (headers != null) {
+            emailBuilder.withHeaders(headers);
+        }
 
         if (emailNotificationMessage.getFrom() != null) {
             emailBuilder.from(convertRecipient(emailNotificationMessage.getFrom()));

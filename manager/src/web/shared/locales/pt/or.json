@@ -207,10 +207,10 @@
   "buttonTextConfirm": "Texto para o botão de ação",
   "buttonTextDecline": "Texto para o botão de recusa",
   "custom": "Atributo personalizado",
-  "tenant": "Reino",
-  "tenant_plural": "Reinos",
+  "realm": "Reino",
+  "realm_plural": "Reinos",
   "displayName":"Nome amigável",
-  "deleteTenantConfirm":"Tem certeza que deseja excluir este Reino?",
+  "deleteRealmConfirm":"Tem certeza que deseja excluir este Reino?",
   "user_plural": "Usuários",
   "regularUser_plural": "Usuários regulares",
   "serviceUser_plural": "Usuários do serviço",
@@ -423,5 +423,15 @@
     "invalidJSON": "JSON inválido",
     "invalidDate": "Data inválida",
     "keyAlreadyExists": "A chave já existe"
+  },
+  "yes": "Sim",
+  "no": "Não",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

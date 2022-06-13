@@ -25,6 +25,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.firebase.messaging.FirebaseMessaging
 import io.openremote.orlib.ORConstants
 import io.openremote.orlib.ORConstants.CLEAR_URL
+import io.openremote.orlib.ORConstants.BASE_URL_KEY
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
 import io.openremote.orlib.service.GeofenceProvider
@@ -66,6 +67,34 @@ open class OrMainActivity : Activity() {
         }
     }
 
+    private val clientUrl: String?
+        get() {
+            var returnValue: String? = null
+
+            if (appConfig != null) {
+                if (URLUtil.isValidUrl(appConfig!!.initialUrl)) {
+                    return appConfig!!.initialUrl
+                } else {
+                    sharedPreferences.let { pref ->
+                        pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
+                            return host.plus(appConfig!!.initialUrl)
+                        }
+                    }
+                }
+            }
+
+
+            sharedPreferences.let { pref ->
+                pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
+                    pref.getString(ORConstants.REALM_KEY, null)?.let { realm ->
+                        returnValue = host.plus("/api/${realm}")
+                    }
+                }
+            }
+
+            return returnValue
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityOrMainBinding.inflate(layoutInflater)
@@ -100,6 +129,10 @@ open class OrMainActivity : Activity() {
 
         if (intent.hasExtra(ORConstants.BASE_URL_KEY)) {
             baseUrl = intent.getStringExtra(ORConstants.BASE_URL_KEY)
+        }
+
+        if (intent.hasExtra(BASE_URL_KEY)) {
+            baseUrl = intent.getStringExtra(BASE_URL_KEY)
         }
 
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)

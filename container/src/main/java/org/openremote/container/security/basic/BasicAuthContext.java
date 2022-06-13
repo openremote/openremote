@@ -45,7 +45,7 @@ public class BasicAuthContext implements AuthContext, Principal {
 
 
     @Override
-    public String getAuthenticatedRealm() {
+    public String getAuthenticatedRealmName() {
         return authenticatedRealm;
     }
 

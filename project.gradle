@@ -121,7 +121,7 @@ if (project == rootProject) {
                         OR_MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
                         OR_MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
                         OR_CUSTOM_APP_DOCROOT: "../deployment/manager/app",
-                        OR_CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
+                        OR_CONSOLE_APP_CONFIG_DOCROOT: "../deployment/manager/consoleappconfig"
                     ]
                 }
             }

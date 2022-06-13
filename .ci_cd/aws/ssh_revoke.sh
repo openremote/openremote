@@ -15,21 +15,15 @@ else
   awsDir=./
 fi
 
-source "${awsDir}login.sh"
-
-if [ "$AWS_ENABLED" != 'true' ]; then
-  exit 1
-fi
-
 if [ -n "$AWS_PROFILE" ]; then
   PROFILE="--profile $AWS_PROFILE"
 fi
 
 if [ -n "$CIDR" ]; then
   echo "Revoking SSH access for CIDR '$CIDR' on AWS"
-  aws ec2 revoke-security-group-ingress --group-name ssh-access --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,Ipv6Ranges=[{CidrIpv6=$CIDR}] $PROFILE &>/dev/null
+  aws ec2 revoke-security-group-ingress --group-name ssh-access --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,Ipv6Ranges=[{CidrIpv6=$CIDR}] $PROFILE
   v6Result=$?
-  aws ec2 revoke-security-group-ingress --group-name ssh-access --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$CIDR}] $PROFILE &>/dev/null
+  aws ec2 revoke-security-group-ingress --group-name ssh-access --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$CIDR}] $PROFILE
   v4Result=$?
 
   if [ $v6Result -ne 0 ] && [ $v4Result -ne 0 ]; then

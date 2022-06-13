@@ -17,8 +17,8 @@ else
 fi
 
 OUS=$1
-ACCOUNT_NAMES=$2
-ACCOUNT_IDS=$3
+AWS_ACCOUNT_NAMES=$2
+AWS_ACCOUNT_IDS=$3
 ACCOUNT_PROFILE="--profile github-da"
 
 echo "Attempting to set the SSH whitelist for the specified account(s)"
@@ -35,22 +35,22 @@ if [ -n "$OUS" ]; then
       echo "Couldn't resolve OU '$ou'"
       exit 1
     fi
-    ACCOUNT_IDS=$(aws organizations list-accounts-for-parent --parent-id ou-hbsh-9i66giju --query "Accounts[?Status=='ACTIVE'].Id" --output text)
+    AWS_ACCOUNT_IDS=$(aws organizations list-accounts-for-parent --parent-id ou-hbsh-9i66giju --query "Accounts[?Status=='ACTIVE'].Id" --output text)
   done
-elif [ -n "$ACCOUNT_NAMES" ]; then
+elif [ -n "$AWS_ACCOUNT_NAMES" ]; then
   IFS=$','
-  for ACCOUNT_NAME in $ACCOUNT_NAMES; do
-    # Get ACCOUNT_ID
+  for AWS_ACCOUNT_NAME in $AWS_ACCOUNT_NAMES; do
+    # Get AWS_ACCOUNT_ID
     source "${awsDir}get_account_id.sh" &>/dev/null
     if [ $? -ne 0 ]; then
-      echo "Couldn't resolve Account name '$ACCOUNT_NAME'"
+      echo "Couldn't resolve Account name '$AWS_ACCOUNT_NAME'"
       exit 1
     fi
-    ACCOUNT_IDS="$ACCOUNT_IDS $ACCOUNT_ID"
+    AWS_ACCOUNT_IDS="$AWS_ACCOUNT_IDS $AWS_ACCOUNT_ID"
   done
 fi
 
-if [ -z "$ACCOUNT_IDS" ]; then
+if [ -z "$AWS_ACCOUNT_IDS" ]; then
   echo "Failed to resolve OUs or accounts or no account IDs provided"
   exit 1
 fi
@@ -58,11 +58,11 @@ fi
 SSH_LIST=$(aws ssm get-parameters-by-path --path "/SSH-Whitelist" --query "Parameters[*].[Name,Value]" --output text)
 IFS=$' \t'
 
-for ACCOUNT_ID in $ACCOUNT_IDS; do
-  # Update github-da profile with ARN for ACCOUNT_ID
+for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
+  # Update github-da profile with ARN for AWS_ACCOUNT_ID
   source "${awsDir}set_github-da_account_arn.sh"
 
-  echo "Revoking existing SSH Whitelist for Account '$ACCOUNT_ID'"
+  echo "Revoking existing SSH Whitelist for Account '$AWS_ACCOUNT_ID'"
   LIST=$(aws ec2 describe-security-groups --filters Name=ip-permission.from-port,Values=22 Name=group-name,Values=ssh-access --query 'SecurityGroups[0].IpPermissions[?(IpProtocol==`tcp` && FromPort==`22`)]' --output json $ACCOUNT_PROFILE)
   if [ -n "$LIST" ] && [ "$LIST" != "null" ]; then
     aws ec2 revoke-security-group-ingress --group-name ssh-access --ip-permissions "$LIST" $ACCOUNT_PROFILE
@@ -74,7 +74,7 @@ for ACCOUNT_ID in $ACCOUNT_IDS; do
       IFS=$' \t'
       entryArr=( $entry )
       echo "Adding SSH whitelist for '${entryArr[0]}' '${entryArr[1]}'"
-      "$awsDir/ssh_whitelist.sh" "${entryArr[1]}" "github-da"
+      "$awsDir/ssh_whitelist.sh" "${entryArr[1]}" "${entryArr[0]}" "github-da"
     done
   fi
 done

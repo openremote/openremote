@@ -68,9 +68,13 @@ If you want to create a backup of your installation, just make a copy of this vo
 
 ## Contributing to OpenRemote
 
-We work with Java, Groovy, TypeScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests, ensure that code is covered by tests and that the full test suite passes.
+For information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 
-For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
+We work with Java, Groovy, TypeScript, Gradle, Docker, and a wide range of APIs and protocol implementations.
+
+We follow the [Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow) workflow with tags and releases for published versions of our components; when working on the codebase create descriptive branch names (e.g. `feature/cool_feature_x`, `hotfix/flux_capacitor`, `issue/123`, etc.).
+
+When your changes are complete then create a Pull Request ensuring that your branch is up-to-date with the source branch and that code changes are covered by tests and that the full test suite passes.
 
 ## Discuss OpenRemote
 

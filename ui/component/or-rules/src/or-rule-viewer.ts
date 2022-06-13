@@ -255,11 +255,11 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                         response = await manager.rest.api.RulesResource.updateAssetRuleset(ruleset.id!, ruleset);
                     }
                     break;
-                case "tenant":
+                case "realm":
                     if (isNew) {
-                        response = await manager.rest.api.RulesResource.createTenantRuleset(ruleset);
+                        response = await manager.rest.api.RulesResource.createRealmRuleset(ruleset);
                     } else {
-                        response = await manager.rest.api.RulesResource.updateTenantRuleset(ruleset.id!, ruleset);
+                        response = await manager.rest.api.RulesResource.updateRealmRuleset(ruleset.id!, ruleset);
                     }
                     break;
                 case "global":

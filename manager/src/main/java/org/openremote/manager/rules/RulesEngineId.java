@@ -22,16 +22,16 @@ package org.openremote.manager.rules;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.RealmRuleset;
 
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The scope of a {@link RulesEngine} and, optional, the tenant or asset it belongs to.
+ * The scope of a {@link RulesEngine} and, optional, the realm or asset it belongs to.
  *
  * An engine in {@link org.openremote.model.rules.GlobalRuleset} scope has no {@link #realm}
- * or {@link #assetId}. An engine {@link org.openremote.model.rules.TenantRuleset} scope has only
+ * or {@link #assetId}. An engine {@link RealmRuleset} scope has only
  * {@link #realm}. An engine in {@link org.openremote.model.rules.AssetRuleset} scope has both.
  */
 public class RulesEngineId<T extends Ruleset> {
@@ -47,7 +47,7 @@ public class RulesEngineId<T extends Ruleset> {
 
     @SuppressWarnings("unchecked")
     public RulesEngineId(String realm) {
-        this((Class<T>) TenantRuleset.class, realm, null);
+        this((Class<T>) RealmRuleset.class, realm, null);
     }
 
     @SuppressWarnings("unchecked")

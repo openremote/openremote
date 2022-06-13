@@ -11,4 +11,5 @@ object ORConstants {
     const val HOST_KEY = "host"
     const val REALM_KEY = "realm"
     const val CLEAR_URL = "CLEAR_URL"
+    const val APP_CONFIG_KEY = "APP_CONFIG_KEY"
 }

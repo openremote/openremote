@@ -7,6 +7,8 @@
 # A standard access security group is also created for the standard OpenRemote stack services; the ssh-access security
 # group is also linked to the EC2 instance and this security group must already exist within the account.
 #
+# Optionally assign an Elastic IP address by setting the ElasticIP parameter to true.
+#
 # Systemd services are also created to:
 #
 # - Mount EFS volume named 'hosts-filesystem' at /deployment.local/efs on restart
@@ -27,7 +29,7 @@ Parameters:
     Description: FQDN for host
     Type: String
     #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
-    ConstraintDescription: Must be a valid FQDN
+    Default: ""
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -36,6 +38,7 @@ Parameters:
     # then we need to be flexible here and bear in mind use case and acceptable cost.
     Default: t4g.small
     AllowedValues:
+      - t4g.micro
       - t4g.small
       - t4g.medium
       - t4g.large
@@ -47,37 +50,44 @@ Parameters:
     Type: String
     #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     ConstraintDescription: Must be a valid FQDN
+    Default: ""
   DNSHostedZoneRoleArn:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
+    Default: ""
+  ElasticIP:
+    Description: Assign elastic IP address
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
+  SMTPHost:
+    Type: String
+    Default: ""
+  SMTPUser:
+    Type: String
+    Default: ""
+  SMTPPassword:
+    Type: String
+    Default: ""
+  SMTPSecret:
+    Type: String
+    Description: SMTP CLI user secret (used to generate an SMTP password from)
+    Default: ""
+  SMTPRegion:
+    Type: String
+    Description: SMTP CLI user region (used to generate an SMTP password from)
+    Default: ""
   SMTPORArn:
     Description: SES Verified identity trust policy ARN for SMTP X-Headers
     Type: String
-  SMTPKey:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SMTP-User-Key
-  SMTPSecret:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SMTP-User-Secret
-  SShWhitelistRoleArn:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SSH-Whitelist-Access-Role-Arn
+    Default: ""
 
 Conditions:
-  CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
+  AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
 
 Resources:
-
-  DNSRecord:
-    Type: AWS::Route53::RecordSet
-    Condition: CreateDNSRecord
-    Properties:
-      HostedZoneName: !Sub "${DNSHostedZoneName}."
-      Name: !Ref Host
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
-      TTL: '60'
-      Type: A
 
   InstanceRoleProfile:
     Type: AWS::IAM::InstanceProfile
@@ -97,6 +107,9 @@ Resources:
     Properties:
       GroupDescription: "Access OpenRemote stack services"
       GroupName: !Ref Host
+      Tags:
+        - Key: Name
+          Value: !Ref Host
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '80'
@@ -216,7 +229,7 @@ Resources:
 
                 [Service]
                 Type=oneshot
-                RandomizedDelaySec=30min
+                RandomizedDelaySec=1800
                 ExecStart=/usr/local/bin/s3-backup
 
                 [Install]
@@ -485,12 +498,22 @@ Resources:
           commands:
             01_output_smtp_credentials:
               command: !Sub |
-                PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPSecret} ${AWS::Region})
-                echo "OR_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" > /etc/environment
-                echo "OR_EMAIL_USER=${SMTPKey}" >> /etc/environment
-                echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
-                echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
-                echo "AWS_REGION=${AWS::Region}" >> /etc/environment
+                echo "AWS_REGION=${AWS::Region}" > /etc/environment
+                if [ -n "${SMTPHost}" ]; then
+                  echo "OR_EMAIL_HOST=${SMTPHost}" >> /etc/environment
+                fi
+                if [ -n "${SMTPUser}" ]; then
+                  echo "OR_EMAIL_USER=${SMTPUser}" >> /etc/environment
+                fi
+                if [ -n "${SMTPPassword}" ]; then
+                  echo "OR_EMAIL_PASSWORD=${SMTPPassword}" >> /etc/environment
+                elif [ -n "${SMTPSecret}" ] && [ -n "${SMTPRegion}" ]; then
+                  PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPSecret} ${SMTPRegion})
+                  echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
+                fi
+                if [ -n "${SMTPORArn}" ]; then
+                  echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
+                fi
 
         docker_setup:
           packages:
@@ -503,7 +526,7 @@ Resources:
                 chkconfig docker on
                 curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/bin/docker-compose && chmod +x /usr/bin/docker-compose && docker-compose --version
           services:
-            sysvinit:
+            systemd:
               docker:
                 enabled: "true"
                 ensureRunning: "true"
@@ -516,7 +539,7 @@ Resources:
             01_configure:
               command: chkconfig yum-cron on
           services:
-            sysvinit:
+            systemd:
               yum-cron:
                 enabled: "true"
                 ensureRunning: "true"
@@ -552,7 +575,7 @@ Resources:
               group: root
 
           services:
-            sysvinit:
+            systemd:
               cfn-hup:
                 enabled: true
                 ensureRunning: true
@@ -566,13 +589,13 @@ Resources:
       KeyName:
         "developers"
       ImageId:
-        "ami-032afb7a6d14ab941"
+        "ami-0042fede24cb86d5c"
       SecurityGroups:
         - "ssh-access"
         - Ref: StandardSecurityGroup
       Ipv6AddressCount: 1
       Tags:
-        - Key: "Name"
+        - Key: Name
           Value: !Ref Host
       IamInstanceProfile: !Ref 'InstanceRoleProfile'
       UserData:
@@ -596,3 +619,91 @@ Resources:
           
           # All done so signal success
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
+
+  IPAddress:
+    Type: AWS::EC2::EIP
+    Condition: AssignElasticIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref Host
+
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Condition: AssignElasticIP
+    Properties:
+      InstanceId: !Ref EC2Instance
+      EIP: !Ref IPAddress
+      
+# Telemetry and Alarms
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: support@openremote.io
+      Protocol: email
+      TopicArn: !Ref SnsTopic
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${Host}.${EC2Instance}
+
+  SystemStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_System
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 2
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+      - !Sub "arn:aws:automate:${AWS::Region}:ec2:recover"
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref EC2Instance
+
+  InstanceStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_Instance
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 3
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+      - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref EC2Instance
+
+  CPUUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 4
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
+      AlarmActions:
+      - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref EC2Instance
+
+

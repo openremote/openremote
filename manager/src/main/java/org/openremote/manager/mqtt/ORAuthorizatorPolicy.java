@@ -56,13 +56,13 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     protected boolean verifyRights(Topic topic, String clientId, String realm, String username, boolean isWrite) {
-        MqttConnection connection = brokerService.clientIdConnectionMap.get(clientId);
+        MqttConnection connection = brokerService.getConnection(clientId);
         int i=0;
 
         try {
             while (connection == null && i<10) {
                 // The connection handler gets called after this quite often so try and wait until the connection is registered
-                connection = brokerService.clientIdConnectionMap.get(clientId);
+                connection = brokerService.getConnection(clientId);
                 i++;
                 Thread.sleep(100);
             }

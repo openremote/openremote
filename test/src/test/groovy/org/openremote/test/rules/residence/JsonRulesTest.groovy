@@ -33,7 +33,7 @@ import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.TemporaryFact
-import org.openremote.model.rules.TenantRuleset
+import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
@@ -80,7 +80,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        RulesEngine tenantBuildingEngine
+        RulesEngine realmBuildingEngine
 
         and: "a mock push notification handler"
         PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
@@ -115,8 +115,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
 
         and: "some rules"
-        Ruleset ruleset = new TenantRuleset(
-            keycloakTestSetup.tenantBuilding.realm,
+        Ruleset ruleset = new RealmRuleset(
+            keycloakTestSetup.realmBuilding.name,
             "Demo Apartment - All Lights Off",
             Ruleset.Lang.JSON,
             getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text)
@@ -124,12 +124,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         expect: "the rule engines to become available and be running with asset states inserted and no longer tracking location rules"
         conditions.eventually {
-            tenantBuildingEngine = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm)
-            assert tenantBuildingEngine != null
-            assert tenantBuildingEngine.isRunning()
-            assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
-            assert tenantBuildingEngine.lastFireTimestamp > 0
-            assert !tenantBuildingEngine.trackLocationPredicates
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.lastFireTimestamp > 0
+            assert !realmBuildingEngine.trackLocationPredicates
         }
 
         and: "the room lights in an apartment to be on"
@@ -145,14 +145,14 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "a user authenticates"
         def accessToken = authenticate(
             container,
-            keycloakTestSetup.tenantBuilding.realm,
+            keycloakTestSetup.realmBuilding.name,
             KEYCLOAK_CLIENT_ID,
             "testuser3",
             "testuser3"
         ).token
 
         and: "a console is registered by that user"
-        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
         def consoleRegistration = new ConsoleRegistration(null,
             "Test Console",
             "1.0",
@@ -191,7 +191,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when:"an additional user is linked to this console (to help with testing)"
         assetStorageService.storeUserAssetLinks(
-            Collections.singletonList(new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(), keycloakTestSetup.testuser2Id, consoleRegistration.id))
+            Collections.singletonList(new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.testuser2Id, consoleRegistration.id))
         )
 
         and: "the console location is set to the apartment"
@@ -210,7 +210,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the console location asset state should be in the rule engine"
         conditions.eventually {
-            def assetState = tenantBuildingEngine.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
+            def assetState = realmBuildingEngine.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
             assert assetState != null
             assert assetState.getValue().isPresent()
             assert assetState.getValueAs(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
@@ -263,12 +263,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
-        def lastFireTimestamp = tenantBuildingEngine.lastFireTimestamp
+        def lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
 
         and: "the engine fires at least one more time"
         conditions.eventually {
-            assert tenantBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
         and: "the console device moves outside the home geofence again (as defined in the rule)"
@@ -298,8 +298,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset to be redeployed"
         conditions.eventually {
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
         }
 
         and: "another notification should have been sent to the console when rule is redeployed"
@@ -308,12 +308,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
-        lastFireTimestamp = tenantBuildingEngine.lastFireTimestamp
+        lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
 
         then: "the engine fires at least one more time"
         conditions.eventually {
-            assert tenantBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"
@@ -326,12 +326,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
-        lastFireTimestamp = tenantBuildingEngine.lastFireTimestamp
+        lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
 
         then: "the engine fires at least one more time"
         conditions.eventually {
-            assert tenantBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
         when: "when time advances 5 hours"
@@ -383,8 +383,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should be redeployed and paused until 1st occurrence"
         conditions.eventually {
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
         }
 
         when: "the same AttributeEvent is sent"
@@ -406,7 +406,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (1st occurrence)"
         conditions.eventually {
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
         }
 
         when: "the same AttributeEvent is sent"
@@ -430,7 +430,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should become paused again (until next occurrence)"
         conditions.eventually {
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
         }
 
         when: "the same AttributeEvent is sent"
@@ -452,7 +452,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (next occurrence)"
         conditions.eventually {
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
         }
 
         when: "the un-pause elapses"
@@ -460,7 +460,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should become paused again (until last occurrence)"
         conditions.eventually {
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
         }
 
         when: "the pause elapses"
@@ -468,7 +468,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (last occurrence)"
         conditions.eventually {
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
         }
 
         when: "the un-pause elapses"
@@ -476,7 +476,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should expire"
         conditions.eventually {
-            assert tenantBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.EXPIRED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.EXPIRED
         }
 
         cleanup: "static variables are reset and the mock is removed"

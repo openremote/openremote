@@ -43,12 +43,12 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.gateway.GatewayConnectionStatusEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
@@ -109,7 +109,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             if (!authContext.isSuperUser()) {
                 @SuppressWarnings("unchecked")
                 EventSubscription<GatewayConnectionStatusEvent> subscription = (EventSubscription<GatewayConnectionStatusEvent>) eventSubscription;
-                subscription.setFilter(new TenantFilter<>(authContext.getAuthenticatedRealm()));
+                subscription.setFilter(new RealmFilter<>(authContext.getAuthenticatedRealmName()));
             }
 
             return true;
@@ -339,7 +339,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 ReadAssetsEvent readAssets = (ReadAssetsEvent)event;
                 AssetQuery query = readAssets.getAssetQuery();
                 // Force realm to be the one that this client is associated with
-                query.tenant(new TenantPredicate(connection.getLocalRealm()));
+                query.realm(new RealmPredicate(connection.getLocalRealm()));
                 List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
 
                 sendCentralManagerMessage(
@@ -390,7 +390,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         persistenceService.doTransaction(em -> em.merge(connection));
     }
 
-    protected boolean deleteConnections(List<String> realms) {
+    public boolean deleteConnections(List<String> realms) {
         LOG.info("Deleting gateway connections for the following realm(s): " + Arrays.toString(realms.toArray()));
 
         try {

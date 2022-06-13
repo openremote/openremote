@@ -50,7 +50,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets._TEMP_ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Provision Host
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
@@ -64,3 +64,4 @@ jobs:
           PROVISION_S3_BUCKET: ${{ github.event.inputs.PROVISION_S3_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets._TEMP_AWS_SECRET_ACCESS_KEY }}
+          AWS_ROLE_NAME: ${{ secrets._TEMP_AWS_ROLE_NAME }}

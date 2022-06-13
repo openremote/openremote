@@ -113,9 +113,9 @@ public class RulesBuilder {
                         throw new IllegalArgumentException("Error evaluating condition of rule '" + builder.name + "': result is not boolean but " + result);
                     }
                 })
-                .then(facts -> {
-                    builder.action.execute((RulesFacts) facts);
-                }).build();
+                .then(facts -> builder.action.execute((RulesFacts) facts))
+                .build();
+
             rules.add(rule);
         }
         return rules.toArray(new Rule[rules.size()]);

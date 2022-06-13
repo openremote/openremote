@@ -162,6 +162,7 @@ services:
       OR_EMAIL_PASSWORD:
       OR_EMAIL_PORT: ${OR_EMAIL_PORT}
       OR_EMAIL_TLS: ${OR_EMAIL_TLS}
+      OR_EMAIL_X_HEADERS: ${OR_EMAIL_X_HEADERS:-} # Headers to set on all outbound emails
 
       # Where to send admin emails to
       OR_EMAIL_ADMIN: ${OR_EMAIL_ADMIN}
@@ -260,7 +261,7 @@ services:
       # When asset attributes are enabled for rule events, each value update will be a temporary
       # fact in rules. You can set the global default expiration time span used when no other
       # attribute-level configuration exists. Default is 1 hour.
-      OR_RULE_EVENT_EXPIRES: ${OR_RULE_EVENT_EXPIRES:-1h}
+      OR_RULE_EVENT_EXPIRES: ${OR_RULE_EVENT_EXPIRES:-PT1H}
 
       # The identity provider implementation to use for managing user identities, roles, and
       # access authorization. The default is 'keycloak' which requires a separate service but
@@ -283,7 +284,7 @@ services:
 
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
-      # DATA_POINTS_MAX_AGE_DAYS = 30
+      # OR_DATA_POINTS_MAX_AGE_DAYS = 30
 
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID
