@@ -11,7 +11,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.openremote.app.R
 import io.openremote.app.databinding.FragmentAppSelectionBinding
-import io.openremote.orlib.models.ORAppInfo
+import io.openremote.app.model.ORAppInfo
 
 private const val ARG_APP_LIST = "appList"
 private const val ARG_APP_MAP = "appMap"

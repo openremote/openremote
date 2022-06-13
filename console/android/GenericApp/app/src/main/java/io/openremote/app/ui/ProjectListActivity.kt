@@ -39,7 +39,7 @@ class ProjectListActivity : AppCompatActivity() {
             jacksonObjectMapper().readValue<List<ProjectItem>>(it).toMutableList()
         } ?: mutableListOf()
 
-        projectListAdapter = ProjectListAdapter(projectItems.reversed(), this::goToMainActivity)
+        projectListAdapter = ProjectListAdapter(projectItems.toMutableList().asReversed(), this::goToMainActivity)
         binding.projectList.adapter = projectListAdapter
         binding.projectList.layoutManager = LinearLayoutManager(this);
 
@@ -62,7 +62,7 @@ class ProjectListActivity : AppCompatActivity() {
                     .edit()
                     .putString(Constants.PROJECT_LIST, jacksonObjectMapper().writeValueAsString(projectItems))
                     .apply()
-                projectListAdapter.notifyDataSetChanged()
+                projectListAdapter.remove(viewHolder.adapterPosition)
             }
 
             override fun onChildDraw(c: Canvas, recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, dX: Float, dY: Float, actionState: Int, isCurrentlyActive: Boolean) {

@@ -1,6 +1,5 @@
 package io.openremote.app.ui
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -13,7 +12,7 @@ import io.openremote.app.databinding.ActivityProjectWizardBinding
 import io.openremote.app.model.ProjectItem
 import io.openremote.app.util.Constants
 import io.openremote.orlib.ORConstants
-import io.openremote.orlib.network.ApiManager
+import io.openremote.app.network.ApiManager
 import io.openremote.orlib.ui.OrMainActivity
 
 class ProjectWizardActivity : FragmentActivity() {

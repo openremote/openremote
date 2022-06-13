@@ -1,14 +1,17 @@
-package io.openremote.orlib.network
+package io.openremote.app.network
 
+import android.net.SSLCertificateSocketFactory
 import android.net.Uri
 import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.openremote.app.model.ORAppInfo
+import io.openremote.app.model.ORConsoleConfig
 import io.openremote.orlib.models.ORAppConfig
-import io.openremote.orlib.models.ORAppInfo
-import io.openremote.orlib.models.ORConsoleConfig
+import org.apache.http.conn.ssl.AllowAllHostnameVerifier
 import java.net.HttpURLConnection
 import java.net.URL
+import javax.net.ssl.*
 import kotlin.concurrent.thread
 
 
@@ -45,7 +48,7 @@ class ApiManager(private val baseUrl: String) {
     }
 
     /*********************************Private functions*******************************/
-    private fun createUrlRequest(
+    fun createUrlRequest(
         method: HttpMethod,
         pathComponents: Array<String>,
         queryParameters: Map<String, Any>? = null
@@ -63,8 +66,10 @@ class ApiManager(private val baseUrl: String) {
         }
 
         val url = URL(builder.build().toString())
-        with(url.openConnection() as HttpURLConnection) {
+        with(url.openConnection() as HttpsURLConnection) {
 
+            sslSocketFactory = SSLCertificateSocketFactory.getInsecure(0, null)
+            hostnameVerifier = AllowAllHostnameVerifier()
             requestMethod = method.toString()
             setRequestProperty("Accept", "application/json")
 
@@ -77,7 +82,7 @@ class ApiManager(private val baseUrl: String) {
         }
     }
 
-    private inline fun <reified T : Any> get(
+    inline fun <reified T : Any> get(
         pathComponents: Array<String>,
         noinline callback: ResponseBlock<T>?,
         queryParameters: Map<String, Any>? = null
@@ -115,7 +120,7 @@ class ApiManager(private val baseUrl: String) {
         }
     }
 
-    private inline fun <reified T : Any> parseResponse(
+    inline fun <reified T : Any> parseResponse(
         httpConnection: HttpURLConnection,
         noinline callback: ResponseBlock<T>?
     ) {

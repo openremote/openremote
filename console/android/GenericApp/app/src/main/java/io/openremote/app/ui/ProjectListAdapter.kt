@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 import io.openremote.app.databinding.RowProjectItemBinding
 import io.openremote.app.model.ProjectItem
 
-class ProjectListAdapter(val items: List<ProjectItem>, private val goToMainActivity: (url: String) -> (Unit)) : RecyclerView.Adapter<ProjectListAdapter.ViewHolder>() {
+class ProjectListAdapter(val items: MutableList<ProjectItem>, private val goToMainActivity: (url: String) -> (Unit)) : RecyclerView.Adapter<ProjectListAdapter.ViewHolder>() {
 
     // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -24,6 +24,11 @@ class ProjectListAdapter(val items: List<ProjectItem>, private val goToMainActiv
     // return the number of the items in the list
     override fun getItemCount(): Int {
         return items.size
+    }
+
+    fun remove(position: Int) {
+        this.items.removeAt(position)
+        this.notifyDataSetChanged()
     }
 
     // Holds the views for adding it to image and text

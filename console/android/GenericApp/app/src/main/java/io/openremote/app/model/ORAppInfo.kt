@@ -1,4 +1,4 @@
-package io.openremote.orlib.models
+package io.openremote.app.model
 
 data class ORAppInfo(
     val consoleAppIncompatible: Boolean,

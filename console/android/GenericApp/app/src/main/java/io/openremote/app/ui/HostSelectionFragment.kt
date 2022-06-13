@@ -8,9 +8,9 @@ import android.webkit.URLUtil
 import androidx.fragment.app.Fragment
 import io.openremote.app.R
 import io.openremote.app.databinding.FragmentHostSelectionBinding
-import io.openremote.orlib.models.ORAppInfo
-import io.openremote.orlib.models.ORConsoleConfig
-import io.openremote.orlib.network.ApiManager
+import io.openremote.app.model.ORAppInfo
+import io.openremote.app.model.ORConsoleConfig
+import io.openremote.app.network.ApiManager
 
 
 /**
