@@ -20,12 +20,11 @@
 package org.openremote.manager.apps;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.apps.AppResource;
+import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.ValueUtil;
 
-import javax.ws.rs.BeanParam;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -33,9 +32,6 @@ import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -52,7 +48,11 @@ public class AppResourceImpl extends WebResource implements AppResource {
     @Override
     public Response getAppInfos(RequestParams requestParams) {
         if (!Files.isDirectory(consoleAppService.consoleAppDocRoot)) {
-            return null;
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(String.format("%s is not a directory", consoleAppService.consoleAppDocRoot))
+                    .type(MediaType.APPLICATION_JSON_TYPE)
+                    .build();
         }
 
         if (consoleAppInfoMap == null) {
@@ -78,11 +78,17 @@ public class AppResourceImpl extends WebResource implements AppResource {
     @Override
     public Response getConsoleConfig(RequestParams requestParams) {
         if (!Files.isDirectory(consoleAppService.consoleAppDocRoot)) {
-            return null;
+            return Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(String.format("%s is not a directory", consoleAppService.consoleAppDocRoot))
+                    .type(MediaType.APPLICATION_JSON_TYPE)
+                    .build();
         }
 
         if (!Files.exists(consoleAppService.consoleAppDocRoot.resolve("console_config.json"))) {
-            return null;
+            return Response
+                    .status(Response.Status.NOT_FOUND)
+                    .build();
         }
 
         if (consoleConfig == null) {
