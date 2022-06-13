@@ -45,7 +45,7 @@ class RealmSelectionFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         parentActivity = requireActivity() as ProjectWizardActivity
 
         // Inflate the layout for this fragment

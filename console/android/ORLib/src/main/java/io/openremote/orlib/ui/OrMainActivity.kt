@@ -67,34 +67,6 @@ open class OrMainActivity : Activity() {
         }
     }
 
-    private val clientUrl: String?
-        get() {
-            var returnValue: String? = null
-
-            if (appConfig != null) {
-                if (URLUtil.isValidUrl(appConfig!!.initialUrl)) {
-                    return appConfig!!.initialUrl
-                } else {
-                    sharedPreferences.let { pref ->
-                        pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
-                            return host.plus(appConfig!!.initialUrl)
-                        }
-                    }
-                }
-            }
-
-
-            sharedPreferences.let { pref ->
-                pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
-                    pref.getString(ORConstants.REALM_KEY, null)?.let { realm ->
-                        returnValue = host.plus("/api/${realm}")
-                    }
-                }
-            }
-
-            return returnValue
-        }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityOrMainBinding.inflate(layoutInflater)
@@ -153,7 +125,7 @@ open class OrMainActivity : Activity() {
     private fun openIntentUrl(intent: Intent) {
         when {
             intent.hasExtra("appUrl") -> {
-                val url = intent.getStringExtra("appUrl")
+                val url = intent.getStringExtra("appUrl")!!
                 LOG.fine("Loading web view: $url")
                 loadUrl(url)
             }
@@ -168,7 +140,7 @@ open class OrMainActivity : Activity() {
                     }
                 }
                 LOG.fine("Loading web view: $url")
-                loadUrl(url)
+                loadUrl(url!!)
             }
         }
     }
@@ -216,7 +188,7 @@ open class OrMainActivity : Activity() {
         if ("about:blank" == url) {
             url = baseUrl
             LOG.fine("Reloading web view: $url")
-            loadUrl(url)
+            loadUrl(url!!)
         }
     }
 
@@ -410,12 +382,13 @@ open class OrMainActivity : Activity() {
         // This will be the URL loaded into the webview itself (false for images etc. of the main page)
         // Check page load error URL
         if (baseUrl != null && baseUrl != failingUrl) {
-            loadUrl(baseUrl)
+            loadUrl(baseUrl!!)
             Toast.makeText(this, description, Toast.LENGTH_LONG).show()
         } else {
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
             if (launchIntent != null) {
                 launchIntent.putExtra(CLEAR_URL, baseUrl)
+                launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(launchIntent)
                 finish()
             }
@@ -423,10 +396,10 @@ open class OrMainActivity : Activity() {
         }
     }
 
-    public fun loadUrl(url: String?) {
+    fun loadUrl(url: String) {
         webViewLoaded = false
-        val temp = url!!.replace(" ", "%20")
-        binding.webView.loadUrl(temp)
+        val encodedUrl = url.replace(" ", "%20")
+        binding.webView.loadUrl(encodedUrl)
     }
 
     override fun onRequestPermissionsResult(

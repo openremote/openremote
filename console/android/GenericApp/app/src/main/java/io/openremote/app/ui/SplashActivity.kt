@@ -1,7 +1,7 @@
 package io.openremote.app.ui
 
+import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -12,11 +12,10 @@ import io.openremote.app.databinding.ActivitySplashBinding
 import io.openremote.app.model.ProjectItem
 import io.openremote.app.util.Constants
 import io.openremote.orlib.ORConstants
-import io.openremote.orlib.ORConstants
-import io.openremote.orlib.network.ApiManager
 import io.openremote.orlib.ui.OrMainActivity
 import io.openremote.orlib.ui.OrPrivacyPolicyActivity
 
+@SuppressLint("CustomSplashScreen")
 class SplashActivity : Activity() {
 
     object SplashActivityConstants {
