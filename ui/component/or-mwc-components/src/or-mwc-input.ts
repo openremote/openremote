@@ -332,7 +332,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     if (patternConstraint) {
         pattern = patternConstraint.regexp;
     }
-    if (notNullConstraint) {
+    if (notNullConstraint || (valueHolderDescriptor && (valueHolderDescriptor as any).optional === false)) {
         required = true;
     }
     if (notBlankConstraint && !pattern) {
