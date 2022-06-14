@@ -558,7 +558,7 @@ export class OrDashboardBuilder extends LitElement {
                                     ` : undefined}
                                     <div style="${this.selectedWidget != null ? css`display: none` : null}">
                                         <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
-                                            <or-mwc-tabs .items="${tabItems}" @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}"></or-mwc-tabs>
+                                            <or-mwc-tabs .items="${tabItems}" @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
                                         </div>
                                         <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
                                             <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
