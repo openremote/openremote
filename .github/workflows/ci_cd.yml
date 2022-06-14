@@ -464,6 +464,7 @@ jobs:
         id: manager-docker-command
         shell: bash
         run: |
+          exit 0
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
             buildPath="openremote/manager/build/install/manager"
             commitSha=$(cd openremote; git rev-parse HEAD; cd ..)
@@ -719,7 +720,7 @@ jobs:
           PLATFORM="amd64"
           fi
           PLATFORM="linux/$PLATFORM"
-          docker build --load --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$MANAGER_REF --platform $PLATFORM -t openremote/manager:$MANAGER_TAG $MANAGER_DOCKER_BUILD_PATH
+          #docker build --load --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$MANAGER_REF --platform $PLATFORM -t openremote/manager:$MANAGER_TAG $MANAGER_DOCKER_BUILD_PATH
           
           # Set compose profile
           composeProfile='docker-compose.yml'
@@ -729,7 +730,8 @@ jobs:
           fi
 
           # Start the stack          
-          MANAGER_VERSION=$MANAGER_TAG OR_DEV_MODE=true docker-compose -f $composeProfile up -d --no-build
+          #MANAGER_VERSION=$MANAGER_TAG OR_DEV_MODE=true docker-compose -f $composeProfile up -d --no-build
+          MANAGER_VERSION=develop OR_DEV_MODE=true docker-compose -f $composeProfile up -d --no-build
           
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}
