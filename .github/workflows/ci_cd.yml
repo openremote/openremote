@@ -609,9 +609,9 @@ jobs:
         run: |          
           # Only need keycloak and postgres services for backend testing
           if [ -z $TEST_UI_COMMAND ]; then
-            composeProfile='profile/dev-testing.yml'
+            composeProfile='profile/dev-testing.yml pull'
           else
-            composeProfile='profile/dev-ui.yml'
+            composeProfile='docker-compose.yml pull keycloak postgresql proxy'
           fi
           
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
@@ -619,7 +619,7 @@ jobs:
           fi
           
           # Pull the images
-          docker-compose -f $composeProfile pull
+          docker-compose -f $composeProfile
         env:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
