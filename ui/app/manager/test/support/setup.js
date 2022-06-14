@@ -21,8 +21,8 @@ const global = {
     browser: ChromiumBrowser,
     name: 1,
     getAppUrl: (realm) => {
-        //const managerUrl = process.env.managerUrl || "https://localhost/";
-        const managerUrl = process.env.managerUrl || "localhost:8080/";
+        const managerUrl = process.env.managerUrl || "https://localhost/";
+        //const managerUrl = process.env.managerUrl || "localhost:8080/";
         const appUrl = managerUrl + "manager/?realm=";
         return appUrl + realm;
     },
@@ -84,7 +84,6 @@ class CustomWorld {
      * @param {String} realm Realm name
      */
     async goToRealmStartPage(realm) {
-
         const url = global.getAppUrl(realm);
         await this.page.goto(url);
     }
@@ -94,17 +93,6 @@ class CustomWorld {
      * @param {String} realm: Realm type (admin or other)
      */
     async openApp(realm) {
-        // let context;
-
-        // if (fs.existsSync('test/storageState.json')) {
-        //     context = await global.browser.newContext({
-        //         storageState: 'test/storageState.json',
-        //     });
-        // }
-        // else {
-        //     context = await global.browser.newContext({ ignoreHTTPSErrors: true });
-        // }
-        // this.page = await context.newPage();
         await this.goToRealmStartPage(realm);
     }
 
@@ -287,10 +275,6 @@ class CustomWorld {
      * @param {String} name name of custom realm
      */
     async switchToRealmByRealmPicker(name) {
-        // close the attribute selector window if it opens
-        // if (await this.page?.locator('text=Cancel').isVisible()) {
-        //     await this.click('text=Cancel')
-        // }
         await this.click('#realm-picker');
         await this.wait(300)
         await this.click(`li[role="menuitem"]:has-text("${name}")`)
@@ -334,7 +318,7 @@ class CustomWorld {
      * create new empty assets
      * @param {Boolean} update for checking if updating values is needed
      */
-    async addAssets(update) {
+    async addAssets(update, configOrLoction) {
 
         await this.wait(600)
 
@@ -343,31 +327,42 @@ class CustomWorld {
 
         // create assets accroding to assets array
         for (let asset of assets) {
-            let isAssetVisible = await this.isVisible(`text=${asset.name}`)
+            let isAssetVisible = await this.isVisible(`#list-container >> text=${asset.name}`)
             try {
                 if (!isAssetVisible) {
                     await this.click('.mdi-plus')
                     await this.click(`text=${asset.asset}`)
                     await this.fill('#name-input input[type="text"]', asset.name)
                     await this.click('#add-btn')
-                    await this.unSelectAll()
-                    await this.click(`text=${asset.name}`)
+                    await this.unselectAll()
+                    await this.click(`#list-container >> text=${asset.name}`)
                     if (update) {
                         // update value in general panel
                         await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3)
 
                         // update in modify mode
                         await this.click('button:has-text("Modify")')
+                        if (configOrLoction == "location") {
+                            await this.updateLocation(asset.location_x, asset.location_y)
+                        }
+                        else if (configOrLoction == "config") {
+                            await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
+                        }
+                        else {
+                            await this.updateLocation(asset.location_x, asset.location_y)
+                            await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
+                        }
+
                         await this.updateInModify(asset.attr_1, asset.a1_type, asset.v1)
                         await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2)
-                        await this.updateLocation(asset.location_x, asset.location_y)
-                        await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
+
+
                         await this.save()
 
                         await this.wait(300)
                     }
-                    await this.unSelectAll()
-                    console.log("Asset: " + asset.name + " added")
+                    await this.unselectAll()
+                    console.log("Asset: " + asset.name + " with " + configOrLoction + " added")
                 }
             }
             catch (error) {
@@ -379,7 +374,7 @@ class CustomWorld {
     /**
      * unselect the asset
      */
-    async unSelectAll(element) {
+    async unselectAll(element) {
 
         const isViewVisible = await this.isVisible('button:has-text("View")')
         const isCloseVisible = await this.isVisible('.mdi-close >> nth=0')
@@ -484,7 +479,7 @@ class CustomWorld {
             await this.wait(500)
             const isVisible = await this.isVisible('#realm-picker')
             expect(isVisible).toBeFalsy()
-            await console.log("         Realm: smartcity deleted")
+            await console.log("Realm: smartcity deleted")
         } catch (e) {
             console.log(e)
         }
@@ -544,7 +539,7 @@ class CustomWorld {
     * @param {String} realm realm name
     * @param {String} level level (lv0, lv1, etc.)
     */
-    async setup(realm, level) {
+    async setup(realm, level, configOrLoction = "both") {
 
         // clean storage
         if (fs.existsSync('test/storageState.json')) {
@@ -553,7 +548,11 @@ class CustomWorld {
 
         if (level !== "lv0") {
             await this.openApp("master")
-            await this.login("admin")
+            await this.wait(300)
+            const isLogin = await this.isVisible('input[name="username"]')
+            if (isLogin) {
+                await this.login("admin")
+            }
             // add realm
             await this.wait(300)
             const isPickerVisible = await this.isVisible('#realm-picker')
@@ -572,12 +571,11 @@ class CustomWorld {
                     await this.logout();
                     await this.goToRealmStartPage(realm);
                     await this.login("smartcity");
-                    await this.addAssets(update);
+                    await this.addAssets(update, configOrLoction);
                 }
             }
             await this.logout()
-            await this.page.close()
-            this.page = undefined;
+            // await this.page.close()
         }
     }
 
@@ -627,7 +625,7 @@ class CustomWorld {
 // launch broswer
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
-        headless: false,
+        headless: true,
         slowMo: 50
     });
 
@@ -639,8 +637,10 @@ BeforeAll(async function () {
     else {
         context = await global.browser.newContext({ ignoreHTTPSErrors: true });
     }
+    let page = await context.newPage()
 })
 
+// open pages
 Before(async function () {
     this.page = await context.newPage();
 })
@@ -657,12 +657,11 @@ After({ timeout: 50000 }, async function (testCase) {
     }
 
     await this.cleanUp()
-    //await this.page?.close()
+    await this.page?.close()
 })
 
 // close browser and delete authentication file
 AfterAll(async function () {
-    await this.page?.close()
     await global.browser.close()
     if (fs.existsSync('test/storageState.json')) {
         fs.unlinkSync('test/storageState.json')

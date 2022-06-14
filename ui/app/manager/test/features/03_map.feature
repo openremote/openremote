@@ -2,7 +2,7 @@
 Feature: Map
 
     Background: Navigation
-        Given Setup "lv4"
+        Given Setup "lv4" for map
 
     @Desktop @markers
     Scenario: check markers on map

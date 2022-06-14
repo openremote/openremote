@@ -5,11 +5,20 @@ const { Given, When, Then } = require("@cucumber/cucumber");
  * Setup
  */
 
-Given('Setup {string}', { timeout: 60000 }, async function (section) {
+Given('Setup {string}', { timeout: 30000 }, async function (section) {
 
     await this.setup("smartcity", section)
 })
 
+Given('Setup {string} for map', { timeout: 60000 }, async function (section) {
+
+    await this.setup("smartcity", section, "location")
+})
+
+Given('Setup {string} for rules', { timeout: 60000 }, async function (section) {
+
+    await this.setup("smartcity", section, "config")
+})
 
 /**
  * General steps 
@@ -39,6 +48,9 @@ When('Navigate to {string} tab', async function (tab) {
     await this.wait(200)
 });
 
+Then('Unselect', async function () {
+    await this.unselectAll()
+})
 
 /**
  * snapshots

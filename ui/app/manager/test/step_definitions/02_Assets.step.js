@@ -12,7 +12,7 @@ Then('Create a {string} with name of {string}', async function (asset, name) {
 })
 
 When('Go to asset {string} info page', { timeout: 10000 }, async function (name) {
-    await this.unSelectAll(name)
+    await this.unselectAll(name)
     await this.click(`#list-container >> text=${name}`)
     await this.wait(300)
 })
@@ -26,10 +26,11 @@ Then('Give {string} to the {string} with type of {string}', async function (valu
 })
 
 Then('Save', async function () {
-
+    await this.wait(200)
     // press enter to enable the save button (could be any other action) (or this will be fixed then no pre-action needed)
     await this.click('#edit-container')
-    await this.click('button:has-text("Save")')
+    await this.click('button:has-text("Save")')    
+    await this.wait(200)
 })
 
 Then('We see the asset with name of {string}', async function (name) {

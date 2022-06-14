@@ -5,7 +5,7 @@ const { expect } = require('@playwright/test');
  * General
  */
 When('Create a new {string} rule', async function (type) {
-    await this.click('.mdi-plus')
+    await this.click('.mdi-plus >> nth=0')
     await this.click(`text=${type}`)
 })
 
@@ -129,11 +129,17 @@ Then('Connect elements', { timeout: 10000 }, async function () {
 })
 
 Then('We see the flow rule with name of {string}', async function (name) {
-    
+
     await this.wait(500)
     // name with FLOW can ensuring that it's a flow rule
     const count = await this.count(`text=${name}FLOW`)
     //const count = await page.locator(`text=${name}FLOW`).count()
     await expect(count).toBe(1)
 })
+
+Then('We should see {int} rules in total', async function (int) {
+    const count = await this.count('.node-container')
+    await expect(count).toBe(int)
+})
+
 
