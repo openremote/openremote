@@ -72,8 +72,10 @@ public class VelbusNetwork {
     }
 
     public void sendPackets(VelbusPacket... packets) {
-        if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
-            return;
+        synchronized (this) {
+            if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
+                return;
+            }
         }
 
         synchronized (messageQueue) {

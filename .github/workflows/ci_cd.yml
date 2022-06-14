@@ -637,6 +637,13 @@ jobs:
         timeout-minutes: 20
         #continue-on-error: true
 
+      - name: Archive backend test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-test-results
+          path: test/build/reports/tests
+
       - name: Cleanup backend tests
         if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}
         run: ${{ steps.run-backend-tests.outputs.cleanup }}
