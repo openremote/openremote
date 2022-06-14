@@ -30,7 +30,7 @@ export class OrDashboardTree extends LitElement {
     private selected: Dashboard | undefined;
 
     @property()
-    public editMode: boolean = true;
+    public showControls: boolean = true;
 
 
     /* --------------- */
@@ -119,7 +119,7 @@ export class OrDashboardTree extends LitElement {
                 <div id="title-container">
                     <span id="title">Dashboards</span>
                 </div>
-                ${this.editMode ? html`
+                ${this.showControls ? html`
                     <div>
                         <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;" @or-mwc-input-changed="${() => { if(this.selected != null) { this.deleteDashboard(this.selected); }}}"></or-mwc-input>
                         <span style="--or-icon-fill: black">
