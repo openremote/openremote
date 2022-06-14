@@ -104,10 +104,10 @@ Then('Set value', async function () {
     // set read and write
     await this.click('button:has-text("Attribute") >> nth=0')   // read 
     await this.click('div[role="alertdialog"] >> text=Solar Panel')
-    await this.click('or-translate:has-text("Power") >> nth=1')
+    await this.click('or-translate:has-text("Power") >> nth=0')
     await this.click('button:has-text("Add")')
 
-    await this.click('button:has-text("Attribute") >> nth=0')   // write
+    await this.click('button:has-text("Attribute") >> nth=1')   // write
     await this.click('div[role="alertdialog"] >> text=Solar Panel')
     await this.click('or-translate:has-text("Power forecast")')
     await this.click('button:has-text("Add")')

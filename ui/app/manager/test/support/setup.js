@@ -4,6 +4,7 @@ const playwright = require('playwright');
 const fs = require('fs');
 const { expect } = require("@playwright/test");
 const { join } = require('path');
+const { Before } = require("@cucumber/cucumber");
 require('dotenv').config();
 
 /**
@@ -20,13 +21,14 @@ const global = {
     browser: ChromiumBrowser,
     name: 1,
     getAppUrl: (realm) => {
-      const managerUrl = process.env.managerUrl || "https://localhost/";
-      const appUrl = managerUrl + "manager/?realm=";
-      return appUrl + realm;
+        //const managerUrl = process.env.managerUrl || "https://localhost/";
+        const managerUrl = process.env.managerUrl || "localhost:8080/";
+        const appUrl = managerUrl + "manager/?realm=";
+        return appUrl + realm;
     },
     passwords: {
-      admin: "secret",
-      smartcity: "smartcity"
+        admin: "secret",
+        smartcity: "smartcity"
     }
 }
 
@@ -82,8 +84,9 @@ class CustomWorld {
      * @param {String} realm Realm name
      */
     async goToRealmStartPage(realm) {
-      const url = global.getAppUrl(realm);
-      await this.page.goto(url);
+
+        const url = global.getAppUrl(realm);
+        await this.page.goto(url);
     }
 
     /**
@@ -91,17 +94,17 @@ class CustomWorld {
      * @param {String} realm: Realm type (admin or other)
      */
     async openApp(realm) {
-        let context;
+        // let context;
 
-        if (fs.existsSync('test/storageState.json')) {
-            context = await global.browser.newContext({
-                storageState: 'test/storageState.json',
-            });
-        }
-        else {
-            context = await global.browser.newContext({ ignoreHTTPSErrors: true });
-        }
-        this.page = await context.newPage();
+        // if (fs.existsSync('test/storageState.json')) {
+        //     context = await global.browser.newContext({
+        //         storageState: 'test/storageState.json',
+        //     });
+        // }
+        // else {
+        //     context = await global.browser.newContext({ ignoreHTTPSErrors: true });
+        // }
+        // this.page = await context.newPage();
         await this.goToRealmStartPage(realm);
     }
 
@@ -117,6 +120,7 @@ class CustomWorld {
             await this.page?.fill('input[name="password"]', password);
             await this.page?.keyboard.press('Enter');
             await this.page?.context().storageState({ path: 'test/storageState.json' });
+            await this.page.waitForNavigation(user == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
         }
     }
 
@@ -375,11 +379,12 @@ class CustomWorld {
     /**
      * unselect the asset
      */
-    async unSelectAll() {
-        await this.wait(200)
-        // leave modify mode
+    async unSelectAll(element) {
+
         const isViewVisible = await this.isVisible('button:has-text("View")')
         const isCloseVisible = await this.isVisible('.mdi-close >> nth=0')
+
+        // leave modify mode
         if (isViewVisible) {
             await this.click('button:has-text("View")')
         }
@@ -389,7 +394,10 @@ class CustomWorld {
             //await this.page?.locator('.mdi-close').first().click()
             await this.click('.mdi-close >> nth=0')
         }
-        await this.wait(300)
+
+        const selectedElement = await this.page.locator(`${element}`).count()
+        await expect(selectedElement).toBe(0)
+        await this.wait(500)
     }
 
     /**
@@ -476,6 +484,7 @@ class CustomWorld {
             await this.wait(500)
             const isVisible = await this.isVisible('#realm-picker')
             expect(isVisible).toBeFalsy()
+            await console.log("         Realm: smartcity deleted")
         } catch (e) {
             console.log(e)
         }
@@ -560,10 +569,10 @@ class CustomWorld {
                 await this.addUser("smartcity", global.passwords["smartcity"])
                 // add assets
                 if (level >= 'lv3') {
-                  await this.logout();
-                  await this.goToRealmStartPage(realm);
-                  await this.login("smartcity");
-                  await this.addAssets(update);
+                    await this.logout();
+                    await this.goToRealmStartPage(realm);
+                    await this.login("smartcity");
+                    await this.addAssets(update);
                 }
             }
             await this.logout()
@@ -607,7 +616,6 @@ class CustomWorld {
             await this.navigateToMenuItem("Realms")
             await this.deleteRealm()
         }
-        await console.log("Realm: smartcity deleted")
     }
 }
 
@@ -619,15 +627,28 @@ class CustomWorld {
 // launch broswer
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
-        headless: true,
-        slowMo: 30
+        headless: false,
+        slowMo: 50
     });
+
+    if (fs.existsSync('test/storageState.json')) {
+        context = await global.browser.newContext({
+            storageState: 'test/storageState.json',
+        });
+    }
+    else {
+        context = await global.browser.newContext({ ignoreHTTPSErrors: true });
+    }
+})
+
+Before(async function () {
+    this.page = await context.newPage();
 })
 
 // delete realm when a scenario ends
 // delete a realm should be able to delete everything inside
 // close page
-After({ timeout: 40000 }, async function (testCase) {
+After({ timeout: 50000 }, async function (testCase) {
 
     // if test fails then take a screenshot
     if (testCase.result.status === Status.FAILED) {
@@ -636,11 +657,12 @@ After({ timeout: 40000 }, async function (testCase) {
     }
 
     await this.cleanUp()
-    await this.page?.close()
+    //await this.page?.close()
 })
 
 // close browser and delete authentication file
 AfterAll(async function () {
+    await this.page?.close()
     await global.browser.close()
     if (fs.existsSync('test/storageState.json')) {
         fs.unlinkSync('test/storageState.json')

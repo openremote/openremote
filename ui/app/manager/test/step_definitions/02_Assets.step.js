@@ -12,8 +12,8 @@ Then('Create a {string} with name of {string}', async function (asset, name) {
 })
 
 When('Go to asset {string} info page', { timeout: 10000 }, async function (name) {
-    await this.unSelectAll()
-    await this.click(`text=${name}`)
+    await this.unSelectAll(name)
+    await this.click(`#list-container >> text=${name}`)
     await this.wait(300)
 })
 
@@ -33,6 +33,7 @@ Then('Save', async function () {
 })
 
 Then('We see the asset with name of {string}', async function (name) {
+    await this.wait(300)
     const count = await this.count(`text=${name}`)
     //const count = await page.locator(`text=${name}`).count()
 
