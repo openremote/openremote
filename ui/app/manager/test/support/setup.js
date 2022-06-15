@@ -1,4 +1,4 @@
-const { setWorldConstructor, BeforeAll, AfterAll, After, Status } = require("@cucumber/cucumber");
+const { setWorldConstructor, World, BeforeAll, AfterAll, After, Status } = require("@cucumber/cucumber");
 const { ChromiumBroswer: ChromiumBrowser } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
@@ -12,7 +12,9 @@ require('dotenv').config();
  *         yarn test
  * 
  * command for running certain test/tests with the "tag"(@OpenRemote) 
- *         yarn run tags "tag" (yarn run tags "@OpenRemote")
+ *         yarn run testTagged "@tag" (yarn run testTagged "@OpenRemote")
+ * for skiping certain tag can run 
+ *         yarn run testTagged "@tag and not @skip"  (yarn run testTagged "@asset and not @separate")
  * 
  * command for more.....
  */
@@ -20,9 +22,11 @@ require('dotenv').config();
 const global = {
     browser: ChromiumBrowser,
     name: 1,
+    startTime: 0,
+    stepTime: 0,
     getAppUrl: (realm) => {
-        const managerUrl = process.env.managerUrl || "https://localhost/";
-        //const managerUrl = process.env.managerUrl || "localhost:8080/";
+        //const managerUrl = process.env.managerUrl || "https://localhost/";
+        const managerUrl = process.env.managerUrl || "localhost:8080/";
         const appUrl = managerUrl + "manager/?realm=";
         return appUrl + realm;
     },
@@ -73,7 +77,7 @@ const assets = [
     }
 ]
 
-class CustomWorld {
+class CustomWorld extends World {
 
     /**
      *  CUSTOM METHODS
@@ -102,7 +106,6 @@ class CustomWorld {
      */
     async login(user) {
         if (!fs.existsSync('test/storageState.json')) {
-            await this.wait(300);
             let password = global.passwords[user];
             await this.page?.fill('input[name="username"]', user);
             await this.page?.fill('input[name="password"]', password);
@@ -254,18 +257,21 @@ class CustomWorld {
      */
     async addRealm(name) {
 
+        global.stepTime = new Date() / 1000
+
         await this.wait(300)
-        const isVisible = await this.isVisible('[aria-label="attribute list"] span:has-text("smartcity")')
+        const isVisible = await this.isVisible(`[aria-label="attribute list"] span:has-text("${name}")`)
         if (!isVisible) {
             await this.click('text=Add Realm');
             await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await Promise.all([
-                this.page?.waitForNavigation(),
+                this.page.waitForNavigation(global.getAppUrl().substring(0, 30) + '#/realms'),
                 this.click('button:has-text("create")')
             ]);
-            await console.log("Realm: " + name + " added")
+
+            await console.log("Realm: " + name + " added,   " + timeCost(false) + "s")
             await this.wait(300)
         }
     }
@@ -284,6 +290,8 @@ class CustomWorld {
      *  Create User
      */
     async addUser(username, password) {
+
+        global.stepTime = new Date() / 1000
         /**
          * add user
          */
@@ -308,7 +316,7 @@ class CustomWorld {
             await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 5000 });
             // create user
             await this.click('button:has-text("create")')
-            console.log("User added")
+            console.log("User added,    " + timeCost(false) + "s")
         }
         else {
         }
@@ -319,6 +327,8 @@ class CustomWorld {
      * @param {Boolean} update for checking if updating values is needed
      */
     async addAssets(update, configOrLoction) {
+
+        global.stepTime = new Date() / 1000
 
         await this.wait(600)
 
@@ -369,6 +379,7 @@ class CustomWorld {
                 console.log('error' + error);
             }
         }
+        console.log("Adding assets takes " + timeCost(false) + "s")
     }
 
     /**
@@ -455,21 +466,24 @@ class CustomWorld {
      */
     async setConfigItem(item_1, item_2, attr_1, attr_2) {
         await this.configItem(item_1, item_2, attr_1)
-        await this.wait(500)
+        await this.wait(300)
         await this.configItem(item_1, item_2, attr_2)
+        await this.wait(300)
     }
 
     /**
      * deleteRealm. It's the most used clean up movement
      */
-    async deleteRealm() {
-        await this.click('[aria-label="attribute list"] span:has-text("smartcity")')
-        await this.click('button:has-text("Delete")')
-        await this.fill('div[role="alertdialog"] input[type="text"]', 'smartcity')
-        await this.click('button:has-text("OK")')
+    async deleteRealm(name) {
 
+        global.stepTime = new Date() / 1000
+
+        await this.click(`[aria-label="attribute list"] span:has-text("${name}")`)
+        await this.click('button:has-text("Delete")')
+        await this.fill('div[role="alertdialog"] input[type="text"]', name)
+        await this.click('button:has-text("OK")')
         // wait for backend to response
-        await this.wait(1500)
+        await this.wait(1000)
         try {
             const count = await this.count('[aria-label="attribute list"] span:has-text("smartcity")')
             //const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
@@ -479,7 +493,7 @@ class CustomWorld {
             await this.wait(500)
             const isVisible = await this.isVisible('#realm-picker')
             expect(isVisible).toBeFalsy()
-            await console.log("Realm: smartcity deleted")
+            await console.log("Realm: smartcity deleted,    " + timeCost(false) + "s")
         } catch (e) {
             console.log(e)
         }
@@ -541,6 +555,8 @@ class CustomWorld {
     */
     async setup(realm, level, configOrLoction = "both") {
 
+        global.startTime = new Date() / 1000
+
         // clean storage
         if (fs.existsSync('test/storageState.json')) {
             fs.unlinkSync('test/storageState.json')
@@ -576,6 +592,7 @@ class CustomWorld {
             }
             await this.logout()
             // await this.page.close()
+            console.log(level + " setup takes " + timeCost(true) + "s")
         }
     }
 
@@ -597,10 +614,11 @@ class CustomWorld {
      */
     async cleanUp() {
 
+        global.stepTime = new Date() / 1000
+
         // ensure login as admin into master
         await this.logout()
-
-
+        await this.wait(700)
         await this.goToRealmStartPage("master")
         await this.login("admin")
         // must wait for the realm picker to be rendered
@@ -612,8 +630,14 @@ class CustomWorld {
             // delete realms
             // should delete everything and set the envrioment to beginning
             await this.navigateToMenuItem("Realms")
-            await this.deleteRealm()
+            await this.deleteRealm("smartcity")
         }
+        console.log("Clean up takes " + timeCost(false) + "s")
+    }
+
+    async logTime(startTime) {
+        let endTime = new Date() / 1000
+        console.log((endTime - startTime).toFixed(3))
     }
 }
 
@@ -626,7 +650,12 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: true,
-        slowMo: 50
+        slowMo: 50,
+        launchOptions: {
+            // force GPU hardware acceleration (even in headless mode)
+            // without hardware acceleration, tests will be much slower
+            args: ["--use-gl=desktop"]
+        }
     });
 
     if (fs.existsSync('test/storageState.json')) {
@@ -642,6 +671,7 @@ BeforeAll(async function () {
 
 // open pages
 Before(async function () {
+    //global.startTime = new Date() / 1000
     this.page = await context.newPage();
 })
 
@@ -649,15 +679,19 @@ Before(async function () {
 // delete a realm should be able to delete everything inside
 // close page
 After({ timeout: 50000 }, async function (testCase) {
-
+    console.log("after start")
     // if test fails then take a screenshot
+    global.stepTime = new Date() / 1000
     if (testCase.result.status === Status.FAILED) {
         await this.page?.screenshot({ path: join("test", 'screenshots', `${global.name}.png`) });
         await global.name++
     }
 
+
     await this.cleanUp()
-    await this.page?.close()
+    await this.page.close()
+    console.log("This test takes " + timeCost(true) + "s")
+    console.log("After takes " + timeCost(false))
 })
 
 // close browser and delete authentication file
@@ -668,4 +702,13 @@ AfterAll(async function () {
     }
 })
 
+function timeCost(startAtBeginning) {
+    let endTime = new Date() / 1000
+    let startTime = startAtBeginning == true ? global.startTime : global.stepTime
+    let timeDiff = (endTime - startTime).toFixed(3)
+    return timeDiff
+}
+
 setWorldConstructor(CustomWorld);
+
+

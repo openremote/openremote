@@ -26,11 +26,15 @@ Then('Give {string} to the {string} with type of {string}', async function (valu
 })
 
 Then('Save', async function () {
-    await this.wait(200)
+    const {page} =this
     // press enter to enable the save button (could be any other action) (or this will be fixed then no pre-action needed)
     await this.click('#edit-container')
+    await this.wait(200)  // wait for button to enabled 
     await this.click('button:has-text("Save")')    
-    await this.wait(200)
+    await this.wait(300)
+    if(page.locator('button:has-text("Save")[disable]') == null){
+        console.log("something wrong with the save button")
+    }
 })
 
 Then('We see the asset with name of {string}', async function (name) {
@@ -77,7 +81,7 @@ Then('Update location of {int} and {int}', { timeout: 10000 }, async function (l
 
     // location_x and location_y are given by the example data
     // currently it's not implmented as dragging the map and clicking on a random place (could be possible in the future)
-    await page.mouse.click(location_x, location_y, { delay: 700 })
+    await page.mouse.click(location_x, location_y, { delay: 500 })
     await this.click('button:has-text("OK")')
 })
 

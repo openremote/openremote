@@ -5,13 +5,13 @@ const { expect } = require("@playwright/test");
  * delete realm
  */
 
-Then('Delete realm', async function () {
+Then('Delete realm', { timeout: 60000 }, async function () {
   await this.switchToRealmByRealmPicker("master")
   await this.deleteRealm()
 })
 
 Then('We should not see the Realm picker', async function () {
-  
+
   await this.goToRealmStartPage("master")
 
   // must wait for the realm picker to be rendered
