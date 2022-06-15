@@ -129,6 +129,7 @@ export enum InputType {
 
 export interface ValueInputProviderOptions {
     label?: string;
+    required?: boolean;
     readonly?: boolean;
     disabled?: boolean;
     compact?: boolean;
@@ -332,7 +333,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     if (patternConstraint) {
         pattern = patternConstraint.regexp;
     }
-    if (notNullConstraint || (valueHolderDescriptor && (valueHolderDescriptor as any).optional === false)) {
+    if (notNullConstraint) {
         required = true;
     }
     if (notBlankConstraint && !pattern) {
@@ -381,6 +382,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
     const readonly = options.readonly;
+    required = required || options.readonly;
     const comfortable = options.comfortable;
     const resizeVertical = options.resizeVertical;
     const inputRef: Ref<OrMwcInput> = createRef();

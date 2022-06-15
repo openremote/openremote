@@ -498,6 +498,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property({type: Boolean})
     public readonly?: boolean;
 
+    @property({type: Boolean})
+    public required?: boolean;
+
     @property()
     public value?: any;
 
@@ -611,6 +614,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (this._templateProvider
             && (_changedProperties.has("disabled")
                 || _changedProperties.has("readonly")
+                || _changedProperties.has("required")
                 || _changedProperties.has("label"))) {
             this._updateTemplate();
         }
@@ -674,6 +678,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
         const options: ValueInputProviderOptions = {
             readonly: this.isReadonly(),
+            required: this.required,
             disabled: this.disabled,
             compact: this.compact,
             label: this.getLabel(),
