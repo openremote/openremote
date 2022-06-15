@@ -175,7 +175,26 @@ class HostSelectionFragment : Fragment() {
                                 }
                             }
                             else -> {
-                                parentActivity.goToMainActivity(realm = "master")
+                                parentActivity.apiManager.getApps { statusCode, apps, error ->
+                                    if (apps?.isEmpty() == true) {
+                                        parentActivity.runOnUiThread {
+                                            binding.errorView.visibility = View.VISIBLE
+                                            binding.errorTextView.text =
+                                                getString(R.string.no_apps_found)
+                                        }
+                                    } else {
+                                        parentFragmentManager.beginTransaction()
+                                            .replace(
+                                                R.id.fragmentContainer,
+                                                AppSelectionFragment.newInstance(
+                                                    appList = apps,
+                                                    appMap = null
+                                                )
+                                            )
+                                            .addToBackStack(ProjectWizardActivity.TAG)
+                                            .commit()
+                                    }
+                                }
                             }
                         }
                     }
