@@ -88,7 +88,9 @@ public class ConsoleAppService implements ContainerService {
                 Files.list(managerWebService.getBuiltInAppDocRoot()),
                 Files.list(managerWebService.getCustomAppDocRoot()))
             .filter(Files::isDirectory)
+            .filter(path -> !path.endsWith("shared") && !path.endsWith("swagger"))
             .map(dir -> dir.getFileName().toString())
+            .distinct()
             .toArray(String[]::new);
     }
 

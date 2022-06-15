@@ -46,6 +46,15 @@ public class AppResourceImpl extends WebResource implements AppResource {
     }
 
     @Override
+    public String[] getApps(RequestParams requestParams) {
+        try {
+            return consoleAppService.getInstalled();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
     public Response getAppInfos(RequestParams requestParams) {
         if (!Files.isDirectory(consoleAppService.consoleAppDocRoot)) {
             return Response

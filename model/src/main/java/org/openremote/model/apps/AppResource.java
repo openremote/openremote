@@ -30,11 +30,20 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Tag(name = "UI Apps")
 @Path("apps")
 public interface AppResource {
+
+    /**
+     * Retrieve a list of available apps
+     */
+    @GET
+    @Produces(APPLICATION_JSON)
+    String[] getApps(@BeanParam RequestParams requestParams);
+
     /**
      * Retrieve info json of all apps.
      */
     @GET
     @Produces(APPLICATION_JSON)
+    @Path("info")
     Response getAppInfos(@BeanParam RequestParams requestParams);
 
     /**
