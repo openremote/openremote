@@ -122,7 +122,6 @@ class ProjectListActivity : AppCompatActivity() {
     }
 
     private fun goToMainActivity(url: String) {
-
         val intent = Intent(this, OrMainActivity::class.java)
         intent.putExtra(ORConstants.BASE_URL_KEY, url)
         runOnUiThread {

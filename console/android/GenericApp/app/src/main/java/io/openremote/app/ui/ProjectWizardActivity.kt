@@ -2,6 +2,7 @@ package io.openremote.app.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.webkit.URLUtil
 import androidx.fragment.app.FragmentActivity
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -48,7 +49,8 @@ class ProjectWizardActivity : FragmentActivity() {
         } ?: mutableListOf()
 
         val intent = Intent(this, OrMainActivity::class.java)
-        var url = if (realm != null) "$host/${appName}/?realm=$realm" else "$host/$appName"
+        var url = if (URLUtil.isValidUrl(host)) host else "https://${host}.openremote.app"
+        url = if (realm != null) "$url/${appName}/?realm=$realm" else "$url/$appName"
         if (consoleProviders?.any() == true) {
             url = if (url.contains("?")) url.plus("&") else url.plus("?")
             url = url.plus("consoleProviders=${consoleProviders.joinToString(" ")}")

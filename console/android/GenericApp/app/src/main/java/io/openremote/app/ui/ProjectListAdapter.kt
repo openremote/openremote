@@ -43,7 +43,7 @@ class ProjectListAdapter(val items: MutableList<ProjectItem>, private val goToMa
         fun bindProjectItem(projectItem: ProjectItem) {
             this.url = projectItem.url
             binding.host.text = projectItem.host
-            projectItem.app?.run {
+            projectItem.app.run {
                 binding.app.visibility = View.VISIBLE
                 binding.app.text = this
             }

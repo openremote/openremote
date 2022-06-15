@@ -25,7 +25,7 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
 
-        val geofencingEvent = GeofencingEvent.fromIntent(intent!!)
+        val geofencingEvent = GeofencingEvent.fromIntent(intent!!) ?: return
 
         if (geofencingEvent.hasError()) {
             LOG.warning("Geofence event error : ${geofencingEvent.errorCode}")
@@ -43,7 +43,7 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
         val geofenceTransition = geofencingEvent.geofenceTransition
         val trans = if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) "ENTER" else "EXIT"
 
-        geofencingEvent.triggeringGeofences.forEach { geofence ->
+        geofencingEvent.triggeringGeofences?.forEach { geofence ->
             val geofenceDefinition = geofenceDefinitions.firstOrNull { it.id == geofence.requestId }
 
             if (geofenceDefinition != null) {

@@ -165,7 +165,7 @@ class GeofenceProvider(val context: Context) {
     private val locationUpdateCallback: LocationCallback by lazy {
         object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                locationResult.lastLocation.let {
+                locationResult.lastLocation?.let {
                     locationClient.removeLocationUpdates(this)
                     locationCallback?.accept(
                         hashMapOf(

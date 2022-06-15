@@ -142,6 +142,18 @@ class AppSelectionFragment : Fragment() {
                                     }
                                 }
                             }
+                            404 -> {
+                                parentFragmentManager.beginTransaction()
+                                    .replace(
+                                        R.id.fragmentContainer,
+                                        RealmSelectionFragment.newInstance(
+                                            realmList = null,
+                                            showRealmTextInput = true
+                                        )
+                                    )
+                                    .addToBackStack(ProjectWizardActivity.TAG)
+                                    .commit()
+                            }
                             else -> {
                                 parentActivity.runOnUiThread {
                                     binding.errorView.visibility = View.VISIBLE

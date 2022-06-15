@@ -226,14 +226,6 @@ open class OrMainActivity : Activity() {
                     )
                 }
 
-                override fun onReceivedSslError(
-                    view: WebView?,
-                    handler: SslErrorHandler?,
-                    error: SslError?
-                ) {
-                    handler?.proceed()
-                }
-
                 override fun onReceivedError(
                     view: WebView,
                     request: WebResourceRequest,

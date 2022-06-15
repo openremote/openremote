@@ -140,28 +140,7 @@ class HostSelectionFragment : Fragment() {
                         parentActivity.binding.progressBar.visibility = View.INVISIBLE
                         when (statusCode) {
                             in 200..299 -> {
-                                if (appInfoMap?.isEmpty() == true) {
-                                    parentActivity.apiManager.getApps { statusCode, apps, error ->
-                                        if (apps?.isEmpty() == true) {
-                                            parentActivity.runOnUiThread {
-                                                binding.errorView.visibility = View.VISIBLE
-                                                binding.errorTextView.text =
-                                                    getString(R.string.no_apps_found)
-                                            }
-                                        } else {
-                                            parentFragmentManager.beginTransaction()
-                                                .replace(
-                                                    R.id.fragmentContainer,
-                                                    AppSelectionFragment.newInstance(
-                                                        appList = apps,
-                                                        appMap = null
-                                                    )
-                                                )
-                                                .addToBackStack(ProjectWizardActivity.TAG)
-                                                .commit()
-                                        }
-                                    }
-                                } else {
+                                if (appInfoMap?.isNotEmpty() == true) {
                                     parentFragmentManager.beginTransaction()
                                         .replace(
                                             R.id.fragmentContainer,
@@ -172,17 +151,45 @@ class HostSelectionFragment : Fragment() {
                                         )
                                         .addToBackStack(ProjectWizardActivity.TAG)
                                         .commit()
+                                } else {
+                                    parentActivity.apiManager.getApps { statusCode, apps, error ->
+                                        if (apps?.isNotEmpty() == true) {
+                                            parentFragmentManager.beginTransaction()
+                                                .replace(
+                                                    R.id.fragmentContainer,
+                                                    AppSelectionFragment.newInstance(
+                                                        appList = apps,
+                                                        appMap = null
+                                                    )
+                                                )
+                                                .addToBackStack(ProjectWizardActivity.TAG)
+                                                .commit()
+                                        } else {
+                                            //TODO remove inserting manager app after all manager instances are updated with console_settings_improvement branch
+                                            val tempApps = arrayListOf("manager")
+                                            parentFragmentManager.beginTransaction()
+                                                .replace(
+                                                    R.id.fragmentContainer,
+                                                    AppSelectionFragment.newInstance(
+                                                        appList = tempApps,
+                                                        appMap = null
+                                                    )
+                                                )
+                                                .addToBackStack(ProjectWizardActivity.TAG)
+                                                .commit()
+
+//                                            parentActivity.runOnUiThread {
+//                                                binding.errorView.visibility = View.VISIBLE
+//                                                binding.errorTextView.text =
+//                                                    getString(R.string.no_apps_found)
+//                                            }
+                                        }
+                                    }
                                 }
                             }
                             else -> {
                                 parentActivity.apiManager.getApps { statusCode, apps, error ->
-                                    if (apps?.isEmpty() == true) {
-                                        parentActivity.runOnUiThread {
-                                            binding.errorView.visibility = View.VISIBLE
-                                            binding.errorTextView.text =
-                                                getString(R.string.no_apps_found)
-                                        }
-                                    } else {
+                                    if (apps?.isNotEmpty() == true) {
                                         parentFragmentManager.beginTransaction()
                                             .replace(
                                                 R.id.fragmentContainer,
@@ -193,6 +200,24 @@ class HostSelectionFragment : Fragment() {
                                             )
                                             .addToBackStack(ProjectWizardActivity.TAG)
                                             .commit()
+                                    } else {
+                                        //TODO remove inserting manager app after all manager instances are updated with console_settings_improvement branch
+                                        val tempApps = arrayListOf("manager")
+                                        parentFragmentManager.beginTransaction()
+                                            .replace(
+                                                R.id.fragmentContainer,
+                                                AppSelectionFragment.newInstance(
+                                                    appList = tempApps,
+                                                    appMap = null
+                                                )
+                                            )
+                                            .addToBackStack(ProjectWizardActivity.TAG)
+                                            .commit()
+//                                        parentActivity.runOnUiThread {
+//                                            binding.errorView.visibility = View.VISIBLE
+//                                            binding.errorTextView.text =
+//                                                getString(R.string.no_apps_found)
+//                                        }
                                     }
                                 }
                             }
