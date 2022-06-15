@@ -38,6 +38,9 @@ class AppSelectionFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        parentActivity = requireActivity() as ProjectWizardActivity
+
         arguments?.let {
             it.getString(ARG_APP_LIST)?.let {
                 appList = mapper.readValue<List<String>>(it)
@@ -48,14 +51,45 @@ class AppSelectionFragment : Fragment() {
             showAppTextInput = it.getBoolean(ARG_SHOW_APP_TEXT_INPUT, false)
             showRealmTextInput = it.getBoolean(ARG_SHOW_REALM_TEXT_INPUT, false)
         }
+
+        if (!appList.isNullOrEmpty()) {
+            if (appList!!.size == 1) {
+                parentActivity.app = appList!![0]
+                parentFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.fragmentContainer,
+                        RealmSelectionFragment.newInstance(
+                            realmList = null,
+                            showRealmTextInput = showRealmTextInput
+                        )
+                    )
+                    .addToBackStack(ProjectWizardActivity.TAG)
+                    .commit()
+            }
+        }
+
+        if (!appMap.isNullOrEmpty()) {
+            if (appMap!!.size == 1) {
+                parentActivity.app = appMap!!.keys.elementAt(0)
+                parentActivity.consoleProviders = appMap!!.values.elementAt(0).providers
+                parentFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.fragmentContainer,
+                        RealmSelectionFragment.newInstance(
+                            realmList = appMap!!.values.elementAt(0).realms,
+                            showRealmTextInput = showRealmTextInput
+                        )
+                    )
+                    .addToBackStack(ProjectWizardActivity.TAG)
+                    .commit()
+            }
+        }
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        parentActivity = requireActivity() as ProjectWizardActivity
-
         // Inflate the layout for this fragment
         binding = FragmentAppSelectionBinding.inflate(inflater, container, false);
         val view: View = binding.root
@@ -95,10 +129,13 @@ class AppSelectionFragment : Fragment() {
                         id: Long
                     ) {
                         parentActivity.app = appArrayAdapter.getItem(position)
+                        parentActivity.consoleProviders =
+                            appMap!!.values.elementAt(position).providers
                     }
 
                     override fun onNothingSelected(p0: AdapterView<*>?) {
                         parentActivity.app = null
+                        parentActivity.consoleProviders = null
                     }
                 }
         }
@@ -148,7 +185,7 @@ class AppSelectionFragment : Fragment() {
                                         R.id.fragmentContainer,
                                         RealmSelectionFragment.newInstance(
                                             realmList = null,
-                                            showRealmTextInput = true
+                                            showRealmTextInput = showRealmTextInput
                                         )
                                     )
                                     .addToBackStack(ProjectWizardActivity.TAG)

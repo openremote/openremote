@@ -172,7 +172,8 @@ class HostSelectionFragment : Fragment() {
                                                     R.id.fragmentContainer,
                                                     AppSelectionFragment.newInstance(
                                                         appList = tempApps,
-                                                        appMap = null
+                                                        appMap = null,
+                                                        showAppTextInput = true
                                                     )
                                                 )
                                                 .addToBackStack(ProjectWizardActivity.TAG)
@@ -195,7 +196,8 @@ class HostSelectionFragment : Fragment() {
                                                 R.id.fragmentContainer,
                                                 AppSelectionFragment.newInstance(
                                                     appList = apps,
-                                                    appMap = null
+                                                    appMap = null,
+                                                    showAppTextInput = true
                                                 )
                                             )
                                             .addToBackStack(ProjectWizardActivity.TAG)
