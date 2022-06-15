@@ -473,6 +473,8 @@
   "no": "No",
   "linked": "Linked",
   "filter": {
+    "filter": "Filter",
+    "clear": "CLEAR",
     "action": "FILTER",
     "assetTypeLabel": "Asset type",
     "assetTypeNone": "None",
