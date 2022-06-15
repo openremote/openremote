@@ -41,12 +41,17 @@ class HostSelectionFragment : Fragment() {
             parentActivity.host = binding.hostInput.text.toString()
         }
 
+        binding.backButton.setOnClickListener {
+            activity?.finish()
+        }
+
         return view
     }
 
     private fun connectToHost(host: String) {
         parentActivity.binding.progressBar.visibility = View.VISIBLE
-        val url = if (URLUtil.isValidUrl(host)) host.plus("/api/master") else "https://${host}.openremote.app/api/master"
+        val url =
+            if (URLUtil.isValidUrl(host)) host.plus("/api/master") else "https://${host}.openremote.app/api/master"
         parentActivity.apiManager = ApiManager(url)
         parentActivity.apiManager.getConsoleConfig { statusCode, consoleConfig, error ->
             when (statusCode) {
@@ -67,6 +72,19 @@ class HostSelectionFragment : Fragment() {
                                                 val appInfo = appInfoMap[config.app!!]
                                                 if (appInfo != null) {
                                                     processAppInfo(config, appInfo)
+                                                } else {
+                                                    parentFragmentManager.beginTransaction()
+                                                        .replace(
+                                                            R.id.fragmentContainer,
+                                                            AppSelectionFragment.newInstance(
+                                                                appList = config.allowedApps,
+                                                                appMap = config.apps,
+                                                                showAppTextInput = config.showAppTextInput,
+                                                                showRealmTextInput = config.showRealmTextInput
+                                                            )
+                                                        )
+                                                        .addToBackStack(ProjectWizardActivity.TAG)
+                                                        .commit()
                                                 }
                                             } else {
                                                 parentFragmentManager.beginTransaction()
@@ -84,10 +102,18 @@ class HostSelectionFragment : Fragment() {
                                             }
                                         }
                                         404 -> { //no appconfig
-                                            parentActivity.goToMainActivity(parentActivity.app!!, "master")
+                                            parentActivity.goToMainActivity(
+                                                parentActivity.app!!,
+                                                "master"
+                                            )
                                         }
                                         else -> {
-                                            parentActivity.showToastMessage("Error getting app info. Check app name.")
+                                            binding.errorView.visibility = View.VISIBLE
+                                            parentActivity.runOnUiThread {
+                                                binding.errorView.visibility = View.VISIBLE
+                                                binding.errorTextView.text =
+                                                    resources.getText(R.string.error_getting_app_info)
+                                            }
                                         }
                                     }
                                 }
@@ -114,16 +140,39 @@ class HostSelectionFragment : Fragment() {
                         parentActivity.binding.progressBar.visibility = View.INVISIBLE
                         when (statusCode) {
                             in 200..299 -> {
-                                parentFragmentManager.beginTransaction()
-                                    .replace(
-                                        R.id.fragmentContainer,
-                                        AppSelectionFragment.newInstance(
-                                            appList = null,
-                                            appMap = appInfoMap
+                                if (appInfoMap?.isEmpty() == true) {
+                                    parentActivity.apiManager.getApps { statusCode, apps, error ->
+                                        if (apps?.isEmpty() == true) {
+                                            parentActivity.runOnUiThread {
+                                                binding.errorView.visibility = View.VISIBLE
+                                                binding.errorTextView.text =
+                                                    getString(R.string.no_apps_found)
+                                            }
+                                        } else {
+                                            parentFragmentManager.beginTransaction()
+                                                .replace(
+                                                    R.id.fragmentContainer,
+                                                    AppSelectionFragment.newInstance(
+                                                        appList = apps,
+                                                        appMap = null
+                                                    )
+                                                )
+                                                .addToBackStack(ProjectWizardActivity.TAG)
+                                                .commit()
+                                        }
+                                    }
+                                } else {
+                                    parentFragmentManager.beginTransaction()
+                                        .replace(
+                                            R.id.fragmentContainer,
+                                            AppSelectionFragment.newInstance(
+                                                appList = null,
+                                                appMap = appInfoMap
+                                            )
                                         )
-                                    )
-                                    .addToBackStack(ProjectWizardActivity.TAG)
-                                    .commit()
+                                        .addToBackStack(ProjectWizardActivity.TAG)
+                                        .commit()
+                                }
                             }
                             else -> {
                                 parentActivity.goToMainActivity(realm = "master")
@@ -133,7 +182,11 @@ class HostSelectionFragment : Fragment() {
                 }
                 else -> {
                     parentActivity.binding.progressBar.visibility = View.INVISIBLE
-                    parentActivity.showToastMessage("Couldn't reach host");
+                    parentActivity.runOnUiThread {
+                        binding.errorView.visibility = View.VISIBLE
+                        binding.errorTextView.text =
+                            resources.getText(R.string.could_not_connect_to_domain)
+                    }
                 }
             }
         }
@@ -142,9 +195,15 @@ class HostSelectionFragment : Fragment() {
     private fun processAppInfo(config: ORConsoleConfig, appInfo: ORAppInfo) {
         parentActivity.consoleProviders = appInfo.providers
         if (appInfo.consoleAppIncompatible) {
-            parentActivity.showToastMessage("Console app isn't compatible with the Generic OR app");
+            parentActivity.runOnUiThread {
+                binding.errorView.visibility = View.VISIBLE
+                binding.errorTextView.text = getString(R.string.app_incompatible)
+            }
         } else if (parentActivity.app != null) {
-            parentActivity.goToMainActivity(parentActivity.app!!, consoleProviders = appInfo.providers)
+            parentActivity.goToMainActivity(
+                parentActivity.app!!,
+                consoleProviders = appInfo.providers
+            )
         } else {
             parentFragmentManager.beginTransaction()
                 .replace(

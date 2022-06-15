@@ -9,7 +9,9 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
+import androidx.core.view.setPadding
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,6 +25,7 @@ import io.openremote.app.util.Constants
 import io.openremote.orlib.ORConstants
 import io.openremote.orlib.ui.OrMainActivity
 
+
 class ProjectListActivity : AppCompatActivity() {
     lateinit var binding: ActivityProjectListBinding
     lateinit var projectListAdapter: ProjectListAdapter
@@ -33,6 +36,10 @@ class ProjectListActivity : AppCompatActivity() {
         binding = ActivityProjectListBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+
+        val toolbar: Toolbar =  findViewById(R.id.settings_toolbar);
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
 
         val projectItems = PreferenceManager.getDefaultSharedPreferences(this)
             .getString(Constants.PROJECT_LIST, null)?.let {
@@ -95,7 +102,12 @@ class ProjectListActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.projects_menu,menu)
+        menuInflater.inflate(R.menu.projects_menu, menu)
+        val menuItem = menu?.findItem(R.id.add);
+        menuItem?.actionView?.setOnClickListener {
+            this.onOptionsItemSelected(menuItem)
+        }
+        menuItem?.actionView?.setPadding(10)
         return super.onCreateOptionsMenu(menu)
     }
 

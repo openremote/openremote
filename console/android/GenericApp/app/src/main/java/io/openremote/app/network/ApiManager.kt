@@ -1,17 +1,14 @@
 package io.openremote.app.network
 
-import android.net.SSLCertificateSocketFactory
 import android.net.Uri
 import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.openremote.app.model.ORAppInfo
 import io.openremote.app.model.ORConsoleConfig
-import io.openremote.orlib.models.ORAppConfig
-import org.apache.http.conn.ssl.AllowAllHostnameVerifier
 import java.net.HttpURLConnection
 import java.net.URL
-import javax.net.ssl.*
+import javax.net.ssl.HttpsURLConnection
 import kotlin.concurrent.thread
 
 
@@ -27,20 +24,12 @@ class ApiManager(private val baseUrl: String) {
         PUT,
     }
 
-    fun getAppConfig(realm: String, callback: ResponseBlock<ORAppConfig>?) {
-        val uri = Uri.parse(baseUrl)
-        val url = URL("${uri.scheme}://${uri.host}/consoleappconfig/${realm}.json")
-        with(url.openConnection() as HttpURLConnection) {
-            requestMethod = HttpMethod.GET.toString()
-            setRequestProperty("Accept", "application/json")
-            thread(start = true) {
-                parseResponse(this, callback)
-            }
-        }
+    fun getApps(callback: ResponseBlock<List<String>>?) {
+        get(arrayOf("apps"), callback)
     }
 
     fun getAppInfos(callback: ResponseBlock<Map<String, ORAppInfo>>?) {
-        get(arrayOf("apps"), callback)
+        get(arrayOf("apps", "info"), callback)
     }
 
     fun getConsoleConfig(callback: ResponseBlock<ORConsoleConfig>?) {
@@ -67,9 +56,6 @@ class ApiManager(private val baseUrl: String) {
 
         val url = URL(builder.build().toString())
         with(url.openConnection() as HttpsURLConnection) {
-
-            sslSocketFactory = SSLCertificateSocketFactory.getInsecure(0, null)
-            hostnameVerifier = AllowAllHostnameVerifier()
             requestMethod = method.toString()
             setRequestProperty("Accept", "application/json")
 

@@ -6,9 +6,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.openremote.app.R
 import io.openremote.app.databinding.FragmentRealmSelectionBinding
 
 private const val ARG_REALM_LIST = "realmList"
@@ -54,6 +56,9 @@ class RealmSelectionFragment : Fragment() {
 
         if (showRealmTextInput) {
             binding.realmInputLayout.visibility = View.VISIBLE
+            binding.realmInput.doOnTextChanged { text, start, before, count ->
+                parentActivity.realm = text.toString()
+            }
         } else {
             if (realmList != null) {
                 realmArrayAdapter = ArrayAdapter(
@@ -63,23 +68,28 @@ class RealmSelectionFragment : Fragment() {
                 )
                 binding.realmSpinner.adapter = realmArrayAdapter
                 binding.realmSpinner.visibility = View.VISIBLE
-            }
 
-            binding.realmSpinner.onItemSelectedListener =
-                object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(
-                        parent: AdapterView<*>?,
-                        view: View?,
-                        position: Int,
-                        id: Long
-                    ) {
-                        parentActivity.realm = realmArrayAdapter.getItem(position)
-                    }
+                binding.realmSpinner.onItemSelectedListener =
+                    object : AdapterView.OnItemSelectedListener {
+                        override fun onItemSelected(
+                            parent: AdapterView<*>?,
+                            view: View?,
+                            position: Int,
+                            id: Long
+                        ) {
+                            parentActivity.realm = realmArrayAdapter.getItem(position)
+                        }
 
-                    override fun onNothingSelected(p0: AdapterView<*>?) {
-                        parentActivity.realm = null
+                        override fun onNothingSelected(p0: AdapterView<*>?) {
+                            parentActivity.realm = null
+                        }
                     }
+            } else {
+                binding.realmInputLayout.visibility = View.VISIBLE
+                binding.realmInput.doOnTextChanged { text, start, before, count ->
+                    parentActivity.realm = text.toString()
                 }
+            }
         }
 
         binding.finishButton.setOnClickListener {
@@ -90,8 +100,15 @@ class RealmSelectionFragment : Fragment() {
                     parentActivity.consoleProviders
                 )
             } else {
-                parentActivity.showToastMessage("Select realm first")
+                parentActivity.runOnUiThread {
+                    binding.errorView.visibility = View.VISIBLE
+                    binding.errorTextView.text = getString(R.string.select_realm_first)
+                }
             }
+        }
+
+        binding.backButton.setOnClickListener {
+            parentFragmentManager.popBackStack()
         }
 
         return view

@@ -2,7 +2,6 @@ package io.openremote.app.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -10,9 +9,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import io.openremote.app.R
 import io.openremote.app.databinding.ActivityProjectWizardBinding
 import io.openremote.app.model.ProjectItem
+import io.openremote.app.network.ApiManager
 import io.openremote.app.util.Constants
 import io.openremote.orlib.ORConstants
-import io.openremote.app.network.ApiManager
 import io.openremote.orlib.ui.OrMainActivity
 
 class ProjectWizardActivity : FragmentActivity() {
@@ -68,17 +67,16 @@ class ProjectWizardActivity : FragmentActivity() {
         }
     }
 
-    fun showToastMessage(message: String) {
-        runOnUiThread {
-            Toast.makeText(
-                this,
-                message,
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
-
     companion object {
         const val TAG = "ProjectWizardActivity"
+    }
+
+    override fun onBackPressed() {
+        val f = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+        if (f is HostSelectionFragment) {
+            finish()
+        } else {
+            super.onBackPressed()
+        }
     }
 }

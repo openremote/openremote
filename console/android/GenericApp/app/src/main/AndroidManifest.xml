@@ -56,9 +56,7 @@
         <activity
             android:name=".ui.ProjectListActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
-            android:label="@string/Settings"
-            android:theme="@style/OpenRemoteThemeWithBar"/>
+            android:screenOrientation="portrait"/>
 
         <service
             android:name="io.openremote.orlib.service.ORFirebaseMessagingService"

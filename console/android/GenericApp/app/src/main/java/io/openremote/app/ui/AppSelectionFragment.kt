@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -61,6 +62,9 @@ class AppSelectionFragment : Fragment() {
 
         if (showAppTextInput) {
             binding.appInputLayout.visibility = View.VISIBLE
+            binding.appInput.doOnTextChanged { text, start, before, count ->
+                parentActivity.app = text.toString()
+            }
         } else {
             if (appList != null) {
                 appArrayAdapter = ArrayAdapter(
@@ -99,6 +103,10 @@ class AppSelectionFragment : Fragment() {
                 }
         }
 
+        binding.backButton.setOnClickListener {
+            parentFragmentManager.popBackStack()
+        }
+
         binding.nextButton.setOnClickListener {
             if (parentActivity.app != null) {
                 val appInfo = appMap?.get(parentActivity.app)
@@ -135,7 +143,11 @@ class AppSelectionFragment : Fragment() {
                                 }
                             }
                             else -> {
-                                parentActivity.showToastMessage("Error getting app info")
+                                parentActivity.runOnUiThread {
+                                    binding.errorView.visibility = View.VISIBLE
+                                    binding.errorTextView.text =
+                                        getString(R.string.error_getting_app_info)
+                                }
                             }
                         }
                     }
@@ -152,7 +164,10 @@ class AppSelectionFragment : Fragment() {
                         .commit()
                 }
             } else {
-                parentActivity.showToastMessage("Select app first")
+                parentActivity.runOnUiThread {
+                    binding.errorView.visibility = View.VISIBLE
+                    binding.errorTextView.text = getString(R.string.select_app_first)
+                }
             }
         }
 

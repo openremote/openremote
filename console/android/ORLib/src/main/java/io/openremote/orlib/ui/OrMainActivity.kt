@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.Uri
+import android.net.http.SslError
 import android.os.*
 import android.view.KeyEvent
 import android.view.View
@@ -223,6 +224,14 @@ open class OrMainActivity : Activity() {
                         errorResponse.reasonPhrase,
                         request.url.toString()
                     )
+                }
+
+                override fun onReceivedSslError(
+                    view: WebView?,
+                    handler: SslErrorHandler?,
+                    error: SslError?
+                ) {
+                    handler?.proceed()
                 }
 
                 override fun onReceivedError(
