@@ -36,11 +36,25 @@ class RealmSelectionFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        parentActivity = requireActivity() as ProjectWizardActivity
+
         arguments?.let {
             it.getString(ARG_REALM_LIST)?.let {
                 realmList = mapper.readValue<List<String>>(it)
             }
             showRealmTextInput = it.getBoolean(ARG_SHOW_REALM_TEXT_INPUT, false)
+        }
+
+        if (!realmList.isNullOrEmpty()) {
+            if (realmList!!.size == 1) {
+                parentActivity.realm = realmList!![0]
+                parentActivity.goToMainActivity(
+                    parentActivity.app!!,
+                    parentActivity.realm,
+                    parentActivity.consoleProviders
+                )
+            }
         }
     }
 
@@ -48,8 +62,6 @@ class RealmSelectionFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        parentActivity = requireActivity() as ProjectWizardActivity
-
         // Inflate the layout for this fragment
         binding = FragmentRealmSelectionBinding.inflate(inflater, container, false);
         val view: View = binding.root
