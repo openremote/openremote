@@ -51,7 +51,6 @@ public class TestFixture implements IGlobalExtension {
     public void start() {
         // Force RECONNECT times to be short to improve test run times
         AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = 50;
-        AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS = 0;
         AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS = 50;
     }
 

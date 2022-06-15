@@ -92,9 +92,9 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
     @Override
     protected void doStop(Container container) throws Exception {
         if (network != null) {
+            network.removeConnectionStatusConsumer(this::setConnectionStatus);
             network.disconnect();
             network.close();
-            network.removeConnectionStatusConsumer(this::setConnectionStatus);
         }
     }
 
