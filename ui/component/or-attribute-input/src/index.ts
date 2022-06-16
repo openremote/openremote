@@ -498,7 +498,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property({type: Boolean})
     public readonly?: boolean;
 
-    @property({type: Boolean})
+    @property({type: Boolean, attribute: true})
     public required?: boolean;
 
     @property()
