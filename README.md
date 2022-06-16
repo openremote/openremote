@@ -46,7 +46,7 @@ or
 
 CMD:
 ```
-cmd /C "set OR_HOSTNAME=192.168.1.1 && set OR_SSL_PORT=8443 && docker-compose -p openremote up -d"
+cmd /C "set OR_HOSTNAME=192.168.1.1 && set OR_SSL_PORT=443 && docker-compose -p openremote up -d"
 ```
 
 ***NOTE: When chaning `OR_SSL_PORT` you will need to alter the `KEYCLOAK_FRONTEND_URL` in the docker-compose.yml file (see comments in the file for details)***
