@@ -239,6 +239,7 @@ class CustomWorld extends World {
      * @param {Sting} setting name of the setting menu item
      */
     async navigateToMenuItem(setting) {
+        await this.wait(500)
         await this.click('button[id="menu-btn-desktop"]');
         await this.click(`text=${setting}`);
     }
@@ -372,7 +373,7 @@ class CustomWorld extends World {
                         await this.wait(300)
                     }
                     await this.unselectAll()
-                    console.log("Asset: " + asset.name + " with " + configOrLoction + " added")
+                    console.log("Asset: " + asset.name + " with " + configOrLoction + " updated has been added")
                 }
             }
             catch (error) {
@@ -385,7 +386,7 @@ class CustomWorld extends World {
     /**
      * unselect the asset
      */
-    async unselectAll(element) {
+    async unselectAll() {
 
         const isViewVisible = await this.isVisible('button:has-text("View")')
         const isCloseVisible = await this.isVisible('.mdi-close >> nth=0')
@@ -400,9 +401,6 @@ class CustomWorld extends World {
             //await this.page?.locator('.mdi-close').first().click()
             await this.click('.mdi-close >> nth=0')
         }
-
-        const selectedElement = await this.page.locator(`${element}`).count()
-        await expect(selectedElement).toBe(0)
         await this.wait(500)
     }
 
@@ -472,27 +470,28 @@ class CustomWorld extends World {
     }
 
     /**
-     * deleteRealm. It's the most used clean up movement
+     * Delete a certain realm by its name
+     * @param {String} name Realm's name
      */
-    async deleteRealm(name) {
+    async deleteRealm(realm) {
 
         global.stepTime = new Date() / 1000
-
-        await this.click(`[aria-label="attribute list"] span:has-text("${name}")`)
+        await this.wait(400)
+        await this.click(`[aria-label="attribute list"] span:has-text("${realm}")`)
         await this.click('button:has-text("Delete")')
-        await this.fill('div[role="alertdialog"] input[type="text"]', name)
+        await this.fill('div[role="alertdialog"] input[type="text"]', realm)
         await this.click('button:has-text("OK")')
         // wait for backend to response
         await this.wait(1000)
         try {
             const count = await this.count('[aria-label="attribute list"] span:has-text("smartcity")')
             //const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
-            expect(count).toBe(0)
+            await expect(count).toBe(0)
 
             await this.goToRealmStartPage("master")
             await this.wait(500)
             const isVisible = await this.isVisible('#realm-picker')
-            expect(isVisible).toBeFalsy()
+            await expect(isVisible).toBeFalsy()
             await console.log("Realm: smartcity deleted,    " + timeCost(false) + "s")
         } catch (e) {
             console.log(e)
@@ -500,22 +499,18 @@ class CustomWorld extends World {
     }
 
     /**
-     * delete all the assets
-     * right now it's deleting all the assets in the array
-     * future improvement will be retrieving all the assets from backend to replace the array
+     * Delete a certain asset by its name
+     * @param {String} asset asset's name 
      */
-    async deleteAssets() {
-        await this.click('#desktop-left a:nth-child(2)')
-
-        for (let asset of assets) {
-            let assetSelected = await this.count(`text=${asset.name}`)
-            if (assetSelected > 0) {
-                await this.click(`text=${asset.name}`)
-                await this.click('.mdi-delete')
-                await Promise.all([
-                    this.click('button:has-text("Delete")')
-                ]);
-            }
+    async deleteSelectedAsset(asset) {
+        await this.navigateToTab("Assets")
+        let assetSelected = await this.count(`text=${asset}`)
+        if (assetSelected > 0) {
+            await this.click(`text=${asset}`)
+            await this.click('.mdi-delete')
+            await Promise.all([
+                this.click('button:has-text("Delete")')
+            ]);
         }
     }
 
@@ -552,8 +547,9 @@ class CustomWorld extends World {
     *  // lv4 is to set the values for assets
     * @param {String} realm realm name
     * @param {String} level level (lv0, lv1, etc.)
+    * @param {String} configOrLoction update on config or location, default as neither
     */
-    async setup(realm, level, configOrLoction = "both") {
+    async setup(realm, level, configOrLocation = "neither") {
 
         global.startTime = new Date() / 1000
 
@@ -587,7 +583,7 @@ class CustomWorld extends World {
                     await this.logout();
                     await this.goToRealmStartPage(realm);
                     await this.login("smartcity");
-                    await this.addAssets(update, configOrLoction);
+                    await this.addAssets(update, configOrLocation);
                 }
             }
             await this.logout()
@@ -678,8 +674,9 @@ Before(async function () {
 // delete realm when a scenario ends
 // delete a realm should be able to delete everything inside
 // close page
-After({ timeout: 50000 }, async function (testCase) {
-    console.log("after start")
+After({ timeout: 100000 }, async function (testCase) {
+    console.log("After start")
+
     // if test fails then take a screenshot
     global.stepTime = new Date() / 1000
     if (testCase.result.status === Status.FAILED) {
@@ -687,11 +684,11 @@ After({ timeout: 50000 }, async function (testCase) {
         await global.name++
     }
 
-
     await this.cleanUp()
     await this.page.close()
-    console.log("This test takes " + timeCost(true) + "s")
     console.log("After takes " + timeCost(false))
+    console.log("This test takes " + timeCost(true) + "s")
+
 })
 
 // close browser and delete authentication file

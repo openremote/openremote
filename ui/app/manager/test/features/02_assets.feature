@@ -3,8 +3,30 @@ Feature: Assets
 
     Background: Navigation
         Given Setup "lv2"
+        
+    @Desktop @add_both_asset
+    Scenario Outline: Add new asset
+        When Login to OpenRemote "smartcity" realm as "smartcity"
+        Then Navigate to "asset" tab
+        Then Create a "Electricity battery asset" with name of "Battery"
+        When Go to asset "Battery" info page
+        Then Go to modify mode
+        Then Give "30" to the "energyLevel" with type of "Positive number"
+        Then Give "50" to the "power" with type of "Number "
+        Then Save
+        When Unselect
+        Then We see the asset with name of "Battery"
+        Then Create a "PV solar asset " with name of "Solar panel"
+        When Go to asset "Solar panel" info page
+        Then Go to modify mode
+        Then Give "30" to the "panelPitch" with type of "Positive integer"
+        Then Give "70" to the "power" with type of "Number "
+        Then Save
+        Then We see the asset with name of "Solar panel"
 
-    @Desktop @add_asset
+
+
+    @Desktop @add_asset @separate
     Scenario Outline: Add new asset
         When Login to OpenRemote "smartcity" realm as "smartcity"
         Then Navigate to "asset" tab
@@ -118,6 +140,7 @@ Feature: Assets
         Then Select "Rule state" and "Store data points" on "energyLevel"
         Then Select "Rule state" and "Store data points" on "power"
         Then Save
+        Then Unselect
         When Go to asset "Solar panel" info page
         Then Go to modify mode
         Then Select "Rule state" and "Store data points" on "power"
