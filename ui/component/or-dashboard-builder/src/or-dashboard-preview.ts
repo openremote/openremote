@@ -112,8 +112,36 @@ export class OrDashboardPreview extends LitElement {
         return [unsafeCSS(gridcss), unsafeCSS(extracss), editorStyling, style];
     }
 
-    @property()
-    protected template?: DashboardTemplate
+    @property() set template(newValue: DashboardTemplate) {
+        const oldValue = this._template;
+        console.log("Template has a new value!");
+        console.log(oldValue);
+        console.log(newValue);
+        if(oldValue != undefined) {
+            const changes = {
+                changedKeys: Object.keys(newValue).filter(key => newValue[key as keyof DashboardTemplate] !== oldValue![key as keyof DashboardTemplate]),
+                oldValue: oldValue,
+                newValue: newValue
+            };
+            this._template = newValue;
+            this.latestChanges = changes;
+            if(JSON.stringify(oldValue) != JSON.stringify(newValue)) {
+                this.requestUpdate("template", oldValue);
+            }
+
+        } else {
+            this._template = newValue;
+            // this._currentTemplate = newValue;
+            // this._tempTemplate = JSON.parse(JSON.stringify(newValue)) as DashboardTemplate;
+            this.setupGrid(false, false);
+        }
+    }
+
+    private _template?: DashboardTemplate;
+
+    get template() {
+        return this._template!;
+    }
 
     @property() // Optional alternative for template
     protected readonly dashboardId?: string;
@@ -124,8 +152,8 @@ export class OrDashboardPreview extends LitElement {
     @property()
     protected editMode: boolean = false;
 
-/*    @property() // Makes it fullscreen or shows controls for editing the size
-    protected fullscreen: boolean = true;*/
+    @property() // Makes it fullscreen or shows controls for editing the size
+    protected fullscreen: boolean = true;
 
     @property()
     protected previewWidth?: string;
@@ -145,8 +173,14 @@ export class OrDashboardPreview extends LitElement {
     protected grid?: GridStack;
 
     @state()
-    protected resizeObserver?: ResizeObserver;
+    protected latestChanges?: {
+        changedKeys: string[],
+        oldValue: DashboardTemplate,
+        newValue: DashboardTemplate
+    }
 
+    @state()
+    protected resizeObserver?: ResizeObserver;
 
     /* ------------------------------------------- */
 
@@ -154,10 +188,31 @@ export class OrDashboardPreview extends LitElement {
         console.log(changedProperties);
 
         // Setup template (list of widgets and properties)
-        if(this.template && this.dashboardId) {
-            manager.rest.api.DashboardResource.get(this.dashboardId).then((response) => { this.template = response.data.template; });
+        if(!this.template && this.dashboardId) {
+            manager.rest.api.DashboardResource.get(this.dashboardId).then((response) => { this.template = response.data.template!; });
         } else if(this.template == null && this.dashboardId == null) {
             console.error("Neither the template nor dashboardId attributes have been specified!");
+        }
+
+        if(changedProperties.has("latestChanges")) {
+            if(this.latestChanges) {
+                if(this.latestChanges.changedKeys.length == 1 && this.latestChanges.changedKeys.includes('columns') && this.grid) {
+                    this.grid.column(this.latestChanges.newValue.columns!);
+                    let maingrid = this.shadowRoot?.querySelector(".maingrid");
+                    let gridElement = this.shadowRoot?.getElementById("gridElement");
+                    gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
+                    gridElement!.style.height = maingrid!.scrollHeight + 'px';
+                    this.setupGrid(true, false);
+                }
+                else if(this.latestChanges.changedKeys.includes('widgets')) {
+                    this.setupGrid(true, true);
+                }
+                else if(this.latestChanges.changedKeys.includes('screenPresets')) {
+                    this.setupGrid(true, true);
+                }
+                // Set them to none again
+                this.latestChanges = undefined;
+            }
         }
 
         // When switching from fullscreen and back the width/height needs to be set correctly
@@ -177,11 +232,6 @@ export class OrDashboardPreview extends LitElement {
                 }
             }
         }*/
-
-        if(changedProperties.has("template")) {
-            console.log("Setting up a new Grid..");
-            this.setupGrid(true, false)
-        }
 
         if(changedProperties.has("selectedWidget")) {
             if(this.selectedWidget) {
@@ -241,16 +291,17 @@ export class OrDashboardPreview extends LitElement {
 
     /* ---------------------------------------- */
 
-    setupGrid(recreate: boolean, force: boolean = false) { //nosonar
-        const gridElement = this.shadowRoot?.getElementById("gridElement");
+    async setupGrid(recreate: boolean, force: boolean = false) { //nosonar
+        let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
+            console.log("Setting up a new Grid!");
             if(recreate && this.grid != null) {
-                this.grid.destroy(force);
+                this.grid.destroy(false);
             }
             this.grid = GridStack.init({
                 acceptWidgets: (this.editMode),
                 animate: true,
-                cellHeight: 'auto',
+                cellHeight: 'initial',
                 cellHeightThrottle: 100,
                 column: this.template?.columns,
                 disableOneColumnMode: true,
@@ -265,11 +316,11 @@ export class OrDashboardPreview extends LitElement {
                 },
                 staticGrid: (!this.editMode),
                 styleInHead: false
-            }, gridElement);
+            }, gridElement!);
 
-            gridElement.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
-            gridElement.style.height = "100%";
-            gridElement.style.minHeight = "100%";
+            gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
+            gridElement!.style.height = "100%";
+            gridElement!.style.minHeight = "100%";
 
             this.grid.on('dropped', (_event: Event, _previousWidget: any, newWidget: GridStackNode | undefined) => {
                 if(this.grid != null && newWidget != null) {
@@ -280,7 +331,7 @@ export class OrDashboardPreview extends LitElement {
             });
             this.grid.on('change', (_event: Event, items: any) => {
                 if(this.template != null && this.template.widgets != null) {
-                    console.log("Noticed a change in movement/sizing!");
+                    console.log("Noticed a change in widget movement/sizing!");
                     (items as GridStackNode[]).forEach(node => {
                         const foundWidget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
                         if(foundWidget && foundWidget.gridItem != null) {
@@ -289,8 +340,12 @@ export class OrDashboardPreview extends LitElement {
                             foundWidget.gridItem.w = node.w;
                             foundWidget.gridItem.h = node.h;
                         }
+
+                        // TODO: requestUpdate() for or-chart since it does not show chart after moving it on the grid.
+                        if(foundWidget?.widgetType == DashboardWidgetType.CHART) {
+                            this.requestUpdate();
+                        }
                     });
-                    this.requestUpdate(); // is required for or-chart since it does not show chart after moving it on the grid.
                     this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
                 }
             });
@@ -311,9 +366,9 @@ export class OrDashboardPreview extends LitElement {
             widgetType: gridStackNode.widgetType
         } as DashboardWidget;
 
-        const tempTemplate = this.template;
+        const tempTemplate = JSON.parse(JSON.stringify(this.template)) as DashboardTemplate;
         tempTemplate?.widgets?.push(widget);
-        this.template = Object.assign({}, tempTemplate); // Force property update
+        this.template = tempTemplate;
         return widget;
     }
 
@@ -347,7 +402,7 @@ export class OrDashboardPreview extends LitElement {
             } else {
                 this.selectedWidget = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
             }
-            this.requestUpdate();
+            // this.requestUpdate();
         }
     }
 
@@ -391,7 +446,7 @@ export class OrDashboardPreview extends LitElement {
                                 </div>-->
                                 ${this.template?.widgets?.map((widget) => {
                                     return html`
-                                        <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem!); }}">
+                                        <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { console.log('Click!'); this.onGridItemClick(widget.gridItem!); }}">
                                             <div class="grid-stack-item-content">
                                                 ${until(this.getWidgetContent(widget).then((content) => {
                                                     return content;

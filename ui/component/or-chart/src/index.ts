@@ -993,7 +993,6 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected async _loadData() {
         if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.period || !this.timestamp) {
-            console.error("Some attributes are missing! Cancelling _loadData..")
             return;
         }
 

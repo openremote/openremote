@@ -328,7 +328,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                                 ${(kpiConfig.attributeRefs && kpiConfig.attributeRefs.length > 0) ? html`
                                     <div id="attribute-list">
                                         <div class="attribute-list-item">
-                                            ${(this.loadedAssets![0] != null) ? html`
+                                            ${(this.loadedAssets && this.loadedAssets[0] != null) ? html`
                                                 <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.loadedAssets![0].type))}</span>
                                                 <div class="attribute-list-item-label">
                                                     <span>${this.loadedAssets![0].name}</span>

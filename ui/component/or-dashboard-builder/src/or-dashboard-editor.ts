@@ -323,7 +323,6 @@ export class OrDashboardEditor extends LitElement{
             },
             float: true,
             margin: 4,
-            minWidth: (activePreset.breakpoint),
             resizable: {
                 handles: 'all'
             },

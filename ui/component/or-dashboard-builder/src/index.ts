@@ -389,6 +389,8 @@ export class OrDashboardBuilder extends LitElement {
         const foundWidget = this.currentTemplate?.widgets?.find((x) => { return x.gridItem?.id == widget.gridItem?.id; });
         if(foundWidget != null) {
             this.selectedWidget = foundWidget;
+        } else {
+            console.error("The selected widget does not exist!");
         }
     }
     deselectWidget() {
@@ -525,9 +527,11 @@ export class OrDashboardBuilder extends LitElement {
                                                          @rerender="${() => { this.rerenderPending = false; }}"
                                     ></or-dashboard-editor>-->
                                     <or-dashboard-preview class="editor" style="background: transparent;"
-                                                          .template="${this.currentTemplate}" .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
+                                                          .template="${this.currentTemplate}" .rerenderPending="${this.rerenderPending}"
+                                                          .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
                                                           .previewSize="${this.previewSize}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
+                                                          @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"
                                                           @deselected="${() => { this.deselectWidget(); }}"
                                     ></or-dashboard-preview>
                                 ` : html`
@@ -564,8 +568,7 @@ export class OrDashboardBuilder extends LitElement {
                                             <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                             <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
                                                 <or-dashboard-boardsettings .template="${this.currentTemplate}"
-                                                                            @minorupdate="${() => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
-                                                                            @majorupdate="${() => { this.currentTemplate = this.selectedDashboard?.template; this.rerenderPending = true; }}"
+                                                                            @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force == true ? this.rerenderPending = true : undefined); }}"
                                                 ></or-dashboard-boardsettings>
                                             </div>
                                         </div>

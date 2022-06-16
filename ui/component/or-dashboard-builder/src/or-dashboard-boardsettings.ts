@@ -34,11 +34,8 @@ export class OrDashboardBoardsettings extends LitElement {
         return [boardSettingsStyling, style]
     }
 
-    forceParentUpdate() {
-        this.dispatchEvent(new CustomEvent('minorupdate'));
-    }
-    forceParentRerender() {
-        this.dispatchEvent(new CustomEvent('majorupdate'));
+    forceParentUpdate(force: boolean = false) {
+        this.dispatchEvent(new CustomEvent('update', { detail: { force: force }}));
     }
 
     /* ------------------------- */
@@ -77,12 +74,12 @@ export class OrDashboardBoardsettings extends LitElement {
                             <!-- Number of Columns control -->
                             <div style="margin-bottom: 12px; display: flex; align-items: center;">
                                 <span style="min-width: 180px;">Number of Columns</span>
-                                <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.template.columns}" max="12" @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.template != null) { this.template.columns = event.detail.value as number; this.forceParentRerender(); }}}"></or-mwc-input>
+                                <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.template.columns}" min="1" max="12" @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.template != null) { this.template.columns = event.detail.value as number; this.forceParentUpdate(true); }}}"></or-mwc-input>
                             </div>
                             <!-- Max Screen Width control-->
                             <div style="margin-bottom: 24px; display: flex; align-items: center;">
                                 <span style="min-width: 150px;">Max Screen Width</span>
-                                <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.template.maxScreenWidth}" disabled @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.template != null) { this.template.maxScreenWidth = event.detail.value as number; this.forceParentUpdate(); }}}"></or-mwc-input>
+                                <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.template.maxScreenWidth}" disabled @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.template != null) { this.template.maxScreenWidth = event.detail.value as number; this.forceParentUpdate(false); }}}"></or-mwc-input>
                                 <span style="margin-left: 8px;">px</span>
                             </div>
                         </div>
@@ -105,7 +102,7 @@ export class OrDashboardBoardsettings extends LitElement {
                                         <or-mwc-input class="displayInput" type="${InputType.SELECT}" style="width: 250px;"
                                                       .options="${scalingPresets.map((x) => scalingPresetToString(x))}"
                                                       .value="${scalingPresetToString(preset.scalingPreset)}"
-                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { preset.scalingPreset = stringToScalingPreset(event.detail.value); this.forceParentRerender(); }}"
+                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { preset.scalingPreset = stringToScalingPreset(event.detail.value); this.forceParentUpdate(true); }}"
                                         ></or-mwc-input>
                                     </div>
                                 `
