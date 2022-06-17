@@ -290,7 +290,7 @@ jobs:
         
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
-        uses: actions/cache@v3.0.4
+        uses: actions/cache@v3
         id: manager-tag-cache
         with:
           path: |
@@ -550,7 +550,7 @@ jobs:
         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
 
       - name: Yarn cache
-        uses: actions/cache@v3.0.4
+        uses: actions/cache@v3
         if: steps.skip-cicd.outputs.value != 'true'
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
