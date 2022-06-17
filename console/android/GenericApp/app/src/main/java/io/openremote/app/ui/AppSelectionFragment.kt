@@ -130,7 +130,7 @@ class AppSelectionFragment : Fragment() {
                     ) {
                         parentActivity.app = appArrayAdapter.getItem(position)
                         parentActivity.consoleProviders =
-                            appMap!!.values.elementAt(position).providers
+                            appMap?.values?.elementAt(position)?.providers
                     }
 
                     override fun onNothingSelected(p0: AdapterView<*>?) {
