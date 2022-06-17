@@ -241,7 +241,15 @@ class CustomWorld extends World {
     async navigateToMenuItem(setting) {
         await this.wait(500)
         await this.click('button[id="menu-btn-desktop"]');
-        await this.click(`text=${setting}`);
+        await this.wait(200)
+        const isItemVisible = this.isVisible(`text=${setting}`)
+        if (isItemVisible) {
+            await this.click(`text=${setting}`);
+        }
+        else {
+            console.log("not rendered yet")
+        }
+
     }
 
     /**
@@ -482,7 +490,7 @@ class CustomWorld extends World {
         await this.fill('div[role="alertdialog"] input[type="text"]', realm)
         await this.click('button:has-text("OK")')
         // wait for backend to response
-        await this.wait(1000)
+        await this.wait(1200)
         try {
             const count = await this.count('[aria-label="attribute list"] span:has-text("smartcity")')
             //const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()

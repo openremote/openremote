@@ -4,8 +4,9 @@ const { expect } = require("@playwright/test");
 When('Check {string} on map', async function (asset) {
     let startTime =new Date() / 1000
     await this.wait(400)
+    const iconCount = await this.count('.marker-icon')
+    await expect(iconCount).toEqual(2)
     await this.click('div:nth-child(3) .marker-container div or-icon svg path')
-
     await this.wait(400)
     const cardPanel = await this.isVisible(`text=${asset}`)
     //const cardPanel = await page.locator(`text=${asset}`).isVisible()

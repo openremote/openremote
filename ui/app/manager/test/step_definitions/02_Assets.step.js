@@ -35,7 +35,6 @@ Then('Give {string} to the {string} with type of {string}', async function (valu
 
 Then('Save', { timeout: 10000 }, async function () {
     let startTime = new Date() / 1000
-    const { page } = this
     // press enter to enable the save button (could be any other action) (or this will be fixed then no pre-action needed)
     await this.click('#edit-container')
     await this.wait(200)  // wait for button to enabled 
@@ -92,15 +91,15 @@ Then('Update {string} to the {string} with type of {string}', { timeout: 10000 }
     this.logTime(startTime)
 })
 
-Then('Update location of {int} and {int}', { timeout: 20000 }, async function (location_x, location_y) {
+Then('Update location of {int} and {int}', { timeout: 30000 }, async function (location_x, location_y) {
     let startTime = new Date() / 1000
     const { page } = this;
 
     await this.click('text=location GEO JSON point >> button span')
-    await this.wait(1000)
+    await this.wait(3000)
     // location_x and location_y are given by the example data
     // currently it's not implmented as dragging the map and clicking on a random place (could be possible in the future)
-    await page.mouse.click(location_x, location_y, { delay: 500 })
+    await page.mouse.click(location_x, location_y, { delay: 600 })
     await this.click('button:has-text("OK")')
     this.logTime(startTime)
 })
