@@ -57,6 +57,9 @@ open class OrMainActivity : Activity() {
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
     private var consoleId: String? = null
+    private var connectFailCount: Int = 0
+    private var connectFailResetHandler: Handler? = null
+    private var connectFailResetRunnable: Runnable? = null
     private var baseUrl: String? = null
     private var onDownloadCompleteReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctxt: Context, intent: Intent) {
@@ -382,9 +385,16 @@ open class OrMainActivity : Activity() {
         }
         // This will be the URL loaded into the webview itself (false for images etc. of the main page)
         // Check page load error URL
-        if (baseUrl != null && baseUrl != failingUrl) {
+        if (baseUrl != null && baseUrl != failingUrl && connectFailCount < 10) {
             loadUrl(baseUrl!!)
-            Toast.makeText(this, description, Toast.LENGTH_LONG).show()
+            Toast.makeText(this, description, Toast.LENGTH_SHORT).show()
+            connectFailCount++
+            connectFailResetRunnable?.let { connectFailResetHandler!!.removeCallbacks(it) }
+            connectFailResetRunnable = Runnable {
+                connectFailCount = 0
+            }
+            connectFailResetHandler = Looper.myLooper()?.let { Handler(it) }
+            connectFailResetHandler!!.postDelayed(connectFailResetRunnable!!, 5000)
         } else {
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
             if (launchIntent != null) {
@@ -447,7 +457,6 @@ open class OrMainActivity : Activity() {
             when (messageType) {
                 "error" -> {
                     LOG.fine("Received WebApp message, error: " + data?.getString("error"))
-                    val mainHandler = Handler(mainLooper)
                     Toast.makeText(
                         this@OrMainActivity,
                         "Error occurred ${data?.getString("error")}",
