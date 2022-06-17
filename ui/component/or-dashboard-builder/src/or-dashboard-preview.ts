@@ -112,7 +112,8 @@ export class OrDashboardPreview extends LitElement {
         return [unsafeCSS(gridcss), unsafeCSS(extracss), editorStyling, style];
     }
 
-    @property() set template(newValue: DashboardTemplate) {
+    @property({ hasChanged(oldValue, newValue) { return !(JSON.stringify(oldValue) == JSON.stringify(newValue))}})
+    set template(newValue: DashboardTemplate) {
         const oldValue = this._template;
         console.log("Template has a new value!");
         console.log(oldValue);
@@ -123,9 +124,10 @@ export class OrDashboardPreview extends LitElement {
                 oldValue: oldValue,
                 newValue: newValue
             };
-            this._template = newValue;
-            this.latestChanges = changes;
             if(JSON.stringify(oldValue) != JSON.stringify(newValue)) {
+                console.log("The template has changed!");
+                this._template = JSON.parse(JSON.stringify(newValue));
+                this.latestChanges = changes;
                 this.requestUpdate("template", oldValue);
             }
 
