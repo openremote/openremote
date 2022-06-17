@@ -78,7 +78,6 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     public static long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
     public static long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
-    public static long RECONNECT_DELAY_JITTER_MILLIS = 10000L;
 
     /**
      * This is intended to be used at the end of a decoder chain where the previous decoder outputs a {@link ByteBuf};
@@ -211,17 +210,15 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
 
-        scheduleDoConnect(true);
+        scheduleDoConnect(false);
     }
 
     protected void scheduleDoConnect(boolean immediate) {
-        long jitter = immediate ? 50 : Math.max(50, RECONNECT_DELAY_JITTER_MILLIS);
-        long delay = immediate ? 50 : Math.max(50, RECONNECT_DELAY_INITIAL_MILLIS);
-        long maxDelay = immediate ? 51 : Math.max(delay+1, Math.max(50, RECONNECT_DELAY_MAX_MILLIS));
+        long delay = immediate ? 50 : Math.max(250, RECONNECT_DELAY_INITIAL_MILLIS);
+        long maxDelay = immediate ? 51 : Math.max(delay+1, Math.max(250, RECONNECT_DELAY_MAX_MILLIS));
 
         RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
-            .withJitter(Duration.ofMillis(jitter))
-            .withDelay(Duration.ofMillis(delay))
+            .withJitter(Duration.ofMillis(delay))
             .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
             .handle(RuntimeException.class)
             .onRetryScheduled((execution) ->

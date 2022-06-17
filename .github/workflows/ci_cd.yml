@@ -173,7 +173,7 @@ jobs:
       - name: Backend files changed
         id: backend-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v22.2
+        uses: tj-actions/changed-files@v23
         with:
           files_ignore: |
             .ci_cd/**
@@ -188,7 +188,7 @@ jobs:
       - name: UI files changed
         id: ui-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v22.2
+        uses: tj-actions/changed-files@v23
         with:
           files: |
             ui/app/manager/**
@@ -636,6 +636,13 @@ jobs:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
         timeout-minutes: 20
         #continue-on-error: true
+
+      - name: Archive backend test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-test-results
+          path: test/build/reports/tests
 
       - name: Cleanup backend tests
         if: ${{ steps.test-backend-command.outputs.value != '' && steps.test-ui-command.outputs.value != '' }}

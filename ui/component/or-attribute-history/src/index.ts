@@ -263,6 +263,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _stepSize?: number;
     protected _updateTimestampTimer?: number;
 
+    protected _dataFirstLoaded: boolean = false;
+
     connectedCallback() {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
@@ -274,18 +276,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
+        let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp") || _changedProperties.has("attribute");
+
+        if (this._dataFirstLoaded && !_changedProperties.get('_loading') && !reloadData) {
+            return false;
+        }
 
         if (!this.toTimestamp) {
             this.toTimestamp = new Date();
             return false;
-        }
-
-        let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp");
-
-        if (_changedProperties.has("assetId") || _changedProperties.has("attributeRef") || _changedProperties.has("attribute")) {
-            this._type = undefined;
-            this._cleanup();
-            reloadData = true;
         }
 
         if (!this._type && this.attribute) {
@@ -719,6 +718,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         if (response.status === 200) {
             this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
+            this._dataFirstLoaded = true;
         }
     }
     protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout= 300) {
