@@ -468,11 +468,13 @@
   "yes": "Ja",
   "no": "Nee",
   "filter": {
+    "filter": "Filter",
+    "clear": "LEEGMAKEN",
     "action": "FILTER",
     "assetTypeLabel": "Asset type",
-    "assetTypeNone": "None",
-    "assetTypeMenuNone": "None",
-    "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "assetTypeNone": "Geen",
+    "assetTypeMenuNone": "Geen",
+    "attributeLabel": "Attribuut",
+    "attributeValueLabel": "Attribuutwaarde"
   }
 }
