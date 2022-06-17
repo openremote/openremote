@@ -24,9 +24,8 @@ import org.openremote.model.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicIdentityProvider;
 import org.openremote.container.security.basic.PasswordStorage;
-import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
@@ -54,9 +53,9 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     public void start(Container container) {
         super.start(container);
 
-        // Create master tenant and admin user
-        if (!tenantExists(MASTER_REALM)) {
-            LOG.info("Creating master tenant and admin user");
+        // Create master realm and admin user
+        if (!realmExists(MASTER_REALM)) {
+            LOG.info("Creating master realm and admin user");
 
             // Configure the master realm
             persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
@@ -207,52 +206,52 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public boolean isUserInTenant(String userId, String realm) {
-        return ManagerIdentityProvider.userInTenantFromDb(persistenceService, userId, realm);
+    public boolean isUserInRealm(String userId, String realm) {
+        return ManagerIdentityProvider.userInRealmFromDb(persistenceService, userId, realm);
     }
 
     @Override
-    public Tenant[] getTenants() {
-        return ManagerIdentityProvider.getTenantsFromDb(persistenceService);
+    public Realm[] getRealms() {
+        return ManagerIdentityProvider.getRealmsFromDb(persistenceService);
     }
 
     @Override
-    public Tenant getTenant(String realm) {
-        return ManagerIdentityProvider.getTenantFromDb(persistenceService, realm);
+    public Realm getRealm(String realm) {
+        return ManagerIdentityProvider.getRealmFromDb(persistenceService, realm);
     }
 
     @Override
-    public void updateTenant(Tenant tenant) {
-        throw new UnsupportedOperationException("This provider does not support modifying tenants");
+    public void updateRealm(Realm realm) {
+        throw new UnsupportedOperationException("This provider does not support modifying realms");
     }
 
     @Override
-    public Tenant createTenant(Tenant tenant) {
-        throw new UnsupportedOperationException("This provider does not support multiple tenants");
+    public Realm createRealm(Realm realm) {
+        throw new UnsupportedOperationException("This provider does not support multiple realms");
     }
 
     @Override
-    public void deleteTenant(String realm) {
-        throw new UnsupportedOperationException("This provider does not support multiple tenants");
+    public void deleteRealm(String realm) {
+        throw new UnsupportedOperationException("This provider does not support multiple realms");
     }
 
     @Override
-    public boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant) {
-        return Objects.equals(tenant.getId(), MASTER_REALM);
+    public boolean isRealmActiveAndAccessible(AuthContext authContext, Realm realm) {
+        return Objects.equals(realm.getId(), MASTER_REALM);
     }
 
     @Override
-    public boolean isTenantActiveAndAccessible(AuthContext authContext, String realm) {
+    public boolean isRealmActiveAndAccessible(AuthContext authContext, String realm) {
         return Objects.equals(realm, MASTER_REALM);
     }
 
     @Override
-    public boolean tenantExists(String realm) {
-        return ManagerIdentityProvider.tenantExistsFromDb(persistenceService, realm);
+    public boolean realmExists(String realm) {
+        return ManagerIdentityProvider.realmExistsFromDb(persistenceService, realm);
     }
 
     @Override
-    public boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles) {
+    public boolean canSubscribeWith(AuthContext auth, RealmFilter<?> filter, ClientRole... requiredRoles) {
         // TODO Doesn't really respect the description of the interface
         return auth.isSuperUser();
     }

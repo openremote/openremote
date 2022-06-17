@@ -234,7 +234,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         if(!this.ruleset) return html``;
 
         return html`
-            <or-mwc-input .type="${InputType.BUTTON}" .label="${this.timeLabel()}" @click="${() => this.showDialog()}"></or-mwc-input>
+            <or-mwc-input .type="${InputType.BUTTON}" .label="${this.timeLabel()}" @or-mwc-input-changed="${() => this.showDialog()}"></or-mwc-input>
         `;
     }
 

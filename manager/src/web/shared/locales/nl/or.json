@@ -223,10 +223,10 @@
   "buttonTextConfirm": "Tekst voor actie knop",
   "buttonTextDecline": "Tekst voor negeerknop",
   "custom": "Nieuw attribuut",
-  "tenant": "Tenant",
-  "tenant_plural": "Tenants",
+  "realm": "Realm",
+  "realm_plural": "Realms",
   "displayName":"Vriendelijke naam",
-  "deleteTenantConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
+  "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
   "user_plural": "Gebruikers",
   "regularUser_plural": "Gebruikers",
   "serviceUser_plural": "Service gebruikers",
@@ -468,11 +468,13 @@
   "yes": "Ja",
   "no": "Nee",
   "filter": {
+    "filter": "Filter",
+    "clear": "LEEGMAKEN",
     "action": "FILTER",
     "assetTypeLabel": "Asset type",
-    "assetTypeNone": "None",
-    "assetTypeMenuNone": "None",
-    "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "assetTypeNone": "Geen",
+    "assetTypeMenuNone": "Geen",
+    "attributeLabel": "Attribuut",
+    "attributeValueLabel": "Attribuutwaarde"
   }
 }

@@ -74,7 +74,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
-            if (!isTenantActiveAndAccessible(asset.getRealm())) {
+            if (!isRealmActiveAndAccessible(asset.getRealm())) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }

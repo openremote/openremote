@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.rules.AssetRuleset;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
 
@@ -66,7 +66,7 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
 
     @Override
     public Object getHealthStatus() {
-        int totalEngines = rulesService.tenantEngines.size() + rulesService.assetEngines.size();
+        int totalEngines = rulesService.realmEngines.size() + rulesService.assetEngines.size();
         int stoppedEngines = 0;
         int errorEngines = 0;
 
@@ -80,17 +80,17 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
             }
         }
 
-        ObjectNode tenantEngines = ValueUtil.createJsonObject();
+        ObjectNode realmEngines = ValueUtil.createJsonObject();
 
-        for (RulesEngine<TenantRuleset> tenantEngine : rulesService.tenantEngines.values()) {
-            if (!tenantEngine.isRunning()) {
+        for (RulesEngine<RealmRuleset> realmEngine : rulesService.realmEngines.values()) {
+            if (!realmEngine.isRunning()) {
                 stoppedEngines++;
             }
-            if (tenantEngine.isError()) {
+            if (realmEngine.isError()) {
                 errorEngines++;
             }
 
-            tenantEngines.set(tenantEngine.getId().getRealm().orElse(""), getEngineHealthStatus(tenantEngine));
+            realmEngines.set(realmEngine.getId().getRealm().orElse(""), getEngineHealthStatus(realmEngine));
         }
 
         ObjectNode assetEngines = ValueUtil.createJsonObject();
@@ -114,7 +114,7 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
         if (rulesService.globalEngine != null) {
             objectValue.set("global", getEngineHealthStatus(rulesService.globalEngine));
         }
-        objectValue.set("tenant", tenantEngines);
+        objectValue.set("realm", realmEngines);
         objectValue.set("asset", assetEngines);
         return objectValue;
     }

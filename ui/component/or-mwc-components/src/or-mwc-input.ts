@@ -129,6 +129,7 @@ export enum InputType {
 
 export interface ValueInputProviderOptions {
     label?: string;
+    required?: boolean;
     readonly?: boolean;
     disabled?: boolean;
     compact?: boolean;
@@ -381,6 +382,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
     const readonly = options.readonly;
+    required = required || options.required;
     const comfortable = options.comfortable;
     const resizeVertical = options.resizeVertical;
     const inputRef: Ref<OrMwcInput> = createRef();
@@ -770,6 +772,12 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public trailingSpace: boolean = false;
 
+    public get nativeValue(): any {
+        if (this._mdcComponent) {
+            return (this._mdcComponent as any).value;
+        }
+    }
+
     /* TEXT INPUT STYLES END */
 
     protected _mdcComponent?: MDCComponent<any>;
@@ -1080,6 +1088,27 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.BUTTON:
                 case InputType.BUTTON_MOMENTARY: {
+
+                    const onMouseDown = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+
+                        if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
+                    const onMouseUp = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+
+                        isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
+                    const onClick = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+                    }
+
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;
                     let classes = {
@@ -1097,7 +1126,8 @@ export class OrMwcInput extends LitElement {
                         <button id="component" class="${classMap(classes)}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @mousedown="${() => {if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))}}" @mouseup="${() => isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))}">
+                            @click="${(ev: MouseEvent) => onClick(ev)}"
+                            @mousedown="${(ev: MouseEvent) => onMouseDown(ev)}" @mouseup="${(ev: MouseEvent) => onMouseUp(ev)}">
                             ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
                             ${this.icon ? html`<or-icon class="${isIconButton ? "" : this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                             ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}">${this.label}</span>` : ``}

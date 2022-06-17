@@ -224,10 +224,10 @@
   "buttonTextConfirm": "Text for action button",
   "buttonTextDecline": "Text for decline button",
   "custom": "Custom attribute",
-  "tenant": "Tenant",
-  "tenant_plural": "Tenants",
+  "realm": "Realm",
+  "realm_plural": "Realms",
   "displayName":"Friendly name",
-  "deleteTenantConfirm":"Are you sure you want to delete this Realm?",
+  "deleteRealmConfirm":"Are you sure you want to delete this Realm?",
   "user_plural": "Users",
   "regularUser_plural": "Regular users",
   "serviceUser_plural": "Service users",
@@ -473,11 +473,15 @@
   "no": "No",
   "linked": "Linked",
   "filter": {
+    "filter": "Filter",
+    "clear": "CLEAR",
     "action": "FILTER",
     "assetTypeLabel": "Asset type",
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value"
-  }
+  },
+  "realmDeleteConfirm": "Warning! this will delete everything in this realm, type the realm name '{{realmName}}' to confirm.",
+  "realmDeleteFailed": "Failed to delete realm"
 }

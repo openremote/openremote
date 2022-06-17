@@ -97,8 +97,8 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
             }
         }
 
-        if (query.tenant != null) {
-            if (!AssetQueryPredicate.asPredicate(query.tenant).test(assetState)) {
+        if (query.realm != null) {
+            if (!AssetQueryPredicate.asPredicate(query.realm).test(assetState)) {
                 return false;
             }
         }
@@ -127,9 +127,9 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
         return givenPath -> Arrays.equals(predicate.path, givenPath);
     }
 
-    public static Predicate<AssetState<?>> asPredicate(TenantPredicate predicate) {
+    public static Predicate<AssetState<?>> asPredicate(RealmPredicate predicate) {
         return assetState ->
-            predicate == null || (predicate.realm != null && predicate.realm.equals(assetState.getRealm()));
+            predicate == null || (predicate.name != null && predicate.name.equals(assetState.getRealm()));
     }
 
     public static Predicate<NameValueHolder<?>> asPredicate(Supplier<Long> currentMillisSupplier, NameValuePredicate predicate) {

@@ -317,7 +317,7 @@ public class RulesetDeployment {
                 "var NumberPredicate = Java.type(\"org.openremote.model.query.filter.NumberPredicate\");\n" +
                 "var ParentPredicate = Java.type(\"org.openremote.model.query.filter.ParentPredicate\");\n" +
                 "var PathPredicate = Java.type(\"org.openremote.model.query.filter.PathPredicate\");\n" +
-                "var TenantPredicate = Java.type(\"org.openremote.model.query.filter.TenantPredicate\");\n" +
+                "var RealmPredicate = Java.type(\"org.openremote.model.query.filter.RealmPredicate\");\n" +
                 "var AttributePredicate = Java.type(\"org.openremote.model.query.filter.AttributePredicate\");\n" +
                 "var AttributeExecuteStatus = Java.type(\"org.openremote.model.attribute.AttributeExecuteStatus\");\n" +
                 "var EXACT = Match.EXACT;\n" +
@@ -439,8 +439,8 @@ public class RulesetDeployment {
             binding.setVariable("historicDatapoints", historicDatapointsFacade);
             binding.setVariable("predictedDatapoints", predictedDatapointsFacade);
 
-            if(ruleset instanceof TenantRuleset) {
-                binding.setVariable("realm", ((TenantRuleset) ruleset).getRealm());
+            if(ruleset instanceof RealmRuleset) {
+                binding.setVariable("realm", ((RealmRuleset) ruleset).getRealm());
             }
 
             if (ruleset instanceof AssetRuleset) {

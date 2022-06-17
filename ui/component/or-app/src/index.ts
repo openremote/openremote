@@ -23,7 +23,7 @@ import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
-import { Tenant } from "@openremote/model";
+import { Realm } from "@openremote/model";
 
 const DefaultLogo = require("../images/logo.svg");
 const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -96,7 +96,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @state()
     protected _activeMenu?: string;
 
-    protected _realms!: Tenant[];
+    protected _realms!: Realm[];
     protected _store: Store<S, AnyAction>;
     protected _storeUnsubscribe!: Unsubscribe;
 
@@ -223,7 +223,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
 
                 // Load available realm info
-                const response = await manager.rest.api.TenantResource.getAccessible();
+                const response = await manager.rest.api.RealmResource.getAccessible();
                 this._realms = response.data;
                 let realm: string | null | undefined = undefined;
 
@@ -231,7 +231,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 if (manager.isSuperUser()) {
                     // Look in session storage
                     realm = window.sessionStorage.getItem("realm");
-                    if (realm && !this._realms.some(r => r.realm === realm)) {
+                    if (realm && !this._realms.some(r => r.name === realm)) {
                         realm = undefined;
                     }
                 }

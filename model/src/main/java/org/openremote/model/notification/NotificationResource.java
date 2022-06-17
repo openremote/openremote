@@ -48,7 +48,7 @@ public interface NotificationResource {
                                         @QueryParam("type") String type,
                                         @QueryParam("from") Long fromTimestamp,
                                         @QueryParam("to") Long toTimestamp,
-                                        @QueryParam("tenantId") String tenantId,
+                                        @QueryParam("realmId") String realmId,
                                         @QueryParam("userId") String userId,
                                         @QueryParam("assetId") String assetId);
     // RT: Was using lists here but they don't work with JSAPI because GWT doesn't use JSArrays for lists - another
@@ -58,7 +58,7 @@ public interface NotificationResource {
 //                                        @QueryParam("type") List<String> types,
 //                                        @QueryParam("from") Long fromTimestamp,
 //                                        @QueryParam("to") Long toTimestamp,
-//                                        @QueryParam("tenantId") List<String> tenantIds,
+//                                        @QueryParam("realmId") List<String> realmIds,
 //                                        @QueryParam("userId") List<String> userIds,
 //                                        @QueryParam("assetId") List<String> assetIds);
 
@@ -77,7 +77,7 @@ public interface NotificationResource {
                              @QueryParam("type") String type,
                              @QueryParam("from") Long fromTimestamp,
                              @QueryParam("to") Long toTimestamp,
-                             @QueryParam("tenantId") String tenantId,
+                             @QueryParam("realmId") String realmId,
                              @QueryParam("userId") String userId,
                              @QueryParam("assetId") String assetId);
     // RT: Was using lists here but they don't work with JSAPI because GWT doesn't use JSArrays for lists - another
@@ -87,7 +87,7 @@ public interface NotificationResource {
 //                             @QueryParam("type") List<String> types,
 //                             @QueryParam("from") Long fromTimestamp,
 //                             @QueryParam("to") Long toTimestamp,
-//                             @QueryParam("tenantId") List<String> tenantIds,
+//                             @QueryParam("realmId") List<String> realmIds,
 //                             @QueryParam("userId") List<String> userIds,
 //                             @QueryParam("assetId") List<String> assetIds);
 

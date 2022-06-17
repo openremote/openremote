@@ -29,7 +29,7 @@ import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.util.TextUtil;
 import org.simplejavamail.email.Email;
@@ -157,8 +157,8 @@ public class EmailNotificationHandler implements NotificationHandler {
 
                 switch (targetType) {
 
-                    case TENANT:
-                        userQuery = new UserQuery().tenant(new TenantPredicate(targetId));
+                    case REALM:
+                        userQuery = new UserQuery().realm(new RealmPredicate(targetId));
                         break;
                     case USER:
                         userQuery = new UserQuery().ids(targetId);

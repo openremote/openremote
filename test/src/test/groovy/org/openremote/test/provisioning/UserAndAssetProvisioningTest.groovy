@@ -49,7 +49,7 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.provisioning.*
 import org.openremote.model.security.ClientRole
-import org.openremote.model.security.Tenant
+import org.openremote.model.security.Realm
 import org.openremote.model.security.User
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -90,15 +90,15 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT)
 
         and: "a realm is created with some custom realm roles"
-        def tenant = new Tenant()
-        tenant.setRealm("test")
-        tenant.setDisplayName("Test")
-        tenant.setEnabled(true);
-        tenant.setDuplicateEmailsAllowed(true);
-        tenant.setRememberMe(true)
-        tenant = identityService.getIdentityProvider().createTenant(tenant)
+        def realm = new Realm()
+        realm.setName("test")
+        realm.setDisplayName("Test")
+        realm.setEnabled(true);
+        realm.setDuplicateEmailsAllowed(true);
+        realm.setRememberMe(true)
+        realm = identityService.getIdentityProvider().createRealm(realm)
         (identityService.getIdentityProvider() as KeycloakIdentityProvider).getRealms(realmsResource -> {
-            RealmResource realmResource = realmsResource.realm(tenant.getRealm())
+            RealmResource realmResource = realmsResource.realm(realm.getName())
             realmResource.roles().create(new RoleRepresentation("installer", "Installer", false))
             realmResource.roles().create(new RoleRepresentation("home-owner", "Home owner", false))
         })
@@ -189,7 +189,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
-            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
             def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert weatherAsset != null
             assert weatherAsset instanceof WeatherAsset
@@ -226,7 +226,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
-            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
             def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert weatherAsset != null
             assert weatherAsset instanceof WeatherAsset
@@ -351,7 +351,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
-            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
             asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert asset != null
             assert asset instanceof WeatherAsset
@@ -513,7 +513,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert deviceNResponses.size() == 1
             assert deviceNResponses.get(0) instanceof SuccessResponseMessage
-            assert ((SuccessResponseMessage)deviceNResponses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            assert ((SuccessResponseMessage)deviceNResponses.get(0)).realm == managerTestSetup.realmBuildingName
             asset = ((SuccessResponseMessage)deviceNResponses.get(0)).asset
             assert asset != null
             assert asset instanceof WeatherAsset
@@ -622,7 +622,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
-            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
             asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert asset != null
             assert asset instanceof WeatherAsset
@@ -631,12 +631,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "a connected device user is disabled and an un-connected device user is disabled"
         existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
-        def device1User = identityService.getIdentityProvider().getUserByUsername(managerTestSetup.realmBuildingTenant, User.SERVICE_ACCOUNT_PREFIX + PROVISIONING_USER_PREFIX + device1UniqueId)
-        def deviceNUser = identityService.getIdentityProvider().getUserByUsername(managerTestSetup.realmBuildingTenant, User.SERVICE_ACCOUNT_PREFIX + PROVISIONING_USER_PREFIX + deviceNUniqueId)
+        def device1User = identityService.getIdentityProvider().getUserByUsername(managerTestSetup.realmBuildingName, User.SERVICE_ACCOUNT_PREFIX + PROVISIONING_USER_PREFIX + device1UniqueId)
+        def deviceNUser = identityService.getIdentityProvider().getUserByUsername(managerTestSetup.realmBuildingName, User.SERVICE_ACCOUNT_PREFIX + PROVISIONING_USER_PREFIX + deviceNUniqueId)
         device1User.setEnabled(false)
         deviceNUser.setEnabled(false)
-        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingTenant, device1User, null)
-        deviceNUser = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingTenant, deviceNUser, null)
+        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null)
+        deviceNUser = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, deviceNUser, null)
 
         then: "already connected client that was authenticated should be disconnected, then reconnect"
         conditions.eventually {
@@ -698,7 +698,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
         def existingNConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDeviceNClientId)
         device1User.setEnabled(true)
-        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingTenant, device1User, null)
+        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null)
 
         and: "the re-enabled client device publishes its' valid client certificate"
         device1Responses.clear()
@@ -712,7 +712,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
-            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
             asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert asset != null
             assert asset instanceof WeatherAsset

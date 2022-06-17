@@ -29,7 +29,7 @@ import org.openremote.model.syslog.SyslogEvent;
  * Filters {@link SharedEvent} by arbitrary criteria.
  */
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = TenantFilter.class, name = TenantFilter.FILTER_TYPE),
+    @JsonSubTypes.Type(value = RealmFilter.class, name = RealmFilter.FILTER_TYPE),
     @JsonSubTypes.Type(value = SyslogEvent.LevelCategoryFilter.class, name = SyslogEvent.LevelCategoryFilter.FILTER_TYPE),
     @JsonSubTypes.Type(value = AssetFilter.class, name = AssetFilter.FILTER_TYPE)
 })
