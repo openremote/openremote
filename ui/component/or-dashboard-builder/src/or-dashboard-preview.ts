@@ -204,22 +204,7 @@ export class OrDashboardPreview extends LitElement {
                     let gridElement = this.shadowRoot?.getElementById("gridElement");
                     gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
                     gridElement!.style.height = maingrid!.scrollHeight + 'px';
-                    // this.grid.column(this.latestChanges.newValue.columns!, 'move');
                     this.setupGrid(true, true);
-                    /*if(this.latestChanges.oldValue.columns! < this.latestChanges.newValue.columns!) {
-                        this.grid.column(this.latestChanges.newValue.columns!, 'move');
-                        let maingrid = this.shadowRoot?.querySelector(".maingrid");
-                        let gridElement = this.shadowRoot?.getElementById("gridElement");
-                        gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
-                        gridElement!.style.height = maingrid!.scrollHeight + 'px';
-                    } else {
-                        this.grid.column(this.latestChanges.newValue.columns!, 'move');
-                        let maingrid = this.shadowRoot?.querySelector(".maingrid");
-                        let gridElement = this.shadowRoot?.getElementById("gridElement");
-                        gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
-                        gridElement!.style.height = maingrid!.scrollHeight + 'px';
-                        this.setupGrid(false, false);
-                    }*/
                 }
                 else if(this.latestChanges.changedKeys.includes('widgets')) {
                     console.log("Setting up Grid.. [#2]");
