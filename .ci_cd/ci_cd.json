@@ -2,7 +2,7 @@
 	"push": {
 		"master": {
 			"distribute": {
-				"tags": "develop"
+				"tags": "develop,latest"
 			},
 			"deploy": {
 				"managerTag": "develop",
