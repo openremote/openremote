@@ -1052,9 +1052,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             let attrValueCheck = true;
 
             if (this._filter.attribute.length > 0 && this._filter.attributeValue.length > 0 && foundAssetIds.includes(asset.id!)) {
-                let attributeVal: [string, string][] = this._filter.attributeValue.map((value: string, index: number) => {
-                    return [this._filter.attribute[index], value];
+                let attributeVal: [string, string][] = [];
+
+                this._filter.attributeValue.forEach((attrVal: string, index: number) => {
+                    if (attrVal.length > 0) {
+                        attributeVal.push([this._filter.attribute[index], attrVal]);
+                    }
                 });
+
                 let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
