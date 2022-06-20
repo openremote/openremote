@@ -1080,6 +1080,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                         if (currentAttributeVal[1].startsWith('=') && currentAttributeVal[1][1] !== '=') {
                                             value = '=' + value;
                                         }
+
+                                        if (/^[0-9]+$/.test(currentAttributeVal[1])) {
+                                            value = '==' + value;
+                                        }
+
                                         const resultNumberEval: boolean = eval(attr.value + value);
 
                                         if (resultNumberEval) {
