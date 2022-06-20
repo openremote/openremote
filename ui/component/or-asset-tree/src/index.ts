@@ -43,6 +43,7 @@ import {
 } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -1029,9 +1030,22 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             attributes: attributeCond
         };
 
-        const response = await manager.rest.api.AssetResource.queryAssets(query);
 
-        const foundAssetIds: string[] = response.data.map((asset: Asset) => asset.id!);
+
+        let response: any;
+        let foundAssetIds: string[];
+
+       try {
+           response = await manager.rest.api.AssetResource.queryAssets(query);
+           foundAssetIds = response.data.map((asset: Asset) => asset.id!);
+       } catch (e) {
+            this._filter.assetType.forEach((assetT: string) => {
+                if(this._assetTypes.findIndex((assetD: AssetDescriptor) => { return assetD.name === assetT; }) === -1) {
+                    showSnackbar(undefined, i18next.t('filter.assetTypeDoesNotExist'), i18next.t("dismiss"));
+                }
+            });
+            foundAssetIds = [];
+        }
 
         return (asset) => {
             let attrValueCheck = true;
