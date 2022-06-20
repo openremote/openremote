@@ -54,16 +54,11 @@ Then('Create a new role', async function () {
     let rows = await page.$$('.mdc-data-table__row')
     const count = await rows.length
 
-    await this.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=0`, 'Custom');
-    //await page.locator(`#attribute-meta-row-${count - 1} input[type="text"]`).first().fill('Custom');
-    await this.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=1`, 'read:asset, write:asset');
-    //await page.locator(`#attribute-meta-row-${count - 1} input[type="text"]`).nth(1).fill('read:asset, write:asset');
-
+    await this.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=0`, 'Custom')
+    await this.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=1`, 'read:asset, write:asset')
     await this.check(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div or-mwc-input:nth-child(3) #field #component #elem >> nth=0`)
-    //await page.locator(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div or-mwc-input:nth-child(3) #field #component #elem`).first().check();
-
     await this.check(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div:nth-child(2) or-mwc-input:nth-child(3) #field #component #elem`)
-    //await page.locator(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div:nth-child(2) or-mwc-input:nth-child(3) #field #component #elem`).check();
+    
     await this.click('button:has-text("create")')
     this.logTime(startTime)
 })
@@ -73,7 +68,7 @@ Then('We see a new role', async function () {
     let startTime = new Date() / 1000
     await this.wait(500)
     const count = await this.count('text=Custom')
-    //const count = await page.locator('text=Custom').count()
+
     await expect(count).toBe(1)
     this.logTime(startTime)
 })
@@ -84,9 +79,9 @@ Then('We see a new role', async function () {
 Then('Select the new role and unselect others', async function () {
     let startTime = new Date() / 1000
     await this.click('td:has-text("smartcity")')
-    await this.click('div[role="button"]:has-text("Roles")');
-    await this.click('li[role="menuitem"]:has-text("Read")');
-    await this.click('li[role="menuitem"]:has-text("Write")');
+    await this.click('div[role="button"]:has-text("Roles")')
+    await this.click('li[role="menuitem"]:has-text("Read")')
+    await this.click('li[role="menuitem"]:has-text("Write")')
     await this.click('li[role="menuitem"]:has-text("Custom")')
     await this.wait(300)
     await this.press("Enter")
@@ -118,8 +113,8 @@ Then('We see that assets permission are selected', async function () {
 Then('Switch back to origin', async function () {
     let startTime = new Date() / 1000
     await this.click('text=Roles Custom')
-    await this.click('li[role="menuitem"]:has-text("Read")');
-    await this.click('li[role="menuitem"]:has-text("Write")');
+    await this.click('li[role="menuitem"]:has-text("Read")')
+    await this.click('li[role="menuitem"]:has-text("Write")')
     await this.click('li[role="menuitem"]:has-text("Custom")')
     await this.wait(200)
     await this.press("Enter")
@@ -131,7 +126,7 @@ Then('Switch back to origin', async function () {
  */
 When('Logout', async function () {
     let startTime = new Date() / 1000
-    await this.logout();
+    await this.logout()
     this.logTime(startTime)
 })
 

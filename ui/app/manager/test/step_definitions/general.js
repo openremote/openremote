@@ -27,7 +27,7 @@ Given('Setup {string} for rules', { timeout: 100000 }, async function (section) 
 /**
  * Login to a realm as expected user
  */
-When('Login to OpenRemote {string} realm as {string}', { timeout: 10000 }, async function (realm, user) {
+When('Login to OpenRemote {string} realm as {string}', async function (realm, user) {
     let startTime = new Date() / 1000
     await this.openApp(realm)
     await this.login(user)
@@ -37,7 +37,7 @@ When('Login to OpenRemote {string} realm as {string}', { timeout: 10000 }, async
 /**
  * Setting menu
  */
-When('Navigate to {string} page', { timeout: 7000 }, async function (name) {
+When('Navigate to {string} page', async function (name) {
     let startTime = new Date() / 1000
     await this.wait(200)
     await this.navigateToMenuItem(name)
@@ -48,14 +48,14 @@ When('Navigate to {string} page', { timeout: 7000 }, async function (name) {
 /**
  * Tab menu
  */
-When('Navigate to {string} tab', { timeout: 7000 }, async function (tab) {
+When('Navigate to {string} tab', async function (tab) {
     let startTime = new Date() / 1000
     await this.navigateToTab(tab)
     await this.wait(200)
     this.logTime(startTime)
 });
 
-Then('Unselect', { timeout: 7000 }, async function () {
+Then('Unselect', async function () {
     let startTime = new Date() / 1000
     await this.unselectAll()
     this.logTime(startTime)

@@ -2,7 +2,7 @@ const { When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
 
 When('Check {string} on map', async function (asset) {
-    let startTime =new Date() / 1000
+    let startTime = new Date() / 1000
     await this.wait(400)
     const iconCount = await this.count('.marker-icon')
     await expect(iconCount).toEqual(2)
@@ -15,17 +15,16 @@ When('Check {string} on map', async function (asset) {
 })
 
 Then('Click and nevigate', async function () {
-    let startTime =new Date() / 1000
-
+    let startTime = new Date() / 1000
+    await this.wait(500)
     await this.click('button:has-text("View")')
     this.logTime(startTime)
 })
 
-Then('We are at {string} page', { timeout: 10000 }, async function (asset) {
-    let startTime =new Date() / 1000
+Then('We are at {string} page', async function (asset) {
+    let startTime = new Date() / 1000
     await this.wait(1000)
     const assetPage = await this.isVisible(`#asset-header >> text=${asset}`)
-    //const assetPage = await page.locator(`#asset-header >> text=${asset}`).isVisible()
-    expect(assetPage).toBeTruthy()
+    await expect(assetPage).toBeTruthy()
     this.logTime(startTime)
 })

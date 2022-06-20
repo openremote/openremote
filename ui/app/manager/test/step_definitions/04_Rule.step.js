@@ -74,7 +74,7 @@ Then('We see the rule with name of {string}', async function (name) {
 /**
  *  Flow editor
  */
-Then('Drag in the elements', { timeout: 10000 }, async function () {
+Then('Drag in the elements', async function () {
 
     // page.dragAndDrop(source, target[, options]) is an alternative 
     // move all the elements
@@ -117,7 +117,7 @@ Then('Set value', async function () {
     await this.fill('[placeholder="value"] >> nth=2', '40')
 })
 
-Then('Connect elements', { timeout: 10000 }, async function () {
+Then('Connect elements', async function () {
     // connect elements
     await this.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
     await this.dragAndDrop('flow-node:nth-child(2) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(2) .socket')

@@ -1,10 +1,11 @@
-const { setWorldConstructor, World, BeforeAll, AfterAll, After, Status } = require("@cucumber/cucumber");
+const { setWorldConstructor, World, BeforeAll, AfterAll, After, Status, setDefaultTimeout, SnippetsFormatter } = require("@cucumber/cucumber");
 const { ChromiumBroswer: ChromiumBrowser } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
 const { expect } = require("@playwright/test");
 const { join } = require('path');
 const { Before } = require("@cucumber/cucumber");
+const { setDefaultResultOrder } = require("dns");
 require('dotenv').config();
 
 /**
@@ -241,8 +242,8 @@ class CustomWorld extends World {
     async navigateToMenuItem(setting) {
         await this.wait(500)
         await this.click('button[id="menu-btn-desktop"]');
-        await this.wait(200)
-        const isItemVisible = this.isVisible(`text=${setting}`)
+        await this.wait(500)
+        const isItemVisible = await this.isVisible(`text=${setting}`)
         if (isItemVisible) {
             await this.click(`text=${setting}`);
         }
@@ -694,7 +695,7 @@ After({ timeout: 100000 }, async function (testCase) {
 
     await this.cleanUp()
     await this.page.close()
-    console.log("After takes " + timeCost(false))
+    console.log("After takes " + timeCost(false) + "s")
     console.log("This test takes " + timeCost(true) + "s")
 
 })
@@ -714,6 +715,7 @@ function timeCost(startAtBeginning) {
     return timeDiff
 }
 
+setDefaultTimeout(1000 * 12);
 setWorldConstructor(CustomWorld);
 
 

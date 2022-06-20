@@ -27,7 +27,7 @@ Feature: Delete
         Then Switch to "smartcity" realm
         When Navigate to "Users" page
         Then Delete user
-        Then We should see an empty use page
+        Then We should not see the "smartcity" user
 
 
     @Desktop @delete_assets

@@ -20,7 +20,6 @@ Then('We should not see the Realm picker', async function () {
   // must wait for the realm picker to be rendered
   await this.wait(500)
   const isVisible = await this.isVisible('#realm-picker')
-  //const isVisible = await this.page?.locator('#realm-picker').isVisible()
   await expect(isVisible).toBeFalsy()
   this.logTime(startTime)
 })
@@ -59,7 +58,6 @@ Then('Delete role', { timeout: 30000 }, async function () {
 Then('We should not see the Custom role', async function () {
   let startTime =new Date() / 1000
   const count = await this.count('text=Custom')
-  //const count = await page.locator('text=Custom').count()
   await expect(count).toEqual(0)
   this.logTime(startTime)
 })
@@ -80,10 +78,9 @@ Then('Delete user', async function () {
   this.logTime(startTime)
 })
 
-Then('We should see an empty use page', async function () {
+Then('We should not see the {string} user', async function (user) {
   let startTime =new Date() / 1000
-  const count = await this.count('td:has-text("smartcity")')
-  //const count = await page.locator('td:has-text("smartcity")').count()
+  const count = await this.count(`td:has-text("${user}")`)
   await expect(count).toEqual(0)
   this.logTime(startTime)
 })
@@ -91,7 +88,7 @@ Then('We should see an empty use page', async function () {
 /**
  * delete assets
  */
-Then('Delete assets', { timeout: 10000 }, async function () {
+Then('Delete assets', async function () {
   let startTime =new Date() / 1000
   await this.deleteSelectedAsset("Battery")
   await this.wait(300)

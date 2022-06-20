@@ -4,7 +4,7 @@ const { expect } = require("@playwright/test");
 /**
  * add new asset
  */
-Then('Create a {string} with name of {string}', { timeout: 10000 }, async function (asset, name) {
+Then('Create a {string} with name of {string}', async function (asset, name) {
     let startTime = new Date() / 1000
     await this.click('.mdi-plus')
     await this.click(`text=${asset}`)
@@ -33,7 +33,7 @@ Then('Give {string} to the {string} with type of {string}', async function (valu
     this.logTime(startTime)
 })
 
-Then('Save', { timeout: 10000 }, async function () {
+Then('Save', async function () {
     let startTime = new Date() / 1000
     // press enter to enable the save button (could be any other action) (or this will be fixed then no pre-action needed)
     await this.click('#edit-container')
@@ -49,7 +49,6 @@ Then('We see the asset with name of {string}', async function (name) {
     let startTime = new Date() / 1000
     await this.wait(300)
     const count = await this.count(`text=${name}`)
-    //const count = await page.locator(`text=${name}`).count()
 
     // reason why it's 1 is because that this scnario runs in a outline
     // each time only one set of data will be used in one run of outlines
@@ -84,7 +83,7 @@ Then('We see the {string} page', async function (name) {
 /**
  * update
  */
-Then('Update {string} to the {string} with type of {string}', { timeout: 10000 }, async function (value, attribute, type) {
+Then('Update {string} to the {string} with type of {string}', async function (value, attribute, type) {
     let startTime = new Date() / 1000
     await this.fill(`#field-${attribute} input[type="${type}"]`, value)
     await this.click(`#field-${attribute} #send-btn span`)
@@ -96,7 +95,7 @@ Then('Update location of {int} and {int}', { timeout: 30000 }, async function (l
     const { page } = this;
 
     await this.click('text=location GEO JSON point >> button span')
-    await this.wait(3000)
+    await this.wait(2000)
     // location_x and location_y are given by the example data
     // currently it's not implmented as dragging the map and clicking on a random place (could be possible in the future)
     await page.mouse.click(location_x, location_y, { delay: 600 })
@@ -141,20 +140,20 @@ Then('Check on readonly of {string}', async function (attribute) {
 When('Go to panel page', async function () {
     let startTime = new Date() / 1000
     await this.click('button:has-text("View")')
+    this.logTime(startTime)
 })
 
 Then('We should see a button on the right of {string}', async function (attribute) {
     let startTime = new Date() / 1000
     const { page } = this;
 
-    await expect(page.waitForSelector(`#field-${attribute} button`)).not.toBeNull()
+    await expect(await page.waitForSelector(`#field-${attribute} button`)).not.toBeNull()
     this.logTime(startTime)
 })
 
 Then('No button on the right of {string}', async function (attribute) {
     let startTime = new Date() / 1000
     const count = await this.count(`#field-${attribute} button`)
-    //const count = await page.locator(`#field-${attribute} button`).count()
     expect(count).toBe(0)
     this.logTime(startTime)
 })
