@@ -755,6 +755,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         const matchingVal: string = value.toString().substring(startIndex + 'attribute:'.length + 1, value.toString().length-1);
 
                         resultingFilter.attribute.push(matchingVal);
+                        resultingFilter.attributeValue.push('');
                     });
                 }
 
