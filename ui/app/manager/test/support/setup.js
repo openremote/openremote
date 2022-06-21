@@ -6,6 +6,8 @@ const { expect } = require("@playwright/test");
 const { join } = require('path');
 const { Before } = require("@cucumber/cucumber");
 const { setDefaultResultOrder } = require("dns");
+const exp = require("constants");
+const { loadavg } = require("os");
 require('dotenv').config();
 
 /**
@@ -106,14 +108,14 @@ class CustomWorld extends World {
      * @param {String} user  Username (admin or other)
      */
     async login(user) {
-        if (!fs.existsSync('test/storageState.json')) {
-            let password = global.passwords[user];
-            await this.page?.fill('input[name="username"]', user);
-            await this.page?.fill('input[name="password"]', password);
-            await this.page?.keyboard.press('Enter');
-            await this.page?.context().storageState({ path: 'test/storageState.json' });
-            await this.page.waitForNavigation(user == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
-        }
+        // if (!fs.existsSync('test/storageState.json')) {
+        let password = global.passwords[user];
+        await this.page?.fill('input[name="username"]', user);
+        await this.page?.fill('input[name="password"]', password);
+        await this.page?.keyboard.press('Enter');
+        //await this.page?.context().storageState({ path: 'test/storageState.json' });
+        await this.page.waitForNavigation(user == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
+        //}
     }
 
 
@@ -121,9 +123,9 @@ class CustomWorld extends World {
      * Logout and delete login certification
      */
     async logout() {
-        if (fs.existsSync('test/storageState.json')) {
-            fs.unlinkSync('test/storageState.json')
-        }
+        // if (fs.existsSync('test/storageState.json')) {
+        //     fs.unlinkSync('test/storageState.json')
+        // }
         const isMenuBtnVisible = await this.isVisible('#menu-btn-desktop')
         if (isMenuBtnVisible) {
             await this.click('#menu-btn-desktop');
@@ -277,13 +279,15 @@ class CustomWorld extends World {
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await Promise.all([
-                this.page.waitForNavigation(global.getAppUrl().substring(0, 30) + '#/realms'),
-                this.click('button:has-text("create")')
+                this.click('button:has-text("create")'),
+                //this.page.waitForNavigation(global.getAppUrl().substring(0, 23) + '#/realms', { waitUntil: 'load', timeout: 0 }),
+                this.page.waitForNavigation(global.getAppUrl().substring(0, 26) + '#/realms', { waitUntil: 'load', timeout: 0 })
             ]);
-
             await console.log("Realm: " + name + " added,   " + timeCost(false) + "s")
-            await this.wait(300)
+            await this.wait(500)
         }
+        const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
+        await expect(count).toEqual(1)
     }
 
     /**
@@ -485,13 +489,14 @@ class CustomWorld extends World {
     async deleteRealm(realm) {
 
         global.stepTime = new Date() / 1000
-        await this.wait(400)
+        await this.wait(300)
         await this.click(`[aria-label="attribute list"] span:has-text("${realm}")`)
         await this.click('button:has-text("Delete")')
+        await this.wait(300)
         await this.fill('div[role="alertdialog"] input[type="text"]', realm)
         await this.click('button:has-text("OK")')
         // wait for backend to response
-        await this.wait(1200)
+        await this.wait(1500)
         try {
             const count = await this.count('[aria-label="attribute list"] span:has-text("smartcity")')
             //const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
@@ -556,16 +561,16 @@ class CustomWorld extends World {
     *  // lv4 is to set the values for assets
     * @param {String} realm realm name
     * @param {String} level level (lv0, lv1, etc.)
-    * @param {String} configOrLoction update on config or location, default as neither
+    * @param {String} configOrLoction update on config or location, default as no
     */
-    async setup(realm, level, configOrLocation = "neither") {
+    async setup(realm, level, configOrLocation = "no") {
 
         global.startTime = new Date() / 1000
 
         // clean storage
-        if (fs.existsSync('test/storageState.json')) {
-            fs.unlinkSync('test/storageState.json')
-        }
+        // if (fs.existsSync('test/storageState.json')) {
+        //     fs.unlinkSync('test/storageState.json')
+        // }
 
         if (level !== "lv0") {
             await this.openApp("master")
@@ -642,7 +647,7 @@ class CustomWorld extends World {
 
     async logTime(startTime) {
         let endTime = new Date() / 1000
-        console.log((endTime - startTime).toFixed(3))
+        console.log((endTime - startTime).toFixed(3) + "s")
     }
 }
 
@@ -663,14 +668,14 @@ BeforeAll(async function () {
         }
     });
 
-    if (fs.existsSync('test/storageState.json')) {
-        context = await global.browser.newContext({
-            storageState: 'test/storageState.json',
-        });
-    }
-    else {
-        context = await global.browser.newContext({ ignoreHTTPSErrors: true });
-    }
+    // if (fs.existsSync('test/storageState.json')) {
+    //     context = await global.browser.newContext({
+    //         storageState: 'test/storageState.json',
+    //     });
+    // }
+    // else {
+    context = await global.browser.newContext({ ignoreHTTPSErrors: true });
+    //}
     let page = await context.newPage()
 })
 
@@ -703,9 +708,6 @@ After({ timeout: 100000 }, async function (testCase) {
 // close browser and delete authentication file
 AfterAll(async function () {
     await global.browser.close()
-    if (fs.existsSync('test/storageState.json')) {
-        fs.unlinkSync('test/storageState.json')
-    }
 })
 
 function timeCost(startAtBeginning) {
@@ -715,7 +717,7 @@ function timeCost(startAtBeginning) {
     return timeDiff
 }
 
-setDefaultTimeout(1000 * 12);
+setDefaultTimeout(1000 * 15);
 setWorldConstructor(CustomWorld);
 
 
