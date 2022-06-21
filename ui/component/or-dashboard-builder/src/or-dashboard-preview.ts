@@ -163,7 +163,7 @@ export class OrDashboardPreview extends LitElement {
     @property() // Optional alternative for previewWidth/previewHeight
     protected previewSize?: DashboardSizeOption;
 
-    @property()
+    @property() // Property that, when toggled on, shows a "loading" state for 200ms, and then renders the component again.
     protected rerenderPending: boolean = false;
 
     /* -------------- */
@@ -171,7 +171,7 @@ export class OrDashboardPreview extends LitElement {
     @state()
     protected grid?: GridStack;
 
-    @state()
+    @state() // State where the changes of the template are saved temporarily (for comparison with incoming data)
     protected latestChanges?: {
         changedKeys: string[],
         oldValue: DashboardTemplate,
@@ -193,8 +193,11 @@ export class OrDashboardPreview extends LitElement {
             console.error("Neither the template nor dashboardId attributes have been specified!");
         }
 
+        // If changes to the template have been made
         if(changedProperties.has("latestChanges")) {
             if(this.latestChanges) {
+
+                // If only columns property changed, change columns through the framework and then recreate grid.
                 if(this.latestChanges.changedKeys.length == 1 && this.latestChanges.changedKeys.includes('columns') && this.grid) {
                     this.grid.column(this.latestChanges.newValue.columns!);
                     let maingrid = this.shadowRoot?.querySelector(".maingrid");
@@ -203,17 +206,21 @@ export class OrDashboardPreview extends LitElement {
                     gridElement!.style.height = maingrid!.scrollHeight + 'px';
                     this.setupGrid(true, false);
                 }
+
+                // If multiple properties changed, just force rerender all of it.
                 else if(this.latestChanges.changedKeys.length > 1) {
                     console.log("Setting up Grid.. [#6]");
                     this.setupGrid(true, true);
                 }
+                // On widgets change only recreate grid is required.
                 else if(this.latestChanges.changedKeys.includes('widgets')) {
                     console.log("Setting up Grid.. [#2]");
                     this.setupGrid(true, false);
                 }
+                // On screenPreset change, a full force rererender is required
                 else if(this.latestChanges.changedKeys.includes('screenPresets')) {
                     console.log("Setting up Grid.. [#3]");
-                    this.setupGrid(true, false);
+                    this.setupGrid(true, true);
                 }
                 // Set them to none again
                 this.latestChanges = undefined;
@@ -258,7 +265,6 @@ export class OrDashboardPreview extends LitElement {
             }
         }
 
-
         if(changedProperties.has("editMode") && changedProperties.has("fullscreen")) {
             console.log("Setting up Grid.. [#4]");
             this.setupGrid(true, false);
@@ -302,6 +308,7 @@ export class OrDashboardPreview extends LitElement {
 
     /* ---------------------------------------- */
 
+    // Wait until function that waits until a boolean returns differently
     waitUntil(conditionFunction: any) {
         const poll = (resolve: any) => {
             if(conditionFunction()) resolve();
@@ -310,13 +317,15 @@ export class OrDashboardPreview extends LitElement {
         return new Promise(poll);
     }
 
+    // Main setup Grid method (often used)
     async setupGrid(recreate: boolean, force: boolean = false) { //nosonar
         let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
             console.log("Setting up a new Grid! Using recreate [" + recreate + "] and force [" + force + "].");
             if(recreate && this.grid != null) {
                 this.grid.destroy(false);
-                if(force) {
+
+                if(force) { // Fully rerender the grid by switching rerenderPending on and off, and continue after that.
                     this.rerenderPending = true;
                     await this.updateComplete;
                     await this.waitUntil((_: any) => !this.rerenderPending);
@@ -324,6 +333,7 @@ export class OrDashboardPreview extends LitElement {
                     this.grid = undefined;
                 }
             }
+            // If grid got reset, setup the ResizeObserver again.
             if(this.grid == null) {
                 const gridHTML = this.shadowRoot?.querySelector(".maingrid");
                 if(gridHTML) {
