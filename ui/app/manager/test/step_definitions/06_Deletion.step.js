@@ -27,7 +27,7 @@ Then('We should not see the Realm picker', async function () {
 /**
  * delete role
  */
-Then('Delete role', { timeout: 30000 }, async function () {
+Then('Delete role', { timeout: 50000 }, async function () {
   let startTime =new Date() / 1000
 
   // reproduce the preparation steps to start from the beginning
@@ -37,7 +37,7 @@ Then('Delete role', { timeout: 30000 }, async function () {
   // delete roles
   await this.click('text=Custom')
 
-  // bad solution
+  // bad solution costing a lot of time
   // can't find a way to locate the delete button 
   // since the sorting of the role is random everytime 
   // the html tag is in form of "#attribute-meta-row-2" in which number inside is decided by order
@@ -100,16 +100,17 @@ Then('Delete assets', async function () {
 })
 
 Then('We should see an empty asset column', async function () {
+
   let startTime =new Date() / 1000
+
   const count_console = await this.count('text=Console')
-  //const count_console = await page.locator('text=Console').count()
   const count_solar = await this.count('text=Solar Panel')
-  //const count_solar = await page.locator('text=Solar Panel').count()
   const count_battery = await this.count('text=Battery')
-  //const count_battery = await page.locator('text=Battery').count()
+
   await expect(count_console).toEqual(1)
   await expect(count_solar).toEqual(0)
   await expect(count_battery).toEqual(0)
+  
   this.logTime(startTime)
 })
 

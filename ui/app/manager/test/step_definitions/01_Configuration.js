@@ -36,7 +36,6 @@ Then('We see a new user', async function () {
     let startTime = new Date() / 1000
     await this.wait(500)
     const count = await this.count('td:has-text("smartcity")')
-    //const count = await page.locator('td:has-text("smartcity")').count()
     await expect(count).toBe(1)
     this.logTime(startTime)
 })

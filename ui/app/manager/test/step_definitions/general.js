@@ -37,7 +37,7 @@ When('Login to OpenRemote {string} realm as {string}', async function (realm, us
 /**
  * Setting menu
  */
-When('Navigate to {string} page', async function (name) {
+When('Navigate to {string} page', { timeout: 30000 }, async function (name) {
     let startTime = new Date() / 1000
     await this.wait(200)
     await this.navigateToMenuItem(name)
@@ -66,5 +66,5 @@ Then('Unselect', async function () {
  */
 Then('Snapshot {string}', async function (string) {
     const { page } = this;
-    await page?.screenshot({ path: join('screenshots', `${string}.png`) });
+    await page?.screenshot({ path: join("test", 'screenshots', `${string}.png`) });
 });

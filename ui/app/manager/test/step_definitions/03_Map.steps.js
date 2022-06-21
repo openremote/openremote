@@ -8,9 +8,10 @@ When('Check {string} on map', async function (asset) {
     await expect(iconCount).toEqual(2)
     await this.click('div:nth-child(3) .marker-container div or-icon svg path')
     await this.wait(400)
+
     const cardPanel = await this.isVisible(`text=${asset}`)
-    //const cardPanel = await page.locator(`text=${asset}`).isVisible()
     await expect(cardPanel).toBeTruthy()
+    
     this.logTime(startTime)
 })
 

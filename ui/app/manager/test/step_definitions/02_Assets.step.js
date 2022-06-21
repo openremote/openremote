@@ -4,7 +4,7 @@ const { expect } = require("@playwright/test");
 /**
  * add new asset
  */
-Then('Create a {string} with name of {string}', async function (asset, name) {
+Then('Create a {string} with name of {string}', { timeout: 30000 }, async function (asset, name) {
     let startTime = new Date() / 1000
     await this.click('.mdi-plus')
     await this.click(`text=${asset}`)

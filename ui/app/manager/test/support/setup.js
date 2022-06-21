@@ -26,8 +26,8 @@ const global = {
     startTime: 0,
     stepTime: 0,
     getAppUrl: (realm) => {
-        const managerUrl = process.env.managerUrl || "https://localhost/";
-        //const managerUrl = process.env.managerUrl || "localhost:8080/";
+        //const managerUrl = process.env.managerUrl || "https://localhost/";
+        const managerUrl = process.env.managerUrl || "localhost:8080/";
         const appUrl = managerUrl + "manager/?realm=";
         return appUrl + realm;
     },
@@ -106,6 +106,9 @@ class CustomWorld extends World {
      * @param {String} user  Username (admin or other)
      */
     async login(user) {
+
+        setStepStartTime()
+        await this.wait(500)
         const isLogin = await this.isVisible('input[name="username"]') || false
         if (isLogin) {
             // if (!fs.existsSync('test/storageState.json')) {
@@ -114,8 +117,9 @@ class CustomWorld extends World {
             await this.page?.fill('input[name="password"]', password);
             await this.page?.keyboard.press('Enter');
             //await this.page?.context().storageState({ path: 'test/storageState.json' });
-            await this.page.waitForNavigation(user == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
+            //await this.page.waitForNavigation(user == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
             //}
+            console.log(`User: "${user}" logged in,   ` + timeCost(false) + "s")
         }
     }
 
@@ -206,11 +210,6 @@ class CustomWorld extends World {
      * wait for millisecond
      * @param {Int} millisecond 
      */
-    // async wait(millisecond) {
-    //     return new Promise(function (resolve) {
-    //         setTimeout(resolve, millisecond)
-    //     });
-    // }
     async wait(millisecond) {
         await this.page.waitForTimeout(millisecond);
     }
@@ -230,7 +229,10 @@ class CustomWorld extends World {
      * @returns {Boolean} if the element if visible 
      */
     async isVisible(element) {
-        return await this.page.locator(element).isVisible()
+        if (element != null)
+            return await this.page.locator(element).isVisible()
+        else
+            return false
     }
 
     /**
@@ -243,6 +245,7 @@ class CustomWorld extends World {
      * @param {Sting} setting name of the setting menu item
      */
     async navigateToMenuItem(setting) {
+        setStepStartTime()
         await this.wait(500)
         await this.click('button[id="menu-btn-desktop"]');
         await this.wait(500)
@@ -253,7 +256,7 @@ class CustomWorld extends World {
         else {
             console.log("not rendered yet")
         }
-
+        console.log(`Navigated to "${setting}" meun item,   ` + timeCost(false) + 's')
     }
 
     /**
@@ -270,7 +273,7 @@ class CustomWorld extends World {
      */
     async addRealm(name) {
 
-        global.stepTime = new Date() / 1000
+        setStepStartTime()
 
         await this.wait(300)
         const isVisible = await this.isVisible(`[aria-label="attribute list"] span:has-text("${name}")`)
@@ -279,13 +282,13 @@ class CustomWorld extends World {
             await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
-            await Promise.all([
-                this.click('button:has-text("create")'),
-                //this.page.waitForNavigation(global.getAppUrl().substring(0, 23) + '#/realms', { waitUntil: 'load', timeout: 50000 }),
-                this.page.waitForNavigation(global.getAppUrl().substring(0, 26) + '#/realms', { waitUntil: 'load', timeout: 0 })
-            ]);
-            await this.wait(3000)
-            await console.log("Realm: " + name + " added,   " + timeCost(false) + "s")
+            // await Promise.all([
+            await this.click('button:has-text("create")')
+            //this.page.waitForNavigation(global.getAppUrl().substring(0, 23) + '#/realms', { waitUntil: 'load', timeout: 50000 }),
+            //     this.page.waitForNavigation(global.getAppUrl().substring(0, 26) + '#/realms', { waitUntil: 'load', timeout: 0 })
+            // ]);
+            await this.wait(5000)
+            await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s")
 
         }
         const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
@@ -307,7 +310,7 @@ class CustomWorld extends World {
      */
     async addUser(username, password) {
 
-        global.stepTime = new Date() / 1000
+        setStepStartTime()
         /**
          * add user
          */
@@ -333,7 +336,7 @@ class CustomWorld extends World {
             await this.click('div[role="button"]:has-text("Roles")')
             // create user
             await this.click('button:has-text("create")')
-            console.log("User added,    " + timeCost(false) + "s")
+            console.log(`User: "${username}" added,    ` + timeCost(false) + "s")
         }
         else {
         }
@@ -345,7 +348,7 @@ class CustomWorld extends World {
      */
     async addAssets(update, configOrLoction) {
 
-        global.stepTime = new Date() / 1000
+        const addAssetTime = new Date() / 1000
 
         await this.wait(600)
 
@@ -354,6 +357,7 @@ class CustomWorld extends World {
 
         // create assets accroding to assets array
         for (let asset of assets) {
+            setStepStartTime()
             let isAssetVisible = await this.isVisible(`#list-container >> text=${asset.name}`)
             try {
                 if (!isAssetVisible) {
@@ -383,33 +387,37 @@ class CustomWorld extends World {
                         await this.updateInModify(asset.attr_1, asset.a1_type, asset.v1)
                         await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2)
 
-
                         await this.save()
 
                         await this.wait(300)
                     }
                     await this.unselectAll()
-                    console.log("Asset: " + asset.name + " with " + configOrLoction + " updated has been added")
+                    console.log("Asset: " + `"${asset.name}"` + " with " + configOrLoction + " updated has been added,  " + timeCost(false) + "s")
                 }
             }
             catch (error) {
                 console.log('error' + error);
             }
         }
-        console.log("Adding assets takes " + timeCost(false) + "s")
+        console.log("Adding assets takes " + (new Date() / 1000 - addAssetTime).toFixed(3) + "s")
     }
 
     /**
      * unselect the asset
      */
     async unselectAll() {
-
+        await this.wait(500)
         const isViewVisible = await this.isVisible('button:has-text("View")')
         const isCloseVisible = await this.isVisible('.mdi-close >> nth=0')
 
         // leave modify mode
         if (isViewVisible) {
             await this.click('button:has-text("View")')
+            let btnDisgard = await this.isVisible('button:has-text("Disgard")')
+            if (btnDisgard) {
+                await this.click('button:has-text("Disgard")')
+                console.log("didn't save successfully")
+            }
         }
 
         // unselect the asset
@@ -417,6 +425,8 @@ class CustomWorld extends World {
             //await this.page?.locator('.mdi-close').first().click()
             await this.click('.mdi-close >> nth=0')
         }
+
+
         await this.wait(500)
     }
 
@@ -491,7 +501,7 @@ class CustomWorld extends World {
      */
     async deleteRealm(realm) {
 
-        global.stepTime = new Date() / 1000
+        setStepStartTime()
         await this.wait(300)
         await this.click(`[aria-label="attribute list"] span:has-text("${realm}")`)
         await this.click('button:has-text("Delete")')
@@ -502,14 +512,13 @@ class CustomWorld extends World {
         await this.wait(3000)
         try {
             const count = await this.count('[aria-label="attribute list"] span:has-text("smartcity")')
-            //const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
             await expect(count).toBe(0)
 
             await this.goToRealmStartPage("master")
             await this.wait(500)
             const isVisible = await this.isVisible('#realm-picker')
             await expect(isVisible).toBeFalsy()
-            await console.log("Realm: smartcity deleted,    " + timeCost(false) + "s")
+            await console.log(`Realm: "${realm}" deleted,    ` + timeCost(false) + "s")
         } catch (e) {
             console.log(e)
         }
@@ -577,7 +586,6 @@ class CustomWorld extends World {
 
         if (level !== "lv0") {
             await this.openApp("master")
-            await this.wait(300)
             await this.login("admin")
 
             // add realm
@@ -602,7 +610,6 @@ class CustomWorld extends World {
                 }
             }
             await this.logout()
-            // await this.page.close()
             console.log(level + " setup takes " + timeCost(true) + "s")
         }
     }
@@ -625,11 +632,11 @@ class CustomWorld extends World {
      */
     async cleanUp() {
 
-        global.stepTime = new Date() / 1000
+        const cleanTime = new Date() / 1000
 
         // ensure login as admin into master
         await this.logout()
-        await this.wait(700)
+        await this.wait(500)
         await this.goToRealmStartPage("master")
         await this.login("admin")
         // must wait for the realm picker to be rendered
@@ -643,7 +650,7 @@ class CustomWorld extends World {
             await this.navigateToMenuItem("Realms")
             await this.deleteRealm("smartcity")
         }
-        console.log("Clean up takes " + timeCost(false) + "s")
+        console.log("Clean up takes " + (new Date() / 1000 - cleanTime).toFixed(3) + "s")
     }
 
     async logTime(startTime) {
@@ -674,15 +681,14 @@ BeforeAll(async function () {
     //         storageState: 'test/storageState.json',
     //     });
     // }
-    // else {
+    // else { }
     context = await global.browser.newContext({ ignoreHTTPSErrors: true });
-    //}
+
     let page = await context.newPage()
 })
 
 // open pages
 Before(async function () {
-    //global.startTime = new Date() / 1000
     this.page = await context.newPage();
 })
 
@@ -693,7 +699,7 @@ After({ timeout: 100000 }, async function (testCase) {
     console.log("After start")
 
     // if test fails then take a screenshot
-    global.stepTime = new Date() / 1000
+    setStepStartTime()
     if (testCase.result.status === Status.FAILED) {
         await this.page?.screenshot({ path: join("test", 'screenshots', `${global.name}.png`) });
         await global.name++
@@ -701,7 +707,6 @@ After({ timeout: 100000 }, async function (testCase) {
 
     await this.cleanUp()
     await this.page.close()
-    console.log("After takes " + timeCost(false) + "s")
     console.log("This test takes " + timeCost(true) + "s")
 
 })
@@ -711,12 +716,17 @@ AfterAll(async function () {
     await global.browser.close()
 })
 
+function setStepStartTime() {
+    global.stepTime = new Date() / 1000
+}
+
 function timeCost(startAtBeginning) {
     let endTime = new Date() / 1000
     let startTime = startAtBeginning == true ? global.startTime : global.stepTime
     let timeDiff = (endTime - startTime).toFixed(3)
     return timeDiff
 }
+
 
 setDefaultTimeout(1000 * 15);
 setWorldConstructor(CustomWorld);

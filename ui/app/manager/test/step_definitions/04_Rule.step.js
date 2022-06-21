@@ -66,9 +66,8 @@ Then('Save rule', async function () {
 
 Then('We see the rule with name of {string}', async function (name) {
 
-    await this.wait(300)
+    await this.wait(500)
     const count = await this.count(`text=${name}`)
-    //const count = await page.locator(`text=${name}`).count()
     await expect(count).toBe(1)
 })
 /**
@@ -133,7 +132,6 @@ Then('We see the flow rule with name of {string}', async function (name) {
     await this.wait(500)
     // name with FLOW can ensuring that it's a flow rule
     const count = await this.count(`text=${name}FLOW`)
-    //const count = await page.locator(`text=${name}FLOW`).count()
     await expect(count).toBe(1)
 })
 
