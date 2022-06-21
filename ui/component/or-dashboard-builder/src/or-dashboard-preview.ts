@@ -112,12 +112,12 @@ export class OrDashboardPreview extends LitElement {
         return [unsafeCSS(gridcss), unsafeCSS(extracss), editorStyling, style];
     }
 
-    @property({ hasChanged(oldValue, newValue) { return !(JSON.stringify(oldValue) == JSON.stringify(newValue))}})
+    @property({ hasChanged(oldValue, newValue) { return !(JSON.stringify(oldValue) == JSON.stringify(newValue)); }})
     set template(newValue: DashboardTemplate) {
         const oldValue = this._template;
-        console.log("Template has a new value!");
+        /*console.log("Template has a new value!");
         console.log(oldValue);
-        console.log(newValue);
+        console.log(newValue);*/
         if(oldValue != undefined) {
             const changes = {
                 changedKeys: Object.keys(newValue).filter(key => (JSON.stringify(newValue[key as keyof DashboardTemplate]) !== JSON.stringify(oldValue![key as keyof DashboardTemplate]))),
@@ -131,9 +131,6 @@ export class OrDashboardPreview extends LitElement {
 
         } else {
             this._template = newValue;
-            console.log(this._template);
-            // this._currentTemplate = newValue;
-            // this._tempTemplate = JSON.parse(JSON.stringify(newValue)) as DashboardTemplate;
             console.log("Setting up Grid.. [#1]");
             this.setupGrid(false, false);
         }
@@ -167,7 +164,7 @@ export class OrDashboardPreview extends LitElement {
     protected previewSize?: DashboardSizeOption;
 
     @property()
-    protected rerenderPending: boolean = true;
+    protected rerenderPending: boolean = false;
 
     /* -------------- */
 
@@ -204,15 +201,19 @@ export class OrDashboardPreview extends LitElement {
                     let gridElement = this.shadowRoot?.getElementById("gridElement");
                     gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
                     gridElement!.style.height = maingrid!.scrollHeight + 'px';
+                    this.setupGrid(true, false);
+                }
+                else if(this.latestChanges.changedKeys.length > 1) {
+                    console.log("Setting up Grid.. [#6]");
                     this.setupGrid(true, true);
                 }
                 else if(this.latestChanges.changedKeys.includes('widgets')) {
                     console.log("Setting up Grid.. [#2]");
-                    this.setupGrid(true, true);
+                    this.setupGrid(true, false);
                 }
                 else if(this.latestChanges.changedKeys.includes('screenPresets')) {
                     console.log("Setting up Grid.. [#3]");
-                    this.setupGrid(true, true);
+                    this.setupGrid(true, false);
                 }
                 // Set them to none again
                 this.latestChanges = undefined;
@@ -259,18 +260,17 @@ export class OrDashboardPreview extends LitElement {
 
 
         if(changedProperties.has("editMode") && changedProperties.has("fullscreen")) {
-            console.log("Completely deleting and creating a new grid..");
             console.log("Setting up Grid.. [#4]");
             this.setupGrid(true, false);
         }
 
 
-        if(changedProperties.has("editMode")) {
+        /*if(changedProperties.has("editMode")) {
             const gridHTML = this.shadowRoot?.querySelector(".maingrid");
             if(gridHTML) {
                 this.setupResizeObserver(gridHTML);
             }
-        }
+        }*/
 
         if(changedProperties.has("previewWidth") || changedProperties.has("previewHeight")) {
             const gridHTML = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
@@ -291,17 +291,44 @@ export class OrDashboardPreview extends LitElement {
             this.previewWidth = getWidthByPreviewSize(this.previewSize);
             this.previewHeight = getHeightByPreviewSize(this.previewSize);
         }
+
+        if(changedProperties.has("rerenderPending")) {
+            if(this.rerenderPending) {
+                setTimeout(() => { this.rerenderPending = false; }, 200);
+            }
+        }
     }
 
 
     /* ---------------------------------------- */
 
+    waitUntil(conditionFunction: any) {
+        const poll = (resolve: any) => {
+            if(conditionFunction()) resolve();
+            else setTimeout(_ => poll(resolve), 400);
+        }
+        return new Promise(poll);
+    }
+
     async setupGrid(recreate: boolean, force: boolean = false) { //nosonar
         let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
-            console.log("Setting up a new Grid!");
+            console.log("Setting up a new Grid! Using recreate [" + recreate + "] and force [" + force + "].");
             if(recreate && this.grid != null) {
                 this.grid.destroy(false);
+                if(force) {
+                    this.rerenderPending = true;
+                    await this.updateComplete;
+                    await this.waitUntil((_: any) => !this.rerenderPending);
+                    gridElement = this.shadowRoot?.getElementById("gridElement");
+                    this.grid = undefined;
+                }
+            }
+            if(this.grid == null) {
+                const gridHTML = this.shadowRoot?.querySelector(".maingrid");
+                if(gridHTML) {
+                    this.setupResizeObserver(gridHTML);
+                }
             }
             this.grid = GridStack.init({
                 acceptWidgets: (this.editMode),
@@ -436,29 +463,35 @@ export class OrDashboardPreview extends LitElement {
                             ></or-mwc-input>
                         </div>
                     ` : undefined}
-                    <div id="container" style="display: flex; justify-content: center; height: 100%;">
-                        <div class="maingrid">
-                            <!-- Gridstack element on which the Grid will be rendered -->
-                            <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
-                                <!--<div class="grid-stack-item">
-                                    <div class="grid-stack-item-content">
-                                        <span>Temporary content</span>
-                                    </div>
-                                </div>-->
-                                ${this.template?.widgets?.map((widget) => {
-                                    return html`
-                                        <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { console.log('Click!'); this.onGridItemClick(widget.gridItem!); }}">
-                                            <div class="grid-stack-item-content">
-                                                ${until(this.getWidgetContent(widget).then((content) => {
-                                                    return content;
-                                                }))}
-                                            </div>
+                    ${this.rerenderPending ? html`
+                        <div>
+                            <span>Rendering Grid...</span>
+                        </div>
+                    ` : html`
+                        <div id="container" style="display: flex; justify-content: center; height: 100%;">
+                            <div class="maingrid">
+                                <!-- Gridstack element on which the Grid will be rendered -->
+                                <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
+                                    <!--<div class="grid-stack-item">
+                                        <div class="grid-stack-item-content">
+                                            <span>Temporary content</span>
                                         </div>
-                                    `
-                                })}
+                                    </div>-->
+                                    ${this.template?.widgets?.map((widget) => {
+                                        return html`
+                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { console.log('Click!'); this.onGridItemClick(widget.gridItem!); }}">
+                                                <div class="grid-stack-item-content">
+                                                    ${until(this.getWidgetContent(widget).then((content) => {
+                                                        return content;
+                                                    }))}
+                                                </div>
+                                            </div>
+                                        `
+                                    })}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    `}
                 </div>
             `
     }

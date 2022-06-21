@@ -209,8 +209,7 @@ export function getHeightByPreviewSize(sizeOption?: DashboardSizeOption): string
     }
 }
 
-export function getPreviewSizeByPx(width?: string, height?: string, previewSize?: DashboardSizeOption): DashboardSizeOption {
-    console.log(previewSize);
+export function getPreviewSizeByPx(width?: string, height?: string): DashboardSizeOption {
     if(width == null && height == null) {
         console.error("Neither the previewWidth, nor previewHeight, nor previewSize attributes have been specified!"); return DashboardSizeOption.CUSTOM;
     } else {
@@ -527,7 +526,7 @@ export class OrDashboardBuilder extends LitElement {
                                                          @rerender="${() => { this.rerenderPending = false; }}"
                                     ></or-dashboard-editor>-->
                                     <or-dashboard-preview class="editor" style="background: transparent;"
-                                                          .template="${this.currentTemplate}" .rerenderPending="${this.rerenderPending}"
+                                                          .template="${this.currentTemplate}"
                                                           .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
                                                           .previewSize="${this.previewSize}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
