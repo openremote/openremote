@@ -26,8 +26,8 @@ const global = {
     startTime: 0,
     stepTime: 0,
     getAppUrl: (realm) => {
-        //const managerUrl = process.env.managerUrl || "https://localhost/";
-        const managerUrl = process.env.managerUrl || "localhost:8080/";
+        const managerUrl = process.env.managerUrl || "https://localhost/";
+        //const managerUrl = process.env.managerUrl || "localhost:8080/";
         const appUrl = managerUrl + "manager/?realm=";
         return appUrl + realm;
     },
