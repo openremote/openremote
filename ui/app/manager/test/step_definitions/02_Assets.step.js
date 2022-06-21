@@ -37,9 +37,9 @@ Then('Save', async function () {
     let startTime = new Date() / 1000
     // press enter to enable the save button (could be any other action) (or this will be fixed then no pre-action needed)
     await this.click('#edit-container')
-    await this.wait(200)  // wait for button to enabled 
+    await this.wait(300)  // wait for button to enabled 
     await this.click('button:has-text("Save")')
-    await this.wait(300)
+    await this.wait(500)
     const count = await this.count('button:has-text("Save")[disable]')
     await expect(count).toEqual(0)
     this.logTime(startTime)

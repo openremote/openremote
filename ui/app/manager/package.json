@@ -23,7 +23,8 @@
     "serve": "npx tsc -b --clean && npx shx rm -rf dist && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "test": "cucumber-js --config test/cucumber.js ./test/features/*.feature --tags 'not @separate'",
-    "testTagged": "cucumber-js --config test/cucumber.js ./test/features/*.feature --tags "
+    "testTagged": "cucumber-js --config test/cucumber.js ./test/features/*.feature --tags",
+    "testSeparated":"cucumber-js --config test/cucumber.js ./test/features/*.feature --tags @separate"
   },
   "dependencies": {
     "@openremote/or-app": "^1.0.4"

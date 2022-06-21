@@ -1,13 +1,11 @@
-const { setWorldConstructor, World, BeforeAll, AfterAll, After, Status, setDefaultTimeout, SnippetsFormatter } = require("@cucumber/cucumber");
+const { setWorldConstructor, World, BeforeAll, AfterAll, After, Status, setDefaultTimeout } = require("@cucumber/cucumber");
 const { ChromiumBroswer: ChromiumBrowser } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
 const { expect } = require("@playwright/test");
 const { join } = require('path');
 const { Before } = require("@cucumber/cucumber");
-const { setDefaultResultOrder } = require("dns");
 const exp = require("constants");
-const { loadavg } = require("os");
 require('dotenv').config();
 
 /**
@@ -108,14 +106,17 @@ class CustomWorld extends World {
      * @param {String} user  Username (admin or other)
      */
     async login(user) {
-        // if (!fs.existsSync('test/storageState.json')) {
-        let password = global.passwords[user];
-        await this.page?.fill('input[name="username"]', user);
-        await this.page?.fill('input[name="password"]', password);
-        await this.page?.keyboard.press('Enter');
-        //await this.page?.context().storageState({ path: 'test/storageState.json' });
-        await this.page.waitForNavigation(user == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
-        //}
+        const isLogin = await this.isVisible('input[name="username"]') || false
+        if (isLogin) {
+            // if (!fs.existsSync('test/storageState.json')) {
+            let password = global.passwords[user];
+            await this.page?.fill('input[name="username"]', user);
+            await this.page?.fill('input[name="password"]', password);
+            await this.page?.keyboard.press('Enter');
+            //await this.page?.context().storageState({ path: 'test/storageState.json' });
+            await this.page.waitForNavigation(user == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
+            //}
+        }
     }
 
 
@@ -280,11 +281,12 @@ class CustomWorld extends World {
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await Promise.all([
                 this.click('button:has-text("create")'),
-                //this.page.waitForNavigation(global.getAppUrl().substring(0, 23) + '#/realms', { waitUntil: 'load', timeout: 0 }),
+                //this.page.waitForNavigation(global.getAppUrl().substring(0, 23) + '#/realms', { waitUntil: 'load', timeout: 50000 }),
                 this.page.waitForNavigation(global.getAppUrl().substring(0, 26) + '#/realms', { waitUntil: 'load', timeout: 0 })
             ]);
+            await this.wait(3000)
             await console.log("Realm: " + name + " added,   " + timeCost(false) + "s")
-            await this.wait(500)
+
         }
         const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
         await expect(count).toEqual(1)
@@ -327,7 +329,8 @@ class CustomWorld extends World {
             await this.click('div[role="button"]:has-text("Roles")');
             await this.click('li[role="menuitem"]:has-text("Read")');
             await this.click('li[role="menuitem"]:has-text("Write")');
-            await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 5000 });
+            await this.wait(2000)
+            await this.click('div[role="button"]:has-text("Roles")')
             // create user
             await this.click('button:has-text("create")')
             console.log("User added,    " + timeCost(false) + "s")
@@ -496,7 +499,7 @@ class CustomWorld extends World {
         await this.fill('div[role="alertdialog"] input[type="text"]', realm)
         await this.click('button:has-text("OK")')
         // wait for backend to response
-        await this.wait(1500)
+        await this.wait(3000)
         try {
             const count = await this.count('[aria-label="attribute list"] span:has-text("smartcity")')
             //const count = await this.page.locator('[aria-label="attribute list"] span:has-text("smartcity")').count()
@@ -575,10 +578,8 @@ class CustomWorld extends World {
         if (level !== "lv0") {
             await this.openApp("master")
             await this.wait(300)
-            const isLogin = await this.isVisible('input[name="username"]')
-            if (isLogin) {
-                await this.login("admin")
-            }
+            await this.login("admin")
+
             // add realm
             await this.wait(300)
             const isPickerVisible = await this.isVisible('#realm-picker')
