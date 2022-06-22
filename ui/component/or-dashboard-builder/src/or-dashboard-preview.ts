@@ -12,7 +12,8 @@ import {
     DashboardWidgetType
 } from "@openremote/model";
 import {
-    DashboardSizeOption, generateGridItem,
+    DashboardSizeOption,
+    generateGridItem,
     generateWidgetDisplayName,
     getHeightByPreviewSize,
     getPreviewSizeByPx,
@@ -49,8 +50,6 @@ const editorStyling = css`
         border-radius: 8px;
         overflow-x: hidden;
         overflow-y: scroll;
-        height: 540px; /* TODO: Should be set according to input */
-        width: 960px; /* TODO: Should be set according to input */
         padding: 4px;
         position: absolute;
         z-index: 0;
@@ -227,24 +226,6 @@ export class OrDashboardPreview extends LitElement {
             }
         }
 
-        // When switching from fullscreen and back the width/height needs to be set correctly
-        /*if(changedProperties.has("fullscreen")) {
-            if(this.fullscreen) {
-                this.previewSize = DashboardSizeOption.FULLSCREEN;
-            } else {
-                this.previewSize = DashboardSizeOption.MEDIUM;
-            }
-
-            const mainGridContainer = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
-            if(mainGridContainer != null) {
-                if(this.previewSize == DashboardSizeOption.FULLSCREEN) {
-                    mainGridContainer.classList.add("maingrid__fullscreen");
-                } else if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
-                    mainGridContainer.classList.remove("maingrid__fullscreen");
-                }
-            }
-        }*/
-
         if(changedProperties.has("selectedWidget")) {
             if(this.selectedWidget) {
                 if(changedProperties.get("selectedWidget") != undefined) { // if previous selected state was a different widget
@@ -279,9 +260,6 @@ export class OrDashboardPreview extends LitElement {
         }*/
 
         if(changedProperties.has("previewWidth") || changedProperties.has("previewHeight")) {
-            const gridHTML = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
-            gridHTML.style.width = this.previewWidth!;
-            gridHTML.style.height = this.previewHeight!;
             this.previewSize = getPreviewSizeByPx(this.previewWidth, this.previewHeight);
         }
 
@@ -479,7 +457,7 @@ export class OrDashboardPreview extends LitElement {
                         </div>
                     ` : html`
                         <div id="container" style="display: flex; justify-content: center; height: 100%;">
-                            <div class="maingrid">
+                            <div class="maingrid" style="width: ${this.previewWidth}; height: ${this.previewHeight}">
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
                                     <!--<div class="grid-stack-item">
