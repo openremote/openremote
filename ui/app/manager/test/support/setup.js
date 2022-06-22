@@ -288,11 +288,11 @@ class CustomWorld extends World {
             //     this.page.waitForNavigation(global.getAppUrl().substring(0, 26) + '#/realms', { waitUntil: 'load', timeout: 0 })
             // ]);
             await this.wait(5000)
+            const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
+            await expect(count).toEqual(1)
+            await this.wait(500)
             await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s")
-
         }
-        const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
-        await expect(count).toEqual(1)
     }
 
     /**
@@ -300,6 +300,7 @@ class CustomWorld extends World {
      * @param {String} name name of custom realm
      */
     async switchToRealmByRealmPicker(name) {
+        await this.wait(300)
         await this.click('#realm-picker');
         await this.wait(300)
         await this.click(`li[role="menuitem"]:has-text("${name}")`)
@@ -728,7 +729,7 @@ function timeCost(startAtBeginning) {
 }
 
 
-setDefaultTimeout(1000 * 15);
+setDefaultTimeout(1000 * 20);
 setWorldConstructor(CustomWorld);
 
 
