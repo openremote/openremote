@@ -175,7 +175,7 @@ export function sizeOptionToString(sizeOption: DashboardSizeOption): string {
     }
 }
 
-export function sortScreenPresets(presets: DashboardScreenPreset[], largetosmall?: boolean): DashboardScreenPreset[] {
+export function sortScreenPresets(presets: DashboardScreenPreset[], largetosmall: boolean = false): DashboardScreenPreset[] {
     return presets.sort((a, b) => {
         if(a.breakpoint != null && b.breakpoint != null) {
             if(a.breakpoint > b.breakpoint) {
@@ -219,6 +219,16 @@ export function getPreviewSizeByPx(width?: string, height?: string): DashboardSi
         else if(width == '480px' && height == '640px') { return DashboardSizeOption.SMALL; }
         else { return DashboardSizeOption.CUSTOM; }
     }
+}
+
+export function getActivePreset(gridWidth: number, presets: DashboardScreenPreset[]): DashboardScreenPreset | undefined {
+    let activePreset: DashboardScreenPreset | undefined;
+    sortScreenPresets(presets, true).forEach((preset) => {
+        if(preset.breakpoint != null && gridWidth <= preset.breakpoint) {
+            activePreset = preset;
+        }
+    });
+    return activePreset;
 }
 
 

@@ -7,6 +7,8 @@ import {
     Attribute,
     AttributeRef,
     DashboardGridItem,
+    DashboardScalingPreset,
+    DashboardScreenPreset,
     DashboardTemplate,
     DashboardWidget,
     DashboardWidgetType
@@ -14,7 +16,7 @@ import {
 import {
     DashboardSizeOption,
     generateGridItem,
-    generateWidgetDisplayName,
+    generateWidgetDisplayName, getActivePreset,
     getHeightByPreviewSize,
     getPreviewSizeByPx,
     getWidthByPreviewSize,
@@ -178,6 +180,9 @@ export class OrDashboardPreview extends LitElement {
     }
 
     @state()
+    protected activePreset?: DashboardScreenPreset;
+
+    @state()
     protected resizeObserver?: ResizeObserver;
 
     /* ------------------------------------------- */
@@ -304,6 +309,7 @@ export class OrDashboardPreview extends LitElement {
                 this.grid.destroy(false);
 
                 if(force) { // Fully rerender the grid by switching rerenderPending on and off, and continue after that.
+                    console.log("Recreating the grid after major changes.");
                     this.rerenderPending = true;
                     await this.updateComplete;
                     await this.waitUntil((_: any) => !this.rerenderPending);
@@ -311,6 +317,24 @@ export class OrDashboardPreview extends LitElement {
                     this.grid = undefined;
                 }
             }
+            const width: number = (this.fullscreen ? this.clientWidth : (+(this.previewWidth?.replace(/\D/g, "")!)));
+            const newPreset = getActivePreset(width, this.template.screenPresets!);
+            if(this.activePreset && newPreset?.scalingPreset != this.activePreset?.scalingPreset) {
+                if(!(recreate && force)) { // Fully rerender the grid by switching rerenderPending on and off, and continue after that.
+                    if(!recreate) { // If not destroyed yet, destroy first.
+                        this.grid?.destroy(false);
+                    }
+                    console.log("Recreating the grid after activePreset change.");
+                    this.rerenderPending = true;
+                    await this.updateComplete;
+                    await this.waitUntil((_: any) => !this.rerenderPending);
+                    gridElement = this.shadowRoot?.getElementById("gridElement");
+                    this.grid = undefined;
+                }
+            }
+            this.activePreset = newPreset;
+
+
             // If grid got reset, setup the ResizeObserver again.
             if(this.grid == null) {
                 const gridHTML = this.shadowRoot?.querySelector(".maingrid");
@@ -321,10 +345,10 @@ export class OrDashboardPreview extends LitElement {
             this.grid = GridStack.init({
                 acceptWidgets: (this.editMode),
                 animate: true,
-                cellHeight: 'initial',
+                cellHeight: (this.activePreset?.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / 4) : 'initial'),
                 cellHeightThrottle: 100,
                 column: this.template?.columns,
-                disableOneColumnMode: true,
+                disableOneColumnMode: (this.activePreset?.scalingPreset != DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN),
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                     scroll: true
@@ -334,7 +358,7 @@ export class OrDashboardPreview extends LitElement {
                 resizable: {
                     handles: 'all'
                 },
-                staticGrid: (!this.editMode),
+                staticGrid: (this.activePreset?.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? true : (!this.editMode)),
                 styleInHead: false
             }, gridElement!);
 
