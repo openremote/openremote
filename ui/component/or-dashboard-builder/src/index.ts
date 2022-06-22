@@ -201,7 +201,7 @@ export function getWidthByPreviewSize(sizeOption?: DashboardSizeOption): string 
 
 export function getHeightByPreviewSize(sizeOption?: DashboardSizeOption): string {
     switch (sizeOption) {
-        case DashboardSizeOption.FULLSCREEN: return 'auto';
+        case DashboardSizeOption.FULLSCREEN: return '100%';
         case DashboardSizeOption.LARGE: return '1080px';
         case DashboardSizeOption.MEDIUM: return '720px';
         case DashboardSizeOption.SMALL: return '640px';
@@ -213,7 +213,7 @@ export function getPreviewSizeByPx(width?: string, height?: string): DashboardSi
     if(width == null && height == null) {
         console.error("Neither the previewWidth, nor previewHeight, nor previewSize attributes have been specified!"); return DashboardSizeOption.CUSTOM;
     } else {
-        if(width == '100%' && height == 'auto') { return DashboardSizeOption.FULLSCREEN; }
+        if(width == '100%' && height == '100%') { return DashboardSizeOption.FULLSCREEN; }
         else if(width == '1920px' && height == '1080px') { return DashboardSizeOption.LARGE; }
         else if(width == '1280px' && height == '720px') { return DashboardSizeOption.MEDIUM; }
         else if(width == '480px' && height == '640px') { return DashboardSizeOption.SMALL; }
@@ -537,7 +537,7 @@ export class OrDashboardBuilder extends LitElement {
                                     ></or-dashboard-editor>-->
                                     <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .template="${this.currentTemplate}"
-                                                          .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
+                                                          .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}"
                                                           .previewSize="${this.previewSize}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                           @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"

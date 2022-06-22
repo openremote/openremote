@@ -16,7 +16,8 @@ import {
 import {
     DashboardSizeOption,
     generateGridItem,
-    generateWidgetDisplayName, getActivePreset,
+    generateWidgetDisplayName,
+    getActivePreset,
     getHeightByPreviewSize,
     getPreviewSizeByPx,
     getWidthByPreviewSize,
@@ -152,9 +153,6 @@ export class OrDashboardPreview extends LitElement {
     @property()
     protected editMode: boolean = false;
 
-    @property() // Makes it fullscreen or shows controls for editing the size
-    protected fullscreen: boolean = true;
-
     @property()
     protected previewWidth?: string;
 
@@ -251,7 +249,7 @@ export class OrDashboardPreview extends LitElement {
             }
         }
 
-        if(changedProperties.has("editMode") && changedProperties.has("fullscreen")) {
+        if(changedProperties.has("editMode")) {
             console.log("Setting up Grid.. [#4]");
             this.setupGrid(true, false);
         }
@@ -269,14 +267,14 @@ export class OrDashboardPreview extends LitElement {
         }
 
         if(changedProperties.has("previewSize") && this.previewSize != DashboardSizeOption.CUSTOM) {
-            const mainGridContainer = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
+            /*const mainGridContainer = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
             if(mainGridContainer != null) {
                 if(this.previewSize == DashboardSizeOption.FULLSCREEN) {
                     mainGridContainer.classList.add("maingrid__fullscreen");
                 } else if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
                     mainGridContainer.classList.remove("maingrid__fullscreen");
                 }
-            }
+            }*/
             this.previewWidth = getWidthByPreviewSize(this.previewSize);
             this.previewHeight = getHeightByPreviewSize(this.previewSize);
         }
@@ -318,7 +316,7 @@ export class OrDashboardPreview extends LitElement {
                     this.grid = undefined;
                 }
             }
-            const width: number = (this.fullscreen ? this.clientWidth : (+(this.previewWidth?.replace(/\D/g, "")!)));
+            const width: number = ((this.previewSize == DashboardSizeOption.FULLSCREEN) ? this.clientWidth : (+(this.previewWidth?.replace(/\D/g, "")!)));
             const newPreset = getActivePreset(width, this.template.screenPresets!);
             if(this.activePreset && newPreset?.scalingPreset != this.activePreset?.scalingPreset) {
                 if(!(recreate && force)) { // Fully rerender the grid by switching rerenderPending on and off, and continue after that.
@@ -482,7 +480,7 @@ export class OrDashboardPreview extends LitElement {
                         </div>
                     ` : html`
                         <div id="container" style="display: flex; justify-content: center; height: 100%;">
-                            <div class="maingrid" style="width: ${this.previewWidth}; height: ${this.previewHeight}">
+                            <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}">
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
                                     <!--<div class="grid-stack-item">
