@@ -4,7 +4,7 @@ Feature: Delete
     Background: Navigation
         Given Setup "lv1"
 
-    @Desktop @delete_realm
+    @Desktop @delete_realm @separate
     Scenario: Delete realm
         When Login to OpenRemote "master" realm as "admin"
         Then Switch to "smartcity" realm

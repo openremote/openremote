@@ -6,14 +6,14 @@ const { expect } = require("@playwright/test");
  */
 
 Then('Delete realm', { timeout: 60000 }, async function () {
-  let startTime =new Date() / 1000
+  let startTime = new Date() / 1000
   await this.switchToRealmByRealmPicker("master")
   await this.deleteRealm("smartcity")
   this.logTime(startTime)
 })
 
 Then('We should not see the Realm picker', async function () {
-  let startTime =new Date() / 1000
+  let startTime = new Date() / 1000
 
   await this.goToRealmStartPage("master")
 
@@ -28,7 +28,7 @@ Then('We should not see the Realm picker', async function () {
  * delete role
  */
 Then('Delete role', { timeout: 50000 }, async function () {
-  let startTime =new Date() / 1000
+  let startTime = new Date() / 1000
 
   // reproduce the preparation steps to start from the beginning
   await this.navigateToTab("Map")
@@ -56,7 +56,7 @@ Then('Delete role', { timeout: 50000 }, async function () {
 })
 
 Then('We should not see the Custom role', async function () {
-  let startTime =new Date() / 1000
+  let startTime = new Date() / 1000
   const count = await this.count('text=Custom')
   await expect(count).toEqual(0)
   this.logTime(startTime)
@@ -68,7 +68,7 @@ Then('We should not see the Custom role', async function () {
  * only admin user has the rights to delete user
  */
 Then('Delete user', async function () {
-  let startTime =new Date() / 1000
+  let startTime = new Date() / 1000
 
   await this.click('td:has-text("smartcity")')
   await this.click('button:has-text("delete")')
@@ -79,7 +79,7 @@ Then('Delete user', async function () {
 })
 
 Then('We should not see the {string} user', async function (user) {
-  let startTime =new Date() / 1000
+  let startTime = new Date() / 1000
   const count = await this.count(`td:has-text("${user}")`)
   await expect(count).toEqual(0)
   this.logTime(startTime)
@@ -88,8 +88,8 @@ Then('We should not see the {string} user', async function (user) {
 /**
  * delete assets
  */
-Then('Delete assets', async function () {
-  let startTime =new Date() / 1000
+Then('Delete assets', { timeout: 30000 }, async function () {
+  let startTime = new Date() / 1000
   await this.deleteSelectedAsset("Battery")
   await this.wait(300)
   await this.deleteSelectedAsset("Solar Panel")
@@ -101,7 +101,7 @@ Then('Delete assets', async function () {
 
 Then('We should see an empty asset column', async function () {
 
-  let startTime =new Date() / 1000
+  let startTime = new Date() / 1000
 
   const count_console = await this.count('text=Console')
   const count_solar = await this.count('text=Solar Panel')
@@ -110,7 +110,7 @@ Then('We should see an empty asset column', async function () {
   await expect(count_console).toEqual(1)
   await expect(count_solar).toEqual(0)
   await expect(count_battery).toEqual(0)
-  
+
   this.logTime(startTime)
 })
 
