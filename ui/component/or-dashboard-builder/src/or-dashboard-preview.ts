@@ -283,7 +283,8 @@ export class OrDashboardPreview extends LitElement {
 
         if(changedProperties.has("rerenderPending")) {
             if(this.rerenderPending) {
-                setTimeout(() => { this.rerenderPending = false; }, 200);
+                this.rerenderPending = false;
+                // setTimeout(() => { this.rerenderPending = false; }, 50);
             }
         }
     }
