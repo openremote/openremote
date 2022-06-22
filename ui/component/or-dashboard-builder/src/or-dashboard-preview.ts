@@ -437,7 +437,7 @@ export class OrDashboardPreview extends LitElement {
     }
 
     onGridItemClick(gridItem: DashboardGridItem) {
-        if(this.editMode) {
+        if(!this.grid?.opts.staticGrid) {
             if(this.selectedWidget?.gridItem?.id == gridItem.id) {
                 this.selectedWidget = undefined;
             } else {
@@ -492,7 +492,7 @@ export class OrDashboardPreview extends LitElement {
                                     </div>-->
                                     ${this.template?.widgets?.map((widget) => {
                                         return html`
-                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { console.log('Click!'); this.onGridItemClick(widget.gridItem!); }}">
+                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem!); }}">
                                                 <div class="grid-stack-item-content">
                                                     ${until(this.getWidgetContent(widget).then((content) => {
                                                         return content;
