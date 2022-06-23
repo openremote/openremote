@@ -651,13 +651,14 @@ jobs:
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
         shell: python
-        run: |
+        run: |        
           import json
           import os
           import sys
           import subprocess
           
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
+          sys.exit(0)
           
           # Output inputs and secrets as environment variables for build
           for key, value in inputsAndSecrets.items():
