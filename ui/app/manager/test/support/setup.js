@@ -549,7 +549,15 @@ class CustomWorld extends World {
      */
     async save() {
         await this.click('#edit-container')
+        await this.wait(200)  // wait for button to enabled 
         await this.click('button:has-text("Save")')
+        await this.wait(200)
+        const isDisabled = await page.locator('button:has-text("Save")').isDisabled()
+        if(!isDisabled){
+            this.click('button:has-text("Save")')
+            await this.wait(200)
+        }
+        await expect(await page.locator('button:has-text("Save")')).toBeDisabled()
     }
 
     /**
