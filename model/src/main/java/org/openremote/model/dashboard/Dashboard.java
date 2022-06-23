@@ -36,6 +36,12 @@ public class Dashboard {
     @Column(name = "OWNER_ID", nullable = false)
     protected String ownerId;
 
+    @Column(name = "VIEW_ACCESS", nullable = false)
+    protected DashboardAccess viewAccess;
+
+    @Column(name = "EDIT_ACCESS", nullable = false)
+    protected DashboardAccess editAccess;
+
     @NotBlank(message = "{Dashboard.displayName.NotBlank}")
     @Column(name = "DISPLAY_NAME", nullable = false)
     protected String displayName;
@@ -64,6 +70,8 @@ public class Dashboard {
     public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
     }
+    public void setViewAccess(DashboardAccess access) { this.viewAccess = access; }
+    public void setEditAccess(DashboardAccess access) { this.editAccess = access; }
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
@@ -77,6 +85,8 @@ public class Dashboard {
     public String getRealm() { return this.realm; }
     public long getVersion() { return this.version; }
     public String getOwnerId() { return this.ownerId; }
+    public DashboardAccess getViewAccess() { return this.viewAccess; }
+    public DashboardAccess getEditAccess() { return this.editAccess; }
     public String getDisplayName() { return this.displayName; }
     public DashboardTemplate getTemplate() { return this.template; }
 }

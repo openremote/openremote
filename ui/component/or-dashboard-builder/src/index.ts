@@ -10,7 +10,7 @@ import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-
 import "@openremote/or-icon";
 import {style} from "./style";
 import {ORGridStackNode} from "./or-dashboard-preview"; //nosonar
-import {Dashboard, DashboardGridItem, DashboardScalingPreset,
+import {Dashboard, DashboardAccess, DashboardGridItem, DashboardScalingPreset,
     DashboardScreenPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor5 } from "@openremote/core";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
@@ -172,6 +172,21 @@ export function sizeOptionToString(sizeOption: DashboardSizeOption): string {
         case DashboardSizeOption.MEDIUM: { return "Medium"; }
         case DashboardSizeOption.SMALL: { return "Small"; }
         case DashboardSizeOption.CUSTOM: { return "Custom Size"; }
+    }
+}
+export function stringToDashboardAccess(access: string): DashboardAccess {
+    switch (access) {
+        case "Public": { return DashboardAccess.PUBLIC; }
+        case "Realm users": { return DashboardAccess.SHARED; }
+        case "Only me": { return DashboardAccess.PRIVATE; }
+        default: { return DashboardAccess.SHARED; }
+    }
+}
+export function dashboardAccessToString(access: DashboardAccess): string {
+    switch (access) {
+        case DashboardAccess.PUBLIC: { return "Public"; }
+        case DashboardAccess.SHARED: { return "Realm users"; }
+        case DashboardAccess.PRIVATE: { return "Only me"; }
     }
 }
 
@@ -576,7 +591,7 @@ export class OrDashboardBuilder extends LitElement {
                                         <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
                                             <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                             <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
-                                                <or-dashboard-boardsettings .template="${this.currentTemplate}"
+                                                <or-dashboard-boardsettings .dashboard="${this.selectedDashboard}"
                                                                             @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force == true ? this.rerenderPending = true : undefined); }}"
                                                 ></or-dashboard-boardsettings>
                                             </div>

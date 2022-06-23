@@ -9,11 +9,13 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.dashboard.Dashboard;
+import org.openremote.model.dashboard.DashboardAccess;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,15 +66,23 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     // Getting ALL dashboards from a realm
     @SuppressWarnings("java:S2326")
-    protected <T extends Dashboard> Dashboard[] findAllOfRealm(String realm) {
+    protected <T extends Dashboard> Dashboard[] findAllOfRealm(String realm, String userId) {
         Object[] result = persistenceService.doReturningTransaction(em -> {
             try {
                 CriteriaBuilder cb = em.getCriteriaBuilder();
                 CriteriaQuery<Dashboard> cq = cb.createQuery(Dashboard.class);
                 Root<Dashboard> root = cq.from(Dashboard.class);
-                CriteriaQuery<Dashboard> all = cq.select(root).where(cb.like(root.get("realm"), realm));
+                List<Predicate> predicates = new ArrayList<>();
+                predicates.add(cb.like(root.get("realm"), realm));
+                predicates.add(cb.or(
+                        root.get("viewAccess").in(DashboardAccess.PUBLIC, DashboardAccess.SHARED),
+                        cb.and(root.get("viewAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId))
+                ));
+                CriteriaQuery<Dashboard> all = cq.select(root).where(predicates.toArray(new Predicate[]{}));
+                        //.where(cb.and(root.get("viewAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId)));
                 TypedQuery<Dashboard> allQuery = em.createQuery(all);
-                return allQuery.getResultList().toArray();
+                Dashboard[] dashboards = allQuery.getResultList().toArray(new Dashboard[0]);
+                return dashboards;
 
             } catch (Exception e) {
                 e.printStackTrace();

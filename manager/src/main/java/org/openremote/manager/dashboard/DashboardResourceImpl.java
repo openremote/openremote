@@ -6,6 +6,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.dashboard.DashboardResource;
+import org.openremote.model.dashboard.DashboardAccess;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.ValueUtil;
 
@@ -34,7 +35,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             if(!isRealmActiveAndAccessible(realm)) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            return this.dashboardStorageService.findAllOfRealm(realm);
+            return this.dashboardStorageService.findAllOfRealm(realm, getUserId());
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
@@ -55,6 +56,8 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
                 throw new WebApplicationException(FORBIDDEN);
             }
             dashboard.setOwnerId(getUserId());
+            dashboard.setViewAccess(DashboardAccess.SHARED);
+            dashboard.setEditAccess(DashboardAccess.SHARED);
 
             return this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
 
