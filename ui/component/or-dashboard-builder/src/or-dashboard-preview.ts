@@ -482,7 +482,10 @@ export class OrDashboardPreview extends LitElement {
                         </div>
                     ` : html`
                         <div id="container" style="display: flex; justify-content: center; height: 100%;">
-                            <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}">
+                            ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                                <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
+                            ` : undefined}
+                            <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}">
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
                                     ${repeat(this.template.widgets!, (item) => item.id, (widget) => {
