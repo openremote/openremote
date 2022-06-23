@@ -26,6 +26,7 @@ import {
 } from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {until} from "lit/directives/until.js";
+import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -384,6 +385,7 @@ export class OrDashboardPreview extends LitElement {
                             foundWidget.gridItem.h = node.h;
                         }
                     });
+                    console.log("Dispatching 'changed' event!");
                     this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
                 }
             });
@@ -483,12 +485,7 @@ export class OrDashboardPreview extends LitElement {
                             <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}">
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
-                                    <!--<div class="grid-stack-item">
-                                        <div class="grid-stack-item-content">
-                                            <span>Temporary content</span>
-                                        </div>
-                                    </div>-->
-                                    ${this.template?.widgets?.map((widget) => {
+                                    ${repeat(this.template.widgets!, (item) => item.id, (widget) => {
                                         return html`
                                             <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem!); }}">
                                                 <div class="grid-stack-item-content">

@@ -142,7 +142,7 @@ export class OrMwcTabs extends LitElement {
                 <div class="mdc-tab-bar" role="tablist" id="tab-bar">
                     <div class="mdc-tab-scroller">
                         <div class="mdc-tab-scroller__scroll-area">
-                            <div class="mdc-tab-scroller__scroll-content">
+                            <div class="mdc-tab-scroller__scroll-content" @click="${() => { console.log(this.mdcTabBar); }}">
                                 ${this.items?.map((menuItem => { return html`
                                     <button class="mdc-tab" role="tab" aria-selected="false" tabindex="${this.items?.indexOf(menuItem)}">
                                     <span class="mdc-tab__content">
