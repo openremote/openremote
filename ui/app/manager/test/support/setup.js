@@ -287,9 +287,14 @@ class CustomWorld extends World {
             //this.page.waitForNavigation(global.getAppUrl().substring(0, 23) + '#/realms', { waitUntil: 'load', timeout: 50000 }),
             //     this.page.waitForNavigation(global.getAppUrl().substring(0, 26) + '#/realms', { waitUntil: 'load', timeout: 0 })
             // ]);
-            await this.wait(7000)
-            const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
-            await expect(count).toEqual(1)
+            await this.wait(8000)
+            try {
+                const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
+                await expect(count).toEqual(1)
+            }
+            catch (e) {
+                console.log(e)
+            }
             await this.wait(300)
             await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s")
         }
