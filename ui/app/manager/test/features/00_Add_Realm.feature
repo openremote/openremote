@@ -1,4 +1,4 @@
-@OpenRemote @add_realm
+@OpenRemote @settings @add_realm
 Feature: Setup
 
     Background: Setup

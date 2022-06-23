@@ -283,15 +283,9 @@ class CustomWorld extends World {
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await this.click('button:has-text("create")')
-            await this.wait(8000)
-            try {
-                const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
-                await expect(count).toEqual(1)
-            }
-            catch (e) {
-                console.log(e)
-            }
-            await this.wait(300)
+            await this.wait(6000)
+            // const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
+            // await expect(count).toEqual(1)
             await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s")
         }
     }
@@ -648,7 +642,7 @@ class CustomWorld extends World {
         await this.goToRealmStartPage("master")
         await this.login("admin")
         // must wait for the realm picker to be rendered
-        await this.wait(600)
+        await this.wait(1000)
         const isPickerVisible = await this.isVisible('#realm-picker')
         if (isPickerVisible) {
             // switch to master realm to ensure being able to delete custom realm
@@ -729,7 +723,7 @@ function timeCost(startAtBeginning) {
 }
 
 
-setDefaultTimeout(1000 * 20);
+setDefaultTimeout(1000 * 22);
 setWorldConstructor(CustomWorld);
 
 

@@ -3,7 +3,7 @@ const { expect } = require("@playwright/test");
 
 
 
-Then('Add a new Realm', { timeout: 100000 }, async function () {
+Then('Add a new Realm', { timeout: 120000 }, async function () {
     let startTime =new Date() / 1000
     await this.addRealm("smartcity")
     this.logTime(startTime)
