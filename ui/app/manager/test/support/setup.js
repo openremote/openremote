@@ -91,6 +91,7 @@ class CustomWorld extends World {
     async goToRealmStartPage(realm) {
         const url = global.getAppUrl(realm);
         await this.page.goto(url);
+        await this.wait(500)
     }
 
     /**
@@ -283,7 +284,7 @@ class CustomWorld extends World {
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await this.click('button:has-text("create")')
-            await this.wait(6000)
+            await this.wait(6500)
             // const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
             // await expect(count).toEqual(1)
             await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s")

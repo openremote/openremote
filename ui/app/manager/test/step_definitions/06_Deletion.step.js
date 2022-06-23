@@ -88,7 +88,7 @@ Then('We should not see the {string} user', async function (user) {
 /**
  * delete assets
  */
-Then('Delete assets', { timeout: 30000 }, async function () {
+Then('Delete assets', { timeout: 40000 }, async function () {
   let startTime = new Date() / 1000
   await this.deleteSelectedAsset("Battery")
   await this.wait(300)
