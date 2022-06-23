@@ -328,7 +328,7 @@ class CustomWorld extends World {
             await this.click('div[role="button"]:has-text("Roles")');
             await this.click('li[role="menuitem"]:has-text("Read")');
             await this.click('li[role="menuitem"]:has-text("Write")');
-            await this.wait(2000)
+            await this.wait(1000)
             await this.click('div[role="button"]:has-text("Roles")')
             // create user
             await this.click('button:has-text("create")')
@@ -552,12 +552,12 @@ class CustomWorld extends World {
         await this.wait(200)  // wait for button to enabled 
         await this.click('button:has-text("Save")')
         await this.wait(200)
-        const isDisabled = await page.locator('button:has-text("Save")').isDisabled()
+        const isDisabled = await this.page.locator('button:has-text("Save")').isDisabled()
         if(!isDisabled){
             this.click('button:has-text("Save")')
             await this.wait(200)
         }
-        await expect(await page.locator('button:has-text("Save")')).toBeDisabled()
+        await expect(await this.page.locator('button:has-text("Save")')).toBeDisabled()
     }
 
     /**
