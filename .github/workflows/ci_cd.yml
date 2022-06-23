@@ -651,14 +651,14 @@ jobs:
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
         shell: python
-        run: |
+        run: |        
           import json
           import os
           import sys
           import subprocess
           
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
-          
+
           # Output inputs and secrets as environment variables for build
           for key, value in inputsAndSecrets.items():
             if "." in key:
@@ -685,7 +685,7 @@ jobs:
         env:
           CMD: ${{ steps.install-command.outputs.value }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
-        timeout-minutes: 10
+        timeout-minutes: 20
         
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
