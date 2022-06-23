@@ -51,7 +51,7 @@ Then('Delete role', { timeout: 50000 }, async function () {
   }
   await this.press('Enter')
   await this.click('div[role="alertdialog"] button:has-text("Delete")')
-  await this.wait(200)
+  await this.wait(100)
   this.logTime(startTime)
 })
 

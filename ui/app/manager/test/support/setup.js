@@ -282,11 +282,7 @@ class CustomWorld extends World {
             await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
-            // await Promise.all([
             await this.click('button:has-text("create")')
-            //this.page.waitForNavigation(global.getAppUrl().substring(0, 23) + '#/realms', { waitUntil: 'load', timeout: 50000 }),
-            //     this.page.waitForNavigation(global.getAppUrl().substring(0, 26) + '#/realms', { waitUntil: 'load', timeout: 0 })
-            // ]);
             await this.wait(8000)
             try {
                 const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
@@ -687,13 +683,6 @@ BeforeAll(async function () {
             args: ["--use-gl=desktop"]
         }
     });
-
-    // if (fs.existsSync('test/storageState.json')) {
-    //     context = await global.browser.newContext({
-    //         storageState: 'test/storageState.json',
-    //     });
-    // }
-    // else { }
     context = await global.browser.newContext({ ignoreHTTPSErrors: true });
 
     let page = await context.newPage()

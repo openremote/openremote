@@ -98,7 +98,7 @@ Then('Update location of {int} and {int}', { timeout: 30000 }, async function (l
     await this.wait(2000)
     // location_x and location_y are given by the example data
     // currently it's not implmented as dragging the map and clicking on a random place (could be possible in the future)
-    await page.mouse.click(location_x, location_y, { delay: 600 })
+    await page.mouse.click(location_x, location_y, { delay: 1000 })
     await this.click('button:has-text("OK")')
     this.logTime(startTime)
 })

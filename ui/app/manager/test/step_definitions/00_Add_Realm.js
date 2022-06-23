@@ -23,7 +23,6 @@ When('Select smartcity realm', async function () {
 Then('We see the smartcity realm', async function () {
     const { page } = this;
     let startTime =new Date() / 1000
-    // textcontent() will return muiltiple lines 
     const text = await page.locator('div[id="realm-picker"]').innerText()
     await expect(text).toBe("smartcity")
     this.logTime(startTime)
