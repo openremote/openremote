@@ -717,6 +717,7 @@ jobs:
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
         run: |
+          exit 0
           ${{ steps.deployment-docker-command.outputs.value }}
 
       - name: Do deployments
