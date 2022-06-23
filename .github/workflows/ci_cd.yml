@@ -658,8 +658,7 @@ jobs:
           import subprocess
           
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
-          sys.exit(0)
-          
+
           # Output inputs and secrets as environment variables for build
           for key, value in inputsAndSecrets.items():
             if "." in key:
@@ -717,7 +716,6 @@ jobs:
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
         run: |
-          exit 0
           ${{ steps.deployment-docker-command.outputs.value }}
 
       - name: Do deployments
