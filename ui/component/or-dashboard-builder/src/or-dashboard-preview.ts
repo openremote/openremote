@@ -468,9 +468,6 @@ export class OrDashboardPreview extends LitElement {
                             <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"
                                           @or-mwc-input-changed="${() => { const newWidth = this.previewHeight; const newHeight = this.previewWidth; this.previewWidth = newWidth; this.previewHeight = newHeight; }}">
                             </or-mwc-input>
-                            <or-mwc-input id="test-btn" type="${InputType.BUTTON}" icon="home"
-                                          @or-mwc-input-changed="${() => { console.log(this.grid?.getGridItems())}}"
-                            ></or-mwc-input>
                             <or-mwc-input id="test2-btn" type="${InputType.BUTTON}" icon="reload"
                                           @or-mwc-input-changed="${() => { this.requestUpdate(); }}"
                             ></or-mwc-input>

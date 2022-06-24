@@ -61,6 +61,7 @@ export class OrDashboardBrowser extends LitElement {
                 const sidebarGrid = GridStack.init({
                     acceptWidgets: false,
                     column: 4,
+                    cellHeight: 67,
                     disableOneColumnMode: true,
                     disableResize: true,
                     draggable: {
@@ -79,6 +80,7 @@ export class OrDashboardBrowser extends LitElement {
                 const backgroundGrid = GridStack.init({
                     staticGrid: true,
                     column: 4,
+                    cellHeight: 67,
                     disableOneColumnMode: true,
                     margin: 8
 

@@ -89,6 +89,7 @@ export class OrMwcTabs extends LitElement {
             if(tabBarElement != null) {
                 this.mdcTabBar = new MDCTabBar(tabBarElement); // init of material component
                 this.mdcTabBar.listen("MDCTabBar:activated", (event: CustomEvent) => {
+                    console.log("MDCTabBar:activated event triggered!");
                     this.index = event.detail.index;
                 });
             }
