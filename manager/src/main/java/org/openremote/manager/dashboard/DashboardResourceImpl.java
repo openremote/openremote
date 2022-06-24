@@ -75,7 +75,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            this.dashboardStorageService.save(ValueUtil.clone(dashboard));
+            this.dashboardStorageService.update(ValueUtil.clone(dashboard), getUserId());
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
@@ -85,7 +85,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     @Override
     public void delete(RequestParams requestParams, List<String> fields) {
         try {
-            this.dashboardStorageService.delete(fields);
+            this.dashboardStorageService.delete(fields, getUserId());
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);

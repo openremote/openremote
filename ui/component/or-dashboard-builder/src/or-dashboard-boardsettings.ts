@@ -68,10 +68,24 @@ export class OrDashboardBoardsettings extends LitElement {
 
     /* -------------------------------- */
 
+    private setViewAccess(access: DashboardAccess) {
+        this.dashboard!.viewAccess = access;
+        if(access == DashboardAccess.PRIVATE) {
+            this.dashboard!.editAccess = DashboardAccess.PRIVATE;
+        } else if(this.dashboard?.editAccess == DashboardAccess.PRIVATE) {
+            this.dashboard!.editAccess = access;
+        }
+        this.requestUpdate();
+    }
+    private setEditAccess(access: DashboardAccess) {
+        this.dashboard!.editAccess = access;
+        this.requestUpdate();
+    }
+
     protected render() { //nosonar
         if(this.dashboard?.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
-            const scalingPresets = [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, DashboardScalingPreset.REDIRECT, DashboardScalingPreset.BLOCK_DEVICE];
+            const scalingPresets = [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, /*DashboardScalingPreset.REDIRECT,*/ DashboardScalingPreset.BLOCK_DEVICE];
             const accessOptions = [dashboardAccessToString(DashboardAccess.PRIVATE), dashboardAccessToString(DashboardAccess.SHARED), dashboardAccessToString(DashboardAccess.PUBLIC)]
             return html`
                 <!-------------------->
@@ -88,7 +102,7 @@ export class OrDashboardBoardsettings extends LitElement {
                                 <or-mwc-input class="permissionInput" compact outlined type="${InputType.SELECT}" style="width: 250px;"
                                               .options="${accessOptions}"
                                               .value="${dashboardAccessToString(this.dashboard.viewAccess!)}"
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.dashboard!.viewAccess = stringToDashboardAccess(event.detail.value); }}"
+                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.setViewAccess(stringToDashboardAccess(event.detail.value)); }}"
                                 ></or-mwc-input>
                             </div>
                             <div style="margin-bottom: 24px;">
@@ -98,9 +112,10 @@ export class OrDashboardBoardsettings extends LitElement {
                                     <span>the dashboard?</span>
                                 </div>
                                 <or-mwc-input class="permissionInput" compact outlined type="${InputType.SELECT}" style="width: 250px;"
-                                          .options="${accessOptions}"
-                                          .value="${dashboardAccessToString(this.dashboard.editAccess!)}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.dashboard!.editAccess = stringToDashboardAccess(event.detail.value); }}"
+                                              .disabled="${(this.dashboard.viewAccess == DashboardAccess.PRIVATE)}" 
+                                              .options="${accessOptions}" 
+                                              .value="${dashboardAccessToString(this.dashboard.editAccess!)}" 
+                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.setEditAccess(stringToDashboardAccess(event.detail.value)); }}"
                                 ></or-mwc-input>
                             </div>
                         </div>
