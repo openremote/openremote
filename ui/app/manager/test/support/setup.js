@@ -266,6 +266,7 @@ class CustomWorld extends World {
      */
     async navigateToTab(tab) {
         await this.click(`#desktop-left a:has-text("${tab}")`)
+        await this.wait(1000)
     }
 
     /**
@@ -284,7 +285,7 @@ class CustomWorld extends World {
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await this.click('button:has-text("create")')
-            await this.wait(6500)
+            await this.wait(10000)
             // const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
             // await expect(count).toEqual(1)
             await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s")
@@ -319,7 +320,7 @@ class CustomWorld extends World {
         const isVisible = await this.isVisible('main[role="main"] >> text=' + username)
         // add user if not exist
         if (!isVisible) {
-
+            // type in name
             await this.click('.mdi-plus >> nth=0')
             await this.fill('input[type="text"] >> nth=0', username)
             // type in password
@@ -333,6 +334,7 @@ class CustomWorld extends World {
             await this.click('div[role="button"]:has-text("Roles")')
             // create user
             await this.click('button:has-text("create")')
+            await this.wait(1000)
             console.log(`User: "${username}" added,    ` + timeCost(false) + "s")
         }
         else {
@@ -554,7 +556,7 @@ class CustomWorld extends World {
         await this.click('button:has-text("Save")')
         await this.wait(200)
         const isDisabled = await this.page.locator('button:has-text("Save")').isDisabled()
-        if(!isDisabled){
+        if (!isDisabled) {
             this.click('button:has-text("Save")')
             await this.wait(200)
         }
@@ -599,9 +601,9 @@ class CustomWorld extends World {
             await this.openApp("master")
             await this.login("admin")
 
-            // add realm
-            await this.wait(300)
+            await this.wait(1000)
             const isPickerVisible = await this.isVisible('#realm-picker')
+            // add realm
             if (!isPickerVisible) {
                 await this.navigateToMenuItem("Realms")
                 await this.addRealm(realm)

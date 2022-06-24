@@ -5,17 +5,17 @@ const { Given, When, Then } = require("@cucumber/cucumber");
  * Setup
  */
 
-Given('Setup {string}', { timeout: 100000 }, async function (section) {
+Given('Setup {string}', { timeout: 150000 }, async function (section) {
 
     await this.setup("smartcity", section)
 })
 
-Given('Setup {string} for map', { timeout: 100000 }, async function (section) {
+Given('Setup {string} for map', { timeout: 150000 }, async function (section) {
 
     await this.setup("smartcity", section, "location")
 })
 
-Given('Setup {string} for rules', { timeout: 100000 }, async function (section) {
+Given('Setup {string} for rules', { timeout: 150000 }, async function (section) {
 
     await this.setup("smartcity", section, "config")
 })

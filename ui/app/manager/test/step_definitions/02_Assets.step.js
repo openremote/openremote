@@ -145,6 +145,7 @@ Then('Check on readonly of {string}', async function (attribute) {
 When('Go to panel page', async function () {
     let startTime = new Date() / 1000
     await this.click('button:has-text("View")')
+    await this.wait(1000)
     this.logTime(startTime)
 })
 

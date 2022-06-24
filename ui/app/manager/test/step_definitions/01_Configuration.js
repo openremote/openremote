@@ -12,23 +12,21 @@ Then('Switch to {string} realm', async function (realm) {
 
 Then("Add a new user", async function () {
     let startTime = new Date() / 1000
-    // type in username
+    // type in name
     await this.click('.mdi-plus >> nth=0')
-    await this.fill('input[type="text"] >> nth=0', 'smartcity')
-
+    await this.fill('input[type="text"] >> nth=0', "smartcity")
     // type in password
-    await this.fill('#password-user0 input[type="password"]', 'smartcity')
-    await this.fill('#repeatPassword-user0 input[type="password"]', 'smartcity')
-
+    await this.fill('#password-user0 input[type="password"]', "smartcity")
+    await this.fill('#repeatPassword-user0 input[type="password"]', "smartcity")
     // select permissions
     await this.click('div[role="button"]:has-text("Roles")');
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
+    await this.wait(1000)
     await this.click('div[role="button"]:has-text("Roles")')
-    await this.wait(500)
-
-    //create
+    // create user
     await this.click('button:has-text("create")')
+    await this.wait(1000)
     this.logTime(startTime)
 })
 
@@ -57,7 +55,7 @@ Then('Create a new role', async function () {
     await this.fill(`#attribute-meta-row-${count - 1} input[type="text"] >> nth=1`, 'read:asset, write:asset')
     await this.check(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div or-mwc-input:nth-child(3) #field #component #elem >> nth=0`)
     await this.check(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div:nth-child(2) or-mwc-input:nth-child(3) #field #component #elem`)
-    
+
     await this.click('button:has-text("create")')
     this.logTime(startTime)
 })

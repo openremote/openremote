@@ -27,7 +27,7 @@ Then('We should not see the Realm picker', async function () {
 /**
  * delete role
  */
-Then('Delete role', { timeout: 50000 }, async function () {
+Then('Delete role', { timeout: 60000 }, async function () {
   let startTime = new Date() / 1000
 
   // reproduce the preparation steps to start from the beginning
