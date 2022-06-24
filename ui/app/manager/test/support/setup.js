@@ -273,7 +273,7 @@ class CustomWorld extends World {
      *  create Realm with name
      * @param {String} name realm name
      */
-    async addRealm(name) {
+    async addRealm(name, first = false) {
 
         setStepStartTime()
 
@@ -285,7 +285,8 @@ class CustomWorld extends World {
 
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await this.click('button:has-text("create")')
-            await this.wait(10000)
+
+            await this.wait(first == true ? 15000 : 10000)
             // const count = await this.count(`[aria-label="attribute list"] span:has-text("${name}")`)
             // await expect(count).toEqual(1)
             await console.log("Realm: " + `"${name}"` + " added,   " + timeCost(false) + "s")
