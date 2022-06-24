@@ -452,7 +452,7 @@ export class OrDashboardPreview extends LitElement {
         console.log("Rendering the following template:");
         console.log(this.template);
         return html`
-                <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;">
+                <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selectedWidget = undefined; }}}">
                     ${this.editMode ? html`
                         <div id="view-options">
                             <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" disabled outlined label="50%"></or-mwc-input>
