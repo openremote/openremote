@@ -4,12 +4,12 @@ import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
 import 'gridstack/dist/h5/gridstack-dd-native';
-import { Dashboard, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
+import { Dashboard, DashboardAccess, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
 import manager from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu"; //nosonar
-import { DashboardSizeOption } from ".";
+import {dashboardAccessToString, DashboardSizeOption} from ".";
 
 //language=css
 const treeStyling = css`
@@ -110,9 +110,16 @@ export class OrDashboardTree extends LitElement {
             { icon: "tablet", text: "Medium", value: DashboardSizeOption.MEDIUM },
             { icon: "cellphone", text: "Small", value: DashboardSizeOption.SMALL }
         ]
-        const dashboardItems: ListItem[] = [];
-        if(this.dashboards != null && this.dashboards.length > 0) {
-            this.dashboards?.forEach((dashboard) => { dashboardItems.push({ icon: "view-dashboard", text: dashboard.displayName, value: dashboard.id})})
+        const groups = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC];
+        const dashboardItems: ListItem[][] = []
+        if(this.dashboards!.length > 0) {
+            groups.forEach((group) => {
+                const foundDashboards = this.dashboards?.filter((dashboard) => { return dashboard.viewAccess == group; });
+                const items: ListItem[] = [];
+                foundDashboards?.forEach((dashboard) => { items.push({ icon: "view-dashboard", text: dashboard.displayName, value: dashboard.id }); })
+                dashboardItems.push(items);
+            });
+            console.log(dashboardItems);
         }
         return html`
             <div id="menu-header">
@@ -135,13 +142,15 @@ export class OrDashboardTree extends LitElement {
                 ` : undefined}
             </div>
             <div id="content">
-                <div>
-                    ${(dashboardItems.length > 0) ? html`
-                    <or-mwc-list .listItems="${dashboardItems}" .values="${this.selected?.id}" @or-mwc-list-changed="${(event: CustomEvent) => { if(event.detail.length == 1) { this.selectDashboard(event.detail[0].value); }}}"></or-mwc-list>
-                ` : html`
-                    <span>No dashboards found!</span>
-                `
-                    }
+                <div style="padding-top: 8px;">
+                    ${dashboardItems.map((items, index) => {
+                        return (items != null && items.length > 0) ? html`
+                            <div style="padding: 8px 0;">
+                                <span style="font-weight: 500; padding-left: 8px; color: #000000;">${dashboardAccessToString(groups[index])}</span>
+                                <or-mwc-list .listItems="${items}" .values="${this.selected?.id}" @or-mwc-list-changed="${(event: CustomEvent) => { if(event.detail.length == 1) { this.selectDashboard(event.detail[0].value); }}}"></or-mwc-list>
+                            </div>
+                        ` : undefined
+                    })}
                 </div>
             </div>
         `
