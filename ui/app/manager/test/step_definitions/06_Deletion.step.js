@@ -74,7 +74,7 @@ Then('Delete user', async function () {
   await this.click('button:has-text("delete")')
   await this.click('div[role="alertdialog"] button:has-text("Delete")')
 
-  await this.wait(300)
+  await this.wait(500)
   this.logTime(startTime)
 })
 
@@ -91,7 +91,7 @@ Then('We should not see the {string} user', async function (user) {
 Then('Delete assets', { timeout: 40000 }, async function () {
   let startTime = new Date() / 1000
   await this.deleteSelectedAsset("Battery")
-  await this.wait(300)
+  await this.wait(500)
   await this.deleteSelectedAsset("Solar Panel")
 
   // must wait to confirm that assets have been deleted

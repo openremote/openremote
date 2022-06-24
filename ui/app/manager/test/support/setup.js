@@ -91,7 +91,7 @@ class CustomWorld extends World {
     async goToRealmStartPage(realm) {
         const url = global.getAppUrl(realm);
         await this.page.goto(url);
-        await this.wait(500)
+        await this.wait(1500)
     }
 
     /**
@@ -266,7 +266,7 @@ class CustomWorld extends World {
      */
     async navigateToTab(tab) {
         await this.click(`#desktop-left a:has-text("${tab}")`)
-        await this.wait(1000)
+        await this.wait(1500)
     }
 
     /**
@@ -277,7 +277,7 @@ class CustomWorld extends World {
 
         setStepStartTime()
 
-        await this.wait(300)
+        await this.wait(500)
         const isVisible = await this.isVisible(`[aria-label="attribute list"] span:has-text("${name}")`)
         if (!isVisible) {
             await this.click('text=Add Realm');
@@ -298,9 +298,9 @@ class CustomWorld extends World {
      * @param {String} name name of custom realm
      */
     async switchToRealmByRealmPicker(name) {
-        await this.wait(300)
+        await this.wait(500)
         await this.click('#realm-picker');
-        await this.wait(300)
+        await this.wait(500)
         await this.click(`li[role="menuitem"]:has-text("${name}")`)
     }
 
@@ -317,7 +317,7 @@ class CustomWorld extends World {
         // go to user page
         await this.click('#menu-btn-desktop');
         await this.click('text=Users');
-        await this.wait(300)
+        await this.wait(500)
         const isVisible = await this.isVisible('main[role="main"] >> text=' + username)
         // add user if not exist
         if (!isVisible) {
@@ -331,11 +331,11 @@ class CustomWorld extends World {
             await this.click('div[role="button"]:has-text("Roles")');
             await this.click('li[role="menuitem"]:has-text("Read")');
             await this.click('li[role="menuitem"]:has-text("Write")');
-            await this.wait(1000)
+            await this.wait(1500)
             await this.click('div[role="button"]:has-text("Roles")')
             // create user
             await this.click('button:has-text("create")')
-            await this.wait(1000)
+            await this.wait(1500)
             console.log(`User: "${username}" added,    ` + timeCost(false) + "s")
         }
         else {
@@ -389,7 +389,7 @@ class CustomWorld extends World {
 
                         await this.save()
 
-                        await this.wait(300)
+                        await this.wait(500)
                     }
                     await this.unselectAll()
                     console.log("Asset: " + `"${asset.name}"` + " with " + configOrLoction + " updated has been added,  " + timeCost(false) + "s")
@@ -469,14 +469,14 @@ class CustomWorld extends World {
      * @param {String} attr attribute's name
      */
     async configItem(item_1, item_2, attr) {
-        await this.wait(300)
+        await this.wait(500)
         await this.click(`td:has-text("${attr} ") >> nth=0`)
-        await this.wait(300)
+        await this.wait(500)
         await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
         await this.click(`li[role="checkbox"]:has-text("${item_1}")`)
         await this.click(`li[role="checkbox"]:has-text("${item_2}")`)
         await this.click('div[role="alertdialog"] button:has-text("Add")')
-        await this.wait(300)
+        await this.wait(500)
 
         // close attribute menu
         await this.click(`td:has-text("${attr}") >> nth=0`)
@@ -490,9 +490,9 @@ class CustomWorld extends World {
      */
     async setConfigItem(item_1, item_2, attr_1, attr_2) {
         await this.configItem(item_1, item_2, attr_1)
-        await this.wait(300)
+        await this.wait(500)
         await this.configItem(item_1, item_2, attr_2)
-        await this.wait(300)
+        await this.wait(500)
     }
 
     /**
@@ -502,10 +502,10 @@ class CustomWorld extends World {
     async deleteRealm(realm) {
 
         setStepStartTime()
-        await this.wait(300)
+        await this.wait(500)
         await this.click(`[aria-label="attribute list"] span:has-text("${realm}")`)
         await this.click('button:has-text("Delete")')
-        await this.wait(300)
+        await this.wait(500)
         await this.fill('div[role="alertdialog"] input[type="text"]', realm)
         await this.click('button:has-text("OK")')
         // wait for backend to response
@@ -536,7 +536,7 @@ class CustomWorld extends World {
             await this.click(`text=${asset}`)
             await this.click('.mdi-delete')
             await this.click('button:has-text("Delete")')
-            await this.wait(1000)
+            await this.wait(1500)
             let visibile = await this.count(`text=${asset}`)
             await expect(visibile).toBeFalsy()
         }
@@ -602,7 +602,7 @@ class CustomWorld extends World {
             await this.openApp("master")
             await this.login("admin")
 
-            await this.wait(1000)
+            await this.wait(1500)
             const isPickerVisible = await this.isVisible('#realm-picker')
             // add realm
             if (!isPickerVisible) {
@@ -654,7 +654,7 @@ class CustomWorld extends World {
         await this.goToRealmStartPage("master")
         await this.login("admin")
         // must wait for the realm picker to be rendered
-        await this.wait(1000)
+        await this.wait(1500)
         const isPickerVisible = await this.isVisible('#realm-picker')
         if (isPickerVisible) {
             // switch to master realm to ensure being able to delete custom realm

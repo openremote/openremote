@@ -24,7 +24,7 @@ Then('Click and nevigate', async function () {
 
 Then('We are at {string} page', async function (asset) {
     let startTime = new Date() / 1000
-    await this.wait(1000)
+    await this.wait(1500)
     const assetPage = await this.isVisible(`#asset-header >> text=${asset}`)
     await expect(assetPage).toBeTruthy()
     this.logTime(startTime)

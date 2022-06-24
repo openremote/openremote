@@ -22,11 +22,11 @@ Then("Add a new user", async function () {
     await this.click('div[role="button"]:has-text("Roles")');
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
-    await this.wait(1000)
+    await this.wait(1500)
     await this.click('div[role="button"]:has-text("Roles")')
     // create user
     await this.click('button:has-text("create")')
-    await this.wait(1000)
+    await this.wait(1500)
     this.logTime(startTime)
 })
 
@@ -57,6 +57,7 @@ Then('Create a new role', async function () {
     await this.check(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div:nth-child(2) or-mwc-input:nth-child(3) #field #component #elem`)
 
     await this.click('button:has-text("create")')
+    await this.wait(1500)
     this.logTime(startTime)
 })
 
@@ -80,7 +81,7 @@ Then('Select the new role and unselect others', async function () {
     await this.click('li[role="menuitem"]:has-text("Read")')
     await this.click('li[role="menuitem"]:has-text("Write")')
     await this.click('li[role="menuitem"]:has-text("Custom")')
-    await this.wait(300)
+    await this.wait(500)
     await this.press("Enter")
     this.logTime(startTime)
 })

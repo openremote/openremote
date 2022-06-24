@@ -20,9 +20,9 @@ When('Go to asset {string} info page', { timeout: 30000 }, async function (name)
     this.logTime(startTime)
 })
 
-Then('Go to modify mode', { timeout: 20000 }, async function () {
+Then('Go to modify mode', { timeout: 30000 }, async function () {
     let startTime = new Date() / 1000
-    await this.wait(500)
+    await this.wait(2000)
     await this.click('button:has-text("Modify")')
     this.logTime(startTime)
 })
@@ -52,7 +52,7 @@ Then('Save', async function () {
 
 Then('We see the asset with name of {string}', async function (name) {
     let startTime = new Date() / 1000
-    await this.wait(300)
+    await this.wait(500)
     const count = await this.count(`text=${name}`)
 
     // reason why it's 1 is because that this scnario runs in a outline
@@ -145,7 +145,7 @@ Then('Check on readonly of {string}', async function (attribute) {
 When('Go to panel page', async function () {
     let startTime = new Date() / 1000
     await this.click('button:has-text("View")')
-    await this.wait(1000)
+    await this.wait(1500)
     this.logTime(startTime)
 })
 
