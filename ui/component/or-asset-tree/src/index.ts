@@ -904,7 +904,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _onFilterInput(newValue: string | undefined, force: boolean): void {
-        console.log('TYPING');
         let currentFilter: OrAssetTreeFilter = this.parseFromInputFilter(newValue);
 
         if (Util.objectsEqual(this._filter, currentFilter,true)) {
@@ -912,9 +911,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         this._filter = currentFilter;
-
-        console.log(this._assetTypeFilter);
-        console.log(this._filter);
 
         if (this._searchInputTimer) {
             clearTimeout(this._searchInputTimer);
