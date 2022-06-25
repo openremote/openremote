@@ -1132,8 +1132,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return this.filterTreeNode(childNode, matcher, nodeOrDescendantMatches);
         });
 
-        nodeOrDescendantMatches = nodeOrDescendantMatches || childOrDescendantMatches.some(m => m);
-        currentNode.expanded = nodeOrDescendantMatches && currentNode.children.length > 0;
+        let childMatches: boolean = childOrDescendantMatches.some(m => m);
+        nodeOrDescendantMatches = nodeOrDescendantMatches || childMatches;
+        currentNode.expanded = childMatches && currentNode.children.length > 0 && this._filterInput.value.length > 0;
         currentNode.hidden = !nodeOrDescendantMatches && !parentMatching;
         return nodeOrDescendantMatches;
     }
