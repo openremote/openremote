@@ -1126,6 +1126,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         };
     }
 
+    protected isAnyFilter(): boolean {
+        return this._filter.asset !== undefined || this._filter.assetType.length > 0 || this._filter.attribute.length > 0;
+    }
+
     protected filterTreeNode(currentNode: UiAssetTreeNode, matcher: (asset: Asset) => boolean, parentMatching: boolean = false): boolean {
         let nodeOrDescendantMatches = matcher(currentNode.asset!);
         currentNode.notMatchingFilter = !nodeOrDescendantMatches;
@@ -1136,7 +1140,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         let childMatches: boolean = childOrDescendantMatches.some(m => m);
         nodeOrDescendantMatches = nodeOrDescendantMatches || childMatches;
-        currentNode.expanded = childMatches && currentNode.children.length > 0 && this._filterInput.value.length > 0;
+        currentNode.expanded = childMatches && currentNode.children.length > 0 && this.isAnyFilter();
         currentNode.hidden = !nodeOrDescendantMatches && !parentMatching;
         return nodeOrDescendantMatches;
     }
@@ -1622,7 +1626,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div class="node-container" style="padding-left: ${level * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
-                        ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? '#d3d3d3;' : undefined))}
+                        ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? 'd3d3d3' : undefined))}
                         <span style="color: ${filterColorForNonMatchingAsset ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic">
