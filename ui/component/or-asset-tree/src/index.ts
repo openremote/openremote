@@ -465,6 +465,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         
                         if (this._filter.assetType.length > 0) {
                             this._assetTypeFilter = this._filter.assetType[0];
+                        } else {
+                            this._assetTypeFilter = '';
                         }
                     }
                 }}"></or-icon>
@@ -473,7 +475,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div class="advanced-filter">
                     ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
                         this.assetTypeSelect(), 
-                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }),
+                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }), 
                         undefined,
                         (v: string[] | string) => {
                             this._assetTypeFilter = (v as string);
@@ -902,6 +904,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _onFilterInput(newValue: string | undefined, force: boolean): void {
+        console.log('TYPING');
         let currentFilter: OrAssetTreeFilter = this.parseFromInputFilter(newValue);
 
         if (Util.objectsEqual(this._filter, currentFilter,true)) {
@@ -909,6 +912,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         this._filter = currentFilter;
+
+        console.log(this._assetTypeFilter);
+        console.log(this._filter);
 
         if (this._searchInputTimer) {
             clearTimeout(this._searchInputTimer);
