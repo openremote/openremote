@@ -174,6 +174,7 @@ export class OrEditAssetPanel extends LitElement {
     protected asset!: Asset;
 
     protected attributeTemplatesAndValidators: TemplateAndValidator[] = [];
+    protected changedAttributes: string[] = [];
 
     public static get styles() {
         return [
@@ -181,6 +182,23 @@ export class OrEditAssetPanel extends LitElement {
             panelStyles,
             style
         ];
+    }
+
+    public attributeUpdated(attributeName: string) {
+        if (!this.asset) {
+            return;
+        }
+        this.changedAttributes.push(attributeName);
+
+        // Request re-render
+        this.requestUpdate();
+    }
+
+    shouldUpdate(changedProperties: PropertyValues): boolean {
+        if (changedProperties.has("asset")) {
+            this.changedAttributes = [];
+        }
+        return super.shouldUpdate(changedProperties);
     }
 
     protected render() {
@@ -261,8 +279,8 @@ export class OrEditAssetPanel extends LitElement {
 
         return html`
             <div id="edit-wrapper">
-                ${getPanel("properties", {}, html`${properties}`) || ``}
-                ${getPanel("attribute_plural", {}, html`${attributes}`) || ``}
+                ${getPanel("0", {type: "info", title: "properties"}, html`${properties}`) || ``}
+                ${getPanel("1", {type: "info", title: "attribute_plural"}, html`${attributes}`) || ``}
             </div>
         `;
     }
@@ -338,6 +356,14 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _onAttributeModified(attribute: Attribute<any>, newValue: any) {
+
+        // Check if modification came from external change
+        const index = this.changedAttributes.indexOf(attribute.name!);
+        if (index > -1) {
+            this.changedAttributes.splice(index, 1);
+            return;
+        }
+
         attribute.value = newValue;
         attribute.timestamp = undefined; // Clear timestamp so server will set this
         this._onModified();

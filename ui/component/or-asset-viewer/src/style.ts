@@ -3,12 +3,18 @@ import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor
 
 // language=CSS
 export const panelStyles = css`
+    .panelContainer {
+        flex: 1 1 100%;
+        box-sizing: border-box;
+        min-width: 400px;
+    }
+    
     .panel {
         background-color: var(--internal-or-asset-viewer-panel-color);
         border: 1px solid #e5e5e5;
         border-radius: 5px;
-        max-width: 100%;
         position: relative;
+        margin: 10px 0;
     }
 
     .panel-content-wrapper {
@@ -54,6 +60,7 @@ export const panelStyles = css`
             border-radius: 0;
             border-right: none;
             border-left: none;
+            flex-basis: 100%;
         }
     }
     
@@ -101,17 +108,16 @@ export const style = css`
     #view-container, #edit-container {
         flex: 0 1 auto;
         overflow: auto;
-        min-height: calc(100vh - 88px - var(--internal-or-header-height));
     }
     
     #view-container {
         margin-top: 0;
         box-sizing: border-box;
-        display: grid;
-        padding: 0 20px 20px;
-        grid-gap: 10px;
-        grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
-        grid-auto-rows: 5px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;
+        padding: 0 15px 15px;
 
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadein 0.3s; /* Firefox < 16 */
@@ -270,12 +276,6 @@ export const style = css`
         .tabletHidden {
             display: none;
         }
-
-        #view-container {
-            grid-auto-rows: auto;
-            grid-template-columns: 100% !important;
-            min-height: unset;
-        }
     }
 
     @media screen and (max-width: 767px) {
@@ -308,6 +308,16 @@ export const style = css`
 
         #edit-container {
             padding: 10px 0;
+        }
+    }
+
+    @media (min-width: 767px) {
+        .view-container {
+            flex-wrap: nowrap;
+        }
+        .panelContainer {
+            flex: 1 1 50%;
+            padding: 0 5px 5px;
         }
     }
 `;

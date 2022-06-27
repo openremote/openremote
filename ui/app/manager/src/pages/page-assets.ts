@@ -178,13 +178,18 @@ export class PageAssets extends Page<AppStateKeyed>  {
 
         this._confirmContinue(() => {
             const nodes = event.detail.detail.newNodes;
+            const assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
 
-            if (Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
-                // User has clicked the same node so let's force reload it
-                this._viewer.reloadAsset();
-            } else {
+            if (!Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
                 this._assetIds = nodes.map((node) => node.asset.id!);
-                this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
+            }
+
+            if (assetId === this._viewer.assetId) {
+                // User has clicked the same node so let's force reload it
+                this._viewer.assetId = undefined;
+                this._viewer.assetId = assetId;
+            } else {
+                this._viewer.assetId = assetId;
                 this._updateRoute(true);
             }
         });
