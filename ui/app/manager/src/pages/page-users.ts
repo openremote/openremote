@@ -431,7 +431,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const realmRoleOptions: string[] = this._realmRoles ? this._realmRoles.filter(cr => !this._realmRolesToExclude.includes(cr.name)).filter(cr => !cr.composite).map(cr => cr.name) : [];
+        const realmRoleOptions: string[] = this._realmRoles ? this._realmRoles.filter(r => !this._realmRolesToExclude.includes(r.name)).filter(r => !r.composite).map(r => r.name) : [];
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
         return html`
