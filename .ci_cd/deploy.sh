@@ -100,8 +100,10 @@ if [ -n "$SSH_USER" ]; then
 fi
 
 # Grant SSH access to this runner's public IP on AWS
-if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
+if [ "$SKIP_SSH_WHITELIST" != 'true' ] && [ -n "$AWS_ACCESS_KEY_ID" ]; then
 
+  echo "Granting AWS SSH access to github runner"
+  
   source temp/aws/login.sh
 
   if [ -n "$CIDR" ]; then
