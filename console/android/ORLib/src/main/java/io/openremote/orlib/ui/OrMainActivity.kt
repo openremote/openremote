@@ -385,25 +385,27 @@ open class OrMainActivity : Activity() {
         }
         // This will be the URL loaded into the webview itself (false for images etc. of the main page)
         // Check page load error URL
-        if (baseUrl != null && baseUrl != failingUrl && connectFailCount < 10) {
-            loadUrl(baseUrl!!)
-            Toast.makeText(this, description, Toast.LENGTH_SHORT).show()
-            connectFailCount++
-            connectFailResetRunnable?.let { connectFailResetHandler!!.removeCallbacks(it) }
-            connectFailResetRunnable = Runnable {
-                connectFailCount = 0
+        if (errorCode >= 500) {
+            if (baseUrl != null && baseUrl != failingUrl && connectFailCount < 10) {
+                loadUrl(baseUrl!!)
+                Toast.makeText(this, description, Toast.LENGTH_SHORT).show()
+                connectFailCount++
+                connectFailResetRunnable?.let { connectFailResetHandler!!.removeCallbacks(it) }
+                connectFailResetRunnable = Runnable {
+                    connectFailCount = 0
+                }
+                connectFailResetHandler = Looper.myLooper()?.let { Handler(it) }
+                connectFailResetHandler!!.postDelayed(connectFailResetRunnable!!, 5000)
+            } else {
+                val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                if (launchIntent != null) {
+                    launchIntent.putExtra(CLEAR_URL, baseUrl)
+                    launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(launchIntent)
+                    finish()
+                }
+                Toast.makeText(applicationContext, "The main page couldn't be opened", Toast.LENGTH_LONG).show()
             }
-            connectFailResetHandler = Looper.myLooper()?.let { Handler(it) }
-            connectFailResetHandler!!.postDelayed(connectFailResetRunnable!!, 5000)
-        } else {
-            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-            if (launchIntent != null) {
-                launchIntent.putExtra(CLEAR_URL, baseUrl)
-                launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(launchIntent)
-                finish()
-            }
-            Toast.makeText(applicationContext, "The main page couldn't be opened", Toast.LENGTH_LONG).show()
         }
     }
 
