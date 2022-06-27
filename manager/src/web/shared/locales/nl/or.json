@@ -279,6 +279,8 @@
   "repeatPassword": "Herhaal wachtwoord",
   "details": "Details",
   "permissions":"Rechten",
+  "linkedAssets":"Gekoppelde assets",
+  "realm_role_plural":"Realm rollen",
   "restrictAccess": "Beperkte toegang",
   "selectRestrictedAssets": "{{number}} assets",
   "restrictedAccessToAssets": "Beperkte toegang tot",
