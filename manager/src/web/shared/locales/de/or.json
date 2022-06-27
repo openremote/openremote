@@ -279,6 +279,7 @@
   "permissions":"Berechtigungen",
   "linkedAssets":"Verbunden assets",
   "realm_role_plural":"Realm rollen",
+  "manager_role_plural":"Manager rollen",
   "restrictAccess": "Zugriff einschränken",
   "selectRestrictedAssets": "{{number}} Assets",
   "restrictedAccessToAssets": "Eingeschränkter Zugriff auf",

@@ -833,7 +833,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                             .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
                                             .type="${InputType.SELECT}" multiple
                                             .options="${compositeRoleOptions}"
-                                            .label="${i18next.t("role_plural")}"
+                                            .label="${i18next.t("manager_role_plural")}"
                                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                 const roleNames = e.detail.value as string[];
                                                 user.roles = this._compositeRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
@@ -870,7 +870,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                         <span>${i18next.t("linkedAssets")}:</span>
                                         <or-mwc-input outlined
                                                       .type="${InputType.BUTTON}"
-                                                      .label="${i18next.t("linkedAssets", {number: user.userAssetLinks.length})}"
+                                                      .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
                                                       @click="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly)}"></or-mwc-input>
                                     </div>
                                 </div>
