@@ -260,13 +260,17 @@ export class PageAssets extends Page<AppStateKeyed>  {
         }
     }
 
-    protected async _onAssetParentChange(newParentId: any) {
+    protected async  _onAssetParentChange(newParentId: any) {
         let parentId: string | undefined = newParentId.parentId;
         let assetsIds: string[] = newParentId.assetsIds;
 
         try {
             if (parentId) {
-                await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
+                if ( !assetsIds.includes(parentId) ) {
+                    await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
+                } else {
+                    showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+                }
             } else {
                 //So need to remove parent from all the selected assets
                 await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
