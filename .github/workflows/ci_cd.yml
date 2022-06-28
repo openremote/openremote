@@ -183,6 +183,7 @@ jobs:
             ui/**
             **/*.md
             **/*.yml
+            manager/src/web/**
 
       # Check which files have changed to only run appropriate tests and checks
       - name: UI files changed
