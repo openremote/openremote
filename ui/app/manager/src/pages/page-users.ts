@@ -819,9 +819,11 @@ export class PageUsers extends Page<AppStateKeyed> {
                                             .label="${i18next.t("realm_role_plural")}"
                                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                 const roleNames = e.detail.value as string[];
-                                                user.realmRoles = this._realmRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
-                                                    return {...r, assigned: true};
+                                                const excludedAndCompositeRoles = user.realmRoles.filter(r => this._realmRolesToExclude.includes(r.name) || r.composite);
+                                                const selectedRoles = this._realmRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
+                                                    return {...r, assigned: true} as Role;
                                                 });
+                                                user.realmRoles = [...excludedAndCompositeRoles, ...selectedRoles];
                                                 this._updateUserSelectedRoles(user, suffix);
                                             }}"></or-mwc-input>
 
@@ -900,17 +902,5 @@ export class PageUsers extends Page<AppStateKeyed> {
                 </td>
             </tr>
         `;
-    }
-
-    protected _addRemoveRealmRole(user: UserModel, roleName: string, add: boolean) {
-        if (!add) {
-            user.realmRoles = user.realmRoles.filter(role => role.name !== roleName);
-        } else {
-            const role = this._realmRoles.find(role => role.name === roleName);
-            if (role) {
-                user.realmRoles.push({...role, assigned: true});
-            }
-        }
-        this.requestUpdate();
     }
 }
