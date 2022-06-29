@@ -225,7 +225,7 @@ class CustomWorld extends World {
 
     /**
      * 
-     * @param {String} element check if the element is visibile in the page
+     * @param {String} element check if the element is visible in the page
      * Note that this element should be the only one in the page
      * @returns {Boolean} if the element if visible 
      */
@@ -328,11 +328,13 @@ class CustomWorld extends World {
             await this.fill('#password-user0 input[type="password"]', password)
             await this.fill('#repeatPassword-user0 input[type="password"]', password)
             // select permissions
-            await this.click('div[role="button"]:has-text("Roles")');
+            await this.click('div[role="button"]:has-text("Realm Roles")')
+            await this.click('li[role="menuitem"]:has-text("Restricted_user")')
+            await this.click('div[role="button"]:has-text("Manager Roles")');
             await this.click('li[role="menuitem"]:has-text("Read")');
             await this.click('li[role="menuitem"]:has-text("Write")');
             await this.wait(1500)
-            await this.click('div[role="button"]:has-text("Roles")')
+            await this.click('div[role="button"]:has-text("Manager Roles")');
             // create user
             await this.click('button:has-text("create")')
             await this.wait(1500)
@@ -425,7 +427,6 @@ class CustomWorld extends World {
             //await this.page?.locator('.mdi-close').first().click()
             await this.click('.mdi-close >> nth=0')
         }
-
 
         await this.wait(500)
     }

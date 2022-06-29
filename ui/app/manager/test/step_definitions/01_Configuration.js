@@ -19,14 +19,16 @@ Then("Add a new user", async function () {
     await this.fill('#password-user0 input[type="password"]', "smartcity")
     await this.fill('#repeatPassword-user0 input[type="password"]', "smartcity")
     // select permissions
-    await this.click('div[role="button"]:has-text("Roles")');
+    await this.click('div[role="button"]:has-text("Realm Roles")')
+    await this.click('li[role="menuitem"]:has-text("Restricted_user")')
+    await this.click('div[role="button"]:has-text("Manager Roles")');
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
-    await this.wait(1500)
-    await this.click('div[role="button"]:has-text("Roles")')
+    await this.wait(500)
+    await this.click('div[role="button"]:has-text("Manager Roles")');
     // create user
     await this.click('button:has-text("create")')
-    await this.wait(1500)
+    await this.wait(500)
     this.logTime(startTime)
 })
 
@@ -77,7 +79,7 @@ Then('We see a new role', async function () {
 Then('Select the new role and unselect others', async function () {
     let startTime = new Date() / 1000
     await this.click('td:has-text("smartcity")')
-    await this.click('div[role="button"]:has-text("Roles")')
+    await this.click('div[role="button"]:has-text("Manager Roles")');
     await this.click('li[role="menuitem"]:has-text("Read")')
     await this.click('li[role="menuitem"]:has-text("Write")')
     await this.click('li[role="menuitem"]:has-text("Custom")')
@@ -110,7 +112,7 @@ Then('We see that assets permission are selected', async function () {
 
 Then('Switch back to origin', async function () {
     let startTime = new Date() / 1000
-    await this.click('text=Roles Custom')
+    await this.click('text=Manager Roles Custom')
     await this.click('li[role="menuitem"]:has-text("Read")')
     await this.click('li[role="menuitem"]:has-text("Write")')
     await this.click('li[role="menuitem"]:has-text("Custom")')
