@@ -111,6 +111,7 @@ export const style = css`
     }
     
     #view-container {
+        flex: 1;
         margin-top: 0;
         box-sizing: border-box;
         display: flex;
@@ -164,7 +165,7 @@ export const style = css`
     }
 
     #asset-header {
-        padding: 20px 30px;
+        padding: 20px 30px 15px;
         display: flex;
         flex: 0 0 auto;
         align-items: center;
@@ -317,7 +318,7 @@ export const style = css`
         }
         .panelContainer {
             flex: 1 1 50%;
-            padding: 0 5px 5px;
+            padding: 0 5px;
         }
     }
 `;

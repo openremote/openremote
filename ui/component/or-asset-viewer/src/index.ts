@@ -535,72 +535,58 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         const attributeChanged = (attributeName: string) => {
             if (hostElement.shadowRoot) {
                 const attributeHistory = hostElement.shadowRoot.getElementById("attribute-history") as OrAttributeHistory;
-                const attributeLabelElem = hostElement.shadowRoot.getElementById(id+"-attribute-label") as HTMLSpanElement;
-
-                if (attributeName && attributeHistory && attributeLabelElem) {
+                if (attributeName && attributeHistory) {
                     let attribute = asset.attributes && asset.attributes![attributeName];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute!.name, attribute);
                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
                     attributeHistory.attribute = attribute;
-                    attributeLabelElem.innerText = label;
                     selectedAttribute = attribute!;
                 }
             }
         };
 
-        const attributePicker = () => {
+        const options = historyAttrs.map((attr) => {
+            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
+            const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
+            return [attr.name, label];
+        });
 
-            let attrTemplate = html`
-            <div class="attribute-picker">
-                ${html`
-                    <span id="${id+"-attribute-label"}">${selectedAttribute || i18next.t("selectAttribute")}</span>
-                    <or-icon icon="chevron-down"></or-icon>
-                `}
-            </div>`;
-
-            const menuItems = historyAttrs.map((attr) => {
-                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
-                const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
-
-                return {
-                    text: label,
-                    value: attr.name!
-                } as ListItem;
-            });
-
-            attrTemplate = html`
-                <div class="attribute-picker-wrapper">
-                ${getContentWithMenuTemplate(
-                    attrTemplate,
-                    menuItems,
-                    (selectedAttribute ? selectedAttribute.name : undefined),
-                    (value: string | string[]) => attributeChanged(value as string))}
-                </div>
-            `;
-
-            return attrTemplate;
-        }
-
+        let attrTemplate = html`
+                <div id="attribute-picker">
+                    <or-mwc-input .checkAssetWrite="${false}" .label="${i18next.t("attribute")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-mwc-input>
+                </div>`;
 
         return html`
             <style>
-               .attribute-picker-wrapper {
-                   position: absolute;
-                   --or-mwc-input-color: currentColor;
-                   top: calc(var(--internal-or-asset-viewer-panel-padding) - 10px);
-                   right: calc(var(--internal-or-asset-viewer-panel-padding) - 10px);
+               #attribute-picker {
+                   flex: 0;
+                   margin: 10px 0;
+                   position: unset;
                }
-               .attribute-picker {
-                   position: relative;
-                   display: flex;
-                   align-items: center;
+               
+               #attribute-picker > or-mwc-input {
+                   width: 250px;
                }
                 
                 or-attribute-history {
                     width: 100%;
+                    --or-attribute-history-controls-margin: 10px 0 10px -5px;
+                    --or-attribute-history-controls-justify-content: flex-start;
                 }
+
+               @media screen and (min-width: 1900px) {
+                   #attribute-picker {
+                       position: absolute;
+                   }
+
+                   or-attribute-history {
+                       --or-attribute-history-controls-margin: 10px 0;
+                       --or-attribute-history-controls-justify-content: flex-end;
+                       min-height: 70px;
+                   }
+               }
             </style>
-            ${attributePicker()}
+            ${attrTemplate}
             <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}" .assetId="${asset.id}"></or-attribute-history>
         `;
     }
