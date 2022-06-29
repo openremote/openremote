@@ -389,7 +389,7 @@ class CustomWorld extends World {
 
                         await this.save()
 
-                        await this.wait(500)
+                        await this.wait(1000)
                     }
                     await this.unselectAll()
                     console.log("Asset: " + `"${asset.name}"` + " with " + configOrLoction + " updated has been added,  " + timeCost(false) + "s")
@@ -509,7 +509,7 @@ class CustomWorld extends World {
         await this.fill('div[role="alertdialog"] input[type="text"]', realm)
         await this.click('button:has-text("OK")')
         // wait for backend to response
-        await this.wait(3000)
+        await this.wait(5000)
         try {
             const count = await this.count('[aria-label="attribute list"] span:has-text("smartcity")')
             await expect(count).toBe(0)

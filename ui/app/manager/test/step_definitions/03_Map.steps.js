@@ -6,12 +6,18 @@ When('Check {string} on map', async function (asset) {
     await this.wait(1000)
     const iconCount = await this.count('.marker-icon')
     await expect(iconCount).toEqual(2)
-    await this.click('div:nth-child(3) .marker-container div or-icon svg path')
-    await this.wait(400)
 
-    const cardPanel = await this.isVisible(`text=${asset}`)
+    await this.click('div:nth-child(3) .marker-container div or-icon svg path')
+    let cardPanel = await this.isVisible(`text=${asset}`)
+    if (cardPanel != true) {
+        await this.click('or-icon > svg > path >> nth=0')
+
+    }
+    cardPanel = await this.isVisible(`text=${asset}`)
+
+    await this.wait(400)
     await expect(cardPanel).toBeTruthy()
-    
+
     this.logTime(startTime)
 })
 

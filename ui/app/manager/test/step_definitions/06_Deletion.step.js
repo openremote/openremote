@@ -27,7 +27,8 @@ Then('We should not see the Realm picker', async function () {
 /**
  * delete role
  */
-Then('Delete role', { timeout: 60000 }, async function () {
+Then('Delete role', { timeout: 30000 }, async function () {
+
   let startTime = new Date() / 1000
 
   // reproduce the preparation steps to start from the beginning
@@ -36,20 +37,8 @@ Then('Delete role', { timeout: 60000 }, async function () {
 
   // delete roles
   await this.click('text=Custom')
-
-  // bad solution costing a lot of time
-  // can't find a way to locate the delete button 
-  // since the sorting of the role is random everytime 
-  // the html tag is in form of "#attribute-meta-row-2" in which number inside is decided by order
-  // if the order is random then then number of html may change every time
-  // then the delete button is not being able to been determined
-
-  // instead i will use tab key to move to the delete button
-  // it's not a decent solution but that's the only way i can come up with
-  for (let i = 0; i < 15; i++) {
-    await this.press('Tab')
-  }
-  await this.press('Enter')
+  await this.wait(100)
+  await this.click('tr[class="attribute-meta-row expanded"] >> button:has-text("delete")')
   await this.click('div[role="alertdialog"] button:has-text("Delete")')
   await this.wait(100)
   this.logTime(startTime)
@@ -88,7 +77,7 @@ Then('We should not see the {string} user', async function (user) {
 /**
  * delete assets
  */
-Then('Delete assets', { timeout: 40000 }, async function () {
+Then('Delete assets', { timeout: 50000 }, async function () {
   let startTime = new Date() / 1000
   await this.deleteSelectedAsset("Battery")
   await this.wait(500)
