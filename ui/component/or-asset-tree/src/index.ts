@@ -439,8 +439,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                               @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
                                   // Means field has lost focus so do filter immediately
                                   this._onFilterInput((e.detail.value as string) || undefined, true);
-                              }}"
-                              trailingSpace="true">
+                              }}">
                               </or-mwc-input>
                 <or-icon id="filterSettingsIcon" icon="tune" @click="${() => {
                     if ( this._filterSetting.classList.contains("visible") ) {

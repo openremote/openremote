@@ -183,6 +183,7 @@ jobs:
             ui/**
             **/*.md
             **/*.yml
+            manager/src/web/**
 
       # Check which files have changed to only run appropriate tests and checks
       - name: UI files changed
@@ -290,7 +291,7 @@ jobs:
         
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3
         id: manager-tag-cache
         with:
           path: |
@@ -550,7 +551,7 @@ jobs:
         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
 
       - name: Yarn cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3
         if: steps.skip-cicd.outputs.value != 'true'
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
@@ -651,14 +652,14 @@ jobs:
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
         shell: python
-        run: |
+        run: |        
           import json
           import os
           import sys
           import subprocess
           
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
-          
+
           # Output inputs and secrets as environment variables for build
           for key, value in inputsAndSecrets.items():
             if "." in key:
@@ -685,7 +686,7 @@ jobs:
         env:
           CMD: ${{ steps.install-command.outputs.value }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
-        timeout-minutes: 10
+        timeout-minutes: 20
         
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''

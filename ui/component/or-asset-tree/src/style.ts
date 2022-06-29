@@ -226,7 +226,7 @@ export const style = css`
     }
     
     #filterInput {
-        padding: 7px 10px;
+        padding: 7px 12px 7px 7px;
     }
     
     #clearIconContainer {
@@ -256,7 +256,7 @@ export const style = css`
     
     #filterSettingsIcon {
         cursor: pointer;
-        margin-right: 5px;
+        margin-right: 12px;
     }
     
     #asset-tree-filter-setting {

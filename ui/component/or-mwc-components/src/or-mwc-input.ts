@@ -596,10 +596,6 @@ const style = css`
     .or-label-with-icon {
         left: 42px !important;
     }
-    
-    .or-trailing-space {
-        width: 78%;
-    }
 `;
 
 @customElement("or-mwc-input")
@@ -768,9 +764,6 @@ export class OrMwcInput extends LitElement {
 
     @property({type: Boolean})
     public resizeVertical: boolean = false;
-
-    @property({type: Boolean})
-    public trailingSpace: boolean = false;
 
     public get nativeValue(): any {
         if (this._mdcComponent) {
@@ -1315,7 +1308,7 @@ export class OrMwcInput extends LitElement {
                                 @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement), (e.target as HTMLTextAreaElement).value)}">${valMinMax[0] ? valMinMax[0] : ""}</textarea>`
                             : html`
                             <input type="${type}" id="elem" aria-labelledby="${ifDefined(label ? "label" : undefined)}"
-                            class="mdc-text-field__input ${this.trailingSpace ? "or-trailing-space" : ""}" ?required="${this.required}" ?readonly="${this.readonly}"
+                            class="mdc-text-field__input" ?required="${this.required}" ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}"
                             step="${this.step ? this.step : "any"}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
@@ -1729,6 +1722,6 @@ export class OrMwcInput extends LitElement {
             return "";
         }
         const opts = options || this.resolveOptions(this.options);
-        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(",");
+        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(", ");
     }
 }
