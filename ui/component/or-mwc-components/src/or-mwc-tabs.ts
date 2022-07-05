@@ -85,6 +85,7 @@ export class OrMwcTabs extends LitElement {
         if (this.iconPosition == null) { this.iconPosition = "left"; }
 
         this.updateComplete.then(() => {
+            console.log("Update Complete triggered in or-mwc-tabs!");
             const tabBarElement = this.shadowRoot?.querySelector('.mdc-tab-bar');
             if(tabBarElement != null) {
                 this.mdcTabBar = new MDCTabBar(tabBarElement); // init of material component
@@ -123,6 +124,7 @@ export class OrMwcTabs extends LitElement {
 
     // If an update happens on either the Index or mdcTabBar object.
     protected updated(changedProperties: Map<string, any>) {
+        console.log(changedProperties);
         if(changedProperties.has('index') || changedProperties.has('mdcTabBar')) {
             if(this.mdcTabBar != null && this.index != null) {
                 this.mdcTabBar.activateTab(this.index);

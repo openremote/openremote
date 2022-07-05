@@ -564,13 +564,8 @@ export class OrDashboardPreview extends LitElement {
                         <div class="gridItem">
                             <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
                                       .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
-                                      showLegend="${_widget.widgetConfig?.showLegend}" .realm="${manager.displayRealm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
+                                      showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${manager.displayRealm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
                             ></or-chart>
-                            ${/*this.editMode*/ false ? html`
-                                <div style="position: absolute; right: 0; bottom: 0; padding: 4px;">
-                                    <span style="font-style: italic;">Uses fake data</span>
-                                </div>
-                            ` : undefined}
                         </div>
                     `;
                 }

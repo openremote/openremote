@@ -9,7 +9,6 @@
     "./src"
   ],
   "references": [
-    { "path": "../../component/or-app" },
-    // { "path": "../../component/or-dashboard-builder" } // Temporarily added this so it can reach <or-dashboard-builder /> locally.
+    { "path": "../../component/or-app" }
   ]
 }

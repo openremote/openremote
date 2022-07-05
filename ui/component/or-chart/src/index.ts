@@ -628,6 +628,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                     </div>
                 ` : (this.shouldShowLegend() ? html`
                     <div id="attribute-list" style="min-height: 50px; min-width: 150px; flex: 0 1 0px; padding: 12px;">
+                        ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
+                            <div>
+                                <span>No attributes connected.</span>
+                            </div>
+                        ` : undefined}
                         ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                             const colourIndex = index % this.colors.length;
                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
