@@ -1724,6 +1724,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         let currentElement = ev.currentTarget as HTMLElement;
         let selectedId: string | null = currentElement.getAttribute('node-asset-id');
 
+        if (!this.selectedIds) {
+            this.selectedIds = [];
+        }
+
         if (selectedId && this.selectedIds && !this.selectedIds.includes(selectedId)) {
             this.selectedIds.push(selectedId);
         }
