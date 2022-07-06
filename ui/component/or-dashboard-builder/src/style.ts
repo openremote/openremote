@@ -28,9 +28,7 @@ export const style = css`
     }
 
     #content {
-        width: 100%;
         display: table-row;
-        /*height: 100%;*/
     }
     #container {
         display: flex;

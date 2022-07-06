@@ -32,7 +32,7 @@ const styling = css`
     /* Header related styling */
     #header {
         display: table-row;
-        height: 0.1%;
+        height: 1px;
         background: white;
     }
     #header-wrapper {

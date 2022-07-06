@@ -2427,7 +2427,7 @@ __metadata:
     "@openremote/model": ^1.0.4
     "@openremote/rest": ^1.0.4
     "@openremote/util": ^1.0.4
-    gridstack: 5.0.0
+    gridstack: ^5.1.1
     lit: ^2.0.2
   languageName: unknown
   linkType: soft
@@ -5511,10 +5511,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gridstack@npm:5.0.0":
-  version: 5.0.0
-  resolution: "gridstack@npm:5.0.0"
-  checksum: 438076867294368c95dbee958d2d3402e6b46ae8e885796acb63420671b828d98d63503dc7935ea3b3662e0c3c0fefa17a270c83f89319935c34f8c5002f38ce
+"gridstack@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "gridstack@npm:5.1.1"
+  checksum: b18be8293696d96c75699a320abb3b0e6c9ab76eba6daa552255aac7b843fd865791b4d21496b25eed557b320b62f12983c60eeb1bc149ce4e3f261197c1f712
   languageName: node
   linkType: hard
 

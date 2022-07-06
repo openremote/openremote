@@ -43,6 +43,7 @@ const editorStyling = css`
         align-items: center;
     }
     /* Margins on view options */
+    #fit-btn { margin-right: 10px; }
     #view-preset-select { margin-left: 20px; }
     #width-input { margin-left: 20px; }
     #height-input { margin-left: 10px; }
@@ -159,6 +160,9 @@ export class OrDashboardPreview extends LitElement {
 
     @property()
     protected previewHeight?: string;
+
+    @property()
+    protected previewZoom: number = 1;
 
     @property() // Optional alternative for previewWidth/previewHeight
     protected previewSize?: DashboardSizeOption;
@@ -455,7 +459,22 @@ export class OrDashboardPreview extends LitElement {
                 <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selectedWidget = undefined; }}}">
                     ${this.editMode ? html`
                         <div id="view-options">
-                            <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" disabled outlined label="50%"></or-mwc-input>
+                            <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
+                                          @or-mwc-input-changed="${() => { 
+                                              const container = this.shadowRoot?.querySelector('#container');
+                                              if(container) {
+                                                  const zoomWidth = +((0.95 * container.clientWidth) / +this.previewWidth!.replace('px', '')).toFixed(2);
+                                                  const zoomHeight = +((0.95 * container.clientHeight) / +this.previewHeight!.replace('px', '')).toFixed(2);
+                                                  console.log(zoomWidth + " & " + zoomHeight);
+                                                  if(zoomWidth > 1 && zoomHeight > 1) { this.previewZoom = 1; }
+                                                  else if(zoomWidth < zoomHeight) { this.previewZoom = zoomWidth; }
+                                                  else { this.previewZoom = zoomHeight; }
+                                              }
+                                          }}">
+                            </or-mwc-input>
+                            <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="Zoom %" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }}"
+                            ></or-mwc-input>
                             <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" .value="${sizeOptionToString(this.previewSize!)}" .options="${[sizeOptionToString(DashboardSizeOption.LARGE), sizeOptionToString(DashboardSizeOption.MEDIUM), sizeOptionToString(DashboardSizeOption.SMALL), sizeOptionToString(DashboardSizeOption.CUSTOM)]}" style="min-width: 220px;"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = stringToSizeOption(event.detail.value); }}"
                             ></or-mwc-input>
@@ -468,9 +487,6 @@ export class OrDashboardPreview extends LitElement {
                             <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"
                                           @or-mwc-input-changed="${() => { const newWidth = this.previewHeight; const newHeight = this.previewWidth; this.previewWidth = newWidth; this.previewHeight = newHeight; }}">
                             </or-mwc-input>
-                            <or-mwc-input id="test2-btn" type="${InputType.BUTTON}" icon="reload"
-                                          @or-mwc-input-changed="${() => { this.requestUpdate(); }}"
-                            ></or-mwc-input>
                         </div>
                     ` : undefined}
                     ${this.rerenderPending ? html`
@@ -482,7 +498,7 @@ export class OrDashboardPreview extends LitElement {
                             ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                                 <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
                             ` : undefined}
-                            <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}">
+                            <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;">
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
                                     ${repeat(this.template.widgets!, (item) => item.id, (widget) => {
