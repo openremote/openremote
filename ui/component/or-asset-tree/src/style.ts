@@ -313,4 +313,12 @@ export const style = css`
     .filterMatching {
         color: #808080;
     }
+    
+    .draggable {
+        cursor: pointer;
+    }
+    
+    .draggable:active {
+        cursor: grabbing;
+    }
 `;
