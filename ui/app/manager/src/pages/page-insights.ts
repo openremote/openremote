@@ -127,6 +127,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
         async () => {
             if (this._dataviewer) this._dataviewer.refresh();
             this._updateRoute(true);
+            this.requestUpdate();
         }
     )
 
@@ -151,7 +152,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
         } as DashboardTemplate;*/
         return html`
             <div style="width: 100%;">
-                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}"
+                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}" .realm="${manager.displayRealm}"
                                       @selected="${(event: CustomEvent) => { console.log(event); this._dashboardId = (event.detail as Dashboard)?.id }}"
                                       @editToggle="${(event: CustomEvent) => { console.log(event); this._editMode = event.detail; this._updateRoute(true); }}"
                 ></or-dashboard-builder>

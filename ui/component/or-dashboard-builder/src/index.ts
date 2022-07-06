@@ -264,6 +264,9 @@ export class OrDashboardBuilder extends LitElement {
     @property() // Originally from URL
     protected readonly selectedId: string | undefined;
 
+    @property() // Originally just manager.displayRealm
+    protected realm: string | undefined;
+
 
     /* ------------------- */
 
@@ -310,26 +313,30 @@ export class OrDashboardBuilder extends LitElement {
         this.hasChanged = false;
         this.previewSize = DashboardSizeOption.MEDIUM; // default, almost never used
         this.rerenderPending = false;
-        this.updateComplete.then(async () => {
 
-            // Getting dashboards
-            await manager.rest.api.DashboardResource.getAllRealmDashboards(manager.displayRealm).then((result) => {
-                this.dashboards = result.data;
+        this.updateComplete.then(async () => {
+            await this.updateDashboards(this.realm!);
+        });
+    }
+
+    async updateDashboards(realm: string) {
+        // Getting dashboards
+        await manager.rest.api.DashboardResource.getAllRealmDashboards(realm).then((result) => {
+            this.dashboards = result.data;
+        });
+
+        // Setting dashboard if selectedId is given by parent component
+        if(this.selectedId != undefined) {
+            manager.rest.api.DashboardResource.get(this.selectedId).then((dashboard) => {
+                this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == dashboard.data.id; }));
             });
 
-            // Setting dashboard if selectedId is given by parent component
-            if(this.selectedId != undefined) {
-                manager.rest.api.DashboardResource.get(this.selectedId).then((dashboard) => {
-                    this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == dashboard.data.id; }));
-                });
-
             // Otherwise, just select the 1st one in the list
-            } else {
-                if(this.dashboards != null) {
-                    this.selectedDashboard = Object.assign({}, this.dashboards[0]);
-                }
+        } else {
+            if(this.dashboards != null) {
+                this.selectedDashboard = Object.assign({}, this.dashboards[0]);
             }
-        });
+        }
     }
 
     /* ------------- */
@@ -339,6 +346,12 @@ export class OrDashboardBuilder extends LitElement {
         console.log(changedProperties);
         this.isLoading = (this.selectedDashboard == undefined);
         this.isInitializing = (this.selectedDashboard == undefined);
+
+        if(this.realm == undefined) { this.realm = manager.displayRealm; }
+
+        if(changedProperties.has("realm")) {
+            this.updateDashboards(this.realm);
+        }
 
         // Any update on the dashboard
         if(changedProperties.has("selectedDashboard")) {
@@ -487,7 +500,7 @@ export class OrDashboardBuilder extends LitElement {
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${this.showDashboardTree ? html`
-                    <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}"
+                    <or-dashboard-tree id="tree" .realm="${this.realm}" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}"
                                        @created="${(event: CustomEvent) => { this.previewSize = event.detail.size; }}"
                                        @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}"
                                        @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"
@@ -551,7 +564,7 @@ export class OrDashboardBuilder extends LitElement {
                                                          @rerender="${() => { this.rerenderPending = false; }}"
                                     ></or-dashboard-editor>-->
                                     <or-dashboard-preview class="editor" style="background: transparent;"
-                                                          .template="${this.currentTemplate}"
+                                                          .realm="${this.realm}" .template="${this.currentTemplate}"
                                                           .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}"
                                                           .previewSize="${this.previewSize}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
@@ -604,12 +617,6 @@ export class OrDashboardBuilder extends LitElement {
                 </div>
             </div>
         ` : null
-    }
-
-    private async getAllDashboards(): Promise<Dashboard[]> {
-        return manager.rest.api.DashboardResource.getAllRealmDashboards(manager.displayRealm).then((response) => {
-            return response.data;
-        });
     }
 
     /* ======================== */

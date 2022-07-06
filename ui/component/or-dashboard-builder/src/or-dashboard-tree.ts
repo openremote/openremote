@@ -24,6 +24,9 @@ export class OrDashboardTree extends LitElement {
     }
 
     @property()
+    protected realm?: string;
+
+    @property()
     private dashboards: Dashboard[] | undefined;
 
     @property()
@@ -45,13 +48,15 @@ export class OrDashboardTree extends LitElement {
     }
 
     private async getAllDashboards() {
-        return manager.rest.api.DashboardResource.getAllRealmDashboards(manager.displayRealm).then((result) => {
+        return manager.rest.api.DashboardResource.getAllRealmDashboards(this.realm!).then((result) => {
             this.dashboards = result.data;
         });
     }
 
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
+        if(this.realm == undefined) { this.realm = manager.displayRealm; }
+
         if(changedProperties.has("dashboards")) {
             this.dispatchEvent(new CustomEvent("updated", { detail: this.dashboards }));
         }
@@ -65,7 +70,7 @@ export class OrDashboardTree extends LitElement {
 
     private createDashboard(size: DashboardSizeOption) {
         const dashboard = {
-            realm: manager.displayRealm,
+            realm: this.realm!,
             displayName: "Dashboard" + (this.dashboards != null ? (this.dashboards.length + 1) : "X"),
             template: {
                 columns: this.getDefaultColumns(size),
@@ -119,7 +124,6 @@ export class OrDashboardTree extends LitElement {
                 foundDashboards?.forEach((dashboard) => { items.push({ icon: "view-dashboard", text: dashboard.displayName, value: dashboard.id }); })
                 dashboardItems.push(items);
             });
-            console.log(dashboardItems);
         }
         return html`
             <div id="menu-header">

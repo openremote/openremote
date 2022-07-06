@@ -149,6 +149,9 @@ export class OrDashboardPreview extends LitElement {
     @property() // Optional alternative for template
     protected readonly dashboardId?: string;
 
+    @property() // Normally manager.displayRealm
+    protected realm?: string;
+
     @property({type: Object})
     protected selectedWidget: DashboardWidget | undefined;
 
@@ -192,6 +195,7 @@ export class OrDashboardPreview extends LitElement {
 
     updated(changedProperties: Map<string, any>) { //nosonar
         console.log(changedProperties);
+        if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
         // Setup template (list of widgets and properties)
         if(!this.template && this.dashboardId) {
@@ -501,7 +505,7 @@ export class OrDashboardPreview extends LitElement {
                             <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;">
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
-                                    ${repeat(this.template.widgets!, (item) => item.id, (widget) => {
+                                    ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
                                         return html`
                                             <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem!); }}">
                                                 <div class="grid-stack-item-content">
@@ -511,7 +515,7 @@ export class OrDashboardPreview extends LitElement {
                                                 </div>
                                             </div>
                                         `
-                                    })}
+                                    }) : undefined}
                                 </div>
                             </div>
                         </div>
@@ -580,7 +584,7 @@ export class OrDashboardPreview extends LitElement {
                         <div class="gridItem">
                             <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
                                       .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
-                                      showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${manager.displayRealm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
+                                      showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
                             ></or-chart>
                         </div>
                     `;
@@ -591,7 +595,7 @@ export class OrDashboardPreview extends LitElement {
                         <div class='gridItem' style="display: flex;">
                             <!--<or-map center='5.454250, 51.445990' zoom='5' style='height: 100%; width: 100%;'></or-map>-->
                             <or-attribute-card .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}"
-                                               showControls="${false}" .realm="${manager.displayRealm}" style="height: 100%;"
+                                               showControls="${false}" .realm="${this.realm}" style="height: 100%;"
                             ></or-attribute-card>
                         </div>
                     `;
