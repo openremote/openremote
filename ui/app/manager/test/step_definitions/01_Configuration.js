@@ -20,7 +20,7 @@ Then("Add a new user", async function () {
     await this.fill('#repeatPassword-user0 input[type="password"]', "smartcity")
     // select permissions
     await this.click('div[role="button"]:has-text("Realm Roles")')
-    await this.click('li[role="menuitem"]:has-text("Restricted_user")')
+    await this.click('li[role="menuitem"]:has-text("Default-roles-smartcity")')
     await this.click('div[role="button"]:has-text("Manager Roles")');
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');

@@ -329,7 +329,7 @@ class CustomWorld extends World {
             await this.fill('#repeatPassword-user0 input[type="password"]', password)
             // select permissions
             await this.click('div[role="button"]:has-text("Realm Roles")')
-            await this.click('li[role="menuitem"]:has-text("Restricted_user")')
+            await this.click('li[role="menuitem"]:has-text("Default-roles-smartcity")')
             await this.click('div[role="button"]:has-text("Manager Roles")');
             await this.click('li[role="menuitem"]:has-text("Read")');
             await this.click('li[role="menuitem"]:has-text("Write")');
@@ -390,6 +390,8 @@ class CustomWorld extends World {
                         await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2)
 
                         await this.save()
+
+                        
 
                         await this.wait(1000)
                     }
@@ -558,6 +560,12 @@ class CustomWorld extends World {
         await this.click('button:has-text("Save")')
         await this.wait(200)
         const isDisabled = await this.page.locator('button:has-text("Save")').isDisabled()
+        //asset modify
+        const ifModifyMode = await this.isVisible('.mdc-dialog__surface')
+        await console.log(await ifModifyMode)
+        if (ifModifyMode) {
+            await this.click('button:has-text("OK")')
+        }
         if (!isDisabled) {
             this.click('button:has-text("Save")')
             await this.wait(200)

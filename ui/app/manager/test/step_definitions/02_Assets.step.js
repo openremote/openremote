@@ -36,17 +36,7 @@ Then('Give {string} to the {string} with type of {string}', async function (valu
 Then('Save', async function () {
     const { page } = this
     let startTime = new Date() / 1000
-    // press enter to enable the save button (could be any other action) (or this will be fixed then no pre-action needed)
-    await this.click('#edit-container')
-    await this.wait(200)  // wait for button to enabled 
-    await this.click('button:has-text("Save")')
-    await this.wait(200)
-    const isDisabled = await page.locator('button:has-text("Save")').isDisabled()
-    if(!isDisabled){
-        this.click('button:has-text("Save")')
-        await this.wait(200)
-    }
-    await expect(await page.locator('button:has-text("Save")')).toBeDisabled()
+    await this.save()
     this.logTime(startTime)
 })
 
