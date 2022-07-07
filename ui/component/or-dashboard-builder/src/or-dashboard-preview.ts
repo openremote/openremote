@@ -116,15 +116,12 @@ export class OrDashboardPreview extends LitElement {
         return [unsafeCSS(gridcss), unsafeCSS(extracss), editorStyling, style];
     }
 
-    @property({ hasChanged(oldValue, newValue) { return !(JSON.stringify(oldValue) == JSON.stringify(newValue)); }})
+    @property({ hasChanged(oldValue, newValue) { return JSON.stringify(oldValue) != JSON.stringify(newValue); }})
     set template(newValue: DashboardTemplate) {
         const oldValue = this._template;
-        /*console.log("Template has a new value!");
-        console.log(oldValue);
-        console.log(newValue);*/
         if(oldValue != undefined) {
             const changes = {
-                changedKeys: Object.keys(newValue).filter(key => (JSON.stringify(newValue[key as keyof DashboardTemplate]) !== JSON.stringify(oldValue![key as keyof DashboardTemplate]))),
+                changedKeys: Object.keys(newValue).filter(key => (JSON.stringify(newValue[key as keyof DashboardTemplate]) !== JSON.stringify(oldValue[key as keyof DashboardTemplate]))),
                 oldValue: oldValue,
                 newValue: newValue
             };
@@ -258,40 +255,27 @@ export class OrDashboardPreview extends LitElement {
             }
         }
 
+        // Switching edit/view mode needs recreation of Grid
         if(changedProperties.has("editMode")) {
             console.log("Setting up Grid.. [#4]");
             this.setupGrid(true, false);
         }
 
-
-        /*if(changedProperties.has("editMode")) {
-            const gridHTML = this.shadowRoot?.querySelector(".maingrid");
-            if(gridHTML) {
-                this.setupResizeObserver(gridHTML);
-            }
-        }*/
-
+        // Adjusting previewSize when manual pixels control changes
         if(changedProperties.has("previewWidth") || changedProperties.has("previewHeight")) {
             this.previewSize = getPreviewSizeByPx(this.previewWidth, this.previewHeight);
         }
 
+        // Adjusting pixels control when previewSize changes.
         if(changedProperties.has("previewSize") && this.previewSize != DashboardSizeOption.CUSTOM) {
-            /*const mainGridContainer = this.shadowRoot?.querySelector(".maingrid") as HTMLElement;
-            if(mainGridContainer != null) {
-                if(this.previewSize == DashboardSizeOption.FULLSCREEN) {
-                    mainGridContainer.classList.add("maingrid__fullscreen");
-                } else if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
-                    mainGridContainer.classList.remove("maingrid__fullscreen");
-                }
-            }*/
             this.previewWidth = getWidthByPreviewSize(this.previewSize);
             this.previewHeight = getHeightByPreviewSize(this.previewSize);
         }
 
+        // When parent component requests a forced rerender
         if(changedProperties.has("rerenderPending")) {
             if(this.rerenderPending) {
                 this.rerenderPending = false;
-                // setTimeout(() => { this.rerenderPending = false; }, 50);
             }
         }
     }
@@ -403,7 +387,7 @@ export class OrDashboardPreview extends LitElement {
     // Method for creating Widgets (reused at many places)
     createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
         const randomId = (Math.random() + 1).toString(36).substring(2);
-        let displayName = generateWidgetDisplayName(this.template!, gridStackNode.widgetType);
+        let displayName = generateWidgetDisplayName(this.template, gridStackNode.widgetType);
         if(displayName == undefined) { displayName = "Widget #" + randomId; } // If no displayName, set random ID as name.
         const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
 
@@ -451,7 +435,17 @@ export class OrDashboardPreview extends LitElement {
             } else {
                 this.selectedWidget = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
             }
-            // this.requestUpdate();
+        }
+    }
+
+    onFitToScreenClick() {
+        const container = this.shadowRoot?.querySelector('#container');
+        if(container) {
+            const zoomWidth = +((0.95 * container.clientWidth) / +this.previewWidth!.replace('px', '')).toFixed(2);
+            const zoomHeight = +((0.95 * container.clientHeight) / +this.previewHeight!.replace('px', '')).toFixed(2);
+            if(zoomWidth > 1 && zoomHeight > 1) { this.previewZoom = 1; }
+            else if(zoomWidth < zoomHeight) { this.previewZoom = zoomWidth; }
+            else { this.previewZoom = zoomHeight; }
         }
     }
 
@@ -464,16 +458,7 @@ export class OrDashboardPreview extends LitElement {
                     ${this.editMode ? html`
                         <div id="view-options">
                             <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
-                                          @or-mwc-input-changed="${() => { 
-                                              const container = this.shadowRoot?.querySelector('#container');
-                                              if(container) {
-                                                  const zoomWidth = +((0.95 * container.clientWidth) / +this.previewWidth!.replace('px', '')).toFixed(2);
-                                                  const zoomHeight = +((0.95 * container.clientHeight) / +this.previewHeight!.replace('px', '')).toFixed(2);
-                                                  if(zoomWidth > 1 && zoomHeight > 1) { this.previewZoom = 1; }
-                                                  else if(zoomWidth < zoomHeight) { this.previewZoom = zoomWidth; }
-                                                  else { this.previewZoom = zoomHeight; }
-                                              }
-                                          }}">
+                                          @or-mwc-input-changed="${() => this.onFitToScreenClick()}">
                             </or-mwc-input>
                             <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="Zoom %" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }}"

@@ -1,4 +1,4 @@
-import {Dashboard, DashboardAccess, DashboardScalingPreset, DashboardTemplate } from "@openremote/model";
+import {Dashboard, DashboardAccess, DashboardScalingPreset } from "@openremote/model";
 import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -73,7 +73,7 @@ export class OrDashboardBoardsettings extends LitElement {
         if(access == DashboardAccess.PRIVATE) {
             this.dashboard!.editAccess = DashboardAccess.PRIVATE;
         } else if(this.dashboard?.editAccess == DashboardAccess.PRIVATE) {
-            this.dashboard!.editAccess = access;
+            this.dashboard.editAccess = access;
         }
         this.requestUpdate();
     }

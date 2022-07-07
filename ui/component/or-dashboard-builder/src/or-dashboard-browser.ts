@@ -92,7 +92,7 @@ export class OrDashboardBrowser extends LitElement {
                 // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
                 // This is done by just loading the initial/original widget back in the sidebar.
                 // @ts-ignore typechecking since we assume they are not undefined
-                sidebarGrid.on('removed', (event: Event, items: GridStackNode[]) => {
+                sidebarGrid.on('removed', (_event: Event, items: GridStackNode[]) => {
                     const filteredItems = sidebarItems.filter(widget => {
                         return (widget.content == items[0].content);
                     });  // Filter the GridstackWidgets: the input (GridstackNode) extends on GridstackWidget
