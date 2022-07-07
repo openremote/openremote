@@ -24,8 +24,8 @@ const global = {
     startTime: 0,
     stepTime: 0,
     getAppUrl: (realm) => {
-        //const managerUrl = process.env.managerUrl || "https://localhost/";
-        const managerUrl = process.env.managerUrl || "localhost:8080/";
+        const managerUrl = process.env.managerUrl || "https://localhost/";
+        //const managerUrl = process.env.managerUrl || "localhost:8080/";
         const appUrl = managerUrl + "manager/?realm=";
         return appUrl + realm;
     },
@@ -566,7 +566,6 @@ class CustomWorld extends World {
         const isDisabled = await this.page.locator('button:has-text("Save")').isDisabled()
         //asset modify
         const ifModifyMode = await this.isVisible('button:has-text("OK")')
-        await console.log(await ifModifyMode)
         if (ifModifyMode) {
             await this.click('button:has-text("OK")')
             console.log("panel closed")
