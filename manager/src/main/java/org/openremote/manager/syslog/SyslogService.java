@@ -81,7 +81,7 @@ public class SyslogService extends Handler implements ContainerService {
 
         if (clientEventService != null) {
             clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) ->
-                subscription.isEventType(SyslogEvent.class) && auth != null && (auth.isSuperUser() || auth.hasResourceRole(Constants.READ_LOGS_ROLE, auth.getClientId())));
+                subscription.isEventType(SyslogEvent.class) && auth != null && (auth.isSuperUser() || auth.hasResourceRole(Constants.READ_LOGS_ROLE, Constants.KEYCLOAK_CLIENT_ID)));
         }
 
         if (container.hasService(ManagerWebService.class)) {

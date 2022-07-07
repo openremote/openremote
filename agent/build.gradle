@@ -1,5 +1,7 @@
 apply plugin: "java-library"
 apply plugin: "groovy"
+apply plugin: "maven-publish"
+apply plugin: "signing"
 
 dependencies {
 
@@ -45,4 +47,50 @@ dependencies {
 
 jar {
     archivesBaseName = "openremote-${project.name}"
+}
+
+javadoc {
+    failOnError = false
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            group = "io.openremote"
+            artifactId = "openremote-${project.name}"
+            from components.java
+            pom {
+                name = 'OpenRemote Model'
+                description = 'Provides core model classes used within OpenRemote; add maven {url "https://jitpack.io"} to resolve all dependencies'
+                url = 'https://github.com/openremote/openremote'
+                licenses {
+                    license {
+                        name = 'GNU Affero General Public License v3.0'
+                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'developers'
+                        name = 'Developers'
+                        email = 'developers@openremote.io'
+                        organization = 'OpenRemote'
+                        organizationUrl = 'https://openremote.io'
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'myRepo'
+            url = layout.buildDirectory.dir("repo")
+        }
+    }
 }

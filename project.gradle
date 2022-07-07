@@ -8,6 +8,12 @@ import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
 import org.jetbrains.gradle.ext.Application
 import org.jetbrains.gradle.ext.JUnit
 
+
+// Configure versions in gradle.properties (putting a gradle.properties file
+// in a subproject only overrides root properties of same name for the actual
+// subproject, not for its children!)
+version = hasProperty("openremoteVersion") ? openremoteVersion : "3.0.0"
+
 // Ensure git hook creation task is executed
 if (project == rootProject) {
 
@@ -209,7 +215,7 @@ def getYarnInstallTask() {
 
 // Gets the list of runtime JAR dependencies; can be used in custom project deployment installDist task to populate
 // extensions directory
-def getDeploymentJars() {
+def getDeploymentJars(Project project = project) {
     if (project.configurations.find { it.name == "runtimeClasspath" } == null) {
         return null;
     }
@@ -239,11 +245,6 @@ if (project.convention.findPlugin(JavaPluginConvention)) {
     sourceSets.main.java.outputDir = new File(buildDir, "classes/main")
     sourceSets.test.java.outputDir = new File(buildDir, "classes/test")
 }
-
-// Configure versions in gradle.properties (putting a gradle.properties file
-// in a subproject only overrides root properties of same name for the actual
-// subproject, not for its children!)
-version = hasProperty("openremoteVersion") ? openremoteVersion : projectVersion
 
 // Add UI tasks
 ext.npmCommand = {

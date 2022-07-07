@@ -44,8 +44,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     @Override
     public User[] query(RequestParams requestParams, UserQuery query) {
         AuthContext authContext = getAuthContext();
-        boolean isAdmin = authContext.hasResourceRole(ClientRole.READ_ADMIN.getValue(), authContext.getClientId());
-        boolean isRestricted = !isAdmin && authContext.hasResourceRole(ClientRole.READ_USERS.getValue(), authContext.getClientId());
+        boolean isAdmin = authContext.hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+        boolean isRestricted = !isAdmin && authContext.hasResourceRole(ClientRole.READ_USERS.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
         if (!isAdmin && !isRestricted) {
              throw new ForbiddenException("Insufficient permissions to read users");

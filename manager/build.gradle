@@ -1,6 +1,10 @@
+import java.nio.file.Paths
+
 apply plugin: "java-library"
 apply plugin: "application"
 apply plugin: "distribution"
+apply plugin: "maven-publish"
+apply plugin: "signing"
 
 mainClassName = "org.openremote.manager.Main"
 
@@ -34,11 +38,6 @@ dependencies {
     }
 }
 
-// Load version properties file and use same version as source code
-def props = new Properties()
-file("src/main/resources/system.properties").withInputStream { props.load(it) }
-version = props.get("version")
-
 jar {
     archivesBaseName = "openremote-${project.name}"
 }
@@ -61,3 +60,57 @@ distributions {
         }
     }
 }
+
+javadoc {
+    failOnError = false
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            group = "io.openremote"
+            artifactId = "openremote-${project.name}"
+            from components.java
+            pom {
+                name = 'OpenRemote Manager'
+                description = 'Provides core container services and is the main component of the OpenRemote backend'
+                url = 'https://github.com/openremote/openremote'
+                licenses {
+                    license {
+                        name = 'GNU Affero General Public License v3.0'
+                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'developers'
+                        name = 'Developers'
+                        email = 'developers@openremote.io'
+                        organization = 'OpenRemote'
+                        organizationUrl = 'https://openremote.io'
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'myRepo'
+            url = layout.buildDirectory.dir("repo")
+        }
+    }
+}
+
+// Output version.properties file
+task setVersionProperties(type: WriteProperties) {
+    outputFile =  Paths.get(projectDir.path, "src", "main", "resources", "version.properties").toFile()
+    property 'version', project.version
+}
+publish.mustRunAfter(setVersionProperties)
+publish.dependsOn(setVersionProperties)

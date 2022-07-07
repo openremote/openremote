@@ -147,7 +147,10 @@ if [ "$VPCID" == 'None' ]; then
   VPCID=$(aws ec2 create-default-vpc --query "Vpc.VpcId" --output text $ACCOUNT_PROFILE)
 
   # Add IPv6 CIDR
-  IPV6CIDR=$(aws ec2 associate-vpc-cidr-block --amazon-provided-ipv6-cidr-block --ipv6-cidr-block-network-border-group $AWS_REGION --vpc-id $VPCID --query "Ipv6CidrBlockAssociation.Ipv6CidrBlock" --output text $ACCOUNT_PROFILE)
+  aws ec2 associate-vpc-cidr-block --amazon-provided-ipv6-cidr-block --ipv6-cidr-block-network-border-group $AWS_REGION --vpc-id $VPCID $ACCOUNT_PROFILE
+  # Wait a short while for it to be provisioned
+  sleep 10
+  IPV6CIDR=$(aws ec2 describe-vpcs --vpc-ids $VPCID --query "Vpcs[0].Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock" --output text $ACCOUNT_PROFILE)
 
   # Add IPv6 CIDR to each subnet and add IPv6 route for internet gateway
   SUBNETID1=$(aws ec2 describe-subnets --filter "Name=vpc-id,Values=$VPCID" --query "Subnets[0].[SubnetId]" --output text $ACCOUNT_PROFILE)
