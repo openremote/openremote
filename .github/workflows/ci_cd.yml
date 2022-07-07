@@ -186,8 +186,9 @@ jobs:
             **/package.json
             **/*.md
             **/*.yml
+            **/.gitignore
+            yarn.lock
             manager/src/web/**
-
       # Check which files have changed to only run appropriate tests and checks
       - name: UI files changed
         id: ui-files-changed
@@ -200,7 +201,6 @@ jobs:
           files_ignore: |
             **/*.md
             **/*.yml
-
       - name: Set skip backend manager tests
         id: skip-backend-tests
         if: steps.backend-files-changed.outputs.any_modified != 'true'
@@ -216,7 +216,6 @@ jobs:
           chmod +x gradlew
           mkdir -p ~/manager-tags-old
           mkdir -p ~/manager-tags-new
-
       - name: Check if main repo
         id: is_main_repo
         run: |
@@ -288,7 +287,6 @@ jobs:
           
           if "managerDockerPush" in data:
             managerPushConfig = data["managerDockerPush"]
-
             if managerPushConfig is not None:
               if len(managerPushConfig.keys()) > 0:
                 for key in managerPushConfig.keys():
@@ -308,7 +306,6 @@ jobs:
           key: ${{ runner.os }}-manager-tags---${{ hashFiles('~/manager-tags-new/**') }}
           restore-keys: |
             ${{ runner.os }}-manager-tags---
-
       - name: Process ci_cd.json file
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request' }}
         id: ci-cd-output
@@ -327,22 +324,18 @@ jobs:
           f = open(".ci_cd/ci_cd.json")
           data = json.load(f)
           f.close()
-
           if eventName == "schedule":
             eventName = "managerDockerPush"
-
           if data is not None and eventName in data:              
             eventConfig = data[eventName]
            
             if eventName == "managerDockerPush":
-
               # Iterate through keys and check if that manager docker image has changed since last execution
               deploys=[]
               for key in eventConfig.keys():
                 os.system(f"echo 'Checking manager docker tag: {key}'")
                 newManifestStr = None
                 oldManifestStr = None
-
                 if os.path.exists(os.path.expanduser(f"~/manager-tags-new/{key}")):
                   f = open(os.path.expanduser(f"~/manager-tags-new/{key}"))
                   newManifestStr = f.read()
@@ -351,7 +344,6 @@ jobs:
                   f = open(os.path.expanduser(f"~/manager-tags-old/{key}"))
                   oldManifestStr = f.read()
                   f.close()                  
-
                 if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
                   os.system(f"echo 'Manager docker tag has been updated: {key}'")
                   if 'deploy' in eventConfig[key]:
@@ -366,15 +358,12 @@ jobs:
                   os.system(f"echo 'Manager docker tag has not changed: {key}'")
                 
             elif eventName == "push" and refName in eventConfig:
-
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
                 deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
                 if 'distribute' in eventConfig and 'tags' in eventConfig['distribute']:
                   tags = eventConfig['distribute']['tags']
-
             elif eventName == "release" and refName in eventConfig:
-
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
                 deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
@@ -407,7 +396,6 @@ jobs:
                 deployStr += '#ref'
               
               deployStr += ";"
-
             deployStr = deployStr.rstrip(";")
             
           if deployStr is not None and len(deployStr) > 0:
@@ -574,7 +562,6 @@ jobs:
           key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn---
-
       - name: Output info
         if: steps.skip-cicd.outputs.value != 'true'
         run: |
@@ -601,7 +588,6 @@ jobs:
           echo 'Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}'
           echo "************************************************************"
           echo "************************************************************"
-
       - name: Pull docker images
         if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
         run: |          
@@ -679,7 +665,6 @@ jobs:
           for key, value in inputsAndSecrets.items():
             if "." in key:
               continue
-
             # Look for temp and env prefixed keys
             if key.startswith("_"):
               if key.startswith("_TEMP_"):
@@ -697,7 +682,6 @@ jobs:
           if result.returncode != 0:
             os.system("echo 'installDist failed'")
             sys.exit(result.returncode)
-
         env:
           CMD: ${{ steps.install-command.outputs.value }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
@@ -707,7 +691,6 @@ jobs:
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
-
       - name: Run frontend tests
         if: steps.test-ui-command.outputs.value != ''
         run: |
@@ -726,7 +709,6 @@ jobs:
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
             composeProfile="openremote/$composeProfile"            
           fi
-
           # Start the stack          
           #MANAGER_VERSION=$MANAGER_TAG OR_DEV_MODE=true docker-compose -f $composeProfile up -d --no-build
           MANAGER_VERSION=develop OR_DEV_MODE=true docker-compose -f $composeProfile up -d --no-build
@@ -751,7 +733,6 @@ jobs:
         if: steps.deployment-docker-command.outputs.value != ''
         run: |
           ${{ steps.deployment-docker-command.outputs.value }}
-
       - name: Do deployments
         if: steps.deployments.outputs.value != ''
         shell: python
@@ -782,7 +763,6 @@ jobs:
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
             sys.exit(1)
-
           for deployment in deployments:
             dep = deployment.split(":")
             env = dep[0]
@@ -810,9 +790,7 @@ jobs:
             for key, value in inputsAndSecrets.items():
               if "." in key:
                 continue
-
               envFile = "temp/env"
-
               # Look for temp and env prefixed keys
               if key.startswith("_"):
                 if key.startswith("_TEMP_"):
@@ -822,7 +800,6 @@ jobs:
                   key = key.replace(prefix, "")
                 else:
                   continue
-
               if key == "github_token":
                 continue
               else:                
@@ -836,7 +813,6 @@ jobs:
                       os.system(f"echo '{value}\"' >> {envFile}")
                   else:
                       os.system(f"echo '{key}=\"{value}\"' >> {envFile}")
-
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):
               os.system(f"echo 'Outputting .ci_cd/env/.env to temp/env'")

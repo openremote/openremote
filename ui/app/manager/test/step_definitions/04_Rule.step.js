@@ -61,17 +61,16 @@ Then('Create Then action on {string} of {string} of {string} with threshold {str
 
 Then('Save rule', async function () {
     await this.click('or-mwc-input:has-text("Save")')
+    await this.wait(1000)
 })
 
 
 Then('We see the rule with name of {string}', async function (name) {
-
-    await this.wait(500)
     const count = await this.count(`text=${name}`)
     await expect(count).toBe(1)
 })
 /**
- *  Flow editor
+ *  Flow editors
  */
 Then('Drag in the elements', async function () {
 
@@ -128,8 +127,6 @@ Then('Connect elements', async function () {
 })
 
 Then('We see the flow rule with name of {string}', async function (name) {
-
-    await this.wait(500)
     // name with FLOW can ensuring that it's a flow rule
     const count = await this.count(`text=${name}FLOW`)
     await expect(count).toBe(1)

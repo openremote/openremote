@@ -1,11 +1,9 @@
 const { setWorldConstructor, World, BeforeAll, AfterAll, After, Status, setDefaultTimeout } = require("@cucumber/cucumber");
 const { ChromiumBroswer: ChromiumBrowser } = require("playwright");
 const playwright = require('playwright');
-const fs = require('fs');
 const { expect } = require("@playwright/test");
 const { join } = require('path');
 const { Before } = require("@cucumber/cucumber");
-const exp = require("constants");
 require('dotenv').config();
 
 /**
@@ -26,8 +24,8 @@ const global = {
     startTime: 0,
     stepTime: 0,
     getAppUrl: (realm) => {
-        const managerUrl = process.env.managerUrl || "https://localhost/";
-        //const managerUrl = process.env.managerUrl || "localhost:8080/";
+        //const managerUrl = process.env.managerUrl || "https://localhost/";
+        const managerUrl = process.env.managerUrl || "localhost:8080/";
         const appUrl = managerUrl + "manager/?realm=";
         return appUrl + realm;
     },
@@ -112,14 +110,10 @@ class CustomWorld extends World {
         await this.wait(500)
         const isLogin = await this.isVisible('input[name="username"]') || false
         if (isLogin) {
-            // if (!fs.existsSync('test/storageState.json')) {
             let password = global.passwords[user];
             await this.page?.fill('input[name="username"]', user);
             await this.page?.fill('input[name="password"]', password);
             await this.page?.keyboard.press('Enter');
-            //await this.page?.context().storageState({ path: 'test/storageState.json' });
-            //await this.page.waitForNavigation(user == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity")
-            //}
             console.log(`User: "${user}" logged in,   ` + timeCost(false) + "s")
         }
     }
@@ -129,9 +123,10 @@ class CustomWorld extends World {
      * Logout and delete login certification
      */
     async logout() {
-        // if (fs.existsSync('test/storageState.json')) {
-        //     fs.unlinkSync('test/storageState.json')
-        // }
+        const isPanelVisibile = await this.isVisible('button:has-text("Cancel")')
+        if (isPanelVisibile) {
+            await this.click('button:has-text("Cancel")')
+        }
         const isMenuBtnVisible = await this.isVisible('#menu-btn-desktop')
         if (isMenuBtnVisible) {
             await this.click('#menu-btn-desktop');
@@ -216,7 +211,8 @@ class CustomWorld extends World {
     }
 
     /**
-     * @param {String} element check how many elements are there in the page
+     * check how many elements are there in the page
+     * @param {String} element css selector
      * @returns {Int} number of elements
      */
     async count(element) {
@@ -224,9 +220,9 @@ class CustomWorld extends World {
     }
 
     /**
-     * 
-     * @param {String} element check if the element is visible in the page
+     * check if the element is visible in the page
      * Note that this element should be the only one in the page
+     * @param {String} element css selector
      * @returns {Boolean} if the element if visible 
      */
     async isVisible(element) {
@@ -305,7 +301,9 @@ class CustomWorld extends World {
     }
 
     /**
-     *  Create User
+     * Create user
+     * @param {String} username 
+     * @param {String} password 
      */
     async addUser(username, password) {
 
@@ -367,6 +365,7 @@ class CustomWorld extends World {
                     await this.click(`text=${asset.asset}`)
                     await this.fill('#name-input input[type="text"]', asset.name)
                     await this.click('#add-btn')
+                    console.log(":::::: emtpy asset has been added")
                     await this.unselectAll()
                     await this.click(`#list-container >> text=${asset.name}`)
                     if (update) {
@@ -375,23 +374,25 @@ class CustomWorld extends World {
 
                         // update in modify mode
                         await this.click('button:has-text("Modify")')
+                        console.log(":::::: into modify mode")
                         if (configOrLoction == "location") {
                             await this.updateLocation(asset.location_x, asset.location_y)
+                            console.log(":::::: location updated")
                         }
                         else if (configOrLoction == "config") {
                             await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
+                            console.log(":::::: config items have been added")
                         }
                         else {
                             await this.updateLocation(asset.location_x, asset.location_y)
                             await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
+                            console.log(":::::: both settings have been added")
                         }
 
                         await this.updateInModify(asset.attr_1, asset.a1_type, asset.v1)
                         await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2)
 
                         await this.save()
-
-                        
 
                         await this.wait(1000)
                     }
@@ -452,6 +453,7 @@ class CustomWorld extends World {
      */
     async updateInModify(attr, type, value) {
         await this.fill(`text=${attr} ${type} >> input[type="number"]`, value)
+        console.log("::::::  "+attr+" has been updated")
     }
 
     /**
@@ -555,16 +557,19 @@ class CustomWorld extends World {
      * Save
      */
     async save() {
+        console.log(":::::: in saving")
+        await this.wait(1000)
         await this.click('#edit-container')
         await this.wait(200)  // wait for button to enabled 
         await this.click('button:has-text("Save")')
         await this.wait(200)
         const isDisabled = await this.page.locator('button:has-text("Save")').isDisabled()
         //asset modify
-        const ifModifyMode = await this.isVisible('.mdc-dialog__surface')
+        const ifModifyMode = await this.isVisible('button:has-text("OK")')
         await console.log(await ifModifyMode)
         if (ifModifyMode) {
             await this.click('button:has-text("OK")')
+            console.log("panel closed")
         }
         if (!isDisabled) {
             this.click('button:has-text("Save")')
@@ -601,11 +606,6 @@ class CustomWorld extends World {
     async setup(realm, level, configOrLocation = "no") {
 
         global.startTime = new Date() / 1000
-
-        // clean storage
-        // if (fs.existsSync('test/storageState.json')) {
-        //     fs.unlinkSync('test/storageState.json')
-        // }
 
         if (level !== "lv0") {
             await this.openApp("master")
@@ -695,7 +695,7 @@ BeforeAll(async function () {
         launchOptions: {
             // force GPU hardware acceleration (even in headless mode)
             // without hardware acceleration, tests will be much slower
-            args: ["--use-gl=desktop"]
+            args: ["--use-gl=desktop"],
         }
     });
     context = await global.browser.newContext({ ignoreHTTPSErrors: true });
@@ -732,10 +732,18 @@ AfterAll(async function () {
     await global.browser.close()
 })
 
+/**
+ * set the start time of a single test
+ */
 function setStepStartTime() {
     global.stepTime = new Date() / 1000
 }
 
+/**
+ * calculate the the time cost from either the start of all tests or a single
+ * @param {Boolean} startAtBeginning 
+ * @returns 
+ */
 function timeCost(startAtBeginning) {
     let endTime = new Date() / 1000
     let startTime = startAtBeginning == true ? global.startTime : global.stepTime
