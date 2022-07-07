@@ -226,7 +226,7 @@ export class OrDashboardPreview extends LitElement {
                 // On widgets change only recreate grid is required.
                 else if(this.latestChanges.changedKeys.includes('widgets')) {
                     console.log("Setting up Grid.. [#2]");
-                    this.setupGrid(true, false);
+                    this.setupGrid(true, true);
                 }
                 // On screenPreset change, a full force rererender is required
                 else if(this.latestChanges.changedKeys.includes('screenPresets')) {
@@ -469,7 +469,6 @@ export class OrDashboardPreview extends LitElement {
                                               if(container) {
                                                   const zoomWidth = +((0.95 * container.clientWidth) / +this.previewWidth!.replace('px', '')).toFixed(2);
                                                   const zoomHeight = +((0.95 * container.clientHeight) / +this.previewHeight!.replace('px', '')).toFixed(2);
-                                                  console.log(zoomWidth + " & " + zoomHeight);
                                                   if(zoomWidth > 1 && zoomHeight > 1) { this.previewZoom = 1; }
                                                   else if(zoomWidth < zoomHeight) { this.previewZoom = zoomWidth; }
                                                   else { this.previewZoom = zoomHeight; }

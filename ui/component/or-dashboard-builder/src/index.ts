@@ -62,7 +62,7 @@ const styling = css`
     /* Header related styling */
     #fullscreen-header {
         display: table-row;
-        height: 0.1%;
+        height: 1px;
     }
     #fullscreen-header-wrapper {
         padding: 17.5px 20px;
@@ -92,22 +92,19 @@ const styling = css`
     /* ----------------------------- */
     /* Editor/builder related styling */
     #builder {
-        flex-grow: 2;
-        align-items: stretch;
-        z-index: 0;
-        /*padding: 3vh 4vw 3vh 4vw;*/
+        display: table-cell;
+        height: 100%;
     }
     
     /* ----------------------------- */
     /* Sidebar related styling (drag and drop widgets / configuration) */
     #sidebar {
-        display: flex;
-        flex-shrink: 0;
-        flex-direction: column;
+        display: table-cell;
+        vertical-align: top;
+        position: relative;
         width: 300px;
         background: white;
         border-left: 1px solid #E0E0E0;
-        z-index: 0;
     }
     #browser {
         flex-grow: 1;
@@ -552,7 +549,7 @@ export class OrDashboardBuilder extends LitElement {
                         </div>
                     `}
                     <div id="content">
-                        <div id="container">
+                        <div id="container" style="display: table;">
                             <div id="builder">
                                 ${(this.selectedDashboard != null) ? html`
                                     <!--<or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
@@ -599,7 +596,7 @@ export class OrDashboardBuilder extends LitElement {
                                     ` : undefined}
                                     <div style="${this.selectedWidget != null ? css`display: none` : null}">
                                         <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
-                                            <or-mwc-tabs .items="${tabItems}" @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
+                                            <or-mwc-tabs .items="${tabItems}" noScroll @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
                                         </div>
                                         <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
                                             <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
