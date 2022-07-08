@@ -90,8 +90,11 @@ publishing {
 
     repositories {
         maven {
-            name = 'myRepo'
-            url = layout.buildDirectory.dir("repo")
+            credentials {
+                username findProperty("publishUsername")
+                password findProperty("publishPassword")
+            }
+            url = version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
         }
     }
 }

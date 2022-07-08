@@ -315,3 +315,5 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     // JAR/ZIP base name is the fully qualified subproject name
     archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"
 }
+
+// POM generator
