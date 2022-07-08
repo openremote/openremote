@@ -280,6 +280,9 @@
   "repeatPassword": "Repeat password",
   "details": "Details",
   "permissions":"Permissions",
+  "linkedAssets":"Linked assets",
+  "realm_role_plural":"Realm roles",
+  "manager_role_plural":"Manager roles",
   "restrictAccess": "Restrict access",
   "selectRestrictedAssets": "{{number}} assets",
   "restrictedAccessToAssets": "Restricted access to",
@@ -473,6 +476,8 @@
   "no": "No",
   "linked": "Linked",
   "filter": {
+    "filter": "Filter",
+    "clear": "CLEAR",
     "action": "FILTER",
     "assetTypeLabel": "Asset type",
     "assetTypeNone": "None",

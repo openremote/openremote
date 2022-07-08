@@ -104,8 +104,8 @@ const style = css`
     :host {
         --internal-or-attribute-history-background-color: var(--or-attribute-history-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-attribute-history-text-color: var(--or-attribute-history-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-        --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 0 0 20px 0);       
-        --internal-or-attribute-history-controls-margin-children: var(--or-attribute-history-controls-margin-children, 0 auto 20px auto);            
+        --internal-or-attribute-history-controls-margin: var(--or-attribute-history-controls-margin, 10px 0);
+        --internal-or-attribute-history-controls-justify-content: var(--or-attribute-history-controls-justify-content, flex-end);
         --internal-or-attribute-history-graph-fill-color: var(--or-attribute-history-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 1);       
         --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
@@ -118,7 +118,6 @@ const style = css`
         --internal-or-attribute-history-graph-point-hover-border-color: var(--or-attribute-history-graph-point-hover-border-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
         --internal-or-attribute-history-graph-point-hover-radius: var(--or-attribute-history-graph-point-hover-radius, 4);      
         --internal-or-attribute-history-graph-point-hover-border-width: var(--or-attribute-history-graph-point-hover-border-width, 2);
-        
         display: block;                
     }
     
@@ -156,16 +155,16 @@ const style = css`
     #controls {
         display: flex;
         flex-wrap: wrap;
-        justify-content: space-between;
-        margin: var(--internal-or-attribute-history-controls-margin);
-        
+        justify-content: var(--internal-or-attribute-history-controls-justify-content);
+        margin: var(--internal-or-attribute-history-controls-margin);        
         flex-direction: row;
     }
     
-    #controls > * {
-        margin: var(--internal-or-attribute-history-controls-margin-children);
+    #time-picker {
+        width: 150px;
+        padding: 0 5px;
     }
-    
+
     #ending-controls {
         max-width: 100%;
         display: flex;
@@ -178,7 +177,7 @@ const style = css`
     }
     
     #ending-date {
-        min-width: 0;
+        width: 200px;
     }
     
     #chart-container {
@@ -263,6 +262,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _stepSize?: number;
     protected _updateTimestampTimer?: number;
 
+    protected _dataFirstLoaded: boolean = false;
+
     connectedCallback() {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
@@ -274,18 +275,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
+        let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp") || _changedProperties.has("attribute");
+
+        if (this._dataFirstLoaded && !_changedProperties.get('_loading') && !reloadData) {
+            return false;
+        }
 
         if (!this.toTimestamp) {
             this.toTimestamp = new Date();
             return false;
-        }
-
-        let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp");
-
-        if (_changedProperties.has("assetId") || _changedProperties.has("attributeRef") || _changedProperties.has("attribute")) {
-            this._type = undefined;
-            this._cleanup();
-            reloadData = true;
         }
 
         if (!this._type && this.attribute) {
@@ -293,6 +291,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
 
         if (reloadData) {
+            this._type = undefined;
             this._data = undefined;
             this._loadData();
         }
@@ -308,7 +307,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         return html`
             <div id="container">
                 <div id="controls">
-                    <or-mwc-input  .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions()}"></or-mwc-input>
+                    <or-mwc-input id="time-picker" .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions()}"></or-mwc-input>
                     <div id="ending-controls">
                         <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.toTimestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) =>  this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.toTimestamp!, false, 0)}"></or-icon>
@@ -719,6 +718,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         if (response.status === 200) {
             this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
+            this._dataFirstLoaded = true;
         }
     }
     protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout= 300) {

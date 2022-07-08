@@ -279,6 +279,9 @@
   "repeatPassword": "Herhaal wachtwoord",
   "details": "Details",
   "permissions":"Rechten",
+  "linkedAssets":"Gekoppelde assets",
+  "realm_role_plural":"Realm rollen",
+  "manager_role_plural":"Manager rollen",
   "restrictAccess": "Beperkte toegang",
   "selectRestrictedAssets": "{{number}} assets",
   "restrictedAccessToAssets": "Beperkte toegang tot",
@@ -468,11 +471,13 @@
   "yes": "Ja",
   "no": "Nee",
   "filter": {
+    "filter": "Filter",
+    "clear": "LEEGMAKEN",
     "action": "FILTER",
     "assetTypeLabel": "Asset type",
-    "assetTypeNone": "None",
-    "assetTypeMenuNone": "None",
-    "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "assetTypeNone": "Geen",
+    "assetTypeMenuNone": "Geen",
+    "attributeLabel": "Attribuut",
+    "attributeValueLabel": "Attribuutwaarde"
   }
 }

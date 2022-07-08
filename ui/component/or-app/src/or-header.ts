@@ -17,7 +17,6 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Realm} from "@openremote/model";
 import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
-import {ThunkMiddleware} from "redux-thunk";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
