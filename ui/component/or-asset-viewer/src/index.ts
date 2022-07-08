@@ -43,8 +43,7 @@ import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { progressCircular } from "@openremote/or-mwc-components/style";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers";
@@ -366,10 +365,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         }
 
         const updateFileName = () => {
-            const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement,
-                fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement,
-                fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput,
-                str = fileInputElem.value;
+            const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
+            const fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement;
+            const fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+            const str = fileInputElem.value;
 
             if (!str) {
                 return;
@@ -429,14 +428,18 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             // TODO: cancel the request to the manager
         }
 
-        const fileToBase64 = () => {
-            const fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+        const doImport = () => {
+            const fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement;
+            const fileUploadBtn = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+            const progressElement = hostElement.shadowRoot!.getElementById("progress-circular") as HTMLProgressElement;
 
-            if (!fileUploadBtn) {
+            if (!fileUploadBtn || !progressElement) {
                 return false;
             }
 
             fileUploadBtn.disabled = true;
+            fileUploadBtn.classList.add("hidden");
+            progressElement.classList.remove("hidden");
 
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
             if (fileInputElem) {
@@ -460,13 +463,13 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                             binary: true
                         } as FileInfo
 
-                        manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo) //todo: this doesn't work yet
+                        manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo, undefined, {timeout: 30000})
                             .then(response => {
                                 if (response.status !== 200) {
                                     showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
                                 } else {
                                     showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", i18next.t("dismiss"));
-                                    console.info(response.data, response) //todo: do something with this response
+                                    console.info(response.data, response)
                                 }
                             })
                             .catch((err) => {
@@ -474,7 +477,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                                 console.error(err);
                             })
                             .finally(() => {
-                                fileUploadBtn.disabled = false;
+                                fileNameElem.value = "";
+                                fileUploadBtn.disabled = true;
+                                fileUploadBtn.classList.remove("hidden");
+                                progressElement.classList.add("hidden");
                             });
 
                     }
@@ -486,12 +492,13 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
 
         if (descriptor.assetImport) {
             content = html`
-                <div id="fileupload"> 
+                <div id="fileupload">
                     <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
-                        <input id="fileupload-elem" name="configfile" type="file" accept=".json, .knxproj, .vlp" @change="${() => updateFileName()}"/>
+                        <input id="fileupload-elem" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
                     </or-mwc-input>
                     <or-mwc-input id="filename-elem" .type="${InputType.TEXT}" disabled></or-mwc-input>
-                    <or-mwc-input id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => fileToBase64()}" disabled></or-mwc-input>
+                    <or-mwc-input id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => doImport()}" disabled></or-mwc-input>
+                    <progress id="progress-circular" class="hidden pure-material-progress-circular"></progress>
                 </div>
             `;
         }
@@ -1043,6 +1050,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     static get styles() {
         return [
             unsafeCSS(tableStyle),
+            progressCircular,
             panelStyles,
             style
         ];
