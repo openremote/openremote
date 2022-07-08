@@ -28,8 +28,7 @@ import org.openremote.model.util.TextUtil;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Objects;
+import java.util.*;
 
 import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
@@ -47,6 +46,7 @@ public abstract class OAuthGrant implements Serializable {
     public static final String VALUE_KEY_SCOPE = "scope";
     protected String tokenEndpointUri;
     protected boolean basicAuthHeader;
+    protected Map<String, List<String>> additionalValueMap = null;
     @JsonProperty(VALUE_KEY_GRANT_TYPE)
     protected String grantType;
     @JsonProperty(VALUE_KEY_CLIENT_ID)
@@ -77,7 +77,15 @@ public abstract class OAuthGrant implements Serializable {
         if(!TextUtil.isNullOrEmpty(scope)) {
             valueMap.put(VALUE_KEY_SCOPE, Collections.singletonList(scope));
         }
+        if(additionalValueMap != null)
+            valueMap.putAll(additionalValueMap);
         return valueMap;
+    }
+
+    public void addFormParameter(String key, String value) {
+        if(additionalValueMap == null)
+            additionalValueMap = new HashMap<>();
+        additionalValueMap.put(key, Collections.singletonList(value));
     }
 
     public String getTokenEndpointUri() {
