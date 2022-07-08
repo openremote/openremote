@@ -32,8 +32,9 @@ Then('Delete role', { timeout: 30000 }, async function () {
   let startTime = new Date() / 1000
 
   // reproduce the preparation steps to start from the beginning
-  await this.navigateToTab("Map")
-  await this.navigateToMenuItem("Roles")
+  // navigation is not needed anymore, it was for the previous implementation
+  // await this.navigateToMenuItem("Data export")
+  // await this.navigateToMenuItem("Roles")
 
   // delete roles
   await this.click('text=Custom')

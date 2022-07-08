@@ -10,7 +10,18 @@ Then('Create a {string} with name of {string}', { timeout: 30000 }, async functi
     await this.click(`text=${asset}`)
     await this.fill('#name-input input[type="text"]', name)
     await this.click('#add-btn')
-    await this.unselectAll()
+    await this.wait(400)
+
+    // check if at modify mode
+    // if yes we should see the save button then save
+    const isSaveBtnVisible = await this.isVisible('button:has-text("Save")')
+    console.log("save btn is " + isSaveBtnVisible)
+    if (isSaveBtnVisible) {
+        console.log("ready to save")
+        await this.click('button:has-text("Save")')
+    }
+
+    await this.unselect()
     this.logTime(startTime)
 })
 
@@ -22,8 +33,8 @@ When('Go to asset {string} info page', { timeout: 30000 }, async function (name)
 
 Then('Go to modify mode', { timeout: 30000 }, async function () {
     let startTime = new Date() / 1000
-    await this.wait(2000)
-    await this.click('button:has-text("Modify")')
+    await this.wait(1000)
+    await this.switchMode("modify")
     this.logTime(startTime)
 })
 
@@ -80,6 +91,7 @@ Then('We see the {string} page', async function (name) {
  */
 Then('Update {string} to the {string} with type of {string}', async function (value, attribute, type) {
     let startTime = new Date() / 1000
+    await this.switchMode("view")
     await this.fill(`#field-${attribute} input[type="${type}"]`, value)
     await this.click(`#field-${attribute} #send-btn span`)
     this.logTime(startTime)
@@ -88,7 +100,7 @@ Then('Update {string} to the {string} with type of {string}', async function (va
 Then('Update location of {int} and {int}', { timeout: 30000 }, async function (location_x, location_y) {
     let startTime = new Date() / 1000
     const { page } = this;
-
+    await this.switchMode("modify")
     await this.click('text=location GEO JSON point >> button span')
     await this.wait(2000)
     // location_x and location_y are given by the example data

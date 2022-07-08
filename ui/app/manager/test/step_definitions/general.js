@@ -57,7 +57,7 @@ When('Navigate to {string} tab', async function (tab) {
 
 Then('Unselect', async function () {
     let startTime = new Date() / 1000
-    await this.unselectAll()
+    await this.unselect()
     this.logTime(startTime)
 })
 

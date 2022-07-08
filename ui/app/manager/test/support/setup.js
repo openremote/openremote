@@ -341,6 +341,24 @@ class CustomWorld extends World {
         else {
         }
     }
+    /**
+    * Switch between modify mode and view mode
+    * @param {String} targetMode view or modify
+    */
+    async switchMode(targetMode) {
+        await this.wait(400)
+        const atModifyMode = await this.isVisible('button:has-text("View")')
+        const atViewMode = await this.isVisible('button:has-text("Modify")')
+
+        if (atModifyMode && (targetMode == "view")) {
+            await this.click('button:has-text("View")')
+            console.log(":::::: at view mode")
+        }
+        if (atViewMode && (targetMode == "modify")) {
+            await this.click('button:has-text("Modify")')
+            console.log(":::::: at modify mode")
+        }
+    }
 
     /**
      * create new empty assets
@@ -350,7 +368,7 @@ class CustomWorld extends World {
 
         const addAssetTime = new Date() / 1000
 
-        await this.wait(600)
+        await this.wait(500)
 
         // Goes to asset page
         await this.click('#desktop-left a:nth-child(2)')
@@ -365,16 +383,24 @@ class CustomWorld extends World {
                     await this.click(`text=${asset.asset}`)
                     await this.fill('#name-input input[type="text"]', asset.name)
                     await this.click('#add-btn')
+                    await this.wait(500)
+                    // check if at modify mode
+                    // if yes we should see the save button then save
+                    const isSaveBtnVisible = await this.isVisible('button:has-text("Save")')
+                    console.log("save btn is " + isSaveBtnVisible)
+                    if (isSaveBtnVisible) {
+                        console.log("ready to save")
+                        await this.click('button:has-text("Save")')
+                    }
                     console.log(":::::: emtpy asset has been added")
-                    await this.unselectAll()
-                    await this.click(`#list-container >> text=${asset.name}`)
+                    await this.switchMode("modify")
+                    // await this.unselect()
+                    // await this.click(`#list-container >> text=${asset.name}`)
                     if (update) {
-                        // update value in general panel
-                        await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3)
+                        // switch to modify mode if at view mode
+                        
 
                         // update in modify mode
-                        await this.click('button:has-text("Modify")')
-                        console.log(":::::: into modify mode")
                         if (configOrLoction == "location") {
                             await this.updateLocation(asset.location_x, asset.location_y)
                             console.log(":::::: location updated")
@@ -394,9 +420,16 @@ class CustomWorld extends World {
 
                         await this.save()
 
-                        await this.wait(1000)
+                        //switch to view mode
+                        await this.switchMode("view")
+                        // update value in view mode
+                        await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3)
+                        await this.wait(500)
+
+                        //switch to modify mode
+                        await this.switchMode("modify")
                     }
-                    await this.unselectAll()
+                    await this.unselect()
                     console.log("Asset: " + `"${asset.name}"` + " with " + configOrLoction + " updated has been added,  " + timeCost(false) + "s")
                 }
             }
@@ -410,20 +443,19 @@ class CustomWorld extends World {
     /**
      * unselect the asset
      */
-    async unselectAll() {
+    async unselect() {
         await this.wait(500)
-        const isViewVisible = await this.isVisible('button:has-text("View")')
         const isCloseVisible = await this.isVisible('.mdi-close >> nth=0')
 
         // leave modify mode
-        if (isViewVisible) {
-            await this.click('button:has-text("View")')
-            let btnDisgard = await this.isVisible('button:has-text("Disgard")')
-            if (btnDisgard) {
-                await this.click('button:has-text("Disgard")')
-                console.log("didn't save successfully")
-            }
-        }
+        // if (isViewVisible) {
+        //     await this.click('button:has-text("View")')
+        //     let btnDisgard = await this.isVisible('button:has-text("Disgard")')
+        //     if (btnDisgard) {
+        //         await this.click('button:has-text("Disgard")')
+        //         console.log("didn't save successfully")
+        //     }
+        // }
 
         // unselect the asset
         if (isCloseVisible) {
@@ -453,7 +485,7 @@ class CustomWorld extends World {
      */
     async updateInModify(attr, type, value) {
         await this.fill(`text=${attr} ${type} >> input[type="number"]`, value)
-        console.log("::::::  "+attr+" has been updated")
+        console.log("::::::  " + attr + " has been updated")
     }
 
     /**
@@ -558,10 +590,13 @@ class CustomWorld extends World {
      */
     async save() {
         console.log(":::::: in saving")
-        await this.wait(1000)
+        await this.wait(200)
         await this.click('#edit-container')
         await this.wait(200)  // wait for button to enabled 
-        await this.click('button:has-text("Save")')
+        const isSaveBtnVisible = await this.isVisible('button:has-text("Save")')
+        if (isSaveBtnVisible) {
+            await this.click('button:has-text("Save")')
+        }
         await this.wait(200)
         const isDisabled = await this.page.locator('button:has-text("Save")').isDisabled()
         //asset modify
@@ -571,7 +606,7 @@ class CustomWorld extends World {
             console.log("panel closed")
         }
         if (!isDisabled) {
-            this.click('button:has-text("Save")')
+            await this.click('button:has-text("Save")')
             await this.wait(200)
         }
         await expect(await this.page.locator('button:has-text("Save")')).toBeDisabled()
@@ -657,7 +692,6 @@ class CustomWorld extends World {
         const cleanTime = new Date() / 1000
 
         // ensure login as admin into master
-        await this.logout()
         await this.wait(500)
         await this.goToRealmStartPage("master")
         await this.login("admin")
