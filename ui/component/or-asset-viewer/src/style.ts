@@ -253,6 +253,20 @@ export const style = css`
         cursor: pointer;
     }
     
+    #fileupload {
+        display: flex;
+        align-items: center;
+    }
+    
+    #fileupload > * {
+        flex: 1 auto;
+        margin-right: 5px;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
     @media screen and (max-width: 1200px) {
         #name-input {
             width: 150px;
