@@ -373,6 +373,11 @@ class CustomWorld extends World {
         // Goes to asset page
         await this.click('#desktop-left a:nth-child(2)')
 
+        // select conosle first to enter into the modify mode
+        await this.click(`#list-container >> text="Consoles"`)
+        await this.switchMode("modify")
+        await this.unselect()
+
         // create assets accroding to assets array
         for (let asset of assets) {
             setStepStartTime()
@@ -398,7 +403,7 @@ class CustomWorld extends World {
                     // await this.click(`#list-container >> text=${asset.name}`)
                     if (update) {
                         // switch to modify mode if at view mode
-                        
+
 
                         // update in modify mode
                         if (configOrLoction == "location") {

@@ -6,6 +6,12 @@ const { expect } = require("@playwright/test");
  */
 Then('Create a {string} with name of {string}', { timeout: 30000 }, async function (asset, name) {
     let startTime = new Date() / 1000
+    // select conosle first to get into the modify mode
+    await this.click(`#list-container >> text="Consoles"`)
+    await this.switchMode("modify")
+    await this.unselect()
+
+    // start adding assets
     await this.click('.mdi-plus')
     await this.click(`text=${asset}`)
     await this.fill('#name-input input[type="text"]', name)
