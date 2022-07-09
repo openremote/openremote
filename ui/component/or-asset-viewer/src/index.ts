@@ -223,7 +223,7 @@ export class OrAssetViewerSaveEvent extends CustomEvent<SaveResult> {
     }
 }
 
-export class OrAssetViewerChangeParentEvent extends CustomEvent<any> {
+export class OrAssetViewerChangeParentEvent extends CustomEvent<{ parentId: string | undefined, assetsIds: string[] }> {
 
     public static readonly NAME = "or-asset-viewer-change-parent";
 
