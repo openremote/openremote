@@ -779,7 +779,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 }
             }
 
-            matchingResult = searchValue.match(/(\"[^\s]+\")\:\S+/g);
+            matchingResult = searchValue.match(/(\"[^\"]+\")\:(([^\"\s]+)|(\"[^\"]+\"))/g);
             if (matchingResult) {
                 if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
@@ -787,9 +787,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                         const startIndex: number = value.toString().indexOf('":');
                         // Adding 2 to remove the ": matched before
-                        const matchingVal: string = value.toString().substring(startIndex + 2);
+                        let matchingVal: string = value.toString().substring(startIndex + 2);
                         // Starting from position 1 to remove first "
                         const matchingName: string = value.toString().substring(1, startIndex);
+
+                        if (matchingVal[0] === '"' && matchingVal[matchingVal.length-1] === '"') {
+                            matchingVal = matchingVal.substring(1,matchingVal.length-1);
+                        }
 
                         resultingFilter.attribute.push(matchingName);
                         resultingFilter.attributeValue.push(matchingVal);
@@ -868,7 +872,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if ( this._attributeNameFilter.value && this._attributeValueFilter.value ) {
-            const attributeValueValue: string = this._attributeValueFilter.value.replace(' ', '');
+            let attributeValueValue: string = this._attributeValueFilter.value;
+            if (attributeValueValue.includes(' ')) {
+                attributeValueValue = '"' + attributeValueValue + '"';
+            }
             filter.attributeValue = [ attributeValueValue ];
         } else {
             filter.attributeValue = [];
@@ -1105,9 +1112,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             const multicharString: string = '*';
 
                                             let parsedValue: string = unparsedValue.replace(multicharString, '.*');
+                                            parsedValue = parsedValue.replace(/"/g,'');
 
                                             let valueFromAttribute: string = attr.value as string;
                                             let answer = valueFromAttribute.match(parsedValue);
+
                                             if (answer && answer.length > 0) {
                                                 atLeastOneAttributeMatchValue = true;
                                             }
