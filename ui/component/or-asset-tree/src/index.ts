@@ -431,11 +431,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
 
                 <div id="header-btns">
-                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this.selectedNodes.some((node) => this.isAncestorSelected(node))}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-mwc-input>
-                    <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this.selectedNodes.some((node) => this.isAncestorSelected(node))}" type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
+                    <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @or-mwc-input-changed="${() => this._onSearchClicked()}"></or-mwc-input>
                     
                     ${getContentWithMenuTemplate(
                             html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
@@ -450,7 +450,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                               ?disabled="${this._loading}"
                               style="width: 100%;"
                               type="${ InputType.TEXT }"
-                              icon="magnify" 
+                              placeholder="${i18next.t("filter.filter")}..."
                               compact="true"
                               outlined="true"
                               @input="${(e: KeyboardEvent) => {
@@ -460,28 +460,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                               @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
                                   // Means field has lost focus so do filter immediately
                                   this._onFilterInput((e.detail.value as string) || undefined, true);
-                              }}"
-                              trailingSpace="true">
+                              }}">
                               </or-mwc-input>
-                <div id="clearIconContainer">
-                    <or-icon id="clearIcon" icon="close" @click="${() => {
-                        // Wipe the current value and hide the clear button
-                        this._filterInput.value = undefined;
-                        this._clearIconContainer.classList.remove("visible");
-                        
-                        this._attributeValueFilter.value = undefined;
-                        this._attributeNameFilter.value = undefined;
-    
-                        this._attributeValueFilter.disabled = true;
-                        
-                        this._assetTypeFilter = '';
-                        
-                        this._filter = new OrAssetTreeFilter();
-                        
-                        // Call filtering
-                        this._doFiltering();
-                    }}"></or-icon>
-                </div>
                 <or-icon id="filterSettingsIcon" icon="tune" @click="${() => {
                     if ( this._filterSetting.classList.contains("visible") ) {
                         this._filterSetting.classList.remove("visible");
@@ -526,7 +506,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <or-mwc-input id="attributeNameFilter" .label="${i18next.t("filter.attributeLabel")}"
                                   
                                   .type="${InputType.TEXT}"
-                                  style="margin-top: 14px;"
+                                  style="margin-top: 10px;"
                                   ?disabled="${this._loading}"
                                   @input="${(e: KeyboardEvent) => {
                                       this._shouldEnableAttrTypeEvent(e);
@@ -537,10 +517,26 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <or-mwc-input id="attributeValueFilter" .label="${i18next.t("filter.attributeValueLabel")}"
                                   
                                   .type="${InputType.TEXT}"
-                                  style="margin-top: 14px;"
+                                  style="margin-top: 10px;"
                                   disabled></or-mwc-input>
-                    <div>
-                        <or-mwc-input style="float: right;" style="margin-top: 14px;" type="${ InputType.BUTTON }" .label="${i18next.t("filter.action")}" raised @click="${() => {
+                    <div style="margin-top: 10px;">
+                        <or-mwc-input style="float:left;" type="${ InputType.BUTTON }" .label="${i18next.t("filter.clear")}" @or-mwc-input-changed="${() => {
+                            // Wipe the current value and hide the clear button
+                            this._filterInput.value = undefined;
+
+                            this._attributeValueFilter.value = undefined;
+                            this._attributeNameFilter.value = undefined;
+
+                            this._attributeValueFilter.disabled = true;
+
+                            this._assetTypeFilter = '';
+
+                            this._filter = new OrAssetTreeFilter();
+
+                            // Call filtering
+                            this._doFiltering();
+                        }}"></or-mwc-input>
+                        <or-mwc-input style="float: right;" type="${ InputType.BUTTON }" .label="${i18next.t("filter.action")}" raised @or-mwc-input-changed="${() => {
                             this._filterFromSettings();
                         }}"></or-mwc-input>
                     </div>
@@ -1014,12 +1010,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         let newFilterForSearchInput: string = this.formatFilter(this._filter);
 
-        if (newFilterForSearchInput) {
-            this._clearIconContainer.classList.add("visible");
-        } else {
-            this._clearIconContainer.classList.remove("visible");
-        }
-
         this._filterInput.value = newFilterForSearchInput;
 
         this._filterSetting.classList.remove("visible");
@@ -1032,24 +1022,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (e.composedPath()) {
             value = ((e.composedPath()[0] as HTMLInputElement).value) || undefined;
-
-            if (value) {
-                this._clearIconContainer.classList.add("visible");
-            } else {
-                this._clearIconContainer.classList.remove("visible");
-            }
         }
 
         this._onFilterInput(value, false);
     }
 
     protected _onFilterInput(newValue: string | undefined, force: boolean): void {
-        if (newValue) {
-            this._clearIconContainer.classList.add("visible");
-        } else {
-            this._clearIconContainer.classList.remove("visible");
-        }
-
         let currentFilter: OrAssetTreeFilter = this.parseFromInputFilter(newValue);
 
         if (Util.objectsEqual(this._filter, currentFilter,true)) {
@@ -1065,7 +1043,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if (!force) {
             this._searchInputTimer = window.setTimeout(() => {
                 this._doFiltering();
-            }, 1500);
+            }, 350);
         } else {
             this._doFiltering();
         }
@@ -1530,8 +1508,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._loading = true;
 
             const query: AssetQuery = {
-                tenant: {
-                    realm: manager.displayRealm
+                realm: {
+                    name: manager.displayRealm
                 },
                 select: { // Just need the basic asset info
                     attributes: []

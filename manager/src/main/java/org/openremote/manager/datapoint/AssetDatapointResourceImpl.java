@@ -93,7 +93,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
-            if (!isTenantActiveAndAccessible(asset.getRealm())) {
+            if (!isRealmActiveAndAccessible(asset.getRealm())) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
@@ -128,7 +128,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
-            if (!isTenantActiveAndAccessible(asset.getRealm())) {
+            if (!isRealmActiveAndAccessible(asset.getRealm())) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
@@ -161,7 +161,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     throw new WebApplicationException(Response.Status.NOT_FOUND);
                 }
 
-                if (!isTenantActiveAndAccessible(asset.getRealm())) {
+                if (!isRealmActiveAndAccessible(asset.getRealm())) {
                     DATA_EXPORT_LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 }

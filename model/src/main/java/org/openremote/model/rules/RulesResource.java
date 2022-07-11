@@ -45,12 +45,12 @@ public interface RulesResource {
     RulesEngineInfo getGlobalEngineInfo(@BeanParam RequestParams requestParams);
 
     /**
-     * Retrieve information about the specified tenant rules engine (if engine doesn't exist then will return null).
+     * Retrieve information about the specified realm rules engine (if engine doesn't exist then will return null).
      */
     @GET
-    @Path("info/tenant/{realm}")
+    @Path("info/realm/{realm}")
     @RolesAllowed({Constants.READ_RULES_ROLE})
-    RulesEngineInfo getTenantEngineInfo(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    RulesEngineInfo getRealmEngineInfo(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
      * Retrieve information about the specified asset rules engine (if engine doesn't exist then will return null).
@@ -70,14 +70,14 @@ public interface RulesResource {
     GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /**
-     * Retrieve rules of a tenant. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
+     * Retrieve rules of a realm. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
      * user tries to access rulesets outside of its authenticated realm. An empty result will be returned if the realm
      * can not be found.
      */
     @GET
-    @Path("tenant/for/{realm}")
+    @Path("realm/for/{realm}")
     @Produces(APPLICATION_JSON)
-    TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    RealmRuleset[] getRealmRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /**
      * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status is returned
@@ -134,45 +134,45 @@ public interface RulesResource {
     /* ################################################################################################# */
 
     /**
-     * Create a tenant ruleset. The superuser can create rules in all realms, a 403 status is returned if a regular user
+     * Create a realm ruleset. The superuser can create rules in all realms, a 403 status is returned if a regular user
      * tries to access ruleset outside of its authenticated realm, or if the user is restricted.
      */
     @POST
-    @Path("tenant")
+    @Path("realm")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_RULES_ROLE})
-    long createTenantRuleset(@BeanParam RequestParams requestParams, @Valid TenantRuleset ruleset);
+    long createRealmRuleset(@BeanParam RequestParams requestParams, @Valid RealmRuleset ruleset);
 
     /**
-     * Retrieve a tenant ruleset. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
+     * Retrieve a realm ruleset. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
      * user tries to access ruleset outside of its authenticated realm, or if the user is restricted.
      */
     @GET
-    @Path("tenant/{id}")
+    @Path("realm/{id}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_RULES_ROLE})
-    TenantRuleset getTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    RealmRuleset getRealmRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
-     * Update a tenant ruleset. The superuser can update rules of all realms, a 403 status is returned if a regular user
+     * Update a realm ruleset. The superuser can update rules of all realms, a 403 status is returned if a regular user
      * tries to access rulesets outside of its authenticated realm, or if the user is restricted.
      */
     @PUT
-    @Path("tenant/{id}")
+    @Path("realm/{id}")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_RULES_ROLE})
-    void updateTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid TenantRuleset ruleset);
+    void updateRealmRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid RealmRuleset ruleset);
 
     /**
-     * Delete a tenant ruleset. The superuser can delete rules of all realms, a 403 status is returned if a regular user
+     * Delete a realm ruleset. The superuser can delete rules of all realms, a 403 status is returned if a regular user
      * tries to access rulesets outside of its authenticated realm, or if the user is restricted.
      */
     @DELETE
-    @Path("tenant/{id}")
+    @Path("realm/{id}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_RULES_ROLE})
-    void deleteTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    void deleteRealmRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /* ################################################################################################# */
 

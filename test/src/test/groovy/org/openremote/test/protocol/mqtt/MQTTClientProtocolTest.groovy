@@ -78,7 +78,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             .setClientId(clientId)
             .setHost(mqttHost)
             .setPort(mqttPort)
-            .setUsernamePassword(new UsernamePassword(keycloakTestSetup.tenantBuilding.realm + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
+            .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
 
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
@@ -97,8 +97,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 new Attribute<>("readWriteTargetTemp", NUMBER)
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
-                            .setSubscriptionTopic("${keycloakTestSetup.tenantBuilding.realm}/$clientId/attributevalue/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
-                            .setPublishTopic("${keycloakTestSetup.tenantBuilding.realm}/$clientId/attributevalue/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
+                            .setSubscriptionTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/attributevalue/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
+                            .setPublishTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/attributevalue/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
                             .setWriteValue("${Protocol.DYNAMIC_VALUE_PLACEHOLDER}")
                     ))
         )

@@ -47,7 +47,7 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
 
     @Override
     public GatewayConnection getConnection(RequestParams requestParams, String realm) {
-        if (!realm.equals(getAuthenticatedRealm()) && !isSuperUser()) {
+        if (!realm.equals(getAuthenticatedRealmName()) && !isSuperUser()) {
             throw new WebApplicationException(FORBIDDEN);
         }
 
@@ -60,7 +60,7 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
 
     @Override
     public ConnectionStatus getConnectionStatus(RequestParams requestParams, String realm) {
-        if (!realm.equals(getAuthenticatedRealm()) && !isSuperUser()) {
+        if (!realm.equals(getAuthenticatedRealmName()) && !isSuperUser()) {
             throw new WebApplicationException(FORBIDDEN);
         }
 
@@ -84,7 +84,7 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
     public void setConnection(RequestParams requestParams, String realm, GatewayConnection connection) {
         connection.setLocalRealm(realm);
 
-        if (!connection.getLocalRealm().equals(getAuthenticatedRealm()) && !isSuperUser()) {
+        if (!connection.getLocalRealm().equals(getAuthenticatedRealmName()) && !isSuperUser()) {
             throw new WebApplicationException(FORBIDDEN);
         }
 
@@ -106,7 +106,7 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
             throw new WebApplicationException(BAD_REQUEST);
         }
 
-        if ((realms.size() > 1 || !getAuthenticatedRealm().equals(realms.get(0))) && !isSuperUser()) {
+        if ((realms.size() > 1 || !getAuthenticatedRealmName().equals(realms.get(0))) && !isSuperUser()) {
             throw new WebApplicationException(FORBIDDEN);
         }
 

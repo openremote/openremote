@@ -3,7 +3,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
-import {InputType} from "./or-mwc-input";
+import {InputType, OrMwcInput} from "./or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {Util} from "@openremote/core";
 
@@ -54,12 +54,8 @@ declare global {
 }
 
 export async function showErrorDialog(errorMessage: string, hostElement?: HTMLElement) {
-    const deferred = new Util.Deferred<void>();
-
-    showDialog(new OrMwcDialog()
-        .setHeading("error")
-        .setContent(
-            html`
+    const title = "error";
+    const content = html`
                 <div>
                     <p><or-translate value="errorOccurred"></or-translate>
                     ${errorMessage ? html`
@@ -70,18 +66,9 @@ export async function showErrorDialog(errorMessage: string, hostElement?: HTMLEl
                             <or-translate .value="${errorMessage}"></or-translate>
                     ` : ``}
                     </p>
-                </div>`
-        )
-        .setActions(
-            [{
-                actionName: "ok",
-                content: i18next.t("ok"),
-                default: true,
-                action: (dialog) => deferred.resolve()
-            }]
-        ), hostElement);
+                </div>`;
 
-    await deferred.promise;
+    return showOkDialog(title, content, undefined, hostElement);
 }
 
 export async function showOkCancelDialog(title: string, content: string | TemplateResult, okText?: string, hostElement?: HTMLElement) {
@@ -101,6 +88,29 @@ export async function showOkCancelDialog(title: string, content: string | Templa
                     },
                     {
                         actionName: "ok",
+                        content: okText ? okText : i18next.t("ok"),
+                        action: () => deferred.resolve(true)
+                    }
+                ]
+            )
+            .setHeading(title),
+        hostElement);
+
+    return await deferred.promise;
+}
+
+export async function showOkDialog(title: string, content: string | TemplateResult, okText?: string, hostElement?: HTMLElement) {
+
+    const deferred = new Util.Deferred<boolean>();
+
+    showDialog(
+        new OrMwcDialog()
+            .setContent(typeof(content) === "string" ? html`<p>${content}</p>` : content)
+            .setActions(
+                [
+                    {
+                        actionName: "ok",
+                        default: true,
                         content: okText ? okText : i18next.t("ok"),
                         action: () => deferred.resolve(true)
                     }
@@ -289,7 +299,7 @@ export class OrMwcDialog extends LitElement {
                                 ${this.actions ? this.actions.map((action) => {
                                     return html`
                                     <div class="mdc-button mdc-dialog__button" ?data-mdc-dialog-button-default="${action.default}" data-mdc-dialog-action="${action.actionName}">
-                                        ${typeof(action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
+                                        ${typeof(action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" @or-mwc-input-changed="${(ev: Event) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
                                     </div>`;
                                 }) : ``}
                             </footer>

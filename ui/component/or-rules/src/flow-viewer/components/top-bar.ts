@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import {customElement, property} from "lit/decorators.js";
 import { IdentityDomLink } from "../node-structure";
-import { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { Utilities } from "../utils";
 import { i18next, translate } from "@openremote/or-translate";
 import { project, modal, input, exporter, FlowEditor } from "./flow-editor";
@@ -98,8 +98,8 @@ export class TopBar extends translate(i18next)(LitElement) {
             @or-mwc-input-changed="${(e: OrInputChangedEvent) => { chosenDesc = e.detail.value; }}"
             ></or-mwc-input>
             <div>
-                <or-mwc-input style="text-align: left; margin-right: 10px" type="button" label="${i18next.t("cancel", "Cancel")!}" @click="${modal.element.close}"></or-mwc-input>
-                <or-mwc-input style="text-align: right" type="button" unelevated label="${i18next.t("save", "Save")!}" @click="${() => {
+                <or-mwc-input style="text-align: left; margin-right: 10px" type="${InputType.BUTTON}" label="${i18next.t("cancel", "Cancel")!}" @or-mwc-input-changed="${modal.element.close}"></or-mwc-input>
+                <or-mwc-input style="text-align: right" type="${InputType.BUTTON}" unelevated label="${i18next.t("save", "Save")!}" @or-mwc-input-changed="${() => {
                 if (!chosenName) { return; }
                 exporter.exportAsNew(project.toNodeCollection(chosenName, chosenDesc));
                 modal.element.close();

@@ -634,3 +634,108 @@ Resources:
     Properties:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
+      
+# Telemetry and Alarms
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: support@openremote.io
+      Protocol: email
+      TopicArn: !Ref SnsTopic
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub ${Host}.${EC2Instance}
+
+  SystemStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_System
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 2
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+      - !Sub "arn:aws:automate:${AWS::Region}:ec2:recover"
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref EC2Instance
+
+  InstanceStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_Instance
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 3
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+      - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref EC2Instance
+
+  CPUUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 4
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
+      AlarmActions:
+      - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref EC2Instance
+
+  HealthCheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/Route53
+      MetricName: HealthCheckStatus
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 15
+      ComparisonOperator: LessThanThreshold
+      Threshold: 1
+      AlarmActions:
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Dimensions:
+      - Name: HealthCheckId
+        Value: !Ref HealthCheck
+
+  HealthCheck:
+    Type: AWS::Route53::HealthCheck
+    DependsOn: EC2Instance
+    Properties:
+      HealthCheckConfig:
+        Port: 443
+        Type: HTTPS
+        ResourcePath: '/api/master/info'
+        FullyQualifiedDomainName: !Sub ${Host}
+        RequestInterval: 30
+        FailureThreshold: 10
+      HealthCheckTags:
+      - Key: Name
+        Value: !Sub ${Host}
+

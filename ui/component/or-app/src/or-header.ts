@@ -14,10 +14,9 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {Tenant} from "@openremote/model";
+import {Realm} from "@openremote/model";
 import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
-import {ThunkMiddleware} from "redux-thunk";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -335,7 +334,7 @@ export class OrHeader extends LitElement {
     }
 
     @property({type: Array})
-    public realms!: Tenant[];
+    public realms!: Realm[];
 
     @property({type: String})
     public realm!: string;
@@ -438,7 +437,7 @@ export class OrHeader extends LitElement {
 
     protected _getRealmMenu(callback: (realm: string) => void): TemplateResult {
 
-        const currentRealm = this.realms.find((t) => t.realm === this.realm);
+        const currentRealm = this.realms.find((t) => t.name === this.realm);
 
         let realmTemplate = html`
             <div id="realm-picker">
@@ -453,7 +452,7 @@ export class OrHeader extends LitElement {
             const menuItems = this.realms.map((r) => {
                 return {
                     text: r.displayName!,
-                    value: r.realm!
+                    value: r.name!
                 } as ListItem;
             });
 
@@ -461,7 +460,7 @@ export class OrHeader extends LitElement {
                 ${getContentWithMenuTemplate(
                         realmTemplate,
                         menuItems,
-                        currentRealm ? currentRealm.realm : undefined,
+                        currentRealm ? currentRealm.name : undefined,
                         (value) => callback(value as string))}
             `;
         }

@@ -51,7 +51,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def clientEventService = container.getService(ClientEventService.class)
         def agentService = container.getService(AgentService.class)
         def mqttClientId = UniqueIdentifierGenerator.generateId()
-        def username = keycloakTestSetup.tenantBuilding.realm + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
+        def username = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
         def password = keycloakTestSetup.serviceUser.secret
 
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST)
@@ -80,7 +80,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
-        def topic = "${keycloakTestSetup.tenantCity.realm}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.thingId".toString()
+        def topic = "${keycloakTestSetup.realmCity.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.thingId".toString()
         client.addMessageConsumer(topic, {msg -> })
 
         then: "No subscription should exist"
@@ -90,7 +90,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes with clientId missing"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
         client.addMessageConsumer(topic, {msg ->})
 
         then: "No subscription should exist"
@@ -101,7 +101,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a mqtt client subscribes with different clientId"
         def newClientId = UniqueIdentifierGenerator.generateId()
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
         client.addMessageConsumer(topic, {msg ->})
 
         then: "No subscription should exist"
@@ -112,7 +112,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to all attributes of an asset"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
         Consumer<MQTTMessage<String>> eventConsumer = { msg ->
             def event = ValueUtil.parse(msg.payload, SharedEvent.class)
             receivedEvents.add(event.get())
@@ -157,7 +157,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "a mqtt client publishes to an asset attribute which is readonly"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC".toString()
         def payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 70)).get()
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
@@ -190,7 +190,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "a mqtt client publishes to an asset attribute value which is not readonly"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/lights/$managerTestSetup.apartment1HallwayId".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/lights/$managerTestSetup.apartment1HallwayId".toString()
         payload = ValueUtil.asJSON(true).orElse(null)
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
@@ -207,7 +207,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "a mqtt client unsubscribes from an asset"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
         client.removeMessageConsumer(topic, eventConsumer)
 
         then: "No subscription should exist"
@@ -226,7 +226,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to a specific asset attribute"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString()
         client.addMessageConsumer(topic, eventConsumer)
 
         then: "the subscription should be created"
@@ -270,7 +270,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to attributes for descendants of an asset"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
         client.addMessageConsumer(topic, eventConsumer)
 
         then: "a subscription should exist"
@@ -296,7 +296,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "a mqtt client subscribes to an asset attribute value"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString()
         Consumer<MQTTMessage<String>> valueConsumer = { msg ->
             receivedValues.add(msg.payload)
         }
@@ -372,7 +372,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to assets that are direct children of the realm"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ASSET_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ASSET_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD".toString()
         client.addMessageConsumer(topic, eventConsumer)
 
         then: "A subscription should exist"
@@ -397,7 +397,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "the client subscribes to descendant assets of a specific asset"
-        topic = "${keycloakTestSetup.tenantBuilding.realm}/$mqttClientId/$DefaultMQTTHandler.ASSET_TOPIC/$managerTestSetup.apartment1Id/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ASSET_TOPIC/$managerTestSetup.apartment1Id/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
         client.addMessageConsumer(topic, eventConsumer)
 
         then: "the subscription should exist"
@@ -410,7 +410,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         when: "an asset is added as a descendant to the subscribed asset"
         def childAsset = new ThingAsset("child")
                 .setParentId(managerTestSetup.apartment1LivingroomId)
-                .setRealm(managerTestSetup.realmBuildingTenant);
+                .setRealm(managerTestSetup.realmBuildingName);
         childAsset = assetStorageService.merge(childAsset);
 
         then: "another event should be sent"

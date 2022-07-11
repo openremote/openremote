@@ -220,7 +220,10 @@ export class PageUsers extends Page<AppStateKeyed> {
     @state()
     protected _roles: Role[] = [];
     @state()
-    protected _realmRoles: RealmRole[] = [];
+    protected _realmRoles: Role[] = [];
+
+    protected _realmRolesToExclude: string[] = ["uma_authorization", "offline_access"];
+
     @state()
     protected _compositeRoles: Role[] = [];
     protected _loading: boolean = false;
@@ -292,13 +295,13 @@ export class PageUsers extends Page<AppStateKeyed> {
             return;
         }
 
-        const tenantResponse = await manager.rest.api.TenantResource.get(manager.displayRealm);
+        const realmResponse = await manager.rest.api.RealmResource.get(manager.displayRealm);
 
-        if (!this.responseAndStateOK(stateChecker, tenantResponse, i18next.t("loadFailedRoles"))) {
+        if (!this.responseAndStateOK(stateChecker, realmResponse, i18next.t("loadFailedRoles"))) {
             return;
         }
 
-        const usersResponse = await manager.rest.api.UserResource.query({tenantPredicate: {realm: manager.displayRealm}} as UserQuery);
+        const usersResponse = await manager.rest.api.UserResource.query({realmPredicate: {name: manager.displayRealm}} as UserQuery);
 
         if (!this.responseAndStateOK(stateChecker, usersResponse, i18next.t("loadFailedUsers"))) {
             return;
@@ -306,7 +309,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
-        this._realmRoles = (tenantResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
+        this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._loading = false;
@@ -428,6 +431,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
+        const realmRoleOptions: string[] = this._realmRoles ? this._realmRoles.filter(r => !this._realmRolesToExclude.includes(r.name)).filter(r => !r.composite).map(r => r.name) : [];
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
         return html`
@@ -460,7 +464,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                             <tbody class="mdc-data-table__content">
                             ${this._users.map((user, index) => this._getUserTemplate(() => {
                                 this._users.pop(); this._users = [...this._users];
-                            }, user, readonly, compositeRoleOptions, "user"+index))}
+                            }, user, readonly, compositeRoleOptions, realmRoleOptions, "user"+index))}
                             ${(this._users.length === 0 || (this._users.length > 0 && !!this._users[this._users.length - 1].id)) && !readonly ? html`
                                 <tr class="mdc-data-table__row" @click="${() => {
                                     this._users = [...this._users, {realm: manager.displayRealm, userAssetLinks: [], roles:[], previousRoles: [], realmRoles: [], previousRealmRoles: [], enabled: true, loaded: true}];
@@ -498,7 +502,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                             <tbody class="mdc-data-table__content">
                             ${this._serviceUsers.map((user, index) => this._getUserTemplate(() => {
                                 this._serviceUsers.pop(); this._serviceUsers = [...this._serviceUsers];
-                            }, user, readonly, compositeRoleOptions, "serviceuser" + index))}
+                            }, user, readonly, compositeRoleOptions, realmRoleOptions, "serviceuser" + index))}
                             ${(this._serviceUsers.length === 0 || (this._serviceUsers.length > 0 && !!this._serviceUsers[this._serviceUsers.length - 1].id)) && !readonly ? html`
                                 <tr class="mdc-data-table__row" @click="${() => {
                                     this._serviceUsers = [...this._serviceUsers, {
@@ -569,6 +573,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
             user.roles = userRolesResponse.data.filter(r => r.assigned);
             user.realmRoles = userRealmRolesResponse.data.filter(r => r.assigned);
+            this._realmRoles = [...userRealmRolesResponse.data];
             user.previousRealmRoles = [...user.realmRoles];
             user.previousRoles = [...user.roles];
             user.userAssetLinks = userAssetLinksResponse.data;
@@ -607,7 +612,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         };
 
         const dialog = showDialog(new OrMwcDialog()
-            .setHeading(i18next.t("restrictAccess"))
+            .setHeading(i18next.t("linkedAssets"))
             .setContent(html`
                 <or-asset-tree 
                     id="chart-asset-tree" readonly .selectedIds="${user.userAssetLinks.map(ual => ual.id.assetId)}"
@@ -709,7 +714,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         return this._compositeRoles.filter((role) => user.roles.some(ur => ur.name === role.name)).flatMap((role) => role.compositeRoleIds).map(id => this._roles.find(r => r.id === id).name);
     }
 
-    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], suffix: string): TemplateResult {
+    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], realmRoleOptions: string[],  suffix: string): TemplateResult {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
@@ -804,6 +809,24 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"
                                                   style="height: 56px;"></or-mwc-input>
 
+                                    <!-- realmRoles roles -->
+                                    <or-mwc-input
+                                            ?readonly="${readonly}"
+                                            ?disabled="${isSameUser}"
+                                            .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => !this._realmRolesToExclude.includes(r.name)).filter(r =>!r.composite).map(r => r.name) : undefined}"
+                                            .type="${InputType.SELECT}" multiple
+                                            .options="${realmRoleOptions}"
+                                            .label="${i18next.t("realm_role_plural")}"
+                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                const roleNames = e.detail.value as string[];
+                                                const excludedAndCompositeRoles = user.realmRoles.filter(r => this._realmRolesToExclude.includes(r.name) || r.composite);
+                                                const selectedRoles = this._realmRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
+                                                    return {...r, assigned: true} as Role;
+                                                });
+                                                user.realmRoles = [...excludedAndCompositeRoles, ...selectedRoles];
+                                                this._updateUserSelectedRoles(user, suffix);
+                                            }}"></or-mwc-input>
+
                                     <!-- composite roles -->
                                     <or-mwc-input
                                             ?readonly="${readonly}"
@@ -812,7 +835,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                             .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
                                             .type="${InputType.SELECT}" multiple
                                             .options="${compositeRoleOptions}"
-                                            .label="${i18next.t("role_plural")}"
+                                            .label="${i18next.t("manager_role_plural")}"
                                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                 const roleNames = e.detail.value as string[];
                                                 user.roles = this._compositeRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
@@ -846,14 +869,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
                                     <!-- restricted access -->
                                     <div>
-                                        <or-mwc-input
-                                                id="${user.id}-restricted"
-                                                .type="${InputType.CHECKBOX}"
-                                                ?readonly="${readonly}"
-                                                .label="${i18next.t("restrictedAccessToAssets") + ':'}"
-                                                @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._addRemoveRealmRole(user, RESTRICTED_USER_REALM_ROLE, ev.detail.value as boolean)}"
-                                                .value="${user.realmRoles ? !!user.realmRoles.find(r => r.name === RESTRICTED_USER_REALM_ROLE) : undefined}"></or-mwc-input>
-
+                                        <span>${i18next.t("linkedAssets")}:</span>
                                         <or-mwc-input outlined
                                                       .type="${InputType.BUTTON}"
                                                       .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
@@ -886,17 +902,5 @@ export class PageUsers extends Page<AppStateKeyed> {
                 </td>
             </tr>
         `;
-    }
-
-    protected _addRemoveRealmRole(user: UserModel, roleName: string, add: boolean) {
-        if (!add) {
-            user.realmRoles = user.realmRoles.filter(role => role.name !== roleName);
-        } else {
-            const role = this._realmRoles.find(role => role.name === roleName);
-            if (role) {
-                user.realmRoles.push({...role, assigned: true});
-            }
-        }
-        this.requestUpdate();
     }
 }

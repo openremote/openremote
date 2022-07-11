@@ -304,7 +304,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
     }
 
     protected getGeoNotifications() {
-        manager.rest.api.RulesResource.getTenantRulesets(manager.config.realm, {fullyPopulate: true}).then((response: any) => {
+        manager.rest.api.RulesResource.getRealmRulesets(manager.config.realm, {fullyPopulate: true}).then((response: any) => {
             const mapItemDefinition: JsonRulesetDefinition = {
                 rules: []
             };
@@ -361,7 +361,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
         const vectorMap = map as OrMap;
 
         manager.console.sendProviderMessage({provider: 'geofence', action: "GET_LOCATION"}, true).then(response => {
-            console.log(JSON.stringify(response));
+            console.info(JSON.stringify(response));
             if (response.data) {
                 vectorMap.flyTo({lng: response.data.longitude, lat: response.data.latitude});
             }

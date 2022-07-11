@@ -22,7 +22,7 @@ import {
 } from "@openremote/or-asset-tree";
 import manager, {DefaultBoxShadow, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {createSelector, Store} from "@reduxjs/toolkit";
+import {Store, createSelector} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
@@ -185,7 +185,8 @@ export class PageAssets extends Page<AppStateKeyed>  {
 
             if (Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
                 // User has clicked the same node so let's force reload it
-                this._viewer.reloadAsset();
+                this._viewer.ids = undefined;
+                this._viewer.ids = nodes.map((node) => node.asset.id!);
             } else {
                 this._assetIds = nodes.map((node) => node.asset.id!);
                 this._viewer.ids = this._assetIds;
@@ -195,7 +196,6 @@ export class PageAssets extends Page<AppStateKeyed>  {
     }
 
     protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
-        const nodes = event.detail.newNodes;
         this._assetIds = event.detail.newNodes.map((node) => node.asset.id!);
         this._viewer.ids = this._assetIds;
         this._updateRoute(true);

@@ -129,6 +129,7 @@ export enum InputType {
 
 export interface ValueInputProviderOptions {
     label?: string;
+    required?: boolean;
     readonly?: boolean;
     disabled?: boolean;
     compact?: boolean;
@@ -381,6 +382,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
     const readonly = options.readonly;
+    required = required || options.required;
     const comfortable = options.comfortable;
     const resizeVertical = options.resizeVertical;
     const inputRef: Ref<OrMwcInput> = createRef();
@@ -594,10 +596,6 @@ const style = css`
     .or-label-with-icon {
         left: 42px !important;
     }
-    
-    .or-trailing-space {
-        width: 78%;
-    }
 `;
 
 @customElement("or-mwc-input")
@@ -767,8 +765,11 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public resizeVertical: boolean = false;
 
-    @property({type: Boolean})
-    public trailingSpace: boolean = false;
+    public get nativeValue(): any {
+        if (this._mdcComponent) {
+            return (this._mdcComponent as any).value;
+        }
+    }
 
     /* TEXT INPUT STYLES END */
 
@@ -1080,6 +1081,27 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.BUTTON:
                 case InputType.BUTTON_MOMENTARY: {
+
+                    const onMouseDown = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+
+                        if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
+                    const onMouseUp = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+
+                        isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
+                    const onClick = (ev: MouseEvent) => {
+                        if (this.disabled) {
+                            ev.stopPropagation();
+                        }
+                    }
+
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;
                     let classes = {
@@ -1097,7 +1119,8 @@ export class OrMwcInput extends LitElement {
                         <button id="component" class="${classMap(classes)}"
                             ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}"
-                            @mousedown="${() => {if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))}}" @mouseup="${() => isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))}">
+                            @click="${(ev: MouseEvent) => onClick(ev)}"
+                            @mousedown="${(ev: MouseEvent) => onMouseDown(ev)}" @mouseup="${(ev: MouseEvent) => onMouseUp(ev)}">
                             ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
                             ${this.icon ? html`<or-icon class="${isIconButton ? "" : this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                             ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}">${this.label}</span>` : ``}
@@ -1285,7 +1308,7 @@ export class OrMwcInput extends LitElement {
                                 @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement), (e.target as HTMLTextAreaElement).value)}">${valMinMax[0] ? valMinMax[0] : ""}</textarea>`
                             : html`
                             <input type="${type}" id="elem" aria-labelledby="${ifDefined(label ? "label" : undefined)}"
-                            class="mdc-text-field__input ${this.trailingSpace ? "or-trailing-space" : ""}" ?required="${this.required}" ?readonly="${this.readonly}"
+                            class="mdc-text-field__input" ?required="${this.required}" ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}"
                             step="${this.step ? this.step : "any"}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
@@ -1699,6 +1722,6 @@ export class OrMwcInput extends LitElement {
             return "";
         }
         const opts = options || this.resolveOptions(this.options);
-        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(",");
+        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(", ");
     }
 }

@@ -80,7 +80,7 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
             if (auth.isSuperUser())
                 return true;
 
-            // TODO Should realm admins be able to work with simulators in their tenant?
+            // TODO Should realm admins be able to work with simulators in their realm?
 
             return false;
         });
@@ -114,7 +114,7 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
                 if (!authContext.isSuperUser())
                     return;
 
-                // TODO Should realm admins be able to work with simulators in their tenant?
+                // TODO Should realm admins be able to work with simulators in their realm?
                 publishSimulatorState(sessionKey, event.getAgentId());
             });
     }

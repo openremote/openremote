@@ -1,17 +1,12 @@
 {
 	"push": {
-		"develop": {
+		"master": {
 			"distribute": {
-				"tags": "develop"
+				"tags": "develop,latest"
 			},
 			"deploy": {
 				"managerTag": "develop",
 				"environment": "staging"
-			}
-		},
-		"master": {
-			"distribute": {
-				"tags": "latest"
 			}
 		}
 	},
