@@ -592,10 +592,6 @@ const style = css`
     .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
         --or-icon-fill: var(--or-app-color4);
     }
-    
-    .or-label-with-icon {
-        left: 42px !important;
-    }
 `;
 
 @customElement("or-mwc-input")
@@ -852,7 +848,7 @@ export class OrMwcInput extends LitElement {
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
             const hasValue = this.value || this.value === false;
-            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""} ${!!this.icon && this.type === InputType.TEXT && hasValue ? "or-label-with-icon" : ""}" id="label">${this.label}</span>` : undefined;
+            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
 
             switch (this.type) {
                 case InputType.RADIO:
@@ -1322,7 +1318,7 @@ export class OrMwcInput extends LitElement {
 
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
-                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" style="--or-icon-fill: ${this.iconColor ? "#" + this.iconColor : "unset"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
+                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" style="color: ${this.iconColor ? "#" + this.iconColor : "unset"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                                 ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
