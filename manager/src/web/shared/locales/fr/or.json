@@ -96,6 +96,8 @@
   "path": "Chemin",
   "showOnMap": "Montrer sur la carte",
   "noAssetSelected": "Veuillez sélectionner une ressource à gauche",
+  "multiAssetSelected": "{{assetNbr}} ressources sélectionnées",
+  "changeParent": "Change Parent",
   "loading": "Chargement...",
   "noAssetsFound": "Aucune ressource trouvée",
   "location": "Position",
@@ -406,6 +408,7 @@
   "daysOfTheWeek": "jours de la semaine",
   "dismiss": "rejeter",
   "createAssetFailed": "Impossible de créer la ressource",
+  "moveAssetFailed": "Impossible de déplacer la ressource",
   "logCategory": {
   },
   "readPermissions": "Autorisations de lire",

@@ -119,7 +119,19 @@ export const style = css`
     #list li[data-selected] > .node-container {
         border-left-color: var(--internal-or-asset-tree-selected-color);
     }
-            
+          
+    .asset-list-element .over {
+        background-color: ${unsafeCSS(DefaultColor5)};
+    }
+    
+    .in-between-element {
+        height: 3px;
+    }
+
+    .end-element {
+        height: 15px;
+    }
+    
     .node-container {
         display: flex;
         border-left: 4px solid transparent;
@@ -284,5 +296,13 @@ export const style = css`
     
     .filterMatching {
         color: #808080;
+    }
+    
+    .draggable {
+        cursor: pointer;
+    }
+    
+    .draggable:active {
+        cursor: grabbing;
     }
 `;

@@ -1718,6 +1718,6 @@ export class OrMwcInput extends LitElement {
             return "";
         }
         const opts = options || this.resolveOptions(this.options);
-        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(",");
+        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(", ");
     }
 }
