@@ -35,6 +35,8 @@ import org.openremote.model.value.MetaItemType;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -277,4 +279,21 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     Asset<?>[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
+
+    /**
+     * Change parent for a set of asset
+     */
+    @PUT
+    @Path("{parentAssetId}/child")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    void updateParent(@BeanParam RequestParams requestParams, @PathParam("parentAssetId") @NotNull(message = "Parent reference required") String parentId, @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
+
+    /**
+     * Remove parent reference from each asset referenced in the query parameter assetIds
+     */
+    @DELETE
+    @Path("/parent")
+    @Produces(APPLICATION_JSON)
+    void updateNoneParent(@BeanParam RequestParams requestParams, @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
 }
