@@ -481,6 +481,7 @@
     "assetTypeNone": "Geen",
     "assetTypeMenuNone": "Geen",
     "attributeLabel": "Attribuut",
-    "attributeValueLabel": "Attribuutwaarde"
+    "attributeValueLabel": "Attribuutwaarde",
+    "assetTypeDoesNotExist": "Filter: Asset type bestaat niet"
   }
 }

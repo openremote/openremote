@@ -240,22 +240,6 @@ export const style = css`
     #filterInput {
         padding: 7px 12px 7px 7px;
     }
-    
-    #clearIconContainer {
-        position: absolute;
-        right: 24px;
-        padding-right: 14px;
-        display: none;
-    }
-    
-    #clearIcon {
-        --or-icon-width: 20px;
-        --or-icon-height: 20px;
-        position: relative;
-        right: 0;
-        padding-right: 16px;
-        cursor: pointer;
-    }
 
     #filterAssetTypeDownIcon {
         width: 16px;
