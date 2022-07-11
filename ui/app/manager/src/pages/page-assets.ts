@@ -1,9 +1,9 @@
 import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import "@openremote/or-asset-tree";
 import "@openremote/or-asset-viewer";
 import {
     OrAssetViewer,
+    OrAssetViewerChangeParentEvent,
     OrAssetViewerEditToggleEvent,
     OrAssetViewerRequestEditToggleEvent,
     OrAssetViewerSaveEvent,
@@ -16,6 +16,7 @@ import {
     OrAssetTree,
     OrAssetTreeAddEvent,
     OrAssetTreeAssetEvent,
+    OrAssetTreeChangeParentEvent,
     OrAssetTreeRequestSelectionEvent,
     OrAssetTreeSelectionEvent
 } from "@openremote/or-asset-tree";
@@ -27,6 +28,7 @@ import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAssetsRoute} from "../routes";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -135,7 +137,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
         [this._realmSelector],
         async (realm: string) => {
             this._assetIds = undefined;
-            if (this._viewer && this._viewer.assetId) this._viewer.assetId = undefined;
+            if (this._viewer && this._viewer.ids) this._viewer.ids = undefined;
             if (this._tree) this._tree.refresh();
             this._updateRoute(true);
         }
@@ -150,6 +152,8 @@ export class PageAssets extends Page<AppStateKeyed>  {
         this.addEventListener(OrAssetTreeAddEvent.NAME, this._onAssetAdd);
         this.addEventListener(OrAssetViewerSaveEvent.NAME, (ev) => this._onAssetSave(ev.detail));
         this.addEventListener(OrAssetTreeAssetEvent.NAME, this._onAssetTreeAssetEvent);
+        this.addEventListener(OrAssetViewerChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
+        this.addEventListener(OrAssetTreeChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
     }
 
     protected render(): TemplateResult | void {
@@ -178,27 +182,22 @@ export class PageAssets extends Page<AppStateKeyed>  {
 
         this._confirmContinue(() => {
             const nodes = event.detail.detail.newNodes;
-            const assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
 
-            if (!Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
-                this._assetIds = nodes.map((node) => node.asset.id!);
-            }
-
-            if (assetId === this._viewer.assetId) {
+            if (Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
                 // User has clicked the same node so let's force reload it
-                this._viewer.assetId = undefined;
-                this._viewer.assetId = assetId;
+                this._viewer.ids = undefined;
+                this._viewer.ids = nodes.map((node) => node.asset.id!);
             } else {
-                this._viewer.assetId = assetId;
+                this._assetIds = nodes.map((node) => node.asset.id!);
+                this._viewer.ids = this._assetIds;
                 this._updateRoute(true);
             }
         });
     }
 
     protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
-        const nodes = event.detail.newNodes;
         this._assetIds = event.detail.newNodes.map((node) => node.asset.id!);
-        this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
+        this._viewer.ids = this._assetIds;
         this._updateRoute(true);
     }
 
@@ -259,13 +258,33 @@ export class PageAssets extends Page<AppStateKeyed>  {
         }
     }
 
+    protected async  _onAssetParentChange(newParentId: any) {
+        let parentId: string | undefined = newParentId.parentId;
+        let assetsIds: string[] = newParentId.assetsIds;
+
+        try {
+            if (parentId) {
+                if ( !assetsIds.includes(parentId) ) {
+                    await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
+                } else {
+                    showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+                }
+            } else {
+                //So need to remove parent from all the selected assets
+                await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
+            }
+        } catch (e) {
+            showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+        }
+    }
+
     protected _onAssetTreeAssetEvent(ev: OrAssetTreeAssetEvent) {
         // Check if the new asset just saved has been created in the asset tree and if so select it
         if (ev.detail.cause === AssetEventCause.CREATE && this._addedAssetId) {
             if (this._addedAssetId === ev.detail.asset.id) {
                 this._assetIds = [ev.detail.asset.id];
                 this._addedAssetId = undefined;
-                this._viewer.assetId = ev.detail.asset.id;
+                this._viewer.ids = this._assetIds;
                 this._updateRoute(true);
             }
         }
