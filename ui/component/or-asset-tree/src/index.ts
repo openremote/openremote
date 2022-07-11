@@ -116,6 +116,22 @@ export class OrAssetTreeSelectionEvent extends CustomEvent<NodeSelectEventDetail
     }
 }
 
+export class OrAssetTreeChangeParentEvent extends CustomEvent<any> {
+
+    public static readonly NAME = "or-asset-tree-change-parent";
+
+    constructor(parent: string | undefined, assetsIds: string[]) {
+        super(OrAssetTreeChangeParentEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                parentId: parent,
+                assetsIds: assetsIds
+            }
+        });
+    }
+}
+
 enum FilterElementType {
     SEARCH_FILTER, ASSET_TYPE,ATTRIBUTE_NAME, ATTRIBUTE_VALUE
 }
@@ -205,6 +221,7 @@ declare global {
         [OrAssetTreeAddEvent.NAME]: OrAssetTreeAddEvent;
         [OrAssetTreeRequestDeleteEvent.NAME]: OrAssetTreeRequestDeleteEvent;
         [OrAssetTreeAssetEvent.NAME]: OrAssetTreeAssetEvent;
+        [OrAssetTreeChangeParentEvent.NAME]: OrAssetTreeChangeParentEvent;
     }
 }
 
@@ -311,6 +328,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @state()
     protected _assetTypeFilter!: string;
     protected _uniqueAssetTypes: string[] = [];
+
+    private _dragDropParentId: string | null = null;
+    protected _expandTimer?: number = undefined;
+    private _latestSelected: UiAssetTreeNode | undefined = undefined;
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -531,6 +552,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <div id="list-container">
                         <ol id="list">
                             ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0)).filter(t => !!t)}
+                            <li class="asset-list-element">    
+                                <div class="end-element" node-asset-id="${''}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
+                            </li>
                         </ol>
                     </div>
                 `)
@@ -651,6 +675,63 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
+    private _buildPaths(node: UiAssetTreeNode): string[] {
+        let paths: string[] = [];
+
+        if (node.asset) {
+            if (node.asset.id) {
+                paths.push(node.asset.id);
+
+                if (node.children.length > 0 && node.expanded) {
+                    node.children.forEach((child: UiAssetTreeNode) => {
+                        paths = paths.concat(this._buildPaths(child));
+                    });
+                }
+
+                return paths;
+            }
+
+            return [];
+        }
+
+        return [];
+    }
+
+    private _findNode(n: UiAssetTreeNode, assetId: string): UiAssetTreeNode | undefined {
+        if (n.asset && n.asset.id) {
+            if (n.asset.id === assetId) {
+                return n;
+            } else if (n.children.length > 0 && n.expanded) {
+                let foundNode: UiAssetTreeNode | undefined = undefined;
+                n.children.forEach((n: UiAssetTreeNode) => {
+                    if (!foundNode) {
+                        foundNode = this._findNode(n, assetId);
+                    }
+                });
+                return foundNode;
+            }
+
+            return undefined;
+        }
+    }
+
+    private _findNodeFromAssetId(assetId: string) : UiAssetTreeNode | undefined {
+        if (this._nodes) {
+            let foundNode: UiAssetTreeNode | undefined = undefined;
+
+            this._nodes.forEach((n: UiAssetTreeNode) => {
+                if (!foundNode) {
+                    foundNode = this._findNode(n, assetId);
+                }
+            });
+
+            return foundNode;
+        } else {
+            return undefined;
+        }
+
+    }
+
     protected _onNodeClicked(evt: MouseEvent | null, node: UiAssetTreeNode | null) {
         if (evt && evt.defaultPrevented) {
             return;
@@ -685,7 +766,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 const multiSelect = !this._isReadonly() && (!this.config || !this.config.select || !this.config.select.multiSelect);
 
                 // determine if node was already selected
-                if (this.checkboxes || (multiSelect && evt && (evt.ctrlKey || evt.metaKey))) {
+                if (this.checkboxes || (multiSelect && evt && (evt.ctrlKey || evt.shiftKey || evt.metaKey))) {
                     deselectOthers = false;
                     if (index >= 0 && this.selectedIds && this.selectedIds.length > 1) {
                         select = false;
@@ -707,14 +788,61 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         : selectedNodes.filter(n => !childNodes.map(cn => cn.asset!.id).includes(n.asset!.id));
 
                 } else if (deselectOthers) {
+                    this._latestSelected = Object.assign({}, node);
                     selectedNodes = [node];
                 } else if (select) {
                     if (index < 0) {
-                        selectedNodes = [...this.selectedNodes];
-                        selectedNodes.push(node);
+                        if (evt && evt.shiftKey) {
+                            let hierarchy: string[] = [];
+                            this._nodes?.forEach((n: UiAssetTreeNode) => {
+                                hierarchy = hierarchy.concat(this._buildPaths(n));
+                            });
+
+                            if (this._latestSelected && this._latestSelected.asset && this._latestSelected.asset.id && node.asset && node.asset.id) {
+                                let latestSelectedAssetId: string = this._latestSelected.asset.id;
+                                let newlySelectedAssetId: string = node.asset.id;
+
+                                let previousIndex: number = hierarchy.findIndex((val: string) => { return val.includes(latestSelectedAssetId); });
+                                let newIndex: number = hierarchy.findIndex((val: string) => { return val.includes(newlySelectedAssetId); });
+
+                                let startIndex: number = -1;
+                                let endIndex: number = -1;
+
+                                if (previousIndex > newIndex) {
+                                    startIndex = newIndex;
+                                    endIndex = previousIndex;
+                                } else {
+                                    startIndex = previousIndex;
+                                    endIndex = newIndex;
+                                }
+
+                                let assetIdsToSelect: string[] = hierarchy.slice(startIndex, endIndex + 1 );
+
+                                let foundNodes: UiAssetTreeNode[] = [];
+
+                                assetIdsToSelect.forEach((assetIdToSelect: string) => {
+                                    let foundNode: UiAssetTreeNode | undefined = this._findNodeFromAssetId(assetIdToSelect);
+
+                                    if (foundNode) {
+                                        foundNodes.push(foundNode);
+                                    }
+                                });
+
+                                selectedNodes = [...this.selectedNodes];
+                                selectedNodes = selectedNodes.concat(foundNodes);
+                            }
+                        } else {
+                            selectedNodes = [...this.selectedNodes];
+                            selectedNodes.push(node);
+                        }
+
+                        this._latestSelected = Object.assign({}, node);
                     }
                 } else if (index >= 0) {
                     selectedNodes = [...this.selectedNodes];
+                    if (selectedNodes.length === 1) {
+                        this._latestSelected = undefined;
+                    }
                     selectedNodes.splice(index, 1);
                 }
             }
@@ -1476,6 +1604,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
+
+
     protected _buildTreeNodes(assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
         if (!assets || assets.length === 0) {
             this._nodes = [];
@@ -1566,6 +1696,102 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         });
     }
 
+    public _onDragStart(ev: any): void {
+        this._dragDropParentId = null;
+
+        let currentElement = ev.currentTarget as HTMLElement;
+        let selectedId: string | null = currentElement.getAttribute('node-asset-id');
+
+        if (!this.selectedIds) {
+            this.selectedIds = [];
+        }
+
+        if (selectedId && this.selectedIds && !this.selectedIds.includes(selectedId)) {
+            this.selectedIds.push(selectedId);
+        }
+    }
+
+    public _onDragEnd(ev: any): void {
+        const dragEndTargetX: number = ev.x;
+        const dragEndTargetY: number = ev.y;
+
+        if (this.shadowRoot !== null) {
+            let listElement: HTMLElement | null = this.shadowRoot.getElementById('list');
+
+            if (listElement) {
+                const topY: number = listElement.getBoundingClientRect().top;
+                const bottomY: number = listElement.getBoundingClientRect().bottom;
+                const leftX: number = listElement.getBoundingClientRect().left;
+                const rightX: number = listElement.getBoundingClientRect().right;
+
+                if (dragEndTargetX < leftX || dragEndTargetX > rightX || dragEndTargetY > bottomY || dragEndTargetY < topY) {
+                    return;
+                }
+            }
+        }
+
+        if (this.selectedIds) {
+            this.dispatchEvent(new OrAssetTreeChangeParentEvent(!this._dragDropParentId ? undefined : this._dragDropParentId, this.selectedIds));
+        }
+    }
+
+    protected isExpandable(assetId: string): boolean {
+        if (this._nodes) {
+            if (this.shadowRoot) {
+                let elem: HTMLElement | null = this.shadowRoot.querySelector('[node-asset-id="' + assetId + '"] > .node-name > [data-expandable]');
+
+                if (elem) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public _onDragOver(ev: any): void {
+        let currentElement = ev.currentTarget as HTMLElement;
+
+        currentElement.classList.add('over');
+
+        let assetId: string | null = currentElement.getAttribute('node-asset-id');
+
+        if (assetId && this.isExpandable(assetId) && !this._expandTimer) {
+            this._expandTimer = window.setTimeout(() => {
+                this.expandeNode(assetId);
+            }, 1000);
+        }
+    }
+
+    protected expandeNode(assetId: string | null): void {
+        if (this.shadowRoot && assetId && assetId === this._dragDropParentId) {
+            let elem: HTMLElement | null = this.shadowRoot.querySelector('[node-asset-id="' + assetId + '"]');
+
+            elem?.parentElement?.setAttribute('data-expanded','');
+        }
+    }
+
+    public _onDragEnter(ev: any): void {
+       let currentElement = ev.currentTarget as HTMLElement;
+
+        currentElement.classList.add('over');
+
+        let enteredId: string | null = currentElement.getAttribute('node-asset-id');
+
+        this._dragDropParentId = enteredId;
+    }
+
+    public _onDragLeave(ev: any): void {
+        let currentElement = ev.currentTarget as HTMLElement;
+
+        currentElement.classList.remove('over');
+
+        clearTimeout(this._expandTimer);
+        this._expandTimer = undefined;
+    }
+
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string | undefined {
 
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
@@ -1589,9 +1815,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             filterColorForNonMatchingAsset = true;
         }
 
+        if (treeNode.expanded && treeNode.children.length === 0) {
+            treeNode.expanded = false;
+        }
+
         return html`
-            <li ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
-                <div class="node-container" style="padding-left: ${level * 22}px">
+            <li class="asset-list-element" ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
+                <div class="in-between-element" node-asset-id="${treeNode.parent ? (treeNode.parent.asset ? treeNode.parent.asset.id : '' ) : undefined}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
+                <div class="node-container draggable" node-asset-id="${treeNode.asset ? treeNode.asset.id : ''}" draggable="true" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}" style="padding-left: ${level * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
                         ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? '#d3d3d3;' : undefined))}
