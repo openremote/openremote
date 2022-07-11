@@ -1121,11 +1121,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @property({type: Object, reflect: false})
     public asset?: Asset;
 
-    @property({type: String})
-    public assetId?: string;
-
     @property({type: Array})
-    public assetsIds: string[] = [];
+    public ids: string[] = [];
 
     @property({type: Object})
     public config?: ViewerConfig;
@@ -1203,11 +1200,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         }
 
-        if (changedProperties.has("assetId")) {
+        if (changedProperties.has("ids")) {
             this.asset = undefined;
-            if (this.assetId) {
+            if (this.ids && this.ids.length === 1) {
                 this._loading = true;
-                super.assetIds = [this.assetId];
+                super.assetIds = [this.ids[0]];
             } else {
                 this._loading = false;
                 super.assetIds = undefined;
@@ -1250,11 +1247,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
             let idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
 
-            this.dispatchEvent(new OrAssetViewerChangeParentEvent(idd, this.assetsIds));
+            this.dispatchEvent(new OrAssetViewerChangeParentEvent(idd, this.ids));
         };
 
         const clearParent = () => {
-            this.dispatchEvent(new OrAssetViewerChangeParentEvent(undefined, this.assetsIds));
+            this.dispatchEvent(new OrAssetViewerChangeParentEvent(undefined, this.ids));
         };
 
         const dialogActions: DialogAction[] = [
@@ -1309,18 +1306,18 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             `;
         }
 
-        if (!this.asset && !this.assetId && this.assetsIds.length > 1) {
+        if (!this.asset && this.ids && this.ids.length > 1) {
             return html `
                 <div class="msg">
                     <div class="multipleAssetsView">
-                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.assetsIds.length } }"></or-translate>
+                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.ids.length } }"></or-translate>
                         <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("changeParent")}" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
                     </div>
                 </div>
             `;
         }
 
-        if (!this.asset && !this.assetId) {
+        if (!this.asset && (!this.ids || this.ids.length === 0)) {
             return html`
                 <div class="msg"><or-translate value="noAssetSelected"></or-translate></div>
             `;
@@ -1408,7 +1405,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     public reloadAsset() {
         this.asset = undefined;
         this._assetModified = false;
-        if (this.assetId) {
+        if (this.ids && this.ids.length === 1) {
             this._loading = true;
             super._refreshEventSubscriptions();
         }
@@ -1470,7 +1467,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (result.success) {
             this._assetModified = false;
-            this.assetId = result.assetId;
+            this.ids = [result.assetId];
             this.reloadAsset();
         }
 
@@ -1506,7 +1503,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     _onEvent(event: SharedEvent) {
         if (event.eventType === "asset") {
             const asset = (event as AssetEvent).asset!;
-            if (asset.id !== this.assetId) {
+            const assetId = this.ids && this.ids.length > 0 ? this.ids[0] : undefined;
+            if (asset.id !== assetId) {
                 return;
             }
             this.asset = asset;

@@ -1,12 +1,12 @@
 import {css, html, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
+import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-asset-viewer";
 import {
     OrAssetViewer,
+    OrAssetViewerChangeParentEvent,
     OrAssetViewerEditToggleEvent,
     OrAssetViewerRequestEditToggleEvent,
     OrAssetViewerSaveEvent,
-    OrAssetViewerChangeParentEvent,
     saveAsset,
     SaveResult,
     ViewerConfig
@@ -16,13 +16,13 @@ import {
     OrAssetTree,
     OrAssetTreeAddEvent,
     OrAssetTreeAssetEvent,
+    OrAssetTreeChangeParentEvent,
     OrAssetTreeRequestSelectionEvent,
-    OrAssetTreeSelectionEvent,
-    OrAssetTreeChangeParentEvent
+    OrAssetTreeSelectionEvent
 } from "@openremote/or-asset-tree";
 import manager, {DefaultBoxShadow, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {Store, createSelector} from "@reduxjs/toolkit";
+import {createSelector, Store} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
@@ -137,7 +137,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
         [this._realmSelector],
         async (realm: string) => {
             this._assetIds = undefined;
-            if (this._viewer && this._viewer.assetId) this._viewer.assetId = undefined;
+            if (this._viewer && this._viewer.ids) this._viewer.ids = undefined;
             if (this._tree) this._tree.refresh();
             this._updateRoute(true);
         }
@@ -188,8 +188,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
                 this._viewer.reloadAsset();
             } else {
                 this._assetIds = nodes.map((node) => node.asset.id!);
-                this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
-                this._viewer.assetsIds = nodes.length > 1 ? this._assetIds : [];
+                this._viewer.ids = this._assetIds;
                 this._updateRoute(true);
             }
         });
@@ -198,8 +197,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
     protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
         const nodes = event.detail.newNodes;
         this._assetIds = event.detail.newNodes.map((node) => node.asset.id!);
-        this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
-        this._viewer.assetsIds = nodes.length > 1 ? this._assetIds : [];
+        this._viewer.ids = this._assetIds;
         this._updateRoute(true);
     }
 
@@ -286,7 +284,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
             if (this._addedAssetId === ev.detail.asset.id) {
                 this._assetIds = [ev.detail.asset.id];
                 this._addedAssetId = undefined;
-                this._viewer.assetId = ev.detail.asset.id;
+                this._viewer.ids = this._assetIds;
                 this._updateRoute(true);
             }
         }
