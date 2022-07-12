@@ -43,6 +43,7 @@ import {
 } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -485,6 +486,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         
                         if (this._filter.assetType.length > 0) {
                             this._assetTypeFilter = this._filter.assetType[0];
+                        } else {
+                            this._assetTypeFilter = '';
                         }
                     }
                 }}"></or-icon>
@@ -493,7 +496,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div class="advanced-filter">
                     ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
                         this.assetTypeSelect(), 
-                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }),
+                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }), 
                         undefined,
                         (v: string[] | string) => {
                             this._assetTypeFilter = (v as string);
@@ -882,6 +885,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         const matchingVal: string = value.toString().substring(startIndex + 'attribute:'.length + 1, value.toString().length-1);
 
                         resultingFilter.attribute.push(matchingVal);
+                        resultingFilter.attributeValue.push('');
                     });
                 }
 
@@ -903,7 +907,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 }
             }
 
-            matchingResult = searchValue.match(/(\"[^\s]+\")\:\S+/g);
+            matchingResult = searchValue.match(/(\"[^\"]+\")\:(([^\"\s]+)|(\"[^\"]+\"))/g);
             if (matchingResult) {
                 if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
@@ -911,9 +915,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                         const startIndex: number = value.toString().indexOf('":');
                         // Adding 2 to remove the ": matched before
-                        const matchingVal: string = value.toString().substring(startIndex + 2);
+                        let matchingVal: string = value.toString().substring(startIndex + 2);
                         // Starting from position 1 to remove first "
                         const matchingName: string = value.toString().substring(1, startIndex);
+
+                        if (matchingVal[0] === '"' && matchingVal[matchingVal.length-1] === '"') {
+                            matchingVal = matchingVal.substring(1,matchingVal.length-1);
+                        }
 
                         resultingFilter.attribute.push(matchingName);
                         resultingFilter.attributeValue.push(matchingVal);
@@ -992,7 +1000,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if ( this._attributeNameFilter.value && this._attributeValueFilter.value ) {
-            const attributeValueValue: string = this._attributeValueFilter.value.replace(' ', '');
+            let attributeValueValue: string = this._attributeValueFilter.value;
+            if (attributeValueValue.includes(' ')) {
+                attributeValueValue = '"' + attributeValueValue + '"';
+            }
             filter.attributeValue = [ attributeValueValue ];
         } else {
             filter.attributeValue = [];
@@ -1157,17 +1168,35 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             attributes: attributeCond
         };
 
-        const response = await manager.rest.api.AssetResource.queryAssets(query);
 
-        const foundAssetIds: string[] = response.data.map((asset: Asset) => asset.id!);
+
+        let response: any;
+        let foundAssetIds: string[];
+
+       try {
+           response = await manager.rest.api.AssetResource.queryAssets(query);
+           foundAssetIds = response.data.map((asset: Asset) => asset.id!);
+       } catch (e) {
+            this._filter.assetType.forEach((assetT: string) => {
+                if(this._assetTypes.findIndex((assetD: AssetDescriptor) => { return assetD.name === assetT; }) === -1) {
+                    showSnackbar(undefined, i18next.t('filter.assetTypeDoesNotExist'), i18next.t("dismiss"));
+                }
+            });
+            foundAssetIds = [];
+        }
 
         return (asset) => {
             let attrValueCheck = true;
 
             if (this._filter.attribute.length > 0 && this._filter.attributeValue.length > 0 && foundAssetIds.includes(asset.id!)) {
-                let attributeVal: [string, string][] = this._filter.attributeValue.map((value: string, index: number) => {
-                    return [this._filter.attribute[index], value];
+                let attributeVal: [string, string][] = [];
+
+                this._filter.attributeValue.forEach((attrVal: string, index: number) => {
+                    if (attrVal.length > 0) {
+                        attributeVal.push([this._filter.attribute[index], attrVal]);
+                    }
                 });
+
                 let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
@@ -1194,6 +1223,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                         if (currentAttributeVal[1].startsWith('=') && currentAttributeVal[1][1] !== '=') {
                                             value = '=' + value;
                                         }
+
+                                        if (/^[0-9]+$/.test(currentAttributeVal[1])) {
+                                            value = '==' + value;
+                                        }
+
                                         const resultNumberEval: boolean = eval(attr.value + value);
 
                                         if (resultNumberEval) {
@@ -1206,9 +1240,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             const multicharString: string = '*';
 
                                             let parsedValue: string = unparsedValue.replace(multicharString, '.*');
+                                            parsedValue = parsedValue.replace(/"/g,'');
 
                                             let valueFromAttribute: string = attr.value as string;
                                             let answer = valueFromAttribute.match(parsedValue);
+
                                             if (answer && answer.length > 0) {
                                                 atLeastOneAttributeMatchValue = true;
                                             }
@@ -1227,6 +1263,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         };
     }
 
+    protected isAnyFilter(): boolean {
+        return this._filter.asset !== undefined || this._filter.assetType.length > 0 || this._filter.attribute.length > 0;
+    }
+
     protected filterTreeNode(currentNode: UiAssetTreeNode, matcher: (asset: Asset) => boolean, parentMatching: boolean = false): boolean {
         let nodeOrDescendantMatches = matcher(currentNode.asset!);
         currentNode.notMatchingFilter = !nodeOrDescendantMatches;
@@ -1235,8 +1275,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return this.filterTreeNode(childNode, matcher, nodeOrDescendantMatches);
         });
 
-        nodeOrDescendantMatches = nodeOrDescendantMatches || childOrDescendantMatches.some(m => m);
-        currentNode.expanded = nodeOrDescendantMatches && currentNode.children.length > 0;
+        let childMatches: boolean = childOrDescendantMatches.some(m => m);
+        nodeOrDescendantMatches = nodeOrDescendantMatches || childMatches;
+        currentNode.expanded = childMatches && currentNode.children.length > 0 && this.isAnyFilter();
         currentNode.hidden = !nodeOrDescendantMatches && !parentMatching;
         return nodeOrDescendantMatches;
     }
@@ -1825,7 +1866,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div class="node-container draggable" node-asset-id="${treeNode.asset ? treeNode.asset.id : ''}" draggable="true" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}" style="padding-left: ${level * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
-                        ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? '#d3d3d3;' : undefined))}
+                        ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? 'd3d3d3' : undefined))}
                         <span style="color: ${filterColorForNonMatchingAsset ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic">
