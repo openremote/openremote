@@ -31,7 +31,7 @@ services:
       LE_EMAIL: ${OR_EMAIL_ADMIN:-}
       DOMAINNAME: ${OR_HOSTNAME:-localhost}
       DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
-      # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://raw.githubusercontent.com/openremote/proxy/main/haproxy.cfg
       #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
 
   postgresql:
