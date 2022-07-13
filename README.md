@@ -49,8 +49,6 @@ CMD:
 cmd /C "set OR_HOSTNAME=192.168.1.1 && set OR_SSL_PORT=8443 && docker-compose -p openremote up -d"
 ```
 
-***NOTE: When chaning `OR_SSL_PORT` you will need to alter the `KEYCLOAK_FRONTEND_URL` in the docker-compose.yml file (see comments in the file for details)***
-
 ## What next
 Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote/wiki) for more information, some things to try:
 
