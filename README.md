@@ -36,7 +36,7 @@ Username: admin
 Password: secret
 
 ### Changing host and/or port
-The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM or want to run on a different port then you will need to set the `OR_HOSTNAME` amd `OR_SSL_PORT` environment variables, so if for example you will be accessing using `https://192.168.1.1:8443` then use the following startup command:
+The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM or want to run on a different port then you will need to set the `OR_HOSTNAME` and `OR_SSL_PORT` environment variables, so if for example you will be accessing using `https://192.168.1.1:8443` then use the following startup command:
 
 BASH: 
 ```
@@ -48,8 +48,6 @@ CMD:
 ```
 cmd /C "set OR_HOSTNAME=192.168.1.1 && set OR_SSL_PORT=8443 && docker-compose -p openremote up -d"
 ```
-
-***NOTE: When chaning `OR_SSL_PORT` you will need to alter the `KEYCLOAK_FRONTEND_URL` in the docker-compose.yml file (see comments in the file for details)***
 
 ## What next
 Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote/wiki) for more information, some things to try:

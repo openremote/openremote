@@ -50,10 +50,10 @@ services:
     volumes:
       - ./deployment:/deployment
     environment:
-      KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
-      # Use the following if OR_SSL_PORT is not the default 443
-      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
+      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
+      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+
 
   manager:
 #    privileged: true
@@ -74,11 +74,8 @@ services:
       OR_EMAIL_ADMIN:
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
       OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
-      OR_SSL_PORT: ${OR_SSL_PORT:-443}
+      OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
-      # Use the following if OR_SSL_PORT is not the default 443
-      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
 
       # The following variables will configure the demo
       OR_FORECAST_SOLAR_API_KEY:

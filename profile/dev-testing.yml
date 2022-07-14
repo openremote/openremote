@@ -12,19 +12,19 @@ services:
     extends:
       file: deploy.yml
       service: keycloak
-    volumes:
+    # volumes:
     #   Map custom themes
     #  - ../deployment:/deployment
-      - ./disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
-    # Access directly if needed on localhost
     ports:
       - "8081:8080"
     depends_on:
       postgresql:
         condition: service_healthy
     environment:
-      # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
-      KEYCLOAK_FRONTEND_URL: http://${OR_HOSTNAME:-localhost}:8080/auth
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      # Prevent theme caching during dev
+      KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
 
   postgresql:
     extends:
