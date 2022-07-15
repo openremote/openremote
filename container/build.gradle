@@ -81,8 +81,8 @@ publishing {
             artifactId = "openremote-${project.name}"
             from components.java
             pom {
-                name = 'OpenRemote Model'
-                description = 'Provides core model classes used within OpenRemote; add maven {url "https://jitpack.io"} to resolve all dependencies'
+                name = 'OpenRemote Container'
+                description = 'Application container for running'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {
@@ -105,8 +105,20 @@ publishing {
 
     repositories {
         maven {
-            name = 'myRepo'
-            url = layout.buildDirectory.dir("repo")
+            if (!version.endsWith('-LOCAL')) {
+                credentials {
+                    username findProperty("publishUsername")
+                    password findProperty("publishPassword")
+                }
+            }
+            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
         }
     }
+}
+
+signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
 }

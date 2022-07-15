@@ -89,11 +89,13 @@ publishing {
 
     repositories {
         maven {
-            credentials {
-                username findProperty("publishUsername")
-                password findProperty("publishPassword")
+            if (!version.endsWith('-LOCAL')) {
+                credentials {
+                    username findProperty("publishUsername")
+                    password findProperty("publishPassword")
+                }
             }
-            url = version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
         }
     }
 }
