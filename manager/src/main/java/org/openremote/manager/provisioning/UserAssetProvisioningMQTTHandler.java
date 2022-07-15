@@ -27,6 +27,7 @@ import io.moquette.interception.messages.InterceptUnsubscribeMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.model.Constants;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -419,7 +420,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             identityProvider.updateUserRoles(
                 realm,
                 serviceUser.getId(),
-                username,
+                Constants.KEYCLOAK_CLIENT_ID,
                 Arrays.stream(provisioningConfig.getUserRoles()).map(ClientRole::getValue).toArray(String[]::new)
             );
         } else {

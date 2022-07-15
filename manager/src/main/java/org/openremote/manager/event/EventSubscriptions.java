@@ -160,7 +160,7 @@ public class EventSubscriptions {
                     TriggeredEventSubscription<T> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSub.subscriptionId);
 
                     if (sessionSub.subscription.getInternalConsumer() == null) {
-                        Message msg = new DefaultMessage();
+                        Message msg = new DefaultMessage(exchange.getContext());
                         msg.setBody(triggeredEventSubscription); // Don't copy the event, use same reference
                         msg.setHeaders(new HashMap<>(exchange.getIn().getHeaders())); // Copy headers
                         msg.setHeader(ConnectionConstants.SESSION_KEY, sessionKey);

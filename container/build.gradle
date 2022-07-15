@@ -8,14 +8,13 @@ dependencies {
     api resolveProject(":model")
 
     api "org.codehaus.groovy:groovy-all:$groovyVersion"
-    api "org.kohsuke:groovy-sandbox:$groovySandboxVersion"
+    api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
 
     api "org.slf4j:slf4j-api:$slf4jVersion"
     api "org.slf4j:slf4j-jdk14:$slf4jVersion"
     api "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    api "com.google.guava:guava:$guavaVersion"
     api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
 
     api "io.undertow:undertow-servlet:$undertowVersion"
@@ -82,7 +81,7 @@ publishing {
             from components.java
             pom {
                 name = 'OpenRemote Container'
-                description = 'Application container for running'
+                description = 'Application container for running; add maven {url "https://jitpack.io"} and maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {

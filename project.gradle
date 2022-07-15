@@ -150,9 +150,6 @@ repositories {
     mavenCentral()
     jcenter()
     maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
-    maven {
         url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"
     }
     maven {
@@ -217,7 +214,7 @@ def getYarnInstallTask() {
 // extensions directory
 def getDeploymentJars(Project project = project) {
     if (project.configurations.find { it.name == "runtimeClasspath" } == null) {
-        return null;
+        return []
     }
 
     // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
