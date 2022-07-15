@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.datapoint;
 
-import org.openremote.agent.protocol.ProtocolPredictedAssetService;
+import org.openremote.agent.protocol.ProtocolPredictedDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -40,7 +40,7 @@ import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.HOURS;
 
-public class AssetPredictedDatapointService extends AbstractDatapointService<AssetPredictedDatapoint> implements ProtocolPredictedAssetService {
+public class AssetPredictedDatapointService extends AbstractDatapointService<AssetPredictedDatapoint> implements ProtocolPredictedDatapointService {
 
     private static final Logger LOG = Logger.getLogger(AssetPredictedDatapointService.class.getName());
 
