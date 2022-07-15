@@ -20,13 +20,14 @@
 package org.openremote.agent.protocol;
 
 import org.openremote.model.ContainerService;
-import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.util.Pair;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-public interface ProtocolPredictedAssetService extends ContainerService {
+public interface ProtocolDatapointService extends ContainerService {
 
-    void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp);
+    void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) throws IllegalStateException;
 
-    void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp);
+    void upsertValues(String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) throws IllegalStateException;
 }
