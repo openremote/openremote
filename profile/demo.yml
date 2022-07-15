@@ -71,7 +71,7 @@ services:
       postgresql:
         condition: service_healthy
     volumes:
-      - ./deployment:/deployment
+      - ../deployment:/deployment
     environment:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
