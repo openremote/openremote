@@ -98,6 +98,11 @@ publishing {
                         organizationUrl = 'https://openremote.io'
                     }
                 }
+                scm {
+                    connection = 'scm:git:git://github.com/openremote/openremote.git'
+                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+                    url = 'https://github.com/openremote/openremote/tree/master'
+                }
             }
         }
     }

@@ -16,7 +16,7 @@ docker image tag updates. The file layout is:
       // Comma separated list of tags to push to openremote/manager docker hub image
       // This can only be used on the main openremote repo (openremote/openremote)
       "distribute": {
-        "tags": "develop"
+        "docker": "develop"
       },
       // Singleton or array of deployments to execute, a deployment consists of (environment and/or managerTag see variables for explanation)
       "deploy": {
@@ -26,7 +26,7 @@ docker image tag updates. The file layout is:
     },
     "master": {
       "distribute": {
-        "tags": "latest"
+        "docker": "latest"
       }
     }
   },
@@ -35,7 +35,8 @@ docker image tag updates. The file layout is:
     // Comma separated list of tags to push to openremote/manager docker hub image $version is replaced with release version
     // This can only be used on the main openremote repo (openremote/openremote)
     "distribute": {
-      "tags": "latest,$version"
+      "docker": "latest,$version",
+      "maven": "$version"
     },
     // Singleton or array of deployments to execute, a deployment consists of (environment and/or managerTag see variables for explanation)
     "deploy": {
