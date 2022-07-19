@@ -67,7 +67,7 @@ on:
 
   # When a release is published
   release:
-    types: [published]    
+    types: [published]
 
   # Manual trigger
   workflow_dispatch:
@@ -287,7 +287,10 @@ jobs:
                   os.system(f"echo 'Outputting manifest info for tag: {key}'")
                   os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
               os.system("echo 'Tag manifests generated:'")
-              os.system("find ~/manager-tags-new")        
+              os.system("find ~/manager-tags-new")
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
         
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
@@ -312,7 +315,8 @@ jobs:
           refName = os.getenv('REF_NAME')
           isMainRepo = os.getenv('IS_MAIN_REPO')
           deploys = None
-          tags = None
+          dockerPublishTags = None
+          mavenPublishTag = None
           deployEnvironment = None
           
           f = open(".ci_cd/ci_cd.json")
@@ -361,25 +365,33 @@ jobs:
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
                 deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
-                if 'distribute' in eventConfig and 'tags' in eventConfig['distribute']:
-                  tags = eventConfig['distribute']['tags']
+                if 'distribute' in eventConfig and 'docker' in eventConfig['distribute']:
+                  dockerPublishTags = eventConfig['distribute']['docker']
 
             elif eventName == "release" and refName in eventConfig:
 
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
                 deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
-                if 'distribute' in eventConfig and 'tags' in eventConfig['distribute']:
-                  tags = eventConfig['distribute']['tags']
+                if 'distribute' in eventConfig:
+                  if 'docker' in eventConfig['distribute']:
+                     dockerPublishTags = eventConfig['distribute']['docker']
+                  if 'maven' in eventConfig['distribute']:
+                     mavenPublishTag = eventConfig['distribute']['maven']
              
-          if tags is not None and isMainRepo == 'true':
-            tags = tags.replace("$version", refName)
-            firstTag = tags.split(",")[0]
-            os.system(f"echo ::set-output name=firstTag::{firstTag}")
-            os.system(f" echo 'Manager tags to push to docker: {tags}'")
-            tags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", tags.split(",")))
-            os.system(f"echo ::set-output name=tags::{tags}")
-                  
+          if dockerPublishTags is not None and isMainRepo == 'true':
+            dockerPublishTags = dockerPublishTags.replace("$version", refName)
+            firstDockerTag = dockerPublishTags.split(",")[0]
+            os.system(f"echo ::set-output name=firstDockerTag::{firstDockerTag}")
+            os.system(f" echo 'Manager tags to push to docker: {dockerPublishTags}'")
+            dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
+            os.system(f"echo ::set-output name=dockerTags::{dockerPublishTags}")
+          
+          if mavenPublishTag is not None and isMainRepo == 'true':
+            mavenPublishTag = mavenPublishTag.replace("$version", refName)
+            os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
+            os.system(f"echo ::set-output name=mavenTag::{mavenPublishTag}")
+          
           deployStr = None
           if deploys is not None:
             if not isinstance(deploys, list):
@@ -471,12 +483,26 @@ jobs:
           echo "::set-output name=buildPath::$buildPath"
           echo "::set-output name=refTag::$commitShaShort"
         env:
-          FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstTag }}
-          MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.tags }}
+          FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
+          MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
-          
+
+      - name: Define maven publish command
+        id: maven-publish-command
+        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' }}
+        shell: bash
+        run: |
+          command="./gradlew publish -PopenremoteVersion=$MAVEN_TAG -PsigningKey=$SIGNING_KEY -PsigningPassword=$SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -P$MAVEN_PASSWORD"
+          echo "::set-output name=value::$command"
+        env:
+          MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
+          SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_PASSWORD }}
+          SIGNING_KEY: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_KEY }}
+          MAVEN_USERNAME: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_PASSWORD }}
+
       - name: Define deployment docker build command
         id: deployment-docker-command
         shell: bash
@@ -508,13 +534,14 @@ jobs:
         shell: bash
         run: |
           if [ -n "$MANAGER_DOCKER_CMD" ]; then
-            echo "::set-output name=value::./gradlew installDist"
+            echo "::set-output name=value::./gradlew installDist -PopenremoteVersion=$REF_NAME"
           elif [ -n "$DEPLOYMENT_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew -p deployment installDist"
           fi
         env:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
+          REF_NAME: ${{ github.ref_name }}
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
@@ -576,6 +603,7 @@ jobs:
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
           echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
+          echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
           echo 'Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}'
           echo 'InstallDist command: ${{ steps.install-command.outputs.value }}'
           echo "Java version: $(java --version)"
@@ -693,10 +721,14 @@ jobs:
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
 
+      - name: Run maven publish command
+        if: steps.maven-publish-command.outputs.value != ''
+        run: |
+          ${{ steps.maven-publish-command.outputs.value }}
+
       - name: Run frontend tests
         if: steps.test-ui-command.outputs.value != ''
-        run: |
-          
+        run: |          
           composeProfile='profile/dev-ui.yml'
           
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then

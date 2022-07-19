@@ -50,11 +50,11 @@ public class StatusResourceImpl implements StatusResource {
             authServerUrl = identityService.getIdentityProvider().getFrontendUrl();
         }
 
-        try(InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("system.properties")) {
+        try(InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
             versionProps.load(resourceStream);
         } catch (IOException e) {
-            LOG.log(Level.SEVERE, "Failed to load manager version properties file: system.properties");
-            throw new IllegalStateException("Missing manager system.properties file");
+            LOG.log(Level.SEVERE, "Failed to load manager version properties file: version.properties");
+            throw new IllegalStateException("Missing manager version.properties file");
         }
 
         String version = versionProps.getProperty("version");
