@@ -29,7 +29,6 @@ com.fasterxml.jackson.jaxrs:*: APACHE LICENSE, VERSION 2.0
 com.fasterxml:classmate: APACHE LICENSE, VERSION 2.0
 com.google.code.findbugs: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 3
 com.google.errorprone:error_prone_annotations: APACHE LICENSE, VERSION 2.0
-com.google.guava:*: APACHE LICENSE, VERSION 2.0
 com.ning:async-http-client: APACHE LICENSE, VERSION 2.0
 com.sun.xml.bind:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
 com.zaxxer:HikariCP: APACHE LICENSE, VERSION 2.0

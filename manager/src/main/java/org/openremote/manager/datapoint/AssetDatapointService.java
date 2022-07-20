@@ -1,5 +1,6 @@
 package org.openremote.manager.datapoint;
 
+import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
@@ -51,7 +52,7 @@ import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
  * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
  * days.
  */
-public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements AssetUpdateProcessor {
+public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements AssetUpdateProcessor, ProtocolDatapointService {
 
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
     public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
