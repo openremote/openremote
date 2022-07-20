@@ -1,5 +1,6 @@
 package org.openremote.test.rules
 
+import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesFacts
 import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
@@ -184,8 +185,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         }
 
         when: "a realm is disabled"
-        def realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
-        def apartment3Engine = rulesService.assetEngines.get(managerTestSetup.apartment3Id)
+        RulesEngine realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+        RulesEngine apartment3Engine = rulesService.assetEngines.get(managerTestSetup.apartment3Id)
         def realmBuilding = keycloakTestSetup.realmBuilding
         realmBuilding.setEnabled(false)
         identityService.getIdentityProvider().updateRealm(realmBuilding)
@@ -250,55 +251,27 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert !realmBuildingEngine.isError()
         }
 
-        when: "a new realm rule definition is added to Building"
-        ruleset = new RealmRuleset(
-            keycloakTestSetup.realmBuilding.name,
-            "Looping error",
-            GROOVY,
-            getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
-        ruleset.getMeta().add(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
-        ruleset = rulesetStorageService.merge(ruleset)
+        when: "a realm is deleted"
+        identityService.getIdentityProvider().deleteRealm(realmBuilding.getName())
 
-        then: "the realms A rule engine should have an error"
+        then: "the realms rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {
-            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
-            assert realmBuildingEngine != null
+            assert rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name) == null
             assert !realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.deployments.size() == 4
-            assert realmBuildingEngine.deployments[ruleset.id].status == LOOP_ERROR
-            assert realmBuildingEngine.deployments[ruleset.id].error instanceof RulesLoopException
-            assert realmBuildingEngine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
-            assert realmBuildingEngine.isError()
-            assert realmBuildingEngine.getError() instanceof RuntimeException
+            assert rulesService.assetEngines.get(managerTestSetup.apartment3Id) == null
+            assert !apartment3Engine.isRunning()
         }
 
-//TODO: Reinstate the realm delete test once realm delete mechanism is finalised
-//        when: "a realm is deleted"
-//        identityService.deleteRealm(accessToken, realmBuilding.getName())
-//
-//        then: "the realms rule engine should stop and all asset rule engines in this realm should also stop"
-//        conditions.eventually {
-//            assert realmBuildingEngine.isRunning() == false
-//            assert realmBuildingEngine.allRulesets.length == 0
-//            assert rulesService.realmEngines.get(keycloakTestSetup.realmBuildingRealm.id) == null
-//            assert smartHomeEngine.isRunning() == false
-//            assert smartHomeEngine.allRulesets.length == 0
-//            assert rulesService.assetEngines.get(managerTestSetup.smartBuildingId) == null
-//            assert apartment3Engine.isRunning() == false
-//            assert apartment3Engine.allRulesets.length == 0
-//            assert rulesService.assetEngines.get(managerTestSetup.apartment3Id) == null
-//        }
-//
-//        and: "other rule engines should be unaffected"
-//        conditions.eventually {
-//            assert rulesService.realmEngines.size() == 2
-//            assert rulesService.assetEngines.size() == 0
-//            def masterEngine = rulesService.realmEngines.get(Constants.MASTER_REALM)
-//            def realmCity = rulesService.realmEngines.get(keycloakTestSetup.realmBRealm.id)
-//            assert masterEngine != null
-//            assert masterEngine.isRunning()
-//            assert realmCity != null
-//            assert realmCity.isRunning()
-//        }
+        and: "other rule engines should be unaffected"
+        conditions.eventually {
+            assert rulesService.realmEngines.size() == 2
+            assert rulesService.assetEngines.size() == 0
+            def masterEngine = rulesService.realmEngines.get(MASTER_REALM)
+            def realmCity = rulesService.realmEngines.get(keycloakTestSetup.realmCity.name)
+            assert masterEngine != null
+            assert masterEngine.isRunning()
+            assert realmCity != null
+            assert realmCity.isRunning()
+        }
     }
 }

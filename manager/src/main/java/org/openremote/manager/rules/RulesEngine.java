@@ -19,25 +19,28 @@
  */
 package org.openremote.manager.rules;
 
+import org.jeasy.rules.api.Facts;
+import org.jeasy.rules.api.Rule;
+import org.jeasy.rules.api.RuleListener;
 import org.jeasy.rules.api.RulesEngineParameters;
-import org.jeasy.rules.core.InferenceRulesEngine;
-import org.openremote.model.PersistenceEvent;
+import org.jeasy.rules.core.AbstractRulesEngine;
+import org.jeasy.rules.core.DefaultRulesEngine;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
+import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.facade.*;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -116,7 +119,7 @@ public class RulesEngine<T extends Ruleset> {
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
     final protected RulesFacts facts;
-    final protected InferenceRulesEngine engine;
+    final protected AbstractRulesEngine engine;
 
     protected boolean running;
     protected long lastFireTimestamp;
@@ -157,11 +160,36 @@ public class RulesEngine<T extends Ruleset> {
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
         this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RULES_LOG);
-        engine = new InferenceRulesEngine(
+        engine = new DefaultRulesEngine(
             // Skip any other rules after the first failed rule (exception thrown in condition or action)
             new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)
         );
         engine.registerRuleListener(facts);
+
+        // Add listener to rethrow runtime exceptions which are otherwise swallowed by the DefaultRulesEngine
+        engine.registerRuleListener(new RuleListener() {
+            @Override
+            public void onEvaluationError(Rule rule, Facts facts, Exception exception) {
+                RuntimeException ex;
+                if (exception instanceof RuntimeException) {
+                    ex = (RuntimeException) exception;
+                } else {
+                    ex = new RuntimeException(exception);
+                }
+                throw ex;
+            }
+
+            @Override
+            public void onFailure(Rule rule, Facts facts, Exception exception) {
+                RuntimeException ex;
+                if (exception instanceof RuntimeException) {
+                    ex = (RuntimeException) exception;
+                } else {
+                    ex = new RuntimeException(exception);
+                }
+                throw ex;
+            }
+        });
     }
 
     public RulesEngineId<T> getId() {
