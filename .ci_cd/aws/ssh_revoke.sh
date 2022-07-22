@@ -21,7 +21,7 @@ fi
 
 if [ -n "$CIDR" ]; then
   echo "Revoking SSH access for CIDR '$CIDR' on AWS"
-  SGID=$(aws ec2 describe-security-groups --filters Name=tag:Name,Values=ssh-access --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  SGID=$(aws ec2 describe-security-groups --filters Name=tag:Name,Values=ssh-access --query "SecurityGroups[0].GroupId" --output text $PROFILE 2>/dev/null)
   aws ec2 revoke-security-group-ingress --group-id $SGID --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,Ipv6Ranges=[{CidrIpv6=$CIDR}] $PROFILE
   v6Result=$?
   aws ec2 revoke-security-group-ingress --group-id $SGID --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$CIDR}] $PROFILE
