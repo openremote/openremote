@@ -480,7 +480,7 @@ Resources:
                 fi
             02_efs_dns:
               command: !Sub |                
-                # Look for EFS filesystem called osts-filesystem and 
+                # Look for EFS filesystem called hosts-filesystem and create env variable for it 
                 FILESYSTEMID=$(aws efs describe-file-systems --query "FileSystems[?Name=='hosts-filesystem'].FileSystemId" --output text --region ${AWS::Region})
                 
                 if [ -n "$FILESYSTEMID" ]; then
