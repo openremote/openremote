@@ -190,7 +190,6 @@ Resources:
             - docker_setup
             - cron_setup
             - env_vars
-            - efs_setup
             - dns_updater
             - s3_backup_service
             - deployment_local_dir
@@ -389,54 +388,6 @@ Resources:
                 systemctl enable dns-updater.service
                 systemctl start dns-updater.service
 
-        efs_setup:
-          packages:
-            yum:
-              amazon-efs-utils: []
-          files:
-            "/usr/local/bin/efs-mount":
-              content: !Sub |
-                #!/bin/bash
-                
-                # -------------------------------------------------------------------------------------------
-                #
-                # Script for checking if EFS filesystem called 'hosts-filesystem' exists and attempts to
-                # mount it to /deployment.local/efs at boot time
-                #
-                # -------------------------------------------------------------------------------------------
-                
-                FILESYSTEMID=$(aws efs describe-file-systems --query "FileSystems[?Name=='hosts-filesystem'].FileSystemId" --output text --region ${AWS::Region})
-                
-                if [ -z "$FILESYSTEMID" ]; then
-                  echo "EFS Filesystem not found so nothing to mount"
-                  exit 0
-                fi
-                
-                echo "Mounting EFS Filesystem '$FILESYSTEMID'"
-                sudo mount -t efs $FILESYSTEMID /deployment.local/efs
-                sudo chown -R ec2-user:ec2-user /deployment.local/efs
-
-            "/lib/systemd/system/efs-mount.service":
-              content: |
-                [Unit]
-                Description=Mounts hosts-filesystem EFS filesystem
-                After=network-online.target firewalld.service
-                Wants=network-online.target
-                
-                [Service]
-                ExecStart=/usr/local/bin/efs-mount
-                
-                [Install]
-                WantedBy=multi-user.target
-          commands:
-            01_init_service:
-              command: |
-                mkdir -p /deployment.local/efs
-                chmod +x /usr/local/bin/efs-mount
-                systemctl daemon-reload
-                systemctl enable efs-mount.service
-                systemctl start efs-mount.service
-
         env_vars:
           files:
             "/home/ec2-user/smtp_credentials_generate.py":
@@ -526,6 +477,15 @@ Resources:
                 fi
                 if [ -n "${SMTPORArn}" ]; then
                   echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
+                fi
+            02_efs_dns:
+              command: !Sub |                
+                # Look for EFS filesystem called osts-filesystem and 
+                FILESYSTEMID=$(aws efs describe-file-systems --query "FileSystems[?Name=='hosts-filesystem'].FileSystemId" --output text --region ${AWS::Region})
+                
+                if [ -n "$FILESYSTEMID" ]; then
+                  echo "EFS Filesystem found: $FILESYSTEMID"
+                  echo "EFS_DNS=$FILESYSTEMID.efs.${AWS::Region}.amazonaws.com" >> /etc/environment
                 fi
 
         docker_setup:
