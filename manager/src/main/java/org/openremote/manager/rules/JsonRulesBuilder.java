@@ -97,12 +97,12 @@ public class JsonRulesBuilder extends RulesBuilder {
                 previouslyUnmatchedAssetStates = new HashSet<>();
             }
 
-            if (!TextUtil.isNullOrEmpty(ruleCondition.timer)) {
+            if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
 
                 try {
-                    if (TimeUtil.isTimeDuration(ruleCondition.timer)) {
+                    if (TimeUtil.isTimeDuration(ruleCondition.duration)) {
 
-                        final long duration = TimeUtil.parseTimeDuration(ruleCondition.timer);
+                        final long duration = TimeUtil.parseTimeDuration(ruleCondition.duration);
                         AtomicLong nextExecuteMillis = new AtomicLong(timerService.getCurrentTimeMillis());
 
                         timePredicate = (time) -> {
@@ -115,9 +115,9 @@ public class JsonRulesBuilder extends RulesBuilder {
                         };
                     }
 
-                    if (CronExpression.isValidExpression(ruleCondition.timer)) {
+                    if (CronExpression.isValidExpression(ruleCondition.duration)) {
 
-                        CronExpression timerExpression = new CronExpression(ruleCondition.timer);
+                        CronExpression timerExpression = new CronExpression(ruleCondition.duration);
                         AtomicLong nextExecuteMillis = new AtomicLong(timerExpression.getNextValidTimeAfter(new Date(timerService.getCurrentTimeMillis())).getTime());
 
                         timePredicate = (time) -> {
@@ -130,7 +130,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         };
                     }
                 } catch (Exception e) {
-                    log(Level.SEVERE, "Failed to parse rule condition timer expression: " + ruleCondition.timer, e);
+                    log(Level.SEVERE, "Failed to parse rule condition timer expression: " + ruleCondition.duration, e);
                     throw e;
                 }
             } else if (ruleCondition.assets != null) {
