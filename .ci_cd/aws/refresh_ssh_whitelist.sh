@@ -75,7 +75,7 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
       IFS=$' \t'
       entryArr=( $entry )
       echo "Adding SSH whitelist for '${entryArr[0]}' '${entryArr[1]}'"
-      "$awsDir/ssh_whitelist.sh" "${entryArr[1]}" "${entryArr[0]}" $ACCOUNT_PROFILE
+      "$awsDir/ssh_whitelist.sh" "${entryArr[1]}" "${entryArr[0]}" "github-da"
     done
   fi
 done
