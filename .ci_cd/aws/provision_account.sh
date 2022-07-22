@@ -139,58 +139,58 @@ fi
 # Update aws github-da profile with this account
 source "${awsDir}set_github-da_account_arn.sh"
 
-# Re-instate default VPC (Control Tower removes it)
-VPCID=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+# Check/Create VPC
+VPCID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 if [ "$VPCID" == 'None' ]; then
-  echo "Provisioning default VPC"
-  VPCID=$(aws ec2 create-default-vpc --query "Vpc.VpcId" --output text $ACCOUNT_PROFILE)
+  echo "Provisioning OR VPC Stack"
+  # Create a new VPC with random IPv4 CIDR (so we can easily create peer connections between accounts)
+  OCTET1=$(( $RANDOM % 255 ))
+  OCTET2=$(( 5 * ($RANDOM % 51) ))
+  VPCIP4CIDR="10.$OCTET1.$OCTET2.0/20"
 
-  # Add IPv6 CIDR
-  aws ec2 associate-vpc-cidr-block --amazon-provided-ipv6-cidr-block --ipv6-cidr-block-network-border-group $AWS_REGION --vpc-id $VPCID $ACCOUNT_PROFILE
-  # Wait a short while for it to be provisioned
-  sleep 10
-  IPV6CIDR=$(aws ec2 describe-vpcs --vpc-ids $VPCID --query "Vpcs[0].Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock" --output text $ACCOUNT_PROFILE)
+  if [ -f "${awsDir}cloudformation-create-vpc.yml" ]; then
+    TEMPLATE_PATH="${awsDir}cloudformation-create-vpc.yml"
+  elif [ -f ".ci_cd/aws/cloudformation-create-vpc.yml" ]; then
+    TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-vpc.yml"
+  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-vpc.yml" ]; then
+    TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-vpc.yml"
+  else
+    echo "Cannot determine location of cloudformation-create-vpc.yml"
+    exit 1
+  fi
 
-  # Add IPv6 CIDR to each subnet and add IPv6 route for internet gateway
-  SUBNETID1=$(aws ec2 describe-subnets --filter "Name=vpc-id,Values=$VPCID" --query "Subnets[0].[SubnetId]" --output text $ACCOUNT_PROFILE)
-  SUBNETID2=$(aws ec2 describe-subnets --filter "Name=vpc-id,Values=$VPCID" --query "Subnets[1].[SubnetId]" --output text $ACCOUNT_PROFILE)
-  SUBNETID3=$(aws ec2 describe-subnets --filter "Name=vpc-id,Values=$VPCID" --query "Subnets[2].[SubnetId]" --output text $ACCOUNT_PROFILE)
-  ROUTETABLEID=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPCID" --query "RouteTables[0].RouteTableId" --output text $ACCOUNT_PROFILE)
-  IGWID=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPCID" --query "InternetGateways[0].InternetGatewayId" --output text $ACCOUNT_PROFILE)
-  if [ -n "$SUBNETID1" ] && [ "$SUBNETID1" != 'None' ] && [ "$SUBNETID1" != 'none' ]; then
-    echo "Adding IPv6 support to subnet '$SUBNETID1'"
-    aws ec2 associate-subnet-cidr-block --ipv6-cidr-block ${IPV6CIDR%0::/56}1::/64 --subnet-id $SUBNETID1 $ACCOUNT_PROFILE
-    aws ec2 modify-subnet-attribute --assign-ipv6-address-on-creation --subnet-id "$SUBNETID1" $ACCOUNT_PROFILE
+  STACK_NAME=or-vpc
+  #Configure parameters
+  PARAMS="ParameterKey=IPV4CIDR,ParameterValue='$VPCIP4CIDR'"
+
+  # Create standard stack resources in specified account
+  STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text)
+
+  # Wait for cloud formation stack status to be CREATE_*
+  echo "Waiting for stack to be created"
+  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
+    echo "Stack creation is still in progress .. Sleeping 30 seconds"
+    sleep 30
+    STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  done
+
+  if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
+    echo "Stack creation has failed status is '$STATUS'"
+    exit 1
+  else
+    echo "Stack creation is complete"
   fi
-  if [ -n "$SUBNETID2" ] && [ "$SUBNETID2" != 'None' ] && [ "$SUBNETID2" != 'none' ]; then
-    echo "Adding IPv6 support to subnet '$SUBNETID3'"
-    aws ec2 associate-subnet-cidr-block --ipv6-cidr-block ${IPV6CIDR%0::/56}2::/64 --subnet-id $SUBNETID2 $ACCOUNT_PROFILE
-    aws ec2 modify-subnet-attribute --assign-ipv6-address-on-creation --subnet-id "$SUBNETID2" $ACCOUNT_PROFILE
-  fi
-  if [ -n "$SUBNETID3" ] && [ "$SUBNETID3" != 'None' ] && [ "$SUBNETID3" != 'none' ]; then
-    echo "Adding IPv6 support to subnet '$SUBNETID3'"
-    aws ec2 associate-subnet-cidr-block --ipv6-cidr-block ${IPV6CIDR%0::/56}3::/64 --subnet-id $SUBNETID3 $ACCOUNT_PROFILE
-    aws ec2 modify-subnet-attribute --assign-ipv6-address-on-creation --subnet-id "$SUBNETID3" $ACCOUNT_PROFILE
-  fi
-  aws ec2 create-route --destination-ipv6-cidr-block ::/0 --route-table-id $ROUTETABLEID --gateway-id $IGWID $ACCOUNT_PROFILE
 
 else
-  echo "Default VPC already exists"
+  echo "OR VPC already exists"
 fi
 
-# Create ssh-access security group
-SGID=$(aws ec2 describe-security-groups --filters Name=vpc-id,Values=$VPCID --group-names 'ssh-access' --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-if [ -z "$SGID" ]; then
-  echo "Provisioning ssh-access security group"
-  SGID=$(aws ec2 create-security-group --description "SSH access for all EC2 instances" --group-name "ssh-access" --query "GroupId" --output text $ACCOUNT_PROFILE)
-
-  if [ -z "$SGID" ]; then
-    echo "Failed to provision ssh-access security group"
-  fi
-else
-  echo "ssh-access security group already exists '$SGID'"
-fi
+# Get SSH Access security group ID
+echo "Getting ssh-access security group ID"
+SGID=$(aws ec2 describe-security-groups --filters Name=tag:Name,Values=ssh-access --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 # Get developers SSH public key from Parameter Store /SSH-Key/ and store as ~/.ssh/developers.pub
 echo "Getting developers SSH public key"
@@ -288,8 +288,8 @@ if [ "$PROVISION_EFS" != 'false' ]; then
   else
 
     # Find Default VPC security group and IP CIDRs
-    VPCIP4CIDR=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].CidrBlockAssociationSet[0].CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
-    VPCIP6CIDR=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
+    VPCIP4CIDR=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].CidrBlockAssociationSet[0].CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
+    VPCIP6CIDR=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
     if [ "$VPCIP4CIDR" == 'None' ]; then
       unset VPCIP4CIDR

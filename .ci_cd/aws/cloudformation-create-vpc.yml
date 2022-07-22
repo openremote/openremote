@@ -1,0 +1,132 @@
+# ---------------------------------------------------------------------------------------------------------------------
+# Create standard OpenRemote VPC with 2 public and 2 private subnets
+# ---------------------------------------------------------------------------------------------------------------------
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Creates standard OR VPC, subnets, route tables and IGW'
+
+Parameters:
+  IPV4CIDR:
+    Description: IPV4CIDR for VPC
+    Type: String
+
+Resources:
+  ## VPC
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref IPV4CIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: or-vpc
+
+  VpcCidrBlockIpv6:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref Vpc
+      AmazonProvidedIpv6CidrBlock: true
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "SSH access whitelist"
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: ssh-access
+
+  ## SUBNETS
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VpcCidrBlockIpv6
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Select [ 0, !Cidr [!Ref IPV4CIDR, 6, 8]]
+      Ipv6CidrBlock: !Select [1, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 7, 64]]
+      AssignIpv6AddressOnCreation: true
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: or-subnet-public-1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VpcCidrBlockIpv6
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Select [ 1, !Cidr [!Ref IPV4CIDR, 6, 8]]
+      Ipv6CidrBlock: !Select [2, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 7, 64]]
+      AssignIpv6AddressOnCreation: true
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: or-subnet-public-2
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VpcCidrBlockIpv6
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Select [ 2, !Cidr [!Ref IPV4CIDR, 6, 8]]
+      Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 7, 64]]
+      AssignIpv6AddressOnCreation: true
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: or-subnet-private-1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VpcCidrBlockIpv6
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Select [ 3, !Cidr [!Ref IPV4CIDR, 6, 8]]
+      Ipv6CidrBlock: !Select [4, !Cidr [!Select [0, !GetAtt 'Vpc.Ipv6CidrBlocks'], 7, 64]]
+      AssignIpv6AddressOnCreation: true
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: or-subnet-private-2
+
+  ## INTERNET GATEWAY
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  GatewayToInternet:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  ## PUBLIC ROUTING
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GatewayToInternet
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable

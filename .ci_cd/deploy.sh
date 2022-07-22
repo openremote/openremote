@@ -470,8 +470,11 @@ while [[ $response -ne 200 ]] && [ $count -lt 12 ]; do
 done
 
 if [ $response -ne 200 ]; then
+  echo "Manager web server is unreachable https://$OR_HOSTNAME..."
   revoke_ssh
   exit 1
+else
+  echo "Manager web server now reachable https://$OR_HOSTNAME..."
 fi
 
 revoke_ssh
