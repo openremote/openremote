@@ -599,7 +599,7 @@ Resources:
       KeyName:
         "developers"
       ImageId: !Ref ImageId
-      SecurityGroups:
+      SecurityGroupIds:
         - Ref: SSHSecurityGroupId
         - Ref: StandardSecurityGroup
       Ipv6AddressCount: 1

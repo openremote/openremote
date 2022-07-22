@@ -299,19 +299,19 @@ if [ "$PROVISION_EFS" != 'false' ]; then
     fi
 
     if [ -z "$VPCIP4CIDR" ] && [ -z "$VPCIP6CIDR" ]; then
-      echo "Default VPC not found"
+      echo "OR VPC not found"
     else
 
       SGID=$(aws ec2 describe-security-groups --filters Name=vpc-id,Values=$VPCID --group-names 'default' --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
       if [ -z "$SGID" ]; then
-        echo "Security group for default VPC not found"
+        echo "Security group for OR VPC not found"
         exit 1
       else
         SUBNETIDS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPCID --query "Subnets[*].SubnetId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
         if [ -z "$SUBNETIDS" ]; then
-          echo "Subnets for default VPC not found"
+          echo "Subnets for OR VPC not found"
         else
 
           PARAMS="ParameterKey=SecurityGroupID,ParameterValue=$SGID"
