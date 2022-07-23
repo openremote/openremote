@@ -30,13 +30,26 @@ Parameters:
     Type: String
     #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     Default: ""
+  VpcId:
+    Description: VPC ID
+    Type: String
+  SubnetId:
+    Description: Subnet ID
+    Type: String
+  SSHSecurityGroupId:
+    Description: SSH Security Group ID
+    Type: String
+  ImageId:
+    Description: AMI ID
+    Type: String
+    Default: "ami-0a6b5206d1730bdce"
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
     # AWS Compute Optimizer reports that this instance type is under-provisioned and advise
     # more than double the price instance. As the requirements vary massively depending on the actual project
     # then we need to be flexible here and bear in mind use case and acceptable cost.
-    Default: t4g.small
+    Default: t4g.medium
     AllowedValues:
       - t4g.micro
       - t4g.small
@@ -106,7 +119,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: "Access OpenRemote stack services"
-      GroupName: !Ref Host
+      VpcId: !Ref VpcId
       Tags:
         - Key: Name
           Value: !Ref Host
@@ -441,7 +454,7 @@ Resources:
                     args = parser.parse_args()
                     print(calculate_key(args.secret, args.region))
                 
-
+                
                 if __name__ == '__main__':
                     main()
               owner: ec2-user
@@ -467,7 +480,7 @@ Resources:
                 fi
             02_efs_dns:
               command: !Sub |                
-                # Look for EFS filesystem called osts-filesystem and 
+                # Look for EFS filesystem called hosts-filesystem and create env variable for it 
                 FILESYSTEMID=$(aws efs describe-file-systems --query "FileSystems[?Name=='hosts-filesystem'].FileSystemId" --output text --region ${AWS::Region})
                 
                 if [ -n "$FILESYSTEMID" ]; then
@@ -548,11 +561,12 @@ Resources:
         Ref: InstanceType
       KeyName:
         "developers"
-      ImageId:
-        "ami-0042fede24cb86d5c"
-      SecurityGroups:
-        - "ssh-access"
+      ImageId: !Ref ImageId
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - Ref: SSHSecurityGroupId
         - Ref: StandardSecurityGroup
+
       Ipv6AddressCount: 1
       Tags:
         - Key: Name
@@ -594,8 +608,8 @@ Resources:
     Properties:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
-      
-# Telemetry and Alarms
+
+  # Telemetry and Alarms
 
   EmailSubscription:
     Type: AWS::SNS::Subscription
@@ -620,13 +634,13 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
       AlarmActions:
-      - !Sub "arn:aws:automate:${AWS::Region}:ec2:recover"
-      - !Ref SnsTopic
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:recover"
+        - !Ref SnsTopic
       OKActions:
-      - !Ref SnsTopic
+        - !Ref SnsTopic
       Dimensions:
-      - Name: InstanceId
-        Value: !Ref EC2Instance
+        - Name: InstanceId
+          Value: !Ref EC2Instance
 
   InstanceStatusAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -639,13 +653,13 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
       AlarmActions:
-      - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
-      - !Ref SnsTopic
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
+        - !Ref SnsTopic
       OKActions:
-      - !Ref SnsTopic
+        - !Ref SnsTopic
       Dimensions:
-      - Name: InstanceId
-        Value: !Ref EC2Instance
+        - Name: InstanceId
+          Value: !Ref EC2Instance
 
   CPUUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -658,13 +672,13 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: 90
       AlarmActions:
-      - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
-      - !Ref SnsTopic
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
+        - !Ref SnsTopic
       OKActions:
-      - !Ref SnsTopic
+        - !Ref SnsTopic
       Dimensions:
-      - Name: InstanceId
-        Value: !Ref EC2Instance
+        - Name: InstanceId
+          Value: !Ref EC2Instance
 
   HealthCheckAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -677,12 +691,12 @@ Resources:
       ComparisonOperator: LessThanThreshold
       Threshold: 1
       AlarmActions:
-      - !Ref SnsTopic
+        - !Ref SnsTopic
       OKActions:
-      - !Ref SnsTopic
+        - !Ref SnsTopic
       Dimensions:
-      - Name: HealthCheckId
-        Value: !Ref HealthCheck
+        - Name: HealthCheckId
+          Value: !Ref HealthCheck
 
   HealthCheck:
     Type: AWS::Route53::HealthCheck
@@ -696,6 +710,6 @@ Resources:
         RequestInterval: 30
         FailureThreshold: 10
       HealthCheckTags:
-      - Key: Name
-        Value: !Sub ${Host}
+        - Key: Name
+          Value: !Sub ${Host}
 
