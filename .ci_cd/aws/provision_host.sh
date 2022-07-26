@@ -194,14 +194,22 @@ EOF
     PARAMS="$PARAMS ParameterKey=DNSHostedZoneRoleArn,ParameterValue=$DNSHostedZoneRoleArn"
   fi
   
-  # Get OR VPC ID, Subnet ID and SSH Security Group ID
+  # Get OR VPC ID, Subnet ID, SSH Security Group ID and EFS MOUNT TARGET IP
   VPCID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-  SUBNETNAME="or-subnet-public-$(( $RANDOM % 2 + 1 ))"
+  SUBNET_NUMBER=$(( $RANDOM % 3 + 1 ))
+  SUBNETNAME="or-subnet-public-$SUBNET_NUMBER"
   SUBNETID=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=$SUBNETNAME --query "Subnets[0].SubnetId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  SUBNET_AZ=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=$SUBNETNAME --query "Subnets[0].AvailabilityZone" --output text $ACCOUNT_PROFILE 2>/dev/null)
   SGID=$(aws ec2 describe-security-groups --filters Name=tag:Name,Values=ssh-access --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  # Look for EFS mount target in caller account for the same availability zone (no costs if within same AZ)
+  EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='or-map-efs'].FileSystemId" --output text)
+  EFS_DNS=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?AvailabilityZoneName=='$SUBNET_AZ'].IpAddress" --output text)
+
   PARAMS="$PARAMS ParameterKey=VpcId,ParameterValue=$VPCID"
   PARAMS="$PARAMS ParameterKey=SSHSecurityGroupId,ParameterValue=$SGID"
   PARAMS="$PARAMS ParameterKey=SubnetId,ParameterValue=$SUBNETID"
+  PARAMS="$PARAMS ParameterKey=EFSDNS,ParameterValue=$EFS_DNS"
 
   # Create standard stack resources in specified account
   STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
