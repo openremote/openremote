@@ -11,7 +11,6 @@
 # * Create Hosted domain zone (if requested) and will create the NS record in the PARENT_DNS_ZONE to delegate to the
 #   new hosted zone; the zone will use the account name.
 # * Adds SSH whitelist to the ssh-access security group in the new account (see refresh_ssh_whitelist.sh)
-# * Create EFS filesystem for sharing data between instances (see cloudformation-create-efs.yml)
 #
 # Arguments:
 # 1 - OU - Name of organizational unit where account should be provisioned (defaults to account root if not set)
@@ -19,7 +18,6 @@
 # 2 - PARENT_DNS_ZONE - name of parent hosted domain zone in management account
 # 3 - HOSTED_DNS - If set to 'true' a sub domain hosted zone will be provisioned in the new account and delegated from the
 #     PARENT_DNS_ZONE in the callee account (e.g. x.y -> AWS_ACCOUNT_NAME.x.y)
-# 4 - PROVISION_EFS set to 'false' to not provision an EFS volume for the default VPC using (cloudformation-create-efs.yml)
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -31,7 +29,7 @@ OU=${1}
 AWS_ACCOUNT_NAME=${2,,}
 PARENT_DNS_ZONE=${3,,}
 HOSTED_DNS=${4,,}
-PROVISION_EFS=${5,,}
+CREATE_VPC_PEER=${5,,}
 ACCOUNT_PROFILE='--profile github-da'
 
 if [ -z "$AWS_ACCOUNT_NAME" ]; then
@@ -164,8 +162,16 @@ if [ "$VPCID" == 'None' ]; then
   #Configure parameters
   PARAMS="ParameterKey=IPV4CIDR,ParameterValue='$VPCIP4CIDR'"
 
+  # Create a VPC Peer connection to the caller account
+  if [ -n "$CREATE_VPC_PEER" ]; then
+    PEER_VPCID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].VpcId" --output text)
+    PEER_VPCCIDR=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].CidrBlock" --output text)
+    PEER_ARN="arn:aws:iam::$CALLER_AWS_ACCOUNT_ID:role/or-vpc-peer-$AWS_REGION"
+    PARAMS="$PARAMS ParameterKey=PeerRoleArn,ParameterValue='$PEER_ARN' ParameterKey=PeerVPCId,ParameterValue='$PEER_VPCID' ParameterKey=PeerVPCAccountId,ParameterValue='$CALLER_AWS_ACCOUNT_ID' ParameterKey=PeerVpcCidr,ParameterValue='$PEER_VPCCIDR'"
+  fi
+
   # Create standard stack resources in specified account
-  STACK_ID=$(aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text)
+  STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text)
 
   # Wait for cloud formation stack status to be CREATE_*
   echo "Waiting for stack to be created"
@@ -184,6 +190,14 @@ if [ "$VPCID" == 'None' ]; then
     echo "Stack creation is complete"
   fi
 
+  # Create route for VPC peer connection in caller account
+  if [ -n "$CREATE_VPC_PEER" ]; then
+    VPCID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+    FILTERS="Name=tag:Name,Values='or-routetable' Name=vpc-id,Values='$PEER_VPCID'"
+    ROUTE_TABLE_ID=$(aws ec2 describe-route-tables --filters $FILTERS --query "RouteTables[0].RouteTableId" --output text)
+    PEER_ID=$(aws ec2 describe-vpc-peering-connections --filters Name=requester-vpc-info.vpc-id,Values=$VPCID --query "VpcPeeringConnections[0].VpcPeeringConnectionId" --output text)
+    aws ec2 create-route --route-table-id $ROUTE_TABLE_ID --destination-cidr-block $VPCIP4CIDR --vpc-peering-connection-id $PEER_ID
+  fi
 else
   echo "OR VPC already exists"
 fi
@@ -264,82 +278,3 @@ if [ -n "$SGID" ]; then
   "${awsDir}refresh_ssh_whitelist.sh" "" "" $AWS_ACCOUNT_ID
 fi
 
-# Provision EFS unless set to false
-if [ "$PROVISION_EFS" != 'false' ]; then
-  echo "Provisioning EFS for account '$AWS_ACCOUNT_NAME' using cloud formation template"
-
-  if [ -f "${awsDir}cloudformation-create-efs.yml" ]; then
-    TEMPLATE_PATH="${awsDir}cloudformation-create-efs.yml"
-  elif [ -f ".ci_cd/aws/cloudformation-create-efs.yml" ]; then
-    TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-efs.yml"
-  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-efs.yml" ]; then
-    TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-efs.yml"
-  else
-    echo "Cannot determine location of cloudformation-create-efs.yml so cannot provision EFS filesystem"
-  fi
-
-  STACK_NAME='hosts-filesystem'
-
-  # Check stack doesn't already exist
-  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
-
-  if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
-    echo "EFS stack already exists"
-  else
-
-    # Find Default VPC security group and IP CIDRs
-    VPCIP4CIDR=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].CidrBlockAssociationSet[0].CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
-    VPCIP6CIDR=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
-
-    if [ "$VPCIP4CIDR" == 'None' ]; then
-      unset VPCIP4CIDR
-    fi
-    if [ "$VPCIP6CIDR" == 'None' ]; then
-      unset VPCIP6CIDR
-    fi
-
-    if [ -z "$VPCIP4CIDR" ] && [ -z "$VPCIP6CIDR" ]; then
-      echo "OR VPC not found"
-    else
-
-      SGID=$(aws ec2 describe-security-groups --filters Name=vpc-id,Values=$VPCID --group-names 'default' --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-
-      if [ -z "$SGID" ]; then
-        echo "Security group for OR VPC not found"
-        exit 1
-      else
-        SUBNETIDS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPCID --query "Subnets[*].SubnetId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-
-        if [ -z "$SUBNETIDS" ]; then
-          echo "Subnets for OR VPC not found"
-        else
-
-          PARAMS="ParameterKey=SecurityGroupID,ParameterValue=$SGID"
-
-          if [ -n "$VPCIP4CIDR" ]; then
-            PARAMS="$PARAMS ParameterKey=VPCIP4CIDR,ParameterValue=$VPCIP4CIDR"
-          fi
-          if [ -n "$VPCIP6CIDR" ]; then
-            PARAMS="$PARAMS ParameterKey=VPCIP6CIDR,ParameterValue=$VPCIP6CIDR"
-          fi
-
-          IFS=$' \t'
-          count=1
-          for SUBNETID in $SUBNETIDS; do
-            PARAMS="$PARAMS ParameterKey=SubnetID$count,ParameterValue=$SUBNETID"
-            count=$((count+1))
-          done
-
-          echo "Creating stack using cloudformation-create-efs.yml"
-          STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
-
-          if [ $? -ne 0 ]; then
-            echo "Create stack failed"
-          else
-            echo "Create stack in progress"
-          fi
-        fi
-      fi
-    fi
-  fi
-fi

@@ -9,9 +9,12 @@
 #
 # Optionally assign an Elastic IP address by setting the ElasticIP parameter to true.
 #
+# Environment variables are optionally output to /etc/environment for:
+# - EFS_DNS for an EFS that can then be mounted from docker services without having to put IP address in docker-compose
+# - SMTP Credentials for use within docker services to simplify SMTP configuration
+#
 # Systemd services are also created to:
 #
-# - Mount EFS volume named 'hosts-filesystem' at /deployment.local/efs on restart
 # - Perform daily backup of /deployment.local/backup if an S3 bucket with the same name as the FQDN for this host exists
 #   (periods replaced with hyphen e.g. demo.openremote.app -> demo-openremote-app)
 # - Update DNS A record on restart
@@ -38,6 +41,9 @@ Parameters:
     Type: String
   SSHSecurityGroupId:
     Description: SSH Security Group ID
+    Type: String
+  EFSDNS:
+    Description: EFS DNS entry (for maps)
     Type: String
   ImageId:
     Description: AMI ID
@@ -75,6 +81,13 @@ Parameters:
       - true
       - false
     Default: false
+  HealthChecks:
+    Description: Create health checks
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: true
   SMTPHost:
     Type: String
     Default: ""
@@ -99,9 +112,9 @@ Parameters:
 
 Conditions:
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
+  CreateHealthChecks: !Equals [!Ref HealthChecks, "true"]
 
 Resources:
-
   InstanceRoleProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -479,13 +492,11 @@ Resources:
                   echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
                 fi
             02_efs_dns:
-              command: !Sub |                
-                # Look for EFS filesystem called hosts-filesystem and create env variable for it 
-                FILESYSTEMID=$(aws efs describe-file-systems --query "FileSystems[?Name=='hosts-filesystem'].FileSystemId" --output text --region ${AWS::Region})
-                
-                if [ -n "$FILESYSTEMID" ]; then
-                  echo "EFS Filesystem found: $FILESYSTEMID"
-                  echo "EFS_DNS=$FILESYSTEMID.efs.${AWS::Region}.amazonaws.com" >> /etc/environment
+              command: !Sub |
+                # Output EFS_DNS to /etc/environment               
+                if [ -n "${EFSDNS}" ]; then
+                  echo "EFS Filesystem DNS: ${EFSDNS}"
+                  echo "EFS_DNS=${EFSDNS}" >> /etc/environment
                 fi
 
         docker_setup:
@@ -625,6 +636,7 @@ Resources:
 
   SystemStatusAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateHealthChecks
     Properties:
       Namespace: AWS/EC2
       MetricName: StatusCheckFailed_System
@@ -644,6 +656,7 @@ Resources:
 
   InstanceStatusAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateHealthChecks
     Properties:
       Namespace: AWS/EC2
       MetricName: StatusCheckFailed_Instance
@@ -682,6 +695,7 @@ Resources:
 
   HealthCheckAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateHealthChecks
     Properties:
       Namespace: AWS/Route53
       MetricName: HealthCheckStatus
@@ -700,6 +714,7 @@ Resources:
 
   HealthCheck:
     Type: AWS::Route53::HealthCheck
+    Condition: CreateHealthChecks
     DependsOn: EC2Instance
     Properties:
       HealthCheckConfig:
