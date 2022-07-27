@@ -97,10 +97,12 @@ public class RulesBuilder {
         List<Rule> rules = new ArrayList<>();
 
         // Maintain rule order by adjusting priority for each rule within the ruleset
-        int priority = 0;
-
+        int i = 1;
         for (Builder builder : builders) {
-            priority++;
+
+            int priority = (builder.priority < Integer.MAX_VALUE - 1) ? builder.priority : Integer.MAX_VALUE - 10000 + i;
+            i++;
+
             Rule rule = new RuleBuilder()
                 .name(builder.name)
                 .description(builder.description)
