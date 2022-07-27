@@ -222,7 +222,9 @@ export class PageUsers extends Page<AppStateKeyed> {
     @state()
     protected _realmRoles: Role[] = [];
 
-    protected _realmRolesToExclude: string[] = ["uma_authorization", "offline_access"];
+    protected _realmRolesFilter = (role: Role) => {
+        return !["uma_authorization", "offline_access", "admin"].includes(role.name) && !role.name.startsWith("default-roles")
+    };
 
     @state()
     protected _compositeRoles: Role[] = [];
@@ -427,7 +429,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const realmRoleOptions: string[] = this._realmRoles ? this._realmRoles.filter(r => !this._realmRolesToExclude.includes(r.name)).filter(r => !r.composite).map(r => r.name) : [];
+        const realmRoleOptions: string[] = this._realmRoles ? this._realmRoles.filter(r => this._realmRolesFilter(r)).filter(r => !r.composite).map(r => i18next.t("realmRole." + r.name, r.name.replace("_", " ").replace("-", " "))) : [];
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
         return html`
@@ -809,13 +811,13 @@ export class PageUsers extends Page<AppStateKeyed> {
                                     <or-mwc-input
                                             ?readonly="${readonly}"
                                             ?disabled="${isSameUser}"
-                                            .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => !this._realmRolesToExclude.includes(r.name)).filter(r =>!r.composite).map(r => r.name) : undefined}"
+                                            .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => !this._realmRolesFilter(r)).filter(r =>!r.composite).map(r => r.name) : undefined}"
                                             .type="${InputType.SELECT}" multiple
                                             .options="${realmRoleOptions}"
                                             .label="${i18next.t("realm_role_plural")}"
                                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                 const roleNames = e.detail.value as string[];
-                                                const excludedAndCompositeRoles = user.realmRoles.filter(r => this._realmRolesToExclude.includes(r.name) || r.composite);
+                                                const excludedAndCompositeRoles = user.realmRoles.filter(r => this._realmRolesFilter(r) || r.composite);
                                                 const selectedRoles = this._realmRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
                                                     return {...r, assigned: true} as Role;
                                                 });
