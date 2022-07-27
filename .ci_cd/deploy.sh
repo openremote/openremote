@@ -265,6 +265,8 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
+echo "Deleting existing EFS mount volume"
+docker volume rm or_efs-data 1>/dev/null
 
 # Start the stack
 echo "Starting the stack"
@@ -400,6 +402,8 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
+echo "Deleting existing EFS mount volume"
+docker volume rm or_efs-data 1>/dev/null
 
 # Start the stack
 echo "Starting the stack"
