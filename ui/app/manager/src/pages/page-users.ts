@@ -372,11 +372,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         if (realmRoles) {
             await manager.rest.api.UserResource.updateUserRealmRoles(manager.displayRealm, user.id, roles);
         } else {
-            if (!user.serviceAccount) {
-                await manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, roles);
-            } else {
-                await manager.rest.api.UserResource.updateUserClientRoles(manager.displayRealm, user.id, user.username, roles);
-            }
+            await manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, roles);
         }
     }
 
@@ -546,7 +542,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             user.loading = true;
 
             // Load users assigned roles
-            const userRolesResponse = await (user.serviceAccount ? manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, user.id, user.username) : manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
+            const userRolesResponse = await (manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
 
             if (!this.responseAndStateOK(() => true, userRolesResponse, i18next.t("loadFailedUserInfo"))) {
                 user.loading = false;
@@ -770,7 +766,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
                                     <!-- password -->
                                     <h5>${i18next.t("password")}</h5>
-                                    ${user.serviceAccount ? html`
+                                    ${isServiceUser ? html`
                                                 <or-mwc-input id="password-${suffix}" readonly
                                                               .label="${i18next.t("secret")}"
                                                               .value="${user.secret}"
@@ -830,7 +826,6 @@ export class PageUsers extends Page<AppStateKeyed> {
                                     <!-- composite roles -->
                                     <or-mwc-input
                                             ?readonly="${readonly}"
-                                            class="${isServiceUser ? "hidden" : ""}"
                                             ?disabled="${isSameUser}"
                                             .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
                                             .type="${InputType.SELECT}" multiple
