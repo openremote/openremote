@@ -199,12 +199,12 @@ EOF
   SUBNET_NUMBER=$(( $RANDOM % 3 + 1 ))
   SUBNETNAME="or-subnet-public-$SUBNET_NUMBER"
   SUBNETID=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=$SUBNETNAME --query "Subnets[0].SubnetId" --output text $ACCOUNT_PROFILE 2>/dev/null)
-  SUBNET_AZ=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=$SUBNETNAME --query "Subnets[0].AvailabilityZone" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  SUBNET_AZ=$(aws ec2 describe-subnets --filters Name=tag:Name,Values=$SUBNETNAME --query "Subnets[0].AvailabilityZoneId" --output text $ACCOUNT_PROFILE 2>/dev/null)
   SGID=$(aws ec2 describe-security-groups --filters Name=tag:Name,Values=ssh-access --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
-  # Look for EFS mount target in caller account for the same availability zone (no costs if within same AZ)
+  # Look for EFS mount target in caller account for the same availability zone ID (no costs if within same AZ) - Don't use name as name to IDs vary between accounts
   EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name=='or-map-efs'].FileSystemId" --output text)
-  EFS_DNS=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?AvailabilityZoneName=='$SUBNET_AZ'].IpAddress" --output text)
+  EFS_DNS=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?AvailabilityZoneId=='$SUBNET_AZ'].IpAddress" --output text)
 
   PARAMS="$PARAMS ParameterKey=VpcId,ParameterValue=$VPCID"
   PARAMS="$PARAMS ParameterKey=SSHSecurityGroupId,ParameterValue=$SGID"

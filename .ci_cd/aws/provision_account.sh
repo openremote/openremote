@@ -14,10 +14,13 @@
 #
 # Arguments:
 # 1 - OU - Name of organizational unit where account should be provisioned (defaults to account root if not set)
-# 1 - AWS_ACCOUNT_NAME - Name of the new account (required)
-# 2 - PARENT_DNS_ZONE - name of parent hosted domain zone in management account
-# 3 - HOSTED_DNS - If set to 'true' a sub domain hosted zone will be provisioned in the new account and delegated from the
+# 2 - AWS_ACCOUNT_NAME - Name of the new account (required)
+# 3 - PARENT_DNS_ZONE - name of parent hosted domain zone in management account
+# 4 - HOSTED_DNS - If set to 'true' a sub domain hosted zone will be provisioned in the new account and delegated from the
 #     PARENT_DNS_ZONE in the callee account (e.g. x.y -> AWS_ACCOUNT_NAME.x.y)
+# 5 - CREATE_VPC_PEER - Whether or not a VPC peering connection should be created with the caller account; will look for
+#     a VPC called or-vpc in the caller account and will try and use the IAM role arn:aws:iam::$CALLER_AWS_ACCOUNT_ID:role/or-vpc-peer-$AWS_REGION
+#     to automatically accept the VPC peering connection
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/

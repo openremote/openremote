@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------------------------
 # Provisions an EFS using the specified VPC and subnets; creates a security group called
-# `or-map`.
+# `or-map`; but doesn't pre-configure ingress rules on this security group.
 # ---------------------------------------------------------------------------------------------
 AWSTemplateFormatVersion: 2010-09-09
 Description: Hosts EFS
