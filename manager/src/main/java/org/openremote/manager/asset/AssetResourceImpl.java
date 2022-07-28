@@ -426,6 +426,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 case ILLEGAL_SOURCE:
                 case NO_AUTH_CONTEXT:
                 case INSUFFICIENT_ACCESS:
+                case INVALID_REALM:
                     status = FORBIDDEN;
                     break;
                 case ASSET_NOT_FOUND:

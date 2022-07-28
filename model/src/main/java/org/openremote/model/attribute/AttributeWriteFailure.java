@@ -118,6 +118,11 @@ public enum AttributeWriteFailure {
     GATEWAY_DISCONNECTED,
 
     /**
+     * The realm either doesn't exist or is inactive
+     */
+    INVALID_REALM,
+
+    /**
      * Fallback failure when no other value makes sense
      */
     UNKNOWN

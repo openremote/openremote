@@ -1,19 +1,14 @@
 # ---------------------------------------------------------------------------------------------
-# Provisions an EFS using the specified VPC, Subnets and Security Group (they must belong to
-# the same VPC). Also adds ingress rule for VPC CIDR (IPv4 and/or IPv6) TCP port 2049. This
-# is intended to be used to create an EFS that can be shared by all hosts within the VPC
+# Provisions an EFS using the specified VPC and subnets; creates a security group called
+# `or-map`; but doesn't pre-configure ingress rules on this security group.
 # ---------------------------------------------------------------------------------------------
 AWSTemplateFormatVersion: 2010-09-09
 Description: Hosts EFS
 
 Parameters:
-  VPCIP4CIDR:
+  VpcId:
     Type: String
-    Description: The VPC IPv4 CIDR
-
-  VPCIP6CIDR:
-    Type: String
-    Description: The VPC IPv6 CIDR
+    Description: The VPC ID
 
   SubnetID1:
     Type: AWS::EC2::Subnet::Id
@@ -27,15 +22,20 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
     Description: Mount target 3 subnet ID
 
-  SecurityGroupID:
-    Type: AWS::EC2::SecurityGroup::Id
-    Description: Security group for mount targets
-
 Conditions:
-  CreateIPV4Ingress: !Not [!Equals [!Ref VPCIP4CIDR, ""]]
-  CreateIPV6Ingress: !Not [!Equals [!Ref VPCIP6CIDR, ""]]
+  CreateTarget1: !Not [!Equals [!Ref SubnetID1, ""]]
+  CreateTarget2: !Not [!Equals [!Ref SubnetID2, ""]]
+  CreateTarget3: !Not [!Equals [!Ref SubnetID3, ""]]
 
 Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "OR Map EFS access"
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: or-map
 
   FileSystem:
     Type: 'AWS::EFS::FileSystem'
@@ -48,7 +48,7 @@ Resources:
         - TransitionToIA: AFTER_30_DAYS
       FileSystemTags:
         - Key: Name
-          Value: hosts-filesystem
+          Value: or-map-efs
 #      FileSystemPolicy:
 #        Version: "2012-10-17"
 #        Statement:
@@ -61,48 +61,53 @@ Resources:
 #              StringEquals:
 #                'aws:PrincipalOrgID': o-dhb7rpaban
 
+
+
   MountTargetResource1:
     Type: AWS::EFS::MountTarget
+    Condition: CreateTarget1
     Properties:
       FileSystemId: !Ref FileSystem
       SubnetId: !Ref SubnetID1
       SecurityGroups:
-        - !Ref SecurityGroupID
+        - !Ref SecurityGroup
 
   MountTargetResource2:
     Type: AWS::EFS::MountTarget
+    Condition: CreateTarget2
     Properties:
       FileSystemId: !Ref FileSystem
       SubnetId: !Ref SubnetID2
       SecurityGroups:
-        - !Ref SecurityGroupID
+        - !Ref SecurityGroup
 
   MountTargetResource3:
     Type: AWS::EFS::MountTarget
+    Condition: CreateTarget3
     Properties:
       FileSystemId: !Ref FileSystem
       SubnetId: !Ref SubnetID3
       SecurityGroups:
-        - !Ref SecurityGroupID
+        - !Ref SecurityGroup
 
-  SecurityGroupIngressIP4:
-    Condition: CreateIPV4Ingress
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      CidrIp: !Ref VPCIP4CIDR
-      GroupId: !Ref SecurityGroupID
-      Description: "EFS for VPC"
-      FromPort: 2049
-      IpProtocol: "tcp"
-      ToPort: 2049
-
-  SecurityGroupIngressIP6:
-    Condition: CreateIPV6Ingress
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      CidrIpv6: !Ref VPCIP6CIDR
-      GroupId: !Ref SecurityGroupID
-      Description: "EFS for VPC"
-      FromPort: 2049
-      IpProtocol: "tcp"
-      ToPort: 2049
+#  SecurityGroupIngressIP4:
+#    Condition: CreateIPV4Ingress
+#    Type: AWS::EC2::SecurityGroupIngress
+#    Properties:
+#      CidrIp: !Ref VPCIP4CIDR
+#      GroupId: !Ref SecurityGroupID
+#      Description: "EFS for VPC"
+#      FromPort: 2049
+#      IpProtocol: "tcp"
+#      ToPort: 2049
+#
+#  SecurityGroupIngressIP6:
+#    Condition: CreateIPV6Ingress
+#    Type: AWS::EC2::SecurityGroupIngress
+#    Properties:
+#      CidrIpv6: !Ref VPCIP6CIDR
+#      GroupId: !Ref SecurityGroupID
+#      Description: "EFS for VPC"
+#      FromPort: 2049
+#      IpProtocol: "tcp"
+#      ToPort: 2049

@@ -63,9 +63,10 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
   source "${awsDir}set_github-da_account_arn.sh"
 
   echo "Revoking existing SSH Whitelist for Account '$AWS_ACCOUNT_ID'"
-  LIST=$(aws ec2 describe-security-groups --filters Name=ip-permission.from-port,Values=22 Name=group-name,Values=ssh-access --query 'SecurityGroups[0].IpPermissions[?(IpProtocol==`tcp` && FromPort==`22`)]' --output json $ACCOUNT_PROFILE)
+  SGID=$(aws ec2 describe-security-groups --filters Name=tag:Name,Values=ssh-access --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  LIST=$(aws ec2 describe-security-groups --group-ids $SGID --filters Name=ip-permission.from-port,Values=22 --query 'SecurityGroups[0].IpPermissions[?(IpProtocol==`tcp` && FromPort==`22`)]' --output json $ACCOUNT_PROFILE)
   if [ -n "$LIST" ] && [ "$LIST" != "null" ]; then
-    aws ec2 revoke-security-group-ingress --group-name ssh-access --ip-permissions "$LIST" $ACCOUNT_PROFILE
+    aws ec2 revoke-security-group-ingress --group-id $SGID --ip-permissions "$LIST" $ACCOUNT_PROFILE
   fi
 
   if [ -n "$SSH_LIST" ]; then

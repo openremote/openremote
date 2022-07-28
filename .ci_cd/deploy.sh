@@ -265,6 +265,8 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
+echo "Deleting existing EFS mount volume"
+docker volume rm or_efs-data 1>/dev/null
 
 # Start the stack
 echo "Starting the stack"
@@ -400,6 +402,8 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
+echo "Deleting existing EFS mount volume"
+docker volume rm or_efs-data 1>/dev/null
 
 # Start the stack
 echo "Starting the stack"
@@ -470,8 +474,11 @@ while [[ $response -ne 200 ]] && [ $count -lt 12 ]; do
 done
 
 if [ $response -ne 200 ]; then
+  echo "Manager web server is unreachable https://$OR_HOSTNAME..."
   revoke_ssh
   exit 1
+else
+  echo "Manager web server now reachable https://$OR_HOSTNAME..."
 fi
 
 revoke_ssh
