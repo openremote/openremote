@@ -26,7 +26,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
     if (config && config.controls && config.controls.allowedConditionTypes) {
         addAssetTypes = config.controls.allowedConditionTypes.indexOf(ConditionType.ASSET_QUERY) >= 0;
         addAgentTypes = config.controls.allowedConditionTypes.indexOf(ConditionType.AGENT_QUERY) >= 0;
-        addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIMER) >= 0;
+        addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.DURATION) >= 0;
     }
 
     const menu: (ListItem | null)[] = [];
@@ -78,7 +78,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
         menu.push({
             text: i18next.t("timer"),
             icon: "timer",
-            value: ConditionType.TIMER,
+            value: ConditionType.DURATION,
             styleMap: {"--or-icon-fill": "#" + TIMER_COLOR}
         } as ListItem);
     }
@@ -90,12 +90,12 @@ export function updateRuleConditionType(ruleCondition: RuleCondition, value: str
 
     if (!value) {
         ruleCondition.assets = undefined;
-        ruleCondition.timer = undefined;
-    } else if (value === ConditionType.TIMER) {
+        ruleCondition.duration = undefined;
+    } else if (value === ConditionType.DURATION) {
         ruleCondition.assets = undefined;
-        ruleCondition.timer = "1h";
+        ruleCondition.duration = "1h";
     } else {
-        ruleCondition.timer = undefined;
+        ruleCondition.duration = undefined;
 
         if (config && config.json && config.json.whenAssetQuery) {
             ruleCondition.assets = JSON.parse(JSON.stringify(config.json.whenAssetQuery));
@@ -164,7 +164,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
             if (type) {
                 switch (type) {
-                    case ConditionType.TIMER:
+                    case ConditionType.DURATION:
                         buttonIcon = "timer";
                         buttonColor = TIMER_COLOR;
                         break;
@@ -197,7 +197,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
         
         if (type) {
             switch (type) {
-                case ConditionType.TIMER:
+                case ConditionType.DURATION:
                     template = html`<span>TIMER NOT IMPLEMENTED</span>`;
                     break;
                 default:
@@ -219,8 +219,8 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
             return assetType;
         }
 
-        if (this.ruleCondition.timer) {
-            return ConditionType.TIMER;
+        if (this.ruleCondition.duration) {
+            return ConditionType.DURATION;
         }
     }
 
