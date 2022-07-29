@@ -19,9 +19,12 @@
  */
 package org.openremote.model.rules;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.geo.GeoJSONPoint;
 
 public class SunPositionTrigger {
+
+    public static final String TWILIGHT_PREFIX = "TWILIGHT_";
 
     /**
      * The astronomical position of the sun
@@ -44,7 +47,7 @@ public class SunPositionTrigger {
     GeoJSONPoint location;
     Integer offsetMins;
 
-
+    @JsonCreator
     public SunPositionTrigger(Position position, GeoJSONPoint location, Integer offsetMins) {
         this.position = position;
         this.location = location;
@@ -61,5 +64,14 @@ public class SunPositionTrigger {
 
     public Integer getOffsetMins() {
         return offsetMins;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "position=" + position +
+            ", location=" + location +
+            ", offsetMins=" + offsetMins +
+            '}';
     }
 }

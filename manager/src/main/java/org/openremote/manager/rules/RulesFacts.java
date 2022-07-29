@@ -36,6 +36,7 @@ import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.util.TimeUtil;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -55,7 +56,6 @@ public class RulesFacts extends Facts implements RuleListener {
 
     public static final int INITIAL_CAPACITY = 100000;
 
-    public static final String CLOCK = "INTERNAL_CLOCK";
     public static final String ASSET_STATES = "INTERNAL_ASSET_STATES";
     public static final String ASSET_EVENTS = "INTERNAL_ASSET_EVENTS";
     public static final String EXECUTION_VARS = "INTERNAL_EXECUTION_VAR";
@@ -68,7 +68,6 @@ public class RulesFacts extends Facts implements RuleListener {
     final protected Logger LOG;
     final protected Map<String, Collection<AssetState<?>>> assetIdIndex = new HashMap<>();
     final protected Map<String, Collection<AssetState<?>>> assetTypeIndex = new HashMap<>();
-    public RulesClock clock;
     protected int triggerCount;
     protected boolean trackLocationRules;
     protected Map<String, Set<GeofencePredicate>> assetStateLocationPredicateMap = null;
@@ -103,15 +102,6 @@ public class RulesFacts extends Facts implements RuleListener {
                                 assetStateSetEntry.getValue())).collect(Collectors.toList());
     }
 
-    public RulesClock getClock() {
-        return clock;
-    }
-
-    public void setClock(RulesClock clock) {
-        this.clock = clock;
-        super.put(CLOCK, clock);
-    }
-
     @SuppressWarnings("unchecked")
     public Collection<AssetState<?>> getAssetStates() {
         return get(ASSET_STATES);
@@ -129,8 +119,7 @@ public class RulesFacts extends Facts implements RuleListener {
 
     public Map<String, Object> getNamedFacts() {
         return asMap().entrySet().stream().filter(entry ->
-                !entry.getKey().equals(CLOCK)
-                        && !entry.getKey().equals(ASSET_STATES)
+                !entry.getKey().equals(ASSET_STATES)
                         && !entry.getKey().equals(ASSET_EVENTS)
                         && !entry.getKey().equals(EXECUTION_VARS)
                         && !entry.getKey().equals(ANONYMOUS_FACTS)
@@ -188,7 +177,6 @@ public class RulesFacts extends Facts implements RuleListener {
             case ASSET_EVENTS:
             case ASSET_STATES:
             case EXECUTION_VARS:
-            case CLOCK:
                 throw new IllegalArgumentException("Reserved internal fact name: " + name);
         }
         if (LOG.isLoggable(Level.FINEST)) {
@@ -269,7 +257,7 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public RulesFacts putTemporary(long expires, Object value) {
-        getAnonymousFacts().add(new TemporaryFact<>((long) getClock().getTimestamp(), expires, value));
+        getAnonymousFacts().add(new TemporaryFact<>(timerService.getCurrentTimeMillis(), expires, value));
         return this;
     }
 
@@ -282,7 +270,7 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public RulesFacts putTemporary(String name, long expires, Object value) {
-        put(name, new TemporaryFact<>((long) getClock().getTimestamp(), expires, value));
+        put(name, new TemporaryFact<>(timerService.getCurrentTimeMillis(), expires, value));
         return this;
     }
 
@@ -462,7 +450,7 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public void removeExpiredTemporaryFacts() {
-        long currentTimestamp = (long) getClock().getTimestamp();
+        long currentTimestamp = timerService.getCurrentTimeMillis();
         getAssetEvents().removeIf(fact -> {
             boolean result = fact.isExpired(currentTimestamp);
             if (result && LOG.isLoggable(Level.FINEST)) {
@@ -472,8 +460,7 @@ public class RulesFacts extends Facts implements RuleListener {
         });
 
         List<Fact<?>> expiredFacts = StreamSupport.stream(super.spliterator(), false).filter(fact -> {
-            if (fact.getName().equals(CLOCK)
-                || fact.getName().equals(ASSET_STATES)
+            if (fact.getName().equals(ASSET_STATES)
                 || fact.getName().equals(ASSET_EVENTS)
                 || fact.getName().equals(EXECUTION_VARS)
                 || fact.getName().equals(ANONYMOUS_FACTS)
@@ -494,7 +481,7 @@ public class RulesFacts extends Facts implements RuleListener {
             boolean result = false;
             if (fact instanceof TemporaryFact<?>) {
                 TemporaryFact<?> temporaryFact = (TemporaryFact<?>) fact;
-                result = temporaryFact.isExpired((long) getClock().getTimestamp());
+                result = temporaryFact.isExpired(timerService.getCurrentTimeMillis());
             }
             if (result && LOG.isLoggable(Level.FINEST)) {
                 LOG.finest("Fact change (DELETE EXPIRED): " + fact + " - on: " + loggingContext);
@@ -512,7 +499,7 @@ public class RulesFacts extends Facts implements RuleListener {
         boolean haveLog = false;
         if (getAllFacts().count() > 0) {
             logger.log(level, "--------------------------------- CLOCK ---------------------------------");
-            logger.log(level, getClock().toString());
+            logger.log(level, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).toString());
             haveLog = true;
         }
 
