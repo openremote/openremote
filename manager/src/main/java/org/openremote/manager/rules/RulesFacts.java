@@ -555,6 +555,10 @@ public class RulesFacts extends Facts implements RuleListener {
         return haveLog;
     }
 
+    public TimerService getClock() {
+        return timerService;
+    }
+
     public static Comparator<AssetState<?>> asComparator(AssetQuery.OrderBy orderBy) {
 
         Function<AssetState<?>, String> keyExtractor = AssetState::getAssetName;
