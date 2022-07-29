@@ -27,6 +27,10 @@ dependencies {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
     }
+
+    testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
+    testImplementation "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
+    testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
 }
 
 tasks.withType(Test) {
