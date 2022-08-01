@@ -4,7 +4,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {Asset, Attribute, NameValueHolder, AssetModelUtil} from "@openremote/model";
-import {DefaultColor5, DefaultColor3, Util} from "@openremote/core";
+import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -55,7 +55,7 @@ const style = css`
     }
 
     .mdc-data-table__header-cell {
-        font-weight: bold;
+        font-weight: 500;
         color: ${unsafeCSS(DefaultColor3)};
     }
 
@@ -132,6 +132,9 @@ const style = css`
     }
     .overflow-visible {
         overflow: visible;
+    }
+    .mdc-data-table__cell > or-attribute-input {
+        width: 283px;
     }
 `;
 
@@ -629,18 +632,23 @@ export class OrEditAssetPanel extends LitElement {
                                 flex: 1;    
                                 overflow: visible;
                                 min-height: 0;
+                                padding: 0;
+                            }
+                            footer.mdc-dialog__actions {
+                                border-top: 1px solid ${unsafeCSS(DefaultColor5)};
                             }
                             or-asset-tree {
                                 height: 100%;
                             }
                         </style>
                     `)
+                .setHeading(i18next.t("setParent"))
                 .setDismissAction(null));
         };
 
         return html`
             <div id="parent-edit-wrapper">
-                ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: false, label: i18next.t("parent")})}
+                ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: true, label: i18next.t("parent")})}
                 <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" outlined .label="${i18next.t("edit")}" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
             </div>
         `;

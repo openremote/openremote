@@ -256,11 +256,7 @@ export const style = css`
     #fileupload {
         display: flex;
         align-items: center;
-    }
-    
-    #fileupload > * {
-        flex: 1 auto;
-        margin-right: 5px;
+        width: 100%;
     }
     
     .hidden {
@@ -342,6 +338,12 @@ export const style = css`
         .panelContainer {
             flex: 1 1 50%;
             padding: 0 5px;
+        }
+        .panelContainer > :first-child{
+            margin-top:0;
+        }
+        .panelContainer > :last-child{
+            margin-bottom:0;
         }
     }
 `;
