@@ -91,7 +91,8 @@ export class OrDashboardBrowser extends LitElement {
                 draggable: {
                     appendTo: 'parent'
                 },
-                margin: 8
+                margin: 8,
+                row: sidebarHeight
 
                 // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
             }, sidebarElement);

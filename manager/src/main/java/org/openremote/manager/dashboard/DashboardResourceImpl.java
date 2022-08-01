@@ -75,7 +75,8 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            this.dashboardStorageService.update(ValueUtil.clone(dashboard), getUserId());
+            Dashboard d = this.dashboardStorageService.update(ValueUtil.clone(dashboard), getUserId());
+            System.out.println(d);
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);

@@ -215,15 +215,30 @@ export class OrDashboardPreview extends LitElement {
                     this.setupGrid(true, false);
                 }
 
+                // If ID changed, aka user selected a different template.
+                else if(this.latestChanges.changedKeys.includes('id')) {
+                    console.log("Setting up Grid.. [#7]");
+                    this.setupGrid(true, true);
+                }
+
                 // If multiple properties changed, just force rerender all of it.
                 else if(this.latestChanges.changedKeys.length > 1) {
                     console.log("Setting up Grid.. [#6]");
                     this.setupGrid(true, true);
                 }
-                // On widgets change only recreate grid is required.
+
+                // On widgets change, check whether they are programmatically added to GridStack. If not, adding them.
                 else if(this.latestChanges.changedKeys.includes('widgets')) {
-                    console.log("Setting up Grid.. [#2]");
-                    this.setupGrid(true, true);
+                    console.log("Creating missing items on the Grid..");
+                    if(this.grid?.el != null) {
+                        console.log(this.grid?.getGridItems());
+                        console.log(this.template.widgets);
+                        this.grid.getGridItems().forEach((gridElement) => {
+                            if(!gridElement.classList.contains('ui-draggable')) {
+                                this.grid?.makeWidget(gridElement);
+                            }
+                        })
+                    }
                 }
                 // On screenPreset change, a full force rererender is required
                 else if(this.latestChanges.changedKeys.includes('screenPresets')) {
@@ -240,11 +255,14 @@ export class OrDashboardPreview extends LitElement {
                 if(changedProperties.get("selectedWidget") != undefined) { // if previous selected state was a different widget
                     this.dispatchEvent(new CustomEvent("deselected", { detail: changedProperties.get("selectedWidget") as DashboardWidget }));
                 }
-                const foundItem = this.grid?.getGridItems().find((item) => {
-                    return item.gridstackNode?.id == this.selectedWidget?.gridItem?.id;
-                });
-                if(foundItem != null) { this.selectGridItem(foundItem); }
-                this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedWidget }));
+                console.log(this.grid);
+                if(this.grid?.el != null) {
+                    const foundItem = this.grid?.getGridItems().find((item) => {
+                        return item.gridstackNode?.id == this.selectedWidget?.gridItem?.id;
+                    });
+                    if(foundItem != null) { this.selectGridItem(foundItem); }
+                    this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedWidget }));
+                }
 
             } else {
                 // Checking whether the mainGrid is not destroyed and there are Items to deselect...
@@ -490,6 +508,7 @@ export class OrDashboardPreview extends LitElement {
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
                                     ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
+                                        console.log(widget.gridItem)
                                         return html`
                                             <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem!); }}">
                                                 <div class="grid-stack-item-content">

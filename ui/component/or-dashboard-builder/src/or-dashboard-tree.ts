@@ -69,10 +69,12 @@ export class OrDashboardTree extends LitElement {
     /* ---------------------- */
 
     private createDashboard(size: DashboardSizeOption) {
+        const randomId = (Math.random() + 1).toString(36).substring(2);
         const dashboard = {
             realm: this.realm!,
             displayName: "Dashboard" + (this.dashboards != null ? (this.dashboards.length + 1) : "X"),
             template: {
+                id: randomId,
                 columns: this.getDefaultColumns(size),
                 maxScreenWidth: 4000,
                 screenPresets: this.getDefaultScreenPresets(size),
