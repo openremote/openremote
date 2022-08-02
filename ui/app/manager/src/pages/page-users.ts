@@ -353,7 +353,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 }
             }
         } finally {
-            this.loadUsers();
+            await this.loadUsers();
         }
     }
 
@@ -397,7 +397,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             await manager.rest.api.AssetResource.createUserAssetLinks(addedLinks);
         }
     }
-    
+
     private _deleteUser(user) {
         showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"), i18next.t("delete"))
             .then((ok) => {
@@ -410,9 +410,15 @@ export class PageUsers extends Page<AppStateKeyed> {
     private doDelete(user) {
         manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then(response => {
             if (user.serviceAccount) {
-                this._serviceUsers = [...this._serviceUsers.filter(u => u.id !== user.id)];
+                const elem = this.shadowRoot?.querySelector('#serviceuser-' + user.username);
+                this._toggleUserExpand(elem as HTMLTableRowElement, user).then(() => {
+                    this._serviceUsers = [...this._serviceUsers.filter(u => u.id !== user.id)];
+                });
             } else {
-                this._users = [...this._users.filter(u => u.id !== user.id)];
+                const elem = this.shadowRoot?.querySelector('#user-' + user.username);
+                this._toggleUserExpand(elem as HTMLTableRowElement, user).then(() => {
+                    this._users = [...this._users.filter(u => u.id !== user.id)];
+                });
             }
         })
     }
@@ -530,8 +536,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         this.realm = state.app.realm;
     }
 
-    protected async _toggleUserExpand(ev: MouseEvent, user: UserModel) {
-        const trElem = ev.currentTarget as HTMLTableRowElement;
+    protected async _toggleUserExpand(trElem: HTMLTableRowElement, user: UserModel, autoScroll: boolean = false) {
         const expanderIcon = trElem.getElementsByTagName("or-icon")[0] as OrIcon;
         const userRow = (trElem.parentElement! as HTMLTableElement).rows[trElem.rowIndex];
 
@@ -585,6 +590,10 @@ export class PageUsers extends Page<AppStateKeyed> {
         if (expanderIcon.icon === "chevron-right") {
             expanderIcon.icon = "chevron-down";
             userRow.classList.add("expanded");
+            if(autoScroll) {
+                await this.updateComplete;
+                userRow.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
+            }
         } else {
             expanderIcon.icon = "chevron-right";
             userRow.classList.remove("expanded");
@@ -718,7 +727,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
 
         return html`
-            <tr class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev, user)}">
+            <tr id="${(user.serviceAccount ? 'serviceuser-' : 'user-') + user.username}" class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev.currentTarget, user)}">
                 <td class="padded-cell mdc-data-table__cell">
                     <or-icon icon="chevron-right"></or-icon>
                     <span>${user.username}</span>
@@ -769,15 +778,19 @@ export class PageUsers extends Page<AppStateKeyed> {
                                     <!-- password -->
                                     <h5>${i18next.t("password")}</h5>
                                     ${isServiceUser ? html`
-                                                <or-mwc-input id="password-${suffix}" readonly
-                                                              .label="${i18next.t("secret")}"
-                                                              .value="${user.secret}"
-                                                              .type="${InputType.TEXT}"></or-mwc-input>
-                                                <or-mwc-input ?readonly="${!user.id || readonly}"
+                                                ${user.secret ? html`
+                                                    <or-mwc-input id="password-${suffix}" readonly
+                                                                  .label="${i18next.t("secret")}"
+                                                                  .value="${user.secret}"
+                                                                  .type="${InputType.TEXT}"></or-mwc-input>
+                                                    <or-mwc-input ?readonly="${!user.id || readonly}"
                                                               .label="${i18next.t("regenerateSecret")}"
                                                               .type="${InputType.BUTTON}"
-                                                              @or-mwc-input-changed="${(ev) => this._regenerateSecret(ev, user, "password-" + suffix)}"></or-mwc-input>`
-                                            : html`
+                                                              @or-mwc-input-changed="${(ev) => this._regenerateSecret(ev, user, "password-" + suffix)}"></or-mwc-input>
+                                                ` : html`
+                                                    <span>${i18next.t("generateSecretInfo")}</span>
+                                                `}
+                                            ` : html`
                                                 <or-mwc-input id="password-${suffix}"
                                                               ?readonly="${readonly}"
                                                               .label="${i18next.t("password")}"
@@ -891,7 +904,35 @@ export class PageUsers extends Page<AppStateKeyed> {
                                     <or-mwc-input id="savebtn-${suffix}" style="margin-left: auto;"
                                                   .label="${i18next.t(user.id ? "save" : "create")}"
                                                   .type="${InputType.BUTTON}"
-                                                  @click="${() => this._createUpdateUser(user)}"></or-mwc-input>
+                                                  @click="${(ev: MouseEvent) => {
+                                                      const prevExpandedRows = this.shadowRoot?.querySelectorAll("tr.item-row.expanded"); // Get list of expanded elements
+                                                      const tableChildren = Array.from(prevExpandedRows[0].parentElement.children); // Full list of elements & headers
+                                                      let prevExpandedTableRows = [];
+                                                      prevExpandedRows.forEach((row) => {
+                                                          const index = tableChildren.indexOf(row);
+                                                          if(tableChildren[index - 1].id.replace((user.serviceAccount ? 'serviceuser-' : 'user-'), '') != 'undefined') { // undefined is the "Add User" row
+                                                              prevExpandedTableRows.push(tableChildren[index - 1]);
+                                                          }
+                                                      });
+                                                      // Perform the actual update to the user, then expand the correct table entries..
+                                                      this._createUpdateUser(user).then(async () => {
+                                                          await this.updateComplete;
+                                                          const elem = this.shadowRoot?.querySelector((user.serviceAccount ? '#serviceuser-' : '#user-') + user.username);
+                                                          prevExpandedTableRows = [...prevExpandedTableRows.filter((row) => row.id != elem.id)]; // Filter out the already updated user entry
+                                                          for await (const rowElem of prevExpandedTableRows) {
+                                                              if(rowElem.id.startsWith("serviceuser-")) {
+                                                                  await this._toggleUserExpand(this.shadowRoot?.querySelector("#" + rowElem.id), this._serviceUsers.find((x) => x.username == rowElem.id.replace('serviceuser-', '')), false);
+                                                              } else if(rowElem.id.startsWith("user-")) {
+                                                                  await this._toggleUserExpand(this.shadowRoot?.querySelector("#" + rowElem.id), this._users.find((x) => x.username == rowElem.id.replace('user-', '')), false);
+                                                              }
+                                                          }
+                                                          // Get the user after updating, and get the table entry assigned to it.
+                                                          // In case of a new user, it will grab the entry that got added afterwards.
+                                                          const newUser = (user.serviceAccount ? this._serviceUsers.find((x) => x.username == user.username) : this._users.find((x) => x.username == user.username));
+                                                          this._toggleUserExpand(elem as HTMLTableRowElement, newUser, true);
+                                                      })
+                                                  }}"
+                                    ></or-mwc-input>
                                 </div>
                             `}
                         </div>

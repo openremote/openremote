@@ -233,6 +233,7 @@
   "regularUser_plural": "Gebruikers",
   "serviceUser_plural": "Service gebruikers",
   "regenerateSecret": "Regenereer secret",
+  "generateSecretInfo": "Een secret wordt gegenereerd bij het maken van een gebruiker.",
   "role": "Rol",
   "role_plural": "Rollen",
   "description": "Omschrijving",
