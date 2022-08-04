@@ -107,6 +107,13 @@ export class PageUsers extends Page<AppStateKeyed> {
                     cursor: progress;
                     opacity: 0.4;
                 }
+                
+                .table-actions-container {
+                    text-align: right;
+                    position: absolute;
+                    right: 0;
+                    margin: 2px;
+                }
 
                 td, th {
                     width: 25%
@@ -492,9 +499,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
                                     <or-translate value="username"></or-translate>
                                 </th>
-                                <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col">
-                                    <or-translate value="email"></or-translate>
-                                </th>
+                                <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col"><!-- Empty --></th>
                                 <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
                                     <or-translate value="role"></or-translate>
                                 </th>
@@ -727,13 +732,17 @@ export class PageUsers extends Page<AppStateKeyed> {
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
 
         return html`
-            <tr id="${(user.serviceAccount ? 'serviceuser-' : 'user-') + user.username}" class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev.currentTarget, user)}">
+            <tr id="${(user.serviceAccount ? 'serviceuser-' : 'user-') + user.username}" class="mdc-data-table__row" @click="${(ev) => {
+                if((ev.path[0].tagName != 'SPAN' || ev.path[0].className == '' || ev.path[0].className == 'mdi-chevron-right' || ev.path[0].className == 'mdi-chevron-down') && ev.path[0].tagName != 'BUTTON') { 
+                    this._toggleUserExpand(ev.currentTarget, user); // Only toggling when not hovering an action button 
+                }
+            }}">
                 <td class="padded-cell mdc-data-table__cell">
                     <or-icon icon="chevron-right"></or-icon>
                     <span>${user.username}</span>
                 </td>
                 <td class="padded-cell mdc-data-table__cell  hide-mobile">
-                    ${user.email}
+                    ${isServiceUser ? undefined : user.email}
                 </td>
                 <td class="padded-cell mdc-data-table__cell">
                     ${user.roles ? user.roles.filter(r => r.composite).map(r => r.name).join(",") : null}
@@ -741,6 +750,16 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <td class="padded-cell mdc-data-table__cell hide-mobile">
                     <or-translate .value="${user.enabled ? "enabled" : "disabled"}"></or-translate>
                 </td>
+                ${(isServiceUser) ? html`
+                    <span class="table-actions-container">
+                        ${user.secret ? html`
+                            <or-mwc-input type="${InputType.BUTTON}" icon="key" style="margin: 0;" title="${i18next.t("copySecret")}" @click="${() => {
+                                navigator.clipboard.writeText(user.secret);
+                                showSnackbar(undefined, i18next.t("copiedSecretToClipboard"));
+                            }}"></or-mwc-input>
+                        ` : undefined}
+                    </span>
+                ` : undefined}
             </tr>
             <tr class="item-row${!user.id ? " expanded" : ""}">
                 <td colspan="4">
