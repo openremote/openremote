@@ -923,49 +923,16 @@ export class PageUsers extends Page<AppStateKeyed> {
                                     <or-mwc-input id="savebtn-${suffix}" style="margin-left: auto;"
                                                   .label="${i18next.t(user.id ? "save" : "create")}"
                                                   .type="${InputType.BUTTON}"
-                                                  @click="${(ev: MouseEvent) => {
-                                                      const prevExpandedRows = this.shadowRoot?.querySelectorAll("tr.item-row.expanded"); // Get list of expanded elements
-                                                      const prevExpandedParents = [];
-                                                      let tableChildren = []; // Full list of elements & headers
-                                                      prevExpandedRows.forEach((row) => {
-                                                          if(!prevExpandedParents.includes(row.parentElement)) {
-                                                              prevExpandedParents.push(row.parentElement);
-                                                              tableChildren = tableChildren.concat(Array.from(row.parentElement.children));
-                                                          }
-                                                      });
-                                                      // Getting the table rows instead of the item content, for reading the HTMLElement ID..
-                                                      let prevExpandedTableRows = [];
-                                                      prevExpandedRows.forEach((row) => {
-                                                          const index = tableChildren.indexOf(row);
-                                                          if(tableChildren[index - 1].id.replace((user.serviceAccount ? 'serviceuser-' : 'user-'), '') != 'undefined') { // undefined is the "Add User" row
-                                                              prevExpandedTableRows.push(tableChildren[index - 1]);
-                                                          }
-                                                      });
-                                                      // Perform the actual update to the user, then expand the correct table entries..
-                                                      this._createUpdateUser(user).then(async () => {
-                                                          await this.updateComplete;
-                                                          const elem = this.shadowRoot?.querySelector((user.serviceAccount ? '#serviceuser-' : '#user-') + user.username);
-                                                          prevExpandedTableRows = [...prevExpandedTableRows.filter((row) => row.id != elem.id)]; // Filter out the already updated user entry
-                                                          for await (const rowElem of prevExpandedTableRows) {
-                                                              if(rowElem.id.startsWith("serviceuser-")) {
-                                                                  await this._toggleUserExpand(this.shadowRoot?.querySelector("#" + rowElem.id), this._serviceUsers.find((x) => x.username == rowElem.id.replace('serviceuser-', '')), false);
-                                                              } else if(rowElem.id.startsWith("user-")) {
-                                                                  await this._toggleUserExpand(this.shadowRoot?.querySelector("#" + rowElem.id), this._users.find((x) => x.username == rowElem.id.replace('user-', '')), false);
-                                                              }
-                                                          }
-                                                          
+                                                  @click="${() => {
+                                                      this._createUpdateUser(user).then(() => {
                                                           if(user.serviceAccount) {
-                                                              showSnackbar(undefined, (user.username + " succesfully saved!"), "Copy secret", () => {
-                                                                  navigator.clipboard.writeText(user.secret);
-                                                              });
+                                                              showSnackbar(undefined, (user.username + " succesfully saved!"), "Copy secret", () => { navigator.clipboard.writeText(user.secret); });
                                                           } else {
                                                               showSnackbar(undefined, (user.username + " succesfully saved!"));
                                                           }
-                                                          // Scroll towards the new user added/changed (optional)
-                                                          // elem.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
                                                       })
-                                                  }}"
-                                    ></or-mwc-input>
+                                                  }}">
+                                    </or-mwc-input>
                                 </div>
                             `}
                         </div>
