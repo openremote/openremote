@@ -274,12 +274,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
 
-        and: "the engine fires at least one more time"
+        then: "the engine fires at least one more time"
         conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
-        and: "the console device moves outside the home geofence again (as defined in the rule)"
+        when: "the console device moves outside the home geofence again (as defined in the rule)"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d)), AttributeEvent.Source.CLIENT)
 
         then: "another notification should have been sent to the console"
