@@ -144,13 +144,21 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     @Override
     public boolean checkCanSubscribe(MqttConnection connection, Topic topic) {
         // Skip standard checks
-        return canSubscribe(connection, topic);
+        if (!canSubscribe(connection, topic)) {
+            getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", connection" + connection);
+            return false;
+        }
+        return true;
     }
 
     @Override
     public boolean checkCanPublish(MqttConnection connection, Topic topic) {
         // Skip standard checks
-        return canPublish(connection, topic);
+        if (!canPublish(connection, topic)) {
+            getLogger().fine("Cannot publish to this topic, topic=" + topic + ", connection" + connection);
+            return false;
+        }
+        return true;
     }
 
     @Override

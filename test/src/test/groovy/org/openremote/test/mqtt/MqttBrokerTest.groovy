@@ -1,7 +1,12 @@
 package org.openremote.test.mqtt
 
-
+import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
+import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
+import com.hivemq.client.mqtt.MqttClientConfig
+import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.moquette.BrokerConstants
+import io.netty.channel.socket.SocketChannel
+import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
@@ -10,6 +15,7 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
+import org.openremote.manager.mqtt.LastWillMQTTHandler
 import org.openremote.manager.mqtt.MQTTHandler
 import org.openremote.manager.mqtt.MqttBrokerService
 import org.openremote.manager.setup.SetupService
@@ -59,7 +65,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a mqtt client connects with invalid credentials"
         def wrongUsername = "master:" + keycloakTestSetup.serviceUser.username
-        MQTT_IOClient client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(wrongUsername, password), null)
+        MQTT_IOClient client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(wrongUsername, password), null, null)
         client.connect()
 
         then: "the client connection status should be in error"
@@ -70,7 +76,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         when: "a mqtt client connects with valid credentials"
         client.disconnect()
         mqttClientId = UniqueIdentifierGenerator.generateId()
-        client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null)
+        client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
         client.connect()
 
         then: "mqtt connection should exist"
@@ -441,12 +447,46 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert receivedEvents.size() == 0
         }
 
-        when: "MQTT client disconnects"
-        client.disconnect()
+        when: "another client connects with a last will configured"
+        newClientId = "newClient"
+        MQTT_IOClient newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/${LastWillMQTTHandler.LAST_WILL_TOKEN}/new_device", ValueUtil.parse("123").orElse(null), false))
+        newClient.connect()
 
-        then: "no connection should be left"
+        then: "the client should be connected"
+        conditions.eventually {
+            assert newClient.getConnectionStatus() == ConnectionStatus.CONNECTED
+        }
+
+        when: "the existing client subscribes to the last will topic"
+        MQTTMessage<String> receivedLastWillMessage
+        client.addMessageConsumer("${keycloakTestSetup.realmBuilding.name}/${LastWillMQTTHandler.LAST_WILL_TOKEN}/#", {receivedLastWillMessage = it})
+
+        and: "the new client gets abruptly disconnected"
+        def existingConnection = mqttBrokerService.clientIdConnectionMap.get(newClientId)
+//        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).config().setOption(ChannelOption.SO_LINGER, 0I)
+        ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)newClient.client).clientConfig).delegate).connectionConfig.get()).channel).close()
+
+        then: "the client should reconnect"
+        conditions.eventually {
+            assert mqttBrokerService.clientIdConnectionMap.get(newClientId) != null
+            assert mqttBrokerService.clientIdConnectionMap.get(newClientId) !== existingConnection
+        }
+
+        and: "the existing client should have received the last will message"
+        conditions.eventually {
+            assert receivedLastWillMessage != null
+            assert receivedLastWillMessage.topic == "${keycloakTestSetup.realmBuilding.name}/${LastWillMQTTHandler.LAST_WILL_TOKEN}/new_device"
+            assert receivedLastWillMessage.payload == "123"
+        }
+
+        when: "both MQTT clients disconnect"
+        client.disconnect()
+        newClient.disconnect()
+
+        then: "no connections should be left"
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.DISCONNECTED
+            assert newClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
             assert mqttBrokerService.clientIdConnectionMap.size() == 0
         }
     }

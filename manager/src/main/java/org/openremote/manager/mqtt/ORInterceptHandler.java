@@ -86,7 +86,12 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         brokerService.addConnection(connection.getClientId(), connection);
 
         // Notify all custom handlers
-        brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onConnect(connection, msg));
+        for (MQTTHandler handler : brokerService.getCustomHandlers()) {
+            if (!handler.onConnect(connection, msg)) {
+                LOG.info("Handler returned false from onConnect so not passing to other handlers: " + handler.getName());
+                break;
+            }
+        }
     }
 
     @Override

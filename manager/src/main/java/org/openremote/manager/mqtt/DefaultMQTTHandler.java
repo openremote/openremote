@@ -61,7 +61,7 @@ import static org.openremote.model.syslog.SyslogCategory.API;
  */
 public class DefaultMQTTHandler extends MQTTHandler {
 
-    public static final int PRIORITY = 1000;
+    public static final int PRIORITY = Integer.MIN_VALUE + 1000;
     public static final String ASSET_TOPIC = "asset";
     public static final String ATTRIBUTE_TOPIC = "attribute";
     public static final String ATTRIBUTE_WRITE_TOPIC = "writeattribute";
@@ -69,11 +69,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     protected AssetStorageService assetStorageService;
-    protected ClientEventService clientEventService;
-    protected MqttBrokerService mqttBrokerService;
-    protected MessageBrokerService messageBrokerService;
-    protected ManagerKeycloakIdentityProvider identityProvider;
-    protected boolean isKeycloak;
 
     public static boolean isAttributeTopic(Topic topic) {
         return ATTRIBUTE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2)) || ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
@@ -100,23 +95,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void start(Container container) throws Exception {
         super.start(container);
-        ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
-        clientEventService = container.getService(ClientEventService.class);
-        messageBrokerService = container.getService(MessageBrokerService.class);
-        mqttBrokerService = container.getService(MqttBrokerService.class);
-
-        if (!identityService.isKeycloakEnabled()) {
-            LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
-            isKeycloak = false;
-        } else {
-            isKeycloak = true;
-            identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
-        }
     }
 
     @Override
-    public void onConnect(MqttConnection connection, InterceptConnectMessage msg) {
+    public boolean onConnect(MqttConnection connection, InterceptConnectMessage msg) {
         super.onConnect(connection, msg);
 
         // Moquette is awful and client ID rather than socket descriptors are used everywhere so cannot distinguish
@@ -138,6 +121,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         LOG.fine("Connected: " + connection);
+        return true;
     }
 
     @Override
@@ -504,9 +488,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
                     mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                 }
             } else {
-                if (ev instanceof AttributeEvent) {
-                    AttributeEvent attributeEvent = (AttributeEvent) ev;
-
+                if (ev instanceof AttributeEvent attributeEvent) {
                     if (isValueSubscription) {
                         mqttBrokerService.publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
                     } else {
@@ -515,14 +497,5 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 }
             }
         };
-    }
-
-    public static Map<String, Object> prepareHeaders(MqttConnection connection) {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(ConnectionConstants.SESSION_KEY, connection.getClientId());
-        headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
-        headers.put(Constants.AUTH_CONTEXT, connection.getAuthContext());
-        headers.put(Constants.REALM_PARAM_NAME, connection.getRealm());
-        return headers;
     }
 }
