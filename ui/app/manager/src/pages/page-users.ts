@@ -934,6 +934,14 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                                   await this._toggleUserExpand(this.shadowRoot?.querySelector("#" + rowElem.id), this._users.find((x) => x.username == rowElem.id.replace('user-', '')), false);
                                                               }
                                                           }
+                                                          
+                                                          if(user.serviceAccount) {
+                                                              showSnackbar(undefined, (user.username + " succesfully saved!"), "Copy secret", () => {
+                                                                  navigator.clipboard.writeText(user.secret);
+                                                              });
+                                                          } else {
+                                                              showSnackbar(undefined, (user.username + " succesfully saved!"));
+                                                          }
                                                           // Scroll towards the new user added/changed (optional)
                                                           // elem.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
                                                       })
