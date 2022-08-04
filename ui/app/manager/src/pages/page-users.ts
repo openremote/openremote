@@ -906,7 +906,15 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                   .type="${InputType.BUTTON}"
                                                   @click="${(ev: MouseEvent) => {
                                                       const prevExpandedRows = this.shadowRoot?.querySelectorAll("tr.item-row.expanded"); // Get list of expanded elements
-                                                      const tableChildren = Array.from(prevExpandedRows[0].parentElement.children); // Full list of elements & headers
+                                                      const prevExpandedParents = [];
+                                                      let tableChildren = []; // Full list of elements & headers
+                                                      prevExpandedRows.forEach((row) => {
+                                                          if(!prevExpandedParents.includes(row.parentElement)) {
+                                                              prevExpandedParents.push(row.parentElement);
+                                                              tableChildren = tableChildren.concat(Array.from(row.parentElement.children));
+                                                          }
+                                                      });
+                                                      // Getting the table rows instead of the item content, for reading the HTMLElement ID..
                                                       let prevExpandedTableRows = [];
                                                       prevExpandedRows.forEach((row) => {
                                                           const index = tableChildren.indexOf(row);
@@ -926,10 +934,8 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                                   await this._toggleUserExpand(this.shadowRoot?.querySelector("#" + rowElem.id), this._users.find((x) => x.username == rowElem.id.replace('user-', '')), false);
                                                               }
                                                           }
-                                                          // Get the user after updating, and get the table entry assigned to it.
-                                                          // In case of a new user, it will grab the entry that got added afterwards.
-                                                          const newUser = (user.serviceAccount ? this._serviceUsers.find((x) => x.username == user.username) : this._users.find((x) => x.username == user.username));
-                                                          this._toggleUserExpand(elem as HTMLTableRowElement, newUser, true);
+                                                          // Scroll towards the new user added/changed (optional)
+                                                          // elem.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
                                                       })
                                                   }}"
                                     ></or-mwc-input>
