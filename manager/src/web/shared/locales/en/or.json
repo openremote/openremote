@@ -238,6 +238,7 @@
   "copySecret": "Copy Secret",
   "copiedSecretToClipboard": "Copied the Secret to your clipboard!",
   "clipboard": "Clipboard",
+  "savedSuccessfully": "saved successfully!",
   "role": "Role",
   "role_plural": "Roles",
   "description": "Description",

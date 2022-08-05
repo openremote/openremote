@@ -926,9 +926,9 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                   @click="${() => {
                                                       this._createUpdateUser(user).then(() => {
                                                           if(user.serviceAccount) {
-                                                              showSnackbar(undefined, (user.username + " succesfully saved!"), "Copy secret", () => { navigator.clipboard.writeText(user.secret); });
+                                                              showSnackbar(undefined, (user.username + " " + i18next.t("savedSuccessfully")), i18next.t("copySecret"), () => { navigator.clipboard.writeText(user.secret); });
                                                           } else {
-                                                              showSnackbar(undefined, (user.username + " succesfully saved!"));
+                                                              showSnackbar(undefined, (user.username + " " + i18next.t("savedSuccessfully")));
                                                           }
                                                       })
                                                   }}">
