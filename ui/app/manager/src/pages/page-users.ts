@@ -769,7 +769,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 <div class="column">
                                     <h5>${i18next.t("details")}</h5>
                                     <!-- user details -->
-                                    <or-mwc-input ?readonly="${!!user.id || readonly}"
+                                    <or-mwc-input ?readonly="${!!user.id || readonly}" .disabled="${!!user.id}"
                                                   .label="${i18next.t("username")}"
                                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" required
                                                   pattern="[a-zA-Z0-9-_]+"
