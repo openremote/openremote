@@ -19,10 +19,9 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
+import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.util.ModelIgnore;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
@@ -40,6 +39,9 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     public static final AttributeDescriptor<Boolean> WEBSOCKET_MODE = new AttributeDescriptor<>("websocketMode", ValueType.BOOLEAN);
     public static final AttributeDescriptor<String> WEBSOCKET_PATH = new AttributeDescriptor<>("websocketPath", ValueType.TEXT);
     public static final AttributeDescriptor<String> WEBSOCKET_QUERY = new AttributeDescriptor<>("websocketQuery", ValueType.TEXT);
+    public static final AttributeDescriptor<String> LAST_WILL_TOPIC = new AttributeDescriptor<>("lastWillTopic", ValueType.TEXT);
+    public static final AttributeDescriptor<BaseJsonNode> LAST_WILL_PAYLOAD = new AttributeDescriptor<>("lastWillPayload", ValueType.JSON);
+    public static final AttributeDescriptor<Boolean> LAST_WILL_RETAIN = new AttributeDescriptor<>("lastWillRetain", ValueType.BOOLEAN);
 
     public static final AgentDescriptor<MQTTAgent, MQTTProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         MQTTAgent.class, MQTTProtocol.class, MQTTAgentLink.class
@@ -111,6 +113,33 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
 
     public MQTTAgent setWebsocketQuery(String websocketQuery) {
         getAttributes().getOrCreate(WEBSOCKET_QUERY).setValue(websocketQuery);
+        return this;
+    }
+
+    public Optional<String> getLastWillTopic() {
+        return getAttributes().getValue(LAST_WILL_TOPIC);
+    }
+
+    public MQTTAgent setLastWillTopic(String lastWillTopic) {
+        getAttributes().getOrCreate(LAST_WILL_TOPIC).setValue(lastWillTopic);
+        return this;
+    }
+
+    public Optional<BaseJsonNode> getLastWillPayload() {
+        return getAttributes().getValue(LAST_WILL_PAYLOAD);
+    }
+
+    public MQTTAgent setLastWillPayload(BaseJsonNode lastWillPayload) {
+        getAttributes().getOrCreate(LAST_WILL_PAYLOAD).setValue(lastWillPayload);
+        return this;
+    }
+
+    public Optional<Boolean> isLastWillRetain() {
+        return getAttributes().getValue(LAST_WILL_RETAIN);
+    }
+
+    public MQTTAgent setLastWillRetain(boolean lastWillRetain) {
+        getAttributes().getOrCreate(LAST_WILL_RETAIN).setValue(lastWillRetain);
         return this;
     }
 }
