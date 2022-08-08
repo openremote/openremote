@@ -59,6 +59,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public Realm realmEnergy;
     public Realm realmCity;
     public User serviceUser;
+    public User serviceUser2;
 
     public KeycloakTestSetup(Container container) {
         super(container);
@@ -102,18 +103,29 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         keycloakProvider.updateUserRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
 
         /*
-         * Service user client
+         * Service user clients
          */
         serviceUser = new User()
             .setServiceAccount(true)
             .setEnabled(true)
-            .setUsername("org/openremote/test");
+            .setUsername("serviceuser");
         serviceUser = keycloakProvider.createUpdateUser(realmBuilding.getName(), serviceUser, UniqueIdentifierGenerator.generateId("serviceusertest"));
         keycloakProvider.updateUserRoles(
             realmBuilding.getName(),
             serviceUser.getId(),
             Constants.KEYCLOAK_CLIENT_ID,
-            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES, ClientRole.READ_LAST_WILL).map(ClientRole::getValue).toArray(String[]::new)
+            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
+        );
+        serviceUser2 = new User()
+            .setServiceAccount(true)
+            .setEnabled(true)
+            .setUsername("serviceuser2");
+        serviceUser2 = keycloakProvider.createUpdateUser(realmBuilding.getName(), serviceUser2, UniqueIdentifierGenerator.generateId("serviceuser2test"));
+        keycloakProvider.updateUserRoles(
+            realmBuilding.getName(),
+            serviceUser2.getId(),
+            Constants.KEYCLOAK_CLIENT_ID,
+            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
         );
     }
 }

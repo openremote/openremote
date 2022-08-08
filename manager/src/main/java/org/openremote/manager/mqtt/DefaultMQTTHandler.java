@@ -22,7 +22,10 @@ package org.openremote.manager.mqtt;
 import io.moquette.broker.subscriptions.Token;
 import io.moquette.broker.subscriptions.Topic;
 import io.moquette.interception.messages.*;
-import io.netty.handler.codec.mqtt.MqttQoS;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.mqtt.*;
+import org.openremote.agent.protocol.mqtt.MQTTLastWill;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.web.ConnectionConstants;
@@ -120,7 +123,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection.getClientId());
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-        LOG.fine("Connected: " + connection);
         return true;
     }
 
@@ -131,7 +133,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Map<String, Object> headers = prepareHeaders(connection);
         headers.put(ConnectionConstants.SESSION_CLOSE, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-        LOG.fine("Connection closed: " + connection);
     }
 
     @Override
@@ -140,7 +141,26 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Map<String, Object> headers = prepareHeaders(connection);
         headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-        LOG.fine("Connection lost: " + connection);
+
+        // Try and publish last will if configured
+        if (connection.hasLastWill()) {
+            // Pass through standard canPublish/publish
+            MQTTLastWill lastWill = connection.getLastWill();
+            Topic lastWillTopic = Topic.asTopic(lastWill.getTopic());
+
+            if (handlesTopic(lastWillTopic)) {
+
+                getLogger().info("Processing last will for client: " + connection);
+
+                if (canPublish(connection, lastWillTopic)) {
+                    MqttFixedHeader fixedHeader = new MqttFixedHeader(MqttMessageType.PUBLISH, true, MqttQoS.EXACTLY_ONCE, false, 0);
+                    MqttPublishVariableHeader varHeader = new MqttPublishVariableHeader(lastWill.getTopic(), 0);
+                    ByteBuf payload = Unpooled.wrappedBuffer(lastWill.getPayload().toString().getBytes());
+                    InterceptPublishMessage message = new InterceptPublishMessage(new MqttPublishMessage(fixedHeader, varHeader, payload), msg.getClientID(), msg.getUsername());
+                    doPublish(connection, lastWillTopic, message);
+                }
+            }
+        }
     }
 
     @Override
@@ -294,14 +314,16 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 LOG.fine("Publish attribute events topic should be {realm}/{clientId}/writeattribute: topic=" + topic + ", connection=" + connection);
                 return false;
             }
+            return true;
         } else if (isAttributeValueWriteTopic(topic)) {
             if (topic.getTokens().size() != 5 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
                 LOG.fine("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + connection);
                 return false;
             }
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
