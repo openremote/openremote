@@ -587,6 +587,17 @@ public class ManagerTestSetup extends ManagerSetup {
                 keycloakTestSetup.testuser3Id,
                 apartment1HallwayId)));
 
+        assetStorageService.storeUserAssetLinks(Arrays.asList(
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.buildingUserId,
+                apartment2Id),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.buildingUserId,
+                apartment2LivingroomId),
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.buildingUserId,
+                apartment2BathroomId)));
+
         assetStorageService.storeUserAssetLinks(List.of(
             new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                 keycloakTestSetup.serviceUser2.getId(),
