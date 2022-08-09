@@ -31,7 +31,11 @@ if [ -n "$CIDR" ]; then
     exit 1
   fi
 
-  aws ec2 authorize-security-group-ingress --group-id $SGID --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$CIDR,Description=$DESCRIPTION}]" $PROFILE
+  if [[ "$CIDR" == *":"* ]]; then
+    aws ec2 authorize-security-group-ingress --group-id $SGID --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,Ipv6Ranges=[{CidrIpv6=$CIDR,Description=$DESCRIPTION}]" $PROFILE
+  else
+    aws ec2 authorize-security-group-ingress --group-id $SGID --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$CIDR,Description=$DESCRIPTION}]" $PROFILE
+  fi
 
   if [ $? -ne 0 ]; then
     echo "SSH Access failed might not be able to SSH into host(s)"
