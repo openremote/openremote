@@ -150,7 +150,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         List<String> subscribeFailures = []
         List<ConnectionStatus> connectionStatuses = []
         Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
-        MQTT_IOClient device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null)
+        MQTT_IOClient device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         device1Client.addConnectionStatusConsumer({connectionStatus ->
             connectionStatuses.add(connectionStatus)})
@@ -205,7 +205,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the client should reconnect"
         conditions.eventually {
             assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != null
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != existingConnection
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) !== existingConnection
         }
 
         then: "the subscriptions should succeed"
@@ -384,7 +384,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         def deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         def mqttDeviceNClientId = UniqueIdentifierGenerator.generateId("deviceN")
-        MQTT_IOClient deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null)
+        MQTT_IOClient deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
         deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 

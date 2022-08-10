@@ -27,6 +27,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.PushNotificationMessage;
@@ -37,15 +38,22 @@ import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
+import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.quartz.CronExpression;
+import org.shredzone.commons.suncalc.SunTimes;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -88,6 +96,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
 
+        @SuppressWarnings("ConstantConditions")
         public RuleConditionState(RuleCondition ruleCondition, boolean trackUnmatched, TimerService timerService) throws Exception {
             this.timerService = timerService;
             this.ruleCondition = ruleCondition;
@@ -97,40 +106,75 @@ public class JsonRulesBuilder extends RulesBuilder {
                 previouslyUnmatchedAssetStates = new HashSet<>();
             }
 
-            if (!TextUtil.isNullOrEmpty(ruleCondition.timer)) {
-
+            if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
                 try {
-                    if (TimeUtil.isTimeDuration(ruleCondition.timer)) {
+                    final long duration = TimeUtil.parseTimeDuration(ruleCondition.duration);
+                    AtomicLong nextExecuteMillis = new AtomicLong(timerService.getCurrentTimeMillis());
 
-                        final long duration = TimeUtil.parseTimeDuration(ruleCondition.timer);
-                        AtomicLong nextExecuteMillis = new AtomicLong(timerService.getCurrentTimeMillis());
-
-                        timePredicate = (time) -> {
-                            long nextExecute = nextExecuteMillis.get();
-                            if (time >= nextExecute) {
-                                nextExecuteMillis.set(nextExecute + duration);
-                                return true;
-                            }
-                            return false;
-                        };
-                    }
-
-                    if (CronExpression.isValidExpression(ruleCondition.timer)) {
-
-                        CronExpression timerExpression = new CronExpression(ruleCondition.timer);
-                        AtomicLong nextExecuteMillis = new AtomicLong(timerExpression.getNextValidTimeAfter(new Date(timerService.getCurrentTimeMillis())).getTime());
-
-                        timePredicate = (time) -> {
-                            long nextExecute = nextExecuteMillis.get();
-                            if (time >= nextExecute) {
-                                nextExecuteMillis.set(timerExpression.getNextInvalidTimeAfter(timerExpression.getNextInvalidTimeAfter(new Date(nextExecute))).getTime());
-                                return true;
-                            }
-                            return false;
-                        };
-                    }
+                    timePredicate = (time) -> {
+                        long nextExecute = nextExecuteMillis.get();
+                        if (time >= nextExecute) {
+                            nextExecuteMillis.set(nextExecute + duration);
+                            return true;
+                        }
+                        return false;
+                    };
                 } catch (Exception e) {
-                    log(Level.SEVERE, "Failed to parse rule condition timer expression: " + ruleCondition.timer, e);
+                    log(Level.SEVERE, "Failed to parse rule condition duration expression: " + ruleCondition.duration, e);
+                    throw e;
+                }
+            } else if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
+                try {
+                    CronExpression timerExpression = new CronExpression(ruleCondition.cron);
+                    AtomicLong nextExecuteMillis = new AtomicLong(timerExpression.getNextValidTimeAfter(new Date(timerService.getCurrentTimeMillis())).getTime());
+
+                    timePredicate = (time) -> {
+                        long nextExecute = nextExecuteMillis.get();
+                        if (time >= nextExecute) {
+                            nextExecuteMillis.set(timerExpression.getNextInvalidTimeAfter(timerExpression.getNextInvalidTimeAfter(new Date(nextExecute))).getTime());
+                            return true;
+                        }
+                        return false;
+                    };
+                } catch (Exception e) {
+                    log(Level.SEVERE, "Failed to parse rule condition cron expression: " + ruleCondition.cron, e);
+                    throw e;
+                }
+            } else if (ruleCondition.sun != null) {
+                SunTimes.Parameters sunCalculator = getSunCalculator(ruleCondition.sun, timerService);
+                long offsetMillis = ruleCondition.sun.getOffsetMins() != null ? ruleCondition.sun.getOffsetMins() * 60000 : 0;
+
+                // Calculate the next occurrence
+                AtomicReference<SunTimes> sunTimes = new AtomicReference<>(sunCalculator.execute());
+                ZonedDateTime occurrence = ruleCondition.sun.getPosition() == SunPositionTrigger.Position.SUNSET ? sunTimes.get().getSet() : sunTimes.get().getRise();
+
+                if (occurrence == null) {
+                    Exception e = new IllegalStateException("Rule condition requested sun position never occurs at the specified location: " + ruleCondition.sun);
+                    log(Level.SEVERE, e.getMessage(), e);
+                    throw e;
+                }
+                try {
+                    AtomicLong nextExecuteMillis = new AtomicLong(occurrence.toInstant().toEpochMilli() + offsetMillis);
+
+                    timePredicate = (time) -> {
+                        long nextExecute = nextExecuteMillis.get();
+                        if (time >= nextExecute) {
+                            // Advance the calculator to when the previous occurrence ends
+                            sunTimes.set(sunCalculator.on(sunTimes.get().getSet()).execute());
+                            ZonedDateTime nextOccurrence = ruleCondition.sun.getPosition() == SunPositionTrigger.Position.SUNSET ? sunTimes.get().getSet() : sunTimes.get().getRise();
+
+                            if (nextOccurrence == null) {
+                                log(Level.WARNING, "Rule condition requested sun position never occurs at the specified location: " + ruleCondition.sun);
+                            } else {
+                                nextExecuteMillis.set(nextOccurrence.toInstant().toEpochMilli() + offsetMillis);
+                            }
+                            log(Level.INFO, "Rule condition sun position has triggered");
+                            return true;
+                        }
+                        return false;
+                    };
+                } catch (Exception e) {
+                    log(Level.SEVERE, "Failed to parse rule condition duration expression: " + ruleCondition.duration, e);
                     throw e;
                 }
             } else if (ruleCondition.assets != null) {
@@ -415,7 +459,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         public boolean thenMatched() {
-            return thenMatchedAssetIds != null && !thenMatchedAssetIds.isEmpty();
+            return (thenMatchedAssetIds != null && !thenMatchedAssetIds.isEmpty()) || !otherwiseMatched();
         }
 
         public boolean otherwiseMatched() {
@@ -488,6 +532,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     public static final String PLACEHOLDER_RULESET_ID = "%RULESET_ID%";
     public static final String PLACEHOLDER_RULESET_NAME = "%RULESET_NAME%";
     public static final String PLACEHOLDER_TRIGGER_ASSETS = "%TRIGGER_ASSETS%";
+    final static String TIMER_TEMPORAL_FACT_NAME_PREFIX = "TimerTemporalFact-";
     final static String LOG_PREFIX = "JSON Rules: ";
     final protected AssetStorageService assetStorageService;
     final protected TimerService timerService;
@@ -500,6 +545,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected BiConsumer<Runnable, Long> scheduledActionConsumer;
     final protected Map<String, RuleState> ruleStateMap = new HashMap<>();
     final protected JsonRule[] jsonRules;
+    final protected Ruleset jsonRuleset;
 
     public JsonRulesBuilder(Ruleset ruleset, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
@@ -516,6 +562,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.predictedDatapointsFacade = predictedDatapoints;
         this.scheduledActionConsumer = scheduledActionConsumer;
 
+        jsonRuleset = ruleset;
         String rulesStr = ruleset.getRules();
         rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_ID, Long.toString(ruleset.getId()));
         rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_NAME, ruleset.getName());
@@ -536,14 +583,28 @@ public class JsonRulesBuilder extends RulesBuilder {
     public void stop(RulesFacts facts) {
         Arrays.stream(jsonRules).forEach(jsonRule ->
             executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
+
+        // Remove temporal fact for timer rule evaluation
+        String tempFactName = TIMER_TEMPORAL_FACT_NAME_PREFIX + jsonRuleset.getId();
+        facts.remove(tempFactName);
     }
 
     public void start(RulesFacts facts) {
-        Arrays.stream(jsonRules).forEach(jsonRule ->
-            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
+        AtomicBoolean hasTimeTrigger = new AtomicBoolean(false);
+
+        Arrays.stream(jsonRules).forEach(jsonRule -> {
+            hasTimeTrigger.set(hasTimeTrigger.get() || LogicGroup.getItemsRecursive(jsonRule.when).stream().anyMatch(RuleCondition::hasTimeTrigger));
+            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
+        });
 
         // Initialise asset states
         onAssetStatesChanged(facts, null);
+
+        // Insert a temporal fact if we have a time trigger (this will cause the engine to fire periodically)
+        if (hasTimeTrigger.get()) {
+            String tempFactName = TIMER_TEMPORAL_FACT_NAME_PREFIX + jsonRuleset.getId();
+            facts.putTemporary(tempFactName, Long.MAX_VALUE - timerService.getCurrentTimeMillis(), ""); // current time + expiration shouldn't overflow
+        }
     }
 
     public void onAssetStatesChanged(RulesFacts facts, RulesEngine.AssetStateChangeEvent event) {
@@ -1070,5 +1131,42 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected static void log(Level level, String message, Throwable t) {
         RulesEngine.RULES_LOG.log(level, LOG_PREFIX + message, t);
+    }
+
+    protected static SunTimes.Parameters getSunCalculator(SunPositionTrigger sunPositionTrigger, TimerService timerService) throws IllegalStateException {
+        SunPositionTrigger.Position  position = sunPositionTrigger.getPosition();
+        GeoJSONPoint location = sunPositionTrigger.getLocation();
+
+        if (position == null) {
+            IllegalStateException e = new IllegalStateException("Rule condition sun requires a position value");
+            log(Level.SEVERE, e.getMessage(), e);
+            throw e;
+        }
+        if (location == null) {
+            IllegalStateException e = new IllegalStateException("Rule condition sun requires a location value");
+            log(Level.SEVERE, e.getMessage(), e);
+            throw e;
+        }
+
+        SunTimes.Twilight twilight = null;
+        if (position.name().startsWith(SunPositionTrigger.TWILIGHT_PREFIX)) {
+            String lookupValue = position.name().substring(SunPositionTrigger.TWILIGHT_PREFIX.length());
+            twilight = EnumUtil.enumFromString(SunTimes.Twilight.class, lookupValue).orElseThrow(() -> {
+                IllegalStateException e = new IllegalStateException("Rule condition un-supported twilight position value '" + lookupValue + "'");
+                log(Level.SEVERE, e.getMessage(), e);
+                return e;
+            });
+        }
+
+        SunTimes.Parameters sunCalculator = SunTimes.compute()
+            .at(location.getY(), location.getX())
+            .utc()
+            .on(timerService.getNow());
+
+        if (twilight != null) {
+            sunCalculator.twilight(twilight);
+        }
+
+        return sunCalculator;
     }
 }

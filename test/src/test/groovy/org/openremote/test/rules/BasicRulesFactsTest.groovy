@@ -5,12 +5,12 @@ import groovy.transform.ToString
 import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.rules.RulesClock
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesFacts
 import org.openremote.manager.rules.facade.AssetsFacade
 import spock.lang.Specification
 
+import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
 class BasicRulesFactsTest extends Specification {
@@ -42,6 +42,7 @@ class BasicRulesFactsTest extends Specification {
 
     def assetsFacade
     RulesFacts rulesFacts
+    TimerService timerService
 
     def setupSpec() {
         // Init logging config
@@ -51,14 +52,11 @@ class BasicRulesFactsTest extends Specification {
     def setup() {
         given: "some rule facts"
         assetsFacade = Mock(AssetsFacade)
-        def timerService = new TimerService()
+        timerService = new TimerService()
         def assetStorageService = new AssetStorageService()
         timerService.clock = TimerService.Clock.PSEUDO
+        timerService.clock.stop()
         rulesFacts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RulesEngine.RULES_LOG)
-
-        and: "a rules clock"
-        def rulesClock = new RulesClock(0)
-        rulesFacts.setClock(rulesClock)
     }
 
     def "Handle named facts"() {
@@ -297,7 +295,7 @@ class BasicRulesFactsTest extends Specification {
         rulesFacts.putTemporary("baz", "PT15S", "BAZ")
 
         and: "the clock is advanced and temporary facts are expired"
-        rulesFacts.setClock(new RulesClock(3000))
+        timerService.getClock().advanceTime(3, TimeUnit.SECONDS)
         rulesFacts.removeExpiredTemporaryFacts()
 
         then: "all temporary facts should still be present"
@@ -312,7 +310,7 @@ class BasicRulesFactsTest extends Specification {
         assert !rulesFacts.getOptional("abc").isPresent()
 
         when: "the clock is advanced and temporary facts are expired"
-        rulesFacts.setClock(new RulesClock(6000))
+        timerService.getClock().advanceTime(3, TimeUnit.SECONDS)
         rulesFacts.removeExpiredTemporaryFacts()
 
         then: "some temporary facts should still be present"
@@ -323,7 +321,7 @@ class BasicRulesFactsTest extends Specification {
         assert rulesFacts.matchFirst("baz").isPresent()
 
         when: "the clock is advanced and temporary facts are expired"
-        rulesFacts.setClock(new RulesClock(12000))
+        timerService.getClock().advanceTime(6, TimeUnit.SECONDS)
         rulesFacts.removeExpiredTemporaryFacts()
 
         then: "some temporary facts should still be present"
@@ -355,7 +353,7 @@ class BasicRulesFactsTest extends Specification {
         rulesFacts.putTemporary("PT15S", anonFact3)
 
         and: "the clock is advanced and temporary facts are expired"
-        rulesFacts.setClock(new RulesClock(3000))
+        timerService.getClock().advanceTime(3, TimeUnit.SECONDS)
         rulesFacts.removeExpiredTemporaryFacts()
 
         then: "all temporary facts should still be present"
@@ -370,7 +368,7 @@ class BasicRulesFactsTest extends Specification {
         assert rulesFacts.match(AnonFact).collect(Collectors.toList()).contains(anonFact3)
 
         when: "the clock is advanced and temporary facts are expired"
-        rulesFacts.setClock(new RulesClock(6000))
+        timerService.getClock().advanceTime(3, TimeUnit.SECONDS)
         rulesFacts.removeExpiredTemporaryFacts()
 
         then: "some temporary facts should still be present"
@@ -381,7 +379,7 @@ class BasicRulesFactsTest extends Specification {
         assert rulesFacts.match(AnonFact, { fact -> fact.baz }).count() == 1
 
         when: "the clock is advanced and temporary facts are expired"
-        rulesFacts.setClock(new RulesClock(12000))
+        timerService.getClock().advanceTime(6, TimeUnit.SECONDS)
         rulesFacts.removeExpiredTemporaryFacts()
 
         then: "some temporary facts should still be present"

@@ -273,15 +273,15 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
         if (group.items) {
             for (const condition of group.items) {
-                if (!condition.assets && !condition.timer) {
+                if (!condition.assets && !condition.duration) {
+                    return false;
+                }
+
+                if (condition.duration && !Util.isTimeDuration(condition.duration)) {
                     return false;
                 }
 
                 if (condition.assets && !this._validateAssetQuery(condition.assets, true, false)) {
-                    return false;
-                }
-
-                if (condition.timer && !Util.isTimeDuration(condition.timer)) {
                     return false;
                 }
             }

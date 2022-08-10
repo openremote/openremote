@@ -868,6 +868,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the request should have succeeded but only the apartment1 location event should have been successful"
         assert writeResults.size() == 2
         assert writeResults.find {it.ref.id == managerTestSetup.apartment1Id && it.ref.name == Asset.LOCATION.name}.failure == null
-        assert writeResults.find {it.ref.id == managerTestSetup.apartment2LivingroomId && it.ref.name == Asset.LOCATION.name}.failure == AttributeWriteFailure.INSUFFICIENT_ACCESS
+        assert writeResults.find {it.ref.id == managerTestSetup.apartment2LivingroomId && it.ref.name == Asset.LOCATION.name}.failure == AttributeWriteFailure.NO_AUTH_CONTEXT
     }
 }

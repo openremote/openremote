@@ -88,22 +88,24 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
 
         then: "only non system users of the users realm should be returned"
-        users.size() == 4
+        users.size() == 5
         users.count {it.isSystemAccount() && it.username == KeycloakIdentityProvider.MANAGER_CLIENT_ID} == 0
         users.find {it.id == keycloakTestSetup.testuser2Id} != null
         users.find {it.id == keycloakTestSetup.testuser3Id} != null
         users.find {it.id == keycloakTestSetup.buildingUserId} != null
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id} != null
+        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id} != null
 
         when: "a request is made for all users ordered by username"
         users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
 
         then: "only non system users of the users realm should be returned in username order"
-        users.size() == 4
+        users.size() == 5
         users[0].username == "building"
         users[1].username == keycloakTestSetup.serviceUser.username
-        users[2].username == "testuser2"
-        users[3].username == "testuser3"
+        users[2].username == keycloakTestSetup.serviceUser2.username
+        users[3].username == "testuser2"
+        users[4].username == "testuser3"
 
         when: "a request is made for subset of users ordered by username descending"
         users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2))
@@ -114,7 +116,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users[1].username == "testuser2"
 
         when: "a request is made for another subset of users ordered by username descending"
-        users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2).offset(2))
+        users = regularUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, true)).limit(2).offset(3))
 
         then: "the correct users should be returned"
         users.size() == 2
@@ -125,9 +127,11 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users = adminUserResource.query(null, new UserQuery().select(new UserQuery.Select().excludeRegularUsers(true)).realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
 
         then: "only service users of the requested realm should be returned"
-        users.size() == 1
+        users.size() == 2
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id} != null
+        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id} != null
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id}.secret != null
+        users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id}.secret != null
     }
 
     def "Get and update roles"() {

@@ -505,10 +505,6 @@ public class RulesEngine<T extends Ruleset> {
             facts.startTrackingLocationRules();
         }
 
-        // Set the current clock
-        RulesClock clock = new RulesClock(timerService);
-        facts.setClock(clock);
-
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
 
@@ -517,7 +513,7 @@ public class RulesEngine<T extends Ruleset> {
 
                 if (deployment.getStatus() == DEPLOYED) {
 
-                    RULES_LOG.fine("Executing rules @" + clock + " of: " + deployment);
+                    RULES_LOG.fine("Executing rules of: " + deployment);
 
                     // If full detail logging is enabled
                     // Log asset states and events before firing
@@ -526,10 +522,10 @@ public class RulesEngine<T extends Ruleset> {
                     // Reset facts for this firing (loop detection etc.)
                     facts.reset();
 
-                    long startTimestamp = System.currentTimeMillis();
+                    long startTimestamp = timerService.getCurrentTimeMillis();
                     lastFireTimestamp = startTimestamp;
                     engine.fire(deployment.getRules(), facts);
-                    RULES_FIRED_LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + (System.currentTimeMillis() - startTimestamp) + "ms");
+                    RULES_FIRED_LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + (timerService.getCurrentTimeMillis() - startTimestamp) + "ms");
                 }
 
             } catch (Exception ex) {
