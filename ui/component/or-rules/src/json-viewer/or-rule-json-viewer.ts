@@ -273,11 +273,12 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
         if (group.items) {
             for (const condition of group.items) {
-                if (!condition.assets && !condition.duration) {
+                if (!condition.assets && !condition.cron && !condition.sun) {
                     return false;
                 }
 
-                if (condition.duration && !Util.isTimeDuration(condition.duration)) {
+                if(condition.cron && !Util.cronStringToISOString(condition.cron)) {
+                    console.log("Cron expression specified is not a valid string.");
                     return false;
                 }
 
@@ -344,7 +345,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         if (!target) {
             return true;
         }
-        
+
         if (target.assets) {
             return this._validateAssetQuery(target.assets, false, false);
         }
@@ -352,7 +353,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         if (target.matchedAssets) {
             return this._validateAssetQuery(target.matchedAssets, false, true);
         }
-        
+
         if (target.conditionAssets && getTypeAndTagsFromGroup(rule.when!).findIndex((typeAndTag) => target.conditionAssets === typeAndTag[1]) < 0) {
             return false;
         }

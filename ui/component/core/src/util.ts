@@ -393,6 +393,103 @@ export function getWeekNumber(date: Date): number {
     return weekNo;
 }
 
+
+
+const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+/* Creates a cron string based on the input parameters.
+* You can for example trigger an expression once a month on friday, or on a specific date ass March 1st.
+*
+* Useful URLs for understanding cron:
+* - https://en.wikipedia.org/wiki/Cron
+* - https://www.freeformatter.com/cron-expression-generator-quartz.html
+*
+*  @param years What years it should trigger. For example ['2022','2023'] or a string to inject.
+*  @param months What months of the year it should trigger. For example ['JAN','FEB'] or [0,1,2,3,4,5] or a string to inject.
+*  @param days What days of the month it should trigger. For example [7,14,21,28] or a string to inject.
+*  @param hours What hours of the day it should trigger. For example [3,6,9,12,15,18,21] or a string to inject.
+*  @param minutes What minutes of the hour it should trigger. For example [0,15,30,45] or a string to inject.
+*  @param seconds What seconds of the minute it should trigger. For example [0,15,30,45] or a string to inject.
+*  @param daysOfTheWeek String to inject for specifying specific days such as '1st monday of the month'.
+* */
+export function formatCronString(years?: string | number | string[], months?: string | string[] | number[], days?: string | number[], hours?: string | number[], minutes?: string | number[], seconds?: string | number[], daysOfTheWeek?: string): string {
+    let cron = "";
+    if(seconds) {
+        if(Array.isArray(seconds)) { cron += (seconds.toString().replace(" ", "")); }
+        else { cron += seconds.toString(); }
+    } else { cron += "0"}
+    cron += " ";
+    if(minutes) {
+        if(Array.isArray(minutes)) { cron += (minutes.toString().replace(" ", "")); }
+        else { cron += minutes.toString(); }
+    } else { cron += "0"}
+    cron += " ";
+    if(hours) {
+        if(Array.isArray(hours)) { cron += (hours.toString().replace(" ", "")); }
+        else { cron += hours.toString(); }
+    } else { cron += "0"}
+    cron += " "
+    if(days) {
+        if(Array.isArray(days)) { cron += (days.toString().replace(" ", "")); }
+        else { cron += days.toString(); }
+    } else { cron += "*"}
+    cron += " ";
+    if(months) {
+        if(Array.isArray(months)) {
+            if(typeof months[0] == 'number') {
+                const monthStrings: string[] = [];
+                months.forEach(month => { monthStrings.push(monthNames[month as number].toString()); })
+                cron += (monthStrings.toString().replace(" ", ""));
+            } else {
+                cron += (months.toString().replace(" ", ""));
+            }
+        }
+        else { cron += months.toString(); }
+    } else { cron += "*"}
+    cron += " ";
+    if(daysOfTheWeek) { cron += daysOfTheWeek.toString(); }
+    else { cron += "?" }
+    cron += " ";
+    if(years) {
+        if (Array.isArray(years)) { cron += (years.toString().replace(" ", "")); }
+        else { cron += years; }
+    } else { cron += "*"}
+    return cron;
+}
+/* Transforms an JS date to a cron string, to trigger ONCE A YEAR on that specific date */
+export function dateToCronString(date: Date): string {
+    return formatCronString(date.getFullYear(), monthNames[date.getMonth()], [date.getDate()], [date.getHours()], [date.getMinutes()]);
+}
+/*
+* Transforms a cron expression string into an ISO String.
+* Input for example would be `0 00 11 * * ? *` for every day at 11am.
+* If the input is '*', it will be replaced by 1. (month parameter of '*' becomes January)
+*/
+export function cronStringToISOString(cronString: String): string | undefined {
+    const splStr = cronString.split(" ");
+    if(!Number.isNaN(Number(splStr[0])) && !Number.isNaN(Number(splStr[1])) && !Number.isNaN(Number(splStr[2])) && (!Number.isNaN(Number(splStr[3])) || splStr[3] == '*')) {
+        const year: string = (!Number.isNaN(Number(splStr[6])) ? splStr[6] : new Date().getFullYear()).toString();
+        let month: string = "";
+        if(splStr[4] != '*') {
+            month = monthNames.indexOf(splStr[4]).toString();
+            month = (month.length == 1 ? ("0" + month) : month);
+        } else {
+            month = new Date().getMonth().toString();
+        }
+        const date: string = ((splStr[3].length == 1 && splStr[3] != '*') ? ("0" + splStr[3]) : splStr[3]);
+        const hour: string = ((splStr[2].length == 1 && splStr[2] != '*') ? ("0" + splStr[2]) : splStr[2]);
+        const minute: string = ((splStr[1].length == 1 && splStr[1] != '*') ? ("0" + splStr[1]) : splStr[1]);
+        const second: string = ((splStr[0].length == 1 && splStr[0] != '*') ? ("0" + splStr[0]) : splStr[0]);
+        const timeString: string = (year + "-" + month + "-" + date + " " + hour + ":" + minute + ":" + second);
+        if(year && month) {
+            return moment(timeString).toISOString();
+        }
+    }
+    return undefined;
+}
+
+
+
 export function getMetaValue(name: string | NameHolder, attribute: Attribute<any> | undefined, descriptor?:  ValueDescriptorHolder | ValueDescriptor | string): any | undefined {
     const metaName = typeof name === "string" ? name : (name as NameHolder).name!;
 
@@ -727,7 +824,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
 
     let matched: T | undefined;
     const formats: ValueFormat[] = [];
-    
+
     const name = nameValueHolder && typeof nameValueHolder === "string" ? nameValueHolder : nameValueHolder ? (nameValueHolder as NameHolder).name : descriptor ? typeof (descriptor) === "string" ? descriptor : descriptor.name : undefined;
     const str = doStandardTranslationLookup(lookup, name, descriptor, assetType, isAttribute);
     if (str) {
@@ -776,12 +873,12 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
     if (lookup !== WellknownMetaItems.FORMAT || formats.length === 0) {
         return matched;
     }
-    
+
     let mergedFormat: ValueFormat = {};
     formats.reverse().forEach((format) => {
         mergedFormat = {...mergedFormat,...format};
     })
-    
+
     return mergedFormat as T;
 }
 

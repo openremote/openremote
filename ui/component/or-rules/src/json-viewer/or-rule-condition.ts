@@ -3,6 +3,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import {AssetTypeInfo, RuleCondition, WellknownAssets, AssetModelUtil} from "@openremote/model";
 import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
+import "./or-rule-trigger-query";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
@@ -90,12 +91,13 @@ export function updateRuleConditionType(ruleCondition: RuleCondition, value: str
 
     if (!value) {
         ruleCondition.assets = undefined;
-        ruleCondition.duration = undefined;
+        ruleCondition.cron = undefined;
+        ruleCondition.sun = undefined;
     } else if (value === ConditionType.DURATION) {
         ruleCondition.assets = undefined;
-        ruleCondition.duration = "1h";
+        ruleCondition.cron = Util.dateToCronString(new Date());
     } else {
-        ruleCondition.duration = undefined;
+        ruleCondition.cron = undefined;
 
         if (config && config.json && config.json.whenAssetQuery) {
             ruleCondition.assets = JSON.parse(JSON.stringify(config.json.whenAssetQuery));
@@ -158,7 +160,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
         let template: TemplateResult | string = ``;
 
         if (showTypeSelect) {
-            
+
             let buttonIcon;
             let buttonColor = "inherit";
 
@@ -192,13 +194,13 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                 </div>
             `;
             }
-           
+
         }
-        
+
         if (type) {
             switch (type) {
                 case ConditionType.DURATION:
-                    template = html`<span>TIMER NOT IMPLEMENTED</span>`;
+                    template = html`<or-rule-trigger-query id="asset-query" .condition="${this.ruleCondition}"></or-rule-trigger-query>`;
                     break;
                 default:
                     template = html`<or-rule-asset-query id="asset-query" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}" .condition="${this.ruleCondition}"></or-rule-asset-query>`;
@@ -219,7 +221,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
             return assetType;
         }
 
-        if (this.ruleCondition.duration) {
+        if (this.ruleCondition.cron || this.ruleCondition.sun) {
             return ConditionType.DURATION;
         }
     }

@@ -54,7 +54,14 @@ export const enum ActionType {
     PUSH_NOTIFICATION = "push",
     ATTRIBUTE = "attribute"
 }
-
+export enum TriggerType {
+    TIME = "time"
+}
+export enum TimeTriggerType {
+    SUNSET = "Sunset",
+    SUNRISE = "Sunrise",
+    TIME_OF_DAY = "Time of Day"
+}
 export enum AssetQueryOperator {
     VALUE_EMPTY = "empty",
     VALUE_NOT_EMPTY = "notEmpty",
