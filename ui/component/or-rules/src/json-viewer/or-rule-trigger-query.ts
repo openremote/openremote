@@ -17,7 +17,7 @@ const style = css`
         display: block;
     }
     
-    .attribute-group {
+    .trigger-group {
         flex-grow: 1;
         display: flex;
         align-items: center;
@@ -31,7 +31,7 @@ const style = css`
         width: 200px;
     }
     
-    .attribute-group > * {
+    .trigger-group > * {
         margin: 10px 3px 6px 3px;
     }
 `;
@@ -54,20 +54,12 @@ export class OrRuleTriggerQuery extends LitElement {
     @state()
     protected selectedTrigger?: TimeTriggerType;
 
-    // @state()
-    // protected selectedTime?: string; // example = [16:45]
-
-    // @state()
-    // protected selectedOffset?: number;
-
     protected triggerOptions: TimeTriggerType[];
 
     constructor() {
         super();
         this.triggerOptions = [TimeTriggerType.TIME_OF_DAY, TimeTriggerType.SUNRISE, TimeTriggerType.SUNSET];
         this.selectedTrigger = this.triggerOptions[0];
-        // this.selectedTime = undefined;
-        // this.selectedOffset = 0;
     }
 
     protected get query() {
@@ -78,7 +70,7 @@ export class OrRuleTriggerQuery extends LitElement {
         const isoString = Util.cronStringToISOString(this.condition.cron!);
         const formattedTime = moment(isoString).format('HH:mm');
         return html`
-            <div>
+            <div class="trigger-group">
                 <or-mwc-input class="min-width" type="${InputType.SELECT}" .options="${this.triggerOptions}" .value="${this.selectedTrigger}" label="Trigger type"
                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setTrigger(ev.detail.value); }}">
                 </or-mwc-input>
@@ -127,7 +119,6 @@ export class OrRuleTriggerQuery extends LitElement {
         }
     }
     setOffset(offset: number) {
-        // this.selectedOffset = offset;
         this.condition.sun = {
             position: this.getPosition(this.selectedTrigger!),
             offsetMins: offset

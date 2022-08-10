@@ -278,7 +278,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 }
 
                 if(condition.cron && !Util.cronStringToISOString(condition.cron)) {
-                    console.log("Cron expression specified is not a valid string.");
                     return false;
                 }
 
