@@ -54,6 +54,9 @@ const style = css`
         width: 100%;
     }
 
+    .mdc-data-table__table {
+        width: 100%;
+    }
     .mdc-data-table__header-cell {
         font-weight: 500;
         color: ${unsafeCSS(DefaultColor3)};
@@ -77,6 +80,9 @@ const style = css`
     }
     .padded-cell {
         padding: 10px 16px;
+    }
+    .padded-cell > or-attribute-input {
+        width: 100%;
     }
     .actions-cell {
         text-align: right;
@@ -132,9 +138,6 @@ const style = css`
     }
     .overflow-visible {
         overflow: visible;
-    }
-    .mdc-data-table__cell > or-attribute-input {
-        width: 283px;
     }
 `;
 
@@ -258,6 +261,12 @@ export class OrEditAssetPanel extends LitElement {
         const attributes = html`
             <div id="attribute-table" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="attribute list" @click="${expanderToggle}">
+                    <colgroup>
+                        <col span="1" style="width: 25%;">
+                        <col span="1" style="width: 25%;">
+                        <col span="1" style="width: 35%;">
+                        <col span="1" style="width: 15%;">
+                    </colgroup>
                     <thead>
                         <tr class="mdc-data-table__header-row">
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
