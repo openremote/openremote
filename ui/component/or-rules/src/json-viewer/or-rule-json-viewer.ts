@@ -281,6 +281,10 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                     return false;
                 }
 
+                if(condition.sun && (!condition.sun.position || !condition.sun.location)) {
+                    return false;
+                }
+
                 if (condition.assets && !this._validateAssetQuery(condition.assets, true, false)) {
                     return false;
                 }
