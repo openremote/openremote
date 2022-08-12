@@ -15,7 +15,6 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
-import org.openremote.manager.mqtt.LastWillMQTTHandler
 import org.openremote.manager.mqtt.MQTTHandler
 import org.openremote.manager.mqtt.MqttBrokerService
 import org.openremote.manager.setup.SetupService
@@ -162,7 +161,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
         receivedEvents.clear()
 
-        when: "a mqtt client publishes to an asset attribute which is readonly"
+        when: "a mqtt client publishes to an asset attribute"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC".toString()
         def payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 70)).get()
         client.sendMessage(new MQTTMessage<String>(topic, payload))
@@ -179,7 +178,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
         receivedEvents.clear()
 
-        when: "a mqtt client publishes to an asset attribute which is not readonly"
+        when: "a mqtt client publishes to an asset attribute"
         payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "lights", false)).get()
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
@@ -195,7 +194,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
         receivedEvents.clear()
 
-        when: "a mqtt client publishes to an asset attribute value which is not readonly"
+        when: "a mqtt client publishes to an asset attribute value"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/lights/$managerTestSetup.apartment1HallwayId".toString()
         payload = ValueUtil.asJSON(true).orElse(null)
         client.sendMessage(new MQTTMessage<String>(topic, payload))
@@ -447,9 +446,11 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert receivedEvents.size() == 0
         }
 
-        when: "another client connects with a last will configured"
+        when: "another client connects with a last will configured to write to an attribute"
         newClientId = "newClient"
-        MQTT_IOClient newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/${LastWillMQTTHandler.LAST_WILL_TOKEN}/new_device", ValueUtil.parse("123").orElse(null), false))
+        username = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser2.username // realm and OAuth client id
+        password = keycloakTestSetup.serviceUser2.secret
+        MQTT_IOClient newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString(), ValueUtil.parse("1000").orElse(null), false))
         newClient.connect()
 
         then: "the client should be connected"
@@ -457,9 +458,26 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert newClient.getConnectionStatus() == ConnectionStatus.CONNECTED
         }
 
-        when: "the existing client subscribes to the last will topic"
-        MQTTMessage<String> receivedLastWillMessage
-        client.addMessageConsumer("${keycloakTestSetup.realmBuilding.name}/${LastWillMQTTHandler.LAST_WILL_TOKEN}/#", {receivedLastWillMessage = it})
+        when: "the existing client subscribes to attribute events in the hallway"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        client.addMessageConsumer(topic, eventConsumer)
+
+        and: "the new client publishes to a an attribute topic"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC".toString()
+        payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 170)).get()
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "The value of the attribute should be updated and the first client should have received the event"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
+            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 170d
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AttributeEvent
+            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 170d
+        }
+        receivedEvents.clear()
 
         and: "the new client gets abruptly disconnected"
         def existingConnection = mqttBrokerService.clientIdConnectionMap.get(newClientId)
@@ -472,11 +490,71 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert mqttBrokerService.clientIdConnectionMap.get(newClientId) !== existingConnection
         }
 
-        and: "the existing client should have received the last will message"
+        and: "The last will message should have updated the value of the attribute and the first client should have received the event"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
+            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 1000d
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AttributeEvent
+            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 1000d
+        }
+        receivedEvents.clear()
+
+        when: "the new client tries to publish again"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC".toString()
+        payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 170)).get()
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "The value of the attribute should be updated and the first client should have received the event"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
+            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 170d
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AttributeEvent
+            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 170d
+        }
+        receivedEvents.clear()
+
+        when: "the new client disconnects"
+        newClient.disconnect()
+
+        then: "the status should show as disconnected"
         conditions.eventually {
-            assert receivedLastWillMessage != null
-            assert receivedLastWillMessage.topic == "${keycloakTestSetup.realmBuilding.name}/${LastWillMQTTHandler.LAST_WILL_TOKEN}/new_device"
-            assert receivedLastWillMessage.payload == "123"
+            assert newClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
+            assert mqttBrokerService.clientIdConnectionMap.size() == 1
+        }
+
+        when: "the new client reconnects using a last will topic for an unauthorised asset/attribute"
+        def asset = assetStorageService.find(managerTestSetup.apartment2LivingroomId)
+        def currentCO2Level = asset.getAttribute("co2Level").flatMap{it.getValue()}.orElse(0d)
+        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/co2Level/$managerTestSetup.apartment2LivingroomId".toString(), ValueUtil.parse("1000").orElse(null), false))
+        newClient.connect()
+
+        then: "the client should be connected"
+        conditions.eventually {
+            assert newClient.getConnectionStatus() == ConnectionStatus.CONNECTED
+            assert mqttBrokerService.clientIdConnectionMap.get(newClientId) != null
+        }
+
+        when: "the new client gets abruptly disconnected"
+        existingConnection = mqttBrokerService.clientIdConnectionMap.get(newClientId)
+//        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).config().setOption(ChannelOption.SO_LINGER, 0I)
+        ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)newClient.client).clientConfig).delegate).connectionConfig.get()).channel).close()
+
+        then: "the client should reconnect"
+        conditions.eventually {
+            assert mqttBrokerService.clientIdConnectionMap.get(newClientId) != null
+            assert mqttBrokerService.clientIdConnectionMap.get(newClientId) !== existingConnection
+        }
+
+        then: "The last will message should not have updated the value of the attribute"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            def asst = assetStorageService.find(managerTestSetup.apartment2LivingroomId)
+            assert asst.getAttribute("co2Level").get().value.orElse(-100) == currentCO2Level
         }
 
         when: "both MQTT clients disconnect"
