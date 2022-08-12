@@ -277,7 +277,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                     return false;
                 }
 
-                if(condition.cron && !Util.cronStringToISOString(condition.cron)) {
+                if(condition.cron && !Util.cronStringToISOString(condition.cron, true)) {
                     return false;
                 }
 

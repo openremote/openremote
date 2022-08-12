@@ -465,24 +465,27 @@ export function dateToCronString(date: Date): string {
 * Input for example would be `0 00 11 * * ? *` for every day at 11am.
 * If the input is '*', it will be replaced by 1. (month parameter of '*' becomes January)
 */
-export function cronStringToISOString(cronString: String): string | undefined {
+export function cronStringToISOString(cronString: String, isUTC: boolean): string | undefined {
     const splStr = cronString.split(" ");
     if(!Number.isNaN(Number(splStr[0])) && !Number.isNaN(Number(splStr[1])) && !Number.isNaN(Number(splStr[2])) && (!Number.isNaN(Number(splStr[3])) || splStr[3] == '*')) {
         const year: string = (!Number.isNaN(Number(splStr[6])) ? splStr[6] : new Date().getFullYear()).toString();
         let month: string = "";
         if(splStr[4] != '*') {
             month = monthNames.indexOf(splStr[4]).toString();
-            month = (month.length == 1 ? ("0" + month) : month);
         } else {
             month = new Date().getMonth().toString();
         }
-        const date: string = ((splStr[3].length == 1 && splStr[3] != '*') ? ("0" + splStr[3]) : splStr[3]);
-        const hour: string = ((splStr[2].length == 1 && splStr[2] != '*') ? ("0" + splStr[2]) : splStr[2]);
-        const minute: string = ((splStr[1].length == 1 && splStr[1] != '*') ? ("0" + splStr[1]) : splStr[1]);
-        const second: string = ((splStr[0].length == 1 && splStr[0] != '*') ? ("0" + splStr[0]) : splStr[0]);
-        const timeString: string = (year + "-" + month + "-" + date + " " + hour + ":" + minute + ":" + second);
-        if(year && month) {
-            return moment(timeString).toISOString();
+        month = (month.length == 1 ? ("0" + month) : month);
+        const date: string = ((splStr[3].length == 1 && splStr[3] != '*') ? ("0" + splStr[3]) : splStr[3].replace('*', '01'));
+        const hour: string = ((splStr[2].length == 1 && splStr[2] != '*') ? ("0" + splStr[2]) : splStr[2].replace('*', '00'));
+        const minute: string = ((splStr[1].length == 1 && splStr[1] != '*') ? ("0" + splStr[1]) : splStr[1].replace('*', '00'));
+        const second: string = ((splStr[0].length == 1 && splStr[0] != '*') ? ("0" + splStr[0]) : splStr[0].replace('*', '00'));
+        if(year.length > 0 && month.length > 0) {
+            if(isUTC) {
+                return moment.utc({year: Number(year), month: Number(month), date: Number(date), hour: Number(hour), minute: Number(minute), second: Number(second)}).toISOString();
+            } else {
+                return moment({year: Number(year), month: Number(month), date: Number(date), hour: Number(hour), minute: Number(minute), second: Number(second)}).toISOString();
+            }
         }
     }
     return undefined;

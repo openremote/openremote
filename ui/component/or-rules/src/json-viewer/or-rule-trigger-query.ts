@@ -139,7 +139,7 @@ export class OrRuleTriggerQuery extends LitElement {
                 </or-mwc-input>
                 ${this.selectedTrigger ? html`
                     ${this.selectedTrigger == this.stringToTrigger(this.triggerOptions[0]) ? html`
-                        <or-mwc-input class="min-width" type="${InputType.TIME}" .value="${(this.condition.cron ? moment(Util.cronStringToISOString(this.condition.cron)).format('HH:mm') : undefined)}" label="Time of day"
+                        <or-mwc-input class="min-width" type="${InputType.TIME}" .value="${(this.condition.cron ? moment(Util.cronStringToISOString(this.condition.cron, true)).format('HH:mm') : undefined)}" label="Time of day"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setTime(ev.detail.value) }}">
                         </or-mwc-input>
                     ` : html`
@@ -184,7 +184,10 @@ export class OrRuleTriggerQuery extends LitElement {
     setTime(time: string) {
         if(time) {
             const splittedTime = time.split(':');
-            this.condition.cron = Util.formatCronString(undefined, undefined, undefined, splittedTime[0], splittedTime[1]);
+            const date = new Date();
+            date.setHours(Number(splittedTime[0]));
+            date.setMinutes(Number(splittedTime[1]));
+            this.condition.cron = Util.formatCronString(undefined, undefined, undefined, date.getUTCHours().toString(), date.getUTCMinutes().toString());
             this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
             this.requestUpdate();
         }
