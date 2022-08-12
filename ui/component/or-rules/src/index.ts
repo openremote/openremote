@@ -45,7 +45,7 @@ export {buttonStyle} from "./style";
 export const enum ConditionType {
     AGENT_QUERY = "agentQuery",
     ASSET_QUERY = "assetQuery",
-    DURATION = "duration"
+    TIME_TRIGGER = "timeTrigger"
 }
 
 export const enum ActionType {
@@ -53,9 +53,6 @@ export const enum ActionType {
     EMAIL = "email",
     PUSH_NOTIFICATION = "push",
     ATTRIBUTE = "attribute"
-}
-export enum TriggerType {
-    TIME = "time"
 }
 export enum TimeTriggerType {
     TIME_OF_DAY = "TIME_OF_DAY"
