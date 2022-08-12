@@ -77,7 +77,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
 
     if (addTimer) {
         menu.push({
-            text: i18next.t("timer"),
+            text: i18next.t("timeTrigger"),
             icon: "timer",
             value: ConditionType.DURATION,
             styleMap: {"--or-icon-fill": "#" + TIMER_COLOR}

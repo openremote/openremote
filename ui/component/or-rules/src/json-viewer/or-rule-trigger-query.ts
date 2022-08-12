@@ -9,6 +9,7 @@ import {TimeTriggerType} from "../index";
 import {Util} from "@openremote/core";
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMap, OrMapClickedEvent} from "@openremote/or-map";
+import {i18next} from "@openremote/or-translate";
 
 // language=CSS
 const style = css`
@@ -38,6 +39,11 @@ const style = css`
     }
 `;
 
+interface TimeTrigger {
+    key: TimeTriggerType | SunPositionTriggerPosition,
+    value: string
+}
+
 @customElement("or-rule-trigger-query")
 export class OrRuleTriggerQuery extends LitElement {
 
@@ -54,24 +60,25 @@ export class OrRuleTriggerQuery extends LitElement {
     /* ---------- */
 
     @state()
-    protected selectedTrigger?: TimeTriggerType | SunPositionTriggerPosition;
+    protected selectedTrigger: TimeTrigger;
 
-    protected triggerOptions: string[];
+    @state()
+    protected triggerOptions: TimeTrigger[];
 
     constructor() {
         super();
         this.triggerOptions = [];
-        Object.values(TimeTriggerType).forEach((type) => { this.triggerOptions.push(this.triggerToString(type)); });
-        this.getSunPositions().forEach((opt) => { this.triggerOptions.push(this.triggerToString(opt)); });
-        this.selectedTrigger = this.stringToTrigger(this.triggerOptions[0]);
+        Object.values(TimeTriggerType).forEach((type) => { this.triggerOptions.push({ key: type, value: this.triggerToString(type)}); });
+        this.getSunPositions().forEach((opt) => { this.triggerOptions.push({ key: opt, value: this.triggerToString(opt)}); });
+        this.selectedTrigger = this.triggerOptions[0];
 
         this.addEventListener(OrMwcDialogOpenedEvent.NAME, this.initMap);
     }
 
     updated(changedProperties: PropertyValues) {
         if(changedProperties.has('condition')) {
-            if(this.condition.cron) { this.selectedTrigger = TimeTriggerType.TIME_OF_DAY; }
-            else if(this.condition.sun) { this.selectedTrigger = this.condition.sun.position; }
+            if(this.condition.cron) { this.selectedTrigger = { key: TimeTriggerType.TIME_OF_DAY, value: this.triggerToString(TimeTriggerType.TIME_OF_DAY) }}
+            else if(this.condition.sun) { this.selectedTrigger = { key: this.condition.sun.position!, value: this.triggerToString(this.condition.sun.position!) }}
         }
     }
 
@@ -119,35 +126,35 @@ export class OrRuleTriggerQuery extends LitElement {
 
     render() {
         const modalActions: DialogAction[] = [
-            { actionName: "close", default: true, content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="Close"></or-mwc-input>`, action: () => {} }
+            { actionName: "close", default: true, content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t('close')}"></or-mwc-input>`, action: () => {} }
         ];
         const onMapModalOpen = () => {
             const dialog: OrMwcDialog = this.shadowRoot!.getElementById("map-modal") as OrMwcDialog;
             if(dialog) {
                 dialog.dismissAction = null;
                 dialog.open();
-                this.renderDialogHTML(this.condition.sun?.location!)
+                this.renderDialogHTML(this.condition.sun?.location)
             }
         }
         // Render dialog on every update (for example when changing location in the modal itself)
-        this.renderDialogHTML(this.condition.sun?.location!);
+        this.renderDialogHTML(this.condition.sun?.location);
 
         return html`
             <div class="trigger-group">
-                <or-mwc-input class="min-width" type="${InputType.SELECT}" .options="${this.triggerOptions}" .value="${this.triggerToString(this.selectedTrigger!)}" label="Trigger type"
-                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setTrigger(this.stringToTrigger(ev.detail.value)!); }}">
+                <or-mwc-input class="min-width" type="${InputType.SELECT}" .options="${this.triggerOptions.map((t) => t.value)}" .value="${this.selectedTrigger.value}" label="${i18next.t('triggerType')}"
+                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setTrigger(this.triggerOptions.find((t) => t.value == ev.detail.value)!); }}">
                 </or-mwc-input>
                 ${this.selectedTrigger ? html`
-                    ${this.selectedTrigger == this.stringToTrigger(this.triggerOptions[0]) ? html`
-                        <or-mwc-input class="min-width" type="${InputType.TIME}" .value="${(this.condition.cron ? moment(Util.cronStringToISOString(this.condition.cron, true)).format('HH:mm') : undefined)}" label="Time of day"
+                    ${this.selectedTrigger.key == this.triggerOptions[0].key ? html`
+                        <or-mwc-input class="min-width" type="${InputType.TIME}" .value="${(this.condition.cron ? moment(Util.cronStringToISOString(this.condition.cron, true)).format('HH:mm') : undefined)}" label="${i18next.t('timeOfDay')}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setTime(ev.detail.value) }}">
                         </or-mwc-input>
                     ` : html`
-                        <or-mwc-input class="min-width width" type="${InputType.NUMBER}" .value="${this.condition.sun?.offsetMins}" label="Offset in minutes"
+                        <or-mwc-input class="min-width width" type="${InputType.NUMBER}" .value="${this.condition.sun?.offsetMins}" label="${i18next.t('offsetInMinutes')}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setOffset(ev.detail.value) }}">
                         </or-mwc-input>
-                        <or-mwc-input type="${InputType.BUTTON}" class="min-width" @or-mwc-input-changed="${onMapModalOpen}" label="LOCATION"></or-mwc-input>
-                        <or-mwc-dialog id="map-modal" heading="Pick location" .actions="${modalActions}"></or-mwc-dialog>
+                        <or-mwc-input type="${InputType.BUTTON}" class="min-width" @or-mwc-input-changed="${onMapModalOpen}" label="${i18next.t('location')}"></or-mwc-input>
+                        <or-mwc-dialog id="map-modal" heading="${i18next.t('pickLocation')}" .actions="${modalActions}"></or-mwc-dialog>
                     `}
                 ` : undefined}
             </div>
@@ -164,16 +171,16 @@ export class OrRuleTriggerQuery extends LitElement {
 
     // Getters/setters of the file
 
-    setTrigger(trigger: TimeTriggerType | SunPositionTriggerPosition) {
+    setTrigger(trigger: TimeTrigger) {
         if(trigger) {
-            if(trigger == TimeTriggerType.TIME_OF_DAY) {
+            if(trigger.key == TimeTriggerType.TIME_OF_DAY) {
                 this.condition.sun = undefined;
-            } else if(this.getSunPositions().includes(trigger)) {
+            } else if(this.getSunPositions().includes(trigger.key)) {
                 this.condition.cron = undefined;
-                if(this.getSunPositions().includes(this.selectedTrigger as SunPositionTriggerPosition)) {
-                    this.condition.sun = { position: trigger, offsetMins: this.condition.sun!.offsetMins, location: this.condition.sun!.location };
+                if(this.getSunPositions().includes(this.selectedTrigger.key as SunPositionTriggerPosition)) {
+                    this.condition.sun = { position: trigger.key, offsetMins: this.condition.sun!.offsetMins, location: this.condition.sun!.location };
                 } else {
-                    this.condition.sun = { position: trigger, offsetMins: 0 };
+                    this.condition.sun = { position: trigger.key, offsetMins: 0 };
                 }
             }
             this.selectedTrigger = trigger;
@@ -212,7 +219,7 @@ export class OrRuleTriggerQuery extends LitElement {
     }
 
     getSunPositions(): SunPositionTriggerPosition[] {
-        return [SunPositionTriggerPosition.SUNRISE, SunPositionTriggerPosition.SUNSET, SunPositionTriggerPosition.TWILIGHT_VISUAL, SunPositionTriggerPosition.TWILIGHT_VISUAL_LOWER, SunPositionTriggerPosition.TWILIGHT_HORIZON, SunPositionTriggerPosition.TWILIGHT_CIVIL, SunPositionTriggerPosition.TWILIGHT_NAUTICAL, SunPositionTriggerPosition.TWILIGHT_ASTRONOMICAL, SunPositionTriggerPosition.TWILIGHT_GOLDEN_HOUR, SunPositionTriggerPosition.TWILIGHT_BLUE_HOUR, SunPositionTriggerPosition.TWILIGHT_NIGHT_HOUR]
+        return [SunPositionTriggerPosition.SUNRISE, SunPositionTriggerPosition.SUNSET, SunPositionTriggerPosition.TWILIGHT_HORIZON, SunPositionTriggerPosition.TWILIGHT_CIVIL, SunPositionTriggerPosition.TWILIGHT_NAUTICAL, SunPositionTriggerPosition.TWILIGHT_ASTRONOMICAL, SunPositionTriggerPosition.TWILIGHT_GOLDEN_HOUR, SunPositionTriggerPosition.TWILIGHT_BLUE_HOUR, SunPositionTriggerPosition.TWILIGHT_NIGHT_HOUR]
     }
 
 
@@ -223,17 +230,9 @@ export class OrRuleTriggerQuery extends LitElement {
     // Utility stuff
 
     triggerToString(position: TimeTriggerType | SunPositionTriggerPosition): string {
-        return position.charAt(0).toUpperCase() + position.slice(1).split('_').join(' ').toLowerCase();
-    }
-    stringToTrigger(s: string): TimeTriggerType | SunPositionTriggerPosition | undefined {
-        const formattedS = s.toUpperCase().split(' ').join('_');
-        const sunPosition = this.getSunPositions().find((sp: SunPositionTriggerPosition) => {
-            return formattedS === sp;
-        });
-        if(!sunPosition) {
-            return Object.values(TimeTriggerType).find((type) => { return formattedS === type; })
-        } else {
-            return sunPosition;
+        if(position == TimeTriggerType.TIME_OF_DAY) { return i18next.t("timeOfDay"); }
+        else {
+            return i18next.t(position.toLowerCase());
         }
     }
 }
