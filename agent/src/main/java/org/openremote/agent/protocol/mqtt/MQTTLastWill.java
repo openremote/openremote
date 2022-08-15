@@ -48,4 +48,13 @@ public class MQTTLastWill {
     public boolean isRetain() {
         return retain;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "topic='" + topic + '\'' +
+            ", retain=" + retain +
+            ", hasPayload=" + (payload != null ? "true" : "false") +
+            '}';
+    }
 }

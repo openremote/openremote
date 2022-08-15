@@ -19,6 +19,7 @@ fi
 OUS=$1
 AWS_ACCOUNT_NAMES=$2
 AWS_ACCOUNT_IDS=$3
+AWS_ROLE_NAME="developers-access"
 ACCOUNT_PROFILE="--profile github-da"
 
 echo "Attempting to set the SSH whitelist for the specified account(s)"
@@ -59,6 +60,7 @@ SSH_LIST=$(aws ssm get-parameters-by-path --path "/SSH-Whitelist" --query "Param
 IFS=$' \t'
 
 for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
+
   # Update github-da profile with ARN for AWS_ACCOUNT_ID
   source "${awsDir}set_github-da_account_arn.sh"
 

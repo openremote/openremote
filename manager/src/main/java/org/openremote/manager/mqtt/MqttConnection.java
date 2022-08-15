@@ -3,6 +3,7 @@ package org.openremote.manager.mqtt;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.representations.AccessToken;
+import org.openremote.agent.protocol.mqtt.MQTTLastWill;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -33,12 +34,14 @@ public class MqttConnection {
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected long connectionTime;
     protected boolean obsolete;
+    protected MQTTLastWill lastWill;
 
-    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password, boolean cleanSession, long connectionTime) {
+    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password, boolean cleanSession, long connectionTime, MQTTLastWill lastWill) {
         this.cleanSession = cleanSession;
         this.clientId = clientId;
         this.identityProvider = identityProvider;
         this.connectionTime = connectionTime;
+        this.lastWill = lastWill;
         setCredentials(realm, username, password);
     }
 
@@ -100,6 +103,14 @@ public class MqttConnection {
         return credentials;
     }
 
+    public boolean hasLastWill() {
+        return lastWill != null;
+    }
+
+    public MQTTLastWill getLastWill() {
+        return lastWill;
+    }
+
     public void setCredentials(String realm, String username, String password) {
 
         this.realm = realm;
@@ -131,6 +142,7 @@ public class MqttConnection {
             ", username='" + username + '\'' +
             ", clientId='" + clientId + '\'' +
             ", obsolete='" + obsolete + '\'' +
+            ", lastWill='" + lastWill + '\'' +
             '}';
     }
 

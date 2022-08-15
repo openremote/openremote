@@ -29,6 +29,7 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
+import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.model.asset.agent.Agent
@@ -55,7 +56,7 @@ import static org.openremote.model.value.ValueType.NUMBER
 class MQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
 
     @SuppressWarnings("GroovyAccessibility")
-    def "Check websocket client protocol and linked attribute deployment"() {
+    def "Check MQTT client protocol and linked attribute deployment"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -97,8 +98,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 new Attribute<>("readWriteTargetTemp", NUMBER)
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
-                            .setSubscriptionTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/attributevalue/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
-                            .setPublishTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/attributevalue/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
+                            .setSubscriptionTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
+                            .setPublishTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC}/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
                             .setWriteValue("${Protocol.DYNAMIC_VALUE_PLACEHOLDER}")
                     ))
         )
@@ -111,7 +112,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert !(agentService.getProtocolInstance(agent.id) as MQTTProtocol).protocolMessageConsumers.isEmpty()
         }
 
-        when: "the source attribute are updated"
+        when: "the attribute referenced in the agent link is updated"
         ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 99d))
 
         then: "the values should be stored in the database"
@@ -121,13 +122,13 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert livingRoom.getAttribute("targetTemperature", Double.class).flatMap{it.value}.orElse(0d) == 99d
         }
 
-        then: "the linked attributes should also have the updated values of the subscribed attributes"
+        then: "the agent linked attribute should also have the updated value of the subscribed attribute"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
             assert asset.getAttribute("readWriteTargetTemp").get().getValue().orElse(null) == 99d
         }
 
-        when: "a linked attribute value is updated"
+        when: "the agent linked attribute is updated"
         def attributeEvent = new AttributeEvent(asset.id,
             "readWriteTargetTemp",
             19.5)
