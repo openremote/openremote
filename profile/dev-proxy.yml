@@ -23,28 +23,20 @@ services:
       service: proxy
     environment:
       MANAGER_HOST: 'host.docker.internal'
-      OR_KEYCLOAK_HOST: 'host.docker.internal'
-      OR_KEYCLOAK_PORT: 8081
 
   keycloak:
     extends:
       file: deploy.yml
       service: keycloak
-    volumes:
-      # Map custom themes
-      #- ../deployment:/deployment
-      - ./disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
+    #volumes:
+    #   Map custom themes
+    #  - ../deployment:/deployment
     # Access directly if needed on localhost
     ports:
       - "8081:8080"
     depends_on:
       postgresql:
         condition: service_healthy
-    environment:
-      # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
-      # Use the following if OR_SSL_PORT is not the default 443
-      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
 
   postgresql:
     extends:

@@ -45,7 +45,7 @@ export {buttonStyle} from "./style";
 export const enum ConditionType {
     AGENT_QUERY = "agentQuery",
     ASSET_QUERY = "assetQuery",
-    TIMER = "timer"
+    DURATION = "duration"
 }
 
 export const enum ActionType {

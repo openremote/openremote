@@ -21,8 +21,16 @@ package org.openremote.manager.mqtt;
 
 import io.moquette.broker.subscriptions.Topic;
 import io.moquette.interception.messages.*;
+import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.web.ConnectionConstants;
+import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -34,6 +42,11 @@ public abstract class MQTTHandler {
 
     public static final String TOKEN_MULTI_LEVEL_WILDCARD = "#";
     public static final String TOKEN_SINGLE_LEVEL_WILDCARD = "+";
+    protected ClientEventService clientEventService;
+    protected MqttBrokerService mqttBrokerService;
+    protected MessageBrokerService messageBrokerService;
+    protected ManagerKeycloakIdentityProvider identityProvider;
+    protected boolean isKeycloak;
 
     /**
      * Gets the priority of this handler which is used to determine the call order; handlers with a lower priority are
@@ -54,7 +67,18 @@ public abstract class MQTTHandler {
      * Called when the system starts to allow for initialisation.
      */
     public void start(Container container) throws Exception {
+        mqttBrokerService = container.getService(MqttBrokerService.class);
+        clientEventService = container.getService(ClientEventService.class);
+        messageBrokerService = container.getService(MessageBrokerService.class);
+        ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
 
+        if (!identityService.isKeycloakEnabled()) {
+            getLogger().warning("MQTT connections are not supported when not using Keycloak identity provider");
+            isKeycloak = false;
+        } else {
+            isKeycloak = true;
+            identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
+        }
     }
 
     /**
@@ -65,10 +89,10 @@ public abstract class MQTTHandler {
     }
 
     /**
-     * Will be called when any client connects
+     * Will be called when any client connects; if returns false then subsequent handlers will not be called
      */
-    public void onConnect(MqttConnection connection, InterceptConnectMessage msg) {
-
+    public boolean onConnect(MqttConnection connection, InterceptConnectMessage msg) {
+        return true;
     }
 
     /**
@@ -110,7 +134,7 @@ public abstract class MQTTHandler {
             getLogger().fine("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", connection" + connection);
             return false;
         }
-        if (!topicRealmAndClientIdMatchesConnection(connection, topic)) {
+        if (!topicRealmMatchesConnection(connection, topic) || !topicClientIdMatchesConnection(connection, topic)) {
             getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", connection" + connection);
             return false;
         }
@@ -130,7 +154,7 @@ public abstract class MQTTHandler {
             getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic + ", connection" + connection);
             return false;
         }
-        if (!topicRealmAndClientIdMatchesConnection(connection, topic)) {
+        if (!topicRealmMatchesConnection(connection, topic) || !topicClientIdMatchesConnection(connection, topic)) {
             getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", connection" + connection);
             return false;
         }
@@ -176,11 +200,11 @@ public abstract class MQTTHandler {
      */
     public abstract void doPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg);
 
-    public static boolean topicRealmAndClientIdMatchesConnection(MqttConnection connection, Topic topic) {
-        if (!connection.realm.equals(topicTokenIndexToString(topic, 0))) {
-            return false;
-        }
+    public static boolean topicRealmMatchesConnection(MqttConnection connection, Topic topic) {
+        return connection.realm.equals(topicTokenIndexToString(topic, 0));
+    }
 
+    public static boolean topicClientIdMatchesConnection(MqttConnection connection, Topic topic) {
         return connection.clientId.equals(topicTokenIndexToString(topic, 1));
     }
 
@@ -190,5 +214,14 @@ public abstract class MQTTHandler {
 
     public static String topicTokenIndexToString(Topic topic, int tokenNumber) {
         return topicTokenCountGreaterThan(topic, tokenNumber) ? topic.getTokens().get(tokenNumber).toString() : null;
+    }
+
+    public static Map<String, Object> prepareHeaders(MqttConnection connection) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(ConnectionConstants.SESSION_KEY, connection.getClientId());
+        headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
+        headers.put(Constants.AUTH_CONTEXT, connection.getAuthContext());
+        headers.put(Constants.REALM_PARAM_NAME, connection.getRealm());
+        return headers;
     }
 }

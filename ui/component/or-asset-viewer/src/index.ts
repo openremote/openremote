@@ -11,7 +11,7 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -43,8 +43,8 @@ import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { progressCircular } from "@openremote/or-mwc-components/style";
+import { OrAssetTree } from "@openremote/or-asset-tree";
 
 export interface PanelConfig {
     type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers";
@@ -209,6 +209,22 @@ export class OrAssetViewerSaveEvent extends CustomEvent<SaveResult> {
     }
 }
 
+export class OrAssetViewerChangeParentEvent extends CustomEvent<{ parentId: string | undefined, assetsIds: string[] }> {
+
+    public static readonly NAME = "or-asset-viewer-change-parent";
+
+    constructor(parent: string | undefined, assetsIds: string[]) {
+        super(OrAssetViewerChangeParentEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                parentId: parent,
+                assetsIds: assetsIds
+            }
+        });
+    }
+}
+
 export class OrAssetViewerRequestEditToggleEvent extends CustomEvent<Util.RequestEventDetail<boolean>> {
 
     public static readonly NAME = "or-asset-viewer-request-edit-toggle";
@@ -245,6 +261,7 @@ declare global {
         [OrAssetViewerSaveEvent.NAME]: OrAssetViewerSaveEvent;
         [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
         [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
+        [OrAssetViewerChangeParentEvent.NAME]: OrAssetViewerChangeParentEvent;
     }
 }
 
@@ -366,10 +383,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         }
 
         const updateFileName = () => {
-            const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement,
-                fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement,
-                fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput,
-                str = fileInputElem.value;
+            const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
+            const fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement;
+            const fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+            const str = fileInputElem.value;
 
             if (!str) {
                 return;
@@ -429,14 +446,18 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             // TODO: cancel the request to the manager
         }
 
-        const fileToBase64 = () => {
-            const fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+        const doImport = () => {
+            const fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement;
+            const fileUploadBtn = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
+            const progressElement = hostElement.shadowRoot!.getElementById("progress-circular") as HTMLProgressElement;
 
-            if (!fileUploadBtn) {
+            if (!fileUploadBtn || !progressElement) {
                 return false;
             }
 
             fileUploadBtn.disabled = true;
+            fileUploadBtn.classList.add("hidden");
+            progressElement.classList.remove("hidden");
 
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
             if (fileInputElem) {
@@ -460,13 +481,13 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                             binary: true
                         } as FileInfo
 
-                        manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo) //todo: this doesn't work yet
+                        manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo, undefined, {timeout: 30000})
                             .then(response => {
                                 if (response.status !== 200) {
                                     showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
                                 } else {
                                     showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", i18next.t("dismiss"));
-                                    console.info(response.data, response) //todo: do something with this response
+                                    console.info(response.data, response)
                                 }
                             })
                             .catch((err) => {
@@ -474,7 +495,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                                 console.error(err);
                             })
                             .finally(() => {
-                                fileUploadBtn.disabled = false;
+                                fileNameElem.value = "";
+                                fileUploadBtn.disabled = true;
+                                fileUploadBtn.classList.remove("hidden");
+                                progressElement.classList.add("hidden");
                             });
 
                     }
@@ -486,12 +510,13 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
 
         if (descriptor.assetImport) {
             content = html`
-                <div id="fileupload"> 
+                <div id="fileupload">
                     <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
-                        <input id="fileupload-elem" name="configfile" type="file" accept=".json, .knxproj, .vlp" @change="${() => updateFileName()}"/>
+                        <input id="fileupload-elem" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
                     </or-mwc-input>
                     <or-mwc-input id="filename-elem" .type="${InputType.TEXT}" disabled></or-mwc-input>
-                    <or-mwc-input id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => fileToBase64()}" disabled></or-mwc-input>
+                    <or-mwc-input id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => doImport()}" disabled></or-mwc-input>
+                    <progress id="progress-circular" class="hidden pure-material-progress-circular"></progress>
                 </div>
             `;
         }
@@ -1043,6 +1068,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     static get styles() {
         return [
             unsafeCSS(tableStyle),
+            progressCircular,
             panelStyles,
             style
         ];
@@ -1051,8 +1077,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @property({type: Object, reflect: false})
     public asset?: Asset;
 
-    @property({type: String})
-    public assetId?: string;
+    @property({type: Array})
+    public ids: string[] | undefined;
 
     @property({type: Object})
     public config?: ViewerConfig;
@@ -1096,13 +1122,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             this.editMode = false;
         }
 
-        if (changedProperties.has("assetId")) {
+        if (changedProperties.has("ids")) {
             this._assetInfo = undefined;
             this.asset = undefined;
 
             // Set asset ID on mixin which will go and load the asset
-            if (this.assetId) {
-                super.assetIds = [this.assetId];
+            if (this.ids && this.ids.length === 1) {
+                super.assetIds = [this.ids[0]];
             } else {
                 super.assetIds = undefined;
             }
@@ -1110,7 +1136,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (changedProperties.has("asset")) {
             this._assetInfo = undefined;
-            this.assetId = undefined;
+            this.ids = undefined;
             super.assetIds = undefined;
 
             if (this.asset) {
@@ -1158,7 +1184,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         const links = await getLinkedUsers(asset);
 
         // Check this asset is still the correct one
-        if (this.assetId && this.assetId !== asset.id) {
+        if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
             throw new Error("Asset has changed");
         }
 
@@ -1169,7 +1195,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         // Check this asset is still the correct one
-        if (this.assetId && this.assetId !== asset.id) {
+        if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
             throw new Error("Asset has changed");
         }
 
@@ -1189,9 +1215,85 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
     }
 
+    protected _onParentChangeClick() {
+        let dialog: OrMwcDialog;
+
+        const blockEvent = (ev: Event) => {
+            ev.stopPropagation();
+        };
+
+        const dialogContent = html`<or-asset-tree id="parent-asset-tree" disableSubscribe readonly .selectedIds="${[]}" @or-asset-tree-request-select="${blockEvent}" @or-asset-tree-selection-changed="${blockEvent}"></or-asset-tree>`;
+
+        const setParent = () => {
+            const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
+            let idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
+
+            this.dispatchEvent(new OrAssetViewerChangeParentEvent(idd, this.ids || []));
+        };
+
+        const clearParent = () => {
+            this.dispatchEvent(new OrAssetViewerChangeParentEvent(undefined, this.ids || []));
+        };
+
+        const dialogActions: DialogAction[] = [
+            {
+                actionName: "clear",
+                content: i18next.t("none"),
+                action: clearParent
+            },
+            {
+                actionName: "ok",
+                content: i18next.t("ok"),
+                action: setParent
+            },
+            {
+                default: true,
+                actionName: "cancel",
+                content: i18next.t("cancel")
+            }
+        ];
+
+        dialog = showDialog(new OrMwcDialog()
+            .setContent(dialogContent)
+            .setActions(dialogActions)
+            .setStyles(html`
+                        <style>
+                            .mdc-dialog__surface {
+                                width: 400px;
+                                height: 800px;
+                                display: flex;
+                                overflow: visible;
+                                overflow-x: visible !important;
+                                overflow-y: visible !important;
+                            }
+                            #dialog-content {
+                                flex: 1;    
+                                overflow: visible;
+                                min-height: 0;
+                            }
+                            or-asset-tree {
+                                height: 100%;
+                            }
+                        </style>
+                    `)
+            .setDismissAction(null));
+    }
+
     protected render(): TemplateResult | void {
 
-        const noSelection = !this.asset && !this.assetId;
+        const noSelection = !this.asset && (!this.ids || this.ids.length === 0);
+        const multiSelection = !this.asset && (!this.ids || this.ids.length > 1);
+
+        if (multiSelection) {
+            return html `
+                <div class="msg">
+                    <div class="multipleAssetsView">
+                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.ids!.length } }"></or-translate>
+                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("changeParent")}" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
+                    </div>
+                </div>
+            `;
+        }
 
         if (noSelection) {
             return html`
@@ -1356,7 +1458,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (result.success) {
             this._assetInfo.modified = false;
             this.asset = undefined;
-            this.assetId = result.assetId;
+            this.ids = [result.assetId];
         }
 
         this.dispatchEvent(new OrAssetViewerSaveEvent(result));
@@ -1370,8 +1472,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     _onEvent(event: SharedEvent) {
-
-        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === this.assetId) || (event.eventType === "attribute" && (event as AttributeEvent).attributeState!.ref!.id == this.assetId);
+        const assetId = this.ids && this.ids.length > 0 ? this.ids[0] : undefined;
+        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).attributeState!.ref!.id == assetId);
 
         if (!processEvent) {
             return;
@@ -1387,6 +1489,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     .catch(reason => {
                         // We can ignore this as it should indicate that the asset has changed
                     });
+                return;
+            }
+
+            if (asset.id !== assetId) {
                 return;
             }
 

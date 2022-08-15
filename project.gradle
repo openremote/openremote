@@ -8,6 +8,12 @@ import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
 import org.jetbrains.gradle.ext.Application
 import org.jetbrains.gradle.ext.JUnit
 
+
+// Configure versions in gradle.properties (putting a gradle.properties file
+// in a subproject only overrides root properties of same name for the actual
+// subproject, not for its children!)
+version = hasProperty("openremoteVersion") ? openremoteVersion : "0.0.0"
+
 // Ensure git hook creation task is executed
 if (project == rootProject) {
 
@@ -97,7 +103,7 @@ if (project == rootProject) {
                     envs = [
                             OR_SETUP_TYPE: "demo",
                             OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "8443"
+                            OR_SSL_PORT: "443"
                     ]
                 }
                 "Empty"(Application) {
@@ -107,7 +113,7 @@ if (project == rootProject) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
                             OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "8443"
+                            OR_SSL_PORT: "443"
                     ]
                 }
             }
@@ -143,9 +149,6 @@ repositories {
     }
     mavenCentral()
     jcenter()
-    maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
     maven {
         url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"
     }
@@ -209,9 +212,9 @@ def getYarnInstallTask() {
 
 // Gets the list of runtime JAR dependencies; can be used in custom project deployment installDist task to populate
 // extensions directory
-def getDeploymentJars() {
+def getDeploymentJars(Project project = project) {
     if (project.configurations.find { it.name == "runtimeClasspath" } == null) {
-        return null;
+        return []
     }
 
     // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
@@ -239,11 +242,6 @@ if (project.convention.findPlugin(JavaPluginConvention)) {
     sourceSets.main.java.outputDir = new File(buildDir, "classes/main")
     sourceSets.test.java.outputDir = new File(buildDir, "classes/test")
 }
-
-// Configure versions in gradle.properties (putting a gradle.properties file
-// in a subproject only overrides root properties of same name for the actual
-// subproject, not for its children!)
-version = hasProperty("openremoteVersion") ? openremoteVersion : projectVersion
 
 // Add UI tasks
 ext.npmCommand = {
@@ -314,3 +312,5 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     // JAR/ZIP base name is the fully qualified subproject name
     archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"
 }
+
+// POM generator

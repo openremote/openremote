@@ -1,0 +1,40 @@
+{
+  "rules": [
+    {
+      "name": "Sunset Trigger Rule",
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "sun": {
+                  "position": "SUNSET",
+                  "location": {
+                    "type": "Point",
+                    "coordinates": [0,0]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "5laT6pWbZa9BHdPvzBHA7T"
+              ]
+            }
+          },
+          "value": 100,
+          "attributeName": "sunset"
+        }
+      ]
+    }
+  ]
+}

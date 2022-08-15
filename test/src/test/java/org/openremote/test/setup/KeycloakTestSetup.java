@@ -112,8 +112,8 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         keycloakProvider.updateUserRoles(
             realmBuilding.getName(),
             serviceUser.getId(),
-            serviceUser.getUsername(),
-            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
+            Constants.KEYCLOAK_CLIENT_ID,
+            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES, ClientRole.READ_LAST_WILL).map(ClientRole::getValue).toArray(String[]::new)
         );
     }
 }

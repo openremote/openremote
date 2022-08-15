@@ -90,4 +90,15 @@ public class LogicGroup<T> {
             ", groups=" + (groups == null ? "[]" : Arrays.toString(groups.toArray())) +
             '}';
     }
+
+    public static <S> List<S> getItemsRecursive(LogicGroup<S> group) {
+        List<S> items = new ArrayList<>();
+        if (group.items != null) {
+            items.addAll(group.items);
+        }
+        if (group.groups != null) {
+            group.groups.forEach(g -> items.addAll(getItemsRecursive(g)));
+        }
+        return items;
+    }
 }

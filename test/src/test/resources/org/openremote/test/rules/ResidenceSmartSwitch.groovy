@@ -121,7 +121,7 @@ rules.add()
                 // User-provided begin/end time of cycle
                 beginEnd.flatMap { it.value}.filter {
                     // is now or in future
-                    it >= facts.clock.timestamp
+                    it >= facts.clock.currentTimeMillis
                 }.map { expectedStartTime ->
                     // and actuator start time attribute
                     def startTime = beginEnd.flatMap {
@@ -173,7 +173,7 @@ rules.add()
                 // User-provided begin/end time of cycle
                 beginEnd.flatMap { it.value}.filter {
                     // allows the cycle to complete in future
-                    (it - CYCLE_TIME_MILLISECONDS) >= facts.clock.timestamp
+                    (it - CYCLE_TIME_MILLISECONDS) >= facts.clock.currentTimeMillis
                 }.map { expectedStopTime ->
                     // and actuator stop time attribute
                     def stopTime = beginEnd.flatMap {
@@ -195,7 +195,7 @@ rules.add()
         { facts ->
             AssetState<Long> beginEnd = facts.bound("beginEnd")
             // Start time is current time (in seconds)
-            def startMilliseconds = facts.clock.timestamp
+            def startMilliseconds = facts.clock.currentTimeMillis
             // Stop time is user-provided smart switch time (in seconds)
             def stopMilliseconds = beginEnd.value.orElse(0l)
             LOG.info("Smart switch mode is READY_AT, enabling actuator with start/stop times " +
@@ -222,7 +222,7 @@ rules.add()
             }.filter { stopTime ->
                 // Actuator stop time attribute is present and value (in seconds) is not zero and in the past
                 stopTime.flatMap { it.value}.map {
-                    it > 0 && it < facts.clock.timestamp
+                    it > 0 && it < facts.clock.currentTimeMillis
                 }.orElse(false)
             }.findFirst().map { stopTime ->
                 facts.bind("stopTime", stopTime.get())

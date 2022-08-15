@@ -8,6 +8,8 @@ plugins {
 apply plugin: "java-library"
 apply plugin: "java-test-fixtures"
 apply plugin: "groovy"
+apply plugin: "maven-publish"
+apply plugin: "signing"
 
 dependencies {
 
@@ -21,10 +23,14 @@ dependencies {
     testRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
     testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
-    api("com.github.calimero:calimero-server:$calimeroVersion") {
+    testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
     }
+
+    testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
+    testImplementation "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
+    testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
 }
 
 tasks.withType(Test) {
@@ -69,4 +75,62 @@ test {
             }
         }
     }
+}
+
+javadoc {
+    failOnError = false
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            group = "io.openremote"
+            artifactId = "openremote-${project.name}"
+            from components.java
+            pom {
+                name = 'OpenRemote Test Fixtures'
+                description = 'Provides test fixtures for writing backend integration tests; add maven {url "https://jitpack.io"} and maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+                url = 'https://github.com/openremote/openremote'
+                licenses {
+                    license {
+                        name = 'GNU Affero General Public License v3.0'
+                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'developers'
+                        name = 'Developers'
+                        email = 'developers@openremote.io'
+                        organization = 'OpenRemote'
+                        organizationUrl = 'https://openremote.io'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/openremote/openremote.git'
+                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+                    url = 'https://github.com/openremote/openremote/tree/master'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            if (!version.endsWith('-LOCAL')) {
+                credentials {
+                    username findProperty("publishUsername")
+                    password findProperty("publishPassword")
+                }
+            }
+            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+        }
+    }
+}
+
+signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
 }

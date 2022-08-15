@@ -96,6 +96,8 @@
   "path": "Percorso",
   "showOnMap": "Mostra sulla mappa",
   "noAssetSelected": "Seleziona un asset sulla sinistra",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "In caricamento...",
   "noAssetsFound": "No assets found",
   "location": "Posizione",
@@ -406,6 +408,7 @@
   "daysOfTheWeek": "Giorni della settimana",
   "dismiss": "dismiss",
   "createAssetFailed": "Fallita la creazione del asset",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "Leggi permessi",
@@ -444,6 +447,7 @@
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "attributeValueLabel": "Attribute value",
+    "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
 }

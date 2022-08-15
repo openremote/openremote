@@ -253,6 +253,29 @@ export const style = css`
         cursor: pointer;
     }
     
+    #fileupload {
+        display: flex;
+        align-items: center;
+    }
+    
+    #fileupload > * {
+        flex: 1 auto;
+        margin-right: 5px;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
+    .multipleAssetsView {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .multipleAssetsView > *:first-child {
+        margin: 30px;
+    }
+    
     @media screen and (max-width: 1200px) {
         #name-input {
             width: 150px;

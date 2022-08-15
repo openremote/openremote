@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.firebase.messaging.Message
 import net.fortuna.ical4j.model.Recur
 import org.openremote.container.timer.TimerService
+import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
+import org.openremote.manager.rules.JsonRulesBuilder
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetDeployment
@@ -16,6 +18,10 @@ import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.UserAssetLink
+import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.attribute.Attribute
+import org.openremote.model.rules.json.JsonRule
+import org.openremote.model.value.ValueType
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.Asset
@@ -41,8 +47,10 @@ import org.simplejavamail.email.Email
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
@@ -266,12 +274,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
 
-        and: "the engine fires at least one more time"
+        then: "the engine fires at least one more time"
         conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
         }
 
-        and: "the console device moves outside the home geofence again (as defined in the rule)"
+        when: "the console device moves outside the home geofence again (as defined in the rule)"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d)), AttributeEvent.Source.CLIENT)
 
         then: "another notification should have been sent to the console"
@@ -483,6 +491,233 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         RulesEngine.PAUSE_SCHEDULER = originalPause
         RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
+        if (notificationService != null) {
+            notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
+            notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
+        }
+    }
+
+    def "Trigger actions based on the position of the sun"() {
+
+        given: "the rule firing delay time is set to a small value for testing"
+        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+
+        and: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def pushNotificationHandler = container.getService(PushNotificationHandler.class)
+        def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
+        def notificationService = container.getService(NotificationService.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def timerService = container.getService(TimerService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        RulesEngine realmBuildingEngine
+
+        and: "a thing asset is added to the building realm"
+        def thingId = UniqueIdentifierGenerator.generateId("TestThing")
+        def thingAsset = new ThingAsset("TestThing")
+            .setId(thingId)
+            .setRealm(keycloakTestSetup.realmBuilding.name)
+            .setLocation(new GeoJSONPoint(0, 0))
+            .addAttributes(
+                    new Attribute<>("sunset", ValueType.INTEGER, null),
+                    new Attribute<>("sunriseWithOffset", ValueType.INTEGER, null),
+                    new Attribute<>("twilightHorizon", ValueType.INTEGER, null),
+            )
+        thingAsset = assetStorageService.merge(thingAsset)
+
+        and: "the pseudo clock is stopped"
+        stopPseudoClock()
+
+        and: "a ruleset with sunset trigger condition is added whose action updates the thing asset"
+        def rulesStr = getClass().getResource("/org/openremote/test/rules/JsonRuleSunset.json").text
+        def rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
+        Ruleset ruleset = new RealmRuleset(
+                keycloakTestSetup.realmBuilding.name,
+                "Sunset Rule",
+                Ruleset.Lang.JSON,
+                rulesStr)
+        ruleset = rulesetStorageService.merge(ruleset)
+        def sunsetCalculator = JsonRulesBuilder.getSunCalculator(rule.rules[0].when.groups[0].items[0].sun, timerService)
+        def sunTimes = sunsetCalculator.execute()
+        def lastFireTimestamp = 0
+
+        expect: "the rule engines to become available and be running with asset states inserted"
+        conditions.eventually {
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the next sunset should be calculated and should be in the future"
+        assert sunTimes.getSet() != null
+        assert sunTimes.getSet().toInstant().isAfter(timerService.getNow())
+
+        and: "the rule should not have triggered"
+        conditions.eventually {
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 0
+        }
+
+        when: "time advances slightly"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should not have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 0
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "time advances slightly past the next sunset time and the rule engine fires"
+        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet()).getSeconds()+1, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
+        }
+
+        when: "the updated attribute is cleared"
+        thingAsset.getAttribute("sunset").get().setValue(null)
+        thingAsset = assetStorageService.merge(thingAsset)
+
+        and: "time advances past the next sunrise"
+        sunTimes = sunsetCalculator.on(sunTimes.getSet()).execute()
+        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getRise()).getSeconds(), TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should not have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 0
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "time advances slightly past the next sunset time and the rule engine fires"
+        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet()).getSeconds()+1, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
+        }
+
+        when: "a ruleset with sunrise offset trigger condition is added whose action updates the thing asset"
+        rulesStr = getClass().getResource("/org/openremote/test/rules/JsonRuleSunriseOffset.json").text
+        rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
+        ruleset = new RealmRuleset(
+                keycloakTestSetup.realmBuilding.name,
+                "Sunrise with offset Rule",
+                Ruleset.Lang.JSON,
+                rulesStr)
+        ruleset = rulesetStorageService.merge(ruleset)
+        sunsetCalculator = JsonRulesBuilder.getSunCalculator(rule.rules[0].when.groups[0].items[0].sun, timerService)
+        sunTimes = sunsetCalculator.execute()
+
+        then: "the rule engines to become available and be running with asset states inserted"
+        conditions.eventually {
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the next sunrise should be calculated and should be in the future"
+        assert sunTimes.getRise() != null
+        assert sunTimes.getRise().toInstant().isAfter(timerService.getNow())
+
+        and: "the rule should not have triggered"
+        conditions.eventually {
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunriseWithOffset").get().getValue().orElse(0) == 0
+        }
+
+        when: "time advances slightly past the next sunrise time and the rule engine fires"
+        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getRise()).getSeconds()+1, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should not have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunriseWithOffset").get().getValue().orElse(0) == 0
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "time advances past the offset delay and the rule engine fires"
+        advancePseudoClock(rule.rules[0].when.groups[0].items[0].sun.offsetMins, TimeUnit.MINUTES, container)
+
+        then: "the rule engine should have fired again and the rule should have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunriseWithOffset").get().getValue().orElse(0) == 100
+        }
+
+        when: "a ruleset with twilight trigger condition is added whose action updates the thing asset"
+        rulesStr = getClass().getResource("/org/openremote/test/rules/JsonRuleTwilight.json").text
+        rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
+        ruleset = new RealmRuleset(
+                keycloakTestSetup.realmBuilding.name,
+                "Twilight Rule",
+                Ruleset.Lang.JSON,
+                rulesStr)
+        ruleset = rulesetStorageService.merge(ruleset)
+        sunsetCalculator = JsonRulesBuilder.getSunCalculator(rule.rules[0].when.groups[0].items[0].sun, timerService)
+        sunTimes = sunsetCalculator.execute()
+
+        then: "the rule engines to become available and be running with asset states inserted"
+        conditions.eventually {
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the next twilight should be calculated and should be in the future"
+        assert sunTimes.getRise() != null
+        assert sunTimes.getRise().toInstant().isAfter(timerService.getNow())
+
+        and: "the rule should not have triggered"
+        conditions.eventually {
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("twilightHorizon").get().getValue().orElse(0) == 0
+        }
+
+        when: "time advances slightly past the next occurrence time and the rule engine fires"
+        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getRise()).getSeconds()+1, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("twilightHorizon").get().getValue().orElse(0) == 100
+        }
+
+        cleanup: "static variables are reset"
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)

@@ -32,7 +32,7 @@ rules.add()
         { facts ->
             facts.matchAssetState(
                     new AssetQuery().types(BuildingAsset)
-                            .attributeValue("vacationUntil", GREATER_THAN, facts.clock.timestamp)
+                            .attributeValue("vacationUntil", GREATER_THAN, facts.clock.currentTimeMillis)
             ).filter { residenceWithVacationUntil ->
                 facts.match(VacationMode).noneMatch {
                     vacationMode -> vacationMode.residenceId == residenceWithVacationUntil.id
@@ -51,7 +51,7 @@ rules.add()
             )
             LOG.info("Vacation mode enabled: " + vacationMode)
 
-            def vacationModeExpiresMillis = vacationMode.until - facts.clock.timestamp
+            def vacationModeExpiresMillis = vacationMode.until - facts.clock.currentTimeMillis
             facts.putTemporary(vacationModeExpiresMillis, vacationMode)
 
             facts.updateAssetState(vacationMode.residenceId, "dayScene", REQUEST_START)
@@ -64,7 +64,7 @@ rules.add()
         { facts ->
             facts.matchAssetState(
                     new AssetQuery().types(BuildingAsset)
-                            .attributeValue("vacationUntil", LESS_EQUALS, facts.clock.timestamp)
+                            .attributeValue("vacationUntil", LESS_EQUALS, facts.clock.currentTimeMillis)
             ).filter { residenceWithVacationUntilInPast ->
                 residenceWithVacationUntilInPast.getValueAs(Double.class).isPresent()
             }.filter { residenceWithVacationUntilInPast ->

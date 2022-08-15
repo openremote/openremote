@@ -1,5 +1,6 @@
 package org.openremote.test.rules
 
+import org.junit.Ignore
 import org.openremote.manager.rules.*
 import org.openremote.manager.setup.SetupService
 import org.openremote.test.setup.ManagerTestSetup
@@ -122,41 +123,42 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 
-    def "Rule condition loops"() {
-
-        given: "the container environment is started"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
-        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        def rulesService = container.getService(RulesService.class)
-        def rulesetStorageService = container.getService(RulesetStorageService.class)
-        RulesEngine apartment2Engine
-
-        and: "some rules"
-        Ruleset ruleset = new AssetRuleset(
-            managerTestSetup.apartment2Id,
-            "Failure Ruleset",
-            Ruleset.Lang.GROOVY,
-            getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
-        ruleset.getMeta().addOrReplace(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
-        ruleset = rulesetStorageService.merge(ruleset)
-
-        expect: "the rule engine should have an error (first firing after initial asset state insert)"
-        conditions.eventually {
-            apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
-            assert apartment2Engine != null
-            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.LOOP_ERROR
-            assert apartment2Engine.deployments[ruleset.id].error instanceof RulesLoopException
-            assert apartment2Engine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
-            assert apartment2Engine.isError()
-            assert apartment2Engine.getError() instanceof RuntimeException
-            assert apartment2Engine.getError().message.startsWith("Ruleset deployments have errors, failed compilation: 0, failed execution: 1")
-            assert apartment2Engine.facts.triggerCount == 0 // Ensure trigger count is reset after execution
-        }
-
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+// Switched rule engine to DefaultEngine rather than InferenceEngine so loops cannot occur now
+//    def "Rule condition loops"() {
+//
+//        given: "the container environment is started"
+//        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+//        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
+//        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+//        def container = startContainer(defaultConfig(), defaultServices())
+//        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+//        def rulesService = container.getService(RulesService.class)
+//        def rulesetStorageService = container.getService(RulesetStorageService.class)
+//        RulesEngine apartment2Engine
+//
+//        and: "some rules"
+//        Ruleset ruleset = new AssetRuleset(
+//            managerTestSetup.apartment2Id,
+//            "Failure Ruleset",
+//            Ruleset.Lang.GROOVY,
+//            getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
+//        ruleset.getMeta().addOrReplace(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
+//        ruleset = rulesetStorageService.merge(ruleset)
+//
+//        expect: "the rule engine should have an error (first firing after initial asset state insert)"
+//        conditions.eventually {
+//            apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
+//            assert apartment2Engine != null
+//            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.LOOP_ERROR
+//            assert apartment2Engine.deployments[ruleset.id].error instanceof RulesLoopException
+//            assert apartment2Engine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
+//            assert apartment2Engine.isError()
+//            assert apartment2Engine.getError() instanceof RuntimeException
+//            assert apartment2Engine.getError().message.startsWith("Ruleset deployments have errors, failed compilation: 0, failed execution: 1")
+//            assert apartment2Engine.facts.triggerCount == 0 // Ensure trigger count is reset after execution
+//        }
+//
+//        cleanup: "the static rules time variable is reset"
+//        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
+//    }
 }

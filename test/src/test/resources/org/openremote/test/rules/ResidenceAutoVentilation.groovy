@@ -8,6 +8,7 @@ import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.AssetQuery.Operator
 import org.openremote.model.rules.AssetState
 
+import java.time.temporal.ChronoUnit
 import java.util.logging.Logger
 import java.util.stream.Stream
 
@@ -80,7 +81,7 @@ Closure<Boolean> roomThresholdMatch =
                             new AssetQuery()
                                     .ids(roomAboveBelowThreshold.id)
                                     .attributeValue(attribute, above ? LESS_EQUALS : GREATER_THAN, threshold)
-                    ).filter(facts.clock.last(timeWindow)).count() == 0
+                    ).filter{facts.clock.now.minus(12, ChronoUnit.MINUTES).toEpochMilli() < it.timestamp}.count() == 0
                 }.isPresent()
             } else {
                 // if we don't have a room with max level (empty attribute?), it's always "below threshold"

@@ -299,18 +299,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             if (authContext == null) {
                                 // Check attribute has public write flag
                                 if (!oldAttribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
-                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                                    throw new AssetProcessingException(NO_AUTH_CONTEXT);
                                 }
                             } else {
                                 // Check realm, must be accessible
                                 if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
                                     asset.getRealm())) {
-                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                                    throw new AssetProcessingException(INVALID_REALM);
                                 }
 
                                 // Regular user must have write attributes role
                                 if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
-                                    authContext.getClientId())) {
+                                    Constants.KEYCLOAK_CLIENT_ID)) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
 
