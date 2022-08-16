@@ -46,8 +46,6 @@ import org.openremote.model.value.MetaItemType;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -146,7 +144,12 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Calculate the next occurrence
                 AtomicReference<SunTimes> sunTimes = new AtomicReference<>(sunCalculator.execute());
-                ZonedDateTime occurrence = ruleCondition.sun.getPosition() == SunPositionTrigger.Position.SUNSET ? sunTimes.get().getSet() : sunTimes.get().getRise();
+                ZonedDateTime occurrence;
+                if(ruleCondition.sun.getPosition() == SunPositionTrigger.Position.SUNRISE || ruleCondition.sun.getPosition().toString().startsWith(SunPositionTrigger.MORNING_TWILIGHT_PREFIX)) {
+                    occurrence = sunTimes.get().getRise();
+                } else {
+                    occurrence = sunTimes.get().getSet();
+                }
 
                 if (occurrence == null) {
                     Exception e = new IllegalStateException("Rule condition requested sun position never occurs at the specified location: " + ruleCondition.sun);
@@ -1150,7 +1153,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         SunTimes.Twilight twilight = null;
         if (position.name().startsWith(SunPositionTrigger.TWILIGHT_PREFIX)) {
-            String lookupValue = position.name().substring(SunPositionTrigger.TWILIGHT_PREFIX.length());
+            String lookupValue = position.name().replace(SunPositionTrigger.MORNING_TWILIGHT_PREFIX, "").replace(SunPositionTrigger.EVENING_TWILIGHT_PREFIX, "").replace(SunPositionTrigger.TWILIGHT_PREFIX, "");
             twilight = EnumUtil.enumFromString(SunTimes.Twilight.class, lookupValue).orElseThrow(() -> {
                 IllegalStateException e = new IllegalStateException("Rule condition un-supported twilight position value '" + lookupValue + "'");
                 log(Level.SEVERE, e.getMessage(), e);
@@ -1159,9 +1162,9 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         SunTimes.Parameters sunCalculator = SunTimes.compute()
-            .at(location.getY(), location.getX())
-            .utc()
-            .on(timerService.getNow());
+                .on(timerService.getNow())
+                .utc()
+                .at(location.getX(), location.getY());
 
         if (twilight != null) {
             sunCalculator.twilight(twilight);

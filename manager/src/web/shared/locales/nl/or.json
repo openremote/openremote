@@ -90,6 +90,8 @@
   "offsetInMinutes": "Afwijking in minuten",
   "sunrise": "Zonsopgang",
   "sunset": "Zonsondergang",
+  "twilight_morning_civil": "Ochtendschemering",
+  "twilight_evening_civil": "Avondschemering",
   "twilight_horizon": "Op de Horizon",
   "twilight_civil": "Civiele schemering",
   "twilight_nautical": "Nautische schemering",

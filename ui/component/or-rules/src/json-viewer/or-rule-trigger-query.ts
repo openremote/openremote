@@ -219,7 +219,11 @@ export class OrRuleTriggerQuery extends LitElement {
     }
 
     getSunPositions(): SunPositionTriggerPosition[] {
-        return [SunPositionTriggerPosition.SUNRISE, SunPositionTriggerPosition.SUNSET, SunPositionTriggerPosition.TWILIGHT_HORIZON, SunPositionTriggerPosition.TWILIGHT_CIVIL, SunPositionTriggerPosition.TWILIGHT_NAUTICAL, SunPositionTriggerPosition.TWILIGHT_ASTRONOMICAL, SunPositionTriggerPosition.TWILIGHT_GOLDEN_HOUR, SunPositionTriggerPosition.TWILIGHT_BLUE_HOUR, SunPositionTriggerPosition.TWILIGHT_NIGHT_HOUR]
+        return [
+            SunPositionTriggerPosition.TWILIGHT_MORNING_CIVIL,
+            SunPositionTriggerPosition.SUNRISE, SunPositionTriggerPosition.SUNSET,
+            SunPositionTriggerPosition.TWILIGHT_EVENING_CIVIL
+        ];
     }
 
 
