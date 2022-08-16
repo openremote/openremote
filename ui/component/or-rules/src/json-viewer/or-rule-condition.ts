@@ -76,6 +76,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
     }
 
     if (addTimer) {
+        menu.push(null);
         menu.push({
             text: i18next.t("time"),
             icon: "timer",
