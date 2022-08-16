@@ -83,7 +83,7 @@
   "then": "Then",
   "orWhen": "Or when",
   "datetime": "Datetime",
-  "timeTrigger": "Time Trigger",
+  "time": "Time",
   "pickLocation": "Pick a location",
   "triggerType": "Trigger Type",
   "timeOfDay": "Time of Day",

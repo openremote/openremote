@@ -27,7 +27,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
     if (config && config.controls && config.controls.allowedConditionTypes) {
         addAssetTypes = config.controls.allowedConditionTypes.indexOf(ConditionType.ASSET_QUERY) >= 0;
         addAgentTypes = config.controls.allowedConditionTypes.indexOf(ConditionType.AGENT_QUERY) >= 0;
-        addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIME_TRIGGER) >= 0;
+        addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIME) >= 0;
     }
 
     const menu: (ListItem | null)[] = [];
@@ -77,9 +77,9 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
 
     if (addTimer) {
         menu.push({
-            text: i18next.t("timeTrigger"),
+            text: i18next.t("time"),
             icon: "timer",
-            value: ConditionType.TIME_TRIGGER,
+            value: ConditionType.TIME,
             styleMap: {"--or-icon-fill": "#" + TIMER_COLOR}
         } as ListItem);
     }
@@ -93,7 +93,7 @@ export function updateRuleConditionType(ruleCondition: RuleCondition, value: str
         ruleCondition.assets = undefined;
         ruleCondition.cron = undefined;
         ruleCondition.sun = undefined;
-    } else if (value === ConditionType.TIME_TRIGGER) {
+    } else if (value === ConditionType.TIME) {
         ruleCondition.assets = undefined;
         ruleCondition.cron = Util.dateToCronString(new Date());
     } else {
@@ -166,7 +166,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
             if (type) {
                 switch (type) {
-                    case ConditionType.TIME_TRIGGER:
+                    case ConditionType.TIME:
                         buttonIcon = "timer";
                         buttonColor = TIMER_COLOR;
                         break;
@@ -199,7 +199,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
 
         if (type) {
             switch (type) {
-                case ConditionType.TIME_TRIGGER:
+                case ConditionType.TIME:
                     template = html`<or-rule-trigger-query id="asset-query" .condition="${this.ruleCondition}"></or-rule-trigger-query>`;
                     break;
                 default:
@@ -222,7 +222,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
         }
 
         if (this.ruleCondition.cron || this.ruleCondition.sun) {
-            return ConditionType.TIME_TRIGGER;
+            return ConditionType.TIME;
         }
     }
 
