@@ -2,6 +2,7 @@ package org.openremote.manager.dashboard;
 
 import com.google.gson.Gson;
 import org.apache.camel.builder.RouteBuilder;
+import org.bouncycastle.math.ec.ScaleYNegateXPointMap;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -140,8 +141,8 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                         throw new IllegalArgumentException("You are not allowed to edit this dashboard!");
                     }
                 }
-                T merged = em.merge(dashboard);
-                return merged;
+                dashboard.setVersion(d.getVersion()); // Always forcing to the correct version, no matter what.
+                return em.merge(dashboard);
             } else {
                 throw new IllegalArgumentException("This dashboard does not exist!");
             }
