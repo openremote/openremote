@@ -229,10 +229,7 @@ export class OrDashboardPreview extends LitElement {
 
                 // On widgets change, check whether they are programmatically added to GridStack. If not, adding them.
                 else if(this.latestChanges.changedKeys.includes('widgets')) {
-                    console.log("Creating missing items on the Grid..");
                     if(this.grid?.el != null) {
-                        console.log(this.grid?.getGridItems());
-                        console.log(this.template.widgets);
                         this.grid.getGridItems().forEach((gridElement) => {
                             if(!gridElement.classList.contains('ui-draggable')) {
                                 this.grid?.makeWidget(gridElement);
@@ -255,7 +252,6 @@ export class OrDashboardPreview extends LitElement {
                 if(changedProperties.get("selectedWidget") != undefined) { // if previous selected state was a different widget
                     this.dispatchEvent(new CustomEvent("deselected", { detail: changedProperties.get("selectedWidget") as DashboardWidget }));
                 }
-                console.log(this.grid);
                 if(this.grid?.el != null) {
                     const foundItem = this.grid?.getGridItems().find((item) => {
                         return item.gridstackNode?.id == this.selectedWidget?.gridItem?.id;
@@ -469,8 +465,6 @@ export class OrDashboardPreview extends LitElement {
 
     // Render
     protected render() {
-        console.log("Rendering the following template:");
-        console.log(this.template);
         return html`
                 <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selectedWidget = undefined; }}}">
                     ${this.editMode ? html`
@@ -508,7 +502,6 @@ export class OrDashboardPreview extends LitElement {
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
                                     ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
-                                        console.log(widget.gridItem)
                                         return html`
                                             <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem!); }}">
                                                 <div class="grid-stack-item-content">

@@ -80,10 +80,8 @@ export class OrDashboardTree extends LitElement {
                 screenPresets: this.getDefaultScreenPresets(size),
             }
         } as Dashboard
-        console.log(dashboard);
         manager.rest.api.DashboardResource.create(dashboard).then((response => {
             if(response.status == 200) {
-                console.log(response); // expects a dashboard response
                 this.dashboards?.push(response.data);
                 this.requestUpdate("dashboards");
                 this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data, size: size }}));
@@ -101,7 +99,6 @@ export class OrDashboardTree extends LitElement {
     private deleteDashboard(dashboard: Dashboard) {
         if(dashboard.id != null) {
             manager.rest.api.DashboardResource.delete({dashboardId: [dashboard.id]}).then((response) => {
-                console.log(response);
                 if(response.status == 204) {
                     this.getAllDashboards();
                 }

@@ -464,6 +464,8 @@ export class OrDashboardBuilder extends LitElement {
         if(this.selectedDashboard != null) {
             this.isLoading = true;
 
+            console.log(this.selectedDashboard);
+
             // Saving object into the database
             manager.rest.api.DashboardResource.update(this.selectedDashboard).then(() => {
                 if(this.dashboards != null && this.selectedDashboard != null) {
@@ -474,6 +476,8 @@ export class OrDashboardBuilder extends LitElement {
                 }
                 this.isLoading = false;
             })
+        } else {
+            console.error("The selected dashboard could not be found..")
         }
     }
 
@@ -622,7 +626,6 @@ export class OrDashboardBuilder extends LitElement {
 
 // Generating the Grid Item details like X and Y coordinates for GridStack to work.
 export function generateGridItem(gridstackNode: ORGridStackNode, displayName: string): DashboardGridItem {
-    console.log("Creating gridItem for " + displayName);
     const randomId = (Math.random() + 1).toString(36).substring(2);
     return {
         id: randomId,

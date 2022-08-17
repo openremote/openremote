@@ -1,5 +1,6 @@
 package org.openremote.manager.dashboard;
 
+import com.google.gson.Gson;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -131,13 +132,16 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     protected <T extends Dashboard> T update(T dashboard, String userId) {
         return persistenceService.doReturningTransaction(em -> {
             Dashboard d = em.find(Dashboard.class, dashboard.getId());
+            System.out.println("StorageService update() has following dashboard:");
+            System.out.println(new Gson().toJson(d));
             if(d != null) {
                 if(d.getEditAccess() == DashboardAccess.PRIVATE) {
                     if(!(d.getOwnerId().equals(userId))) {
                         throw new IllegalArgumentException("You are not allowed to edit this dashboard!");
                     }
                 }
-                return em.merge(dashboard);
+                T merged = em.merge(dashboard);
+                return merged;
             } else {
                 throw new IllegalArgumentException("This dashboard does not exist!");
             }
