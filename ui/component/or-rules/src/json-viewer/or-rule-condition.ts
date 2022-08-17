@@ -96,7 +96,8 @@ export function updateRuleConditionType(ruleCondition: RuleCondition, value: str
         ruleCondition.sun = undefined;
     } else if (value === ConditionType.TIME) {
         ruleCondition.assets = undefined;
-        ruleCondition.cron = Util.dateToCronString(new Date());
+        const date = new Date();
+        ruleCondition.cron = Util.formatCronString(undefined, undefined, undefined, date.getUTCHours().toString(), date.getUTCMinutes().toString());
     } else {
         ruleCondition.cron = undefined;
 

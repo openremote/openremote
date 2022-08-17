@@ -124,12 +124,13 @@ public class JsonRulesBuilder extends RulesBuilder {
             } else if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
                 try {
                     CronExpression timerExpression = new CronExpression(ruleCondition.cron);
+                    timerExpression.setTimeZone(TimeZone.getTimeZone("UTC"));
                     AtomicLong nextExecuteMillis = new AtomicLong(timerExpression.getNextValidTimeAfter(new Date(timerService.getCurrentTimeMillis())).getTime());
 
                     timePredicate = (time) -> {
                         long nextExecute = nextExecuteMillis.get();
                         if (time >= nextExecute) {
-                            nextExecuteMillis.set(timerExpression.getNextInvalidTimeAfter(timerExpression.getNextInvalidTimeAfter(new Date(nextExecute))).getTime());
+                            nextExecuteMillis.set(timerExpression.getNextValidTimeAfter(timerExpression.getNextInvalidTimeAfter(new Date(nextExecute))).getTime());
                             return true;
                         }
                         return false;
