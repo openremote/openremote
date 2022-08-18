@@ -27,6 +27,7 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {until} from "lit/directives/until.js";
 import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
+import { i18next } from "@openremote/or-translate";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -399,7 +400,7 @@ export class OrDashboardPreview extends LitElement {
     createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
         const randomId = (Math.random() + 1).toString(36).substring(2);
         let displayName = generateWidgetDisplayName(this.template, gridStackNode.widgetType);
-        if(displayName == undefined) { displayName = "Widget #" + randomId; } // If no displayName, set random ID as name.
+        if(displayName == undefined) { displayName = (i18next.t('dashboard.widget') + " #" + randomId); } // If no displayName, set random ID as name.
         const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
 
         const widget = {
@@ -473,16 +474,16 @@ export class OrDashboardPreview extends LitElement {
                             <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
                                           @or-mwc-input-changed="${() => this.onFitToScreenClick()}">
                             </or-mwc-input>
-                            <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="Zoom %" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
+                            <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="${i18next.t('dashboard.zoomPercent')}" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }}"
                             ></or-mwc-input>
-                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" .value="${sizeOptionToString(this.previewSize!)}" .options="${screenSizes.map((size) => size.value)}" style="min-width: 220px;"
+                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}" .value="${sizeOptionToString(this.previewSize!)}" .options="${screenSizes.map((size) => size.value)}" style="min-width: 220px;"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = screenSizes.find((size) => size.value == event.detail.value)?.key; }}"
                             ></or-mwc-input>
-                            <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="Width" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
+                            <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="${i18next.t('width')}" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }}"
                             ></or-mwc-input>
-                            <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="Height" min="100" .value="${this.previewHeight?.replace('px', '')}" style="width: 90px;"
+                            <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="${i18next.t('height')}" min="100" .value="${this.previewHeight?.replace('px', '')}" style="width: 90px;"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewHeight = event.detail.value + 'px'; }}"
                             ></or-mwc-input>
                             <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"
@@ -492,12 +493,12 @@ export class OrDashboardPreview extends LitElement {
                     ` : undefined}
                     ${this.rerenderPending ? html`
                         <div>
-                            <span>Rendering Grid...</span>
+                            <span>${i18next.t('dashboard.renderingGrid')}</span>
                         </div>
                     ` : html`
                         <div id="container" style="display: flex; justify-content: center; height: 100%;">
                             ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
-                                <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
+                                <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
                             ` : undefined}
                             <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;">
                                 <!-- Gridstack element on which the Grid will be rendered -->
@@ -522,7 +523,6 @@ export class OrDashboardPreview extends LitElement {
     }
 
     setupResizeObserver(element: Element): ResizeObserver {
-        console.log("Setting up ResizeObserver..");
         this.resizeObserver?.disconnect();
         this.resizeObserver = new ResizeObserver(() => {
 
@@ -563,13 +563,13 @@ export class OrDashboardPreview extends LitElement {
             }
 
             switch (_widget.widgetType) {
-                case DashboardWidgetType.CHART: {
+                case DashboardWidgetType.LINE_CHART: {
 
                     // Generation of fake data when in editMode.
                     if(this.editMode) {
                         _widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
                             if(!assets.find((asset: Asset) => { return asset.id == attrRef.id; })) {
-                                assets.push({ id: attrRef.id, name: "Asset X", type: "ThingAsset" });
+                                assets.push({ id: attrRef.id, name: (i18next.t('asset') +" X"), type: "ThingAsset" });
                             }
                         });
                         attributes = [];
@@ -599,12 +599,12 @@ export class OrDashboardPreview extends LitElement {
                 }
             }
         }
-        return html`<span>Error!</span>`;
+        return html`<span>${i18next.t('error')}!</span>`;
     }
 
     protected generateMockData(widget: DashboardWidget, startOfPeriod: number, _endOfPeriod: number, amount: number = 10): any {
         switch (widget.widgetType) {
-            case DashboardWidgetType.CHART: {
+            case DashboardWidgetType.LINE_CHART: {
                 const mockTime: number = startOfPeriod;
                 const chartData: any[] = [];
                 const interval = (Date.now() - startOfPeriod) / amount;

@@ -11,6 +11,7 @@ import "@openremote/or-mwc-components/or-mwc-menu";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu"; //nosonar
 import {dashboardAccessToString, DashboardSizeOption} from ".";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { i18next } from "@openremote/or-translate";
 
 //language=css
 const treeStyling = css`
@@ -78,7 +79,7 @@ export class OrDashboardTree extends LitElement {
         const randomId = (Math.random() + 1).toString(36).substring(2);
         const dashboard = {
             realm: this.realm!,
-            displayName: "Dashboard" + (this.dashboards != null ? (this.dashboards.length + 1) : "X"),
+            displayName: i18next.t('dashboard.self') + " " + (this.dashboards != null ? (this.dashboards.length + 1) : "X"),
             template: {
                 id: randomId,
                 columns: this.getDefaultColumns(size),
@@ -116,9 +117,9 @@ export class OrDashboardTree extends LitElement {
 
     protected render() {
         const menuItems: ListItem[] = [
-            { icon: "monitor", text: "Large", value: DashboardSizeOption.LARGE },
-            { icon: "tablet", text: "Medium", value: DashboardSizeOption.MEDIUM },
-            { icon: "cellphone", text: "Small", value: DashboardSizeOption.SMALL }
+            { icon: "monitor", text: i18next.t('dashboard.size.large'), value: DashboardSizeOption.LARGE },
+            { icon: "tablet", text: i18next.t('dashboard.size.medium'), value: DashboardSizeOption.MEDIUM },
+            { icon: "cellphone", text: i18next.t('dashboard.size.small'), value: DashboardSizeOption.SMALL }
         ]
         const groups = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC];
         const dashboardItems: ListItem[][] = []
@@ -133,13 +134,13 @@ export class OrDashboardTree extends LitElement {
         return html`
             <div id="menu-header">
                 <div id="title-container">
-                    <span id="title">Dashboards</span>
+                    <span id="title">${i18next.t('dashboards')}</span>
                 </div>
                 ${this.showControls ? html`
                     <div id="header-btns">
                         ${this.selected != null ? html`
                             <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => { if(this.selected != null) {
-                                showOkCancelDialog('Are you sure?', ('This will permanently delete ' + this.selected.displayName) + '.', 'Delete').then(() => { this.deleteDashboard(this.selected!); });
+                                showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', { dashboard: this.selected.displayName }), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteDashboard(this.selected!); }});
                             }}}"></or-mwc-input>
                         ` : undefined}
                         <span style="--or-icon-fill: black">
@@ -189,17 +190,17 @@ export class OrDashboardTree extends LitElement {
             case DashboardSizeOption.LARGE: {
                 return [{
                     id: "large",
-                    displayName: "Large",
+                    displayName: i18next.t('dashboard.size.large'),
                     breakpoint: 1000000, // TODO: change this
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "medium",
-                    displayName: "Medium",
+                    displayName: i18next.t('dashboard.size.medium'),
                     breakpoint: 1280,
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "small",
-                    displayName: "Small",
+                    displayName: i18next.t('dashboard.size.small'),
                     breakpoint: 640,
                     scalingPreset: DashboardScalingPreset.BLOCK_DEVICE
                 }];
@@ -207,17 +208,17 @@ export class OrDashboardTree extends LitElement {
             case DashboardSizeOption.SMALL: {
                 return [{
                     id: "large",
-                    displayName: "Large",
+                    displayName: i18next.t('dashboard.size.large'),
                     breakpoint: 1000000,
                     scalingPreset: DashboardScalingPreset.BLOCK_DEVICE
                 }, {
                     id: "medium",
-                    displayName: "Medium",
+                    displayName: i18next.t('dashboard.size.medium'),
                     breakpoint: 1280,
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "small",
-                    displayName: "Small",
+                    displayName: i18next.t('dashboard.size.small'),
                     breakpoint: 640,
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }];
@@ -225,17 +226,17 @@ export class OrDashboardTree extends LitElement {
             default: { // or DashboardSizeOption.MEDIUM since that is the default
                 return [{
                     id: "large",
-                    displayName: "Large",
+                    displayName: i18next.t('dashboard.size.large'),
                     breakpoint: 1000000,
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "medium",
-                    displayName: "Medium",
+                    displayName: i18next.t('dashboard.size.medium'),
                     breakpoint: 1280,
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "small",
-                    displayName: "Small",
+                    displayName: i18next.t('dashboard.size.small'),
                     breakpoint: 640,
                     scalingPreset: DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN
                 }];

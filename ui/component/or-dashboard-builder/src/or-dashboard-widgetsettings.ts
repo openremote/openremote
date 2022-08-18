@@ -8,7 +8,7 @@ import {OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-a
 import {style} from './style';
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import {DefaultColor5, manager } from "@openremote/core";
-import i18next from "i18next";
+import { i18next } from "@openremote/or-translate";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -137,7 +137,7 @@ export class OrDashboardWidgetsettings extends LitElement {
 
             // Setting what panels are expanded, depending on WidgetType
             switch (this.selectedWidget?.widgetType) {
-                case DashboardWidgetType.CHART: {
+                case DashboardWidgetType.LINE_CHART: {
                     this.expandedPanels = ['Attributes', 'Display']; break;
                 }
                 case DashboardWidgetType.KPI: {
@@ -166,7 +166,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     // This is always the case when a new Widget has been created.
     generateWidgetConfig(widget: DashboardWidget): Object {
         switch (widget.widgetType) {
-            case DashboardWidgetType.CHART: {
+            case DashboardWidgetType.LINE_CHART: {
                 return {
                     displayName: widget.displayName,
                     attributeRefs: [],
@@ -233,7 +233,7 @@ export class OrDashboardWidgetsettings extends LitElement {
         let htmlContent: TemplateResult;
         switch (widgetType) {
 
-            case DashboardWidgetType.CHART: {
+            case DashboardWidgetType.LINE_CHART: {
                 const chartConfig = widgetConfig as ChartWidgetConfig;
                 htmlContent = html`
                     <div>

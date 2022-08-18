@@ -2,7 +2,6 @@ import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
-import "./or-dashboard-editor";
 import "./or-dashboard-preview";
 import "./or-dashboard-widgetsettings";
 import "./or-dashboard-boardsettings";
@@ -589,15 +588,15 @@ export function generateWidgetDisplayName(template: DashboardTemplate, widgetTyp
     if(template.widgets != null) {
         const filteredWidgets: DashboardWidget[] = template.widgets.filter((x) => { return x.widgetType == widgetType; });
         switch (widgetType) {
-            case DashboardWidgetType.KPI: return (i18next.t('dashboard.widget.kpi') + " #" + (filteredWidgets.length + 1));
-            case DashboardWidgetType.CHART: return (i18next.t('dashboard.widget.chart') + " #" + (filteredWidgets.length + 1));
+            case DashboardWidgetType.KPI: return (i18next.t('dashboard.widget-kpi') + " #" + (filteredWidgets.length + 1));
+            case DashboardWidgetType.LINE_CHART: return (i18next.t('dashboard.widget-linechart') + " #" + (filteredWidgets.length + 1));
         }
     }
     return undefined;
 }
 export function getWidgetMinWidth(widgetType: DashboardWidgetType): number {
     switch (widgetType) {
-        case DashboardWidgetType.CHART: return 2;
+        case DashboardWidgetType.LINE_CHART: return 2;
         case DashboardWidgetType.KPI: return 1;
     }
 }

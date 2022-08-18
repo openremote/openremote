@@ -3,6 +3,7 @@ import {css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, state} from "lit/decorators.js";
 import {style} from "./style";
 import { DashboardWidgetType } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -63,8 +64,8 @@ export class OrDashboardBrowser extends LitElement {
     protected renderGrid() {
         const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
         const sidebarItems = [
-            {x: 0, y: 0, w: 2, h: 2, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span class="itemText">Line Chart</span></div>'},
-            {x: 2, y: 0, w: 2, h: 2, widgetType: DashboardWidgetType.KPI, locked: true, content: '<div class="sidebarItem"><or-icon icon="label"></or-icon><span class="itemText">KPI</span></div>'},
+            {x: 0, y: 0, w: 2, h: 2, widgetType: DashboardWidgetType.LINE_CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span class="itemText">' + i18next.t("dashboard.widget-linechart") + '</span></div>'},
+            {x: 2, y: 0, w: 2, h: 2, widgetType: DashboardWidgetType.KPI, locked: true, content: '<div class="sidebarItem"><or-icon icon="label"></or-icon><span class="itemText">' + i18next.t("dashboard.widget-kpi") + '</span></div>'},
             {x: 0, y: 2, w: 2, h: 2, locked: true, noMove: true, content: ''}, // Invisible widget
             {x: 2, y: 2, w: 2, h: 2, locked: true, noMove: true, content: ''} // Invisible widget
         ];

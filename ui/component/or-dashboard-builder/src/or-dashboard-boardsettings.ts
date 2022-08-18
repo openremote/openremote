@@ -3,6 +3,8 @@ import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {style} from './style';
+import { i18next } from "@openremote/or-translate";
+import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {
     dashboardAccessToString,
     scalingPresetToString,
@@ -21,9 +23,6 @@ export class OrDashboardBoardsettings extends LitElement {
 
     @property()
     protected readonly dashboard?: Dashboard;
-
-    /*@property()
-    protected readonly template?: DashboardTemplate;*/
 
     @state()
     protected expandedPanels: string[] = ["Permissions", "Layout", "Display", "Breakpoints"];
@@ -93,15 +92,13 @@ export class OrDashboardBoardsettings extends LitElement {
             });
             return html`
                 <!-------------------->
-                <div>${this.generateExpandableHeader('Permissions')}</div>
+                <div>${this.generateExpandableHeader(i18next.t('permissions'))}</div>
                 <div>
-                    ${this.expandedPanels.includes('Permissions') ? html`
+                    ${this.expandedPanels.includes(i18next.t('permissions')) ? html`
                         <div style="padding: 24px 24px 24px 24px;">
                             <div style="margin-bottom: 24px;">
                                 <div class="label">
-                                    <span>Who can</span>
-                                    <span style="font-weight: bold;">view</span>
-                                    <span>the dashboard?</span>
+                                    ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanView').toString())}</span>`}
                                 </div>
                                 <or-mwc-input class="permissionInput" compact outlined type="${InputType.SELECT}" style="width: 250px;"
                                               .options="${accessOptions.map((access) => access.value)}"
@@ -111,9 +108,7 @@ export class OrDashboardBoardsettings extends LitElement {
                             </div>
                             <div style="margin-bottom: 24px;">
                                 <div class="label">
-                                    <span>Who can</span>
-                                    <span style="font-weight: bold;">edit</span>
-                                    <span>the dashboard?</span>
+                                    ${html`<span>${unsafeHTML(i18next.t('dashboard.whoCanEdit').toString())}</span>`}
                                 </div>
                                 <or-mwc-input class="permissionInput" compact outlined type="${InputType.SELECT}" style="width: 250px;"
                                               .disabled="${(this.dashboard.viewAccess == DashboardAccess.PRIVATE)}" 
@@ -126,18 +121,18 @@ export class OrDashboardBoardsettings extends LitElement {
                     ` : null}
                 </div>
                 <!-------------------->
-                <div>${this.generateExpandableHeader('Layout')}</div>
+                <div>${this.generateExpandableHeader(i18next.t('layout'))}</div>
                 <div>
-                    ${this.expandedPanels.includes('Layout') ? html`
+                    ${this.expandedPanels.includes(i18next.t('layout')) ? html`
                         <div style="padding: 24px 24px 24px 24px;">
                             <!-- Number of Columns control -->
                             <div style="margin-bottom: 12px; display: flex; align-items: center;">
-                                <span style="min-width: 180px;">Number of Columns</span>
+                                <span style="min-width: 180px;">${i18next.t("dashboard.numberOfColumns")}</span>
                                 <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.dashboard.template.columns}" min="1" max="12" @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.dashboard?.template != null) { this.dashboard.template.columns = event.detail.value as number; this.forceParentUpdate(true); }}}"></or-mwc-input>
                             </div>
                             <!-- Max Screen Width control-->
                             <div style="margin-bottom: 24px; display: flex; align-items: center;">
-                                <span style="min-width: 150px;">Max Screen Width</span>
+                                <span style="min-width: 150px;">${i18next.t('dashboard.maxScreenWidth')}</span>
                                 <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.dashboard.template.maxScreenWidth}" disabled @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.dashboard?.template != null) { this.dashboard.template.maxScreenWidth = event.detail.value as number; this.forceParentUpdate(false); }}}"></or-mwc-input>
                                 <span style="margin-left: 8px;">px</span>
                             </div>
@@ -145,17 +140,15 @@ export class OrDashboardBoardsettings extends LitElement {
                     ` : null}
                 </div>
                 <!-------------------->
-                <div>${this.generateExpandableHeader('Display')}</div>
+                <div>${this.generateExpandableHeader(i18next.t('display'))}</div>
                 <div>
-                    ${this.expandedPanels.includes('Display') ? html`
+                    ${this.expandedPanels.includes(i18next.t('display')) ? html`
                         <div style="padding: 24px 24px 24px 24px;">
                             ${screenPresets.map((preset) => {
                                 return html`
                                     <div style="margin-bottom: 24px;">
                                         <div class="label">
-                                            <span>On a</span>
-                                            <span style="font-weight: bold;">${preset.displayName}</span>
-                                            <span>Screen my board should:</span>
+                                            ${html`<span>${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", ("<b>" + i18next.t("dashboard.size." + preset.displayName?.toLowerCase()) + "</b>")))}</span>`}
                                         </div>
                                         <or-mwc-input class="displayInput" type="${InputType.SELECT}" outlined style="width: 250px;"
                                                       .options="${scalingPresets.map((x) => x.value)}"
@@ -179,7 +172,7 @@ export class OrDashboardBoardsettings extends LitElement {
                             ${screenPresets.map((preset) => {
                                 return html`
                                     <div style="margin-bottom: 12px; display: flex; align-items: center;">
-                                        <span style="min-width: 140px;">${preset.displayName} screen</span>
+                                        <span style="min-width: 140px;">${i18next.t("dashboard.size." + preset.displayName?.toLowerCase())} ${i18next.t('screen')}</span>
                                         <span style="margin-right: 8px;">${(screenPresets.indexOf(preset) == 0) ? '>' : '<'}</span>
                                         <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${(screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}" .disabled="${true}"></or-mwc-input>
                                         <span style="margin-left: 8px;">px</span>
@@ -194,9 +187,8 @@ export class OrDashboardBoardsettings extends LitElement {
         } else {
             return html`
                 <div style="padding: 24px;">
-                    <span>Something went wrong.</span><br/>
-                    <span>No dashboard could be found.</span><br/><br/>
-                    <span>Try to reopen the tab.</span>
+                    <span>${i18next.t('errorOccured')}</span><br/>
+                    <span>${i18next.t('noDashboardFound')}</span>
                 </div>
             `
         }
