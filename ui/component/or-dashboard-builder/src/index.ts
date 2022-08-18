@@ -18,6 +18,7 @@ import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import { OrMwcTabItem } from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs"; //nosonar
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { i18next } from "@openremote/or-translate";
 
 // language=CSS
 const styling = css`
@@ -127,65 +128,13 @@ export enum DashboardSizeOption {
 
 // Enum to Menu String method
 export function scalingPresetToString(scalingPreset: DashboardScalingPreset | undefined): string {
-    if(scalingPreset != null) {
-        switch (scalingPreset) {
-            case DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN: {
-                return "Wrap widgets to one column";
-            } case DashboardScalingPreset.KEEP_LAYOUT: {
-                return "Keep layout";
-            } case DashboardScalingPreset.BLOCK_DEVICE: {
-                return "Block this device";
-            } case DashboardScalingPreset.REDIRECT: {
-                return "Redirect to a different Dashboard.."
-            }
-        }
-    }
-    return "undefined";
-}
-
-// Menu String to enum method
-export function stringToScalingPreset(scalingPreset: string): DashboardScalingPreset {
-    switch (scalingPreset) {
-        case "Wrap widgets to one column": { return DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN; }
-        case "Keep layout": { return DashboardScalingPreset.KEEP_LAYOUT; }
-        case "Block this device": { return DashboardScalingPreset.BLOCK_DEVICE; }
-        case "Redirect to a different Dashboard..": { return DashboardScalingPreset.REDIRECT; }
-        default: { return DashboardScalingPreset.KEEP_LAYOUT; }
-    }
-
-}
-
-export function stringToSizeOption(sizeOption: string): DashboardSizeOption {
-    switch (sizeOption) {
-        case "Large": { return DashboardSizeOption.LARGE; }
-        case "Medium": { return DashboardSizeOption.MEDIUM; }
-        case "Small": { return DashboardSizeOption.SMALL; }
-        default: { return DashboardSizeOption.MEDIUM; }
-    }
+    return (scalingPreset != null ? i18next.t("dashboard.presets." + scalingPreset.toLowerCase()) : "undefined");
 }
 export function sizeOptionToString(sizeOption: DashboardSizeOption): string {
-    switch (sizeOption) {
-        case DashboardSizeOption.FULLSCREEN: { return "Fullscreen"; }
-        case DashboardSizeOption.LARGE: { return "Large"; }
-        case DashboardSizeOption.MEDIUM: { return "Medium"; }
-        case DashboardSizeOption.SMALL: { return "Small"; }
-        case DashboardSizeOption.CUSTOM: { return "Custom Size"; }
-    }
-}
-export function stringToDashboardAccess(access: string): DashboardAccess {
-    switch (access) {
-        case "Public": { return DashboardAccess.PUBLIC; }
-        case "Realm users": { return DashboardAccess.SHARED; }
-        case "Only me": { return DashboardAccess.PRIVATE; }
-        default: { return DashboardAccess.SHARED; }
-    }
+    return i18next.t("dashboard.size." + DashboardSizeOption[sizeOption].toLowerCase());
 }
 export function dashboardAccessToString(access: DashboardAccess): string {
-    switch (access) {
-        case DashboardAccess.PUBLIC: { return "Public"; }
-        case DashboardAccess.SHARED: { return "Realm users"; }
-        case DashboardAccess.PRIVATE: { return "Only me"; }
-    }
+    return i18next.t("dashboard.access." + access.toLowerCase());
 }
 
 export function sortScreenPresets(presets: DashboardScreenPreset[], largetosmall: boolean = false): DashboardScreenPreset[] {
@@ -394,7 +343,7 @@ export class OrDashboardBuilder extends LitElement {
     createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
         const randomId = (Math.random() + 1).toString(36).substring(2);
         let displayName = generateWidgetDisplayName(this.currentTemplate!, gridStackNode.widgetType);
-        if(displayName == undefined) { displayName = "Widget #" + randomId; } // If no displayName, set random ID as name.
+        if(displayName == undefined) { displayName = (i18next.t('widget') + " #" + randomId); } // If no displayName, set random ID as name.
         const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
 
         const widget = {
@@ -475,7 +424,7 @@ export class OrDashboardBuilder extends LitElement {
                     this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);
                     this.dashboards[this.dashboards?.indexOf(this.selectedDashboard)] = this.selectedDashboard;
                     this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
-                    showSnackbar(undefined, ("Saved Dashboard succesfully!"));
+                    showSnackbar(undefined, i18next.t('dashboard.saveSuccessful'));
                 }
                 this.isLoading = false;
             })
@@ -495,11 +444,11 @@ export class OrDashboardBuilder extends LitElement {
     // Rendering the page
     render(): any { //nosonar
         const menuItems: ListItem[] = [
-            { icon: "content-copy", text: "Copy URL", value: "copy" },
-            { icon: "open-in-new", text: "Open in new Tab", value: "tab" },
+            { icon: "content-copy", text: (i18next.t("copy") + " URL"), value: "copy" },
+            { icon: "open-in-new", text: i18next.t("dashboard.openInNewTab"), value: "tab" },
         ];
         const tabItems: OrMwcTabItem[] = [
-            { name: "WIDGETS" }, { name: "SETTINGS"}
+            { name: i18next.t("dashboard.widgets") }, { name: i18next.t("settings") }
         ];
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
@@ -516,7 +465,7 @@ export class OrDashboardBuilder extends LitElement {
                             <div id="header-wrapper">
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
-                                    <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" 
+                                    <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="${i18next.t('name')}" 
                                                   .value="${this.selectedDashboard != null ? this.selectedDashboard.displayName : ' '}"
                                                   .disabled="${this.isLoading || (this.selectedDashboard == null)}" 
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.changeDashboardName(event.detail.value); }}"
@@ -530,8 +479,8 @@ export class OrDashboardBuilder extends LitElement {
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="save-btn" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="Save" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
-                                        <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="eye" label="View" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
+                                        <or-mwc-input id="save-btn" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
+                                        <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
                                     </div>
                                 </div>
                             </div>
@@ -549,7 +498,7 @@ export class OrDashboardBuilder extends LitElement {
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="pencil" label="Modify" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
+                                        <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>
                                 </div>
                             </div>
@@ -559,14 +508,6 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="container" style="display: table;">
                             <div id="builder">
                                 ${(this.selectedDashboard != null) ? html`
-                                    <!--<or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
-                                                         .previewSize="${this.previewSize}" .isLoading="${this.isLoading}" .rerenderPending="${this.rerenderPending}"
-                                                         @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
-                                                         @deselected="${() => { this.deselectWidget(); }}"
-                                                         @dropped="${(event: CustomEvent) => { this.createWidget(event.detail); }}"
-                                                         @changed="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, event.detail.template); }}"
-                                                         @rerender="${() => { this.rerenderPending = false; }}"
-                                    ></or-dashboard-editor>-->
                                     <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .realm="${this.realm}" .template="${this.currentTemplate}"
                                                           .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}"
@@ -577,7 +518,7 @@ export class OrDashboardBuilder extends LitElement {
                                     ></or-dashboard-preview>
                                 ` : html`
                                     <div style="justify-content: center; display: flex; align-items: center; height: 100%;">
-                                        <span>Please select a Dashboard from the left.</span>
+                                        <span>${i18next.t('noDashboardSelected')}</span>
                                     </div>
                                 `}
                             </div>
@@ -648,8 +589,8 @@ export function generateWidgetDisplayName(template: DashboardTemplate, widgetTyp
     if(template.widgets != null) {
         const filteredWidgets: DashboardWidget[] = template.widgets.filter((x) => { return x.widgetType == widgetType; });
         switch (widgetType) {
-            case DashboardWidgetType.KPI: return "KPI #" + (filteredWidgets.length + 1);
-            case DashboardWidgetType.CHART: return "Chart #" + (filteredWidgets.length + 1);
+            case DashboardWidgetType.KPI: return (i18next.t('dashboard.widget.kpi') + " #" + (filteredWidgets.length + 1));
+            case DashboardWidgetType.CHART: return (i18next.t('dashboard.widget.chart') + " #" + (filteredWidgets.length + 1));
         }
     }
     return undefined;

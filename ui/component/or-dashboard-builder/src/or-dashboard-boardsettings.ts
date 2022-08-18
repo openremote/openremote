@@ -6,9 +6,7 @@ import {style} from './style';
 import {
     dashboardAccessToString,
     scalingPresetToString,
-    sortScreenPresets,
-    stringToDashboardAccess,
-    stringToScalingPreset
+    sortScreenPresets
 } from ".";
 
 //language=css
@@ -85,8 +83,14 @@ export class OrDashboardBoardsettings extends LitElement {
     protected render() { //nosonar
         if(this.dashboard?.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
-            const scalingPresets = [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, /*DashboardScalingPreset.REDIRECT,*/ DashboardScalingPreset.BLOCK_DEVICE];
-            const accessOptions = [dashboardAccessToString(DashboardAccess.PRIVATE), dashboardAccessToString(DashboardAccess.SHARED), dashboardAccessToString(DashboardAccess.PUBLIC)]
+            const accessOptions: {key: DashboardAccess, value: string}[] = [];
+            [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].forEach((access) => {
+                accessOptions.push({key: access, value: dashboardAccessToString(access)})
+            })
+            const scalingPresets: {key: DashboardScalingPreset, value: string}[] = [];
+            [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, /*DashboardScalingPreset.REDIRECT,*/ DashboardScalingPreset.BLOCK_DEVICE].forEach((preset: DashboardScalingPreset) => {
+                scalingPresets.push({key: preset, value: scalingPresetToString(preset) });
+            });
             return html`
                 <!-------------------->
                 <div>${this.generateExpandableHeader('Permissions')}</div>
@@ -100,9 +104,9 @@ export class OrDashboardBoardsettings extends LitElement {
                                     <span>the dashboard?</span>
                                 </div>
                                 <or-mwc-input class="permissionInput" compact outlined type="${InputType.SELECT}" style="width: 250px;"
-                                              .options="${accessOptions}"
+                                              .options="${accessOptions.map((access) => access.value)}"
                                               .value="${dashboardAccessToString(this.dashboard.viewAccess!)}"
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.setViewAccess(stringToDashboardAccess(event.detail.value)); }}"
+                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.setViewAccess(accessOptions.find((access) => access.value == event.detail.value)?.key!); }}"
                                 ></or-mwc-input>
                             </div>
                             <div style="margin-bottom: 24px;">
@@ -113,9 +117,9 @@ export class OrDashboardBoardsettings extends LitElement {
                                 </div>
                                 <or-mwc-input class="permissionInput" compact outlined type="${InputType.SELECT}" style="width: 250px;"
                                               .disabled="${(this.dashboard.viewAccess == DashboardAccess.PRIVATE)}" 
-                                              .options="${accessOptions}" 
+                                              .options="${accessOptions.map((access) => access.value)}" 
                                               .value="${dashboardAccessToString(this.dashboard.editAccess!)}" 
-                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.setEditAccess(stringToDashboardAccess(event.detail.value)); }}"
+                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.setEditAccess(accessOptions.find((access) => access.value == event.detail.value)?.key!); }}"
                                 ></or-mwc-input>
                             </div>
                         </div>
@@ -154,9 +158,12 @@ export class OrDashboardBoardsettings extends LitElement {
                                             <span>Screen my board should:</span>
                                         </div>
                                         <or-mwc-input class="displayInput" type="${InputType.SELECT}" outlined style="width: 250px;"
-                                                      .options="${scalingPresets.map((x) => scalingPresetToString(x))}"
-                                                      .value="${scalingPresetToString(preset.scalingPreset)}"
-                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { preset.scalingPreset = stringToScalingPreset(event.detail.value); this.forceParentUpdate(true); }}"
+                                                      .options="${scalingPresets.map((x) => x.value)}"
+                                                      .value="${scalingPresets.find((p) => p.key == preset.scalingPreset)?.value}"
+                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                                          preset.scalingPreset = scalingPresets.find((p) => p.value == event.detail.value)?.key;
+                                                          this.forceParentUpdate(true);
+                                                      }}"
                                         ></or-mwc-input>
                                     </div>
                                 `

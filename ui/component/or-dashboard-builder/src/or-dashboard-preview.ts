@@ -21,8 +21,7 @@ import {
     getHeightByPreviewSize,
     getPreviewSizeByPx,
     getWidthByPreviewSize,
-    sizeOptionToString,
-    stringToSizeOption
+    sizeOptionToString
 } from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {until} from "lit/directives/until.js";
@@ -381,7 +380,6 @@ export class OrDashboardPreview extends LitElement {
             });
             this.grid.on('change', (_event: Event, items: any) => {
                 if(this.template != null && this.template.widgets != null) {
-                    console.log("Noticed a change in widget movement/sizing!");
                     (items as GridStackNode[]).forEach(node => {
                         const foundWidget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
                         if(foundWidget && foundWidget.gridItem != null) {
@@ -391,7 +389,6 @@ export class OrDashboardPreview extends LitElement {
                             foundWidget.gridItem.h = node.h;
                         }
                     });
-                    console.log("Dispatching 'changed' event!");
                     this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
                 }
             });
@@ -465,6 +462,10 @@ export class OrDashboardPreview extends LitElement {
 
     // Render
     protected render() {
+        let screenSizes: {key: DashboardSizeOption, value: string}[] = [];
+        [DashboardSizeOption.LARGE, DashboardSizeOption.MEDIUM, DashboardSizeOption.SMALL, DashboardSizeOption.CUSTOM].forEach((opt) => {
+            screenSizes.push({key: opt, value: sizeOptionToString(opt)});
+        })
         return html`
                 <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selectedWidget = undefined; }}}">
                     ${this.editMode ? html`
@@ -475,8 +476,8 @@ export class OrDashboardPreview extends LitElement {
                             <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="Zoom %" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }}"
                             ></or-mwc-input>
-                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" .value="${sizeOptionToString(this.previewSize!)}" .options="${[sizeOptionToString(DashboardSizeOption.LARGE), sizeOptionToString(DashboardSizeOption.MEDIUM), sizeOptionToString(DashboardSizeOption.SMALL), sizeOptionToString(DashboardSizeOption.CUSTOM)]}" style="min-width: 220px;"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = stringToSizeOption(event.detail.value); }}"
+                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" .value="${sizeOptionToString(this.previewSize!)}" .options="${screenSizes.map((size) => size.value)}" style="min-width: 220px;"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = screenSizes.find((size) => size.value == event.detail.value)?.key; }}"
                             ></or-mwc-input>
                             <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="Width" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }}"
