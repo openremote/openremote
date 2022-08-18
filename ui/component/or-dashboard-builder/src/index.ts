@@ -17,6 +17,7 @@ import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import { OrMwcTabItem } from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs"; //nosonar
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 // language=CSS
 const styling = css`
@@ -474,6 +475,7 @@ export class OrDashboardBuilder extends LitElement {
                     this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);
                     this.dashboards[this.dashboards?.indexOf(this.selectedDashboard)] = this.selectedDashboard;
                     this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
+                    showSnackbar(undefined, ("Saved Dashboard succesfully!"));
                 }
                 this.isLoading = false;
             })

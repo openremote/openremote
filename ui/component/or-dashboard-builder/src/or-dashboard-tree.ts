@@ -10,9 +10,15 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu"; //nosonar
 import {dashboardAccessToString, DashboardSizeOption} from ".";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 //language=css
 const treeStyling = css`
+    #header-btns {
+        display: flex;
+        flex-direction: row;
+        padding-right: 5px;
+    }
 `;
 
 @customElement("or-dashboard-tree")
@@ -130,15 +136,19 @@ export class OrDashboardTree extends LitElement {
                     <span id="title">Dashboards</span>
                 </div>
                 ${this.showControls ? html`
-                    <div>
-                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;" @or-mwc-input-changed="${() => { if(this.selected != null) { this.deleteDashboard(this.selected); }}}"></or-mwc-input>
+                    <div id="header-btns">
+                        ${this.selected != null ? html`
+                            <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => { if(this.selected != null) {
+                                showOkCancelDialog('Are you sure?', ('This will permanently delete ' + this.selected.displayName) + '.', 'Delete').then(() => { this.deleteDashboard(this.selected!); });
+                            }}}"></or-mwc-input>
+                        ` : undefined}
                         <span style="--or-icon-fill: black">
                             ${getContentWithMenuTemplate(
-                                html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" style="margin-left: -4px; --or-icon-fill: white;"></or-mwc-input>`,
-                                menuItems, "monitor", (value: string | string[]) => {
-                                    const size: DashboardSizeOption = +value;
-                                    this.createDashboard(size);
-                                }
+                                    html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" style="--or-icon-fill: white;"></or-mwc-input>`,
+                                    menuItems, "monitor", (value: string | string[]) => {
+                                        const size: DashboardSizeOption = +value;
+                                        this.createDashboard(size);
+                                    }
                             )}                        
                         </span>
                     </div>
