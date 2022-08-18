@@ -343,16 +343,20 @@ export class OrDashboardBuilder extends LitElement {
         console.log(changedProperties);
         this.isLoading = (this.selectedDashboard == undefined);
         this.isInitializing = (this.selectedDashboard == undefined);
-
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
+        // On any update (except widget selection), check whether changed have been made.
+        if(!(changedProperties.size == 1 && changedProperties.has('selectedWidget'))) {
+            this.hasChanged = (JSON.stringify(this.selectedDashboard) != this.initialDashboardJSON || JSON.stringify(this.currentTemplate) != this.initialTemplateJSON);
+        }
+
+        // Support for realm switching
         if(changedProperties.has("realm")) {
             this.updateDashboards(this.realm);
         }
 
         // Any update on the dashboard
         if(changedProperties.has("selectedDashboard")) {
-            this.hasChanged = (JSON.stringify(this.selectedDashboard) != this.initialDashboardJSON || JSON.stringify(this.currentTemplate) != this.initialTemplateJSON);
             this.selectedWidget = undefined;
             if(this.selectedDashboard != null) {
 
@@ -373,7 +377,6 @@ export class OrDashboardBuilder extends LitElement {
 
         // Update on the Grid and its widget
         if(changedProperties.has("currentTemplate")) {
-            this.hasChanged = !(JSON.stringify(this.selectedDashboard) == this.initialDashboardJSON || JSON.stringify(this.currentTemplate) == this.initialTemplateJSON);
             if(this.selectedDashboard != null) {
                 this.selectedDashboard.template = this.currentTemplate;
             }
@@ -464,8 +467,6 @@ export class OrDashboardBuilder extends LitElement {
         if(this.selectedDashboard != null) {
             this.isLoading = true;
 
-            console.log(this.selectedDashboard);
-
             // Saving object into the database
             manager.rest.api.DashboardResource.update(this.selectedDashboard).then(() => {
                 if(this.dashboards != null && this.selectedDashboard != null) {
@@ -527,7 +528,7 @@ export class OrDashboardBuilder extends LitElement {
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="save-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="Save" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
+                                        <or-mwc-input id="save-btn" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="Save" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
                                         <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="eye" label="View" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
                                     </div>
                                 </div>
