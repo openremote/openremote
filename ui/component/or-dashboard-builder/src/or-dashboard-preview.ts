@@ -182,6 +182,9 @@ export class OrDashboardPreview extends LitElement {
         newValue: DashboardTemplate
     }
 
+    @state() // Records time a user is dragging
+    protected latestDragWidgetStart?: Date;
+
     @state()
     protected activePreset?: DashboardScreenPreset;
 
@@ -393,6 +396,12 @@ export class OrDashboardPreview extends LitElement {
                     this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
                 }
             });
+            this.grid.on('resizestart', (_event: Event, el: any) => {
+                this.latestDragWidgetStart = new Date();
+            });
+            this.grid.on('resizestop', (_event: Event, el: any) => {
+                setTimeout(() => {  this.latestDragWidgetStart = undefined; }, 200);
+            });
         }
     }
 
@@ -440,11 +449,11 @@ export class OrDashboardPreview extends LitElement {
         })
     }
 
-    onGridItemClick(gridItem: DashboardGridItem) {
-        if(!this.grid?.opts.staticGrid) {
-            if(this.selectedWidget?.gridItem?.id == gridItem.id) {
+    onGridItemClick(gridItem: DashboardGridItem | undefined) {
+        if(!this.latestDragWidgetStart && !this.grid?.opts.staticGrid) {
+            if(!gridItem) {
                 this.selectedWidget = undefined;
-            } else {
+            } else if(this.selectedWidget?.gridItem?.id != gridItem.id) {
                 this.selectedWidget = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
             }
         }
@@ -468,7 +477,7 @@ export class OrDashboardPreview extends LitElement {
             screenSizes.push({key: opt, value: sizeOptionToString(opt)});
         })
         return html`
-                <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selectedWidget = undefined; }}}">
+                <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
                     ${this.editMode ? html`
                         <div id="view-options">
                             <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
@@ -500,12 +509,15 @@ export class OrDashboardPreview extends LitElement {
                             ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                                 <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
                             ` : undefined}
-                            <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}" style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;">
+                            <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}"
+                                 @click="${(ev: MouseEvent) => { (ev.composedPath()[0] as HTMLElement).id == 'gridElement' ? this.onGridItemClick(undefined) : undefined; }}"
+                                 style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;"
+                            >
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
                                     ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
                                         return html`
-                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem!); }}">
+                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
                                                 <div class="grid-stack-item-content">
                                                     ${until(this.getWidgetContent(widget).then((content) => {
                                                         return content;
