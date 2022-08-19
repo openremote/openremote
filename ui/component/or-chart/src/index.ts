@@ -855,7 +855,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     _openDialog() {
         const dialog = showDialog(new OrAttributePicker()
-            // .setShowOnlyDatapointAttrs(true) TODO: Temporarily set to false for testing purposes
+            .setShowOnlyDatapointAttrs(true)
             .setMultiSelect(true)
             .setSelectedAttributes(this._getSelectedAttributes()));
 

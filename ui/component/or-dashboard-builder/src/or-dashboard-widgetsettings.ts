@@ -230,7 +230,7 @@ export class OrDashboardWidgetsettings extends LitElement {
 
     // UI generation of all settings fields. Depending on the WidgetType it will
     // return different HTML containing different settings.
-    generateHTML(widgetType: DashboardWidgetType, widgetConfig: any): TemplateResult { //nosonar
+    generateHTML(widgetType: DashboardWidgetType, widgetConfig: any): TemplateResult {
         let htmlContent: TemplateResult;
         switch (widgetType) {
 
@@ -438,7 +438,7 @@ export class OrDashboardWidgetsettings extends LitElement {
         if(attributeRefs != null) {
             dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(true));
         } else {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi))
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(true))
         }
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
             this.setWidgetAttributes(event.detail);

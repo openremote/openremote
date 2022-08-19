@@ -8,14 +8,14 @@ import "./or-dashboard-boardsettings";
 import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
-import {ORGridStackNode} from "./or-dashboard-preview"; //nosonar
+import {ORGridStackNode} from "./or-dashboard-preview";
 import {Dashboard, DashboardAccess, DashboardGridItem, DashboardScalingPreset,
     DashboardScreenPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor5 } from "@openremote/core";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import { OrMwcTabItem } from "@openremote/or-mwc-components/or-mwc-tabs";
-import "@openremote/or-mwc-components/or-mwc-tabs"; //nosonar
+import "@openremote/or-mwc-components/or-mwc-tabs";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 
@@ -269,12 +269,18 @@ export class OrDashboardBuilder extends LitElement {
         // Getting dashboards
         await manager.rest.api.DashboardResource.getAllRealmDashboards(realm).then((result) => {
             this.dashboards = result.data;
+        }).catch((reason) => {
+            showSnackbar(undefined, i18next.t('errorOccurred'));
+            console.error(reason);
         });
 
         // Setting dashboard if selectedId is given by parent component
         if(this.selectedId != undefined) {
             manager.rest.api.DashboardResource.get(this.selectedId).then((dashboard) => {
                 this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == dashboard.data.id; }));
+            }).catch((reason) => {
+                showSnackbar(undefined, i18next.t('errorOccurred'));
+                console.error(reason);
             });
 
             // Otherwise, just select the 1st one in the list
@@ -288,13 +294,13 @@ export class OrDashboardBuilder extends LitElement {
     /* ------------- */
 
     // On every property update
-    updated(changedProperties: Map<string, any>) { //nosonar
+    updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
         this.isLoading = (this.selectedDashboard == undefined);
         this.isInitializing = (this.selectedDashboard == undefined);
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
-        // On any update (except widget selection), check whether changed have been made.
+        // On any update (except widget selection), check whether hasChanged should be updated.
         if(!(changedProperties.size == 1 && changedProperties.has('selectedWidget'))) {
             this.hasChanged = (JSON.stringify(this.selectedDashboard) != this.initialDashboardJSON || JSON.stringify(this.currentTemplate) != this.initialTemplateJSON);
         }
@@ -330,7 +336,9 @@ export class OrDashboardBuilder extends LitElement {
                 this.selectedDashboard.template = this.currentTemplate;
             }
         }
+        // When edit/view mode gets toggled
         if(changedProperties.has("editMode")) {
+            this.selectedWidget = undefined;
             this.showDashboardTree = true;
             this.previewSize = (this.editMode ? DashboardSizeOption.MEDIUM : DashboardSizeOption.FULLSCREEN)
         }
@@ -425,10 +433,15 @@ export class OrDashboardBuilder extends LitElement {
                     this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
                     showSnackbar(undefined, i18next.t('dashboard.saveSuccessful'));
                 }
+            }).catch((reason) => {
+                console.error(reason);
+                showSnackbar(undefined, i18next.t('errorOccurred'));
+            }).finally(() => {
                 this.isLoading = false;
             })
         } else {
-            console.error("The selected dashboard could not be found..")
+            console.error("The selected dashboard could not be found..");
+            showSnackbar(undefined, i18next.t('errorOccurred'));
         }
     }
 
@@ -441,7 +454,7 @@ export class OrDashboardBuilder extends LitElement {
     protected showDashboardTree: boolean = true;
 
     // Rendering the page
-    render(): any { //nosonar
+    render(): any {
         const menuItems: ListItem[] = [
             { icon: "content-copy", text: (i18next.t("copy") + " URL"), value: "copy" },
             { icon: "open-in-new", text: i18next.t("dashboard.openInNewTab"), value: "tab" },

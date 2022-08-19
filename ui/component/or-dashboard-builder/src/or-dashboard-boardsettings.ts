@@ -79,7 +79,7 @@ export class OrDashboardBoardsettings extends LitElement {
         this.requestUpdate();
     }
 
-    protected render() { //nosonar
+    protected render() {
         if(this.dashboard?.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
             const accessOptions: {key: DashboardAccess, value: string}[] = [];

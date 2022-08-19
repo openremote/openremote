@@ -190,7 +190,7 @@ export class OrDashboardPreview extends LitElement {
 
     /* ------------------------------------------- */
 
-    updated(changedProperties: Map<string, any>) { //nosonar
+    updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
@@ -307,7 +307,7 @@ export class OrDashboardPreview extends LitElement {
     }
 
     // Main setup Grid method (often used)
-    async setupGrid(recreate: boolean, force: boolean = false) { //nosonar
+    async setupGrid(recreate: boolean, force: boolean = false) {
         let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
             console.log("Setting up a new Grid! Using recreate [" + recreate + "] and force [" + force + "].");
@@ -541,7 +541,7 @@ export class OrDashboardPreview extends LitElement {
     // or generating fake data for the widgets.
 
 
-    async getWidgetContent(widget: DashboardWidget): Promise<TemplateResult> { //nosonar
+    async getWidgetContent(widget: DashboardWidget): Promise<TemplateResult> {
         const _widget = Object.assign({}, widget);
         if(_widget.gridItem) {
             let assets: Asset[] = [];

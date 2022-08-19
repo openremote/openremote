@@ -8,7 +8,7 @@ import { Dashboard, DashboardAccess, DashboardScalingPreset, DashboardScreenPres
 import manager from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu"; //nosonar
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import {dashboardAccessToString, DashboardSizeOption} from ".";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
