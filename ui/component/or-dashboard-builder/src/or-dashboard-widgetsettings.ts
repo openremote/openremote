@@ -8,6 +8,7 @@ import {OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-a
 import {style} from './style';
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import {DefaultColor5, manager } from "@openremote/core";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -138,10 +139,10 @@ export class OrDashboardWidgetsettings extends LitElement {
             // Setting what panels are expanded, depending on WidgetType
             switch (this.selectedWidget?.widgetType) {
                 case DashboardWidgetType.LINE_CHART: {
-                    this.expandedPanels = ['Attributes', 'Display']; break;
+                    this.expandedPanels = [i18next.t('attributes'), i18next.t('display')]; break;
                 }
                 case DashboardWidgetType.KPI: {
-                    this.expandedPanels = ['Attributes', 'Display', 'Settings']; break;
+                    this.expandedPanels = [i18next.t('attributes'), i18next.t('display'), i18next.t('settings')]; break;
                 }
             }
         })
@@ -237,13 +238,13 @@ export class OrDashboardWidgetsettings extends LitElement {
                 const chartConfig = widgetConfig as ChartWidgetConfig;
                 htmlContent = html`
                     <div>
-                        ${this.generateExpandableHeader('Attributes')}
+                        ${this.generateExpandableHeader(i18next.t('attributes'))}
                     </div>
                     <div>
-                        ${this.expandedPanels.includes('Attributes') ? html`
+                        ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                             <div style="padding: 12px;">
                                 ${(chartConfig.attributeRefs == null || chartConfig.attributeRefs.length == 0) ? html`
-                                    <span>No attributes connected.</span>
+                                    <span>${i18next.t('noAttributesConnected')}</span>
                                 ` : undefined}
                                 <div id="attribute-list">
                                     ${(chartConfig.attributeRefs != null && this.loadedAssets != null) ? chartConfig.attributeRefs.map((attributeRef: AttributeRef) => {
@@ -262,29 +263,29 @@ export class OrDashboardWidgetsettings extends LitElement {
                                         ` : undefined;
                                     }) : undefined}
                                 </div>
-                                <or-mwc-input .type="${InputType.BUTTON}" label="Attribute" icon="plus" style="margin-top: 16px;" @or-mwc-input-changed="${() => this.openDialog(chartConfig.attributeRefs, true)}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('attribute')}" icon="plus" style="margin-top: 16px;" @or-mwc-input-changed="${() => this.openDialog(chartConfig.attributeRefs, true)}"></or-mwc-input>
                             </div>
                         ` : null}
                     </div>
                     <div>
-                        ${this.generateExpandableHeader('Display')}
+                        ${this.generateExpandableHeader(i18next.t('display'))}
                     </div>
                     <div>
-                        ${this.expandedPanels.includes('Display') ? html`
+                        ${this.expandedPanels.includes(i18next.t('display')) ? html`
                             <div style="padding: 24px 24px 48px 24px;">
                                 <div>
-                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" .value="${chartConfig.period}" label="Default timeframe"
+                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" .value="${chartConfig.period}" label="${i18next.t('timeframe')}"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).period = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                                 <div class="switchMwcInputContainer" style="margin-top: 18px;">
-                                    <span>Show Timestamp Controls</span>
+                                    <span>${i18next.t('dashboard.showTimestampControls')}</span>
                                     <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;" .value="${chartConfig.showTimestampControls}"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showTimestampControls = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                                 <div class="switchMwcInputContainer">
-                                    <span>Show Legend</span>
+                                    <span>${i18next.t('dashboard.showLegend')}</span>
                                     <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;" .value="${chartConfig.showLegend}"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showLegend = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
@@ -293,18 +294,18 @@ export class OrDashboardWidgetsettings extends LitElement {
                         ` : null}
                     </div>
                     <div>
-                        ${this.generateExpandableHeader('Settings')}
+                        ${this.generateExpandableHeader(i18next.t('settings'))}
                     </div>
                     <div>
-                        ${this.expandedPanels.includes('Settings') ? html`
+                        ${this.expandedPanels.includes(i18next.t('settings')) ? html`
                             <div style="padding: 24px 24px 48px 24px;">
                                 <div>
-                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${chartConfig.deltaFormat}" label="Show value as"
+                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${chartConfig.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).deltaFormat = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                                 <div style="margin-top: 18px;">
-                                    <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${chartConfig.decimals}" label="Decimals"
+                                    <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${chartConfig.decimals}" label="${i18next.t('decimals')}"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).decimals = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
@@ -319,12 +320,11 @@ export class OrDashboardWidgetsettings extends LitElement {
                 const kpiConfig = widgetConfig as KPIWidgetConfig;
                 htmlContent = html`
                     <div>
-                        ${this.generateExpandableHeader('Attributes')}
+                        ${this.generateExpandableHeader(i18next.t('attributes'))}
                     </div>
                     <div>
-                        ${this.expandedPanels.includes('Attributes') ? html`
+                        ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                             <div style="padding: 12px;">
-                                <!--<span>Attribute</span>-->
                                 ${(kpiConfig.attributeRefs && kpiConfig.attributeRefs.length > 0) ? html`
                                     <div id="attribute-list">
                                         <div class="attribute-list-item">
@@ -347,13 +347,13 @@ export class OrDashboardWidgetsettings extends LitElement {
                         ` : null}
                     </div>
                     <div>
-                        ${this.generateExpandableHeader('Display')}
+                        ${this.generateExpandableHeader(i18next.t('display'))}
                     </div>
                     <div>
-                        ${this.expandedPanels.includes('Display') ? html`
+                        ${this.expandedPanels.includes(i18next.t('display')) ? html`
                             <div style="padding: 24px 24px 48px 24px;">
                                 <div>
-                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" .value="${kpiConfig.period}" label="Default timeframe"
+                                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" .value="${kpiConfig.period}" label="${i18next.t('timeframe')}"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as KPIWidgetConfig).period = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
@@ -361,19 +361,21 @@ export class OrDashboardWidgetsettings extends LitElement {
                         ` : null}
                     </div>
                     <div>
-                        ${this.generateExpandableHeader('Settings')}
+                        ${this.generateExpandableHeader(i18next.t('settings'))}
                     </div>
                 `
                 break;
             }
             default: {
-                htmlContent = html`<span>Unknown error.</span>`
+                htmlContent = html`<span>${i18next.t('errorOccurred')}</span>`
             }
         }
         return html`
             ${htmlContent}
             <div id="actions" style="position: absolute; bottom: 20px; right: 20px;">
-                <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" label="Delete Component" @or-mwc-input-changed="${() => { this.deleteSelectedWidget(); }}"></or-mwc-input>
+                <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" label="${i18next.t('dashboard.deleteWidget')}" @or-mwc-input-changed="${() => {
+                    showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deleteWidgetWarning'), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteSelectedWidget(); }});
+                }}"></or-mwc-input>
             </div>
         `
     }
@@ -434,7 +436,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     openDialog(attributeRefs: AttributeRef[], multi: boolean) {
         let dialog: OrAttributePicker;
         if(attributeRefs != null) {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs)); //.setShowOnlyDatapointAttrs(true)) //.setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.dataConfig?.attributes))
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(true));
         } else {
             dialog = showDialog(new OrAttributePicker().setMultiSelect(multi))
         }

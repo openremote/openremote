@@ -155,6 +155,7 @@
   "noRuleStateAttributes": "No attributes with 'rule state' or 'agent link' configuration item found",
   "noDatapointsAttributes": "No attributes with 'store data points' or 'agent link' configuration item found",
   "noAttributesToShow": "No attributes found",
+  "noAttributesConnected": "No attributes connected.",
   "noDatapointsOrRuleStateAttributes": "No attributes with 'rule state', 'store data points', or 'agent link' configuration item found",
   "copy": "Copy",
   "paste": "Paste",
@@ -532,6 +533,11 @@
     "presetSize": "Preview Size",
     "renderingGrid": "Rendering Grid...",
     "deviceNotSupported": "This dashboard does not support your device.",
-    "deletePermanentWarning": "This will delete {{dashboard}} permanently."
+    "deletePermanentWarning": "This will delete {{dashboard}} permanently.",
+    "deleteWidgetWarning": "This will remove the widget from your board, and be permanently deleted after saving.",
+    "showTimestampControls": "Show Timestamp controls",
+    "showLegend": "Show legend",
+    "showValueAs": "Show value as",
+    "deleteWidget": "Delete Widget"
   }
 }
