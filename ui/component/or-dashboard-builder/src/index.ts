@@ -266,6 +266,7 @@ export class OrDashboardBuilder extends LitElement {
     }
 
     async updateDashboards(realm: string) {
+
         // Getting dashboards
         await manager.rest.api.DashboardResource.getAllRealmDashboards(realm).then((result) => {
             this.dashboards = result.data;
@@ -276,15 +277,10 @@ export class OrDashboardBuilder extends LitElement {
 
         // Setting dashboard if selectedId is given by parent component
         if(this.selectedId != undefined) {
-            manager.rest.api.DashboardResource.get(this.selectedId).then((dashboard) => {
-                this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == dashboard.data.id; }));
-            }).catch((reason) => {
-                showSnackbar(undefined, i18next.t('errorOccurred'));
-                console.error(reason);
-            });
-
-            // Otherwise, just select the 1st one in the list
-        } else {
+            this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == this.selectedId; }));
+        }
+        // Otherwise, just select the 1st one in the list
+        else {
             if(this.dashboards != null) {
                 this.selectedDashboard = Object.assign({}, this.dashboards[0]);
             }
@@ -306,7 +302,7 @@ export class OrDashboardBuilder extends LitElement {
         }
 
         // Support for realm switching
-        if(changedProperties.has("realm")) {
+        if(changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.updateDashboards(this.realm);
         }
 
@@ -395,6 +391,12 @@ export class OrDashboardBuilder extends LitElement {
 
     selectDashboard(dashboard: Dashboard) {
         if(this.dashboards != null) {
+            if(this.selectedDashboard && this.initialDashboardJSON) {
+                const indexOf = this.dashboards.indexOf(this.selectedDashboard);
+                if(indexOf) {
+                    this.dashboards[indexOf] = JSON.parse(this.initialDashboardJSON) as Dashboard;
+                }
+            }
             this.selectedDashboard = this.dashboards.find((x) => { return x.id == dashboard.id; });
             this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
             this.initialTemplateJSON = JSON.stringify(this.selectedDashboard?.template);
@@ -465,7 +467,7 @@ export class OrDashboardBuilder extends LitElement {
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${this.showDashboardTree ? html`
-                    <or-dashboard-tree id="tree" .realm="${this.realm}" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}"
+                    <or-dashboard-tree id="tree" .realm="${this.realm}" .hasChanged="${this.hasChanged}" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}"
                                        @created="${(event: CustomEvent) => { this.previewSize = event.detail.size; }}"
                                        @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}"
                                        @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"

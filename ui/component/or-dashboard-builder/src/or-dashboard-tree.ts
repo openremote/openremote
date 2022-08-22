@@ -12,6 +12,7 @@ import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc
 import {dashboardAccessToString, DashboardSizeOption} from ".";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
+import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 
 //language=css
 const treeStyling = css`
@@ -20,6 +21,10 @@ const treeStyling = css`
         flex-direction: row;
         padding-right: 5px;
     }
+    .node-container {
+        align-items: center;
+        padding-left: 10px;
+    }
 `;
 
 @customElement("or-dashboard-tree")
@@ -27,7 +32,7 @@ export class OrDashboardTree extends LitElement {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
-        return [style, treeStyling];
+        return [style, treeStyling, OrAssetTreeStyle];
     }
 
     @property()
@@ -36,11 +41,16 @@ export class OrDashboardTree extends LitElement {
     @property()
     private dashboards: Dashboard[] | undefined;
 
-    @property()
+    @property({hasChanged: (oldVal, val): boolean => {
+        return JSON.stringify(oldVal) != JSON.stringify(val);
+    }})
     private selected: Dashboard | undefined;
 
     @property()
-    public showControls: boolean = true;
+    protected hasChanged: boolean = false;
+
+    @property()
+    protected showControls: boolean = true;
 
 
     /* --------------- */
@@ -99,8 +109,12 @@ export class OrDashboardTree extends LitElement {
         }))
     }
 
-    private selectDashboard(id: string) {
-        this.selected = this.dashboards?.find((dashboard) => { return dashboard.id == id; });
+    private selectDashboard(id: string | Dashboard) {
+        if(typeof id == 'string') {
+            this.selected = this.dashboards?.find((dashboard) => { return dashboard.id == id; });
+        } else {
+            this.selected = id;
+        }
     }
 
     private deleteDashboard(dashboard: Dashboard) {
@@ -161,7 +175,29 @@ export class OrDashboardTree extends LitElement {
                         return (items != null && items.length > 0) ? html`
                             <div style="padding: 8px 0;">
                                 <span style="font-weight: 500; padding-left: 8px; color: #000000;">${dashboardAccessToString(groups[index])}</span>
-                                <or-mwc-list .listItems="${items}" .values="${this.selected?.id}" @or-mwc-list-changed="${(event: CustomEvent) => { if(event.detail.length == 1) { this.selectDashboard(event.detail[0].value); }}}"></or-mwc-list>
+                                <div id="list-container">
+                                    <ol id="list">
+                                        ${items.map((listItem: ListItem) => {
+                                            return html`
+                                                <li ?data-selected="${listItem.value == this.selected?.id}" @click="${(evt: MouseEvent) => {
+                                                    if(listItem.value != this.selected?.id) {
+                                                        if(this.hasChanged) {
+                                                            showOkCancelDialog(i18next.t('areYouSure'), i18next.t('confirmContinueDashboardModified'), i18next.t('discard')).then((ok: boolean) => {
+                                                                if(ok) { this.selectDashboard(listItem.value); }
+                                                            });
+                                                        } else {
+                                                            this.selectDashboard(listItem.value);
+                                                        }
+                                                    }
+                                                }}">
+                                                    <div class="node-container">
+                                                        <span class="node-name">${listItem.text} </span>
+                                                    </div>
+                                                </li>
+                                            `
+                                        })}
+                                    </ol>
+                                </div>
                             </div>
                         ` : undefined
                     })}
