@@ -148,7 +148,7 @@ export class OrDashboardBoardsettings extends LitElement {
                                 return html`
                                     <div style="margin-bottom: 24px;">
                                         <div class="label">
-                                            ${html`<span>${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", ("<b>" + i18next.t("dashboard.size." + preset.displayName?.toLowerCase()) + "</b>")))}</span>`}
+                                            ${html`<span>${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", ("<b>" + preset.displayName + "</b>")))}</span>`}
                                         </div>
                                         <or-mwc-input class="displayInput" type="${InputType.SELECT}" outlined style="width: 250px;"
                                                       .options="${scalingPresets.map((x) => x.value)}"
@@ -172,7 +172,7 @@ export class OrDashboardBoardsettings extends LitElement {
                             ${screenPresets.map((preset) => {
                                 return html`
                                     <div style="margin-bottom: 12px; display: flex; align-items: center;">
-                                        <span style="min-width: 140px;">${i18next.t("dashboard.size." + preset.displayName?.toLowerCase())} ${i18next.t('screen')}</span>
+                                        <span style="min-width: 140px;">${preset.displayName} ${i18next.t('screen')}</span>
                                         <span style="margin-right: 8px;">${(screenPresets.indexOf(preset) == 0) ? '>' : '<'}</span>
                                         <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${(screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}" .disabled="${true}"></or-mwc-input>
                                         <span style="margin-left: 8px;">px</span>

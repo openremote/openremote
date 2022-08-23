@@ -9,7 +9,7 @@ import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
 import "@openremote/or-dashboard-builder";
-import {Dashboard, DashboardTemplate, DashboardWidgetType } from "@openremote/model";
+import {ClientRole, Dashboard, DashboardTemplate, DashboardWidgetType } from "@openremote/model";
 import {getInsightsRoute} from "../routes";
 
 export interface PageInsightsConfig {
@@ -152,7 +152,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
         } as DashboardTemplate;*/
         return html`
             <div style="width: 100%;">
-                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}" .realm="${manager.displayRealm}"
+                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}" .realm="${manager.displayRealm}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
                                       @selected="${(event: CustomEvent) => { console.log(event); this._dashboardId = (event.detail as Dashboard)?.id }}"
                                       @editToggle="${(event: CustomEvent) => { console.log(event); this._editMode = event.detail; this._updateRoute(true); }}"
                 ></or-dashboard-builder>

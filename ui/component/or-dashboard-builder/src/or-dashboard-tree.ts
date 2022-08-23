@@ -4,7 +4,7 @@ import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
 import 'gridstack/dist/h5/gridstack-dd-native';
-import { Dashboard, DashboardAccess, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
+import {ClientRole, Dashboard, DashboardAccess, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
 import manager from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-menu";
@@ -12,6 +12,7 @@ import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc
 import {dashboardAccessToString, DashboardSizeOption} from ".";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 
 //language=css
@@ -65,9 +66,13 @@ export class OrDashboardTree extends LitElement {
     }
 
     private async getAllDashboards() {
-        return manager.rest.api.DashboardResource.getAllRealmDashboards(this.realm!).then((result) => {
-            this.dashboards = result.data;
-        });
+        return manager.rest.api.DashboardResource.getAllRealmDashboards(this.realm!)
+            .then((result) => {
+                this.dashboards = result.data;
+            }).catch((reason) => {
+                console.error(reason);
+                showSnackbar(undefined, i18next.t('errorOccurred'));
+            });
     }
 
     updated(changedProperties: Map<string, any>) {
@@ -106,7 +111,10 @@ export class OrDashboardTree extends LitElement {
                 // Select the item that was created
                 this.selected = this.dashboards?.find((x) => { return x.id == response.data.id; });
             }
-        }))
+        })).catch((reason) => {
+            console.error(reason);
+            showSnackbar(undefined, i18next.t('errorOccurred'));
+        })
     }
 
     private selectDashboard(id: string | Dashboard) {
@@ -119,10 +127,14 @@ export class OrDashboardTree extends LitElement {
 
     private deleteDashboard(dashboard: Dashboard) {
         if(dashboard.id != null) {
-            manager.rest.api.DashboardResource.delete({dashboardId: [dashboard.id]}).then((response) => {
-                if(response.status == 204) {
-                    this.getAllDashboards();
-                }
+            manager.rest.api.DashboardResource.delete({dashboardId: [dashboard.id]})
+                .then((response) => {
+                    if(response.status == 204) {
+                        this.getAllDashboards();
+                    }
+                }).catch((reason) => {
+                    console.error(reason);
+                    showSnackbar(undefined, i18next.t('errorOccurred'));
             })
         }
     }

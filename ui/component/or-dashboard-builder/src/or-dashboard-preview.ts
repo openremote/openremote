@@ -27,6 +27,7 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {until} from "lit/directives/until.js";
 import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -156,6 +157,9 @@ export class OrDashboardPreview extends LitElement {
     protected editMode: boolean = false;
 
     @property()
+    protected readonly: boolean = true;
+
+    @property()
     protected previewWidth?: string;
 
     @property()
@@ -199,7 +203,9 @@ export class OrDashboardPreview extends LitElement {
 
         // Setup template (list of widgets and properties)
         if(!this.template && this.dashboardId) {
-            manager.rest.api.DashboardResource.get(this.dashboardId).then((response) => { this.template = response.data.template!; });
+            manager.rest.api.DashboardResource.get(this.dashboardId)
+                .then((response) => { this.template = response.data.template!; })
+                .catch((reason) => { console.error(reason); showSnackbar(undefined, i18next.t('errorOccurred')); });
         } else if(this.template == null && this.dashboardId == null) {
             console.error("Neither the template nor dashboardId attributes have been specified!");
         }
@@ -564,14 +570,18 @@ export class OrDashboardPreview extends LitElement {
             if(!this.editMode || _widget.widgetType == DashboardWidgetType.KPI) {
                 const response = await manager.rest.api.AssetResource.queryAssets({
                     ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
-                });
-                console.warn("Getting attribute data from database!");
-                assets = response.data;
-                attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
-                    const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
-                    const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                    return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-                }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                }).catch((reason => {
+                    console.error(reason);
+                    showSnackbar(undefined, i18next.t('errorOccurred'));
+                }));
+                if(response) {
+                    assets = response.data;
+                    attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
+                        const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
+                        const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
+                        return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
+                    }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                }
             }
 
             switch (_widget.widgetType) {

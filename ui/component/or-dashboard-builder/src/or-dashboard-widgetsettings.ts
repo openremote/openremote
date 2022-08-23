@@ -8,6 +8,7 @@ import {OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-a
 import {style} from './style';
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import {DefaultColor5, manager } from "@openremote/core";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 
@@ -212,6 +213,9 @@ export class OrDashboardWidgetsettings extends LitElement {
                 ids: this.selectedWidget?.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
             }).then(response => {
                 this.loadedAssets = response.data;
+            }).catch((reason) => {
+                console.error(reason);
+                showSnackbar(undefined, i18next.t('errorOccurred'));
             })
         }
     }
