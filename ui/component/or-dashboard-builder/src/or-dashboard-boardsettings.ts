@@ -28,7 +28,7 @@ export class OrDashboardBoardsettings extends LitElement {
     protected readonly showPerms?: boolean;
 
     @state()
-    protected expandedPanels: string[] = ["Permissions", "Layout", "Display", "Breakpoints"];
+    protected expandedPanels: string[] = [i18next.t('permissions'), i18next.t('layout'), i18next.t('display'), "Breakpoints"];
 
     constructor() {
         super();
