@@ -10,7 +10,7 @@
             "items": [
               {
                 "sun": {
-                  "position": "TWILIGHT_HORIZON",
+                  "position": "TWILIGHT_MORNING_HORIZON",
                   "location": {
                     "type": "Point",
                     "coordinates": [0,0]

@@ -25,6 +25,8 @@ import org.openremote.model.geo.GeoJSONPoint;
 public class SunPositionTrigger {
 
     public static final String TWILIGHT_PREFIX = "TWILIGHT_";
+    public static final String MORNING_TWILIGHT_PREFIX = "TWILIGHT_MORNING_";
+    public static final String EVENING_TWILIGHT_PREFIX = "TWILIGHT_EVENING_";
 
     /**
      * The astronomical position of the sun
@@ -32,15 +34,24 @@ public class SunPositionTrigger {
     public enum Position {
         SUNRISE,
         SUNSET,
-        TWILIGHT_VISUAL,
-        TWILIGHT_VISUAL_LOWER,
-        TWILIGHT_HORIZON,
-        TWILIGHT_CIVIL,
-        TWILIGHT_NAUTICAL,
-        TWILIGHT_ASTRONOMICAL,
-        TWILIGHT_GOLDEN_HOUR,
-        TWILIGHT_BLUE_HOUR,
-        TWILIGHT_NIGHT_HOUR
+        TWILIGHT_MORNING_VISUAL,
+        TWILIGHT_MORNING_VISUAL_LOWER,
+        TWILIGHT_MORNING_HORIZON,
+        TWILIGHT_MORNING_CIVIL,
+        TWILIGHT_MORNING_NAUTICAL,
+        TWILIGHT_MORNING_ASTRONOMICAL,
+        TWILIGHT_MORNING_GOLDEN_HOUR,
+        TWILIGHT_MORNING_BLUE_HOUR,
+        TWILIGHT_MORNING_NIGHT_HOUR,
+        TWILIGHT_EVENING_VISUAL,
+        TWILIGHT_EVENING_VISUAL_LOWER,
+        TWILIGHT_EVENING_HORIZON,
+        TWILIGHT_EVENING_CIVIL,
+        TWILIGHT_EVENING_NAUTICAL,
+        TWILIGHT_EVENING_ASTRONOMICAL,
+        TWILIGHT_EVENING_GOLDEN_HOUR,
+        TWILIGHT_EVENING_BLUE_HOUR,
+        TWILIGHT_EVENING_NIGHT_HOUR,
     }
 
     Position position;
