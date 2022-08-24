@@ -24,6 +24,9 @@ export class OrDashboardBoardsettings extends LitElement {
     @property()
     protected readonly dashboard?: Dashboard;
 
+    @property()
+    protected readonly showPerms?: boolean;
+
     @state()
     protected expandedPanels: string[] = ["Permissions", "Layout", "Display", "Breakpoints"];
 
@@ -92,9 +95,9 @@ export class OrDashboardBoardsettings extends LitElement {
             });
             return html`
                 <!-------------------->
-                <div>${this.generateExpandableHeader(i18next.t('permissions'))}</div>
+                <div>${this.showPerms ? this.generateExpandableHeader(i18next.t('permissions')) : undefined}</div>
                 <div>
-                    ${this.expandedPanels.includes(i18next.t('permissions')) ? html`
+                    ${this.showPerms && this.expandedPanels.includes(i18next.t('permissions')) ? html`
                         <div style="padding: 24px 24px 24px 24px;">
                             <div style="margin-bottom: 24px;">
                                 <div class="label">
