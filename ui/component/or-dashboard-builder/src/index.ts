@@ -5,19 +5,28 @@ import "./or-dashboard-browser";
 import "./or-dashboard-preview";
 import "./or-dashboard-widgetsettings";
 import "./or-dashboard-boardsettings";
-import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
+import {InputType, OrInputChangedEvent} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
 import {ORGridStackNode} from "./or-dashboard-preview";
-import {ClientRole, Dashboard, DashboardAccess, DashboardGridItem, DashboardScalingPreset,
-    DashboardScreenPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
+import {
+    ClientRole,
+    Dashboard,
+    DashboardAccess,
+    DashboardGridItem,
+    DashboardScalingPreset,
+    DashboardScreenPreset,
+    DashboardTemplate,
+    DashboardWidget,
+    DashboardWidgetType
+} from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor5} from "@openremote/core";
-import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
-import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
-import { OrMwcTabItem } from "@openremote/or-mwc-components/or-mwc-tabs";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { i18next } from "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 
 // language=CSS
 const styling = css`
@@ -322,11 +331,8 @@ export class OrDashboardBuilder extends LitElement {
                     this.selectedDashboard.template.widgets = [];
                 }
             } else if(this.selectedDashboard == undefined && this.dashboards != null) {
-                if(this.selectedId != null) {
-                    this.selectedDashboard = this.dashboards.find((x) => { return x.id == this.selectedId; })
-                } else {
-                    this.selectedDashboard = this.dashboards[0];
-                }
+                const found = (this.selectedId != null ? (this.dashboards.find((x) => { return x.id == this.selectedId; })) : undefined); // selectedId if available...
+                this.selectedDashboard = (found != null ? found : this.dashboards[0]); // else the 1st dashboard in the list
             }
             this.currentTemplate = this.selectedDashboard?.template;
             this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedDashboard }))
