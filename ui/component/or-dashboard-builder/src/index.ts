@@ -324,13 +324,7 @@ export class OrDashboardBuilder extends LitElement {
         // Any update on the dashboard
         if(changedProperties.has("selectedDashboard")) {
             this.selectedWidget = undefined;
-            if(this.selectedDashboard != null) {
-
-                // Set widgets to an empty array if null for GridStack to work.
-                if(this.selectedDashboard.template != null && this.selectedDashboard.template.widgets == null) {
-                    this.selectedDashboard.template.widgets = [];
-                }
-            } else if(this.selectedDashboard == undefined && this.dashboards != null) {
+            if(this.selectedDashboard == undefined && this.dashboards != null) {
                 const found = (this.selectedId != null ? (this.dashboards.find((x) => { return x.id == this.selectedId; })) : undefined); // selectedId if available...
                 this.selectedDashboard = (found != null ? found : this.dashboards[0]); // else the 1st dashboard in the list
             }

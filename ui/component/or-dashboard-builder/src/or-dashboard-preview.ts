@@ -426,7 +426,10 @@ export class OrDashboardPreview extends LitElement {
         } as DashboardWidget;
 
         const tempTemplate = JSON.parse(JSON.stringify(this.template)) as DashboardTemplate;
-        tempTemplate?.widgets?.push(widget);
+        if(tempTemplate.widgets == undefined) {
+            tempTemplate.widgets = [];
+        }
+        tempTemplate.widgets?.push(widget);
         this.template = tempTemplate;
         this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
         return widget;
