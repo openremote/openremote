@@ -9,8 +9,9 @@ import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
 import "@openremote/or-dashboard-builder";
-import {ClientRole, Dashboard, DashboardTemplate, DashboardWidgetType } from "@openremote/model";
+import {ClientRole, Dashboard} from "@openremote/model";
 import {getInsightsRoute} from "../routes";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
@@ -47,52 +48,6 @@ export class PageInsights extends Page<AppStateKeyed>  {
                 z-index: 0;
                 background: transparent;
             }
-            
-            /*.hideMobile {
-                display: none;
-            }
-
-            #wrapper {
-                height: 100%;
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                overflow: auto;
-            }
-                
-            #title {
-                margin: 20px auto 0;
-                padding: 0;
-                font-size: 18px;
-                font-weight: bold;
-                width: 100%;
-                max-width: 1360px;
-                align-items: center;
-                display: flex;
-            }
-
-            !*or-data-viewer {
-                width: 100%;
-                max-width: 1400px;
-                margin: 0 auto;
-            }*!
-        
-            #title > or-icon {
-                margin-right: 10px;
-                margin-left: 14px;
-                --or-icon-width: 20px;
-                --or-icon-height: 20px;
-            }
-            
-            @media only screen and (min-width: 768px){
-                .hideMobile {
-                    display: flex;
-                }
-
-                #title {
-                    padding: 0 20px;
-                }
-            }*/
         `;
     }
 
@@ -107,6 +62,12 @@ export class PageInsights extends Page<AppStateKeyed>  {
 
     @property()
     private _dashboardId: string;
+
+    @state()
+    private _userId?: string;
+
+
+    /* ------------------ */
 
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
@@ -133,6 +94,13 @@ export class PageInsights extends Page<AppStateKeyed>  {
 
     constructor(store: Store<AppStateKeyed>) {
         super(store);
+        manager.rest.api.UserResource.getCurrent().then((response: any) => {
+            console.log(response);
+            this._userId = response.data.id;
+        }).catch((ex) => {
+            console.error(ex);
+            showSnackbar(undefined, i18next.t('errorOccurred'));
+        })
     }
 
     public connectedCallback() {
@@ -140,29 +108,13 @@ export class PageInsights extends Page<AppStateKeyed>  {
     }
 
     protected render(): TemplateResult | void {
-       /* const template = {
-            columns: 8,
-            maxScreenWidth: 400,
-            screenPresets: [],
-            widgets: [
-                {widgetType: DashboardWidgetType.CHART, gridItem: { id: 'item1', x: 0, y: 0, w: 2, h: 2 }},
-                {widgetType: DashboardWidgetType.CHART, gridItem: { id: 'item2', x: 5, y: 0, w: 2, h: 2 }},
-                {widgetType: DashboardWidgetType.MAP, gridItem: { id: 'item3', x: 2, y: 0, w: 3, h: 3 }},
-            ]
-        } as DashboardTemplate;*/
         return html`
             <div style="width: 100%;">
-                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}" .realm="${manager.displayRealm}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
+                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}" .realm="${manager.displayRealm}" .userId="${this._userId}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
                                       @selected="${(event: CustomEvent) => { console.log(event); this._dashboardId = (event.detail as Dashboard)?.id }}"
                                       @editToggle="${(event: CustomEvent) => { console.log(event); this._editMode = event.detail; this._updateRoute(true); }}"
                 ></or-dashboard-builder>
             </div>
-            <!--<div id="wrapper">
-                <div id="title">
-                    <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
-                </div>
-                <or-data-viewer id="data-viewer" .config="${this.config?.dataViewer}"></or-data-viewer>
-            </div>-->
         `;
     }
 
@@ -174,7 +126,6 @@ export class PageInsights extends Page<AppStateKeyed>  {
     }
 
     protected _updateRoute(silent: boolean = true) {
-        console.log("Updating the URL Route!");
         router.navigate(getInsightsRoute(this._editMode, this._dashboardId), {
             callHooks: !silent,
             callHandler: !silent

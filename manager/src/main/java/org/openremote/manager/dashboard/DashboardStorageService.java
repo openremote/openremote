@@ -2,7 +2,6 @@ package org.openremote.manager.dashboard;
 
 import com.google.gson.Gson;
 import org.apache.camel.builder.RouteBuilder;
-import org.bouncycastle.math.ec.ScaleYNegateXPointMap;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -19,10 +18,14 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.ws.rs.WebApplicationException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 public class DashboardStorageService extends RouteBuilder implements ContainerService {
 
@@ -138,13 +141,13 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             if(d != null) {
                 if(d.getEditAccess() == DashboardAccess.PRIVATE) {
                     if(!(d.getOwnerId().equals(userId))) {
-                        throw new IllegalArgumentException("You are not allowed to edit this dashboard!");
+                        throw new WebApplicationException("You are not allowed to edit this dashboard!", FORBIDDEN);
                     }
                 }
                 dashboard.setVersion(d.getVersion()); // Always forcing to the correct version, no matter what.
                 return em.merge(dashboard);
             } else {
-                throw new IllegalArgumentException("This dashboard does not exist!");
+                throw new WebApplicationException("This dashboard does not exist!", NOT_FOUND);
             }
         });
     }

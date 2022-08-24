@@ -502,6 +502,7 @@
   "screen": "Screen",
   "noDashboardSelected": "Please select a Dashboard on the left.",
   "noDashboardFound": "No Dashboard could be found.",
+  "noDashboardWriteAccess": "You don't have access to edit this dashboard.",
   "confirmContinueDashboardModified": "Dashboard has been edited, do you want to discard the changes?",
   "dashboards": "Dashboards",
   "dashboard": {

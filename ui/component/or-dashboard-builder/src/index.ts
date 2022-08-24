@@ -11,7 +11,7 @@ import {style} from "./style";
 import {ORGridStackNode} from "./or-dashboard-preview";
 import {ClientRole, Dashboard, DashboardAccess, DashboardGridItem, DashboardScalingPreset,
     DashboardScreenPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
-import manager, {DefaultColor3, DefaultColor5 } from "@openremote/core";
+import manager, {DefaultColor3, DefaultColor5} from "@openremote/core";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import { OrMwcTabItem } from "@openremote/or-mwc-components/or-mwc-tabs";
@@ -212,6 +212,9 @@ export class OrDashboardBuilder extends LitElement {
 
     @property() // Originally just manager.displayRealm
     protected realm: string | undefined;
+
+    @property() // REQUIRED userId
+    protected userId: string | undefined;
 
     @property()
     protected readonly: boolean = true;
@@ -453,6 +456,12 @@ export class OrDashboardBuilder extends LitElement {
     protected _isReadonly(): boolean {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_INSIGHTS);
     }
+    protected _hasEditAccess(): boolean {
+        return this.userId != null && (this.selectedDashboard?.editAccess == DashboardAccess.PRIVATE ? this.selectedDashboard?.ownerId == this.userId : true)
+    }
+    protected _hasViewAccess(): boolean {
+        return this.userId != null && (this.selectedDashboard?.viewAccess == DashboardAccess.PRIVATE ? this.selectedDashboard?.ownerId == this.userId : true)
+    }
 
     /* ----------------- */
 
@@ -500,8 +509,8 @@ export class OrDashboardBuilder extends LitElement {
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="save-btn" ?hidden="${this._isReadonly()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
-                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
+                                        <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
+                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
                                     </div>
                                 </div>
                             </div>
@@ -519,7 +528,7 @@ export class OrDashboardBuilder extends LitElement {
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
+                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>
                                 </div>
                             </div>
@@ -527,29 +536,28 @@ export class OrDashboardBuilder extends LitElement {
                     `}
                     <div id="content">
                         <div id="container" style="display: table;">
-                            ${(this.editMode && this._isReadonly()) ? html`
+                            ${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? html`
                                 <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                                    <span>${i18next.t('errorOccurred')}.</span>
+                                    <span>${!this._hasEditAccess() ? i18next.t('noDashboardWriteAccess') : i18next.t('errorOccurred')}.</span>
                                 </div>
-                            ` : html`
-                                <div id="builder">
-                                    ${(this.selectedDashboard != null) ? html`
-                                        <or-dashboard-preview class="editor" style="background: transparent;"
+                            ` : undefined}
+                            <div id="builder" style="${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? 'display: none' : undefined}">
+                                ${(this.selectedDashboard != null) ? html`
+                                    <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .realm="${this.realm}" .template="${this.currentTemplate}"
                                                           .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}"
                                                           .previewSize="${this.previewSize}" .readonly="${this._isReadonly()}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                           @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"
                                                           @deselected="${() => { this.deselectWidget(); }}"
-                                        ></or-dashboard-preview>
-                                    ` : html`
+                                    ></or-dashboard-preview>
+                                ` : html`
                                         <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
                                             <span>${i18next.t('noDashboardSelected')}</span>
                                         </div>
                                     `}
-                                </div>
-                            `}
-                            ${(this.editMode && !this._isReadonly()) ? html`
+                            </div>
+                            ${(this.editMode && !this._isReadonly() && this._hasEditAccess()) ? html`
                                 <div id="sidebar">
                                     ${this.selectedWidget != null ? html`
                                         <div>
@@ -558,7 +566,7 @@ export class OrDashboardBuilder extends LitElement {
                                                     <span id="title">${this.selectedWidget?.displayName}:</span>
                                                 </div>
                                                 <div>
-                                                    <or-mwc-input type="${InputType.BUTTON}" icon="close" style="" @or-mwc-input-changed="${() => { this.deselectWidget(); }}"></or-mwc-input>
+                                                    <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => { this.deselectWidget(); }}"></or-mwc-input>
                                                 </div>
                                             </div>
                                             <div id="content" style="display: block;">

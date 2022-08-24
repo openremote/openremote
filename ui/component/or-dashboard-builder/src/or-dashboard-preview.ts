@@ -281,7 +281,7 @@ export class OrDashboardPreview extends LitElement {
         // Switching edit/view mode needs recreation of Grid
         if(changedProperties.has("editMode")) {
             console.log("Setting up Grid.. [#4]");
-            this.setupGrid(true, false);
+            this.setupGrid(true, true);
         }
 
         // Adjusting previewSize when manual pixels control changes
