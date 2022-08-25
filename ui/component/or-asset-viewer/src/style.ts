@@ -4,7 +4,7 @@ import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor
 // language=CSS
 export const panelStyles = css`
     .panelContainer {
-        flex: 1 1 100%;
+        flex: 1 1 auto;
         box-sizing: border-box;
         min-width: 400px;
     }
@@ -14,7 +14,7 @@ export const panelStyles = css`
         border: 1px solid #e5e5e5;
         border-radius: 5px;
         position: relative;
-        margin: 10px 0;
+        margin: 0 0 10px 0;
     }
 
     .panel-content-wrapper {
@@ -47,20 +47,13 @@ export const panelStyles = css`
         box-sizing: border-box;
     }
 
-    .panel-content > :first-child {
-        margin-top: 0;
-    }
-
-    .panel-content > :last-child {
-        margin-bottom: 0;
-    }
-
     @media screen and (max-width: 767px) {
         .panel {
             border-radius: 0;
             border-right: none;
             border-left: none;
             flex-basis: 100%;
+            min-width: 360px;
         }
     }
     
@@ -271,32 +264,6 @@ export const style = css`
     .multipleAssetsView > *:first-child {
         margin: 30px;
     }
-    
-    @media screen and (max-width: 1200px) {
-        #name-input {
-            width: 150px;
-        }
-
-        #chart-panel {
-            grid-row-start: 1;
-        }
-
-        #attributes-panel {
-            grid-row-start: 2;
-        }
-
-        #location-panel {
-            grid-row-start: 3;
-        }
-
-        #history-panel {
-            grid-row-start: 4;
-        }
-
-        .tabletHidden {
-            display: none;
-        }
-    }
 
     @media screen and (max-width: 767px) {
         #wrapper {
@@ -314,8 +281,7 @@ export const style = css`
         }
         
         #asset-header {
-            grid-area: auto!important;
-            padding: 15px 15px 5px;
+            padding: 15px 15px 15px;
         }
 
         #name-input {
@@ -329,21 +295,38 @@ export const style = css`
         #edit-container {
             padding: 10px 0;
         }
+
+        .panelContainer {
+            min-width: 360px;
+            padding: 0 5px;
+        }
     }
 
-    @media (min-width: 767px) {
-        .view-container {
-            flex-wrap: nowrap;
-        }
+    @media (min-width: 1130px) {
+
         .panelContainer {
             flex: 1 1 50%;
             padding: 0 5px;
         }
-        .panelContainer > :first-child{
-            margin-top:0;
+    }
+    
+    @media screen and (max-width: 1130px) {
+        #name-input {
+            width: 150px;
         }
-        .panelContainer > :last-child{
-            margin-bottom:0;
+
+        .tabletHidden {
+            display: none;
+        }
+
+        #view-container {
+            flex-direction: column;
+            flex-wrap: nowrap;
+        }
+
+        .panelContainer {
+            flex: 0 1 auto;
         }
     }
+
 `;
