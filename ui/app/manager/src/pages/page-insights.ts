@@ -95,7 +95,6 @@ export class PageInsights extends Page<AppStateKeyed>  {
     constructor(store: Store<AppStateKeyed>) {
         super(store);
         manager.rest.api.UserResource.getCurrent().then((response: any) => {
-            console.log(response);
             this._userId = response.data.id;
         }).catch((ex) => {
             console.error(ex);

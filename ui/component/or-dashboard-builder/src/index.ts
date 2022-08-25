@@ -294,12 +294,6 @@ export class OrDashboardBuilder extends LitElement {
         if(this.selectedId != undefined) {
             this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == this.selectedId; }));
         }
-        // Otherwise, just select the 1st one in the list
-        else {
-            if(this.dashboards != null) {
-                this.selectedDashboard = Object.assign({}, this.dashboards[0]);
-            }
-        }
     }
 
     /* ------------- */
@@ -307,8 +301,8 @@ export class OrDashboardBuilder extends LitElement {
     // On every property update
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
-        this.isLoading = (this.selectedDashboard == undefined);
-        this.isInitializing = (this.selectedDashboard == undefined);
+        this.isLoading = (this.dashboards == undefined);
+        this.isInitializing = (this.dashboards == undefined);
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
         // On any update (except widget selection), check whether hasChanged should be updated.
@@ -324,10 +318,6 @@ export class OrDashboardBuilder extends LitElement {
         // Any update on the dashboard
         if(changedProperties.has("selectedDashboard")) {
             this.selectedWidget = undefined;
-            if(this.selectedDashboard == undefined && this.dashboards != null) {
-                const found = (this.selectedId != null ? (this.dashboards.find((x) => { return x.id == this.selectedId; })) : undefined); // selectedId if available...
-                this.selectedDashboard = (found != null ? found : this.dashboards[0]); // else the 1st dashboard in the list
-            }
             this.currentTemplate = this.selectedDashboard?.template;
             this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedDashboard }))
         }
@@ -395,7 +385,7 @@ export class OrDashboardBuilder extends LitElement {
 
     /* --------------------- */
 
-    selectDashboard(dashboard: Dashboard) {
+    selectDashboard(dashboard: Dashboard | undefined) {
         if(this.dashboards != null) {
             if(this.selectedDashboard && this.initialDashboardJSON) {
                 const indexOf = this.dashboards.indexOf(this.selectedDashboard);
@@ -403,7 +393,7 @@ export class OrDashboardBuilder extends LitElement {
                     this.dashboards[indexOf] = JSON.parse(this.initialDashboardJSON) as Dashboard;
                 }
             }
-            this.selectedDashboard = this.dashboards.find((x) => { return x.id == dashboard.id; });
+            this.selectedDashboard = (dashboard ? this.dashboards.find((x) => { return x.id == dashboard.id; }) : undefined);
             this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
             this.initialTemplateJSON = JSON.stringify(this.selectedDashboard?.template);
         }
@@ -558,7 +548,7 @@ export class OrDashboardBuilder extends LitElement {
                                         </div>
                                     `}
                             </div>
-                            ${(this.editMode && !this._isReadonly() && this._hasEditAccess()) ? html`
+                            ${(this.selectedDashboard != null && this.editMode && !this._isReadonly() && this._hasEditAccess()) ? html`
                                 <div id="sidebar">
                                     ${this.selectedWidget != null ? html`
                                         <div>

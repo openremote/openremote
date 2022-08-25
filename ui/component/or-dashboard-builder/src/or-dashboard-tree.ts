@@ -82,10 +82,10 @@ export class OrDashboardTree extends LitElement {
         console.log(changedProperties);
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
-        if(changedProperties.has("dashboards")) {
+        if(changedProperties.has("dashboards") && changedProperties.get("dashboards") != null) {
             this.dispatchEvent(new CustomEvent("updated", { detail: this.dashboards }));
         }
-        if(changedProperties.has("selected") && this.selected != undefined) {
+        if(changedProperties.has("selected")) {
             this.dispatchEvent(new CustomEvent("select", { detail: this.selected }));
         }
     }
@@ -120,7 +120,7 @@ export class OrDashboardTree extends LitElement {
         })
     }
 
-    private selectDashboard(id: string | Dashboard) {
+    private selectDashboard(id: string | Dashboard | undefined) {
         if(typeof id == 'string') {
             this.selected = this.dashboards?.find((dashboard) => { return dashboard.id == id; });
         } else {
@@ -178,6 +178,7 @@ export class OrDashboardTree extends LitElement {
                 ${this.showControls ? html`
                     <div id="header-btns">
                         ${this.selected != null ? html`
+                            <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => { this.selectDashboard(undefined); }}"></or-mwc-input>
                             <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => { if(this.selected != null) {
                                 showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', { dashboard: this.selected.displayName }), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteDashboard(this.selected!); }});
                             }}}"></or-mwc-input>
