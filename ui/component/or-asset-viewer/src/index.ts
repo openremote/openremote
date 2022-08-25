@@ -585,7 +585,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             <style>
                #attribute-picker {
                    flex: 0;
-                   margin: 10px 0;
+                   margin: 0 0 10px 0;
                    position: unset;
                }
                
@@ -595,7 +595,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 
                 or-attribute-history {
                     width: 100%;
-                    --or-attribute-history-controls-margin: 10px 0 10px -5px;
+                    --or-attribute-history-controls-margin: 0 0 10px -5px;
                     --or-attribute-history-controls-justify-content: flex-start;
                 }
 
@@ -605,7 +605,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                    }
 
                    or-attribute-history {
-                       --or-attribute-history-controls-margin: 10px 0;
+                       --or-attribute-history-controls-margin: 0 0 10px 0;
                        --or-attribute-history-controls-justify-content: flex-end;
                        min-height: 70px;
                    }

@@ -22,6 +22,13 @@ export const panelStyles = css`
         padding: var(--internal-or-asset-viewer-panel-padding);
     }
 
+    .panel-content > :first-child {
+        margin-top: 0;
+    }
+    .panel-content > :last-child {
+        margin-bottom: 0;
+    }
+
     .panel-content {
         display: flex;
         flex-wrap: wrap;
