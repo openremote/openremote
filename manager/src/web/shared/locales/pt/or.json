@@ -237,8 +237,6 @@
   "secured": "Seguro",
   "clientSecret": "Segredo do cliente",
   "clientId": "ID do Cliente",
-  "realm": "Reino",
-  "realm_plural": "Reinos",
   "port": "Porta",
   "host": "Hostname",
   "errorOccurred": "Ocorreu um erro",

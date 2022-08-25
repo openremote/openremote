@@ -208,8 +208,6 @@
   "buttonTextConfirm": "Testo per il pulsante di azione",
   "buttonTextDecline": "Testo per il pulsante di rifiuto",
   "custom": "Attributo personalizzato",
-  "realm": "Inquilino",
-  "realm_plural": "Inquilini",
   "displayName":"Nome amico",
   "deleteRealmConfirm":"Sei sicuro di voler cancellare questo Regno??",
   "user_plural": "Utenti",
