@@ -539,6 +539,8 @@
     "showTimestampControls": "Show Timestamp controls",
     "showLegend": "Show legend",
     "showValueAs": "Show value as",
-    "deleteWidget": "Delete Widget"
+    "deleteWidget": "Delete Widget",
+    "myDashboards": "My dashboards",
+    "createdByOthers": "Created by others"
   }
 }

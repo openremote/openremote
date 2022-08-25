@@ -47,6 +47,9 @@ export class OrDashboardTree extends LitElement {
     }})
     private selected: Dashboard | undefined;
 
+    @property() // REQUIRED
+    private readonly userId?: string;
+
     @property()
     protected hasChanged: boolean = false;
 
@@ -147,15 +150,25 @@ export class OrDashboardTree extends LitElement {
             { icon: "tablet", text: i18next.t('dashboard.size.medium'), value: DashboardSizeOption.MEDIUM },
             { icon: "cellphone", text: i18next.t('dashboard.size.small'), value: DashboardSizeOption.SMALL }
         ]
-        const groups = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC];
         const dashboardItems: ListItem[][] = []
         if(this.dashboards!.length > 0) {
-            groups.forEach((group) => {
-                const foundDashboards = this.dashboards?.filter((dashboard) => { return dashboard.viewAccess == group; });
-                const items: ListItem[] = [];
-                foundDashboards?.forEach((dashboard) => { items.push({ icon: "view-dashboard", text: dashboard.displayName, value: dashboard.id }); })
-                dashboardItems.push(items);
-            });
+            if(this.userId) {
+                const myDashboards: Dashboard[] = [];
+                const otherDashboards: Dashboard[] = [];
+                this.dashboards?.forEach((d) => {
+                    (d.ownerId == this.userId) ? myDashboards.push(d) : otherDashboards.push(d);
+                })
+                if(myDashboards.length > 0) {
+                    const items: ListItem[] = [];
+                    myDashboards.forEach((d) => { items.push({ icon: "view-dashboard", text: d.displayName, value: d.id }); });
+                    dashboardItems.push(items);
+                }
+                if(otherDashboards.length > 0) {
+                    const items: ListItem[] = [];
+                    otherDashboards.forEach((d) => { items.push({ icon: "view-dashboard", text: d.displayName, value: d.id }); });
+                    dashboardItems.push(items);
+                }
+            }
         }
         return html`
             <div id="menu-header">
@@ -186,7 +199,7 @@ export class OrDashboardTree extends LitElement {
                     ${dashboardItems.map((items, index) => {
                         return (items != null && items.length > 0) ? html`
                             <div style="padding: 8px 0;">
-                                <span style="font-weight: 500; padding-left: 8px; color: #000000;">${dashboardAccessToString(groups[index])}</span>
+                                <span style="font-weight: 500; padding-left: 8px; color: #000000;">${(index == 0 ? i18next.t('dashboard.myDashboards') : i18next.t('dashboard.createdByOthers'))}</span>
                                 <div id="list-container">
                                     <ol id="list">
                                         ${items.map((listItem: ListItem) => {

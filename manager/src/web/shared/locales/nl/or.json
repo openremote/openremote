@@ -531,6 +531,8 @@
     "showTimestampControls": "Toon tijdsopties",
     "showLegend": "Toon legenda",
     "showValueAs": "Laat waarde zien als",
-    "deleteWidget": "Verwijder Widget"
+    "deleteWidget": "Verwijder Widget",
+    "myDashboards": "Mijn dashboards",
+    "createdByOthers": "Gemaakt door anderen"
   }
 }
