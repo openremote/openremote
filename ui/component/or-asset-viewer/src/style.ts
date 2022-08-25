@@ -4,9 +4,10 @@ import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor
 // language=CSS
 export const panelStyles = css`
     .panelContainer {
-        flex: 1 1 auto;
+        flex: 1 1 50%;
         box-sizing: border-box;
         min-width: 400px;
+        padding: 0 5px;
     }
     
     .panel {
@@ -298,15 +299,7 @@ export const style = css`
 
         .panelContainer {
             min-width: 360px;
-            padding: 0 5px;
-        }
-    }
-
-    @media (min-width: 1130px) {
-
-        .panelContainer {
-            flex: 1 1 50%;
-            padding: 0 5px;
+            padding: 0;
         }
     }
     
