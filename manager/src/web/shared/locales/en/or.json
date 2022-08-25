@@ -506,7 +506,6 @@
   "confirmContinueDashboardModified": "Dashboard has been edited, do you want to discard the changes?",
   "dashboards": "Dashboards",
   "dashboard": {
-    "self": "Dashboard",
     "widget": "Widget",
     "widgets": "Widgets",
     "widget-kpi": "KPI",
@@ -524,6 +523,7 @@
     "access.shared": "Realm Users",
     "access.private": "Only me",
     "saveSuccessful": "Saved Dashboard successfully!",
+    "initialName": "New Dashboard",
     "openInNewTab": "Open in new Tab",
     "whoCanView": "Who can <b>view</b> the Dashboard?",
     "whoCanEdit": "Who can <b>edit</b> the Dashboard?",

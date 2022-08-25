@@ -94,7 +94,7 @@ export class OrDashboardTree extends LitElement {
         const randomId = (Math.random() + 1).toString(36).substring(2);
         const dashboard = {
             realm: this.realm!,
-            displayName: i18next.t('dashboard.self') + " " + (this.dashboards != null ? (this.dashboards.length + 1) : "X"),
+            displayName: i18next.t('dashboard.initialName'),
             template: {
                 id: randomId,
                 columns: this.getDefaultColumns(size),
