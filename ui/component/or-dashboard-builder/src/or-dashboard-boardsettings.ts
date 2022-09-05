@@ -76,10 +76,12 @@ export class OrDashboardBoardsettings extends LitElement {
             this.dashboard.editAccess = access;
         }
         this.requestUpdate();
+        this.forceParentUpdate(false);
     }
     private setEditAccess(access: DashboardAccess) {
         this.dashboard!.editAccess = access;
         this.requestUpdate();
+        this.forceParentUpdate(false);
     }
 
     protected render() {
