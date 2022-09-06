@@ -235,7 +235,17 @@ export class OrDashboardWidgetsettings extends LitElement {
     // UI generation of all settings fields. Depending on the WidgetType it will
     // return different HTML containing different settings.
     generateHTML(widgetType: DashboardWidgetType, widgetConfig: any): TemplateResult {
+        let htmlGeneral: TemplateResult;
         let htmlContent: TemplateResult;
+        htmlGeneral = html`
+            <div style="padding: 12px;">
+                <div>
+                    <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;" .value="${this.selectedWidget?.displayName}" label="${i18next.t('displayname')}" 
+                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.selectedWidget!.displayName = event.detail.value; this.forceParentUpdate(); }}"
+                    ></or-mwc-input>
+                </div>
+            </div>
+        `
         switch (widgetType) {
 
             case DashboardWidgetType.LINE_CHART: {
@@ -375,6 +385,7 @@ export class OrDashboardWidgetsettings extends LitElement {
             }
         }
         return html`
+            ${htmlGeneral}
             ${htmlContent}
             <div id="actions" style="position: absolute; bottom: 20px; right: 20px;">
                 <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" label="${i18next.t('dashboard.deleteWidget')}" @or-mwc-input-changed="${() => {
