@@ -130,16 +130,11 @@ const styling = css`
 export interface DashboardBuilderConfig {
     // no configuration built yet
 }
-export enum DashboardSizeOption {
-    LARGE, MEDIUM, SMALL, FULLSCREEN, CUSTOM
-}
+export const MAX_BREAKPOINT = 1000000;
 
 // Enum to Menu String method
 export function scalingPresetToString(scalingPreset: DashboardScalingPreset | undefined): string {
     return (scalingPreset != null ? i18next.t("dashboard.presets." + scalingPreset.toLowerCase()) : "undefined");
-}
-export function sizeOptionToString(sizeOption: DashboardSizeOption): string {
-    return i18next.t("dashboard.size." + DashboardSizeOption[sizeOption].toLowerCase());
 }
 export function dashboardAccessToString(access: DashboardAccess): string {
     return i18next.t("dashboard.access." + access.toLowerCase());
@@ -157,38 +152,6 @@ export function sortScreenPresets(presets: DashboardScreenPreset[], largetosmall
         }
         return 0;
     });
-}
-
-export function getWidthByPreviewSize(sizeOption?: DashboardSizeOption): string {
-    switch (sizeOption) {
-        case DashboardSizeOption.FULLSCREEN: return '100%';
-        case DashboardSizeOption.LARGE: return '1920px';
-        case DashboardSizeOption.MEDIUM: return '1280px';
-        case DashboardSizeOption.SMALL: return '480px';
-        default: return '900px';
-    }
-}
-
-export function getHeightByPreviewSize(sizeOption?: DashboardSizeOption): string {
-    switch (sizeOption) {
-        case DashboardSizeOption.FULLSCREEN: return '100%';
-        case DashboardSizeOption.LARGE: return '1080px';
-        case DashboardSizeOption.MEDIUM: return '720px';
-        case DashboardSizeOption.SMALL: return '640px';
-        default: return '540px';
-    }
-}
-
-export function getPreviewSizeByPx(width?: string, height?: string): DashboardSizeOption {
-    if(width == null && height == null) {
-        console.error("Neither the previewWidth, nor previewHeight, nor previewSize attributes have been specified!"); return DashboardSizeOption.CUSTOM;
-    } else {
-        if(width == '100%' && height == '100%') { return DashboardSizeOption.FULLSCREEN; }
-        else if(width == '1920px' && height == '1080px') { return DashboardSizeOption.LARGE; }
-        else if(width == '1280px' && height == '720px') { return DashboardSizeOption.MEDIUM; }
-        else if(width == '480px' && height == '640px') { return DashboardSizeOption.SMALL; }
-        else { return DashboardSizeOption.CUSTOM; }
-    }
 }
 
 export function getActivePreset(gridWidth: number, presets: DashboardScreenPreset[]): DashboardScreenPreset | undefined {
@@ -259,9 +222,6 @@ export class OrDashboardBuilder extends LitElement {
     protected hasChanged: boolean;
 
     @state()
-    protected previewSize: DashboardSizeOption; // DashboardSizeOption
-
-    @state()
     protected rerenderPending: boolean;
 
 
@@ -272,7 +232,6 @@ export class OrDashboardBuilder extends LitElement {
         this.isInitializing = true;
         this.isLoading = true;
         this.hasChanged = false;
-        this.previewSize = DashboardSizeOption.MEDIUM; // default, almost never used
         this.rerenderPending = false;
 
         this.updateComplete.then(async () => {
@@ -332,7 +291,6 @@ export class OrDashboardBuilder extends LitElement {
         if(changedProperties.has("editMode")) {
             this.selectedWidget = undefined;
             this.showDashboardTree = true;
-            this.previewSize = (this.editMode ? DashboardSizeOption.MEDIUM : DashboardSizeOption.FULLSCREEN)
         }
     }
 
@@ -361,7 +319,7 @@ export class OrDashboardBuilder extends LitElement {
     deleteWidget(widget: DashboardWidget) {
         if(this.currentTemplate != null && this.currentTemplate.widgets != null) {
             const tempTemplate = this.currentTemplate;
-            tempTemplate.widgets = tempTemplate.widgets?.filter((x) => { return x.id != widget.id; });
+            tempTemplate.widgets = tempTemplate.widgets?.filter((x: DashboardWidget) => { return x.id != widget.id; });
             this.currentTemplate = Object.assign({}, tempTemplate);
         }
         if(this.selectedWidget?.id == widget.id) {
@@ -474,7 +432,7 @@ export class OrDashboardBuilder extends LitElement {
             <div id="container">
                 ${this.showDashboardTree ? html`
                     <or-dashboard-tree id="tree" .realm="${this.realm}" .hasChanged="${this.hasChanged}" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}" .userId="${this.userId}"
-                                       @created="${(event: CustomEvent) => { this.previewSize = event.detail.size; this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"
+                                       @created="${(event: CustomEvent) => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"
                                        @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}"
                                        @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"
                     ></or-dashboard-tree>
@@ -537,7 +495,7 @@ export class OrDashboardBuilder extends LitElement {
                                     <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .realm="${this.realm}" .template="${this.currentTemplate}"
                                                           .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}"
-                                                          .previewSize="${this.previewSize}" .readonly="${this._isReadonly()}"
+                                                          .fullscreen="${!this.editMode}" .readonly="${this._isReadonly()}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                           @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"
                                                           @deselected="${() => { this.deselectWidget(); }}"

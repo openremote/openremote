@@ -130,7 +130,9 @@ export class OrMwcTabs extends LitElement {
     protected updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
         if(changedProperties.has('index') || changedProperties.has('mdcTabBar')) {
+            console.warn('Change in index or mdcTabBar..');
             if(this.mdcTabBar != null && this.index != null) {
+                console.warn('Activating tab..')
                 this.mdcTabBar.activateTab(this.index);
                 this.dispatchEvent(new CustomEvent("activated", { detail: { index: this.index }}))
             }

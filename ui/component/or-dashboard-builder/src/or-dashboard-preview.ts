@@ -14,14 +14,9 @@ import {
     DashboardWidgetType
 } from "@openremote/model";
 import {
-    DashboardSizeOption,
     generateGridItem,
     generateWidgetDisplayName,
-    getActivePreset,
-    getHeightByPreviewSize,
-    getPreviewSizeByPx,
-    getWidthByPreviewSize,
-    sizeOptionToString
+    getActivePreset, MAX_BREAKPOINT,
 } from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {until} from "lit/directives/until.js";
@@ -135,6 +130,7 @@ export class OrDashboardPreview extends LitElement {
             this._template = newValue;
             console.log("Setting up Grid.. [#1]");
             this.setupGrid(false, false);
+            this.previewPreset = newValue.screenPresets![1]; // Initial preset on load
         }
     }
 
@@ -168,8 +164,13 @@ export class OrDashboardPreview extends LitElement {
     @property()
     protected previewZoom: number = 1;
 
-    @property() // Optional alternative for previewWidth/previewHeight
-    protected previewSize?: DashboardSizeOption;
+    // @property() // Optional alternative for previewWidth/previewHeight
+    // protected previewSize?: DashboardSizeOption;
+    @property()
+    protected previewPreset?: DashboardScreenPreset;
+
+    @property()
+    protected fullscreen: boolean = false;
 
     @property() // Property that, when toggled on, shows a "loading" state for 200ms, and then renders the component again.
     protected rerenderPending: boolean = false;
@@ -250,6 +251,15 @@ export class OrDashboardPreview extends LitElement {
                 else if(this.latestChanges.changedKeys.includes('screenPresets')) {
                     console.log("Setting up Grid.. [#3]");
                     this.setupGrid(true, true);
+
+                    // Updating previewPreset in case the currently used one has changed..
+                    const changed: DashboardScreenPreset[] | undefined = this.latestChanges.newValue.screenPresets?.filter((newpreset) => {
+                        return (this.latestChanges?.oldValue.screenPresets?.find((oldpreset) => { return oldpreset.id == newpreset.id })?.breakpoint != newpreset.breakpoint);
+                    });
+                    if(changed) {
+                        const found = changed.find((x) => x.id == this.previewPreset?.id);
+                        if(found) { this.previewPreset = found; }
+                    }
                 }
                 // Set them to none again
                 this.latestChanges = undefined;
@@ -288,13 +298,32 @@ export class OrDashboardPreview extends LitElement {
 
         // Adjusting previewSize when manual pixels control changes
         if(changedProperties.has("previewWidth") || changedProperties.has("previewHeight")) {
-            this.previewSize = getPreviewSizeByPx(this.previewWidth, this.previewHeight);
+            if(this.template?.screenPresets) {
+                this.previewPreset = this.template.screenPresets.find(s => {
+                    return (s.breakpoint! == Number(this.previewWidth?.replace('px', '')) // if width is equal
+                        && (Math.round((s.breakpoint) / 16 * 9) == Math.round(Number(this.previewHeight?.replace('px', ''))))); // if height is equal
+                });
+            }
         }
 
         // Adjusting pixels control when previewSize changes.
-        if(changedProperties.has("previewSize") && this.previewSize != DashboardSizeOption.CUSTOM) {
-            this.previewWidth = getWidthByPreviewSize(this.previewSize);
-            this.previewHeight = getHeightByPreviewSize(this.previewSize);
+        if(changedProperties.has("previewPreset")) {
+            if(this.template?.screenPresets) {
+                const preset = this.template.screenPresets?.find(s => s.id == this.previewPreset?.id);
+                if(preset) {
+
+                    // Largest breakpoint is 1 million, so we get 1 size smaller and add 1 px of width to it.
+                    // Otherwise, just set width and calculate height with 16/9 aspect ratio.
+                    if(preset.breakpoint === MAX_BREAKPOINT) {
+                        const breakpoint = this.template.screenPresets[this.template.screenPresets.indexOf(preset) + 1].breakpoint!;
+                        this.previewWidth = (breakpoint + 1) + "px";
+                        this.previewHeight = (Math.round((breakpoint + 1) / 16 * 9) + "px");
+                    } else {
+                        this.previewWidth = preset.breakpoint + "px";
+                        this.previewHeight = (preset.breakpoint! / 16 * 9) + "px";
+                    }
+                }
+            }
         }
 
         // When parent component requests a forced rerender
@@ -334,7 +363,7 @@ export class OrDashboardPreview extends LitElement {
                     this.grid = undefined;
                 }
             }
-            const width: number = ((this.previewSize == DashboardSizeOption.FULLSCREEN) ? this.clientWidth : (+(this.previewWidth?.replace(/\D/g, "")!)));
+            const width: number = (this.fullscreen ? this.clientWidth : (+(this.previewWidth?.replace(/\D/g, "")!)));
             const newPreset = getActivePreset(width, this.template.screenPresets!);
             if(this.activePreset && newPreset?.scalingPreset != this.activePreset?.scalingPreset) {
                 if(!(recreate && force)) { // Fully rerender the grid by switching rerenderPending on and off, and continue after that.
@@ -483,10 +512,9 @@ export class OrDashboardPreview extends LitElement {
 
     // Render
     protected render() {
-        let screenSizes: {key: DashboardSizeOption, value: string}[] = [];
-        [DashboardSizeOption.LARGE, DashboardSizeOption.MEDIUM, DashboardSizeOption.SMALL, DashboardSizeOption.CUSTOM].forEach((opt) => {
-            screenSizes.push({key: opt, value: sizeOptionToString(opt)});
-        })
+        const customPreset = "Custom";
+        let screenPresets = this.template?.screenPresets?.map(s => s.displayName);
+        screenPresets?.push(customPreset);
         return html`
                 <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
                     ${this.editMode ? html`
@@ -497,8 +525,9 @@ export class OrDashboardPreview extends LitElement {
                             <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="${i18next.t('dashboard.zoomPercent')}" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }}"
                             ></or-mwc-input>
-                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}" .value="${sizeOptionToString(this.previewSize!)}" .options="${screenSizes.map((size) => size.value)}" style="min-width: 220px;"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = screenSizes.find((size) => size.value == event.detail.value)?.key; }}"
+                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}"
+                                          .value="${this.previewPreset == undefined ? customPreset : this.previewPreset.displayName}" .options="${screenPresets}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewPreset = this.template?.screenPresets?.find(s => s.displayName == event.detail.value); }}"
                             ></or-mwc-input>
                             <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="${i18next.t('width')}" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }}"
@@ -520,12 +549,12 @@ export class OrDashboardPreview extends LitElement {
                             ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                                 <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
                             ` : undefined}
-                            <div class="maingrid ${this.previewSize == DashboardSizeOption.FULLSCREEN ? 'maingrid__fullscreen' : undefined}"
+                            <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined}"
                                  @click="${(ev: MouseEvent) => { (ev.composedPath()[0] as HTMLElement).id == 'gridElement' ? this.onGridItemClick(undefined) : undefined; }}"
                                  style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;"
                             >
                                 <!-- Gridstack element on which the Grid will be rendered -->
-                                <div id="gridElement" class="grid-stack ${this.previewSize == DashboardSizeOption.FULLSCREEN ? undefined : 'grid-element'}">
+                                <div id="gridElement" class="grid-stack ${this.fullscreen ? undefined : 'grid-element'}">
                                     ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
                                         return html`
                                             <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">

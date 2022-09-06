@@ -4,16 +4,16 @@ import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
 import 'gridstack/dist/h5/gridstack-dd-native';
-import {ClientRole, Dashboard, DashboardAccess, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
+import {Dashboard, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
 import manager from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
-import {dashboardAccessToString, DashboardSizeOption} from ".";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
+import {MAX_BREAKPOINT} from "./index";
 
 //language=css
 const treeStyling = css`
@@ -27,6 +27,10 @@ const treeStyling = css`
         padding-left: 10px;
     }
 `;
+
+enum DashboardSizeOption {
+    LARGE, MEDIUM, SMALL, FULLSCREEN, CUSTOM
+}
 
 @customElement("or-dashboard-tree")
 export class OrDashboardTree extends LitElement {
@@ -109,7 +113,7 @@ export class OrDashboardTree extends LitElement {
             if(response.status == 200) {
                 this.dashboards?.push(response.data);
                 this.requestUpdate("dashboards");
-                this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data, size: size }}));
+                this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data }}));
 
                 // Select the item that was created
                 this.selected = this.dashboards?.find((x) => { return x.id == response.data.id; });
@@ -253,7 +257,7 @@ export class OrDashboardTree extends LitElement {
                 return [{
                     id: "large",
                     displayName: i18next.t('dashboard.size.large'),
-                    breakpoint: 1000000, // TODO: change this
+                    breakpoint: MAX_BREAKPOINT,
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "medium",
@@ -271,7 +275,7 @@ export class OrDashboardTree extends LitElement {
                 return [{
                     id: "large",
                     displayName: i18next.t('dashboard.size.large'),
-                    breakpoint: 1000000,
+                    breakpoint: MAX_BREAKPOINT,
                     scalingPreset: DashboardScalingPreset.BLOCK_DEVICE
                 }, {
                     id: "medium",
@@ -289,7 +293,7 @@ export class OrDashboardTree extends LitElement {
                 return [{
                     id: "large",
                     displayName: i18next.t('dashboard.size.large'),
-                    breakpoint: 1000000,
+                    breakpoint: MAX_BREAKPOINT,
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "medium",

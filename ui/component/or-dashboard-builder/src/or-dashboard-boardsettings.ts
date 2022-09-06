@@ -83,6 +83,11 @@ export class OrDashboardBoardsettings extends LitElement {
         this.requestUpdate();
         this.forceParentUpdate(false);
     }
+    private setBreakpoint(presetIndex: number, value: number) {
+        this.dashboard!.template!.screenPresets![presetIndex].breakpoint = value;
+        this.requestUpdate();
+        this.forceParentUpdate(true);
+    }
 
     protected render() {
         if(this.dashboard?.template?.screenPresets != null) {
@@ -179,7 +184,10 @@ export class OrDashboardBoardsettings extends LitElement {
                                     <div style="margin-bottom: 12px; display: flex; align-items: center;">
                                         <span style="min-width: 140px;">${preset.displayName} ${i18next.t('screen')}</span>
                                         <span style="margin-right: 8px;">${(screenPresets.indexOf(preset) == 0) ? '>' : '<'}</span>
-                                        <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${(screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}" .disabled="${true}"></or-mwc-input>
+                                        <or-mwc-input type="${InputType.NUMBER}" compact outlined .disabled="${(screenPresets.indexOf(preset) == 0)}"
+                                                      .value="${(screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}"
+                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.setBreakpoint(screenPresets.indexOf(preset), event.detail.value)}}"
+                                        ></or-mwc-input>
                                         <span style="margin-left: 8px;">px</span>
                                     </div>
                                 `
