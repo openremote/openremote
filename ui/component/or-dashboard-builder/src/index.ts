@@ -102,19 +102,23 @@ const styling = css`
     /* ----------------------------- */
     /* Editor/builder related styling */
     #builder {
-        display: table-cell;
+        flex: 1 0 auto;
         height: 100%;
     }
     
     /* ----------------------------- */
     /* Sidebar related styling (drag and drop widgets / configuration) */
     #sidebar {
-        display: table-cell;
         vertical-align: top;
         position: relative;
         width: 300px;
         background: white;
         border-left: 1px solid #E0E0E0;
+    }
+    .settings-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
     }
     #browser {
         flex-grow: 1;
@@ -125,6 +129,14 @@ const styling = css`
     
     #save-btn { margin-left: 15px; }
     #view-btn { margin-left: 15px; }
+    
+    .hidescroll {
+        -ms-overflow-style: none; /* for Internet Explorer, Edge */
+        scrollbar-width: none; /* for Firefox */
+    }
+    .hidescroll::-webkit-scrollbar {
+        display: none; /* for Chrome, Safari, and Opera */
+    }
 `;
 
 export interface DashboardBuilderConfig {
@@ -484,7 +496,7 @@ export class OrDashboardBuilder extends LitElement {
                         </div>
                     `}
                     <div id="content">
-                        <div id="container" style="display: table;">
+                        <div id="container">
                             ${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? html`
                                 <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
                                     <span>${!this._hasEditAccess() ? i18next.t('noDashboardWriteAccess') : i18next.t('errorOccurred')}.</span>
@@ -509,7 +521,7 @@ export class OrDashboardBuilder extends LitElement {
                             ${(this.selectedDashboard != null && this.editMode && !this._isReadonly() && this._hasEditAccess()) ? html`
                                 <div id="sidebar">
                                     ${this.selectedWidget != null ? html`
-                                        <div>
+                                        <div class="settings-container">
                                             <div id="menu-header">
                                                 <div id="title-container">
                                                     <span id="title">${this.selectedWidget?.displayName}:</span>
@@ -518,22 +530,25 @@ export class OrDashboardBuilder extends LitElement {
                                                     <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => { this.deselectWidget(); }}"></or-mwc-input>
                                                 </div>
                                             </div>
-                                            <div id="content" style="display: block;">
-                                                <or-dashboard-widgetsettings .selectedWidget="${this.selectedWidget}"
-                                                                             @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
-                                                                             @update="${() => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
-                                                ></or-dashboard-widgetsettings>
+                                            <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
+                                                <div style="position: relative;">
+                                                    <or-dashboard-widgetsettings style="position: absolute;" .selectedWidget="${this.selectedWidget}"
+                                                                                 @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
+                                                                                 @update="${() => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
+                                                    ></or-dashboard-widgetsettings>
+                                                </div>
                                             </div>
                                         </div>
                                     ` : undefined}
-                                    <div style="${this.selectedWidget != null ? css`display: none` : null}">
+                                    <div class="settings-container" style="${this.selectedWidget != null ? css`display: none` : null}">
                                         <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
                                             <or-mwc-tabs .items="${tabItems}" noScroll @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
                                         </div>
-                                        <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
-                                            <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
-                                            <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
-                                                <or-dashboard-boardsettings .dashboard="${this.selectedDashboard}" .showPerms="${this.selectedDashboard?.ownerId == this.userId}"
+                                        <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
+                                            <div style="position: relative;">
+                                                <or-dashboard-browser id="browser" style="position: absolute; ${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
+                                                <or-dashboard-boardsettings style="position: absolute; ${this.sidebarMenuIndex != 1 ? css`display: none` : null}" 
+                                                                            .dashboard="${this.selectedDashboard}" .showPerms="${this.selectedDashboard?.ownerId == this.userId}" 
                                                                             @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force ? this.rerenderPending = true : undefined); }}"
                                                 ></or-dashboard-boardsettings>
                                             </div>
