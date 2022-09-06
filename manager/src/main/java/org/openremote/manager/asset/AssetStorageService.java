@@ -179,7 +179,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
              }
 
              // Regular user must have role
-             if (!filter.isPublicEvents() && !isAnonymous && !auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), auth.getClientId())) {
+             if (!filter.isPublicEvents() && !isAnonymous && !auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                  return false;
              }
 
@@ -501,7 +501,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            if (query.access != PUBLIC && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), authContext.getClientId())) {
+            if (query.access != PUBLIC && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 String msg = "User must have '" + ClientRole.READ_ASSETS.getValue() + "' role to read non public assets";
                 LOG.fine(msg);
                 throw new IllegalStateException(msg);

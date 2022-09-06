@@ -3,16 +3,30 @@ import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor
 
 // language=CSS
 export const panelStyles = css`
+    .panelContainer {
+        flex: 1 1 50%;
+        box-sizing: border-box;
+        min-width: 400px;
+        padding: 0 5px;
+    }
+    
     .panel {
         background-color: var(--internal-or-asset-viewer-panel-color);
         border: 1px solid #e5e5e5;
         border-radius: 5px;
-        max-width: 100%;
         position: relative;
+        margin: 0 0 10px 0;
     }
 
     .panel-content-wrapper {
         padding: var(--internal-or-asset-viewer-panel-padding);
+    }
+
+    .panel-content > :first-child {
+        margin-top: 0;
+    }
+    .panel-content > :last-child {
+        margin-bottom: 0;
     }
 
     .panel-content {
@@ -41,19 +55,13 @@ export const panelStyles = css`
         box-sizing: border-box;
     }
 
-    .panel-content > :first-child {
-        margin-top: 0;
-    }
-
-    .panel-content > :last-child {
-        margin-bottom: 0;
-    }
-
     @media screen and (max-width: 767px) {
         .panel {
             border-radius: 0;
             border-right: none;
             border-left: none;
+            flex-basis: 100%;
+            min-width: 360px;
         }
     }
     
@@ -101,17 +109,17 @@ export const style = css`
     #view-container, #edit-container {
         flex: 0 1 auto;
         overflow: auto;
-        min-height: calc(100vh - 88px - var(--internal-or-header-height));
     }
     
     #view-container {
+        flex: 1;
         margin-top: 0;
         box-sizing: border-box;
-        display: grid;
-        padding: 0 20px 20px;
-        grid-gap: 10px;
-        grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
-        grid-auto-rows: 5px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;
+        padding: 0 15px 15px;
 
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadein 0.3s; /* Firefox < 16 */
@@ -158,7 +166,7 @@ export const style = css`
     }
 
     #asset-header {
-        padding: 20px 30px;
+        padding: 20px 30px 15px;
         display: flex;
         flex: 0 0 auto;
         align-items: center;
@@ -246,36 +254,23 @@ export const style = css`
         cursor: pointer;
     }
     
-    @media screen and (max-width: 1200px) {
-        #name-input {
-            width: 150px;
-        }
+    #fileupload {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
+    .multipleAssetsView {
+        display: flex;
+        flex-direction: column;
+    }
 
-        #chart-panel {
-            grid-row-start: 1;
-        }
-
-        #attributes-panel {
-            grid-row-start: 2;
-        }
-
-        #location-panel {
-            grid-row-start: 3;
-        }
-
-        #history-panel {
-            grid-row-start: 4;
-        }
-
-        .tabletHidden {
-            display: none;
-        }
-
-        #view-container {
-            grid-auto-rows: auto;
-            grid-template-columns: 100% !important;
-            min-height: unset;
-        }
+    .multipleAssetsView > *:first-child {
+        margin: 30px;
     }
 
     @media screen and (max-width: 767px) {
@@ -294,8 +289,7 @@ export const style = css`
         }
         
         #asset-header {
-            grid-area: auto!important;
-            padding: 15px 15px 5px;
+            padding: 15px 15px 15px;
         }
 
         #name-input {
@@ -309,5 +303,30 @@ export const style = css`
         #edit-container {
             padding: 10px 0;
         }
+
+        .panelContainer {
+            min-width: 360px;
+            padding: 0;
+        }
     }
+    
+    @media screen and (max-width: 1130px) {
+        #name-input {
+            width: 150px;
+        }
+
+        .tabletHidden {
+            display: none;
+        }
+
+        #view-container {
+            flex-direction: column;
+            flex-wrap: nowrap;
+        }
+
+        .panelContainer {
+            flex: 0 1 auto;
+        }
+    }
+
 `;

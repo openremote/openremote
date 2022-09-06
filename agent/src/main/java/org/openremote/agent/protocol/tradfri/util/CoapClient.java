@@ -10,9 +10,11 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.EndpointManager;
+import org.eclipse.californium.elements.config.Configuration;
 import org.eclipse.californium.scandium.DTLSConnector;
 import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
-import org.eclipse.californium.scandium.dtls.pskstore.InMemoryPskStore;
+import org.eclipse.californium.scandium.dtls.pskstore.AdvancedSinglePskStore;
+import org.eclipse.californium.scandium.util.SecretUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
@@ -66,15 +68,14 @@ public class CoapClient {
      */
     private void updateDtlsConnector() throws IOException {
         if(dtlsEndpoint != null) dtlsEndpoint.destroy();
-        DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder();
+        DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder(new Configuration());
         builder.setAddress(new InetSocketAddress(0));
-        InMemoryPskStore pskStore = new InMemoryPskStore();
-        pskStore.addKnownPeer(new InetSocketAddress(ApiEndpoint.getGatewayIp(), 5684),
-                credentials.getIdentity(),
-                credentials.getKey().getBytes());
-        builder.setPskStore(pskStore);
+        AdvancedSinglePskStore pskStore = new AdvancedSinglePskStore(
+            credentials.getIdentity(),
+            SecretUtil.create(credentials.getKey().getBytes(), "PSK"));
+        builder.setAdvancedPskStore(pskStore);
 
-        DTLSConnector dtlsconnector = new DTLSConnector(builder.build(), null);
+        DTLSConnector dtlsconnector = new DTLSConnector(builder.build());
         CoapEndpoint.Builder endpointBuilder = new CoapEndpoint.Builder();
         endpointBuilder.setConnector(dtlsconnector);
 

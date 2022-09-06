@@ -74,7 +74,6 @@
   "then": "则",
   "orWhen": "或当",
   "datetime": "时间",
-  "timer": "计时器",
   "rulesEditorAddCondition": "添加另一个条件",
   "rulesEditorAddGroup": "添加组",
   "rulesEditorAddAction": "添加动作",
@@ -96,6 +95,8 @@
   "path": "路径",
   "showOnMap": "在地图显示",
   "noAssetSelected": "请选择左列资源",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "加载中...",
   "noAssetsFound": "No assets found",
   "location": "位置",
@@ -406,6 +407,7 @@
   "daysOfTheWeek": "天每周",
   "dismiss": "忽略",
   "createAssetFailed": "创建资源失败",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "读权限",
@@ -444,6 +446,7 @@
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "attributeValueLabel": "Attribute value",
+    "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
 }

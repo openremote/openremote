@@ -129,6 +129,7 @@ export enum InputType {
 
 export interface ValueInputProviderOptions {
     label?: string;
+    required?: boolean;
     readonly?: boolean;
     disabled?: boolean;
     compact?: boolean;
@@ -332,7 +333,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     if (patternConstraint) {
         pattern = patternConstraint.regexp;
     }
-    if (notNullConstraint || (valueHolderDescriptor && (valueHolderDescriptor as any).optional === false)) {
+    if (notNullConstraint) {
         required = true;
     }
     if (notBlankConstraint && !pattern) {
@@ -381,6 +382,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
     const readonly = options.readonly;
+    required = required || options.required;
     const comfortable = options.comfortable;
     const resizeVertical = options.resizeVertical;
     const inputRef: Ref<OrMwcInput> = createRef();
@@ -590,14 +592,6 @@ const style = css`
     .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
         --or-icon-fill: var(--or-app-color4);
     }
-    
-    .or-label-with-icon {
-        left: 42px !important;
-    }
-    
-    .or-trailing-space {
-        width: 78%;
-    }
 `;
 
 @customElement("or-mwc-input")
@@ -767,9 +761,6 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public resizeVertical: boolean = false;
 
-    @property({type: Boolean})
-    public trailingSpace: boolean = false;
-
     public get nativeValue(): any {
         if (this._mdcComponent) {
             return (this._mdcComponent as any).value;
@@ -857,7 +848,7 @@ export class OrMwcInput extends LitElement {
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
             const hasValue = this.value || this.value === false;
-            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""} ${!!this.icon && this.type === InputType.TEXT && hasValue ? "or-label-with-icon" : ""}" id="label">${this.label}</span>` : undefined;
+            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
 
             switch (this.type) {
                 case InputType.RADIO:
@@ -1313,7 +1304,7 @@ export class OrMwcInput extends LitElement {
                                 @change="${(e: Event) => this.onValueChange((e.target as HTMLTextAreaElement), (e.target as HTMLTextAreaElement).value)}">${valMinMax[0] ? valMinMax[0] : ""}</textarea>`
                             : html`
                             <input type="${type}" id="elem" aria-labelledby="${ifDefined(label ? "label" : undefined)}"
-                            class="mdc-text-field__input ${this.trailingSpace ? "or-trailing-space" : ""}" ?required="${this.required}" ?readonly="${this.readonly}"
+                            class="mdc-text-field__input" ?required="${this.required}" ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}"
                             step="${this.step ? this.step : "any"}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
@@ -1327,7 +1318,7 @@ export class OrMwcInput extends LitElement {
 
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
-                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" style="--or-icon-fill: ${this.iconColor ? "#" + this.iconColor : "unset"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
+                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" style="color: ${this.iconColor ? "#" + this.iconColor : "unset"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                                 ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
@@ -1374,7 +1365,7 @@ export class OrMwcInput extends LitElement {
                                         <div class="mdc-slider__thumb-knob"></div>
                                     </div>
                                 </div>
-                                ${inputElem ? html`<div style="width: 75px; margin-left: 20px;">${inputElem}</div>` : ``}
+                                ${inputElem ? html`<div style="min-width: 70px; width: 70px;">${inputElem}</div>` : ``}
                             </span>
                         `;
                     }
@@ -1727,6 +1718,6 @@ export class OrMwcInput extends LitElement {
             return "";
         }
         const opts = options || this.resolveOptions(this.options);
-        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(",");
+        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(", ");
     }
 }

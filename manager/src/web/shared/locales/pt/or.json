@@ -74,7 +74,6 @@
   "then": "Então",
   "orWhen": "Ou quando",
   "datetime": "Data hora",
-  "timer": "Timer",
   "rulesEditorAddCondition": "Adicionar outra condição",
   "rulesEditorAddGroup": "Adicionar grupo",
   "rulesEditorAddAction": "Adicionar ação",
@@ -96,6 +95,8 @@
   "path": "Trajeto",
   "showOnMap": "Mostrar no mapa",
   "noAssetSelected": "Selecione um ativo à esquerda",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "Carregando ...",
   "noAssetsFound": "No assets found",
   "location": "Posição",
@@ -236,8 +237,6 @@
   "secured": "Seguro",
   "clientSecret": "Segredo do cliente",
   "clientId": "ID do Cliente",
-  "realm": "Reino",
-  "realm_plural": "Reinos",
   "port": "Porta",
   "host": "Hostname",
   "errorOccurred": "Ocorreu um erro",
@@ -395,6 +394,7 @@
   "daysOfTheWeek": "Dias da semana",
   "dismiss": "dispensar",
   "createAssetFailed": "Falha ao criar ativo",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {},
   "readPermissions": "Permissões de leitura",
   "writePermissions": "Permissões de escrita",
@@ -432,6 +432,7 @@
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "attributeValueLabel": "Attribute value",
+    "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
+import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
@@ -99,7 +100,16 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             websocketURI = builder.build();
         }
 
-        return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI);
+        MQTTLastWill lastWill = null;
+
+        if (agent.getLastWillTopic().isPresent()) {
+            String topic = agent.getLastWillTopic().get();
+            BaseJsonNode payload = agent.getLastWillPayload().orElse(null);
+            boolean retain = agent.isLastWillRetain().orElse(false);
+            lastWill = new MQTTLastWill(topic, payload, retain);
+        }
+
+        return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill);
     }
 
     @Override

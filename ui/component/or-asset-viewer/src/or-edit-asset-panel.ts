@@ -4,7 +4,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {Asset, Attribute, NameValueHolder, AssetModelUtil} from "@openremote/model";
-import {DefaultColor5, DefaultColor3, Util} from "@openremote/core";
+import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -54,8 +54,11 @@ const style = css`
         width: 100%;
     }
 
+    .mdc-data-table__table {
+        width: 100%;
+    }
     .mdc-data-table__header-cell {
-        font-weight: bold;
+        font-weight: 500;
         color: ${unsafeCSS(DefaultColor3)};
     }
 
@@ -77,6 +80,9 @@ const style = css`
     }
     .padded-cell {
         padding: 10px 16px;
+    }
+    .padded-cell > or-attribute-input {
+        width: 100%;
     }
     .actions-cell {
         text-align: right;
@@ -174,6 +180,7 @@ export class OrEditAssetPanel extends LitElement {
     protected asset!: Asset;
 
     protected attributeTemplatesAndValidators: TemplateAndValidator[] = [];
+    protected changedAttributes: string[] = [];
 
     public static get styles() {
         return [
@@ -181,6 +188,23 @@ export class OrEditAssetPanel extends LitElement {
             panelStyles,
             style
         ];
+    }
+
+    public attributeUpdated(attributeName: string) {
+        if (!this.asset) {
+            return;
+        }
+        this.changedAttributes.push(attributeName);
+
+        // Request re-render
+        this.requestUpdate();
+    }
+
+    shouldUpdate(changedProperties: PropertyValues): boolean {
+        if (changedProperties.has("asset")) {
+            this.changedAttributes = [];
+        }
+        return super.shouldUpdate(changedProperties);
     }
 
     protected render() {
@@ -237,6 +261,12 @@ export class OrEditAssetPanel extends LitElement {
         const attributes = html`
             <div id="attribute-table" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="attribute list" @click="${expanderToggle}">
+                    <colgroup>
+                        <col span="1" style="width: 25%;">
+                        <col span="1" style="width: 25%;">
+                        <col span="1" style="width: 35%;">
+                        <col span="1" style="width: 15%;">
+                    </colgroup>
                     <thead>
                         <tr class="mdc-data-table__header-row">
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
@@ -261,8 +291,8 @@ export class OrEditAssetPanel extends LitElement {
 
         return html`
             <div id="edit-wrapper">
-                ${getPanel("properties", {}, html`${properties}`) || ``}
-                ${getPanel("attribute_plural", {}, html`${attributes}`) || ``}
+                ${getPanel("0", {type: "info", title: "properties"}, html`${properties}`) || ``}
+                ${getPanel("1", {type: "info", title: "attribute_plural"}, html`${attributes}`) || ``}
             </div>
         `;
     }
@@ -338,6 +368,14 @@ export class OrEditAssetPanel extends LitElement {
     }
 
     protected _onAttributeModified(attribute: Attribute<any>, newValue: any) {
+
+        // Check if modification came from external change
+        const index = this.changedAttributes.indexOf(attribute.name!);
+        if (index > -1) {
+            this.changedAttributes.splice(index, 1);
+            return;
+        }
+
         attribute.value = newValue;
         attribute.timestamp = undefined; // Clear timestamp so server will set this
         this._onModified();
@@ -603,18 +641,23 @@ export class OrEditAssetPanel extends LitElement {
                                 flex: 1;    
                                 overflow: visible;
                                 min-height: 0;
+                                padding: 0;
+                            }
+                            footer.mdc-dialog__actions {
+                                border-top: 1px solid ${unsafeCSS(DefaultColor5)};
                             }
                             or-asset-tree {
                                 height: 100%;
                             }
                         </style>
                     `)
+                .setHeading(i18next.t("setParent"))
                 .setDismissAction(null));
         };
 
         return html`
             <div id="parent-edit-wrapper">
-                ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: false, label: i18next.t("parent")})}
+                ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: true, label: i18next.t("parent")})}
                 <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" outlined .label="${i18next.t("edit")}" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
             </div>
         `;

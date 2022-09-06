@@ -74,7 +74,6 @@
   "then": "Poi",
   "orWhen": "O quando",
   "datetime": "Datetime",
-  "timer": "Timer",
   "rulesEditorAddCondition": "Aggiungi un'altra condizione",
   "rulesEditorAddGroup": "Aggiungi gruppo",
   "rulesEditorAddAction": "Aggiungi azione",
@@ -96,6 +95,8 @@
   "path": "Percorso",
   "showOnMap": "Mostra sulla mappa",
   "noAssetSelected": "Seleziona un asset sulla sinistra",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "In caricamento...",
   "noAssetsFound": "No assets found",
   "location": "Posizione",
@@ -207,8 +208,6 @@
   "buttonTextConfirm": "Testo per il pulsante di azione",
   "buttonTextDecline": "Testo per il pulsante di rifiuto",
   "custom": "Attributo personalizzato",
-  "realm": "Inquilino",
-  "realm_plural": "Inquilini",
   "displayName":"Nome amico",
   "deleteRealmConfirm":"Sei sicuro di voler cancellare questo Regno??",
   "user_plural": "Utenti",
@@ -406,6 +405,7 @@
   "daysOfTheWeek": "Giorni della settimana",
   "dismiss": "dismiss",
   "createAssetFailed": "Fallita la creazione del asset",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "Leggi permessi",
@@ -444,6 +444,7 @@
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "attributeValueLabel": "Attribute value",
+    "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
 }

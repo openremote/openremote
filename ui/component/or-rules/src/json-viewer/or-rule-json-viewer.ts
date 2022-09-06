@@ -273,15 +273,19 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
         if (group.items) {
             for (const condition of group.items) {
-                if (!condition.assets && !condition.timer) {
+                if (!condition.assets && !condition.cron && !condition.sun) {
+                    return false;
+                }
+
+                if(condition.cron && !Util.cronStringToISOString(condition.cron, true)) {
+                    return false;
+                }
+
+                if(condition.sun && (!condition.sun.position || !condition.sun.location)) {
                     return false;
                 }
 
                 if (condition.assets && !this._validateAssetQuery(condition.assets, true, false)) {
-                    return false;
-                }
-
-                if (condition.timer && !Util.isTimeDuration(condition.timer)) {
                     return false;
                 }
             }
@@ -344,7 +348,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         if (!target) {
             return true;
         }
-        
+
         if (target.assets) {
             return this._validateAssetQuery(target.assets, false, false);
         }
@@ -352,7 +356,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         if (target.matchedAssets) {
             return this._validateAssetQuery(target.matchedAssets, false, true);
         }
-        
+
         if (target.conditionAssets && getTypeAndTagsFromGroup(rule.when!).findIndex((typeAndTag) => target.conditionAssets === typeAndTag[1]) < 0) {
             return false;
         }

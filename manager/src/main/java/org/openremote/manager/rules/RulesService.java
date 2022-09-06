@@ -21,6 +21,7 @@ package org.openremote.manager.rules;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.model.Constants;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -169,7 +170,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 }
 
                 // Regular user must have role
-                if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), auth.getClientId())) {
+                if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                     return false;
                 }
 

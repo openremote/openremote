@@ -37,6 +37,7 @@ import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.ValueUtil;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -73,11 +74,11 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected boolean disconnected = true; // Need to use this flag to cancel client reconnect task
     protected Consumer<String> topicSubscribeFailureConsumer;
 
-    protected AbstractMQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI) {
-        this(UniqueIdentifierGenerator.generateId(), host, port, secure, cleanSession, usernamePassword, websocketURI);
+    protected AbstractMQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill) {
+        this(UniqueIdentifierGenerator.generateId(), host, port, secure, cleanSession, usernamePassword, websocketURI, lastWill);
     }
 
-    protected AbstractMQTT_IOClient(String clientId, String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI) {
+    protected AbstractMQTT_IOClient(String clientId, String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill) {
         this.clientId = clientId;
         this.host = host;
         this.port = port;
@@ -140,6 +141,14 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             builder = builder
                 .serverHost(host)
                 .serverPort(port);
+        }
+
+        if (lastWill != null) {
+            builder.willPublish()
+                .topic(lastWill.getTopic())
+                .payload(ValueUtil.getStringCoerced(lastWill.getPayload()).orElse("").getBytes())
+                .retain(lastWill.isRetain())
+                .applyWillPublish();
         }
 
         try {

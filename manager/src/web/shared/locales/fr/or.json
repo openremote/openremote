@@ -74,7 +74,6 @@
   "then": "Alors",
   "orWhen": "Ou quand",
   "datetime": "Date et heure",
-  "timer": "Minuteur",
   "rulesEditorAddCondition": "Ajouter une condition",
   "rulesEditorAddGroup": "Ajouter un groupe",
   "rulesEditorAddAction": "Ajouter une action",
@@ -96,6 +95,9 @@
   "path": "Chemin",
   "showOnMap": "Montrer sur la carte",
   "noAssetSelected": "Veuillez sélectionner une ressource à gauche",
+  "multiAssetSelected": "{{assetNbr}} ressources sélectionnées",
+  "changeParent": "Modifier le parent",
+  "setParent": "Sélectionnez parent",
   "loading": "Chargement...",
   "noAssetsFound": "Aucune ressource trouvée",
   "location": "Position",
@@ -165,6 +167,7 @@
   "wait": "Attendre",
   "setup": "Configuration",
   "selectFile": "Sélectionnez le fichier",
+  "file": "Fichier",
   "discoverAssets": "Découvrir les ressources",
   "discovering": "Découvrir",
   "underlyingAssets": "Ressources sous-jacents",
@@ -236,8 +239,6 @@
   "secured": "Sécurisé",
   "clientSecret": "Secret du client",
   "clientId": "ID du client",
-  "realm": "Realm",
-  "realm_plural": "Realms",
   "port": "Port",
   "host": "Nom d'hôte",
   "errorOccurred": "Une erreur est survenue",
@@ -406,6 +407,7 @@
   "daysOfTheWeek": "jours de la semaine",
   "dismiss": "rejeter",
   "createAssetFailed": "Impossible de créer la ressource",
+  "moveAssetFailed": "Impossible de déplacer la ressource",
   "logCategory": {
   },
   "readPermissions": "Autorisations de lire",
@@ -444,6 +446,7 @@
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "attributeValueLabel": "Attribute value",
+    "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
 }

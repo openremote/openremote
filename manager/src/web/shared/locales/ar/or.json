@@ -74,7 +74,6 @@
   "then": "إذن",
   "orWhen": "أو عندما",
   "datetime": "حذف التوقيت",
-  "timer": "المؤقت",
   "rulesEditorAddCondition": "أضف شرط آخر",
   "rulesEditorAddGroup": "إضافة مجموعة",
   "rulesEditorAddAction": "إضافة فعل",
@@ -96,6 +95,8 @@
   "path": "المسار",
   "showOnMap": "إظهار على الخريطة",
   "noAssetSelected": "الرجاء إختيار مكون من اليسار",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "جاري التحميل",
   "noAssetsFound": "No assets found",
   "location": "الموقع",
@@ -384,6 +385,7 @@
   "daysOfTheWeek": "أيام الأسبوع",
   "dismiss": "رفض",
   "createAssetFailed": "  فشل في إنشاء المكون  ",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "صلاحيات القراءة",
@@ -395,6 +397,7 @@
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "attributeValueLabel": "Attribute value",
+    "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
 }

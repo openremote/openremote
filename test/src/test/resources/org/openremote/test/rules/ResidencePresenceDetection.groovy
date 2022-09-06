@@ -16,6 +16,8 @@ import org.openremote.model.query.AssetQuery
 import org.openremote.model.rules.AssetState
 import org.openremote.model.util.Pair
 
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 import static org.openremote.model.query.AssetQuery.Operator.GREATER_THAN
@@ -100,7 +102,7 @@ rules.add()
                         // with increasing values
                         coLevelFact.getFact().isValueGreaterThanOldValue()
                         // in the last 12 minutes
-                    }.filter(facts.clock.last("12m")).count() == 0
+                    }.filter{facts.clock.now.minus(12, ChronoUnit.MINUTES).toEpochMilli() < it.timestamp}.count() == 0
                 }.orElse(true) // or we don't have a CO2 sensor
 
             }.orElse(false)

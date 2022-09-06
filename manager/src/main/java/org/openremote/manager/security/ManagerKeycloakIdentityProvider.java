@@ -21,6 +21,7 @@ package org.openremote.manager.security;
 
 import io.undertow.util.Headers;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
@@ -62,6 +63,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,8 +76,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.ValueUtil.convert;
 
@@ -94,7 +95,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
     public static final String KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED = "emailNotificationsDisabled";
     public static final String KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED = "pushNotificationsDisabled";
-    public static final String KEYCLOAK_FRONTEND_URL = "KEYCLOAK_FRONTEND_URL";
+    public static final String KC_HOSTNAME = "KC_HOSTNAME";
+    public static final String KC_HOSTNAME_PATH = "KC_HOSTNAME_PATH";
+    public static final String KC_HOSTNAME_PORT = "KC_HOSTNAME_PORT";
 
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -118,7 +121,24 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             setActiveCredentials(grant);
         }
 
-        frontendUrl = getString(container.getConfig(), KEYCLOAK_FRONTEND_URL, null);
+        String hostname = getString(container.getConfig(), Constants.OR_HOSTNAME, "localhost");
+        int port = getInteger(container.getConfig(), Constants.OR_SSL_PORT, 8080); // Should just be called port
+        String keycloakHostname = getString(container.getConfig(), KC_HOSTNAME, hostname);
+        int keycloakPort = getInteger(container.getConfig(), KC_HOSTNAME_PORT, port);
+        String keycloakHostnamePath = getString(container.getConfig(), KC_HOSTNAME_PATH, "auth");
+
+        URIBuilder uriBuilder = new URIBuilder().setHost(keycloakHostname).setPath(keycloakHostnamePath);
+        if (keycloakPort > 0) {
+            uriBuilder.setPort(keycloakPort);
+        }
+
+        try {
+            frontendUrl = uriBuilder.build().toString();
+        } catch (URISyntaxException e) {
+            LOG.log(Level.SEVERE, "Failed to build Keycloak host URI", e);
+            throw new RuntimeException(e);
+        }
+
         keycloakAdminPassword = container.getConfig().getOrDefault(OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT);
         timerService = container.getService(TimerService.class);
         persistenceService = container.getService(PersistenceService.class);
@@ -130,7 +150,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         // Allow all external hostnames with wildcard and same host with wildcard
         validRedirectUris = new ArrayList<>();
         validRedirectUris.add("/*");
-        validRedirectUris.addAll(WebService.getExternalHostnames(container).stream().map(hostname -> "https://" + hostname + "/*").toList());
+        validRedirectUris.addAll(WebService.getExternalHostnames(container).stream().map(host -> "https://" + host + "/*").toList());
     }
 
     @Override
@@ -1110,7 +1130,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         // User must have role
         if (requiredRoles != null) {
             for (ClientRole requiredRole : requiredRoles) {
-                if (!auth.hasResourceRole(requiredRole.getValue(), auth.getClientId())) {
+                if (!auth.hasResourceRole(requiredRole.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                     return false;
                 }
             }

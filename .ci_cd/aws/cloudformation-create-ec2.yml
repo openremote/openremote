@@ -2,16 +2,17 @@
 # Standard OpenRemote CloudFormation template for provisioning an EC2 instance with docker support for running the
 # OpenRemote stack. SMTP credentials are optionally read from the parameter store and added to the /etc/environment
 # file to essentially preconfigure standard OpenRemote SMTP environment variables.
-# DNS parameters allow for DNS A record for the created EC2 instance to be dynamically updated between restarts.
-#
-# A standard access security group is also created for the standard OpenRemote stack services; the ssh-access security
-# group is also linked to the EC2 instance and this security group must already exist within the account.
+# DNS parameters allow for DNS A record for the created EC2 instance to be dynamically updated between restarts and a
+# standard access security group is also created for the standard OpenRemote stack services.
 #
 # Optionally assign an Elastic IP address by setting the ElasticIP parameter to true.
 #
+# Environment variables are optionally output to /etc/environment for:
+# - EFS_DNS for an EFS that can then be mounted from docker services without having to put IP address in docker-compose
+# - SMTP Credentials for use within docker services to simplify SMTP configuration
+#
 # Systemd services are also created to:
 #
-# - Mount EFS volume named 'hosts-filesystem' at /deployment.local/efs on restart
 # - Perform daily backup of /deployment.local/backup if an S3 bucket with the same name as the FQDN for this host exists
 #   (periods replaced with hyphen e.g. demo.openremote.app -> demo-openremote-app)
 # - Update DNS A record on restart
@@ -30,13 +31,29 @@ Parameters:
     Type: String
     #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     Default: ""
+  VpcId:
+    Description: VPC ID in which to create instance
+    Type: String
+  SubnetId:
+    Description: Subnet ID in which to create instance
+    Type: String
+  SSHSecurityGroupId:
+    Description: SSH Security Group ID
+    Type: String
+  EFSDNS:
+    Description: EFS DNS entry (for maps - IP address of EFS mount target in the same AZ ID)
+    Type: String
+  ImageId:
+    Description: AMI ID
+    Type: String
+    Default: "ami-0a6b5206d1730bdce"
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
     # AWS Compute Optimizer reports that this instance type is under-provisioned and advise
     # more than double the price instance. As the requirements vary massively depending on the actual project
     # then we need to be flexible here and bear in mind use case and acceptable cost.
-    Default: t4g.small
+    Default: t4g.medium
     AllowedValues:
       - t4g.micro
       - t4g.small
@@ -62,6 +79,13 @@ Parameters:
       - true
       - false
     Default: false
+  HealthChecks:
+    Description: Create health checks
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: true
   SMTPHost:
     Type: String
     Default: ""
@@ -86,9 +110,9 @@ Parameters:
 
 Conditions:
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
+  CreateHealthChecks: !Equals [!Ref HealthChecks, "true"]
 
 Resources:
-
   InstanceRoleProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -106,7 +130,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: "Access OpenRemote stack services"
-      GroupName: !Ref Host
+      VpcId: !Ref VpcId
       Tags:
         - Key: Name
           Value: !Ref Host
@@ -177,7 +201,6 @@ Resources:
             - docker_setup
             - cron_setup
             - env_vars
-            - efs_setup
             - dns_updater
             - s3_backup_service
             - deployment_local_dir
@@ -376,54 +399,6 @@ Resources:
                 systemctl enable dns-updater.service
                 systemctl start dns-updater.service
 
-        efs_setup:
-          packages:
-            yum:
-              amazon-efs-utils: []
-          files:
-            "/usr/local/bin/efs-mount":
-              content: !Sub |
-                #!/bin/bash
-                
-                # -------------------------------------------------------------------------------------------
-                #
-                # Script for checking if EFS filesystem called 'hosts-filesystem' exists and attempts to
-                # mount it to /deployment.local/efs at boot time
-                #
-                # -------------------------------------------------------------------------------------------
-                
-                FILESYSTEMID=$(aws efs describe-file-systems --query "FileSystems[?Name=='hosts-filesystem'].FileSystemId" --output text --region ${AWS::Region})
-                
-                if [ -z "$FILESYSTEMID" ]; then
-                  echo "EFS Filesystem not found so nothing to mount"
-                  exit 0
-                fi
-                
-                echo "Mounting EFS Filesystem '$FILESYSTEMID'"
-                sudo mount -t efs $FILESYSTEMID /deployment.local/efs
-                sudo chown -R ec2-user:ec2-user /deployment.local/efs
-
-            "/lib/systemd/system/efs-mount.service":
-              content: |
-                [Unit]
-                Description=Mounts hosts-filesystem EFS filesystem
-                After=network-online.target firewalld.service
-                Wants=network-online.target
-                
-                [Service]
-                ExecStart=/usr/local/bin/efs-mount
-                
-                [Install]
-                WantedBy=multi-user.target
-          commands:
-            01_init_service:
-              command: |
-                mkdir -p /deployment.local/efs
-                chmod +x /usr/local/bin/efs-mount
-                systemctl daemon-reload
-                systemctl enable efs-mount.service
-                systemctl start efs-mount.service
-
         env_vars:
           files:
             "/home/ec2-user/smtp_credentials_generate.py":
@@ -490,7 +465,7 @@ Resources:
                     args = parser.parse_args()
                     print(calculate_key(args.secret, args.region))
                 
-
+                
                 if __name__ == '__main__':
                     main()
               owner: ec2-user
@@ -513,6 +488,13 @@ Resources:
                 fi
                 if [ -n "${SMTPORArn}" ]; then
                   echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
+                fi
+            02_efs_dns:
+              command: !Sub |
+                # Output EFS_DNS to /etc/environment               
+                if [ -n "${EFSDNS}" ]; then
+                  echo "EFS Filesystem DNS: ${EFSDNS}"
+                  echo "EFS_DNS=${EFSDNS}" >> /etc/environment
                 fi
 
         docker_setup:
@@ -588,11 +570,12 @@ Resources:
         Ref: InstanceType
       KeyName:
         "developers"
-      ImageId:
-        "ami-0042fede24cb86d5c"
-      SecurityGroups:
-        - "ssh-access"
+      ImageId: !Ref ImageId
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - Ref: SSHSecurityGroupId
         - Ref: StandardSecurityGroup
+
       Ipv6AddressCount: 1
       Tags:
         - Key: Name
@@ -634,8 +617,8 @@ Resources:
     Properties:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
-      
-# Telemetry and Alarms
+
+  # Telemetry and Alarms
 
   EmailSubscription:
     Type: AWS::SNS::Subscription
@@ -651,6 +634,7 @@ Resources:
 
   SystemStatusAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateHealthChecks
     Properties:
       Namespace: AWS/EC2
       MetricName: StatusCheckFailed_System
@@ -660,16 +644,17 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
       AlarmActions:
-      - !Sub "arn:aws:automate:${AWS::Region}:ec2:recover"
-      - !Ref SnsTopic
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:recover"
+        - !Ref SnsTopic
       OKActions:
-      - !Ref SnsTopic
+        - !Ref SnsTopic
       Dimensions:
-      - Name: InstanceId
-        Value: !Ref EC2Instance
+        - Name: InstanceId
+          Value: !Ref EC2Instance
 
   InstanceStatusAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateHealthChecks
     Properties:
       Namespace: AWS/EC2
       MetricName: StatusCheckFailed_Instance
@@ -679,13 +664,13 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
       AlarmActions:
-      - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
-      - !Ref SnsTopic
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
+        - !Ref SnsTopic
       OKActions:
-      - !Ref SnsTopic
+        - !Ref SnsTopic
       Dimensions:
-      - Name: InstanceId
-        Value: !Ref EC2Instance
+        - Name: InstanceId
+          Value: !Ref EC2Instance
 
   CPUUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -698,12 +683,46 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: 90
       AlarmActions:
-      - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
-      - !Ref SnsTopic
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
+        - !Ref SnsTopic
       OKActions:
-      - !Ref SnsTopic
+        - !Ref SnsTopic
       Dimensions:
-      - Name: InstanceId
-        Value: !Ref EC2Instance
+        - Name: InstanceId
+          Value: !Ref EC2Instance
 
+  HealthCheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: CreateHealthChecks
+    Properties:
+      Namespace: AWS/Route53
+      MetricName: HealthCheckStatus
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 15
+      ComparisonOperator: LessThanThreshold
+      Threshold: 1
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: HealthCheckId
+          Value: !Ref HealthCheck
+
+  HealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Condition: CreateHealthChecks
+    DependsOn: EC2Instance
+    Properties:
+      HealthCheckConfig:
+        Port: 443
+        Type: HTTPS
+        ResourcePath: '/api/master/info'
+        FullyQualifiedDomainName: !Sub ${Host}
+        RequestInterval: 30
+        FailureThreshold: 10
+      HealthCheckTags:
+        - Key: Name
+          Value: !Sub ${Host}
 

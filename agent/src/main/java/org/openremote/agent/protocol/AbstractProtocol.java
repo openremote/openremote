@@ -37,7 +37,6 @@ import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.MetaItemType;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -82,7 +81,8 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     protected TimerService timerService;
     protected ScheduledExecutorService executorService;
     protected ProtocolAssetService assetService;
-    protected ProtocolPredictedAssetService predictedAssetService;
+    protected ProtocolPredictedDatapointService predictedDatapointService;
+    protected ProtocolDatapointService datapointService;
     protected T agent;
 
     public AbstractProtocol(T agent) {
@@ -94,7 +94,8 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         timerService = container.getService(TimerService.class);
         executorService = container.getExecutorService();
         assetService = container.getService(ProtocolAssetService.class);
-        predictedAssetService = container.getService(ProtocolPredictedAssetService.class);
+        predictedDatapointService = container.getService(ProtocolPredictedDatapointService.class);
+        datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
 
         withLock(getProtocolName() + "::start", () -> {

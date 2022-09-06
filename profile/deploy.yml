@@ -61,7 +61,7 @@ services:
       # private/externally generated certificates); this is an alternative to DOMAINNAME for multiple domains.
       DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
 
-      # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://raw.githubusercontent.com/openremote/proxy/main/haproxy.cfg
       HAPROXY_CONFIG: ${HAPROXY_CONFIG:-/etc/haproxy/haproxy.cfg}
 
       # Email address for SSL certificate issuance and expiration notifications.
@@ -150,7 +150,7 @@ services:
       OR_SETUP_TYPE: ${OR_SETUP_TYPE}
 
       # The public HOSTNAME and SSL PORT of this manager
-      OR_SSL_PORT: ${OR_SSL_PORT:-443}
+      OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
 
       # Additional hostnames that should be allowed to access the auth server
@@ -216,10 +216,10 @@ services:
       OR_KEYCLOAK_HOST: ${OR_KEYCLOAK_HOST:-keycloak}
       OR_KEYCLOAK_PORT: ${OR_KEYCLOAK_PORT:-8080}
 
-      # The frontend URL of the Keycloak identity provider used by this instance (defaults to http:// https://OR_HOSTNAME:OR_SSL_PORT/auth)
-      # This is used in server info endpoint to inform frontend where the identity provider is for this instance (frontend apps should
-      # assume identity provider is on the same host as this instance if it is not set)
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
+      # Keycloak frontend host name, port and path (defaults: to OR_HOSTNAME:OR_SSL_PORT/auth)
+      KC_HOSTNAME:
+      KC_HOSTNAME_PORT:
+      KC_HOSTNAME_PATH:
 
       # Location of built in web content.
       OR_APP_DOCROOT: ${OR_APP_DOCROOT:-/opt/web}
@@ -319,33 +319,36 @@ services:
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
       TZ: ${TZ:-Europe/Amsterdam}
 
-      # Switch to DEBUG to diagnose Keycloak problems; default:
-      KEYCLOAK_LOGLEVEL: ${KEYCLOAK_LOGLEVEL:-INFO}
+      # Switch to debug to diagnose Keycloak problems; default:
+      KC_LOG_LEVEL: ${KC_LOG_LEVEL:-info}
 
       # Configure how Keycloak connects to the database
-      DB_VENDOR: ${OR_DB_VENDOR:-postgres}
-      DB_ADDR: ${OR_DB_HOST:-postgresql}
-      DB_PORT: ${OR_DB_PORT:-5432}
-      DB_DATABASE: ${OR_DB_NAME:-openremote}
-      DB_USER: ${OR_DB_USER:-postgres}
-      DB_PASSWORD: ${OR_DB_PASSWORD:-postgres}
-      DB_SCHEMA: ${OR_DB_SCHEMA:-public}
-      KEYCLOAK_USER: ${KEYCLOAK_USER:-admin}
-      KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
-      PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING:-true}
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
-      # Use the following if OR_SSL_PORT is not the default 443
-      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
+      KC_DB_URL_HOST: ${KC_DB_URL_HOST:-postgresql}
+      KC_DB_URL_PORT: ${KC_DB_URL_PORT:-5432}
+      KC_DB_URL_DATABASE: ${KC_DB_URL_DATABASE:-openremote}
+      KC_DB_SCHEMA: ${KC_DB_SCHEMA:-public}
+      KC_DB_USERNAME: ${KC_DB_USERNAME:-postgres}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-postgres}
+      # Configure web server
+      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
+      KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
+      KC_PROXY: ${KC_PROXY:-edge}
+
+      # Configure main user credentials (only on first startup)
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-secret}
+      # Custom startup options (see keycloak documentation)
+      KEYCLOAK_START_COMMAND: ${KEYCLOAK_START_COMMAND:-start}
+      KEYCLOAK_START_OPTS: ${KEYCLOAK_START_OPTS:-}
+      # Default themes to use
+      KEYCLOAK_DEFAULT_THEME: ${KEYCLOAK_DEFAULT_THEME:-openremote}
+      KEYCLOAK_ACCOUNT_THEME: ${KEYCLOAK_ACCOUNT_THEME:-openremote}
+      KEYCLOAK_WELCOME_THEME: ${KEYCLOAK_WELCOME_THEME:-keycloak}
 
       # Custom JVM options (increase heap size if required)
-      JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:--XX:CompressedClassSpaceSize=50m -XX:MaxMetaspaceSize=250m
-        -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
-        -XX:MaxDirectMemorySize=25m
-        -XX:NativeMemoryTracking=summary
-        -XX:+ExitOnOutOfMemoryError
-        -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
-        -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true}
-
+      JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:-}
 
   # PostgreSQL DBMS
   postgresql:

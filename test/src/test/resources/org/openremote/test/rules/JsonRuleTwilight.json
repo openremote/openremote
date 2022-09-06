@@ -1,0 +1,40 @@
+{
+  "rules": [
+    {
+      "name": "Sunrise with offset Trigger Rule",
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "sun": {
+                  "position": "TWILIGHT_MORNING_HORIZON",
+                  "location": {
+                    "type": "Point",
+                    "coordinates": [0,0]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "5laT6pWbZa9BHdPvzBHA7T"
+              ]
+            }
+          },
+          "value": 100,
+          "attributeName": "twilightHorizon"
+        }
+      ]
+    }
+  ]
+}

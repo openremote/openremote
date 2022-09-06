@@ -83,7 +83,7 @@ import static java.util.Collections.unmodifiableSet;
  *     &lt;param-value&gt;150&lt;/param-value&gt;
  * &lt;/init-param&gt;
  * &lt;init-param&gt;
- *     &lt;description&gt;The mimetypes which needs to be compressed. Must be a commaseparated string. Defaults to the below values.&lt;/description&gt;
+ *     &lt;description&gt;The mimetypes which needs to be compressed. Must be a comma separated string. Defaults to the below values.&lt;/description&gt;
  *     &lt;param-name&gt;mimetypes&lt;/param-name&gt;
  *     &lt;param-value&gt;
  *         text/plain, text/html, text/xml, text/css, text/javascript, text/csv, text/rtf,

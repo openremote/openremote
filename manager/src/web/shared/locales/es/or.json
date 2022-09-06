@@ -74,7 +74,6 @@
   "then": "Entonces",
   "orWhen": "O cuando",
   "datetime": "Fecha y hora",
-  "timer": "Timer",
   "rulesEditorAddCondition": "Añadir condición",
   "rulesEditorAddGroup": "Añadir grupo",
   "rulesEditorAddAction": "Añadir acción",
@@ -96,6 +95,9 @@
   "path": "Ruta",
   "showOnMap": "Mostrar en el mapa",
   "noAssetSelected": "Seleccione un activo a la izquierda",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Cambiar principal",
+  "setParent": "Seleccione principal activo",
   "loading": "Cargando...",
   "noAssetsFound": "No assets found",
   "location": "Posición",
@@ -165,6 +167,7 @@
   "wait": "Espere",
   "setup": "Instalación",
   "selectFile": "Seleccione Archivo",
+  "file": "Archivo",
   "discoverAssets": "Descubrir activos",
   "discovering": "Descubriendo",
   "underlyingAssets": "Activos subyacentes",
@@ -236,8 +239,6 @@
   "secured": "Asegurado",
   "clientSecret": "Secreto del cliente",
   "clientId": "ID del cliente",
-  "realm": "Realm",
-  "realm_plural": "Realms",
   "port": "Puerto",
   "host": "Hostname",
   "errorOccurred": "Se ha producido un error",
@@ -406,6 +407,7 @@
   "daysOfTheWeek": "Días de la semana",
   "dismiss": "despedir",
   "createAssetFailed": "No se pudo crear el activo",
+  "moveAssetFailed": "Failed to move asset",
   "logCategory": {
   },
   "readPermissions": "Leer permisos",
@@ -444,6 +446,7 @@
     "assetTypeNone": "None",
     "assetTypeMenuNone": "None",
     "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
+    "attributeValueLabel": "Attribute value",
+    "assetTypeDoesNotExist": "Filter : Asset type does not exist"
   }
 }

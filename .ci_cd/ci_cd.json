@@ -2,7 +2,7 @@
 	"push": {
 		"master": {
 			"distribute": {
-				"tags": "develop"
+				"docker": "develop,latest"
 			},
 			"deploy": {
 				"managerTag": "develop",
@@ -12,7 +12,8 @@
 	},
 	"release": {
 		"distribute": {
-			"tags": "latest,$version"
+			"docker": "latest,$version",
+      "maven": "$version"
 		},
 		"deploy": {
 			"managerTag": "latest",

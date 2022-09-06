@@ -119,7 +119,19 @@ export const style = css`
     #list li[data-selected] > .node-container {
         border-left-color: var(--internal-or-asset-tree-selected-color);
     }
-            
+          
+    .asset-list-element .over {
+        background-color: ${unsafeCSS(DefaultColor5)};
+    }
+    
+    .in-between-element {
+        height: 3px;
+    }
+
+    .end-element {
+        height: 15px;
+    }
+    
     .node-container {
         display: flex;
         border-left: 4px solid transparent;
@@ -222,27 +234,11 @@ export const style = css`
         display: flex;
         align-items: center;
         position: relative;
-        background-color: #F9F9F9;
+        background-color: var(--internal-or-asset-tree-selected-background-color);
     }
     
     #filterInput {
-        padding: 7px 10px;
-    }
-    
-    #clearIconContainer {
-        position: absolute;
-        right: 24px;
-        padding-right: 14px;
-        display: none;
-    }
-    
-    #clearIcon {
-        --or-icon-width: 20px;
-        --or-icon-height: 20px;
-        position: absolute;
-        right: 0;
-        padding-right: 16px;
-        cursor: pointer;
+        padding: 7px 12px 7px 7px;
     }
 
     #filterAssetTypeDownIcon {
@@ -256,19 +252,19 @@ export const style = css`
     
     #filterSettingsIcon {
         cursor: pointer;
-        margin-right: 5px;
+        margin-right: 12px;
     }
     
     #asset-tree-filter-setting {
         position: absolute;
-        background-color: #F9F9F9;
+        background-color: var(--internal-or-asset-tree-background-color);
         top: calc(var(--internal-or-asset-tree-header-height) + var(--internal-or-header-height, 50px) - 1px);
         display: none;
         width: 300px;
         z-index: 100;
         box-shadow: rgb(0 0 0 / 21%) 0px 1px 3px 0px;
         box-sizing: border-box;
-        padding: 5px;
+        padding: 10px;
     }
 
     #asset-tree-filter-setting .advanced-filter {
@@ -300,5 +296,13 @@ export const style = css`
     
     .filterMatching {
         color: #808080;
+    }
+    
+    .draggable {
+        cursor: pointer;
+    }
+    
+    .draggable:active {
+        cursor: grabbing;
     }
 `;

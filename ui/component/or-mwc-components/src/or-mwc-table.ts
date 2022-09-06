@@ -68,9 +68,9 @@ const style = css`
     }
 
     .mdc-data-table__header-cell {
-        font-weight: 700;
+        font-weight: 500;
         color: ${unsafeCSS(DefaultColor3)};
-        font-size: 12px;
+        font-size: 14px;
     }
 `;
 
