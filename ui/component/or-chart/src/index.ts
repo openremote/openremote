@@ -204,7 +204,7 @@ const style = css`
     }
 
     #attribute-list {
-        overflow: auto;
+        /*overflow: auto;*/
         flex: 1 1 0;
         min-height: 150px;
         width: 100%;
@@ -289,7 +289,13 @@ const style = css`
         /*min-height: 400px;
         max-height: 550px;*/
     }
-
+    .hidescroll {
+        -ms-overflow-style: none; /* for Internet Explorer, Edge */
+        scrollbar-width: none; /* for Firefox */
+    }
+    .hidescroll::-webkit-scrollbar {
+        display: none; /* for Chrome, Safari, and Opera */
+    }
     canvas {
         width: 100% !important;
         height: 100%; !important;
@@ -551,105 +557,112 @@ export class OrChart extends translate(i18next)(LitElement) {
     shouldShowLegend(): boolean {
         return (this.showLegend && this.showLegend.toString() == "true");
     }
+    applyChartResponsiveness(): void {
+        if(this.shadowRoot) {
+            const container = this.shadowRoot.getElementById('container');
+            if(container) {
+                const bottomLegenda = (container.clientWidth < 600);
+                container.style.flexDirection = bottomLegenda ? 'column' : 'row';
+                const attributeList = this.shadowRoot.getElementById('attribute-list');
+                if(attributeList) {
+                    attributeList.style.flexDirection = bottomLegenda ? 'row' : 'column';
+                    attributeList.style.gap = bottomLegenda ? '12px' : '';
+                }
+                const chartControls = this.shadowRoot.getElementById('chart-controls');
+                if(chartControls) {
+                    chartControls.style.overflow = bottomLegenda ? 'auto hidden' : 'hidden auto';
+                }
+                this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
+                    (item as HTMLElement).style.minWidth = bottomLegenda ? '100px' : '';
+                    (item as HTMLElement).style.minHeight = bottomLegenda ? '' : '50px';
+                });
+            }
+        }
+    }
 
     render() {
         const disabled = this._loading;
         const endDateInputType = this.getInputType();
+        this.updateComplete.then(() => { this.applyChartResponsiveness(); })
         return html`
             <div id="container">
                 <div id="chart-container">
                     <canvas id="chart"></canvas>
                 </div>
 
-                <!-- Checking whether showControls is set to true. Had to do string check as well -->
-                ${this.shouldShowControls() ? html`
-                    <div id="controls">
-                        <div class="interval-controls" style="margin-right: 6px;">
-                            ${getContentWithMenuTemplate(
-                            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
-                            this._getPeriodOptions(),
-                            this.period,
-                            (value) => this.setPeriodOption(value))}
-    
-                            ${!!this.compareTimestamp ? html `
+                <div id="chart-controls" class="hidescroll">
+                    <!-- Checking whether showControls is set to true. Had to do string check as well -->
+                    ${this.shouldShowControls() ? html`
+                        <div id="controls">
+                            <div class="interval-controls" style="margin-right: 6px;">
+                                ${getContentWithMenuTemplate(
+                                    html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`, 
+                                    this._getPeriodOptions(),
+                                    this.period,
+                                    (value) => this.setPeriodOption(value)
+                                )}
+                                ${!!this.compareTimestamp ? html`
                                     <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @or-mwc-input-changed="${() => this.setPeriodCompare(false)}" icon="minus"></or-mwc-input>
-                            ` : html`
+                                ` : html`
                                     <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @or-mwc-input-changed="${() => this.setPeriodCompare(true)}" icon="plus"></or-mwc-input>
-                            `}
-                        </div>
-                      
-                        <div class="period-controls">
-    
-                            ${!!this.compareTimestamp ? html `
-                                <span class="line-label solid"></span>
-                            `: ``}
-                            <or-mwc-input id="ending-date" 
-                                .checkAssetWrite="${false}"
-                                .type="${endDateInputType}" 
-                                ?disabled="${disabled}" 
-                                .value="${this.timestamp}" 
-                                @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
-                            <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false, undefined, 0)}"></or-icon>
-                            <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true, undefined, 0)}"></or-icon>
-                        </div>
-                        ${!!this.compareTimestamp ? html `
+                                `}
+                            </div>
+                          
                             <div class="period-controls">
-                            <span class="line-label dashed"></span>
+        
+                                ${!!this.compareTimestamp ? html `
+                                    <span class="line-label solid"></span>
+                                `: ``}
                                 <or-mwc-input id="ending-date" 
                                     .checkAssetWrite="${false}"
                                     .type="${endDateInputType}" 
                                     ?disabled="${disabled}" 
-                                    .value="${this.compareTimestamp}" 
-                                    @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-mwc-input>
-                                <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true, 0)}"></or-icon>
-                                <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true, 0)}"></or-icon>
+                                    .value="${this.timestamp}" 
+                                    @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
+                                <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false, undefined, 0)}"></or-icon>
+                                <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true, undefined, 0)}"></or-icon>
                             </div>
-                        ` : html``}
-    
-                        <div id="attribute-list">
+                            ${!!this.compareTimestamp ? html `
+                                <div class="period-controls">
+                                <span class="line-label dashed"></span>
+                                    <or-mwc-input id="ending-date" 
+                                        .checkAssetWrite="${false}"
+                                        .type="${endDateInputType}" 
+                                        ?disabled="${disabled}" 
+                                        .value="${this.compareTimestamp}" 
+                                        @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-mwc-input>
+                                    <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true, 0)}"></or-icon>
+                                    <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true, 0)}"></or-icon>
+                                </div>
+                            ` : html``}
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
+                        </div>
+                    ` : html``} 
+                    ${this.shouldShowLegend() ? html`
+                        <div id="attribute-list" style="min-height: 50px; min-width: 150px; flex: 0 1 0px; padding: 12px;">
+                            ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
+                                <div>
+                                    <span>${i18next.t('noAttributesConnected')}</span>
+                                </div>
+                            ` : undefined}
                             ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
-                        const colourIndex = index % this.colors.length;
-                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
-                        const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
-                        const bgColor = this.colors[colourIndex] || "";
-                        return html`
-                                    <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
+                                const colourIndex = index % this.colors.length;
+                                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
+                                const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
+                                const bgColor = this.colors[colourIndex] || "";
+                                return html`
+                                    <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
                                         <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                         <div class="attribute-list-item-label">
                                             <span>${this.assets[assetIndex].name}</span>
                                             <span style="font-size:14px; color:grey;">${label}</span>
                                         </div>
-                                        <button class="button-clear" @click="${() => this._deleteAttribute(index)}"><or-icon icon="close-circle"></or-icon></button>
                                     </div>
                                 `
-                    })}
+                            })}
                         </div>
-                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
-                    </div>
-                ` : (this.shouldShowLegend() ? html`
-                    <div id="attribute-list" style="min-height: 50px; min-width: 150px; flex: 0 1 0px; padding: 12px;">
-                        ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
-                            <div>
-                                <span>${i18next.t('noAttributesConnected')}</span>
-                            </div>
-                        ` : undefined}
-                        ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
-                            const colourIndex = index % this.colors.length;
-                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
-                            const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
-                            const bgColor = this.colors[colourIndex] || "";
-                            return html`
-                                <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
-                                    <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
-                                    <div class="attribute-list-item-label">
-                                        <span>${this.assets[assetIndex].name}</span>
-                                        <span style="font-size:14px; color:grey;">${label}</span>
-                                    </div>
-                                </div>
-                            `
-                        })}
-                    </div>
-                ` : undefined)}
+                    ` : undefined}
+                </div>
             </div>
         `;
     }

@@ -216,7 +216,7 @@ export class OrDashboardBuilder extends LitElement {
     protected selectedDashboard: Dashboard | undefined;
 
     @state()
-    protected selectedWidget: DashboardWidget | undefined;
+    protected selectedWidgetId: string | undefined;
 
     @state() // Used to toggle the SAVE button depending on whether changes have been made.
     protected initialDashboardJSON: string | undefined;
@@ -288,7 +288,7 @@ export class OrDashboardBuilder extends LitElement {
 
         // Any update on the dashboard
         if(changedProperties.has("selectedDashboard")) {
-            this.selectedWidget = undefined;
+            this.deselectWidget();
             this.currentTemplate = this.selectedDashboard?.template;
             this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedDashboard }))
         }
@@ -301,7 +301,7 @@ export class OrDashboardBuilder extends LitElement {
         }
         // When edit/view mode gets toggled
         if(changedProperties.has("editMode")) {
-            this.selectedWidget = undefined;
+            this.deselectWidget();
             this.showDashboardTree = true;
         }
     }
@@ -334,7 +334,7 @@ export class OrDashboardBuilder extends LitElement {
             tempTemplate.widgets = tempTemplate.widgets?.filter((x: DashboardWidget) => { return x.id != widget.id; });
             this.currentTemplate = Object.assign({}, tempTemplate);
         }
-        if(this.selectedWidget?.id == widget.id) {
+        if(this.selectedWidgetId == widget.id) {
             this.deselectWidget();
         }
     }
@@ -344,13 +344,13 @@ export class OrDashboardBuilder extends LitElement {
     selectWidget(widget: DashboardWidget): void {
         const foundWidget = this.currentTemplate?.widgets?.find((x) => { return x.gridItem?.id == widget.gridItem?.id; });
         if(foundWidget != null) {
-            this.selectedWidget = foundWidget;
+            this.selectedWidgetId = foundWidget.id;
         } else {
             console.error("The selected widget does not exist!");
         }
     }
     deselectWidget() {
-        this.selectedWidget = undefined;
+        this.selectedWidgetId = undefined;
     }
 
     /* --------------------- */
@@ -506,7 +506,7 @@ export class OrDashboardBuilder extends LitElement {
                                 ${(this.selectedDashboard != null) ? html`
                                     <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .realm="${this.realm}" .template="${this.currentTemplate}"
-                                                          .selectedWidget="${this.selectedWidget}" .editMode="${this.editMode}"
+                                                          .selectedWidget="${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)}" .editMode="${this.editMode}"
                                                           .fullscreen="${!this.editMode}" .readonly="${this._isReadonly()}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                           @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"
@@ -520,11 +520,11 @@ export class OrDashboardBuilder extends LitElement {
                             </div>
                             ${(this.selectedDashboard != null && this.editMode && !this._isReadonly() && this._hasEditAccess()) ? html`
                                 <div id="sidebar">
-                                    ${this.selectedWidget != null ? html`
+                                    ${this.selectedWidgetId != null ? html`
                                         <div class="settings-container">
                                             <div id="menu-header">
                                                 <div id="title-container">
-                                                    <span id="title">${this.selectedWidget?.displayName}:</span>
+                                                    <span id="title">${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)?.displayName}:</span>
                                                 </div>
                                                 <div>
                                                     <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => { this.deselectWidget(); }}"></or-mwc-input>
@@ -532,15 +532,15 @@ export class OrDashboardBuilder extends LitElement {
                                             </div>
                                             <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
                                                 <div style="position: relative;">
-                                                    <or-dashboard-widgetsettings style="position: absolute;" .selectedWidget="${this.selectedWidget}"
+                                                    <or-dashboard-widgetsettings style="position: absolute;" .selectedWidget="${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)}"
                                                                                  @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
-                                                                                 @update="${() => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
+                                                                                 @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force ? this.rerenderPending = true : undefined); }}"
                                                     ></or-dashboard-widgetsettings>
                                                 </div>
                                             </div>
                                         </div>
                                     ` : undefined}
-                                    <div class="settings-container" style="${this.selectedWidget != null ? css`display: none` : null}">
+                                    <div class="settings-container" style="${this.selectedWidgetId != null ? css`display: none` : null}">
                                         <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
                                             <or-mwc-tabs .items="${tabItems}" noScroll @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
                                         </div>

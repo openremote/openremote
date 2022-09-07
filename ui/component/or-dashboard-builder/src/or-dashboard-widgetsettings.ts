@@ -196,8 +196,8 @@ export class OrDashboardWidgetsettings extends LitElement {
     /* ------------------------------ */
 
     // Method to update the Grid. For example after changing a setting.
-    forceParentUpdate() {
-        this.dispatchEvent(new CustomEvent('update'));
+    forceParentUpdate(force: boolean = false) {
+        this.dispatchEvent(new CustomEvent('update', { detail: { force: force }}));
     }
 
     deleteSelectedWidget() {
@@ -289,19 +289,19 @@ export class OrDashboardWidgetsettings extends LitElement {
                             <div style="padding: 24px 24px 48px 24px;">
                                 <div>
                                     <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" .value="${chartConfig.period}" label="${i18next.t('timeframe')}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).period = event.detail.value; this.forceParentUpdate(); }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).period = event.detail.value; this.requestUpdate(); this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                                 <div class="switchMwcInputContainer" style="margin-top: 18px;">
                                     <span>${i18next.t('dashboard.showTimestampControls')}</span>
                                     <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;" .value="${chartConfig.showTimestampControls}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showTimestampControls = event.detail.value; this.forceParentUpdate(); }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showTimestampControls = event.detail.value; this.requestUpdate(); this.forceParentUpdate(false); }}"
                                     ></or-mwc-input>
                                 </div>
                                 <div class="switchMwcInputContainer">
                                     <span>${i18next.t('dashboard.showLegend')}</span>
                                     <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;" .value="${chartConfig.showLegend}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showLegend = event.detail.value; this.forceParentUpdate(); }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showLegend = event.detail.value; this.requestUpdate(); this.forceParentUpdate(false); }}"
                                     ></or-mwc-input>
                                 </div>
                             </div>
@@ -315,12 +315,12 @@ export class OrDashboardWidgetsettings extends LitElement {
                             <div style="padding: 24px 24px 48px 24px;">
                                 <div>
                                     <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${chartConfig.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).deltaFormat = event.detail.value; this.forceParentUpdate(); }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).deltaFormat = event.detail.value; this.requestUpdate(); this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                                 <div style="margin-top: 18px;">
                                     <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${chartConfig.decimals}" label="${i18next.t('decimals')}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).decimals = event.detail.value; this.forceParentUpdate(); }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).decimals = event.detail.value; this.requestUpdate(); this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                             </div>
@@ -368,7 +368,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                             <div style="padding: 24px 24px 48px 24px;">
                                 <div>
                                     <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" .value="${kpiConfig.period}" label="${i18next.t('timeframe')}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as KPIWidgetConfig).period = event.detail.value; this.forceParentUpdate(); }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => {(this.selectedWidget?.widgetConfig as KPIWidgetConfig).period = event.detail.value; this.requestUpdate(); this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                             </div>

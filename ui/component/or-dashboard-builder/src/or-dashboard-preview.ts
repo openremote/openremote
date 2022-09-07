@@ -61,8 +61,8 @@ const editorStyling = css`
         border-radius: 0;
         overflow-x: hidden;
         overflow-y: auto;
-        height: auto;
-        width: 100%;
+        height: auto !important; /* To override .maingrid */
+        width: 100% !important; /* To override .maingrid */
         padding: 4px;
         /*pointer-events: none;*/
         position: relative;
