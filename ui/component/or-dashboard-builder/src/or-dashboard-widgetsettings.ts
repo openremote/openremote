@@ -340,7 +340,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                         ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                             <div style="padding: 12px;">
                                 ${(kpiConfig.attributeRefs && kpiConfig.attributeRefs.length > 0) ? html`
-                                    <div id="attribute-list">
+                                    <div id="attribute-list" style="min-height: 0px;">
                                         <div class="attribute-list-item">
                                             ${(this.loadedAssets && this.loadedAssets[0] != null) ? html`
                                                 <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.loadedAssets[0].type))}</span>
@@ -355,7 +355,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                                         </div>
                                     </div>
                                 ` : html`
-                                    <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this.openDialog(kpiConfig.attributeRefs, true)}"></or-mwc-input>
+                                    <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this.openDialog(kpiConfig.attributeRefs, false)}"></or-mwc-input>
                                 `}
                             </div>
                         ` : null}

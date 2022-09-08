@@ -206,10 +206,12 @@ const style = css`
     #attribute-list {
         /*overflow: auto;*/
         flex: 1 1 0;
-        min-height: 150px;
-        width: 100%;
+        width: 95%;
         display: flex;
         flex-direction: column;
+    }
+    .attribute-list-dense {
+        flex-wrap: wrap;
     }
     
     .attribute-list-item {
@@ -219,6 +221,9 @@ const style = css`
         align-items: center;
         padding: 0;
         min-height: 50px;
+    }
+    .attribute-list-item-dense {
+        min-height: 28px;
     }
 
     .button-clear {
@@ -248,8 +253,8 @@ const style = css`
     }
 
     .attribute-list-item-bullet {
-        width: 14px;
-        height: 14px;
+        width: 12px;
+        height: 12px;
         border-radius: 7px;
         margin-right: 10px;
     }
@@ -370,6 +375,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     @property()
     public showLegend: boolean = true;
+
+    @property()
+    public denseLegend: boolean = false;
 
     @property()
     protected _loading: boolean = false;
@@ -509,7 +517,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             },
                             ticks: {
                                 autoSkip: true,
-                                maxTicksLimit: 30,
+                                maxTicksLimit: 20,
                                 color: "#000",
                                 font: {
                                     family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
@@ -558,16 +566,16 @@ export class OrChart extends translate(i18next)(LitElement) {
                 container.style.flexDirection = bottomLegenda ? 'column' : 'row';
                 const attributeList = this.shadowRoot.getElementById('attribute-list');
                 if(attributeList) {
-                    attributeList.style.flexDirection = bottomLegenda ? 'row' : 'column';
-                    attributeList.style.gap = bottomLegenda ? '12px' : '';
+                    attributeList.style.gap = bottomLegenda ? '0 12px' : '';
+                    attributeList.style.maxHeight = bottomLegenda ? '90px' : '';
                 }
                 const chartControls = this.shadowRoot.getElementById('chart-controls');
                 if(chartControls) {
                     chartControls.style.overflow = bottomLegenda ? 'auto hidden' : 'hidden auto';
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
-                    (item as HTMLElement).style.minWidth = bottomLegenda ? '100px' : '';
-                    (item as HTMLElement).style.minHeight = bottomLegenda ? '' : '50px';
+                    (item as HTMLElement).style.minHeight = bottomLegenda ? '' : '44px';
+                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegenda ? 'row' : 'column';
                 });
             }
         }
@@ -632,7 +640,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         </div>
                     ` : html``} 
                     ${this.shouldShowLegend() ? html`
-                        <div id="attribute-list" style="min-height: 50px; min-width: 150px; flex: 0 1 0px; padding: 12px;">
+                        <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="min-height: 50px; min-width: 150px; padding: ${this.denseLegend ? '6px' : '12px'};">
                             ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                 <div>
                                     <span>${i18next.t('noAttributesConnected')}</span>
@@ -644,11 +652,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
                                 const bgColor = this.colors[colourIndex] || "";
                                 return html`
-                                    <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
+                                    <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
                                         <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
-                                        <div class="attribute-list-item-label">
-                                            <span>${this.assets[assetIndex].name}</span>
-                                            <span style="font-size:14px; color:grey;">${label}</span>
+                                        <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
+                                            <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
+                                            <span style="font-size:12px; color:grey;">${label}</span>
                                         </div>
                                     </div>
                                 `

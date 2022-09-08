@@ -2,6 +2,7 @@ import manager, {DefaultColor4} from "@openremote/core";
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
+import {debounce, throttle} from "lodash";
 import {
     Asset,
     Attribute,
@@ -530,7 +531,7 @@ export class OrDashboardPreview extends LitElement {
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewPreset = this.template?.screenPresets?.find(s => s.displayName == event.detail.value); }}"
                             ></or-mwc-input>
                             <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="${i18next.t('width')}" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }}"
+                                          @or-mwc-input-changed="${debounce((event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }, 550)}"
                             ></or-mwc-input>
                             <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="${i18next.t('height')}" min="100" .value="${this.previewHeight?.replace('px', '')}" style="width: 90px;"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewHeight = event.detail.value + 'px'; }}"
@@ -574,15 +575,23 @@ export class OrDashboardPreview extends LitElement {
             `
     }
 
+    // Triggering a Grid rerender on every time the element resizes.
+    // In fullscreen, debounce (only trigger after 550ms of no changes) to limit amount of rerenders.
     setupResizeObserver(element: Element): ResizeObserver {
         this.resizeObserver?.disconnect();
-        this.resizeObserver = new ResizeObserver(() => {
-
-            console.log("Noticed a Dashboard resize! Updating the grid..");
-            console.log("Setting up Grid.. [#5]");
-            this.setupGrid(true, false);
-
-        });
+        if(this.fullscreen) {
+            this.resizeObserver = new ResizeObserver(debounce(() => {
+                console.log("Noticed a Dashboard resize! Updating the grid..");
+                console.log("Setting up Grid.. [#5]");
+                this.setupGrid(true, false);
+            }, 550));
+        } else {
+            this.resizeObserver = new ResizeObserver(() => {
+                console.log("Noticed a Dashboard resize! Updating the grid..");
+                console.log("Setting up Grid.. [#5]");
+                this.setupGrid(true, false);
+            });
+        }
         this.resizeObserver.observe(element);
         return this.resizeObserver;
     }
@@ -641,7 +650,7 @@ export class OrDashboardPreview extends LitElement {
                     return html`
                         <div class="gridItem" id="gridItem-${widget.id}">
                             ${isMinimumSize ? html`
-                                <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
+                                <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" denseLegend="${true}"
                                           .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
                                           showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
                                 ></or-chart>
