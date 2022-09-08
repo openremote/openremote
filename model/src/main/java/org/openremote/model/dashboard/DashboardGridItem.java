@@ -14,8 +14,11 @@ public class DashboardGridItem {
 
     @Min(value = 1, message = "{Dashboard.gridItem.h.Min}")
     protected int h;
+
     protected int minH;
     protected int minW;
+    protected int minPixelH;
+    protected int minPixelW;
     protected boolean noResize;
     protected boolean noMove;
     protected boolean locked;

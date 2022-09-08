@@ -316,8 +316,8 @@ export class OrDashboardPreview extends LitElement {
                     // Otherwise, just set width and calculate height with 16/9 aspect ratio.
                     if(preset.breakpoint === MAX_BREAKPOINT) {
                         const breakpoint = this.template.screenPresets[this.template.screenPresets.indexOf(preset) + 1].breakpoint!;
-                        this.previewWidth = (breakpoint + 1) + "px";
-                        this.previewHeight = (Math.round((breakpoint + 1) / 16 * 9) + "px");
+                        this.previewWidth = (breakpoint * 1.5) + "px";
+                        this.previewHeight = (Math.round((breakpoint * 1.5) / 16 * 9) + "px");
                     } else {
                         this.previewWidth = preset.breakpoint + "px";
                         this.previewHeight = (preset.breakpoint! / 16 * 9) + "px";
@@ -525,7 +525,7 @@ export class OrDashboardPreview extends LitElement {
                             <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="${i18next.t('dashboard.zoomPercent')}" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }}"
                             ></or-mwc-input>
-                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}"
+                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}" style="min-width: 220px;"
                                           .value="${this.previewPreset == undefined ? customPreset : this.previewPreset.displayName}" .options="${screenPresets}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewPreset = this.template?.screenPresets?.find(s => s.displayName == event.detail.value); }}"
                             ></or-mwc-input>
@@ -618,6 +618,11 @@ export class OrDashboardPreview extends LitElement {
                 }
             }
 
+            const gridElem = this.shadowRoot?.getElementById('gridItem-' + widget.id);
+            const isMinimumSize = /*(gridElem == null) || */(widget.gridItem?.minPixelW && widget.gridItem?.minPixelH &&
+                gridElem && (widget.gridItem?.minPixelW < gridElem.clientWidth) && (widget.gridItem?.minPixelH < gridElem.clientHeight)
+            );
+
             switch (_widget.widgetType) {
                 case DashboardWidgetType.LINE_CHART: {
 
@@ -634,22 +639,29 @@ export class OrDashboardPreview extends LitElement {
                         });
                     }
                     return html`
-                        <div class="gridItem">
-                            <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
-                                      .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
-                                      showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
-                            ></or-chart>
+                        <div class="gridItem" id="gridItem-${widget.id}">
+                            ${isMinimumSize ? html`
+                                <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
+                                          .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
+                                          showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
+                                ></or-chart>
+                            ` : html`
+                                <span>Widget is too small.</span>
+                            `}
                         </div>
                     `;
                 }
 
                 case DashboardWidgetType.KPI: {
                     return html`
-                        <div class='gridItem' style="display: flex;">
-                            <!--<or-map center='5.454250, 51.445990' zoom='5' style='height: 100%; width: 100%;'></or-map>-->
-                            <or-attribute-card .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}"
-                                               showControls="${false}" .realm="${this.realm}" style="height: 100%;"
-                            ></or-attribute-card>
+                        <div class='gridItem' id="gridItem-${widget.id}" style="display: flex;">
+                            ${isMinimumSize ? html`
+                                <or-attribute-card .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
+                                                   showControls="${false}" .realm="${this.realm}" style="height: 100%;"
+                                ></or-attribute-card>
+                            ` : html`
+                                <span>Widget is too small.</span>
+                            `}
                         </div>
                     `;
                 }

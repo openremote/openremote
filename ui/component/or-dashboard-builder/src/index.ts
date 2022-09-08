@@ -586,6 +586,8 @@ export function generateGridItem(gridstackNode: ORGridStackNode, displayName: st
         h: 2,
         minW: getWidgetMinWidth(gridstackNode.widgetType),
         minH: getWidgetMinWidth(gridstackNode.widgetType),
+        minPixelW: getWidgetMinPixelWidth(gridstackNode.widgetType),
+        minPixelH: getWidgetMinPixelHeight(gridstackNode.widgetType),
         noResize: false,
         noMove: false,
         locked: false,
@@ -606,5 +608,17 @@ export function getWidgetMinWidth(widgetType: DashboardWidgetType): number {
     switch (widgetType) {
         case DashboardWidgetType.LINE_CHART: return 2;
         case DashboardWidgetType.KPI: return 1;
+    }
+}
+export function getWidgetMinPixelWidth(widgetType: DashboardWidgetType): number {
+    switch (widgetType) {
+        case DashboardWidgetType.LINE_CHART: return 300;
+        case DashboardWidgetType.KPI: return 100;
+    }
+}
+export function getWidgetMinPixelHeight(widgetType: DashboardWidgetType): number {
+    switch (widgetType) {
+        case DashboardWidgetType.LINE_CHART: return 140;
+        case DashboardWidgetType.KPI: return 100;
     }
 }

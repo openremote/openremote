@@ -289,13 +289,6 @@ const style = css`
         /*min-height: 400px;
         max-height: 550px;*/
     }
-    .hidescroll {
-        -ms-overflow-style: none; /* for Internet Explorer, Edge */
-        scrollbar-width: none; /* for Firefox */
-    }
-    .hidescroll::-webkit-scrollbar {
-        display: none; /* for Chrome, Safari, and Opera */
-    }
     canvas {
         width: 100% !important;
         height: 100%; !important;
@@ -590,7 +583,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <canvas id="chart"></canvas>
                 </div>
 
-                <div id="chart-controls" class="hidescroll">
+                <div id="chart-controls">
                     <!-- Checking whether showControls is set to true. Had to do string check as well -->
                     ${this.shouldShowControls() ? html`
                         <div id="controls">
