@@ -510,6 +510,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     second: 'HH:mm:ss',
                                     minute: "HH:mm",
                                     hour: "HH:mm",
+                                    day: "MMM D",
                                     week: "w"
                                 },
                                 unit: this._timeUnits,
@@ -517,7 +518,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                             },
                             ticks: {
                                 autoSkip: true,
-                                maxTicksLimit: 20,
                                 color: "#000",
                                 font: {
                                     family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
@@ -1030,8 +1030,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                 stepSize = 1;
                 break;
             case "week":
-                interval = DatapointInterval.HOUR;
-                stepSize = 6;
+                interval = DatapointInterval.DAY;
+                stepSize = 1;
                 break;
             case "month":
                 interval = DatapointInterval.DAY;

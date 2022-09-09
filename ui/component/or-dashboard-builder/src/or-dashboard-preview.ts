@@ -22,6 +22,7 @@ import {
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {until} from "lit/directives/until.js";
 import {repeat} from 'lit/directives/repeat.js';
+import {guard} from 'lit/directives/guard.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
@@ -199,6 +200,18 @@ export class OrDashboardPreview extends LitElement {
 
     /* ------------------------------------------- */
 
+
+    // Checking whether actual changes have been made; if not, prevent updating.
+    shouldUpdate(changedProperties: Map<PropertyKey, unknown>): boolean {
+        const changed = changedProperties;
+        if(changedProperties.has('latestChanges') && this.latestChanges?.changedKeys.length == 0) {
+            changed.delete('latestChanges');
+        }
+        return (changed.size == 0 ? false : super.shouldUpdate(changedProperties));
+    }
+
+
+    // Main method for executing actions after property changes
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
@@ -524,7 +537,7 @@ export class OrDashboardPreview extends LitElement {
                                           @or-mwc-input-changed="${() => this.onFitToScreenClick()}">
                             </or-mwc-input>
                             <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="${i18next.t('dashboard.zoomPercent')}" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }}"
+                                          @or-mwc-input-changed="${debounce((event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }, 50)}"
                             ></or-mwc-input>
                             <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}" style="min-width: 220px;"
                                           .value="${this.previewPreset == undefined ? customPreset : this.previewPreset.displayName}" .options="${screenPresets}"

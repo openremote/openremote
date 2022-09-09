@@ -240,7 +240,7 @@ export class OrDashboardWidgetsettings extends LitElement {
         htmlGeneral = html`
             <div style="padding: 12px;">
                 <div>
-                    <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;" .value="${this.selectedWidget?.displayName}" label="${i18next.t('displayname')}" 
+                    <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;" .value="${this.selectedWidget?.displayName}" label="${i18next.t('name')}" 
                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.selectedWidget!.displayName = event.detail.value; this.forceParentUpdate(); }}"
                     ></or-mwc-input>
                 </div>
