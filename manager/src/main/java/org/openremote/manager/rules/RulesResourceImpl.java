@@ -39,6 +39,7 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -248,6 +249,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public long createRealmRuleset(@BeanParam RequestParams requestParams, RealmRuleset ruleset) {
+        LOG.log(Level.INFO, "--> ruleset on ressource : " + ruleset);
         Realm realm = identityService.getIdentityProvider().getRealm(ruleset.getRealm());
         if (realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
