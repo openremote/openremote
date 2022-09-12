@@ -2,7 +2,8 @@ import manager, {DefaultColor4} from "@openremote/core";
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
-import {debounce, throttle} from "lodash";
+import "./or-dashboard-widget";
+import {debounce} from "lodash";
 import {
     Asset,
     Attribute,
@@ -20,9 +21,7 @@ import {
     getActivePreset, MAX_BREAKPOINT,
 } from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {until} from "lit/directives/until.js";
 import {repeat} from 'lit/directives/repeat.js';
-import {guard} from 'lit/directives/guard.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
@@ -83,12 +82,6 @@ const editorStyling = css`
     }
     .grid-stack-item-content__active {
         border: 2px solid ${unsafeCSS(DefaultColor4)};    
-    }
-    .gridItem {
-        height: 100%;
-        overflow: hidden;
-        box-sizing: border-box;
-        padding: 8px;
     }
     
     /* Grid lines on the background of the grid */
@@ -198,15 +191,20 @@ export class OrDashboardPreview extends LitElement {
     @state()
     protected resizeObserver?: ResizeObserver;
 
+    @state()
+    protected cachedMockData?: Map<string, unknown> = new Map<string, unknown>();
+
     /* ------------------------------------------- */
 
 
     // Checking whether actual changes have been made; if not, prevent updating.
     shouldUpdate(changedProperties: Map<PropertyKey, unknown>): boolean {
+        // console.error(changedProperties)
         const changed = changedProperties;
-        if(changedProperties.has('latestChanges') && this.latestChanges?.changedKeys.length == 0) {
+        if(changedProperties.has('latestChanges') && this.latestChanges?.changedKeys.length == 0 && (JSON.stringify((changedProperties.get('latestChanges') as any)?.oldValue)) == (JSON.stringify((changedProperties.get('latestChanges') as any)?.newValue))) {
             changed.delete('latestChanges');
         }
+        changed.delete('latestDragWidgetStart');
         return (changed.size == 0 ? false : super.shouldUpdate(changedProperties));
     }
 
@@ -572,10 +570,10 @@ export class OrDashboardPreview extends LitElement {
                                     ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
                                         return html`
                                             <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
-                                                <div class="grid-stack-item-content">
-                                                    ${until(this.getWidgetContent(widget).then((content) => {
-                                                        return content;
-                                                    }))}
+                                                <div class="grid-stack-item-content" style="display: flex;">
+                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}"
+                                                                         style="width: 100%;"
+                                                    ></or-dashboard-widget>
                                                 </div>
                                             </div>
                                         `
@@ -611,124 +609,4 @@ export class OrDashboardPreview extends LitElement {
 
     /* --------------------------------------- */
 
-    // Widget related methods such as getting Widget HTML,
-    // or generating fake data for the widgets.
-
-
-    async getWidgetContent(widget: DashboardWidget): Promise<TemplateResult> {
-        const _widget = Object.assign({}, widget);
-        if(_widget.gridItem) {
-            let assets: Asset[] = [];
-            let attributes: [number, Attribute<any>][] = [];
-
-            // Pulling data from database, however only when in editMode!!
-            // KPI widgetType does use real data in EDIT mode as well, so separate check
-            if(!this.editMode || _widget.widgetType == DashboardWidgetType.KPI) {
-                const response = await manager.rest.api.AssetResource.queryAssets({
-                    ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
-                }).catch((reason => {
-                    console.error(reason);
-                    showSnackbar(undefined, i18next.t('errorOccurred'));
-                }));
-                if(response) {
-                    assets = response.data;
-                    attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
-                        const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
-                        const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                        return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-                    }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                }
-            }
-
-            const gridElem = this.shadowRoot?.getElementById('gridItem-' + widget.id);
-            const isMinimumSize = /*(gridElem == null) || */(widget.gridItem?.minPixelW && widget.gridItem?.minPixelH &&
-                gridElem && (widget.gridItem?.minPixelW < gridElem.clientWidth) && (widget.gridItem?.minPixelH < gridElem.clientHeight)
-            );
-
-            switch (_widget.widgetType) {
-                case DashboardWidgetType.LINE_CHART: {
-
-                    // Generation of fake data when in editMode.
-                    if(this.editMode) {
-                        _widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
-                            if(!assets.find((asset: Asset) => { return asset.id == attrRef.id; })) {
-                                assets.push({ id: attrRef.id, name: (i18next.t('asset') +" X"), type: "ThingAsset" });
-                            }
-                        });
-                        attributes = [];
-                        _widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
-                            attributes.push([0, { name: attrRef.name }]);
-                        });
-                    }
-                    return html`
-                        <div class="gridItem" id="gridItem-${widget.id}">
-                            ${isMinimumSize ? html`
-                                <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" denseLegend="${true}"
-                                          .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
-                                          showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
-                                ></or-chart>
-                            ` : html`
-                                <span>Widget is too small.</span>
-                            `}
-                        </div>
-                    `;
-                }
-
-                case DashboardWidgetType.KPI: {
-                    return html`
-                        <div class='gridItem' id="gridItem-${widget.id}" style="display: flex;">
-                            ${isMinimumSize ? html`
-                                <or-attribute-card .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
-                                                   showControls="${false}" .realm="${this.realm}" style="height: 100%;"
-                                ></or-attribute-card>
-                            ` : html`
-                                <span>Widget is too small.</span>
-                            `}
-                        </div>
-                    `;
-                }
-            }
-        }
-        return html`<span>${i18next.t('error')}!</span>`;
-    }
-
-    protected generateMockData(widget: DashboardWidget, startOfPeriod: number, _endOfPeriod: number, amount: number = 10): any {
-        switch (widget.widgetType) {
-            case DashboardWidgetType.LINE_CHART: {
-                const mockTime: number = startOfPeriod;
-                const chartData: any[] = [];
-                const interval = (Date.now() - startOfPeriod) / amount;
-
-                // Generating random coordinates on the chart
-                let data: any[] = [];
-                widget.widgetConfig?.attributeRefs?.forEach((_attrRef: AttributeRef) => {
-                    let valueEntries: any[] = [];
-                    let prevValue: number = 100;
-                    for(let i = 0; i < amount; i++) {
-                        const value = Math.floor(Math.random() * ((prevValue + 2) - (prevValue - 2)) + (prevValue - 2))
-                        valueEntries.push({
-                            x: (mockTime + (i * interval)),
-                            y: value
-                        });
-                        prevValue = value;
-                    }
-                    data.push(valueEntries);
-                })
-
-                // Making a line for each attribute
-                widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
-                    chartData.push({
-                        backgroundColor: ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"][chartData.length],
-                        borderColor: ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"][chartData.length],
-                        data: data[chartData.length],
-                        fill: false,
-                        label: attrRef.name,
-                        pointRadius: 2
-                    });
-                });
-                return chartData;
-            }
-        }
-        return [];
-    }
 }

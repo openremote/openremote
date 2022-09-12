@@ -11,6 +11,7 @@ import {DefaultColor5, manager } from "@openremote/core";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
+import {ChartWidgetConfig, KPIWidgetConfig} from "./or-dashboard-widget";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -88,34 +89,6 @@ const widgetSettingsStyling = css`
 
 /* ------------------------------------ */
 
-// Interfaces that contain Configurations of each Widget Type.
-// The database stores them in any type, however these can be used
-// for type checking.
-
-interface ChartWidgetConfig {
-    displayName: string;
-    attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
-    timestamp?: Date;
-    compareTimestamp?: Date;
-    decimals: number;
-    deltaFormat: "absolute" | "percentage";
-    showTimestampControls: boolean;
-    showLegend: boolean;
-}
-interface MapWidgetConfig {
-    displayName?: string;
-    center?: LngLatLike;
-    zoom?: number;
-}
-interface KPIWidgetConfig {
-    displayName: string;
-    attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
-}
-
-/* ------------------------------------ */
-
 @customElement("or-dashboard-widgetsettings")
 export class OrDashboardWidgetsettings extends LitElement {
 
@@ -185,7 +158,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                     displayName: widget.displayName,
                     attributeRefs: [],
                     period: "day"
-                } as MapWidgetConfig
+                } as KPIWidgetConfig
             }
             default: {
                 return {};

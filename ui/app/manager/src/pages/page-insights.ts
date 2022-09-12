@@ -72,7 +72,6 @@ export class PageInsights extends Page<AppStateKeyed>  {
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
         if(changedProperties.has("_dashboardId")) {
-            console.log("Changed Properties of _dashboardId!")
             this._updateRoute();
         }
     }
@@ -110,8 +109,8 @@ export class PageInsights extends Page<AppStateKeyed>  {
         return html`
             <div style="width: 100%;">
                 <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}" .realm="${manager.displayRealm}" .userId="${this._userId}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
-                                      @selected="${(event: CustomEvent) => { console.log(event); this._dashboardId = (event.detail as Dashboard)?.id }}"
-                                      @editToggle="${(event: CustomEvent) => { console.log(event); this._editMode = event.detail; this._updateRoute(true); }}"
+                                      @selected="${(event: CustomEvent) => { this._dashboardId = (event.detail as Dashboard)?.id }}"
+                                      @editToggle="${(event: CustomEvent) => { this._editMode = event.detail; this._updateRoute(true); }}"
                 ></or-dashboard-builder>
             </div>
         `;
