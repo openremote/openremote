@@ -53,7 +53,6 @@ const editorStyling = css`
         overflow-x: hidden;
         overflow-y: scroll;
         padding: 4px;
-        position: absolute;
         z-index: 0;
     }
     .maingrid__fullscreen {
@@ -557,27 +556,29 @@ export class OrDashboardPreview extends LitElement {
                             <span>${i18next.t('dashboard.renderingGrid')}</span>
                         </div>
                     ` : html`
-                        <div id="container" style="display: flex; justify-content: center; height: 100%;">
+                        <div id="container" style="display: flex; justify-content: center; height: 100%; overflow: hidden auto; position: relative;">
                             ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                                 <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
                             ` : undefined}
-                            <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined}"
-                                 @click="${(ev: MouseEvent) => { (ev.composedPath()[0] as HTMLElement).id == 'gridElement' ? this.onGridItemClick(undefined) : undefined; }}"
-                                 style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;"
-                            >
-                                <!-- Gridstack element on which the Grid will be rendered -->
-                                <div id="gridElement" class="grid-stack ${this.fullscreen ? undefined : 'grid-element'}">
-                                    ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
-                                        return html`
-                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
-                                                <div class="grid-stack-item-content" style="display: flex;">
-                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}"
-                                                                         style="width: 100%;"
-                                                    ></or-dashboard-widget>
+                            <div style="position: absolute; padding-bottom: 32px;">
+                                <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined}"
+                                     @click="${(ev: MouseEvent) => { (ev.composedPath()[0] as HTMLElement).id == 'gridElement' ? this.onGridItemClick(undefined) : undefined; }}"
+                                     style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;"
+                                >
+                                    <!-- Gridstack element on which the Grid will be rendered -->
+                                    <div id="gridElement" class="grid-stack ${this.fullscreen ? undefined : 'grid-element'}">
+                                        ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
+                                            return html`
+                                                <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
+                                                    <div class="grid-stack-item-content" style="display: flex;">
+                                                        <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}"
+                                                                             style="width: 100%;"
+                                                        ></or-dashboard-widget>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        `
-                                    }) : undefined}
+                                            `
+                                        }) : undefined}
+                                    </div>
                                 </div>
                             </div>
                         </div>

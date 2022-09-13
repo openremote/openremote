@@ -570,10 +570,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if(attributeList) {
                     attributeList.style.gap = bottomLegenda ? '0 12px' : '';
                     attributeList.style.maxHeight = bottomLegenda ? '90px' : '';
-                }
-                const chartControls = this.shadowRoot.getElementById('chart-controls');
-                if(chartControls) {
-                    chartControls.style.overflow = bottomLegenda ? 'auto hidden' : 'hidden auto';
+                    attributeList.style.flexDirection = bottomLegenda ? 'row' : 'column'
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
                     (item as HTMLElement).style.minHeight = bottomLegenda ? '' : '44px';
@@ -593,7 +590,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <canvas id="chart"></canvas>
                 </div>
 
-                <div id="chart-controls">
+                <div id="chart-controls" style="overflow: hidden auto;">
                     <!-- Checking whether showControls is set to true. Had to do string check as well -->
                     ${cache(this.shouldShowControls() ? html`
                         <div id="controls">
