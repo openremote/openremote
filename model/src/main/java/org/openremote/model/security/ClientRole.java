@@ -66,6 +66,7 @@ public enum ClientRole {
         READ_MAP,
         READ_ASSETS,
         READ_RULES,
+        READ_INSIGHTS,
         WRITE_USER,
         WRITE_ADMIN,
         WRITE_LOGS,
