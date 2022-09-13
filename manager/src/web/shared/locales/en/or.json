@@ -536,6 +536,7 @@
     "deviceNotSupported": "This dashboard does not support your device.",
     "deletePermanentWarning": "This will delete {{dashboard}} permanently.",
     "deleteWidgetWarning": "This will remove the widget from your board, and be permanently deleted after saving.",
+    "widgetTooSmall": "Widget is too small.",
     "showTimestampControls": "Show Timestamp controls",
     "showLegend": "Show legend",
     "showValueAs": "Show value as",

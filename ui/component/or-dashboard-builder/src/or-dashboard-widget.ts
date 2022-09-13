@@ -4,8 +4,10 @@ import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 import {css, html, LitElement, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { until } from "lit/directives/until.js";
+import { cache } from "lit/directives/cache.js";
+import {debounce, throttle} from "lodash";
 import {style} from "./style";
 
 //language=css
@@ -65,6 +67,16 @@ export class OrDashboardWidget extends LitElement {
     @state()
     protected cachedMockData?: Map<string, any[]> = new Map<string, any[]>();
 
+    @state()
+    protected error?: string;
+
+    @state()
+    protected resizeObserver?: ResizeObserver;
+
+    @query("#widget-container")
+    protected widgetContainerElement?: Element;
+
+
     static get styles() {
         return [styling, style];
     }
@@ -76,18 +88,35 @@ export class OrDashboardWidget extends LitElement {
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
     }
+    firstUpdated(changedProperties: Map<string, any>) {
+        this.updateComplete.then(() => {
+            const gridItemElement = this.widgetContainerElement;
+            if(gridItemElement) {
+                this.resizeObserver?.disconnect();
+                this.resizeObserver = new ResizeObserver(throttle(() => {
+                    const isMinimumSize = (this.widget?.gridItem?.minPixelW && this.widget.gridItem?.minPixelH &&
+                        (this.widget.gridItem?.minPixelW < gridItemElement.clientWidth) && (this.widget.gridItem?.minPixelH < gridItemElement.clientHeight)
+                    );
+                    this.error = (isMinimumSize ? undefined : i18next.t('dashboard.widgetTooSmall'));
+                }, 200));
+                this.resizeObserver.observe(gridItemElement);
+            } else {
+                console.error("gridItemElement could not be found!");
+            }
+        });
+    }
 
 
     protected render() {
         return html`
-            <div style="height: 100%; padding: 8px; display: flex; flex-direction: column;">
+            <div id="widget-container" style="height: 100%; padding: 8px; display: flex; flex-direction: column;">
                 <div style="display: flex; height: 36px; justify-content: space-between; align-items: center; margin-right: -6px;">
                     <span class="panel-title">${this.widget?.displayName?.toUpperCase()}</span>
                     <or-mwc-input type="${InputType.BUTTON}" icon="refresh" .disabled="${this.editMode}" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
                 </div>
                 ${until(this.getWidgetContent(this.widget!).then((content) => {
                     return content;
-                }))}
+                }), html`${i18next.t('loading')}`)}
             </div>
         `
     }
@@ -118,11 +147,6 @@ export class OrDashboardWidget extends LitElement {
                 }
             }
 
-            const gridElem = this.shadowRoot?.getElementById('gridItem-' + widget.id);
-            const isMinimumSize = /*(gridElem == null) || */(widget.gridItem?.minPixelW && widget.gridItem?.minPixelH &&
-                gridElem && (widget.gridItem?.minPixelW < gridElem.clientWidth) && (widget.gridItem?.minPixelH < gridElem.clientHeight)
-            );
-
             switch (_widget.widgetType) {
                 case DashboardWidgetType.LINE_CHART: {
 
@@ -140,10 +164,14 @@ export class OrDashboardWidget extends LitElement {
                     }
                     return html`
                         <div class="gridItem" id="gridItem-${_widget.id}">
-                            <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" denseLegend="${true}" 
-                                      .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
-                                      showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
-                            ></or-chart>
+                            ${cache(this.error ? html`
+                                <span>${this.error}</span>
+                            ` : html`
+                                <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" denseLegend="${true}" 
+                                          .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
+                                          showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
+                                ></or-chart>                            
+                            `)}
                         </div>
                     `;
                 }
@@ -151,13 +179,13 @@ export class OrDashboardWidget extends LitElement {
                 case DashboardWidgetType.KPI: {
                     return html`
                         <div class='gridItem' id="gridItem-${widget.id}" style="display: flex;">
-                            ${isMinimumSize ? html`
+                            ${cache(this.error ? html`
+                                <span>${this.error}</span>
+                            ` : html`
                                 <or-attribute-card .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
                                                    showControls="${false}" .realm="${this.realm}" style="height: 100%;"
                                 ></or-attribute-card>
-                            ` : html`
-                                <span>Widget is too small.</span>
-                            `}
+                            `)}
                         </div>
                     `;
                 }

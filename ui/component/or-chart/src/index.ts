@@ -38,6 +38,8 @@ import "chartjs-adapter-moment";
 import {GenericAxiosResponse } from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { cache } from "lit/directives/cache.js";
+import { throttle } from "lodash";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
@@ -458,7 +460,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    onResize:() => this.dispatchEvent(new OrChartEvent("resize")),
+                    onResize: throttle(() => { this.dispatchEvent(new OrChartEvent("resize")); this.applyChartResponsiveness(); }, 200),
                     showLines: true,
                     plugins: {
                         legend: {
@@ -584,7 +586,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     render() {
         const disabled = this._loading;
         const endDateInputType = this.getInputType();
-        this.updateComplete.then(() => { this.applyChartResponsiveness(); })
+        // this.updateComplete.then(() => { this.applyChartResponsiveness(); })
         return html`
             <div id="container">
                 <div id="chart-container">
@@ -593,7 +595,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
                 <div id="chart-controls">
                     <!-- Checking whether showControls is set to true. Had to do string check as well -->
-                    ${this.shouldShowControls() ? html`
+                    ${cache(this.shouldShowControls() ? html`
                         <div id="controls">
                             <div class="interval-controls" style="margin-right: 6px;">
                                 ${getContentWithMenuTemplate(
@@ -638,8 +640,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                             ` : html``}
                             <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
                         </div>
-                    ` : html``} 
-                    ${this.shouldShowLegend() ? html`
+                    ` : undefined)} 
+                    ${cache(this.shouldShowLegend() ? html`
                         <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="min-height: 50px; min-width: 150px; padding: ${this.denseLegend ? '6px' : '12px'};">
                             ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                 <div>
@@ -662,7 +664,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 `
                             })}
                         </div>
-                    ` : undefined}
+                    ` : undefined)}
                 </div>
             </div>
         `;
@@ -910,6 +912,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (this._chart) {
             this._chart.destroy();
             this._chart = undefined;
+            this.requestUpdate();
         }
     }
 
