@@ -514,10 +514,7 @@ export class OrDashboardPreview extends LitElement {
         const container = this.shadowRoot?.querySelector('#container');
         if(container) {
             const zoomWidth = +((0.95 * container.clientWidth) / +this.previewWidth!.replace('px', '')).toFixed(2);
-            const zoomHeight = +((0.95 * container.clientHeight) / +this.previewHeight!.replace('px', '')).toFixed(2);
-            if(zoomWidth > 1 && zoomHeight > 1) { this.previewZoom = 1; }
-            else if(zoomWidth < zoomHeight) { this.previewZoom = zoomWidth; }
-            else { this.previewZoom = zoomHeight; }
+            this.previewZoom = (zoomWidth > 1 ? 1 : zoomWidth);
         }
     }
 
@@ -560,7 +557,7 @@ export class OrDashboardPreview extends LitElement {
                             ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                                 <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
                             ` : undefined}
-                            <div style="position: absolute; padding-bottom: 32px;">
+                            <div style="position: absolute; padding-bottom: 64px;">
                                 <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined}"
                                      @click="${(ev: MouseEvent) => { (ev.composedPath()[0] as HTMLElement).id == 'gridElement' ? this.onGridItemClick(undefined) : undefined; }}"
                                      style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;"
