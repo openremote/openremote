@@ -36,6 +36,12 @@ import javax.validation.constraints.Size;
 public class GatewayConnection {
 
     @Id
+    @Column(name = "ID", nullable = false)
+    protected String id;
+
+    @Column(name = "LOCAL_USER", nullable = false)
+    protected String localUser;
+
     @Column(name = "LOCAL_REALM", nullable = false)
     protected String localRealm;
 
@@ -76,6 +82,8 @@ public class GatewayConnection {
 
     @JsonCreator
     public GatewayConnection(
+        @JsonProperty("id") String id,
+        @JsonProperty("localUser") String localUser,
         @JsonProperty("localRealm") String localRealm,
         @JsonProperty("host") String host,
         @JsonProperty("port") Integer port,
@@ -84,6 +92,8 @@ public class GatewayConnection {
         @JsonProperty("clientSecret") String clientSecret,
         @JsonProperty("secured") Boolean secured,
         @JsonProperty("disabled") boolean disabled) {
+        this.id = id;
+        this.localUser = localUser;
         this.localRealm = localRealm;
         this.host = host;
         this.port = port;
@@ -95,6 +105,8 @@ public class GatewayConnection {
     }
 
     public GatewayConnection(
+        String localUser,
+        String localRealm,
         String host,
         Integer port,
         String realm,
@@ -102,6 +114,8 @@ public class GatewayConnection {
         String clientSecret,
         Boolean secured,
         boolean disabled) {
+        this.localUser = localUser;
+        this.localRealm = localRealm;
         this.host = host;
         this.port = port;
         this.realm = realm;
@@ -109,6 +123,22 @@ public class GatewayConnection {
         this.clientSecret = clientSecret;
         this.secured = secured;
         this.disabled = disabled;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getLocalUser() {
+        return localUser;
+    }
+
+    public void setLocalUser(String localUser) {
+        this.localUser = localUser;
     }
 
     public String getLocalRealm() {
@@ -182,7 +212,9 @@ public class GatewayConnection {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "localRealm='" + localRealm + '\'' +
+            "id='" + id + '\'' +
+            ", localUser='" + localUser + '\'' +
+            ", localRealm='" + localRealm + '\'' +
             ", host='" + host + '\'' +
             ", port=" + port +
             ", realm='" + realm + '\'' +

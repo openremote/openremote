@@ -125,6 +125,8 @@ create table ASSET_PREDICTED_DATAPOINT (
 );
 
 create table GATEWAY_CONNECTION (
+    ID                 varchar(255)             not null,
+    LOCAL_USER         varchar(255)             not null,
     LOCAL_REALM        varchar(255)             not null,
     REALM              varchar(255)             not null,
     HOST               varchar(255)             not null,
@@ -133,7 +135,7 @@ create table GATEWAY_CONNECTION (
     CLIENT_SECRET      varchar(36)              not null,
     SECURED            boolean                  null,
     DISABLED           boolean                  not null default false,
-    primary key (LOCAL_REALM)
+    primary key (ID)
 );
 
 create table PROVISIONING_CONFIG (

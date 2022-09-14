@@ -77,8 +77,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected TimerService timerService;
     protected ScheduledExecutorService executorService;
     protected ManagerIdentityService identityService;
-    protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
-    protected final Map<String, WebsocketIOClient<String>> clientRealmMap = new HashMap<>();
+    protected final Map<String, GatewayConnection> connectionIdMap = new HashMap<>();
+    protected final Map<String, WebsocketIOClient<String>> clientIdMap = new HashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -120,28 +120,28 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     public void start(Container container) throws Exception {
 
         // Get existing connections
-        connectionRealmMap.putAll(persistenceService.doReturningTransaction(entityManager ->
+        connectionIdMap.putAll(persistenceService.doReturningTransaction(entityManager ->
             entityManager
                 .createQuery("select gc from GatewayConnection gc", GatewayConnection.class)
-                .getResultList()).stream().collect(Collectors.toMap(GatewayConnection::getLocalRealm, gc -> gc)));
+                .getResultList()).stream().collect(Collectors.toMap(GatewayConnection::getId, gc -> gc)));
 
         // Create clients for enabled connections
-        connectionRealmMap.forEach((realm, connection) -> {
+        connectionIdMap.forEach((id, connection) -> {
             if (!connection.isDisabled()) {
-                clientRealmMap.put(realm, createGatewayClient(connection));
+                clientIdMap.put(id, createGatewayClient(connection));
             }
         });
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        clientRealmMap.forEach((realm, client) -> {
+        clientIdMap.forEach((id, client) -> {
             if (client != null) {
-                destroyGatewayClient(connectionRealmMap.get(realm), client);
+                destroyGatewayClient(connectionIdMap.get(id), client);
             }
         });
-        clientRealmMap.clear();
-        connectionRealmMap.clear();
+        clientIdMap.clear();
+        connectionIdMap.clear();
     }
 
     @Override
@@ -162,23 +162,23 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
         LOG.info("Modified gateway client connection '" + cause + "': " + connection);
 
-        synchronized (clientRealmMap) {
+        synchronized (clientIdMap) {
             switch (cause) {
 
                 case UPDATE:
-                    WebsocketIOClient<String> client = clientRealmMap.remove(connection.getLocalRealm());
+                    WebsocketIOClient<String> client = clientIdMap.remove(connection.getId());
                     if (client != null) {
                         destroyGatewayClient(connection, client);
                     }
                 case CREATE:
-                    connectionRealmMap.put(connection.getLocalRealm(), connection);
+                    connectionIdMap.put(connection.getId(), connection);
                     if (!connection.isDisabled()) {
-                        clientRealmMap.put(connection.getLocalRealm(), createGatewayClient(connection));
+                        clientIdMap.put(connection.getId(), createGatewayClient(connection));
                     }
                     break;
                 case DELETE:
-                    connectionRealmMap.remove(connection.getLocalRealm());
-                    client = clientRealmMap.remove(connection.getLocalRealm());
+                    connectionIdMap.remove(connection.getId());
+                    client = clientIdMap.remove(connection.getId());
                     if (client != null) {
                         destroyGatewayClient(connection, client);
                     }
@@ -233,14 +233,14 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 AssetEvent.class,
                 new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
                 assetEvent ->
-                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent)));
+                    sendCentralManagerMessage(connection.getId(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent)));
 
             clientEventService.addInternalSubscription(
                 getClientSessionKey(connection)+"Attribute",
                 AttributeEvent.class,
                 new AssetFilter<AttributeEvent>().setRealm(connection.getLocalRealm()),
                 attributeEvent ->
-                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent)));
+                    sendCentralManagerMessage(connection.getId(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent)));
 
             client.connect();
             return client;
@@ -275,7 +275,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     protected void onGatewayClientConnectionStatusChanged(GatewayConnection connection, ConnectionStatus connectionStatus) {
         LOG.info("Connection status change for gateway IO client '" + connectionStatus + "': " + connection);
-        clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getLocalRealm(), connectionStatus));
+        clientEventService.publishEvent(new GatewayConnectionStatusEvent(timerService.getCurrentTimeMillis(), connection.getId(), connectionStatus));
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
@@ -299,8 +299,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             if (event instanceof GatewayDisconnectEvent) {
                 if (((GatewayDisconnectEvent)event).getReason() == GatewayDisconnectEvent.Reason.PERMANENT_ERROR) {
                     LOG.info("Central manager requested disconnect due to permanent error (likely this version of the edge gateway software is not compatible with that manager version)");
-                    destroyGatewayClient(connection, clientRealmMap.get(connection.getLocalRealm()));
-                    clientRealmMap.put(connection.getLocalRealm(), null);
+                    destroyGatewayClient(connection, clientIdMap.get(connection.getId()));
+                    clientIdMap.put(connection.getId(), null);
                 }
             } else if (event instanceof AttributeEvent) {
                 assetProcessingService.sendAttributeEvent((AttributeEvent)event, AttributeEvent.Source.INTERNAL);
@@ -309,24 +309,24 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 if (assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE) {
                     Asset asset = assetEvent.getAsset();
                     asset.setRealm(connection.getLocalRealm());
-                    LOG.finer("Request from central manager to create/update an asset: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId());
+                    LOG.finer("Request from central manager to create/update an asset: ID=" + connection.getId() + ", Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId());
                     try {
                         asset = assetStorageService.merge(asset, true);
                     } catch (Exception e) {
-                        LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId(), e);
+                        LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: ID=" + connection.getId() + ", Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId(), e);
                     }
                 }
             } else if (event instanceof DeleteAssetsRequestEvent) {
                 DeleteAssetsRequestEvent deleteRequest = (DeleteAssetsRequestEvent)event;
-                LOG.finer("Request from central manager to delete asset(s): Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()));
+                LOG.finer("Request from central manager to delete asset(s): ID=" + connection.getId() + ", Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()));
                 boolean success = false;
                 try {
                     success = assetStorageService.delete(deleteRequest.getAssetIds());
                 } catch (Exception e) {
-                    LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()), e);
+                    LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: ID=" + connection.getId() + ", Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()), e);
                 } finally {
                     sendCentralManagerMessage(
-                        connection.getLocalRealm(),
+                        connection.getId(),
                         messageToString(
                             EventRequestResponseWrapper.MESSAGE_PREFIX,
                             new EventRequestResponseWrapper<>(
@@ -343,7 +343,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
 
                 sendCentralManagerMessage(
-                    connection.getLocalRealm(),
+                    connection.getId(),
                     messageToString(
                         EventRequestResponseWrapper.MESSAGE_PREFIX,
                         new EventRequestResponseWrapper<>(
@@ -354,11 +354,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
     }
 
-    protected void sendCentralManagerMessage(String realm, String message) {
+    protected void sendCentralManagerMessage(String id, String message) {
         WebsocketIOClient<String> client;
 
-        synchronized (clientRealmMap) {
-            client = clientRealmMap.get(realm);
+        synchronized (clientIdMap) {
+            client = clientIdMap.get(id);
         }
 
         if (client != null) {
@@ -367,7 +367,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected String getClientSessionKey(GatewayConnection connection) {
-        return CLIENT_EVENT_SESSION_PREFIX + connection.getLocalRealm();
+        return CLIENT_EVENT_SESSION_PREFIX + connection.getId();
     }
 
     protected <T> T messageFromString(String message, String prefix, Class<T> clazz) {
@@ -382,7 +382,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     /** GATEWAY RESOURCE METHODS */
     protected List<GatewayConnection> getConnections() {
-        return new ArrayList<>(connectionRealmMap.values());
+        return new ArrayList<>(connectionIdMap.values());
     }
 
     public void setConnection(GatewayConnection connection) {
@@ -414,8 +414,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return true;
     }
 
-    protected ConnectionStatus getConnectionStatus(String realm) {
-        GatewayConnection connection = connectionRealmMap.get(realm);
+    protected ConnectionStatus getConnectionStatus(String id) {
+        GatewayConnection connection = connectionIdMap.get(id);
 
         if (connection == null) {
             return null;
@@ -425,7 +425,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             return ConnectionStatus.DISABLED;
         }
 
-        WebsocketIOClient<String> client = clientRealmMap.get(realm);
+        WebsocketIOClient<String> client = clientIdMap.get(id);
         return client != null ? client.getConnectionStatus() : null;
     }
 }
