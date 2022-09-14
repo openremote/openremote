@@ -178,6 +178,7 @@ const style = css`
     
     #ending-date {
         width: 200px;
+        padding-left: 5px;
     }
     
     #chart-container {

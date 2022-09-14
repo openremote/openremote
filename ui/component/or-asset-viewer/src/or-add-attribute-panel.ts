@@ -45,7 +45,7 @@ export class OrAddAttributePanel extends LitElement {
     @query("#array-input")
     protected arrayInput!: OrMwcInput;
 
-    protected customAttribute: boolean = false;
+    protected customAttribute: boolean = true;
     protected attributeTypes?: [string, string][];
     protected attributeValueTypes?: [string, string][];
     protected arrayRegex: RegExp = /\[\]/g;
@@ -98,7 +98,7 @@ export class OrAddAttributePanel extends LitElement {
 
         return html`
             <div id="attribute-creator">
-                <or-mwc-input .type="${InputType.SELECT}" .options="${this.attributeTypes}" .label="${i18next.t("type")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTypeChanged(ev.detail.value)}"></or-mwc-input>
+                <or-mwc-input .type="${InputType.SELECT}" .options="${this.attributeTypes}" .label="${i18next.t("type")}" .value="${"@custom"}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTypeChanged(ev.detail.value)}"></or-mwc-input>
                 <or-mwc-input id="name-input" .type="${InputType.TEXT}" ?disabled="${!this.customAttribute}" .value="${(this.attribute && this.attribute.name) ? this.attribute.name : undefined}" .label="${i18next.t("name")}" pattern="\\w+" required @keyup="${(ev: KeyboardEvent) => this.onNameChanged((ev.target as OrMwcInput).currentValue)}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onNameChanged(ev.detail.value)}"></or-mwc-input>
                 <or-mwc-input id="type-input" .type="${InputType.SELECT}" ?disabled="${!this.customAttribute}" .value="${this.attribute && this.attribute.type ? this.attribute.type.replace(this.arrayRegex, "") : undefined}" .options="${this.attributeValueTypes}" .label="${i18next.t("valueType")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onValueTypeChanged(ev.detail.value)}"></or-mwc-input>
                 <or-mwc-input id="array-checkbox" .type="${InputType.CHECKBOX}" ?disabled="${!this.customAttribute}" .value="${this.isArray}" .label="${i18next.t("array")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onArrayChanged(ev.detail.value, 1)}"></or-mwc-input>
