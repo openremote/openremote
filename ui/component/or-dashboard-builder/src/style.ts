@@ -43,17 +43,20 @@ export const style = css`
         width: 100%;
         height: var(--internal-or-asset-tree-header-height);
         border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
-        z-index: 1000;
+        z-index: 7;
         line-height: var(--internal-or-asset-tree-header-height);
         color: var(--internal-or-asset-tree-header-text-color);
         --or-icon-fill: var(--internal-or-asset-tree-header-text-color);
     }
 
     #title-container {
-        flex: 1 0 auto;
+        flex: 1;
         flex-direction: row;
         text-transform: capitalize;
         padding-left: 15px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     
     #title {

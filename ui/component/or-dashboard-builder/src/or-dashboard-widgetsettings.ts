@@ -358,12 +358,9 @@ export class OrDashboardWidgetsettings extends LitElement {
             }
         }
         return html`
-            ${htmlGeneral}
-            ${htmlContent}
-            <div id="actions" style="position: absolute; bottom: 20px; right: 20px;">
-                <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" label="${i18next.t('dashboard.deleteWidget')}" @or-mwc-input-changed="${() => {
-                    showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deleteWidgetWarning'), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteSelectedWidget(); }});
-                }}"></or-mwc-input>
+            <div>
+                ${htmlGeneral}
+                ${htmlContent}
             </div>
         `
     }

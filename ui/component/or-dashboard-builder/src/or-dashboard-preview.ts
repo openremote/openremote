@@ -1,13 +1,10 @@
 import manager, {DefaultColor4} from "@openremote/core";
-import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
+import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
 import "./or-dashboard-widget";
 import {debounce} from "lodash";
 import {
-    Asset,
-    Attribute,
-    AttributeRef,
     DashboardGridItem,
     DashboardScalingPreset,
     DashboardScreenPreset,
@@ -102,10 +99,6 @@ export interface ORGridStackNode extends GridStackNode {
 @customElement("or-dashboard-preview")
 export class OrDashboardPreview extends LitElement {
 
-    static get styles() {
-        return [unsafeCSS(gridcss), unsafeCSS(extracss), editorStyling, style];
-    }
-
     @property({ hasChanged(oldValue, newValue) { return JSON.stringify(oldValue) != JSON.stringify(newValue); }})
     set template(newValue: DashboardTemplate) {
         const oldValue = this._template;
@@ -195,6 +188,9 @@ export class OrDashboardPreview extends LitElement {
 
     /* ------------------------------------------- */
 
+    static get styles() {
+        return [unsafeCSS(gridcss), unsafeCSS(extracss), editorStyling, style];
+    }
 
     // Checking whether actual changes have been made; if not, prevent updating.
     shouldUpdate(changedProperties: Map<PropertyKey, unknown>): boolean {
@@ -520,6 +516,18 @@ export class OrDashboardPreview extends LitElement {
 
     // Render
     protected render() {
+
+        try { // to correct the list of gridItems each render (Hopefully temporarily since it's quite compute heavy)
+            if(this.grid?.getGridItems()) {
+                console.warn("Correcting list of gridItems..");
+                this.grid?.getGridItems().forEach((gridItem: GridItemHTMLElement) => {
+                    if(this.template?.widgets?.find((widget) => widget.id == gridItem.id) == undefined) {
+                        this.grid?.removeWidget(gridItem);
+                    }
+                })
+            }
+        } catch (e) { console.warn(e); }
+
         const customPreset = "Custom";
         let screenPresets = this.template?.screenPresets?.map(s => s.displayName);
         screenPresets?.push(customPreset);
@@ -566,7 +574,7 @@ export class OrDashboardPreview extends LitElement {
                                     <div id="gridElement" class="grid-stack ${this.fullscreen ? undefined : 'grid-element'}">
                                         ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
                                             return html`
-                                                <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
+                                                <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
                                                     <div class="grid-stack-item-content" style="display: flex;">
                                                         <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}"
                                                                              style="width: 100%;"

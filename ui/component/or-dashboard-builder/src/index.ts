@@ -1,5 +1,6 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
+import {when} from 'lit/directives/when.js';
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-preview";
@@ -27,6 +28,8 @@ import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {i18next} from "@openremote/or-translate";
+import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {DashboardKeyEmitter} from "./or-dashboard-keyhandler";
 
 // language=CSS
 const styling = css`
@@ -114,6 +117,12 @@ const styling = css`
         width: 300px;
         background: white;
         border-left: 1px solid #E0E0E0;
+    }
+    #sidebar-widget-headeractions {
+        flex: 0;
+        display: flex;
+        flex-direction: row;
+        padding-right: 5px;
     }
     .settings-container {
         display: flex;
@@ -236,6 +245,8 @@ export class OrDashboardBuilder extends LitElement {
     @state()
     protected rerenderPending: boolean;
 
+    private readonly keyEmitter: DashboardKeyEmitter = new DashboardKeyEmitter();
+
 
     /* ------------- */
 
@@ -249,6 +260,23 @@ export class OrDashboardBuilder extends LitElement {
         this.updateComplete.then(async () => {
             await this.updateDashboards(this.realm!);
         });
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.keyEmitter.addListener('delete', (e: KeyboardEvent) => {
+            if(this.selectedWidgetId) {
+                const selectedWidget = this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId);
+                if(selectedWidget) { showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deleteWidgetWarning'), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteWidget(selectedWidget); }}); }
+            }
+        });
+        this.keyEmitter.addListener('save', (e: KeyboardEvent) => {
+            this.saveDashboard();
+        })
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.keyEmitter.removeAllListeners();
     }
 
     async updateDashboards(realm: string) {
@@ -324,7 +352,7 @@ export class OrDashboardBuilder extends LitElement {
 
         const tempTemplate = this.currentTemplate;
         tempTemplate?.widgets?.push(widget);
-        this.currentTemplate = Object.assign({}, tempTemplate); // Force property update
+        this.currentTemplate = tempTemplate;
         return widget;
     }
 
@@ -332,7 +360,7 @@ export class OrDashboardBuilder extends LitElement {
         if(this.currentTemplate != null && this.currentTemplate.widgets != null) {
             const tempTemplate = this.currentTemplate;
             tempTemplate.widgets = tempTemplate.widgets?.filter((x: DashboardWidget) => { return x.id != widget.id; });
-            this.currentTemplate = Object.assign({}, tempTemplate);
+            this.currentTemplate = tempTemplate;
         }
         if(this.selectedWidgetId == widget.id) {
             this.deselectWidget();
@@ -389,7 +417,7 @@ export class OrDashboardBuilder extends LitElement {
     /* ----------------------------------- */
 
     saveDashboard() {
-        if(this.selectedDashboard != null) {
+        if(this.selectedDashboard != null && !this._isReadonly() && this._hasEditAccess()) {
             this.isLoading = true;
 
             // Saving object into the database
@@ -431,15 +459,16 @@ export class OrDashboardBuilder extends LitElement {
     @state()
     protected showDashboardTree: boolean = true;
 
+    private readonly menuItems: ListItem[] = [
+        { icon: "content-copy", text: (i18next.t("copy") + " URL"), value: "copy" },
+        { icon: "open-in-new", text: i18next.t("dashboard.openInNewTab"), value: "tab" },
+    ];
+    private readonly tabItems: OrMwcTabItem[] = [
+        { name: i18next.t("dashboard.widgets") }, { name: i18next.t("settings") }
+    ];
+
     // Rendering the page
     render(): any {
-        const menuItems: ListItem[] = [
-            { icon: "content-copy", text: (i18next.t("copy") + " URL"), value: "copy" },
-            { icon: "open-in-new", text: i18next.t("dashboard.openInNewTab"), value: "tab" },
-        ];
-        const tabItems: OrMwcTabItem[] = [
-            { name: i18next.t("dashboard.widgets") }, { name: i18next.t("settings") }
-        ];
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${this.showDashboardTree ? html`
@@ -467,7 +496,7 @@ export class OrDashboardBuilder extends LitElement {
                                     <div id="header-actions-content">
                                         ${getContentWithMenuTemplate(
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
-                                                menuItems, "monitor", (method: any) => { this.shareUrl(method); }
+                                                this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
                                         <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
                                         <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
@@ -486,7 +515,7 @@ export class OrDashboardBuilder extends LitElement {
                                     <div id="fullscreen-header-actions-content">
                                         ${getContentWithMenuTemplate(
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
-                                                menuItems, "monitor", (method: any) => { this.shareUrl(method); }
+                                                this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
                                         <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
@@ -513,49 +542,57 @@ export class OrDashboardBuilder extends LitElement {
                                                           @deselected="${() => { this.deselectWidget(); }}"
                                     ></or-dashboard-preview>
                                 ` : html`
-                                        <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                                            <span>${i18next.t('noDashboardSelected')}</span>
-                                        </div>
-                                    `}
+                                    <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+                                        <span>${i18next.t('noDashboardSelected')}</span>
+                                    </div>
+                                `}
                             </div>
-                            ${(this.selectedDashboard != null && this.editMode && !this._isReadonly() && this._hasEditAccess()) ? html`
-                                <div id="sidebar">
-                                    ${this.selectedWidgetId != null ? html`
-                                        <div class="settings-container">
-                                            <div id="menu-header">
-                                                <div id="title-container">
-                                                    <span id="title">${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)?.displayName}:</span>
+                            ${when((this.selectedDashboard != null && this.editMode && !this._isReadonly() && this._hasEditAccess()), () => {
+                                const selectedWidget = this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId);
+                                return html`
+                                    <div id="sidebar">
+                                        ${this.selectedWidgetId != null ? html`
+                                            <div class="settings-container">
+                                                <div id="menu-header">
+                                                    <div id="title-container">
+                                                        <span id="title" title="${selectedWidget?.displayName}">${selectedWidget?.displayName}:</span>
+                                                    </div>
+                                                    <div id="sidebar-widget-headeractions">
+                                                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => {
+                                                            showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deleteWidgetWarning'), i18next.t('delete')).then((ok: boolean) => {
+                                                                if(ok) { this.deleteWidget(selectedWidget!); }
+                                                            })
+                                                        }}"></or-mwc-input>
+                                                        <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => { this.deselectWidget(); }}"></or-mwc-input>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => { this.deselectWidget(); }}"></or-mwc-input>
+                                                <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
+                                                    <div style="position: relative;">
+                                                        <or-dashboard-widgetsettings style="position: absolute;" .selectedWidget="${selectedWidget}"
+                                                                                     @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
+                                                                                     @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force ? this.rerenderPending = true : undefined); }}"
+                                                        ></or-dashboard-widgetsettings>
+                                                    </div>
                                                 </div>
+                                            </div>
+                                        ` : undefined}
+                                        <div class="settings-container" style="${this.selectedWidgetId != null ? css`display: none` : null}">
+                                            <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
+                                                <or-mwc-tabs .items="${this.tabItems}" noScroll @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
                                             </div>
                                             <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
                                                 <div style="position: relative;">
-                                                    <or-dashboard-widgetsettings style="position: absolute;" .selectedWidget="${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)}"
-                                                                                 @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
-                                                                                 @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force ? this.rerenderPending = true : undefined); }}"
-                                                    ></or-dashboard-widgetsettings>
+                                                    <or-dashboard-browser id="browser" style="position: absolute; ${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
+                                                    <or-dashboard-boardsettings style="position: absolute; ${this.sidebarMenuIndex != 1 ? css`display: none` : null}" 
+                                                                                .dashboard="${this.selectedDashboard}" .showPerms="${this.selectedDashboard?.ownerId == this.userId}" 
+                                                                                @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force ? this.rerenderPending = true : undefined); }}"
+                                                    ></or-dashboard-boardsettings>
                                                 </div>
                                             </div>
                                         </div>
-                                    ` : undefined}
-                                    <div class="settings-container" style="${this.selectedWidgetId != null ? css`display: none` : null}">
-                                        <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
-                                            <or-mwc-tabs .items="${tabItems}" noScroll @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}" style="pointer-events: ${this.selectedDashboard ? undefined : 'none'}"></or-mwc-tabs>
-                                        </div>
-                                        <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
-                                            <div style="position: relative;">
-                                                <or-dashboard-browser id="browser" style="position: absolute; ${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
-                                                <or-dashboard-boardsettings style="position: absolute; ${this.sidebarMenuIndex != 1 ? css`display: none` : null}" 
-                                                                            .dashboard="${this.selectedDashboard}" .showPerms="${this.selectedDashboard?.ownerId == this.userId}" 
-                                                                            @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force ? this.rerenderPending = true : undefined); }}"
-                                                ></or-dashboard-boardsettings>
-                                            </div>
-                                        </div>
                                     </div>
-                                </div>
-                            ` : undefined}
+                                `
+                            }, undefined)}
                         </div>
                     </div>
                 </div>
