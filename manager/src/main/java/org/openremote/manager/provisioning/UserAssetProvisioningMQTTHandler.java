@@ -33,7 +33,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.mqtt.MQTTHandler;
-import org.openremote.manager.mqtt.MqttBrokerService;
+import org.openremote.manager.mqtt.MQTTBrokerService;
 import org.openremote.manager.mqtt.MqttConnection;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -110,7 +110,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     public static final String PROVISIONING_USER_PREFIX = "ps-";
     protected ProvisioningService provisioningService;
     protected TimerService timerService;
-    protected MqttBrokerService brokerService;
+    protected MQTTBrokerService brokerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
@@ -121,7 +121,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         super.start(container);
         provisioningService = container.getService(ProvisioningService.class);
         timerService = container.getService(TimerService.class);
-        brokerService = container.getService(MqttBrokerService.class);
+        brokerService = container.getService(MQTTBrokerService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
 

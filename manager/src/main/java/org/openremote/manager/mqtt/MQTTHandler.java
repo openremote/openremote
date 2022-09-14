@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * This allows custom handlers to be discovered by the {@link MqttBrokerService} during system startup using the
+ * This allows custom handlers to be discovered by the {@link MQTTBrokerService} during system startup using the
  * {@link java.util.ServiceLoader} mechanism. This allows topic(s) can be handled in a custom way. Any instances must
  * have a no-arg constructor.
  */
@@ -43,7 +43,7 @@ public abstract class MQTTHandler {
     public static final String TOKEN_MULTI_LEVEL_WILDCARD = "#";
     public static final String TOKEN_SINGLE_LEVEL_WILDCARD = "+";
     protected ClientEventService clientEventService;
-    protected MqttBrokerService mqttBrokerService;
+    protected MQTTBrokerService mqttBrokerService;
     protected MessageBrokerService messageBrokerService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
@@ -67,7 +67,7 @@ public abstract class MQTTHandler {
      * Called when the system starts to allow for initialisation.
      */
     public void start(Container container) throws Exception {
-        mqttBrokerService = container.getService(MqttBrokerService.class);
+        mqttBrokerService = container.getService(MQTTBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);

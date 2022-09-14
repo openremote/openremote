@@ -35,7 +35,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
-import org.openremote.manager.mqtt.MqttBrokerService
+import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.provisioning.ProvisioningService
 import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler
 import org.openremote.manager.security.ManagerIdentityService
@@ -63,8 +63,8 @@ import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
-import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_PORT
+import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
+import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_PORT
 import static org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler.*
 import static org.openremote.model.value.ValueType.NUMBER
 
@@ -80,7 +80,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def provisioningService = container.getService(ProvisioningService.class)
-        def mqttBrokerService = container.getService(MqttBrokerService.class)
+        def mqttBrokerService = container.getService(MQTTBrokerService.class)
         def clientEventService = container.getService(ClientEventService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def identityService = container.getService(ManagerIdentityService.class)

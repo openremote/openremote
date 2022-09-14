@@ -18,10 +18,10 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
     protected final ManagerKeycloakIdentityProvider identityProvider;
     protected final AssetStorageService assetStorageService;
     protected final ClientEventService clientEventService;
-    protected final MqttBrokerService brokerService;
+    protected final MQTTBrokerService brokerService;
 
     public ORAuthorizatorPolicy(ManagerKeycloakIdentityProvider identityProvider,
-                                MqttBrokerService brokerService,
+                                MQTTBrokerService brokerService,
                                 AssetStorageService assetStorageService,
                                 ClientEventService clientEventService) {
         this.identityProvider = identityProvider;

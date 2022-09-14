@@ -674,6 +674,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 return gatewayService.mergeGatewayAsset(gatewayId, asset);
             }
 
+            // Validate realm
+            if (asset.getRealm() == null) {
+                String msg = "Asset realm must be set : asset=" + asset;
+                LOG.info(msg);
+                throw new IllegalStateException(msg);
+            }
+
             // Do standard JSR-380 validation on the asset (includes custom validation)
             Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset, Asset.AssetSave.class);
 
@@ -719,13 +726,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (overrideVersion) {
                     asset.setVersion(existingAsset.getVersion());
                 }
-            }
-
-            // Validate realm
-            if (asset.getRealm() == null) {
-                String msg = "Asset realm must be set : asset=" + asset;
-                LOG.info(msg);
-                throw new IllegalStateException(msg);
             }
 
             if (!identityService.getIdentityProvider().realmExists(asset.getRealm())) {

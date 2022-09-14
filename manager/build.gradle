@@ -32,6 +32,10 @@ dependencies {
         exclude module: "slf4j-log4j12" // Don't want log4J
     }
 
+    implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
+        exclude group: "org.osgi"
+    }
+
     implementation("org.quartz-scheduler:quartz:$quartzVersion") {
         exclude group: "c3p0"
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2022, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -30,8 +30,22 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.MqttMessageBuilders;
 import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.activemq.artemis.api.core.QueueConfiguration;
+import org.apache.activemq.artemis.api.core.client.*;
+import org.apache.activemq.artemis.core.client.impl.ClientSessionInternal;
+import org.apache.activemq.artemis.core.config.Configuration;
+import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
+import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
+import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
+import org.apache.activemq.artemis.core.server.ServerSession;
+import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
+import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager;
+import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
+import org.apache.activemq.artemis.spi.core.security.jaas.PropertiesLoginModule;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.manager.security.MultiTenantDirectAccessGrantsLoginModule;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -46,12 +60,14 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import javax.security.auth.login.AppConfigurationEntry;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -61,13 +77,14 @@ import static org.openremote.container.persistence.PersistenceService.PERSISTENC
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
-public class MqttBrokerService extends RouteBuilder implements ContainerService, IAuthenticator {
+public class MQTTBrokerService extends RouteBuilder implements ContainerService, IAuthenticator {
 
     public static final int PRIORITY = MED_PRIORITY;
     public static final String INTERNAL_CLIENT_ID = "ManagerInternal";
-    private static final Logger LOG = SyslogCategory.getLogger(API, MqttBrokerService.class);
+    private static final Logger LOG = SyslogCategory.getLogger(API, MQTTBrokerService.class);
 
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
@@ -117,6 +134,11 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void start(Container container) throws Exception {
+
+        if (!active) {
+            return;
+        }
+
         AssetStorageService assetStorageService = container.getService(AssetStorageService.class);
         Properties properties = new Properties();
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
@@ -141,7 +163,67 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
 
         mqttBroker = new Server();
         mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, this, new ORAuthorizatorPolicy(identityProvider, this, assetStorageService, clientEventService));
+
+        Configuration config = new ConfigurationImpl();
+        config.addAcceptorConfiguration("in-vm", "vm://0");
+        config.addAcceptorConfiguration("tcp", "tcp://localhost:1884?protocols=MQTT");
+        config.setMaxDiskUsage(-1);
+        config.setSecurityInvalidationInterval(30000);
+        config.addSecuritySettingPlugin(new ORSecuritySettingPlugin());
+
+        EmbeddedActiveMQ server = new EmbeddedActiveMQ();
+        server.setConfiguration(config);
+        server.setSecurityManager(new ActiveMQORSecurityManager(realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "", new SecurityConfiguration() {
+            @Override
+            public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+                return new AppConfigurationEntry[] {
+                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true")),
+                    new AppConfigurationEntry(MultiTenantDirectAccessGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(MultiTenantDirectAccessGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true"))
+                };
+            }
+        }));
+        server.start();
+
         LOG.fine("Started MQTT broker");
+
+//        ServerSession internalSession = server.getActiveMQServer().createInternalSession("Internal",
+//            ActiveMQClient.DEFAULT_MIN_LARGE_MESSAGE_SIZE,
+//            null,
+//            MQTTUtil.SESSION_AUTO_COMMIT_SENDS,
+//            MQTTUtil.SESSION_AUTO_COMMIT_ACKS,
+//            MQTTUtil.SESSION_PREACKNOWLEDGE,
+//            MQTTUtil.SESSION_XA,
+//            null,
+//            null,
+//            MQTTUtil.SESSION_AUTO_CREATE_QUEUE,
+//            server.getActiveMQServer().newOperationContext(),
+//            null,
+//            null);
+//
+//        internalSession.create
+
+        ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0");
+        ClientSessionFactory factory = serverLocator.createSessionFactory();
+        String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
+        ClientSessionInternal internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, serverLocator.isPreAcknowledge(), serverLocator.getAckBatchSize(), internalClientID);
+        ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
+        serverSession.disableSecurity();
+
+        executorService.scheduleWithFixedDelay(() -> {
+            try {
+                ClientProducer producer = internalSession.createProducer("master.client123.asset.1234");
+                ClientMessage message = internalSession.createMessage(false);
+                message.writeBodyBufferString("AssetEvent{\"id\": \"1234\", \"prop1\": true}");
+                producer.send(message);
+
+                producer = internalSession.createProducer("master.client123.asset.5678");
+                message = internalSession.createMessage(false);
+                message.writeBodyBufferString("AssetEvent{\"id\": \"5678\", \"prop1\": true}");
+                producer.send(message);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Something went wrong", e);
+            }
+        }, 20, 20, TimeUnit.SECONDS);
     }
 
 

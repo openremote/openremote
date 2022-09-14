@@ -39,13 +39,13 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 public class ORInterceptHandler extends AbstractInterceptHandler {
 
     private static final Logger LOG = SyslogCategory.getLogger(API, ORInterceptHandler.class);
-    protected final MqttBrokerService brokerService;
+    protected final MQTTBrokerService brokerService;
     protected final MessageBrokerService messageBrokerService;
     protected final ManagerKeycloakIdentityProvider identityProvider;
     protected final TimerService timerService;
     protected final WeakHashMap<String, MqttConnection> disconnectedConnections = new WeakHashMap<>();
 
-    public ORInterceptHandler(MqttBrokerService brokerService,
+    public ORInterceptHandler(MQTTBrokerService brokerService,
                               ManagerKeycloakIdentityProvider identityProvider,
                               MessageBrokerService messageBrokerService,
                               TimerService timerService) {
