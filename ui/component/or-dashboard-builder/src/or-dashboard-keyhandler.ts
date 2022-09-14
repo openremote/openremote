@@ -14,6 +14,9 @@ export class DashboardKeyEmitter extends EventEmitter {
         if(e.key == 'Delete') {
             e.preventDefault();
             this.emit('delete', e);
+        } else if(e.key == 'Escape') {
+            e.preventDefault();
+            this.emit('deselect', e);
         } else if(e.key == 's' && e.ctrlKey) {
             e.preventDefault();
             this.emit('save', e);

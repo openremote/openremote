@@ -270,9 +270,8 @@ export class OrDashboardBuilder extends LitElement {
                 if(selectedWidget) { showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deleteWidgetWarning'), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteWidget(selectedWidget); }}); }
             }
         });
-        this.keyEmitter.addListener('save', (e: KeyboardEvent) => {
-            this.saveDashboard();
-        })
+        this.keyEmitter.addListener('deselect', (e: KeyboardEvent) => { this.deselectWidget(); });
+        this.keyEmitter.addListener('save', (e: KeyboardEvent) => { this.saveDashboard(); });
     }
     disconnectedCallback() {
         super.disconnectedCallback();
