@@ -20,18 +20,28 @@
 package org.openremote.manager.mqtt;
 
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
+import org.apache.activemq.artemis.core.security.CheckType;
+import org.apache.activemq.artemis.core.security.Role;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager;
+import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakDeployment;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
+import org.openremote.model.syslog.SyslogCategory;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import java.util.Set;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
  * A security manager that uses the {@link org.openremote.manager.security.MultiTenantJaasCallbackHandler} with a
@@ -41,45 +51,24 @@ import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCerts
  */
 public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
+    private static final Logger LOG = SyslogCategory.getLogger(API, ORAuthorizatorPolicy.class);
+    protected AuthorisationService authorisationService;
+    protected MQTTBrokerService brokerService;
+    protected Function<String, KeycloakDeployment> deploymentResolver;
+
     // Duplicate fields due to being private in super class
     protected String certificateConfigName;
     protected String configName;
     protected SecurityConfiguration config;
     protected SecurityConfiguration certificateConfig;
 
-    protected Function<String, KeycloakDeployment> deploymentResolver;
-
-    public ActiveMQORSecurityManager(Function<String, KeycloakDeployment> deploymentResolver) {
-        this.deploymentResolver = deploymentResolver;
-    }
-
-    public ActiveMQORSecurityManager(Function<String, KeycloakDeployment> deploymentResolver, String configurationName) {
-        super(configurationName);
-        this.deploymentResolver = deploymentResolver;
-        this.configName = configurationName;
-    }
-
-    public ActiveMQORSecurityManager(Function<String, KeycloakDeployment> deploymentResolver, String configurationName, String certificateConfigurationName) {
-        super(configurationName, certificateConfigurationName);
-        this.deploymentResolver = deploymentResolver;
-        this.configName = configurationName;
-        this.certificateConfigName = certificateConfigurationName;
-    }
-
-    public ActiveMQORSecurityManager(Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
+    public ActiveMQORSecurityManager(AuthorisationService authorisationService, MQTTBrokerService brokerService, Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
         super(configurationName, configuration);
+        this.authorisationService = authorisationService;
+        this.brokerService = brokerService;
         this.deploymentResolver = deploymentResolver;
         this.configName = configurationName;
         this.config = configuration;
-    }
-
-    public ActiveMQORSecurityManager(Function<String, KeycloakDeployment> deploymentResolver, String configurationName, String certificateConfigurationName, SecurityConfiguration configuration, SecurityConfiguration certificateConfiguration) {
-        super(configurationName, certificateConfigurationName, configuration, certificateConfiguration);
-        this.deploymentResolver = deploymentResolver;
-        this.configName = configurationName;
-        this.certificateConfigName = certificateConfigurationName;
-        this.config = configuration;
-        this.certificateConfig = certificateConfiguration;
     }
 
     @Override
@@ -130,5 +119,55 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 Thread.currentThread().setContextClassLoader(currentLoader);
             }
         }
+    }
+
+    @Override
+    public boolean authorize(Subject subject, Set<Role> roles, CheckType checkType, String address) {
+
+        return switch (checkType) {
+            case SEND -> verifyRights(subject, address, true);
+            case CONSUME -> verifyRights(subject, address, false);
+            case CREATE_ADDRESS, DELETE_ADDRESS, CREATE_DURABLE_QUEUE, DELETE_DURABLE_QUEUE, CREATE_NON_DURABLE_QUEUE, DELETE_NON_DURABLE_QUEUE ->
+                // All MQTT clients must be able to create addresses and queues (every session and subscription will create a queue within the topic address)
+                true;
+            case MANAGE, BROWSE -> false;
+        };
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    protected boolean verifyRights(Subject subject, String topicStr, boolean isWrite) {
+
+        Topic topic;
+
+        try {
+            topic = Topic.parse(topicStr);
+        } catch (IllegalArgumentException e) {
+            LOG.log(Level.WARNING, "Invalid topic provided by client '" + topicStr + "': " + subject, e);
+            return false;
+        }
+
+        if (isWrite && topic.hasWildcard()) {
+            return false;
+        }
+
+        KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
+
+        // See if a custom handler wants to handle authorisation for this topic pub/sub
+        for (MQTTHandler handler : brokerService.getCustomHandlers()) {
+            if (handler.handlesTopic(topic)) {
+                LOG.fine("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", subject=" + subject);
+                boolean result;
+
+                if (isWrite) {
+                    result = handler.checkCanPublish(securityContext, topic);
+                } else {
+                    result = handler.checkCanSubscribe(securityContext, topic);
+                }
+                return result;
+            }
+        }
+
+        LOG.fine("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", subject=" + subject);
+        return false;
     }
 }

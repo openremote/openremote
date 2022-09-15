@@ -19,9 +19,10 @@
  */
 package org.openremote.manager.mqtt;
 
-import io.moquette.broker.subscriptions.Topic;
-import io.moquette.interception.messages.*;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.representations.AccessToken;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -29,6 +30,7 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 
+import javax.security.auth.Subject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -129,8 +131,8 @@ public abstract class MQTTHandler {
      * Checks that authenticated session and topic realm matches the authenticated user and also that topic client ID
      * matches the connection client ID.
      */
-    public boolean checkCanSubscribe(MqttConnection connection, Topic topic) {
-        if (connection.getAuthContext() == null) {
+    public boolean checkCanSubscribe(KeycloakSecurityContext securityContext, Topic topic) {
+        if (securityContext == null) {
             getLogger().fine("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", connection" + connection);
             return false;
         }
@@ -149,8 +151,8 @@ public abstract class MQTTHandler {
      * Checks that authenticated sessions and topic realm matches the authenticated user and also that topic client ID
      * matches the connection client ID.
      */
-    public boolean checkCanPublish(MqttConnection connection, Topic topic) {
-        if (connection.getAuthContext() == null) {
+    public boolean checkCanPublish(KeycloakSecurityContext securityContext, Topic topic) {
+        if (securityContext == null) {
             getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic + ", connection" + connection);
             return false;
         }
@@ -177,28 +179,28 @@ public abstract class MQTTHandler {
      * Called to authorise a subscription if {@link #handlesTopic} returned true; should return true if the subscription
      * is allowed otherwise return false.
      */
-    public abstract boolean canSubscribe(MqttConnection connection, Topic topic);
+    public abstract boolean canSubscribe(KeycloakSecurityContext securityContext, Topic topic);
 
     /**
      * Called to authorise a publish if {@link #handlesTopic} returned true; should return true if the publish is
      * allowed otherwise return false.
      */
-    public abstract boolean canPublish(MqttConnection connection, Topic topic);
+    public abstract boolean canPublish(KeycloakSecurityContext securityContext, Topic topic);
 
     /**
      * Called to handle subscribe if {@link #canSubscribe} returned true.
      */
-    public abstract void doSubscribe(MqttConnection connection, Topic topic, InterceptSubscribeMessage msg);
+    public abstract void doSubscribe(KeycloakSecurityContext securityContext, Topic topic, InterceptSubscribeMessage msg);
 
     /**
      * Called to handle unsubscribe if {@link #handlesTopic} returned true.
      */
-    public abstract void doUnsubscribe(MqttConnection connection, Topic topic, InterceptUnsubscribeMessage msg);
+    public abstract void doUnsubscribe(KeycloakSecurityContext securityContext, Topic topic, InterceptUnsubscribeMessage msg);
 
     /**
      * Called to handle publish if {@link #canPublish} returned true.
      */
-    public abstract void doPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg);
+    public abstract void doPublish(KeycloakSecurityContext securityContext, Topic topic, InterceptPublishMessage msg);
 
     public static boolean topicRealmMatchesConnection(MqttConnection connection, Topic topic) {
         return connection.realm.equals(topicTokenIndexToString(topic, 0));
@@ -213,7 +215,7 @@ public abstract class MQTTHandler {
     }
 
     public static String topicTokenIndexToString(Topic topic, int tokenNumber) {
-        return topicTokenCountGreaterThan(topic, tokenNumber) ? topic.getTokens().get(tokenNumber).toString() : null;
+        return topicTokenCountGreaterThan(topic, tokenNumber) ? topic.getTokens().get(tokenNumber) : null;
     }
 
     public static Map<String, Object> prepareHeaders(MqttConnection connection) {

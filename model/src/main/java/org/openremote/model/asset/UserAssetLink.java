@@ -25,6 +25,7 @@ import org.openremote.model.value.MetaItemType;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * An asset can be linked to many users, and a user can have links to many assets.
