@@ -82,12 +82,13 @@ const editorStyling = css`
     .grid-stack-item-content {
         background: white;
         box-sizing: border-box;
-        border: 2px solid #E0E0E0;
+        border: 1px solid #E0E0E0;
         border-radius: 4px;
         overflow: hidden !important;
     }
     .grid-stack-item-content__active {
-        border: 2px solid ${unsafeCSS(DefaultColor4)};    
+        border: 2px solid ${unsafeCSS(DefaultColor4)};
+        margin: -1px !important; /* to compromise with the extra pixel of border. */
     }
     
     /* Grid lines on the background of the grid */
@@ -417,7 +418,7 @@ export class OrDashboardPreview extends LitElement {
                     scroll: true
                 },
                 float: true,
-                margin: 4,
+                margin: 5,
                 resizable: {
                     handles: 'all'
                 },
@@ -586,9 +587,7 @@ export class OrDashboardPreview extends LitElement {
                                         return html`
                                             <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
                                                 <div class="grid-stack-item-content" style="display: flex;">
-                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}" 
-                                                                         style="width: 100%;"
-                                                    ></or-dashboard-widget>
+                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}" style="width: 100%; height: auto;"></or-dashboard-widget>
                                                 </div>
                                             </div>
                                         `

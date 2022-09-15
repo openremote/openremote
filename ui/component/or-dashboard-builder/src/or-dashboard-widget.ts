@@ -109,10 +109,14 @@ export class OrDashboardWidget extends LitElement {
 
     protected render() {
         return html`
-            <div id="widget-container" style="height: 100%; padding: 8px; display: flex; flex-direction: column;">
-                <div style="display: flex; height: 36px; justify-content: space-between; align-items: center; margin-right: -6px;">
+            <div id="widget-container" style="height: 100%; padding: 8px 16px 8px 16px; display: flex; flex-direction: column;">
+                <div style="display: flex; height: 36px; justify-content: space-between; align-items: center; margin-right: -12px;">
                     <span class="panel-title">${this.widget?.displayName?.toUpperCase()}</span>
-                    <or-mwc-input type="${InputType.BUTTON}" icon="refresh" .disabled="${this.editMode}" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                    <div>
+                        <!--<or-mwc-input type="${InputType.BUTTON}" outlined label="Period"></or-mwc-input>-->
+                        <!--<or-mwc-input type="${InputType.BUTTON}" label="Settings"></or-mwc-input>-->
+                        <or-mwc-input type="${InputType.BUTTON}" icon="refresh" .disabled="${this.editMode}" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                    </div>
                 </div>
                 ${until(this.getWidgetContent(this.widget!).then((content) => {
                     return content;
