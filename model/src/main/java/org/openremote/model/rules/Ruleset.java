@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueType;
 
@@ -33,15 +32,9 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.syslog.SyslogCategory.RULES;
 
 /**
  * Rules can be defined in three scopes: global, for a realm, for an asset sub-tree.
@@ -57,7 +50,6 @@ import static org.openremote.model.syslog.SyslogCategory.RULES;
     @JsonSubTypes.Type(value = GlobalRuleset.class, name = GlobalRuleset.TYPE)
 })
 public abstract class Ruleset {
-    public static final Logger LOG = SyslogCategory.getLogger(RULES, Ruleset.class);
     public static final MetaItemDescriptor<Boolean> SHOW_ON_LIST = new MetaItemDescriptor<>("showOnList", ValueType.BOOLEAN);
 
     public enum Lang {
@@ -249,29 +241,7 @@ public abstract class Ruleset {
 
     @JsonIgnore
     public CalendarEvent getValidity() {
-        LOG.log(Level.FINE, "Meta in Ruleset : " + getMeta());
-
-
-
-        LOG.log(Level.FINE, "Validity in Ruleset : " + getMeta().get(VALIDITY));
-        LOG.log(Level.FINE, "Validity in Ruleset : " + getMeta().get(VALIDITY.getName()));
-
-        Optional<MetaItem<?>> metaItem = getMeta().get(VALIDITY.getName());
-        LOG.log(Level.FINE, "item : " + metaItem.get());
-        LOG.log(Level.FINE, "item type : " + metaItem.get().getType());
-        LOG.log(Level.FINE, "item name : " + metaItem.get().getName());
-
-        MetaItem<?> metaItem1 = metaItem.get();
-        LOG.log(Level.FINE, "metaitem value : " + metaItem1.getValue().get());
-        LOG.log(Level.FINE, "metaitem class : " + metaItem1.getValue().get().getClass());
-
-        //return (CalendarEvent) getMeta().get(VALIDITY.getName()).flatMap(MetaItem::getValue).orElse(null);
-
-        //return getMeta().get(VALIDITY).flatMap(MetaItem::getValue).orElse(null);
-
-        LinkedHashMap map = (LinkedHashMap) metaItem1.getValue().get();
-
-        return new CalendarEvent(new Date((Long) map.get("start")), new Date((Long) map.get("end")));
+        return getMeta().get(VALIDITY).flatMap(MetaItem::getValue).orElse(null);
     }
 
     @JsonIgnore

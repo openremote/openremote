@@ -24,6 +24,7 @@ import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeLink;
+import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.util.TsIgnore;
@@ -189,6 +190,14 @@ public final class MetaItemType {
      * false/off/released/open value when released.
      */
     public static final MetaItemDescriptor<Boolean> MOMENTARY = new MetaItemDescriptor<>("momentary", ValueType.BOOLEAN);
+
+    /* RULESET / META */
+
+    public static final MetaItemDescriptor<CalendarEvent> VALIDITY = new MetaItemDescriptor<>("validity", ValueType.CALENDAR_EVENT);
+
+    public static final MetaItemDescriptor<Boolean> TRIGGER_ON_PREDICTED_DATA = new MetaItemDescriptor<>("triggerOnPredictedData", ValueType.BOOLEAN);
+
+    public static final MetaItemDescriptor<Boolean> CONTINUE_ON_ERROR = new MetaItemDescriptor<>("continueOnError", ValueType.BOOLEAN);
 
     protected MetaItemType() {
     }

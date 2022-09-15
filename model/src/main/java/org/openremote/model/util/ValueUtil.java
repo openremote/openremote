@@ -581,6 +581,10 @@ public class ValueUtil {
 
     public static Optional<MetaItemDescriptor<?>> getMetaItemDescriptor(String name) {
         if (TextUtil.isNullOrEmpty(name)) return Optional.empty();
+
+        LOG.log(Level.FINE, "meta research : " + name);
+        LOG.log(Level.FINE, "List of descriptors : " + metaItemDescriptors.stream().map(m -> m.getName()).collect(Collectors.joining(",")));
+
         return metaItemDescriptors.stream().filter(mid -> mid.getName().equals(name)).findFirst();
     }
 

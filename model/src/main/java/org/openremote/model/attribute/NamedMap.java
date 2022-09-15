@@ -20,7 +20,6 @@
 package org.openremote.model.attribute;
 
 import com.google.common.collect.ForwardingMap;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.AbstractNameValueDescriptorHolder;
 import org.openremote.model.value.AbstractNameValueHolder;
@@ -32,19 +31,15 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
-import static org.openremote.model.syslog.SyslogCategory.RULES;
 
 /**
  * Special map for {@link NameHolder} items where item names are used as map keys.
  */
 public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMap<String, T> implements Serializable {
-    public static final Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, NamedMap.class);
-
     protected Map<String, T> delegate = new HashMap<>();
 
     public NamedMap() {
@@ -134,26 +129,14 @@ public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMa
 
     @SuppressWarnings("unchecked")
     public <V, W extends AbstractNameValueHolder<V>> Optional<W> get(AbstractNameValueDescriptorHolder<V> nameValueDescriptorHolder) {
-        LOG.log(Level.FINE, "--- name " + nameValueDescriptorHolder.getName());
-        LOG.log(Level.FINE, "--- type " + nameValueDescriptorHolder.getType());
-        LOG.log(Level.FINE, "--- type type " + nameValueDescriptorHolder.getType().getType());
         Optional<T> valueProvider = get(nameValueDescriptorHolder.getName());
 
-        LOG.log(Level.FINE, "--- present? " + valueProvider.isPresent());
-        if (valueProvider.isPresent()) {
-            LOG.log(Level.FINE, "--- get " + valueProvider.get());
-        }
         return valueProvider.map(item -> {
-            LOG.log(Level.FINE, "--------------");
-            LOG.log(Level.FINE, "---- item type " + item.getType());
-            LOG.log(Level.FINE, "---- item type type " + item.getType().getType());
             Class<?> itemType = item.getType().getType();
             Class<V> expectedType = nameValueDescriptorHolder.getType().getType();
             if (itemType == expectedType) {
-                LOG.log(Level.FINE, "-------- Type match");
                 return (W)item;
             }
-            LOG.log(Level.FINE, "not matching... returning null");
             return null;
         });
     }

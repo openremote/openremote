@@ -61,7 +61,6 @@ import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
-import static org.openremote.model.util.ValueUtil.LOG;
 import static org.openremote.model.util.ValueUtil.distinctByKey;
 
 public class JsonRulesBuilder extends RulesBuilder {
@@ -628,10 +627,6 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         Condition condition = buildLhsCondition(rule, ruleState);
         Action action = buildRhsAction(rule, ruleState);
-
-        LOG.log(Level.FINE, "condition and action : " + condition + " - " + action);
-        LOG.log(Level.FINE, "rule : " + rule);
-        LOG.log(Level.FINE, "ruleState : " + ruleState);
 
         if (condition == null || action == null) {
             throw new IllegalArgumentException("Error building JSON rule when or then is not defined: " + rule.name);

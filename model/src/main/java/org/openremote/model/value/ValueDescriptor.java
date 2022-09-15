@@ -25,17 +25,11 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.RULES;
 
 /**
  * A simple wrapper around a {@link Class} that describes a value that can be used by {@link Attribute}s and
@@ -53,7 +47,6 @@ import static org.openremote.model.syslog.SyslogCategory.RULES;
  */
 //@JsonDeserialize(using = ValueDescriptor.ValueDescriptorDeserialiser.class)
 public class ValueDescriptor<T> implements NameHolder, Serializable {
-    public static final Logger LOG = SyslogCategory.getLogger(RULES, ValueDescriptor.class);
 
     /**
      * This class handles serialising {@link ValueDescriptor}s as strings
@@ -153,8 +146,6 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 
     @SuppressWarnings("unchecked")
     public ValueDescriptor(String name, Class<T> type, ValueConstraint...constraints) {
-        LOG.log(Level.FINE, "LA");
-        LOG.log(Level.FINE, name);
         if (type.isArray()) {
             throw new IllegalArgumentException("Value descriptor type should be the inner array type");
         }
@@ -173,8 +164,6 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
     }
 
     protected ValueDescriptor(String name, Class<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units, Integer arrayDimensions) {
-        LOG.log(Level.FINE, "ICI");
-        LOG.log(Level.FINE, name);
         this.name = name;
         this.type = type;
         this.arrayDimensions = arrayDimensions;

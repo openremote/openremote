@@ -153,9 +153,6 @@ public class RulesetDeployment {
         this.predictedDatapointsFacade = predictedDatapointsFacade;
 
         if (ruleset.getMeta().has(Ruleset.VALIDITY)) {
-            RulesEngine.LOG.log(Level.FINE, " Meta info : " + ruleset.getMeta().toString());
-            RulesEngine.LOG.log(Level.FINE, "Validity Key entry in Meta info : " + ruleset.getMeta().get(Ruleset.VALIDITY.getName()));
-            RulesEngine.LOG.log(Level.FINE, "Validity Key entry in Meta info : " + ruleset.getMeta().get(Ruleset.VALIDITY));
             validity = ruleset.getValidity();
 
             if (validity == null) {
