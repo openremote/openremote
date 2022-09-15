@@ -1,5 +1,5 @@
 import manager, {DefaultColor4} from "@openremote/core";
-import {css, html, LitElement, unsafeCSS} from "lit";
+import {css, CSSResult, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
 import "./or-dashboard-widget";
@@ -22,6 +22,8 @@ import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
+import { when } from "lit/directives/when.js";
+import { cache } from "lit/directives/cache.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -532,64 +534,95 @@ export class OrDashboardPreview extends LitElement {
         let screenPresets = this.template?.screenPresets?.map(s => s.displayName);
         screenPresets?.push(customPreset);
         return html`
-                <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
-                    ${this.editMode ? html`
-                        <div id="view-options">
-                            <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
-                                          @or-mwc-input-changed="${() => this.onFitToScreenClick()}">
-                            </or-mwc-input>
-                            <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="${i18next.t('dashboard.zoomPercent')}" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
-                                          @or-mwc-input-changed="${debounce((event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }, 50)}"
-                            ></or-mwc-input>
-                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}" style="min-width: 220px;"
-                                          .value="${this.previewPreset == undefined ? customPreset : this.previewPreset.displayName}" .options="${screenPresets}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewPreset = this.template?.screenPresets?.find(s => s.displayName == event.detail.value); }}"
-                            ></or-mwc-input>
-                            <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="${i18next.t('width')}" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
-                                          @or-mwc-input-changed="${debounce((event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }, 550)}"
-                            ></or-mwc-input>
-                            <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="${i18next.t('height')}" min="100" .value="${this.previewHeight?.replace('px', '')}" style="width: 90px;"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewHeight = event.detail.value + 'px'; }}"
-                            ></or-mwc-input>
-                            <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"
-                                          @or-mwc-input-changed="${() => { const newWidth = this.previewHeight; const newHeight = this.previewWidth; this.previewWidth = newWidth; this.previewHeight = newHeight; }}">
-                            </or-mwc-input>
-                        </div>
-                    ` : undefined}
-                    ${this.rerenderPending ? html`
-                        <div>
-                            <span>${i18next.t('dashboard.renderingGrid')}</span>
-                        </div>
-                    ` : html`
-                        <div id="container" style="display: flex; justify-content: center; height: 100%; overflow: hidden auto; position: relative;">
-                            ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
-                                <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
-                            ` : undefined}
-                            <div style="position: absolute; padding-bottom: 64px;">
-                                <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined}"
-                                     @click="${(ev: MouseEvent) => { (ev.composedPath()[0] as HTMLElement).id == 'gridElement' ? this.onGridItemClick(undefined) : undefined; }}"
-                                     style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;"
-                                >
-                                    <!-- Gridstack element on which the Grid will be rendered -->
-                                    <div id="gridElement" class="grid-stack ${this.fullscreen ? undefined : 'grid-element'}">
-                                        ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
-                                            return html`
-                                                <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
-                                                    <div class="grid-stack-item-content" style="display: flex;">
-                                                        <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}"
-                                                                             style="width: 100%;"
-                                                        ></or-dashboard-widget>
-                                                    </div>
+            <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
+                ${this.editMode ? html`
+                    <div id="view-options">
+                        <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
+                                      @or-mwc-input-changed="${() => this.onFitToScreenClick()}">
+                        </or-mwc-input>
+                        <or-mwc-input id="zoom-input" type="${InputType.NUMBER}" outlined label="${i18next.t('dashboard.zoomPercent')}" min="25" .value="${(this.previewZoom * 100)}" style="width: 90px"
+                                      @or-mwc-input-changed="${debounce((event: OrInputChangedEvent) => { this.previewZoom = event.detail.value / 100; }, 50)}"
+                        ></or-mwc-input>
+                        <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="${i18next.t('dashboard.presetSize')}" style="min-width: 220px;"
+                                      .value="${this.previewPreset == undefined ? customPreset : this.previewPreset.displayName}" .options="${screenPresets}"
+                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewPreset = this.template?.screenPresets?.find(s => s.displayName == event.detail.value); }}"
+                        ></or-mwc-input>
+                        <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="${i18next.t('width')}" min="100" .value="${this.previewWidth?.replace('px', '')}" style="width: 90px"
+                                      @or-mwc-input-changed="${debounce((event: OrInputChangedEvent) => { this.previewWidth = event.detail.value + 'px'; }, 550)}"
+                        ></or-mwc-input>
+                        <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="${i18next.t('height')}" min="100" .value="${this.previewHeight?.replace('px', '')}" style="width: 90px;"
+                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewHeight = event.detail.value + 'px'; }}"
+                        ></or-mwc-input>
+                        <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"
+                                      @or-mwc-input-changed="${() => { const newWidth = this.previewHeight; const newHeight = this.previewWidth; this.previewWidth = newWidth; this.previewHeight = newHeight; }}">
+                        </or-mwc-input>
+                    </div>
+                ` : undefined}
+                ${this.rerenderPending ? html`
+                    <div>
+                        <span>${i18next.t('dashboard.renderingGrid')}</span>
+                    </div>
+                ` : html`
+                    <div id="container" style="display: flex; justify-content: center; height: 100%; overflow: hidden auto; position: relative;">
+                        ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                            <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
+                        ` : undefined}
+                        <div style="position: absolute; padding-bottom: 64px;">
+                            <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined}"
+                                 @click="${(ev: MouseEvent) => { (ev.composedPath()[0] as HTMLElement).id == 'gridElement' ? this.onGridItemClick(undefined) : undefined; }}"
+                                 style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;"
+                            >
+                                <!-- Gridstack element on which the Grid will be rendered -->
+                                <div id="gridElement" class="grid-stack ${this.fullscreen ? undefined : 'grid-element'}">
+                                    ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
+                                        return html`
+                                            <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
+                                                <div class="grid-stack-item-content" style="display: flex;">
+                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}" 
+                                                                         style="width: 100%;"
+                                                    ></or-dashboard-widget>
                                                 </div>
-                                            `
-                                        }) : undefined}
-                                    </div>
+                                            </div>
+                                        `
+                                    }) : undefined}
                                 </div>
                             </div>
                         </div>
-                    `}
-                </div>
-            `
+                    </div>
+                `}
+            </div>
+            <style>
+                ${cache(when((this.grid && ((this.grid.getColumn() && this.grid.getColumn() > 12) || (this.template?.columns && this.template.columns > 12))),
+                        () => this.applyCustomGridstackGridCSS(this.grid?.getColumn() ? this.grid.getColumn() : this.template!.columns!),
+                        undefined
+                ))}
+            </style>
+        `
+    }
+
+
+
+    private cachedGridstackCSS: Map<number, TemplateResult[]> = new Map<number, TemplateResult[]>();
+
+    // Provides support for > 12 columns in GridStack (which requires manual css edits)
+    //language=html
+    applyCustomGridstackGridCSS(columns: number): TemplateResult {
+        console.error("Applying custom Gridstack CSS...");
+        if(this.cachedGridstackCSS.has(columns)) {
+            return html`${this.cachedGridstackCSS.get(columns)!.map((x) => x)}`;
+        } else {
+            const htmls: TemplateResult[] = [];
+            for(let i = 0; i < (columns + 1); i++) {
+                htmls.push(html`
+                    <style>
+                        .grid-stack > .grid-stack-item[gs-w="${i}"]:not(.ui-draggable-dragging):not(.ui-resizable-resizing) { width: ${100 - (columns - i) * (100 / columns)}% !important; }
+                        .grid-stack > .grid-stack-item[gs-x="${i}"]:not(.ui-draggable-dragging):not(.ui-resizable-resizing) { left: ${100 - (columns - i) * (100 / columns)}% !important; }                    
+                    </style>
+                `);
+            }
+            this.cachedGridstackCSS.set(columns, htmls);
+            return html`${htmls.map((x) => x)}`;
+        }
     }
 
     // Triggering a Grid rerender on every time the element resizes.

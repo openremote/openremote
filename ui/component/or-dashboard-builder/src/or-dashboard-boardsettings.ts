@@ -138,7 +138,11 @@ export class OrDashboardBoardsettings extends LitElement {
                             <!-- Number of Columns control -->
                             <div style="margin-bottom: 12px; display: flex; align-items: center;">
                                 <span style="min-width: 180px;">${i18next.t("dashboard.numberOfColumns")}</span>
-                                <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.dashboard.template.columns}" min="1" max="12" @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.dashboard?.template != null) { this.dashboard.template.columns = event.detail.value as number; this.forceParentUpdate(true); }}}"></or-mwc-input>
+                                <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.dashboard.template.columns}" min="1" max="24" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                    if(this.dashboard?.template != null && event.detail.value as number <= 24 && event.detail.value as number >= 1) {
+                                        this.dashboard.template.columns = event.detail.value as number; this.forceParentUpdate(true); 
+                                    }
+                                }}"></or-mwc-input>
                             </div>
                             <!-- Max Screen Width control-->
                             <div style="margin-bottom: 24px; display: flex; align-items: center;">
