@@ -45,6 +45,14 @@ const editorStyling = css`
     #height-input { margin-left: 10px; }
     #rotate-btn { margin-left: 10px; }
     
+    .maingridContainer {
+        position: absolute;
+        padding-bottom: 64px;
+    }
+    .maingridContainer__fullscreen {
+        width: 100%;
+    }
+    
     .maingrid {
         border: 3px solid #909090;
         background: #FFFFFF;
@@ -60,9 +68,9 @@ const editorStyling = css`
         border-radius: 0;
         overflow-x: hidden;
         overflow-y: auto;
-        height: auto !important; /* To override .maingrid */
+        height: 100% !important; /* To override .maingrid */
         width: 100% !important; /* To override .maingrid */
-        padding: 4px;
+        padding: 0;
         /*pointer-events: none;*/
         position: relative;
         z-index: 0;
@@ -559,15 +567,15 @@ export class OrDashboardPreview extends LitElement {
                     </div>
                 ` : undefined}
                 ${this.rerenderPending ? html`
-                    <div>
+                    <div id="container" style="justify-content: center; align-items: center;">
                         <span>${i18next.t('dashboard.renderingGrid')}</span>
                     </div>
                 ` : html`
-                    <div id="container" style="display: flex; justify-content: center; height: 100%; overflow: hidden auto; position: relative;">
+                    <div id="container" style="justify-content: center; overflow: hidden auto; position: relative;">
                         ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                             <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
                         ` : undefined}
-                        <div style="position: absolute; padding-bottom: 64px;">
+                        <div class="${this.fullscreen ? 'maingridContainer__fullscreen' : 'maingridContainer'}">
                             <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined}"
                                  @click="${(ev: MouseEvent) => { (ev.composedPath()[0] as HTMLElement).id == 'gridElement' ? this.onGridItemClick(undefined) : undefined; }}"
                                  style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.previewZoom}; -moz-transform: scale(${this.previewZoom}); transform-origin: top;"
@@ -592,12 +600,17 @@ export class OrDashboardPreview extends LitElement {
                 `}
             </div>
             <style>
-                ${cache(when((this.grid && ((this.grid.getColumn() && this.grid.getColumn() > 12) || (this.template?.columns && this.template.columns > 12))),
-                        () => this.applyCustomGridstackGridCSS(this.grid?.getColumn() ? this.grid.getColumn() : this.template!.columns!),
+                ${cache(when((this.grid && ((this.getGridstackColumns(this.grid) && this.getGridstackColumns(this.grid)! > 12) || (this.template?.columns && this.template.columns > 12))),
+                        () => this.applyCustomGridstackGridCSS(this.getGridstackColumns(this.grid) ? this.getGridstackColumns(this.grid)! : this.template!.columns!),
                         undefined
                 ))}
             </style>
         `
+    }
+
+    getGridstackColumns(grid: GridStack | undefined): number | undefined {
+        try { return grid?.getColumn(); }
+        catch (e) { return undefined; }
     }
 
 
