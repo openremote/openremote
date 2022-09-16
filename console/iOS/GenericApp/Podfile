@@ -16,6 +16,7 @@ target 'GenericApp' do
   pod 'Firebase/Crashlytics'
   pod 'Firebase/Analytics'
   pod 'IQKeyboardManagerSwift'
+  pod 'DropDown'
 end
 
 target 'NotificationService' do

@@ -14,6 +14,8 @@ class SplashViewController: UIViewController {
     var appconfig: ORAppConfig?
     var host: String?
 
+    @IBAction func unwindToSplashScreen(sender: UIStoryboardSegue) { }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
@@ -23,7 +25,7 @@ class SplashViewController: UIViewController {
             host = savedHost
             let url = host!.appending("/api/\(realm)")
 
-            let apiManager = ApiManager(baseUrl: url)
+            let apiManager = HttpApiManager(baseUrl: url)
             apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in
                 DispatchQueue.main.async {
                     if statusCode == 200 && error == nil {
@@ -36,7 +38,9 @@ class SplashViewController: UIViewController {
                 }
             })
         } else {
-            self.performSegue(withIdentifier: "goToProjectView", sender: self)
+//            self.performSegue(withIdentifier: "goToProjectView", sender: self)
+            self.performSegue(withIdentifier: "goToWizardDomainView", sender: self)
+//            self.performSegue(withIdentifier: "goToWizard", sender: self)
         }
     }
 
@@ -47,4 +51,5 @@ class SplashViewController: UIViewController {
             orViewController.baseUrl = host
         }
     }
+
 }

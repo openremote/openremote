@@ -1,71 +1,104 @@
 //
-//  ProjectViewController.swift
+//  WizardAppViewController.swift
 //  GenericApp
 //
-//  Created by Michael Rademaker on 26/10/2020.
-//  Copyright © 2020 OpenRemote. All rights reserved.
+//  Created by Eric Bariaux on 18/06/2022.
+//  Copyright © 2022 OpenRemote. All rights reserved.
 //
 
 import UIKit
 import MaterialComponents.MaterialTextFields
 import ORLib
+import DropDown
 
-class ProjectViewController: UIViewController {
+class WizardAppViewController: UIViewController {
 
-    var projectName: String?
-    var realmName: String?
+    var configManager: ConfigManager?
+    
+    var appName: String?
     var appconfig: ORAppConfig?
     var host: String?
+    
+    var apps: [String]?
+    
+    var dropDown = DropDown()
 
-    @IBOutlet weak var projectTextInput: ORTextInput!
-    @IBOutlet weak var realmTextInput: ORTextInput!
-    @IBOutlet weak var connectButton: MDCRaisedButton!
+    @IBOutlet weak var appTextInput: ORTextInput!
+    @IBOutlet weak var nextButton: MDCRaisedButton!
+    
+    @IBOutlet weak var appsSelectionButton: UIButton!
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         let orGreenColor = UIColor(named: "or_green")
 
-        connectButton.backgroundColor = orGreenColor
-        connectButton.tintColor = UIColor.white
+        nextButton.backgroundColor = orGreenColor
+        nextButton.tintColor = UIColor.white
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        projectTextInput.textField?.delegate = self
-        projectTextInput.textField?.autocorrectionType = .no
-        projectTextInput.textField?.autocapitalizationType = .none
-        projectTextInput.textField?.returnKeyType = .next
+//        appTextInput.textField?.delegate = self
+        appTextInput.textField?.autocorrectionType = .no
+        appTextInput.textField?.autocapitalizationType = .none
+        appTextInput.textField?.returnKeyType = .next
+        
+        if let apps = apps {
+            dropDown.anchorView = appsSelectionButton
+            // The list of items to display. Can be changed dynamically
+            dropDown.dataSource = apps
 
-        realmTextInput.textField?.delegate = self
-        realmTextInput.textField?.autocorrectionType = .no
-        realmTextInput.textField?.autocapitalizationType = .none
-        realmTextInput.textField?.returnKeyType = .continue
-    }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "goToWebView" {
-            let orViewController = segue.destination as! ORViewcontroller
+            dropDown.selectionAction = { [weak self] (index, item) in
+                self?.appsSelectionButton.setTitle(item, for: .normal)
+            }
             
+            appsSelectionButton.isHidden = false
+            appTextInput.isHidden = true
         }
     }
 
+    @IBAction func selectApp(_ sender: AnyObject) {
+            dropDown.show()
+        }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "goToWizardRealmView" {
+            
+        }
+/*        if segue.identifier == "goToWebView" {
+            let orViewController = segue.destination as! ORViewcontroller
+            
+        }*/
+    }
+
+    @IBAction func nextButtonpressed(_ sender: UIButton) {
+        print("Selected app " + (dropDown.selectedItem ?? "none"))
+        /*
+        if let domain = domainName {
+            requestAppConfig(domain)
+        }
+         */
+        self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
+    }
+
+  
+/*
     @IBAction func connectButtonpressed(_ sender: UIButton) {
         if let project = projectName, let realm = realmName {
             requestAppConfig(project, realm)
         }
     }
+     */
 }
-
-extension ProjectViewController: UITextFieldDelegate {
+/*
+ 
+extension WizardAppViewController: UITextFieldDelegate {
 
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         if textField == projectTextInput.textField {
             projectName = projectTextInput.textField?.text?.appending(string).trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        if textField == realmTextInput.textField {
-            realmName = realmTextInput?.textField?.text?.appending(string).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         return true
     }
@@ -74,7 +107,7 @@ extension ProjectViewController: UITextFieldDelegate {
         host = project.isUrl() ? project : "https://\(project).openremote.app/"
         let url = project.isUrl() ? project.appending("/api/\(realm)") : "https://\(project).openremote.app/api/\(realm)"
         
-        let apiManager = HttpApiManager(baseUrl: url)
+        let apiManager = ApiManager(baseUrl: url)
         apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in
             DispatchQueue.main.async {
                 if (statusCode == 200 || statusCode == 404) && error == nil {
@@ -109,3 +142,4 @@ extension ProjectViewController: UITextFieldDelegate {
         return true
     }
 }
+*/

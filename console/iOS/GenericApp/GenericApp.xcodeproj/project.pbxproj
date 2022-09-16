@@ -22,6 +22,13 @@
 		878D2D19249A490400011484 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 878D2D17249A490400011484 /* LaunchScreen.storyboard */; };
 		878D2D27249A498900011484 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878D2D26249A498900011484 /* NotificationService.swift */; };
 		878D2D2B249A498900011484 /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 878D2D24249A498900011484 /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */; };
+		910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */; };
+		914448D328CFA9C2007DF2E4 /* WizardVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 914448D228CFA9C2007DF2E4 /* WizardVC.swift */; };
+		91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F942889C15D000FF05C /* WizardRealmViewController.swift */; };
+		91932FA228C8CCA500BABBA3 /* WizardSwiftUIViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91932FA128C8CCA500BABBA3 /* WizardSwiftUIViewController.swift */; };
+		91932FA428C8CD9500BABBA3 /* WizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91932FA328C8CD9500BABBA3 /* WizardView.swift */; };
+		91932FA628C8DA7C00BABBA3 /* WizardHostingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91932FA528C8DA7C00BABBA3 /* WizardHostingController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +79,14 @@
 		878D2D26249A498900011484 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		878D2D28249A498900011484 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		878D2D30249A4D3700011484 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardAppViewController.swift; sourceTree = "<group>"; };
+		910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardDomainViewController.swift; sourceTree = "<group>"; };
+		914448D228CFA9C2007DF2E4 /* WizardVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardVC.swift; sourceTree = "<group>"; };
+		91658F8F28897BC0000FF05C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		91658F942889C15D000FF05C /* WizardRealmViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardRealmViewController.swift; sourceTree = "<group>"; };
+		91932FA128C8CCA500BABBA3 /* WizardSwiftUIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardSwiftUIViewController.swift; sourceTree = "<group>"; };
+		91932FA328C8CD9500BABBA3 /* WizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardView.swift; sourceTree = "<group>"; };
+		91932FA528C8DA7C00BABBA3 /* WizardHostingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardHostingController.swift; sourceTree = "<group>"; };
 		A994B3D3E3853BA4D16AA5A8 /* Pods-GenericApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GenericApp.debug.xcconfig"; path = "Target Support Files/Pods-GenericApp/Pods-GenericApp.debug.xcconfig"; sourceTree = "<group>"; };
 		D61E1E0434CC1446EAF20BA0 /* Pods-GenericApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GenericApp.release.xcconfig"; path = "Target Support Files/Pods-GenericApp/Pods-GenericApp.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -120,6 +135,7 @@
 		878D2D00249A490300011484 = {
 			isa = PBXGroup;
 			children = (
+				91658F8F28897BC0000FF05C /* README.md */,
 				878D2D0B249A490300011484 /* GenericApp */,
 				878D2D25249A498900011484 /* NotificationService */,
 				878D2D0A249A490300011484 /* Products */,
@@ -177,6 +193,13 @@
 			children = (
 				4CEDA2CD254075D400C47E3B /* SplashViewController.swift */,
 				4C81AA632546B251006ED5DD /* ProjectViewController.swift */,
+				9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */,
+				910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */,
+				91658F942889C15D000FF05C /* WizardRealmViewController.swift */,
+				91932FA128C8CCA500BABBA3 /* WizardSwiftUIViewController.swift */,
+				91932FA528C8DA7C00BABBA3 /* WizardHostingController.swift */,
+				91932FA328C8CD9500BABBA3 /* WizardView.swift */,
+				914448D228CFA9C2007DF2E4 /* WizardVC.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -363,9 +386,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */,
+				914448D328CFA9C2007DF2E4 /* WizardVC.swift in Sources */,
 				4CF3439127A13F2200EB5A0E /* String+Utils.swift in Sources */,
 				4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */,
+				91932FA628C8DA7C00BABBA3 /* WizardHostingController.swift in Sources */,
+				91932FA428C8CD9500BABBA3 /* WizardView.swift in Sources */,
 				878D2D0D249A490300011484 /* AppDelegate.swift in Sources */,
+				910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */,
+				91932FA228C8CCA500BABBA3 /* WizardSwiftUIViewController.swift in Sources */,
+				910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */,
 				4CEDA2CE254075D400C47E3B /* SplashViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

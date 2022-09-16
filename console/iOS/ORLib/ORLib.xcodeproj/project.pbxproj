@@ -27,9 +27,34 @@
 		4CF5D07827143F2000D705BE /* ORPushNotificationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */; };
 		4CF5D07927143F2000D705BE /* ORPushNotificationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */; };
 		4CF5D07A27143F2000D705BE /* ORNotificationResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06727143F1F00D705BE /* ORNotificationResource.swift */; };
-		4CF5D07B27143F2000D705BE /* ApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06827143F1F00D705BE /* ApiManager.swift */; };
+		4CF5D07B27143F2000D705BE /* HttpApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06827143F1F00D705BE /* HttpApiManager.swift */; };
+		91658F9128897E55000FF05C /* ORConsoleConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9028897E55000FF05C /* ORConsoleConfig.swift */; };
+		91658F9328897EDD000FF05C /* ORAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9228897EDD000FF05C /* ORAppInfo.swift */; };
+		91932F9328C66A3C00BABBA3 /* test1-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9228C66A3C00BABBA3 /* test1-ConsoleConfig.json */; };
+		91932F9628C6715C00BABBA3 /* test2-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9528C6715C00BABBA3 /* test2-ConsoleConfig.json */; };
+		91932F9828C6738A00BABBA3 /* test3-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9728C6738A00BABBA3 /* test3-ConsoleConfig.json */; };
+		91932F9B28C673DC00BABBA3 /* test5-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9928C673DC00BABBA3 /* test5-ConsoleConfig.json */; };
+		91932F9C28C673DC00BABBA3 /* test4-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9A28C673DC00BABBA3 /* test4-ConsoleConfig.json */; };
+		91932F9E28C6752C00BABBA3 /* test6-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9D28C6752C00BABBA3 /* test6-ConsoleConfig.json */; };
+		91932FA028C6754100BABBA3 /* test6-Apps.txt in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9F28C6754100BABBA3 /* test6-Apps.txt */; };
+		91A9A8F328BF6A3300DF8928 /* Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8F228BF6A3300DF8928 /* Tests.swift */; };
+		91A9A8F428BF6A3300DF8928 /* libORLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CF5D04727143EEC00D705BE /* libORLib.a */; };
+		91A9A8FB28BF6A4900DF8928 /* ConfigManagerTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FA28BF6A4900DF8928 /* ConfigManagerTest.swift */; };
+		91A9A8FD28BF6A9900DF8928 /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */; };
+		91A9A8FF28BF6C4C00DF8928 /* ApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FE28BF6C4C00DF8928 /* ApiManager.swift */; };
+		91A9A90128BF6EA000DF8928 /* FileApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A90028BF6EA000DF8928 /* FileApiManager.swift */; };
 		ABD81191A88B3D7A8B2E66B6 /* Pods_ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41E56A0D7E49334C15A35CB4 /* Pods_ORLib.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		91A9A8F528BF6A3300DF8928 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4CF5D03F27143EEC00D705BE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4CF5D04627143EEC00D705BE;
+			remoteInfo = ORLib;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		4CF5D04527143EEC00D705BE /* CopyFiles */ = {
@@ -44,8 +69,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		37A59C1C5EEB5A3027F557D0 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "../../../michael/Documents/OR/Code/temp/openremote/console/iOS/GenericApp/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
-		3F2140D7DCE68D42273B346B /* Pods-ORLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.debug.xcconfig"; path = "../../../michael/Documents/OR/Code/temp/openremote/console/iOS/GenericApp/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.debug.xcconfig"; sourceTree = "<group>"; };
+		37A59C1C5EEB5A3027F557D0 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "../../../Users/ebariaux/Development/OpenRemote/openremote/console/iOS/GenericApp/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
+		3F2140D7DCE68D42273B346B /* Pods-ORLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.debug.xcconfig"; path = "../../../Users/ebariaux/Development/OpenRemote/openremote/console/iOS/GenericApp/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.debug.xcconfig"; sourceTree = "<group>"; };
 		41E56A0D7E49334C15A35CB4 /* Pods_ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C0E4A0F274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerOverlayPreviewLayer.swift; sourceTree = "<group>"; };
 		4C0E4A11274BE411008CB352 /* QrScannerProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScannerProvider.swift; sourceTree = "<group>"; };
@@ -69,7 +94,23 @@
 		4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationButton.swift; sourceTree = "<group>"; };
 		4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationAction.swift; sourceTree = "<group>"; };
 		4CF5D06727143F1F00D705BE /* ORNotificationResource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORNotificationResource.swift; sourceTree = "<group>"; };
-		4CF5D06827143F1F00D705BE /* ApiManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ApiManager.swift; sourceTree = "<group>"; };
+		4CF5D06827143F1F00D705BE /* HttpApiManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HttpApiManager.swift; sourceTree = "<group>"; };
+		91658F9028897E55000FF05C /* ORConsoleConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORConsoleConfig.swift; sourceTree = "<group>"; };
+		91658F9228897EDD000FF05C /* ORAppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORAppInfo.swift; sourceTree = "<group>"; };
+		91932F9228C66A3C00BABBA3 /* test1-ConsoleConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "test1-ConsoleConfig.json"; sourceTree = "<group>"; };
+		91932F9428C670D800BABBA3 /* Tests.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Tests.md; sourceTree = "<group>"; };
+		91932F9528C6715C00BABBA3 /* test2-ConsoleConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "test2-ConsoleConfig.json"; sourceTree = "<group>"; };
+		91932F9728C6738A00BABBA3 /* test3-ConsoleConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "test3-ConsoleConfig.json"; sourceTree = "<group>"; };
+		91932F9928C673DC00BABBA3 /* test5-ConsoleConfig.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "test5-ConsoleConfig.json"; sourceTree = "<group>"; };
+		91932F9A28C673DC00BABBA3 /* test4-ConsoleConfig.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "test4-ConsoleConfig.json"; sourceTree = "<group>"; };
+		91932F9D28C6752C00BABBA3 /* test6-ConsoleConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "test6-ConsoleConfig.json"; sourceTree = "<group>"; };
+		91932F9F28C6754100BABBA3 /* test6-Apps.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "test6-Apps.txt"; sourceTree = "<group>"; wrapsLines = 0; };
+		91A9A8F028BF6A3300DF8928 /* Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		91A9A8F228BF6A3300DF8928 /* Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests.swift; sourceTree = "<group>"; };
+		91A9A8FA28BF6A4900DF8928 /* ConfigManagerTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigManagerTest.swift; sourceTree = "<group>"; };
+		91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigManager.swift; sourceTree = "<group>"; };
+		91A9A8FE28BF6C4C00DF8928 /* ApiManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiManager.swift; sourceTree = "<group>"; };
+		91A9A90028BF6EA000DF8928 /* FileApiManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileApiManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +119,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				ABD81191A88B3D7A8B2E66B6 /* Pods_ORLib.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91A9A8ED28BF6A3300DF8928 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				91A9A8F428BF6A3300DF8928 /* libORLib.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,6 +148,7 @@
 			children = (
 				4CC64C3E27C3CDD400A2FA4C /* Media.xcassets */,
 				4CF5D04927143EEC00D705BE /* ORLib */,
+				91A9A8F128BF6A3300DF8928 /* Tests */,
 				4CF5D04827143EEC00D705BE /* Products */,
 				15E46D9A67E43A8180E89721 /* Pods */,
 				717C35290053DAF6024CFEA7 /* Frameworks */,
@@ -109,6 +159,7 @@
 			isa = PBXGroup;
 			children = (
 				4CF5D04727143EEC00D705BE /* libORLib.a */,
+				91A9A8F028BF6A3300DF8928 /* Tests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -122,6 +173,7 @@
 				4CF5D05527143F1F00D705BE /* UI */,
 				4CF5D05B27143F1F00D705BE /* Utils */,
 				4CF5D04A27143EEC00D705BE /* ORLib.swift */,
+				91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */,
 			);
 			path = ORLib;
 			sourceTree = "<group>";
@@ -168,6 +220,8 @@
 				4CF5D06327143F1F00D705BE /* ORLinkConfig.swift */,
 				4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */,
 				4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */,
+				91658F9028897E55000FF05C /* ORConsoleConfig.swift */,
+				91658F9228897EDD000FF05C /* ORAppInfo.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -176,7 +230,8 @@
 			isa = PBXGroup;
 			children = (
 				4CF5D06727143F1F00D705BE /* ORNotificationResource.swift */,
-				4CF5D06827143F1F00D705BE /* ApiManager.swift */,
+				4CF5D06827143F1F00D705BE /* HttpApiManager.swift */,
+				91A9A8FE28BF6C4C00DF8928 /* ApiManager.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -187,6 +242,32 @@
 				41E56A0D7E49334C15A35CB4 /* Pods_ORLib.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		91932F9128C66A0400BABBA3 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				91932F9428C670D800BABBA3 /* Tests.md */,
+				91932F9228C66A3C00BABBA3 /* test1-ConsoleConfig.json */,
+				91932F9528C6715C00BABBA3 /* test2-ConsoleConfig.json */,
+				91932F9728C6738A00BABBA3 /* test3-ConsoleConfig.json */,
+				91932F9A28C673DC00BABBA3 /* test4-ConsoleConfig.json */,
+				91932F9928C673DC00BABBA3 /* test5-ConsoleConfig.json */,
+				91932F9D28C6752C00BABBA3 /* test6-ConsoleConfig.json */,
+				91932F9F28C6754100BABBA3 /* test6-Apps.txt */,
+			);
+			path = Fixtures;
+			sourceTree = "<group>";
+		};
+		91A9A8F128BF6A3300DF8928 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				91932F9128C66A0400BABBA3 /* Fixtures */,
+				91A9A8FA28BF6A4900DF8928 /* ConfigManagerTest.swift */,
+				91A9A8F228BF6A3300DF8928 /* Tests.swift */,
+				91A9A90028BF6EA000DF8928 /* FileApiManager.swift */,
+			);
+			path = Tests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -210,17 +291,38 @@
 			productReference = 4CF5D04727143EEC00D705BE /* libORLib.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		91A9A8EF28BF6A3300DF8928 /* Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 91A9A8F728BF6A3300DF8928 /* Build configuration list for PBXNativeTarget "Tests" */;
+			buildPhases = (
+				91A9A8EC28BF6A3300DF8928 /* Sources */,
+				91A9A8ED28BF6A3300DF8928 /* Frameworks */,
+				91A9A8EE28BF6A3300DF8928 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				91A9A8F628BF6A3300DF8928 /* PBXTargetDependency */,
+			);
+			name = Tests;
+			productName = Tests;
+			productReference = 91A9A8F028BF6A3300DF8928 /* Tests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		4CF5D03F27143EEC00D705BE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 1250;
+				LastSwiftUpdateCheck = 1340;
 				LastUpgradeCheck = 1250;
 				TargetAttributes = {
 					4CF5D04627143EEC00D705BE = {
 						CreatedOnToolsVersion = 12.5.1;
+					};
+					91A9A8EF28BF6A3300DF8928 = {
+						CreatedOnToolsVersion = 13.4.1;
 					};
 				};
 			};
@@ -238,9 +340,27 @@
 			projectRoot = "";
 			targets = (
 				4CF5D04627143EEC00D705BE /* ORLib */,
+				91A9A8EF28BF6A3300DF8928 /* Tests */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		91A9A8EE28BF6A3300DF8928 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				91932F9328C66A3C00BABBA3 /* test1-ConsoleConfig.json in Resources */,
+				91932F9628C6715C00BABBA3 /* test2-ConsoleConfig.json in Resources */,
+				91932F9828C6738A00BABBA3 /* test3-ConsoleConfig.json in Resources */,
+				91932F9C28C673DC00BABBA3 /* test4-ConsoleConfig.json in Resources */,
+				91932F9E28C6752C00BABBA3 /* test6-ConsoleConfig.json in Resources */,
+				91932F9B28C673DC00BABBA3 /* test5-ConsoleConfig.json in Resources */,
+				91932FA028C6754100BABBA3 /* test6-Apps.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		8FD1291A07546E0F98084666 /* [CP] Check Pods Manifest.lock */ = {
@@ -273,6 +393,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4CF5D07027143F2000D705BE /* ErrorManager.swift in Sources */,
+				91658F9328897EDD000FF05C /* ORAppInfo.swift in Sources */,
 				4CF5D07227143F2000D705BE /* Window+Utils.swift in Sources */,
 				4C0E4A12274BE411008CB352 /* QrScannerProvider.swift in Sources */,
 				4CF5D07727143F2000D705BE /* ORLinkConfig.swift in Sources */,
@@ -280,12 +401,14 @@
 				4CF5D06E27143F2000D705BE /* ORViewController.swift in Sources */,
 				4CF5D07327143F2000D705BE /* UIColor+Utils.swift in Sources */,
 				4CF5D06D27143F2000D705BE /* ORTextInput.swift in Sources */,
+				91658F9128897E55000FF05C /* ORConsoleConfig.swift in Sources */,
 				4CF5D07A27143F2000D705BE /* ORNotificationResource.swift in Sources */,
 				4CF5D07827143F2000D705BE /* ORPushNotificationButton.swift in Sources */,
+				91A9A8FF28BF6C4C00DF8928 /* ApiManager.swift in Sources */,
 				4CF5D06A27143F2000D705BE /* GeofenceProvider.swift in Sources */,
 				4CF5D06927143F2000D705BE /* StorageProvider.swift in Sources */,
 				4CF5D07127143F2000D705BE /* Constants.swift in Sources */,
-				4CF5D07B27143F2000D705BE /* ApiManager.swift in Sources */,
+				4CF5D07B27143F2000D705BE /* HttpApiManager.swift in Sources */,
 				4CF5D04B27143EEC00D705BE /* ORLib.swift in Sources */,
 				4CF5D06B27143F2000D705BE /* PushNotificationProvider.swift in Sources */,
 				4CF5D07527143F2000D705BE /* String+Utils.swift in Sources */,
@@ -293,10 +416,29 @@
 				4CF5D07427143F2000D705BE /* Reachability.swift in Sources */,
 				4CF5D07627143F2000D705BE /* ORAppConfig.swift in Sources */,
 				4CF5D07927143F2000D705BE /* ORPushNotificationAction.swift in Sources */,
+				91A9A8FD28BF6A9900DF8928 /* ConfigManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91A9A8EC28BF6A3300DF8928 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				91A9A90128BF6EA000DF8928 /* FileApiManager.swift in Sources */,
+				91A9A8F328BF6A3300DF8928 /* Tests.swift in Sources */,
+				91A9A8FB28BF6A4900DF8928 /* ConfigManagerTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		91A9A8F628BF6A3300DF8928 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4CF5D04627143EEC00D705BE /* ORLib */;
+			targetProxy = 91A9A8F528BF6A3300DF8928 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		4CF5D04C27143EEC00D705BE /* Debug */ = {
@@ -451,6 +593,42 @@
 			};
 			name = Release;
 		};
+		91A9A8F828BF6A3300DF8928 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4AC88KZHJZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.Tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		91A9A8F928BF6A3300DF8928 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4AC88KZHJZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.Tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -468,6 +646,15 @@
 			buildConfigurations = (
 				4CF5D04F27143EEC00D705BE /* Debug */,
 				4CF5D05027143EEC00D705BE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		91A9A8F728BF6A3300DF8928 /* Build configuration list for PBXNativeTarget "Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				91A9A8F828BF6A3300DF8928 /* Debug */,
+				91A9A8F928BF6A3300DF8928 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

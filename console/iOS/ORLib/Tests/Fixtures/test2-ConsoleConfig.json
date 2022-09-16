@@ -1,0 +1,7 @@
+{
+    "showAppTextInput" : false,
+    "showRealmTextInput" : false,
+    "app" : "Console 1",
+    "allowedApps" : [],
+    "apps" : {}
+}
