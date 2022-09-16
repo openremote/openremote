@@ -66,10 +66,6 @@ extension WizardDomainViewController: UITextFieldDelegate {
     }
 
     fileprivate func requestAppConfig(_ domain: String) {
-//        host = domain.isUrl() ? domain : "https://\(domain).openremote.app/"
-//        let url = domain.isUrl() ? domain.appending("/api/master") : "https://\(domain).openremote.app/api/master"
-        
-//        let apiManager = HttpApiManager(baseUrl: url)
         configManager = ConfigManager(apiManagerFactory: { url in
             HttpApiManager(baseUrl: url)
         })
@@ -93,86 +89,6 @@ extension WizardDomainViewController: UITextFieldDelegate {
                 self.performSegue(withIdentifier: "goToWebView", sender: self)
             }
         }
-
-        /*
-        async {
-            do {
-                try await print("Console config \(apiManager.getConsoleConfig())")
-            } catch {
-                print("Error in getConsoleConfig call \(error)")
-            }
-            do {
-                try await print("Apps \(apiManager.getApps())")
-            } catch {
-                print("Error in getApps call \(error)")
-            }
-        }
-         */
-        
-        
-        /*
-        apiManager.getConsoleConfig(callback: { statusCode, consoleConfig, error in
-            DispatchQueue.main.async {
-                if (statusCode == 200 || statusCode == 404) && error == nil {
-//                    let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
-//                    userDefaults?.set(self.host, forKey: DefaultsKey.hostKey)
-                    let cc = consoleConfig ?? ORConsoleConfig()
-                    print(cc)
-                    
-                    // TODO: app != nil -> don't ask user for app
-                    if let selectedApp = cc.app {
-                        
-                    }
-                    
-                    
-                    // allowedApps == nil -> get list of apps
-                    if cc.allowedApps == nil {
-                        apiManager.getApps(callback: { statusCode, apps, error in
-                            DispatchQueue.main.async {
-                                if (statusCode == 200 || statusCode == 404) && error == nil {
-                                    let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
-                                    userDefaults?.set(self.host, forKey: DefaultsKey.hostKey)
-                                    
-                                    self.apps = apps
-                //                    userDefaults?.set(realm, forKey: DefaultsKey.realmKey)
-                //                    self.appconfig = orAppConfig
-
-                                    self.performSegue(withIdentifier: "goToWizardAppView", sender: self)
-                                    
-                                    
-                                // FIXME: this is temporary for compatibility with older managers
-                                } else if statusCode == 403 {
-                                    // Should select "manager" as the app
-                                    
-                                    
-                                    
-                                    
-                                } else {
-                                    let alertView = UIAlertController(title: "Error", message: "Error occurred getting app config. Check your input and try again", preferredStyle: .alert)
-                                    alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-
-                                    self.present(alertView, animated: true, completion: nil)
-                                }
-                            }
-                        })
-                    } else {
-                        self.apps = cc.allowedApps
-                    }
-                    
-//                    userDefaults?.set(realm, forKey: DefaultsKey.realmKey)
-//                    self.appconfig = orAppConfig
-
-//                    self.performSegue(withIdentifier: "goToWebView", sender: self)
-                } else {
-                    let alertView = UIAlertController(title: "Error", message: "Error occurred getting app config. Check your input and try again", preferredStyle: .alert)
-                    alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-
-                    self.present(alertView, animated: true, completion: nil)
-                }
-            }
-
-        })*/
-        
     }
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {

@@ -40,7 +40,7 @@ class WizardAppViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-//        appTextInput.textField?.delegate = self
+        appTextInput.textField?.delegate = self
         appTextInput.textField?.autocorrectionType = .no
         appTextInput.textField?.autocapitalizationType = .none
         appTextInput.textField?.returnKeyType = .next
@@ -92,17 +92,17 @@ class WizardAppViewController: UIViewController {
     }
      */
 }
-/*
  
 extension WizardAppViewController: UITextFieldDelegate {
 
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        if textField == projectTextInput.textField {
-            projectName = projectTextInput.textField?.text?.appending(string).trimmingCharacters(in: .whitespacesAndNewlines)
+        if textField == appTextInput.textField {
+            appName = appTextInput.textField?.text?.appending(string).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         return true
     }
 
+    /*
     fileprivate func requestAppConfig(_ project: String, _ realm: String) {
         host = project.isUrl() ? project : "https://\(project).openremote.app/"
         let url = project.isUrl() ? project.appending("/api/\(realm)") : "https://\(project).openremote.app/api/\(realm)"
@@ -126,20 +126,18 @@ extension WizardAppViewController: UITextFieldDelegate {
             }
         })
     }
+     */
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         guard let input = textField.text, !input.isEmpty else {
             return false
         }
 
-        if textField == projectTextInput.textField {
-            realmTextInput.textField?.becomeFirstResponder()
-        } else if textField == realmTextInput.textField, let project = projectName, let realm = realmName {
-            realmTextInput.textField?.resignFirstResponder()
-            requestAppConfig(project, realm)
+        if textField == appTextInput.textField, let app = appName {
+            appTextInput.textField?.resignFirstResponder()
+//            requestAppConfig(domain)
         }
 
         return true
     }
 }
-*/

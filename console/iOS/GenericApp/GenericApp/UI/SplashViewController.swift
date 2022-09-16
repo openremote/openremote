@@ -14,7 +14,7 @@ class SplashViewController: UIViewController {
     var appconfig: ORAppConfig?
     var host: String?
 
-    @IBAction func unwindToSplashScreen(sender: UIStoryboardSegue) { }
+    @IBAction func unwindToSplashScreen(sender: UIStoryboardSegue) { }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
