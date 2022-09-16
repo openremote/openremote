@@ -25,6 +25,7 @@ import io.moquette.interception.messages.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.*;
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.openremote.agent.protocol.mqtt.MQTTLastWill;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
@@ -102,25 +103,12 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean onConnect(MqttConnection connection, InterceptConnectMessage msg) {
-        super.onConnect(connection, msg);
-
-        // Moquette is awful and client ID rather than socket descriptors are used everywhere so cannot distinguish
-        // between multiple connections using the same client ID
-        // Force disconnect any existing session that is using this client ID
-        clientEventService.closeSession(connection.getClientId());
-
-        // Clear existing subscriptions by sending session close message
+    public boolean onConnect(RemotingConnection connection) {
         Map<String, Object> headers = prepareHeaders(connection);
-        headers.put(ConnectionConstants.SESSION_CLOSE, true);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-
-        headers.remove(ConnectionConstants.SESSION_CLOSE);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
 
         // Put a close connection runnable into the headers for the client event service
-        // Get the current session which is specific to the current connection
-        Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection.getClientId());
+        Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection);
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         return true;

@@ -72,37 +72,6 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         };
     }
 
-    @Override
-    public void onConnect(InterceptConnectMessage msg) {
-        String realm = null;
-        String username = null;
-        MQTTLastWill lastWill = null;
-        String password = msg.isPasswordFlag() ? new String(msg.getPassword(), Charsets.UTF_8) : null;
-
-        if (msg.getUsername() != null) {
-            String[] realmAndUsername = msg.getUsername().split(":");
-            realm = realmAndUsername[0];
-            username = realmAndUsername[1];
-        }
-
-        if (msg.isWillFlag()) {
-            Optional<String> payload = msg.getWillMessage() != null ? Optional.of(new String(msg.getWillMessage())) : Optional.empty();
-            lastWill = new MQTTLastWill(msg.getWillTopic(), payload.flatMap(ValueUtil::parse).orElse(null), msg.isWillRetain());
-        }
-
-        MqttConnection connection = new MqttConnection(identityProvider, msg.getClientID(), realm, username, password, msg.isCleanSession(), timerService.getCurrentTimeMillis(), lastWill);
-        LOG.fine("Client connect: " + connection);
-        brokerService.addConnection(connection.getClientId(), connection);
-
-        // Notify all custom handlers
-        for (MQTTHandler handler : brokerService.getCustomHandlers()) {
-            if (!handler.onConnect(connection, msg)) {
-                LOG.info("Handler returned false from onConnect so not passing to other handlers: " + handler.getName());
-                break;
-            }
-        }
-    }
-
     // This is actively initiated by the client when it is gracefully disconnecting
     @Override
     public void onDisconnect(InterceptDisconnectMessage msg) {

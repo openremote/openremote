@@ -19,10 +19,9 @@
  */
 package org.openremote.manager.mqtt;
 
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.representations.AccessToken;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -30,7 +29,6 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 
-import javax.security.auth.Subject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -93,21 +91,21 @@ public abstract class MQTTHandler {
     /**
      * Will be called when any client connects; if returns false then subsequent handlers will not be called
      */
-    public boolean onConnect(MqttConnection connection, InterceptConnectMessage msg) {
+    public boolean onConnect(RemotingConnection connection) {
         return true;
     }
 
     /**
      * Will be called when any client disconnects
      */
-    public void onDisconnect(MqttConnection connection, InterceptDisconnectMessage msg) {
+    public void onDisconnect(RemotingConnection connection) {
 
     }
 
     /**
      * Will be called when any client loses connection
      */
-    public void onConnectionLost(MqttConnection connection, InterceptConnectionLostMessage msg) {
+    public void onConnectionLost(RemotingConnection connection) {
 
     }
 
@@ -133,11 +131,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanSubscribe(KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().fine("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", connection" + connection);
+            getLogger().fine("Anonymous connection subscriptions not supported by this handler, topic=" + topic);
             return false;
         }
-        if (!topicRealmMatchesConnection(connection, topic) || !topicClientIdMatchesConnection(connection, topic)) {
-            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", connection" + connection);
+        if (!topicRealmMatches(securityContext, topic) || !topicClientIdMatches(securityContext, topic)) {
+            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", user=" + securityContext);
             return false;
         }
         if (!canSubscribe(connection, topic)) {
@@ -156,7 +154,7 @@ public abstract class MQTTHandler {
             getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic + ", connection" + connection);
             return false;
         }
-        if (!topicRealmMatchesConnection(connection, topic) || !topicClientIdMatchesConnection(connection, topic)) {
+        if (!topicRealmMatches(connection, topic) || !topicClientIdMatches(connection, topic)) {
             getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", connection" + connection);
             return false;
         }
@@ -202,11 +200,11 @@ public abstract class MQTTHandler {
      */
     public abstract void doPublish(KeycloakSecurityContext securityContext, Topic topic, InterceptPublishMessage msg);
 
-    public static boolean topicRealmMatchesConnection(MqttConnection connection, Topic topic) {
-        return connection.realm.equals(topicTokenIndexToString(topic, 0));
+    public static boolean topicRealmMatches(KeycloakSecurityContext securityContext, Topic topic) {
+        return securityContext.getRealm().equals(topicTokenIndexToString(topic, 0));
     }
 
-    public static boolean topicClientIdMatchesConnection(MqttConnection connection, Topic topic) {
+    public static boolean topicClientIdMatches(KeycloakSecurityContext securityContext, Topic topic) {
         return connection.clientId.equals(topicTokenIndexToString(topic, 1));
     }
 

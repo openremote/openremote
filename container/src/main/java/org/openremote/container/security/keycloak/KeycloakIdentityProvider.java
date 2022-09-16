@@ -54,6 +54,7 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -417,6 +418,15 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
             .map(keycloakPrincipal ->
                 ((KeycloakPrincipal<?>)keycloakPrincipal).getKeycloakSecurityContext()).orElse(null);
+    }
+
+    public static String getSubjectName(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
+            .map(Principal::getName).orElse(null);
     }
 
     public static boolean isSuperUser(KeycloakSecurityContext securityContext) {
