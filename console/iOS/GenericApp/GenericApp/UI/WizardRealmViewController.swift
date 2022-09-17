@@ -12,10 +12,12 @@ import ORLib
 
 class WizardRealmViewController: UIViewController {
     
+    var configManager: ConfigManager?
+
+    var realmName: String?
+    
     @IBOutlet weak var realmTextInput: ORTextInput!
     @IBOutlet weak var nextButton: MDCRaisedButton!
-    
-    var realmName: String?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -35,7 +37,29 @@ class WizardRealmViewController: UIViewController {
         realmTextInput.textField?.returnKeyType = .next
     }
     
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "goToWebView" {
+            let orViewController = segue.destination as! ORViewcontroller
+            
+            switch configManager!.state {
+            case .selectDomain:
+                fatalError("We should never come to this screen in that state")
+            case .selectApp(_, let apps):
+                fatalError("We should never come to this screen in that state")
+            case .selectRealm(let baseURL, let app, let realms):
+                orViewController.targetUrl = "\(baseURL)/\(app)/?consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+            case.complete(let baseURL, let app, let realm):
+                orViewController.targetUrl = "\(baseURL)/\(app)/?realm=\(realm)&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+            }
+            
+//            orViewController.targetUrl = "https://demo.openremote.io/manager/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+        }
+    }
+    
     @IBAction func nextButtonpressed(_ sender: UIButton) {
+        if let realm = realmName {
+            _ = try? configManager!.setRealm(realm: realm)
+        }
         /*
         if let domain = domainName {
             requestAppConfig(domain)

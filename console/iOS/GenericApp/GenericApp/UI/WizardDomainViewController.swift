@@ -46,6 +46,9 @@ class WizardDomainViewController: UIViewController {
             let appViewController = segue.destination as! WizardAppViewController
             appViewController.apps = self.apps
             appViewController.configManager = self.configManager
+        } else if segue.identifier == "goToWizardRealmView" {
+            let realmViewController = segue.destination as! WizardRealmViewController
+            realmViewController.configManager = self.configManager
         }
     }
 
@@ -71,22 +74,28 @@ extension WizardDomainViewController: UITextFieldDelegate {
         })
 
         async {
-            let state = try await configManager!.setDomain(domain: domain)
-            print("State \(state)")
-            switch state {
-            case .selectDomain:
-                // Something wrong, we just set the domain
+            do {
+                let state = try await configManager!.setDomain(domain: domain)
+                print("State \(state)")
+                switch state {
+                case .selectDomain:
+                    // Something wrong, we just set the domain
+                    let alertView = UIAlertController(title: "Error", message: "Error occurred getting app config. Check your input and try again", preferredStyle: .alert)
+                    alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+
+                    self.present(alertView, animated: true, completion: nil)
+                case .selectApp(_, let apps):
+                    self.apps = apps
+                    self.performSegue(withIdentifier: "goToWizardAppView", sender: self)
+                case .selectRealm(_, _, _):
+                    self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
+                case.complete(_, _, _):
+                    self.performSegue(withIdentifier: "goToWebView", sender: self)
+                }
+            } catch {
                 let alertView = UIAlertController(title: "Error", message: "Error occurred getting app config. Check your input and try again", preferredStyle: .alert)
                 alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-
                 self.present(alertView, animated: true, completion: nil)
-            case .selectApp(_, let apps):
-                self.apps = apps
-                self.performSegue(withIdentifier: "goToWizardAppView", sender: self)
-            case .selectRealm(let baseURL, let realms):
-                self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
-            case.complete(let baseURL, let app, let realm):
-                self.performSegue(withIdentifier: "goToWebView", sender: self)
             }
         }
     }

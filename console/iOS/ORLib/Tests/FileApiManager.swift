@@ -10,38 +10,35 @@ import Foundation
 
 class FileApiManager: ApiManager {
 
-    let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-//        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return decoder
-    }()
+    let decoder = JSONDecoder()
 
-
-    private var consoleConfig : ORConsoleConfig?
-    private var apps: [String]?
-    
-    
-    // TODO: need a way to return errors, how to define that in test files ?
+    private var fixture: Fixture
     
     public init(baseUrl: String) {
-        if let consoleConfigFile = Bundle(for: FileApiManager.self).url(forResource: "\(baseUrl)-ConsoleConfig", withExtension: "json") {
-            if let consoleConfigData = try? Data(contentsOf: consoleConfigFile as URL) {
-                do {
-                    consoleConfig = try self.decoder.decode(ORConsoleConfig.self, from: consoleConfigData)
-                } catch {
-                    print(error)
+        let pattern = #"https://(?<domain>.*)\.openremote\.app"#
+        do {
+            let regex = try NSRegularExpression(pattern: pattern, options: [])
+            let nsrange = NSRange(baseUrl.startIndex..<baseUrl.endIndex, in: baseUrl)
+            if let match = regex.firstMatch(in: baseUrl, options: [], range: nsrange) {
+                let nsrange = match.range(withName: "domain")
+                if nsrange.location != NSNotFound, let range = Range(nsrange, in: baseUrl) {
+                    let domain = baseUrl[range]
+                    if let fixtureFile = Bundle(for: FileApiManager.self).url(forResource: String(domain), withExtension: "json") {
+                        if let fixtureData = try? Data(contentsOf: fixtureFile as URL) {
+                            do {
+                                fixture = try self.decoder.decode(Fixture.self, from: fixtureData)
+                                return
+                            } catch {
+                                print(error)
+                            }
+                        }
+                    }
                 }
             }
+        } catch {
+            // Will use default value below
         }
-        if let appsFile = Bundle(for: FileApiManager.self).url(forResource: "\(baseUrl)-Apps", withExtension: "txt") {
-            if let appsContent = try? Data(contentsOf: appsFile as URL) {
-                do {
-                    apps = try self.decoder.decode([String].self, from: appsContent)
-                } catch {
-                    print(error)
-                }
-            }
-        }
+        fixture = Fixture()
     }
 
     
@@ -49,14 +46,20 @@ class FileApiManager: ApiManager {
     }
 
     public func getConsoleConfig() async throws -> ORConsoleConfig? {
-        return consoleConfig
+        if let returnCode = fixture.consoleConfigReturnCode {
+            throw ApiManagerError.communicationError(returnCode)
+        }
+        return fixture.consoleConfig
     }
 
     public func getApps(callback: ResponseBlock<[String]>?) {
     }
     
     public func getApps() async throws -> [String]? {
-        return apps
+        if let returnCode = fixture.appsReturnCode {
+            throw ApiManagerError.communicationError(returnCode)
+        }
+        return fixture.apps
     }
 
 }

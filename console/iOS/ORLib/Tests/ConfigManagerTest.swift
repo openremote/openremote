@@ -15,33 +15,38 @@ class ConfigManagerTest: XCTestCase {
         FileApiManager(baseUrl: url)
     })
 
+    func test0() async throws {
+        let state = try await configManager.setDomain(domain: "test0")
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test0.openremote.app", "manager", nil))
+    }
+
     func test1() async throws {
         let state = try await configManager.setDomain(domain: "test1")
-        XCTAssertEqual(state, ConfigManagerState.selectApp("test1", nil))
+        XCTAssertEqual(state, ConfigManagerState.complete("https://test1.openremote.app", "manager", nil))
     }
 
     func test2() async throws {
         let state = try await configManager.setDomain(domain: "test2")
-        XCTAssertEqual(state, ConfigManagerState.selectRealm("test2", "Console 1"))
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test2.openremote.app", "Console 1", nil))
     }
 
     func test3() async throws {
         let state = try await configManager.setDomain(domain: "test3")
-        XCTAssertEqual(state, ConfigManagerState.selectRealm("test3", "Console 1"))
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test3.openremote.app", "Console 1", nil))
     }
 
     func test4() async throws {
         let state = try await configManager.setDomain(domain: "test4")
-        XCTAssertEqual(state, ConfigManagerState.selectApp("test4", ["Console 1", "Console 2"]))
+        XCTAssertEqual(state, ConfigManagerState.selectApp("https://test4.openremote.app", ["Console 1", "Console 2"]))
     }
 
     func test5() async throws {
         let state = try await configManager.setDomain(domain: "test5")
-        XCTAssertEqual(state, ConfigManagerState.selectApp("test5", nil))
+        XCTAssertEqual(state, ConfigManagerState.selectApp("https://test5.openremote.app", nil))
     }
 
     func test6() async throws {
         let state = try await configManager.setDomain(domain: "test6")
-        XCTAssertEqual(state, ConfigManagerState.selectApp("test6", ["Console 1", "Console 2"]))
+        XCTAssertEqual(state, ConfigManagerState.selectApp("https://test6.openremote.app", ["Console 1", "Console 2"]))
     }
 }

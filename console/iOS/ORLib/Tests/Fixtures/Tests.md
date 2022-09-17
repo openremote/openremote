@@ -1,6 +1,10 @@
+### Test0
+
+DefaultConfig, nothing present
+
 ### Test1
 
-Default empty ConsoleConfig, no apps list
+ConsoleConfig not asking for app or realm, no apps list -> defaults to manager, no realm
 
 ### Test2
 
@@ -21,3 +25,10 @@ ConsoleConfig with no specified app and a list of apps but requesting the text f
 ### Test6
 
 ConsoleConfig with no specified app and no allowed apps but apps list available via Apps call
+
+
+
+
+
+TODO:
+- add test for full URLs entry

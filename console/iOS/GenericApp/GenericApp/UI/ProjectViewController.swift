@@ -43,13 +43,15 @@ class ProjectViewController: UIViewController {
         realmTextInput.textField?.autocapitalizationType = .none
         realmTextInput.textField?.returnKeyType = .continue
     }
-    
+
+    /*
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToWebView" {
             let orViewController = segue.destination as! ORViewcontroller
-            
+            orViewController.appconfig = self.appconfig
         }
     }
+    */
 
     @IBAction func connectButtonpressed(_ sender: UIButton) {
         if let project = projectName, let realm = realmName {

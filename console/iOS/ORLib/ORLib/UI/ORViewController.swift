@@ -37,6 +37,8 @@ open class ORViewcontroller : UIViewController {
     
     public var baseUrl: String?
     
+    public var targetUrl: String?
+    
     open override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.white
@@ -46,7 +48,13 @@ open class ORViewcontroller : UIViewController {
     open override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-
+        if let targetUrl = targetUrl {
+            if let urlString = targetUrl.stringByURLEncoding() {
+                if let url = URL(string: urlString) {
+                    loadURL(url: url)
+                }
+            }
+        }
     }
 
     func sendData(data: [String: Any?]) {

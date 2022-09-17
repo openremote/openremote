@@ -30,19 +30,20 @@
 		4CF5D07B27143F2000D705BE /* HttpApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06827143F1F00D705BE /* HttpApiManager.swift */; };
 		91658F9128897E55000FF05C /* ORConsoleConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9028897E55000FF05C /* ORConsoleConfig.swift */; };
 		91658F9328897EDD000FF05C /* ORAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9228897EDD000FF05C /* ORAppInfo.swift */; };
-		91932F9328C66A3C00BABBA3 /* test1-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9228C66A3C00BABBA3 /* test1-ConsoleConfig.json */; };
-		91932F9628C6715C00BABBA3 /* test2-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9528C6715C00BABBA3 /* test2-ConsoleConfig.json */; };
-		91932F9828C6738A00BABBA3 /* test3-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9728C6738A00BABBA3 /* test3-ConsoleConfig.json */; };
-		91932F9B28C673DC00BABBA3 /* test5-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9928C673DC00BABBA3 /* test5-ConsoleConfig.json */; };
-		91932F9C28C673DC00BABBA3 /* test4-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9A28C673DC00BABBA3 /* test4-ConsoleConfig.json */; };
-		91932F9E28C6752C00BABBA3 /* test6-ConsoleConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9D28C6752C00BABBA3 /* test6-ConsoleConfig.json */; };
-		91932FA028C6754100BABBA3 /* test6-Apps.txt in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9F28C6754100BABBA3 /* test6-Apps.txt */; };
+		91932F9328C66A3C00BABBA3 /* test1.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9228C66A3C00BABBA3 /* test1.json */; };
+		91932F9628C6715C00BABBA3 /* test2.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9528C6715C00BABBA3 /* test2.json */; };
+		91932F9828C6738A00BABBA3 /* test3.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9728C6738A00BABBA3 /* test3.json */; };
+		91932F9B28C673DC00BABBA3 /* test5.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9928C673DC00BABBA3 /* test5.json */; };
+		91932F9C28C673DC00BABBA3 /* test4.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9A28C673DC00BABBA3 /* test4.json */; };
+		91932F9E28C6752C00BABBA3 /* test6.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9D28C6752C00BABBA3 /* test6.json */; };
 		91A9A8F328BF6A3300DF8928 /* Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8F228BF6A3300DF8928 /* Tests.swift */; };
 		91A9A8F428BF6A3300DF8928 /* libORLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CF5D04727143EEC00D705BE /* libORLib.a */; };
 		91A9A8FB28BF6A4900DF8928 /* ConfigManagerTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FA28BF6A4900DF8928 /* ConfigManagerTest.swift */; };
 		91A9A8FD28BF6A9900DF8928 /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */; };
 		91A9A8FF28BF6C4C00DF8928 /* ApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FE28BF6C4C00DF8928 /* ApiManager.swift */; };
 		91A9A90128BF6EA000DF8928 /* FileApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A90028BF6EA000DF8928 /* FileApiManager.swift */; };
+		91AA79F128D4D525005B9913 /* ProjectConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AA79F028D4D525005B9913 /* ProjectConfig.swift */; };
+		91AA79F328D628E9005B9913 /* Fixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AA79F228D628E9005B9913 /* Fixture.swift */; };
 		ABD81191A88B3D7A8B2E66B6 /* Pods_ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41E56A0D7E49334C15A35CB4 /* Pods_ORLib.framework */; };
 /* End PBXBuildFile section */
 
@@ -97,20 +98,21 @@
 		4CF5D06827143F1F00D705BE /* HttpApiManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HttpApiManager.swift; sourceTree = "<group>"; };
 		91658F9028897E55000FF05C /* ORConsoleConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORConsoleConfig.swift; sourceTree = "<group>"; };
 		91658F9228897EDD000FF05C /* ORAppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORAppInfo.swift; sourceTree = "<group>"; };
-		91932F9228C66A3C00BABBA3 /* test1-ConsoleConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "test1-ConsoleConfig.json"; sourceTree = "<group>"; };
+		91932F9228C66A3C00BABBA3 /* test1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test1.json; sourceTree = "<group>"; };
 		91932F9428C670D800BABBA3 /* Tests.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Tests.md; sourceTree = "<group>"; };
-		91932F9528C6715C00BABBA3 /* test2-ConsoleConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "test2-ConsoleConfig.json"; sourceTree = "<group>"; };
-		91932F9728C6738A00BABBA3 /* test3-ConsoleConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "test3-ConsoleConfig.json"; sourceTree = "<group>"; };
-		91932F9928C673DC00BABBA3 /* test5-ConsoleConfig.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "test5-ConsoleConfig.json"; sourceTree = "<group>"; };
-		91932F9A28C673DC00BABBA3 /* test4-ConsoleConfig.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "test4-ConsoleConfig.json"; sourceTree = "<group>"; };
-		91932F9D28C6752C00BABBA3 /* test6-ConsoleConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "test6-ConsoleConfig.json"; sourceTree = "<group>"; };
-		91932F9F28C6754100BABBA3 /* test6-Apps.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "test6-Apps.txt"; sourceTree = "<group>"; wrapsLines = 0; };
+		91932F9528C6715C00BABBA3 /* test2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test2.json; sourceTree = "<group>"; };
+		91932F9728C6738A00BABBA3 /* test3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test3.json; sourceTree = "<group>"; };
+		91932F9928C673DC00BABBA3 /* test5.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = test5.json; sourceTree = "<group>"; };
+		91932F9A28C673DC00BABBA3 /* test4.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = test4.json; sourceTree = "<group>"; };
+		91932F9D28C6752C00BABBA3 /* test6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test6.json; sourceTree = "<group>"; };
 		91A9A8F028BF6A3300DF8928 /* Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		91A9A8F228BF6A3300DF8928 /* Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests.swift; sourceTree = "<group>"; };
 		91A9A8FA28BF6A4900DF8928 /* ConfigManagerTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigManagerTest.swift; sourceTree = "<group>"; };
 		91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigManager.swift; sourceTree = "<group>"; };
 		91A9A8FE28BF6C4C00DF8928 /* ApiManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiManager.swift; sourceTree = "<group>"; };
 		91A9A90028BF6EA000DF8928 /* FileApiManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileApiManager.swift; sourceTree = "<group>"; };
+		91AA79F028D4D525005B9913 /* ProjectConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectConfig.swift; sourceTree = "<group>"; };
+		91AA79F228D628E9005B9913 /* Fixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fixture.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -222,6 +224,7 @@
 				4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */,
 				91658F9028897E55000FF05C /* ORConsoleConfig.swift */,
 				91658F9228897EDD000FF05C /* ORAppInfo.swift */,
+				91AA79F028D4D525005B9913 /* ProjectConfig.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -248,13 +251,12 @@
 			isa = PBXGroup;
 			children = (
 				91932F9428C670D800BABBA3 /* Tests.md */,
-				91932F9228C66A3C00BABBA3 /* test1-ConsoleConfig.json */,
-				91932F9528C6715C00BABBA3 /* test2-ConsoleConfig.json */,
-				91932F9728C6738A00BABBA3 /* test3-ConsoleConfig.json */,
-				91932F9A28C673DC00BABBA3 /* test4-ConsoleConfig.json */,
-				91932F9928C673DC00BABBA3 /* test5-ConsoleConfig.json */,
-				91932F9D28C6752C00BABBA3 /* test6-ConsoleConfig.json */,
-				91932F9F28C6754100BABBA3 /* test6-Apps.txt */,
+				91932F9228C66A3C00BABBA3 /* test1.json */,
+				91932F9528C6715C00BABBA3 /* test2.json */,
+				91932F9728C6738A00BABBA3 /* test3.json */,
+				91932F9A28C673DC00BABBA3 /* test4.json */,
+				91932F9928C673DC00BABBA3 /* test5.json */,
+				91932F9D28C6752C00BABBA3 /* test6.json */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -266,6 +268,7 @@
 				91A9A8FA28BF6A4900DF8928 /* ConfigManagerTest.swift */,
 				91A9A8F228BF6A3300DF8928 /* Tests.swift */,
 				91A9A90028BF6EA000DF8928 /* FileApiManager.swift */,
+				91AA79F228D628E9005B9913 /* Fixture.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -350,13 +353,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				91932F9328C66A3C00BABBA3 /* test1-ConsoleConfig.json in Resources */,
-				91932F9628C6715C00BABBA3 /* test2-ConsoleConfig.json in Resources */,
-				91932F9828C6738A00BABBA3 /* test3-ConsoleConfig.json in Resources */,
-				91932F9C28C673DC00BABBA3 /* test4-ConsoleConfig.json in Resources */,
-				91932F9E28C6752C00BABBA3 /* test6-ConsoleConfig.json in Resources */,
-				91932F9B28C673DC00BABBA3 /* test5-ConsoleConfig.json in Resources */,
-				91932FA028C6754100BABBA3 /* test6-Apps.txt in Resources */,
+				91932F9328C66A3C00BABBA3 /* test1.json in Resources */,
+				91932F9628C6715C00BABBA3 /* test2.json in Resources */,
+				91932F9828C6738A00BABBA3 /* test3.json in Resources */,
+				91932F9C28C673DC00BABBA3 /* test4.json in Resources */,
+				91932F9E28C6752C00BABBA3 /* test6.json in Resources */,
+				91932F9B28C673DC00BABBA3 /* test5.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -411,6 +413,7 @@
 				4CF5D07B27143F2000D705BE /* HttpApiManager.swift in Sources */,
 				4CF5D04B27143EEC00D705BE /* ORLib.swift in Sources */,
 				4CF5D06B27143F2000D705BE /* PushNotificationProvider.swift in Sources */,
+				91AA79F128D4D525005B9913 /* ProjectConfig.swift in Sources */,
 				4CF5D07527143F2000D705BE /* String+Utils.swift in Sources */,
 				4C0E4A10274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift in Sources */,
 				4CF5D07427143F2000D705BE /* Reachability.swift in Sources */,
@@ -427,6 +430,7 @@
 				91A9A90128BF6EA000DF8928 /* FileApiManager.swift in Sources */,
 				91A9A8F328BF6A3300DF8928 /* Tests.swift in Sources */,
 				91A9A8FB28BF6A4900DF8928 /* ConfigManagerTest.swift in Sources */,
+				91AA79F328D628E9005B9913 /* Fixture.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -74,7 +74,10 @@ class WizardAppViewController: UIViewController {
     }
 
     @IBAction func nextButtonpressed(_ sender: UIButton) {
+        // TODO: handle case of free text field entry
+        // TODO: validation on value provided
         print("Selected app " + (dropDown.selectedItem ?? "none"))
+        _ = try? configManager!.setApp(app: dropDown.selectedItem ?? "none")
         /*
         if let domain = domainName {
             requestAppConfig(domain)

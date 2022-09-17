@@ -74,9 +74,9 @@ public class HttpApiManager: NSObject, ApiManager {
         return try await withCheckedThrowingContinuation { continuation in
             session.dataTask(with: urlRequest, completionHandler: { responseData, response, error in
                 let httpStatusCode = (response as? HTTPURLResponse)?.statusCode ?? 500
-
-                if httpStatusCode == 404 {
-                    continuation.resume(returning: nil)
+               
+                if httpStatusCode != 200 {
+                    continuation.resume(throwing: ApiManagerError.communicationError(httpStatusCode))
                     return
                 }
                 
@@ -84,7 +84,7 @@ public class HttpApiManager: NSObject, ApiManager {
                     continuation.resume(throwing: ApiManagerError.communicationError(httpStatusCode))
                     return
                 }
-
+                
                 guard let responseModel = try? self.decoder.decode(ORConsoleConfig.self, from: responseData) else {
                     print("Couldn't parse response: \(String(data: responseData, encoding: .utf8)!)")
                     continuation.resume(throwing: ApiManagerError.parsingError(httpStatusCode))
@@ -128,6 +128,11 @@ public class HttpApiManager: NSObject, ApiManager {
 
                 if httpStatusCode == 404 {
                     continuation.resume(throwing: ApiManagerError.notFound)
+                    return
+                }
+                
+                if httpStatusCode != 200 {
+                    continuation.resume(throwing: ApiManagerError.communicationError(httpStatusCode))
                     return
                 }
                 

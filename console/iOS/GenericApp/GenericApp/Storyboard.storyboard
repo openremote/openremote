@@ -195,6 +195,7 @@
                         <outlet property="domainTextInput" destination="LdF-6W-ii0" id="cU5-lf-fnQ"/>
                         <outlet property="nextButton" destination="uoR-Y9-80o" id="F7l-Qe-lg1"/>
                         <segue destination="ccW-7o-aWn" kind="presentation" identifier="goToWizardAppView" id="okt-Gc-Qir"/>
+                        <segue destination="P3v-2u-Uf5" kind="presentation" identifier="goToWizardRealmView" id="9ZZ-gO-4Go"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Me9-Tm-nKE" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -463,6 +464,7 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
+        <segue reference="9ZZ-gO-4Go"/>
         <segue reference="4Aa-7e-CLQ"/>
     </inferredMetricsTieBreakers>
     <resources>

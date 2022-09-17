@@ -13,7 +13,7 @@ public struct ORConsoleConfig: Codable {
     }
     
     public var showAppTextInput = false
-    public var showRealmTextInput = false
+    public var showRealmTextInput = true
     public var app: String?
     public var allowedApps: [String]?
     public var apps: [String:ORAppInfo]?
