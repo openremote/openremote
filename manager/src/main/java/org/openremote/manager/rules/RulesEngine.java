@@ -710,7 +710,6 @@ public class RulesEngine<T extends Ruleset> {
                 UNPAUSE_SCHEDULER.accept(this, deployment);
             }
         });
-
     }
 
     protected void scheduleUnpause(RulesetDeployment deployment) {

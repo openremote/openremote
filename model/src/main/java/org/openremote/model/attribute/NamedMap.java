@@ -20,7 +20,6 @@
 package org.openremote.model.attribute;
 
 import com.google.common.collect.ForwardingMap;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.AbstractNameValueDescriptorHolder;
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.NameHolder;
@@ -31,10 +30,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
-
-import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
 
 /**
  * Special map for {@link NameHolder} items where item names are used as map keys.
