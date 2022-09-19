@@ -321,8 +321,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         if (ruleset.enabled) {
 
             // Look at validity meta
-            if (ruleset.meta && ruleset.meta[WellknownRulesetMetaItems.VALIDITY]) {
-                const calendarEvent = ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
+            if (ruleset.meta && ruleset.meta["validity"]) {
+                const calendarEvent = ruleset.meta["validity"] as CalendarEvent;
                 const now = new Date().getTime();
 
                 if (calendarEvent.start) {
