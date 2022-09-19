@@ -231,7 +231,7 @@ public abstract class Ruleset {
     }
 
     public boolean isContinueOnError() {
-        return getMeta().get(CONTINUE_ON_ERROR).asBoolean(false);
+        return Optional.ofNullable(getMeta().get(CONTINUE_ON_ERROR)).map(node -> node.asBoolean(false)).orElse(false);
     }
 
     public Ruleset setContinueOnError(boolean continueOnError) {
@@ -251,7 +251,7 @@ public abstract class Ruleset {
     }
 
     public boolean isTriggerOnPredictedData() {
-        return getMeta().get(TRIGGER_ON_PREDICTED_DATA).asBoolean(false);
+        return Optional.ofNullable(getMeta().get(TRIGGER_ON_PREDICTED_DATA)).map(node -> node.asBoolean(false)).orElse(false);
     }
 
     public Ruleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
