@@ -19,21 +19,21 @@
  */
 package org.openremote.manager.rules;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.attribute.MetaMap;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.query.RulesetQuery;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RealmRuleset;
+import org.openremote.model.rules.Ruleset;
 import org.openremote.model.util.ValueUtil;
 
 import java.sql.Connection;
@@ -290,7 +290,7 @@ public class RulesetStorageService implements ContainerService {
         ruleset.setLastModified(rs.getTimestamp("LAST_MODIFIED"));
         ruleset.setCreatedOn(rs.getTimestamp("CREATED_ON"));
         if (rs.getString("META") != null) {
-            ruleset.setMeta(ValueUtil.parse(rs.getString("META"), MetaMap.class).orElse(null));
+            ruleset.setMeta(ValueUtil.parse(rs.getString("META"), ObjectNode.class).orElse(null));
         }
         if (query.fullyPopulate) {
             ruleset.setRules(rs.getString("RULES"));
