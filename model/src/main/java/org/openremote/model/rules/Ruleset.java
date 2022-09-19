@@ -258,4 +258,13 @@ public abstract class Ruleset {
         getMeta().set(TRIGGER_ON_PREDICTED_DATA, BooleanNode.valueOf(triggerOnPredictedData));
         return this;
     }
+
+    public boolean isShowOnList() {
+        return Optional.ofNullable(getMeta().get(SHOW_ON_LIST)).map(node -> node.asBoolean(false)).orElse(false);
+    }
+
+    public Ruleset setShowOnList(boolean showOn) {
+        getMeta().set(SHOW_ON_LIST, BooleanNode.valueOf(showOn));
+        return this;
+    }
 }

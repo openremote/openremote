@@ -20,7 +20,6 @@ import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 import static org.openremote.model.rules.Ruleset.Lang.JAVASCRIPT
 import static org.openremote.model.rules.Ruleset.Lang.JSON
-import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST
 
 class BasicRulesetResourceTest extends Specification implements ManagerContainerTrait {
 
@@ -89,7 +88,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some apartment 2 demo rules"
         ruleDefinitions[0].lang == GROOVY
-        ruleDefinitions[0].meta.getValue(SHOW_ON_LIST).orElse(false)
+        (ruleDefinitions[0] as AssetRuleset).isShowOnList()
 
         /* ############################################## WRITE ####################################### */
 
