@@ -238,7 +238,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             "Throw Failure Exception",
             GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text)
-        ruleset.getMeta().add(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
+            .setContinueOnError(true)
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the realms A rule engine should run with one deployment as error"

@@ -386,7 +386,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             Date.from(validityStart),
             Date.from(validityEnd),
             recur)
-        ruleset.getMeta().add(new MetaItem<Object>(Ruleset.VALIDITY ,calendarEvent))
+        ruleset.setValidity(calendarEvent)
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the ruleset should be redeployed and paused until 1st occurrence"
