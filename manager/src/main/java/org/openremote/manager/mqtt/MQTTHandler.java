@@ -198,7 +198,7 @@ public abstract class MQTTHandler {
     }
 
     public static boolean topicClientIdMatches(KeycloakSecurityContext securityContext, Topic topic) {
-        return connection.clientId.equals(topicTokenIndexToString(topic, 1));
+        return securityContext..clientId.equals(topicTokenIndexToString(topic, 1));
     }
 
     public static boolean topicTokenCountGreaterThan(Topic topic, int size) {
