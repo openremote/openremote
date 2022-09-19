@@ -28,10 +28,6 @@ dependencies {
         force = true
     }
 
-    api ("io.moquette:moquette-broker:$moquetteVersion") {
-        exclude module: "slf4j-log4j12" // Don't want log4J
-    }
-
     implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
         exclude group: "org.osgi"
     }

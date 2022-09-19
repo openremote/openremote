@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.mqtt;
 
+import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
@@ -138,11 +139,7 @@ public abstract class MQTTHandler {
             getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", user=" + securityContext);
             return false;
         }
-        if (!canSubscribe(connection, topic)) {
-            getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", connection" + connection);
-            return false;
-        }
-        return true;
+        return canSubscribe(securityContext, topic);
     }
 
     /**
@@ -151,18 +148,14 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanPublish(KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic + ", connection" + connection);
+            getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic);
             return false;
         }
-        if (!topicRealmMatches(connection, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", connection" + connection);
+        if (!topicRealmMatches(securityContext, topic) || !topicClientIdMatches(securityContext, topic)) {
+            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", user=" + securityContext);
             return false;
         }
-        if (!canPublish(connection, topic)) {
-            getLogger().fine("Cannot publish to this topic, topic=" + topic + ", connection" + connection);
-            return false;
-        }
-        return true;
+        return canPublish(securityContext, topic);
     }
 
     /**
@@ -188,17 +181,17 @@ public abstract class MQTTHandler {
     /**
      * Called to handle subscribe if {@link #canSubscribe} returned true.
      */
-    public abstract void doSubscribe(KeycloakSecurityContext securityContext, Topic topic, InterceptSubscribeMessage msg);
+    public abstract void doSubscribe(RemotingConnection connection, Topic topic);
 
     /**
      * Called to handle unsubscribe if {@link #handlesTopic} returned true.
      */
-    public abstract void doUnsubscribe(KeycloakSecurityContext securityContext, Topic topic, InterceptUnsubscribeMessage msg);
+    public abstract void doUnsubscribe(RemotingConnection connection, Topic topic);
 
     /**
      * Called to handle publish if {@link #canPublish} returned true.
      */
-    public abstract void doPublish(KeycloakSecurityContext securityContext, Topic topic, InterceptPublishMessage msg);
+    public abstract void doPublish(RemotingConnection connection, Topic topic, MqttPublishMessage msg);
 
     public static boolean topicRealmMatches(KeycloakSecurityContext securityContext, Topic topic) {
         return securityContext.getRealm().equals(topicTokenIndexToString(topic, 0));

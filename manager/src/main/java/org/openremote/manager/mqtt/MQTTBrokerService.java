@@ -19,8 +19,9 @@
  */
 package org.openremote.manager.mqtt;
 
-import io.moquette.BrokerConstants;
+import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import io.netty.handler.codec.mqtt.MqttTopicSubscription;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.client.*;
 import org.apache.activemq.artemis.core.client.impl.ClientSessionInternal;
@@ -36,7 +37,6 @@ import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.openremote.agent.protocol.mqtt.MQTTLastWill;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
@@ -75,11 +75,10 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, FailureListener {
 
     public static final int PRIORITY = MED_PRIORITY;
-    private static final Logger LOG = SyslogCategory.getLogger(API, MQTTBrokerService.class);
-
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
+    private static final Logger LOG = SyslogCategory.getLogger(API, MQTTBrokerService.class);
 
     protected AuthorisationService authorisationService;
     protected ManagerKeycloakIdentityProvider identityProvider;
@@ -102,8 +101,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void init(Container container) throws Exception {
-        host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST);
-        port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT);
+        host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0");
+        port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883);
 
         authorisationService = container.getService(AuthorisationService.class);
         clientEventService = container.getService(ClientEventService.class);
@@ -149,6 +148,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         config.addAcceptorConfiguration("in-vm", "vm://0");
         String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port).setParameter("protocols", "MQTT").build().toString();
         config.addAcceptorConfiguration("tcp", serverURI);
+        ActiveMQInterceptor.brokerService = this;
+        config.setIncomingInterceptorClassNames(Collections.singletonList(ActiveMQInterceptor.class.getName()));
         // TODO: Make this configurable
         config.setMaxDiskUsage(-1);
         config.setSecurityInvalidationInterval(30000);
@@ -267,6 +268,46 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     @Override
     public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
         // TODO: Decide if we need this or is afterDestroyConnection enough
+    }
+
+    public void onSubscribe(List<MqttTopicSubscription> topicSubscriptions, RemotingConnection connection) {
+        for (MqttTopicSubscription subscription : topicSubscriptions) {
+            Topic topic = Topic.parse(subscription.topicName());
+
+            for (MQTTHandler handler : getCustomHandlers()) {
+                if (handler.handlesTopic(topic)) {
+                    LOG.fine("Handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                    handler.doSubscribe(connection, topic);
+                    break;
+                }
+            }
+        }
+    }
+
+    public void onUnsubscribe(List<String> topics, RemotingConnection connection) {
+        for (String topicStr : topics) {
+            Topic topic = Topic.parse(topicStr);
+
+            for (MQTTHandler handler : getCustomHandlers()) {
+                if (handler.handlesTopic(topic)) {
+                    LOG.fine("Handler has handled unsubscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                    handler.doUnsubscribe(connection, topic);
+                    break;
+                }
+            }
+        }
+    }
+
+    public void onPublish(MqttPublishMessage publishMessage, RemotingConnection connection) {
+        Topic topic = Topic.parse(publishMessage.variableHeader().topicName());
+
+        for (MQTTHandler handler : getCustomHandlers()) {
+            if (handler.handlesTopic(topic)) {
+                LOG.fine("Handler has handled publish: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                handler.doPublish(connection, topic, publishMessage);
+                break;
+            }
+        }
     }
 
     public Iterable<MQTTHandler> getCustomHandlers() {

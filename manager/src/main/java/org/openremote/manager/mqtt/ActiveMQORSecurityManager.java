@@ -22,6 +22,7 @@ package org.openremote.manager.mqtt;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.security.CheckType;
 import org.apache.activemq.artemis.core.security.Role;
+import org.apache.activemq.artemis.core.server.ActiveMQServer;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager;
 import org.keycloak.KeycloakSecurityContext;
@@ -61,6 +62,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     protected String configName;
     protected SecurityConfiguration config;
     protected SecurityConfiguration certificateConfig;
+    protected ActiveMQServer server;
 
     public ActiveMQORSecurityManager(AuthorisationService authorisationService, MQTTBrokerService brokerService, Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
         super(configurationName, configuration);
@@ -80,7 +82,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         }
     }
 
-    private Subject getAuthenticatedSubject(String user,
+    protected Subject getAuthenticatedSubject(String user,
                                             final String password,
                                             final RemotingConnection remotingConnection,
                                             final String securityDomain) throws LoginException {
