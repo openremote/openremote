@@ -36,6 +36,7 @@ import java.util.stream.Stream;
  * Special map for {@link NameHolder} items where item names are used as map keys.
  */
 public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMap<String, T> implements Serializable {
+
     protected Map<String, T> delegate = new HashMap<>();
 
     public NamedMap() {
@@ -126,7 +127,6 @@ public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMa
     @SuppressWarnings("unchecked")
     public <V, W extends AbstractNameValueHolder<V>> Optional<W> get(AbstractNameValueDescriptorHolder<V> nameValueDescriptorHolder) {
         Optional<T> valueProvider = get(nameValueDescriptorHolder.getName());
-
         return valueProvider.map(item -> {
             Class<?> itemType = item.getType().getType();
             Class<V> expectedType = nameValueDescriptorHolder.getType().getType();
