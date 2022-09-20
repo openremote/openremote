@@ -7,7 +7,7 @@ import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { until } from "lit/directives/until.js";
 import { cache } from "lit/directives/cache.js";
-import {debounce, throttle} from "lodash";
+import {throttle} from "lodash";
 import {style} from "./style";
 
 //language=css
@@ -16,14 +16,6 @@ const styling = css`
         height: 100%;
         overflow: hidden;
         box-sizing: border-box;
-    }
-    .panel-title {
-        text-transform: uppercase;
-        font-weight: bolder;
-        line-height: 1em;
-        color: var(--internal-or-asset-viewer-title-text-color);
-        /*margin-bottom: 20px;*/
-        flex: 0 0 auto;
     }
 `
 
@@ -65,9 +57,6 @@ export class OrDashboardWidget extends LitElement {
     protected readonly realm?: string;
 
     @state()
-    protected cachedMockData?: Map<string, any[]> = new Map<string, any[]>();
-
-    @state()
     protected error?: string;
 
     @state()
@@ -88,7 +77,7 @@ export class OrDashboardWidget extends LitElement {
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
     }
-    firstUpdated(changedProperties: Map<string, any>) {
+    firstUpdated(_changedProperties: Map<string, any>) {
         this.updateComplete.then(() => {
             const gridItemElement = this.widgetContainerElement;
             if(gridItemElement) {
@@ -98,6 +87,7 @@ export class OrDashboardWidget extends LitElement {
                         (this.widget.gridItem?.minPixelW < gridItemElement.clientWidth) && (this.widget.gridItem?.minPixelH < gridItemElement.clientHeight)
                     );
                     this.error = (isMinimumSize ? undefined : i18next.t('dashboard.widgetTooSmall'));
+                    this.requestUpdate();
                 }, 200));
                 this.resizeObserver.observe(gridItemElement);
             } else {
@@ -108,6 +98,7 @@ export class OrDashboardWidget extends LitElement {
 
 
     protected render() {
+        console.error("Rendering or-dashboard-widget [" + this.widget?.displayName + "]")
         return html`
             <div id="widget-container" style="height: 100%; padding: 8px 16px 8px 16px; display: flex; flex-direction: column;">
                 <div style="display: flex; height: 36px; justify-content: space-between; align-items: center; margin-right: -12px;">
@@ -115,7 +106,7 @@ export class OrDashboardWidget extends LitElement {
                     <div>
                         <!--<or-mwc-input type="${InputType.BUTTON}" outlined label="Period"></or-mwc-input>-->
                         <!--<or-mwc-input type="${InputType.BUTTON}" label="Settings"></or-mwc-input>-->
-                        <or-mwc-input type="${InputType.BUTTON}" icon="refresh" .disabled="${this.editMode}" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                        <or-mwc-input type="${InputType.BUTTON}" icon="refresh" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
                     </div>
                 </div>
                 ${until(this.getWidgetContent(this.widget!).then((content) => {
@@ -198,6 +189,10 @@ export class OrDashboardWidget extends LitElement {
         return html`<span>${i18next.t('error')}!</span>`;
     }
 
+
+    @state()
+    protected cachedMockData?: Map<string, { period: any, data: any[] }> = new Map<string, { period: any, data: any[] }>();
+
     protected generateMockData(widget: DashboardWidget, startOfPeriod: number, _endOfPeriod: number, amount: number = 10): any {
         switch (widget.widgetType) {
             case DashboardWidgetType.LINE_CHART: {
@@ -207,8 +202,9 @@ export class OrDashboardWidget extends LitElement {
 
                 // Generating random coordinates on the chart
                 let data: any[] = [];
-                if(this.cachedMockData?.has(widget.id!) && (this.cachedMockData.get(widget.id!) as any[]).length == widget.widgetConfig?.attributeRefs?.length) {
-                    data = this.cachedMockData.get(widget.id!)!;
+                const cached: { period: any, data: any[] } | undefined = this.cachedMockData?.get(widget.id!);
+                if(cached && (cached.data.length == widget.widgetConfig?.attributeRefs?.length) && (cached.period == widget.widgetConfig?.period)) {
+                    data = this.cachedMockData?.get(widget.id!)!.data!;
                 } else {
                     widget.widgetConfig?.attributeRefs?.forEach((_attrRef: AttributeRef) => {
                         let valueEntries: any[] = [];
@@ -223,7 +219,7 @@ export class OrDashboardWidget extends LitElement {
                         }
                         data.push(valueEntries);
                     });
-                    this.cachedMockData?.set(widget.id!, data);
+                    this.cachedMockData?.set(widget.id!, { period: widget.widgetConfig?.period, data: data });
                 }
 
                 // Making a line for each attribute

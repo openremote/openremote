@@ -1,4 +1,3 @@
-import {LngLatLike} from "maplibre-gl";
 import {Asset, AssetModelUtil, AttributeRef, DashboardWidget, DashboardWidgetType } from "@openremote/model";
 import {css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -9,7 +8,6 @@ import {style} from './style';
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import {DefaultColor5, manager } from "@openremote/core";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import {ChartWidgetConfig, KPIWidgetConfig} from "./or-dashboard-widget";
 
@@ -229,7 +227,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                     </div>
                     <div>
                         ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
-                            <div style="padding: 12px;">
+                            <div style="padding: 0 14px 12px 14px;">
                                 ${(chartConfig.attributeRefs == null || chartConfig.attributeRefs.length == 0) ? html`
                                     <span>${i18next.t('noAttributesConnected')}</span>
                                 ` : undefined}
@@ -250,7 +248,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                                         ` : undefined;
                                     }) : undefined}
                                 </div>
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('attribute')}" icon="plus" style="margin-top: 16px;" @or-mwc-input-changed="${() => this.openDialog(chartConfig.attributeRefs, true)}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('attribute')}" icon="plus" style="margin-top: 24px; margin-left: -7px;" @or-mwc-input-changed="${() => this.openDialog(chartConfig.attributeRefs, true)}"></or-mwc-input>
                             </div>
                         ` : null}
                     </div>
@@ -312,7 +310,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                     <div>
                         ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                             <div style="padding: 12px;">
-                                ${(kpiConfig.attributeRefs && kpiConfig.attributeRefs.length > 0) ? html`
+                                ${kpiConfig.attributeRefs && kpiConfig.attributeRefs.length > 0 ? html`
                                     <div id="attribute-list" style="min-height: 0px;">
                                         <div class="attribute-list-item">
                                             ${(this.loadedAssets && this.loadedAssets[0] != null) ? html`
@@ -369,10 +367,10 @@ export class OrDashboardWidgetsettings extends LitElement {
     // UI generation of an expandable panel header.
     generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <button class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
+            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
-                <span style="margin-left: 6px;">${name}</span>
-            </button>
+                <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
+            </span>
         `
     }
 

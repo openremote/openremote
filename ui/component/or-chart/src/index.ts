@@ -639,7 +639,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         </div>
                     ` : undefined)} 
                     ${cache(this.shouldShowLegend() ? html`
-                        <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="min-height: 50px; min-width: 150px; padding: ${this.denseLegend ? '6px' : '12px'};">
+                        <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="padding: ${this.denseLegend ? '6px' : '12px'};">
                             ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                 <div>
                                     <span>${i18next.t('noAttributesConnected')}</span>

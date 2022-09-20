@@ -43,7 +43,7 @@ export const style = css`
         width: 100%;
         height: var(--internal-or-asset-tree-header-height);
         border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
-        z-index: 7;
+        z-index: 3;
         line-height: var(--internal-or-asset-tree-header-height);
         color: var(--internal-or-asset-tree-header-text-color);
         --or-icon-fill: var(--internal-or-asset-tree-header-text-color);
@@ -68,8 +68,21 @@ export const style = css`
         display: flex;
         align-items: center;
         padding: 12px;
-        background: #F0F0F0;
+        background: none;
+        border-top: 1px solid ${unsafeCSS(DefaultColor5)};
+        border-right: none;
+        border-bottom: none;
+        border-left: none;
+        border-radius: 0;
         width: 100%;
-        border: none;
+        cursor: pointer;
+    }
+    .panel-title {
+        text-transform: uppercase;
+        font-weight: bolder;
+        line-height: 1em;
+        color: var(--internal-or-asset-viewer-title-text-color);
+        /*margin-bottom: 20px;*/
+        flex: 0 0 auto;
     }
 `

@@ -3,7 +3,6 @@ import { customElement, property} from "lit/decorators.js";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
-import 'gridstack/dist/h5/gridstack-dd-native';
 import {Dashboard, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
 import manager from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
@@ -13,7 +12,6 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
-import {MAX_BREAKPOINT} from "./index";
 
 //language=css
 const treeStyling = css`
@@ -35,7 +33,6 @@ enum DashboardSizeOption {
 @customElement("or-dashboard-tree")
 export class OrDashboardTree extends LitElement {
 
-    // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
         return [style, treeStyling, OrAssetTreeStyle];
     }
@@ -209,7 +206,7 @@ export class OrDashboardTree extends LitElement {
                                     <ol id="list">
                                         ${items.map((listItem: ListItem) => {
                                             return html`
-                                                <li ?data-selected="${listItem.value == this.selected?.id}" @click="${(evt: MouseEvent) => {
+                                                <li ?data-selected="${listItem.value == this.selected?.id}" @click="${(_evt: MouseEvent) => {
                                                     if(listItem.value != this.selected?.id) {
                                                         if(this.hasChanged) {
                                                             showOkCancelDialog(i18next.t('areYouSure'), i18next.t('confirmContinueDashboardModified'), i18next.t('discard')).then((ok: boolean) => {
@@ -255,16 +252,6 @@ export class OrDashboardTree extends LitElement {
         switch (preset) {
             case DashboardSizeOption.LARGE: {
                 return [{
-                    id: "large",
-                    displayName: i18next.t('dashboard.size.large'),
-                    breakpoint: MAX_BREAKPOINT,
-                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
-                }, {
-                    id: "medium",
-                    displayName: i18next.t('dashboard.size.medium'),
-                    breakpoint: 1280,
-                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
-                }, {
                     id: "small",
                     displayName: i18next.t('dashboard.size.small'),
                     breakpoint: 640,
@@ -273,16 +260,6 @@ export class OrDashboardTree extends LitElement {
             }
             case DashboardSizeOption.SMALL: {
                 return [{
-                    id: "large",
-                    displayName: i18next.t('dashboard.size.large'),
-                    breakpoint: MAX_BREAKPOINT,
-                    scalingPreset: DashboardScalingPreset.BLOCK_DEVICE
-                }, {
-                    id: "medium",
-                    displayName: i18next.t('dashboard.size.medium'),
-                    breakpoint: 1280,
-                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
-                }, {
                     id: "small",
                     displayName: i18next.t('dashboard.size.small'),
                     breakpoint: 640,
@@ -291,16 +268,6 @@ export class OrDashboardTree extends LitElement {
             }
             default: { // or DashboardSizeOption.MEDIUM since that is the default
                 return [{
-                    id: "large",
-                    displayName: i18next.t('dashboard.size.large'),
-                    breakpoint: MAX_BREAKPOINT,
-                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
-                }, {
-                    id: "medium",
-                    displayName: i18next.t('dashboard.size.medium'),
-                    breakpoint: 1280,
-                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
-                }, {
                     id: "small",
                     displayName: i18next.t('dashboard.size.small'),
                     breakpoint: 640,

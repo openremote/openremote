@@ -53,7 +53,7 @@ const styling = css`
         display: flex;
         flex-direction: row;
         align-items: center;
-        border-bottom: 1px solid #E0E0E0;
+        border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
     }
     #header-title {
         font-size: 18px;
@@ -116,7 +116,7 @@ const styling = css`
         position: relative;
         width: 300px;
         background: white;
-        border-left: 1px solid #E0E0E0;
+        border-left: 1px solid ${unsafeCSS(DefaultColor5)};
     }
     #sidebar-widget-headeractions {
         flex: 0;
@@ -198,7 +198,10 @@ export class OrDashboardBuilder extends LitElement {
     protected readonly config: DashboardBuilderConfig | undefined;
 
     @property() // Originally from URL
-    protected readonly editMode: boolean | undefined;
+    protected readonly editMode: boolean = false;
+
+    @property()
+    protected readonly fullscreen: boolean = true;
 
     @property() // Originally from URL
     protected readonly selectedId: string | undefined;
@@ -264,14 +267,14 @@ export class OrDashboardBuilder extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        this.keyEmitter.addListener('delete', (e: KeyboardEvent) => {
+        this.keyEmitter.addListener('delete', (_e: KeyboardEvent) => {
             if(this.selectedWidgetId) {
                 const selectedWidget = this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId);
                 if(selectedWidget) { showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deleteWidgetWarning'), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteWidget(selectedWidget); }}); }
             }
         });
-        this.keyEmitter.addListener('deselect', (e: KeyboardEvent) => { this.deselectWidget(); });
-        this.keyEmitter.addListener('save', (e: KeyboardEvent) => { this.saveDashboard(); });
+        this.keyEmitter.addListener('deselect', (_e: KeyboardEvent) => { this.deselectWidget(); });
+        this.keyEmitter.addListener('save', (_e: KeyboardEvent) => { this.saveDashboard(); });
     }
     disconnectedCallback() {
         super.disconnectedCallback();
@@ -472,7 +475,7 @@ export class OrDashboardBuilder extends LitElement {
             <div id="container">
                 ${this.showDashboardTree ? html`
                     <or-dashboard-tree id="tree" .realm="${this.realm}" .hasChanged="${this.hasChanged}" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}" .userId="${this.userId}"
-                                       @created="${(event: CustomEvent) => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"
+                                       @created="${(_event: CustomEvent) => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"
                                        @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}"
                                        @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"
                     ></or-dashboard-tree>
@@ -493,6 +496,9 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="header-actions">
                                     <div id="header-actions-content">
+                                        <or-mwc-input id="responsive-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
+                                                      @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
+                                        </or-mwc-input>
                                         ${getContentWithMenuTemplate(
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
@@ -535,7 +541,7 @@ export class OrDashboardBuilder extends LitElement {
                                     <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .realm="${this.realm}" .template="${this.currentTemplate}"
                                                           .selectedWidget="${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)}" .editMode="${this.editMode}"
-                                                          .fullscreen="${!this.editMode}" .readonly="${this._isReadonly()}"
+                                                          .fullscreen="${this.fullscreen}" .readonly="${this._isReadonly()}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                           @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"
                                                           @deselected="${() => { this.deselectWidget(); }}"
@@ -569,7 +575,9 @@ export class OrDashboardBuilder extends LitElement {
                                                     <div style="position: relative;">
                                                         <or-dashboard-widgetsettings style="position: absolute;" .selectedWidget="${selectedWidget}"
                                                                                      @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
-                                                                                     @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force ? this.rerenderPending = true : undefined); }}"
+                                                                                     @update="${(event: CustomEvent) => {
+                                                                                         this.currentTemplate = Object.assign({}, this.selectedDashboard?.template);
+                                                                                         if(event.detail.force) { this.rerenderPending = true; }}}"
                                                         ></or-dashboard-widgetsettings>
                                                     </div>
                                                 </div>
@@ -584,14 +592,16 @@ export class OrDashboardBuilder extends LitElement {
                                                     <or-dashboard-browser id="browser" style="position: absolute; ${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                                     <or-dashboard-boardsettings style="position: absolute; ${this.sidebarMenuIndex != 1 ? css`display: none` : null}" 
                                                                                 .dashboard="${this.selectedDashboard}" .showPerms="${this.selectedDashboard?.ownerId == this.userId}" 
-                                                                                @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); (event.detail.force ? this.rerenderPending = true : undefined); }}"
+                                                                                @update="${(event: CustomEvent) => {
+                                                                                    this.currentTemplate = Object.assign({}, this.selectedDashboard?.template);
+                                                                                    if(event.detail.force) { this.rerenderPending = true; }}}"
                                                     ></or-dashboard-boardsettings>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 `
-                            }, undefined)}
+                            })}
                         </div>
                     </div>
                 </div>
@@ -612,7 +622,7 @@ export class OrDashboardBuilder extends LitElement {
 }
 
 // Generating the Grid Item details like X and Y coordinates for GridStack to work.
-export function generateGridItem(gridstackNode: ORGridStackNode, displayName: string): DashboardGridItem {
+export function generateGridItem(gridstackNode: ORGridStackNode, _displayName: string): DashboardGridItem {
     const randomId = (Math.random() + 1).toString(36).substring(2);
     return {
         id: randomId,

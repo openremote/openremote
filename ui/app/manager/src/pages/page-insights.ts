@@ -61,6 +61,9 @@ export class PageInsights extends Page<AppStateKeyed>  {
     protected _editMode: boolean = true;
 
     @property()
+    protected _fullscreen: boolean = true;
+
+    @property()
     private _dashboardId: string;
 
     @state()
@@ -108,9 +111,11 @@ export class PageInsights extends Page<AppStateKeyed>  {
     protected render(): TemplateResult | void {
         return html`
             <div style="width: 100%;">
-                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}" .realm="${manager.displayRealm}" .userId="${this._userId}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
+                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .fullscreen="${this._fullscreen}" .selectedId="${this._dashboardId}"
+                                      .realm="${manager.displayRealm}" .userId="${this._userId}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
                                       @selected="${(event: CustomEvent) => { this._dashboardId = (event.detail as Dashboard)?.id }}"
-                                      @editToggle="${(event: CustomEvent) => { this._editMode = event.detail; this._updateRoute(true); }}"
+                                      @editToggle="${(event: CustomEvent) => { this._editMode = event.detail; this._fullscreen = true; this._updateRoute(true); }}"
+                                      @fullscreenToggle="${(event: CustomEvent) => { this._fullscreen = event.detail; }}"
                 ></or-dashboard-builder>
             </div>
         `;

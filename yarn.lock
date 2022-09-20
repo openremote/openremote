@@ -2422,12 +2422,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder"
   dependencies:
-    "@material/tab-bar": ^9.0.0
     "@openremote/core": ^1.0.4
     "@openremote/model": ^1.0.4
     "@openremote/rest": ^1.0.4
     "@openremote/util": ^1.0.4
-    gridstack: ^5.1.1
+    gridstack: ^6.0.1
     lit: ^2.0.2
   languageName: unknown
   linkType: soft
@@ -5511,10 +5510,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gridstack@npm:^5.1.1":
-  version: 5.1.1
-  resolution: "gridstack@npm:5.1.1"
-  checksum: b18be8293696d96c75699a320abb3b0e6c9ab76eba6daa552255aac7b843fd865791b4d21496b25eed557b320b62f12983c60eeb1bc149ce4e3f261197c1f712
+"gridstack@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "gridstack@npm:6.0.1"
+  checksum: d389e1580c30b46bc0a8455d4acd5b3118e042cc73e66ac65562c5376241f1ff07c349d5b9078eed1dd65a7d9d248f786e9e6ecefa9e73296589525e1689113f
   languageName: node
   linkType: hard
 
