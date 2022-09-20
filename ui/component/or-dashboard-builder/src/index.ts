@@ -654,14 +654,11 @@ export function generateGridItem(gridstackNode: ORGridStackNode, _displayName: s
     }
 }
 export function generateWidgetDisplayName(template: DashboardTemplate, widgetType: DashboardWidgetType): string | undefined {
-    if(template.widgets != null) {
-        const filteredWidgets: DashboardWidget[] = template.widgets.filter((x) => { return x.widgetType == widgetType; });
-        switch (widgetType) {
-            case DashboardWidgetType.KPI: return (i18next.t('dashboard.widget-kpi') + " #" + (filteredWidgets.length + 1));
-            case DashboardWidgetType.LINE_CHART: return (i18next.t('dashboard.widget-linechart') + " #" + (filteredWidgets.length + 1));
-        }
+    switch (widgetType) {
+        case DashboardWidgetType.KPI: return (i18next.t('dashboard.widget-kpi') + " " + i18next.t('dashboard.widget'));
+        case DashboardWidgetType.LINE_CHART: return (i18next.t('dashboard.widget-linechart') + " " + i18next.t('dashboard.widget'));
+        default: return undefined;
     }
-    return undefined;
 }
 export function getWidgetMinWidth(widgetType: DashboardWidgetType): number {
     switch (widgetType) {
