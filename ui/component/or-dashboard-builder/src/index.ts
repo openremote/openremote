@@ -490,7 +490,7 @@ export class OrDashboardBuilder extends LitElement {
                 ` : undefined}
                 <div id="container" style="display: table;">
                     ${this.editMode ? html`
-                        <div id="header">
+                        <div id="header" style="display: ${this.selectedDashboard == null && 'none'}">
                             <div id="header-wrapper">
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
@@ -511,8 +511,12 @@ export class OrDashboardBuilder extends LitElement {
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
-                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
+                                        <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
+                                                      @or-mwc-input-changed="${() => { this.saveDashboard(); }}">
+                                        </or-mwc-input>
+                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}"
+                                                      @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}">
+                                        </or-mwc-input>
                                     </div>
                                 </div>
                             </div>
@@ -527,10 +531,10 @@ export class OrDashboardBuilder extends LitElement {
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
+                                                html`<or-mwc-input id="share-btn" ?hidden="${this.selectedDashboard == null}" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
+                                        <or-mwc-input id="view-btn" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>
                                 </div>
