@@ -30,6 +30,7 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {i18next} from "@openremote/or-translate";
 import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {DashboardKeyEmitter} from "./or-dashboard-keyhandler";
+import {generateWidgetConfig} from "./or-dashboard-widget";
 
 // language=CSS
 const styling = css`
@@ -338,22 +339,26 @@ export class OrDashboardBuilder extends LitElement {
 
     /* ----------------- */
 
-    // Method for creating Widgets (reused at many places)
+
     createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
         const randomId = (Math.random() + 1).toString(36).substring(2);
         let displayName = generateWidgetDisplayName(this.currentTemplate!, gridStackNode.widgetType);
-        if(displayName == undefined) { displayName = (i18next.t('widget') + " #" + randomId); } // If no displayName, set random ID as name.
+        if(displayName == undefined) { displayName = (i18next.t('dashboard.widget') + " #" + randomId); } // If no displayName, set random ID as name.
         const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
 
         const widget = {
             id: randomId,
             displayName: displayName,
             gridItem: gridItem,
-            widgetType: gridStackNode.widgetType
+            widgetType: gridStackNode.widgetType,
         } as DashboardWidget;
+        widget.widgetConfig = generateWidgetConfig(widget);
 
-        const tempTemplate = this.currentTemplate;
-        tempTemplate?.widgets?.push(widget);
+        const tempTemplate = JSON.parse(JSON.stringify(this.currentTemplate)) as DashboardTemplate;
+        if(tempTemplate.widgets == undefined) {
+            tempTemplate.widgets = [];
+        }
+        tempTemplate.widgets?.push(widget);
         this.currentTemplate = tempTemplate;
         return widget;
     }
@@ -546,6 +551,7 @@ export class OrDashboardBuilder extends LitElement {
                                                           .selectedWidget="${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)}" .editMode="${this.editMode}"
                                                           .fullscreen="${this.fullscreen}" .readonly="${this._isReadonly()}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
+                                                          @dropped="${(event: CustomEvent) => { this.createWidget(event.detail as ORGridStackNode)}}"
                                                           @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"
                                                           @deselected="${() => { this.deselectWidget(); }}"
                                     ></or-dashboard-preview>
@@ -563,7 +569,7 @@ export class OrDashboardBuilder extends LitElement {
                                             <div class="settings-container">
                                                 <div id="menu-header">
                                                     <div id="title-container">
-                                                        <span id="title" title="${selectedWidget?.displayName}">${selectedWidget?.displayName}:</span>
+                                                        <span id="title" title="${selectedWidget?.displayName}">${selectedWidget?.displayName}</span>
                                                     </div>
                                                     <div id="sidebar-widget-headeractions">
                                                         <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => {

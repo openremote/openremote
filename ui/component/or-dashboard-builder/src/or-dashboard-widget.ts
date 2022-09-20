@@ -41,6 +41,33 @@ export interface KPIWidgetConfig {
     attributeRefs: AttributeRef[];
     period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
 }
+export function generateWidgetConfig(widget: DashboardWidget): Object {
+    console.error("Generating widget config..")
+    switch (widget.widgetType) {
+        case DashboardWidgetType.LINE_CHART: {
+            return {
+                displayName: widget.displayName,
+                attributeRefs: [],
+                period: "day",
+                timestamp: new Date(),
+                decimals: 2,
+                deltaFormat: "absolute",
+                showTimestampControls: false,
+                showLegend: true
+            } as ChartWidgetConfig
+        }
+        case DashboardWidgetType.KPI: {
+            return {
+                displayName: widget.displayName,
+                attributeRefs: [],
+                period: "day"
+            } as KPIWidgetConfig
+        }
+        default: {
+            return {};
+        }
+    }
+}
 
 /* ------------------------------------ */
 

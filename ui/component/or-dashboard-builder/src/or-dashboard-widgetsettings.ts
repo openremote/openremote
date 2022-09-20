@@ -125,9 +125,6 @@ export class OrDashboardWidgetsettings extends LitElement {
         console.log(changedProperties);
         if(changedProperties.has("selectedWidget")) {
             if(this.selectedWidget != null) {
-                if(this.selectedWidget.widgetConfig == null) {
-                    this.selectedWidget.widgetConfig = this.generateWidgetConfig(this.selectedWidget);
-                }
                 this.fetchAssets();
             }
         }
@@ -135,36 +132,6 @@ export class OrDashboardWidgetsettings extends LitElement {
 
     /* ------------------------------------ */
 
-    // Default values that are used when no config is specified.
-    // This is always the case when a new Widget has been created.
-    generateWidgetConfig(widget: DashboardWidget): Object {
-        switch (widget.widgetType) {
-            case DashboardWidgetType.LINE_CHART: {
-                return {
-                    displayName: widget.displayName,
-                    attributeRefs: [],
-                    period: "day",
-                    timestamp: new Date(),
-                    decimals: 2,
-                    deltaFormat: "absolute",
-                    showTimestampControls: false,
-                    showLegend: true
-                } as ChartWidgetConfig
-            }
-            case DashboardWidgetType.KPI: {
-                return {
-                    displayName: widget.displayName,
-                    attributeRefs: [],
-                    period: "day"
-                } as KPIWidgetConfig
-            }
-            default: {
-                return {};
-            }
-        }
-    }
-
-    /* ------------------------------ */
 
     // Method to update the Grid. For example after changing a setting.
     forceParentUpdate(force: boolean = false) {
@@ -195,7 +162,7 @@ export class OrDashboardWidgetsettings extends LitElement {
         if(this.selectedWidget?.widgetType != null && this.selectedWidget.widgetConfig != null) {
             return this.generateHTML(this.selectedWidget.widgetType, this.selectedWidget.widgetConfig);
         }
-        return html`<span>Unknown Error</span>`
+        return html`<span>${i18next.t('errorOccurred')}</span>`
     }
 
 

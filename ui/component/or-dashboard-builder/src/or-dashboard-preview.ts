@@ -392,7 +392,6 @@ export class OrDashboardPreview extends LitElement {
             this.grid.on('dropped', (_event: Event, _previousWidget: any, newWidget: GridStackNode | undefined) => {
                 if(this.grid != null && newWidget != null) {
                     this.grid.removeWidget((newWidget.el) as GridStackElement, true, false); // Removes dragged widget first
-                    this.createWidget(newWidget as ORGridStackNode);
                     this.dispatchEvent(new CustomEvent("dropped", { detail: newWidget }));
                 }
             });
@@ -415,30 +414,6 @@ export class OrDashboardPreview extends LitElement {
                 setTimeout(() => {  this.latestDragWidgetStart = undefined; }, 200);
             });
         }
-    }
-
-    // Method for creating Widgets (reused at many places)
-    createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
-        const randomId = (Math.random() + 1).toString(36).substring(2);
-        let displayName = generateWidgetDisplayName(this.template, gridStackNode.widgetType);
-        if(displayName == undefined) { displayName = (i18next.t('dashboard.widget') + " #" + randomId); } // If no displayName, set random ID as name.
-        const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
-
-        const widget = {
-            id: randomId,
-            displayName: displayName,
-            gridItem: gridItem,
-            widgetType: gridStackNode.widgetType
-        } as DashboardWidget;
-
-        const tempTemplate = JSON.parse(JSON.stringify(this.template)) as DashboardTemplate;
-        if(tempTemplate.widgets == undefined) {
-            tempTemplate.widgets = [];
-        }
-        tempTemplate.widgets?.push(widget);
-        this.template = tempTemplate;
-        this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
-        return widget;
     }
 
 
