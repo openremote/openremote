@@ -492,7 +492,7 @@
   "layout": "Indeling",
   "display": "Weergave",
   "screen": "Scherm",
-  "noDashboardSelected": "Selecteer een Dashboard aan de linkerkant.",
+  "noDashboardSelected": "Selecteer een Dashboard aan de linkerkant",
   "noDashboardFound": "Geen dashboard gevonden.",
   "noDashboardWriteAccess": "U heeft geen rechten om dit dashboard aan te passen.",
   "confirmContinueDashboardModified": "Dashboard is aangepast, wijzigingen negeren?",
