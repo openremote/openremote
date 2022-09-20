@@ -222,7 +222,8 @@ export class OrDashboardPreview extends LitElement {
                 { displayName: "Custom" }
             ]
         }
-        if(!this.previewSize) { this.previewSize = this.availablePreviewSizes[2]; }
+        // Defaulting to a Phone view
+        if(!this.previewSize) { this.previewSize = this.availablePreviewSizes[3]; }
     }
 
     static get styles() {

@@ -27,7 +27,7 @@ const treeStyling = css`
 `;
 
 enum DashboardSizeOption {
-    LARGE, MEDIUM, SMALL, FULLSCREEN, CUSTOM
+    DESKTOP, MOBILE
 }
 
 @customElement("or-dashboard-tree")
@@ -98,7 +98,7 @@ export class OrDashboardTree extends LitElement {
         const randomId = (Math.random() + 1).toString(36).substring(2);
         const dashboard = {
             realm: this.realm!,
-            displayName: i18next.t('dashboard.initialName'),
+            displayName: this.getDefaultDisplayName(size),
             template: {
                 id: randomId,
                 columns: this.getDefaultColumns(size),
@@ -110,7 +110,7 @@ export class OrDashboardTree extends LitElement {
             if(response.status == 200) {
                 this.dashboards?.push(response.data);
                 this.requestUpdate("dashboards");
-                this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data }}));
+                this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data, fullscreen: (size !== DashboardSizeOption.MOBILE) }}));
 
                 // Select the item that was created
                 this.selected = this.dashboards?.find((x) => { return x.id == response.data.id; });
@@ -147,9 +147,8 @@ export class OrDashboardTree extends LitElement {
 
     protected render() {
         const menuItems: ListItem[] = [
-            { icon: "monitor", text: i18next.t('dashboard.size.large'), value: DashboardSizeOption.LARGE },
-            { icon: "tablet", text: i18next.t('dashboard.size.medium'), value: DashboardSizeOption.MEDIUM },
-            { icon: "cellphone", text: i18next.t('dashboard.size.small'), value: DashboardSizeOption.SMALL }
+            { icon: "monitor", text: i18next.t('dashboard.size.desktop'), value: DashboardSizeOption.DESKTOP },
+            { icon: "cellphone", text: i18next.t('dashboard.size.mobile'), value: DashboardSizeOption.MOBILE }
         ]
         const dashboardItems: ListItem[][] = []
         if(this.dashboards!.length > 0) {
@@ -240,36 +239,43 @@ export class OrDashboardTree extends LitElement {
     // TODO: Needs to be moved to probably model itself
     private getDefaultColumns(preset: DashboardSizeOption): number {
         switch (preset) {
-            case DashboardSizeOption.SMALL: { return 4; }
-            case DashboardSizeOption.MEDIUM: { return 8; }
-            case DashboardSizeOption.LARGE: { return 12; }
+            case DashboardSizeOption.MOBILE: { return 4; }
+            case DashboardSizeOption.DESKTOP: { return 12; }
             default: { return 12; }
+        }
+    }
+
+    // TODO: Needs to be moved to probably model itself
+    private getDefaultDisplayName(preset: DashboardSizeOption): string {
+        switch (preset) {
+            case DashboardSizeOption.DESKTOP: { return i18next.t('dashboard.initialName'); }
+            case DashboardSizeOption.MOBILE: { return i18next.t('dashboard.initialName') + " (" + i18next.t('dashboard.size.mobile') + ")"; }
         }
     }
 
     // TODO: Needs to be moved to probably model itself
     private getDefaultScreenPresets(preset: DashboardSizeOption): DashboardScreenPreset[] {
         switch (preset) {
-            case DashboardSizeOption.LARGE: {
+            case DashboardSizeOption.DESKTOP: {
                 return [{
-                    id: "small",
-                    displayName: i18next.t('dashboard.size.small'),
+                    id: "mobile",
+                    displayName: 'dashboard.size.mobile',
                     breakpoint: 640,
-                    scalingPreset: DashboardScalingPreset.BLOCK_DEVICE
+                    scalingPreset: DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN
                 }];
             }
-            case DashboardSizeOption.SMALL: {
+            case DashboardSizeOption.MOBILE: {
                 return [{
-                    id: "small",
-                    displayName: i18next.t('dashboard.size.small'),
+                    id: "mobile",
+                    displayName: 'dashboard.size.mobile',
                     breakpoint: 640,
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }];
             }
-            default: { // or DashboardSizeOption.MEDIUM since that is the default
+            default: { // or DashboardSizeOption.DESKTOP since that is the default
                 return [{
-                    id: "small",
-                    displayName: i18next.t('dashboard.size.small'),
+                    id: "mobile",
+                    displayName: 'dashboard.size.mobile',
                     breakpoint: 640,
                     scalingPreset: DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN
                 }];

@@ -219,7 +219,7 @@ export class OrDashboardBoardsettings extends LitElement {
                 return html`
                     <div style="margin-bottom: ${screenPresets.length > 1 ? '24px' : '16px'}">
                         <div class="label">
-                            ${html`<span>${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", ("<b>" + preset.displayName + "</b>")))}</span>`}
+                            ${html`<span>${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", ("<b>" + i18next.t(preset.displayName!) + "</b>")))}</span>`}
                         </div>
                         <or-mwc-input class="displayInput" type="${InputType.SELECT}" comfortable style="width: 100%;"
                                       .options="${scalingPresets.map((x) => x.value)}"
