@@ -390,6 +390,27 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         persistenceService.doTransaction(em -> em.merge(connection));
     }
 
+    public boolean deleteConnection(String realm, String id) {
+        LOG.info("Deleting gateway connection for the following realm: " + realm);
+
+        try {
+            persistenceService.doTransaction(em -> {
+
+                List<GatewayConnection> connections = em
+                    .createQuery("select gc from GatewayConnection gc where gc.id=:id AND gc.localRealm=:realm", GatewayConnection.class)
+                    .setParameter("id", id)
+                    .setParameter("realm", realm)
+                    .getResultList();
+
+                connections.forEach(em::remove);
+            });
+        } catch (Exception e) {
+            return false;
+        }
+
+        return true;
+    }
+
     public boolean deleteConnections(List<String> realms) {
         LOG.info("Deleting gateway connections for the following realm(s): " + Arrays.toString(realms.toArray()));
 
@@ -401,10 +422,6 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     .setParameter("realms", realms)
                     .getResultList();
 
-                if (connections.size() != realms.size()) {
-                    throw new IllegalArgumentException("Cannot delete one or more requested gateway connections as they don't exist");
-                }
-
                 connections.forEach(em::remove);
             });
         } catch (Exception e) {
@@ -414,10 +431,14 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return true;
     }
 
-    protected ConnectionStatus getConnectionStatus(String id) {
+    protected ConnectionStatus getConnectionStatus(String realm, String id) {
         GatewayConnection connection = connectionIdMap.get(id);
 
         if (connection == null) {
+            return null;
+        }
+
+        if (connection.getLocalRealm().equals(realm) == false) {
             return null;
         }
 

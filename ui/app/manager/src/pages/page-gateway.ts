@@ -219,8 +219,8 @@ export class PageGateway extends Page<AppStateKeyed>  {
         this._loading = true;
         this._connection = {secured: true};
         this._connectionStatus = null;
-        const connectionResponse = await manager.rest.api.GatewayClientResource.getConnection(this.realm);
-        const statusResponse = await manager.rest.api.GatewayClientResource.getConnectionStatus(this.realm);
+        const connectionResponse = await manager.rest.api.GatewayClientResource.getConnection(this.realm, this.realm);
+        const statusResponse = await manager.rest.api.GatewayClientResource.getConnectionStatus(this.realm, this.realm);
 
         this._setConnection(connectionResponse.data);
         this._connectionStatus = statusResponse.data;
@@ -237,7 +237,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
 
     protected async _delete() {
         this._loading = true;
-        const response = await manager.rest.api.GatewayClientResource.deleteConnection(this.realm);
+        const response = await manager.rest.api.GatewayClientResource.deleteConnection(this.realm, this.realm);
         if (response.status !== 204) {
             // TODO: Toast message
         }

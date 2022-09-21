@@ -39,19 +39,28 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface GatewayClientResource {
 
     /**
-     * Get the {@link GatewayConnection} for the specified realm, user must be a realm admin
+     * Get the {@link GatewayConnection} for the specified realm with the id specified, user must be a realm admin
+     */
+    @GET
+    @Path("connection/{realm}/{id}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    GatewayConnection getConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String id);
+
+    @GET
+    @Path("status/{realm}/{id}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    ConnectionStatus getConnectionStatus(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String id);
+
+    /**
+     * Get the {@link GatewayConnection}s for the specified realm, user must be a realm admin
      */
     @GET
     @Path("connection/{realm}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    GatewayConnection getConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
-
-    @GET
-    @Path("status/{realm}")
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    ConnectionStatus getConnectionStatus(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    List<GatewayConnection> getRealmConnections(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
      * Get the {@link GatewayConnection}s for all realms, user must be a super user
@@ -63,7 +72,7 @@ public interface GatewayClientResource {
     List<GatewayConnection> getConnections(@BeanParam RequestParams requestParams);
 
     /**
-     * Update a {@link GatewayConnection} for the specified realm
+     * Update {@link GatewayConnection}s for the specified realm
      */
     @PUT
     @Path("connection/{realm}")
@@ -72,9 +81,9 @@ public interface GatewayClientResource {
     void setConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid GatewayConnection connection);
 
     @DELETE
-    @Path("connection/{realm}")
+    @Path("connection/{realm}/{id}")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    void deleteConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    void deleteConnection(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String id);
 
     @DELETE
     @Path("connection")

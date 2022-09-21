@@ -46,25 +46,42 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
     }
 
     @Override
-    public GatewayConnection getConnection(RequestParams requestParams, String realm) {
+    public GatewayConnection getConnection(RequestParams requestParams, String realm, String id) {
         if (!realm.equals(getAuthenticatedRealmName()) && !isSuperUser()) {
             throw new WebApplicationException(FORBIDDEN);
         }
 
         try {
-            return gatewayClientService.getConnections().stream().filter(c -> realm.equals(c.getLocalRealm())).findFirst().orElse(null);
+            return gatewayClientService.getConnections().stream().filter(
+                c -> realm.equals(c.getLocalRealm()) && id.equals(c.getId())
+            ).findFirst().orElse(null);
         } catch (Exception e) {
             throw new WebApplicationException(e, BAD_REQUEST);
         }
     }
 
     @Override
-    public ConnectionStatus getConnectionStatus(RequestParams requestParams, String realm) {
+    public List<GatewayConnection> getRealmConnections(RequestParams requestParams, String realm) {
         if (!realm.equals(getAuthenticatedRealmName()) && !isSuperUser()) {
             throw new WebApplicationException(FORBIDDEN);
         }
 
-        return gatewayClientService.getConnectionStatus(realm);
+        try {
+            return gatewayClientService.getConnections().stream().filter(
+                c -> realm.equals(c.getLocalRealm())
+            ).toList();
+        } catch (Exception e) {
+            throw new WebApplicationException(e, BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ConnectionStatus getConnectionStatus(RequestParams requestParams, String realm, String id) {
+        if (!realm.equals(getAuthenticatedRealmName()) && !isSuperUser()) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        return gatewayClientService.getConnectionStatus(realm, id);
     }
 
     @Override
@@ -96,8 +113,23 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
     }
 
     @Override
-    public void deleteConnection(RequestParams requestParams, String realm) {
-        deleteConnections(requestParams, Collections.singletonList(realm));
+    public void deleteConnection(RequestParams requestParams, String realm, String id) {
+        if (realm.isEmpty()) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+
+        if ((!getAuthenticatedRealmName().equals(realm)) && !isSuperUser()) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        try {
+            boolean deleted = gatewayClientService.deleteConnection(realm, id);
+            if (!deleted) {
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+        } catch (Exception e) {
+            throw new WebApplicationException(e, BAD_REQUEST);
+        }
     }
 
     @Override
