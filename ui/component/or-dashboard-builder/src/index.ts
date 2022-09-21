@@ -480,10 +480,7 @@ export class OrDashboardBuilder extends LitElement {
             <div id="container">
                 ${this.showDashboardTree ? html`
                     <or-dashboard-tree id="tree" .realm="${this.realm}" .hasChanged="${this.hasChanged}" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}" .userId="${this.userId}"
-                                       @created="${(event: CustomEvent) => { 
-                                           this.dispatchEvent(new CustomEvent('editToggle', { detail: true }));
-                                           this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: event.detail.fullscreen }));
-                                       }}"
+                                       @created="${(_event: CustomEvent) => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"
                                        @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}"
                                        @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"
                     ></or-dashboard-tree>

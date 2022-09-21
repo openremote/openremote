@@ -110,7 +110,7 @@ export class OrDashboardTree extends LitElement {
             if(response.status == 200) {
                 this.dashboards?.push(response.data);
                 this.requestUpdate("dashboards");
-                this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data, fullscreen: (size !== DashboardSizeOption.MOBILE) }}));
+                this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data }}));
 
                 // Select the item that was created
                 this.selected = this.dashboards?.find((x) => { return x.id == response.data.id; });
