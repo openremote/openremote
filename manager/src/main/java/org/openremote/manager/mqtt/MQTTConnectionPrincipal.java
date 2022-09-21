@@ -19,26 +19,38 @@
  */
 package org.openremote.manager.mqtt;
 
-import io.netty.handler.codec.mqtt.*;
-import org.apache.activemq.artemis.api.core.ActiveMQException;
-import org.apache.activemq.artemis.core.protocol.mqtt.MQTTInterceptor;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 
-public class ActiveMQInterceptor implements MQTTInterceptor {
+import java.security.Principal;
+import java.util.Objects;
 
-    // Need to inject this
-    static MQTTBrokerService brokerService;
+public class MQTTConnectionPrincipal implements Principal {
+
+    protected RemotingConnection connection;
+
+    public MQTTConnectionPrincipal(RemotingConnection connection) {
+        this.connection = connection;
+    }
 
     @Override
-    public boolean intercept(MqttMessage packet, RemotingConnection connection) throws ActiveMQException {
+    public String getName() {
+        return connection.getProtocolName();
+    }
 
-        if (packet instanceof MqttSubscribeMessage subscribeMessage) {
-            brokerService.onSubscribe(subscribeMessage.payload().topicSubscriptions(), connection);
-        } else if (packet instanceof MqttUnsubscribeMessage unsubscribeMessage) {
-            brokerService.onUnsubscribe(unsubscribeMessage.payload().topics(), connection);
-        } else if (packet instanceof MqttPublishMessage publishMessage) {
-            brokerService.onPublish(publishMessage, connection);
-        }
-        return true;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MQTTConnectionPrincipal that = (MQTTConnectionPrincipal) o;
+        return connection.equals(that.connection);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(connection);
+    }
+
+    public RemotingConnection getConnection() {
+        return connection;
     }
 }

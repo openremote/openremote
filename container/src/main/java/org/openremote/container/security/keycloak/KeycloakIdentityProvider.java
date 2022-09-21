@@ -383,6 +383,9 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                         keycloakServiceUri.clone().build().toString()
                     );
 
+                    // Set preferred username as principal attribute
+                    adapterConfig.setPrincipalAttribute("preferred_username");
+
                     return KeycloakDeploymentBuilder.build(adapterConfig);
                 }
             };

@@ -21,11 +21,14 @@ package org.openremote.manager.mqtt;
 
 import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import io.netty.handler.codec.mqtt.MqttSubscriptionOption;
 import io.netty.handler.codec.mqtt.MqttTopicSubscription;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
+import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
 import org.apache.activemq.artemis.api.core.client.*;
 import org.apache.activemq.artemis.core.client.impl.ClientSessionInternal;
 import org.apache.activemq.artemis.core.config.Configuration;
+import org.apache.activemq.artemis.core.config.WildcardConfiguration;
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
@@ -35,8 +38,12 @@ import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPlugin;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
+import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
+import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
@@ -72,13 +79,14 @@ import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
-public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, FailureListener {
+public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin {
 
     public static final int PRIORITY = MED_PRIORITY;
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
-    private static final Logger LOG = SyslogCategory.getLogger(API, MQTTBrokerService.class);
+    protected final WildcardConfiguration wildcardConfiguration = new WildcardConfiguration();
+    protected static final Logger LOG = SyslogCategory.getLogger(API, MQTTBrokerService.class);
 
     protected AuthorisationService authorisationService;
     protected ManagerKeycloakIdentityProvider identityProvider;
@@ -148,12 +156,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         config.addAcceptorConfiguration("in-vm", "vm://0");
         String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port).setParameter("protocols", "MQTT").build().toString();
         config.addAcceptorConfiguration("tcp", serverURI);
+        // Inject this broker service into the interceptor which is constructed using reflection
         ActiveMQInterceptor.brokerService = this;
+
         config.setIncomingInterceptorClassNames(Collections.singletonList(ActiveMQInterceptor.class.getName()));
         // TODO: Make this configurable
         config.setMaxDiskUsage(-1);
         config.setSecurityInvalidationInterval(30000);
         config.registerBrokerPlugin(this);
+        config.setWildCardConfiguration(wildcardConfiguration);
+        config.setPersistenceEnabled(false);
 
         server = new EmbeddedActiveMQ();
         server.setConfiguration(config);
@@ -162,7 +174,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
                 return new AppConfigurationEntry[] {
                     new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true")),
-                    new AppConfigurationEntry(MultiTenantDirectAccessGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(MultiTenantDirectAccessGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true"))
+                    new AppConfigurationEntry(MultiTenantDirectAccessGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(
+                        MultiTenantDirectAccessGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true",
+                        AbstractKeycloakLoginModule.ROLE_PRINCIPAL_CLASS_OPTION, RolePrincipal.class.getName()
+                    )),
+                    new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST, KeycloakPrincipal.class.getName()))
                 };
             }
         }));
@@ -245,10 +261,32 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void afterCreateConnection(RemotingConnection connection) throws ActiveMQException {
-        // Attach listeners
-        connection.addFailureListener(this);
+        // MQTT seems to only use failure callback even if closed gracefully (need to look at the exception for details)
+        connection.addFailureListener(new FailureListener() {
+            @Override
+            public void connectionFailed(ActiveMQException exception, boolean failedOver) {
+                connectionFailed(exception, failedOver, null);
+            }
 
-        // Notify handlers
+            @Override
+            public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
+                // TODO: Force delete session (don't allow retained/durable sessions)
+
+                if (exception.getType() == ActiveMQExceptionType.REMOTE_DISCONNECT) {// Seems to be the type for graceful close of connection
+                    // Notify handlers of connection close
+                    for (MQTTHandler handler : getCustomHandlers()) {
+                        handler.onDisconnect(connection);
+                    }
+                } else {
+                    // Notify handlers of connection failure
+                    for (MQTTHandler handler : getCustomHandlers()) {
+                        handler.onConnectionLost(connection);
+                    }
+                }
+            }
+        });
+
+        // Notify handlers of connect
         for (MQTTHandler handler : getCustomHandlers()) {
             handler.onConnect(connection);
         }
@@ -256,28 +294,17 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void afterDestroyConnection(RemotingConnection connection) throws ActiveMQException {
-        connection.removeFailureListener(this);
-        // TODO: Force delete session (don't allow retained/durable sessions)
-    }
-
-    @Override
-    public void connectionFailed(ActiveMQException exception, boolean failedOver) {
-        connectionFailed(exception, failedOver, null);
-    }
-
-    @Override
-    public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
-        // TODO: Decide if we need this or is afterDestroyConnection enough
     }
 
     public void onSubscribe(List<MqttTopicSubscription> topicSubscriptions, RemotingConnection connection) {
         for (MqttTopicSubscription subscription : topicSubscriptions) {
             Topic topic = Topic.parse(subscription.topicName());
+            MqttSubscriptionOption option = subscription.option();
 
             for (MQTTHandler handler : getCustomHandlers()) {
                 if (handler.handlesTopic(topic)) {
                     LOG.fine("Handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
-                    handler.doSubscribe(connection, topic);
+                    handler.onSubscribe(connection, topic, option);
                     break;
                 }
             }
@@ -291,7 +318,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             for (MQTTHandler handler : getCustomHandlers()) {
                 if (handler.handlesTopic(topic)) {
                     LOG.fine("Handler has handled unsubscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
-                    handler.doUnsubscribe(connection, topic);
+                    handler.onUnsubscribe(connection, topic);
                     break;
                 }
             }
@@ -304,7 +331,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
                 LOG.fine("Handler has handled publish: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
-                handler.doPublish(connection, topic, publishMessage);
+                handler.onPublish(connection, topic, publishMessage);
                 break;
             }
         }
@@ -347,5 +374,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Couldn't send AttributeEvent to MQTT client", e);
         }
+    }
+
+    public WildcardConfiguration getWildcardConfiguration() {
+        return wildcardConfiguration;
     }
 }

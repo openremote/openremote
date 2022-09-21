@@ -35,7 +35,6 @@ import org.openremote.model.syslog.SyslogCategory;
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
-
 import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -52,7 +51,7 @@ import static org.openremote.model.syslog.SyslogCategory.API;
  */
 public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
-    private static final Logger LOG = SyslogCategory.getLogger(API, ORAuthorizatorPolicy.class);
+    private static final Logger LOG = SyslogCategory.getLogger(API, ActiveMQORSecurityManager.class);
     protected AuthorisationService authorisationService;
     protected MQTTBrokerService brokerService;
     protected Function<String, KeycloakDeployment> deploymentResolver;
@@ -115,7 +114,14 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             } catch (LoginException e) {
                 throw e;
             }
-            return lc.getSubject();
+            Subject subject = lc.getSubject();
+
+            // Insert remoting connection for use in authorisation
+            if (subject != null) {
+                subject.getPrincipals().add(new MQTTConnectionPrincipal(remotingConnection));
+            }
+
+            return subject;
         } finally {
             if (thisLoader != currentLoader) {
                 Thread.currentThread().setContextClassLoader(currentLoader);
@@ -128,7 +134,11 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
         return switch (checkType) {
             case SEND -> verifyRights(subject, address, true);
-            case CONSUME -> verifyRights(subject, address, false);
+            case CONSUME -> {
+                int index = address.indexOf("::");
+                address = address.substring(0, index);
+                yield verifyRights(subject, address, false);
+            }
             case CREATE_ADDRESS, DELETE_ADDRESS, CREATE_DURABLE_QUEUE, DELETE_DURABLE_QUEUE, CREATE_NON_DURABLE_QUEUE, DELETE_NON_DURABLE_QUEUE ->
                 // All MQTT clients must be able to create addresses and queues (every session and subscription will create a queue within the topic address)
                 true;
@@ -137,14 +147,16 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    protected boolean verifyRights(Subject subject, String topicStr, boolean isWrite) {
-
+    protected boolean verifyRights(Subject subject, String address, boolean isWrite) {
+        KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
+        RemotingConnection connection = MQTTHandler.getConnectionFromSubject(subject);
         Topic topic;
 
         try {
-            topic = Topic.parse(topicStr);
+            // Get MQTT topic from address
+            topic = Topic.fromAddress(address, brokerService.getWildcardConfiguration());
         } catch (IllegalArgumentException e) {
-            LOG.log(Level.WARNING, "Invalid topic provided by client '" + topicStr + "': " + subject, e);
+            LOG.log(Level.WARNING, "Invalid topic provided by client '" + address + "', connection=" + connection, e);
             return false;
         }
 
@@ -152,24 +164,23 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             return false;
         }
 
-        KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
-
         // See if a custom handler wants to handle authorisation for this topic pub/sub
         for (MQTTHandler handler : brokerService.getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.fine("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", subject=" + subject);
+                LOG.fine("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
                 boolean result;
 
                 if (isWrite) {
-                    result = handler.checkCanPublish(securityContext, topic);
+                    result = handler.checkCanPublish(connection, securityContext, topic);
                 } else {
-                    result = handler.checkCanSubscribe(securityContext, topic);
+                    result = handler.checkCanSubscribe(connection, securityContext, topic);
                 }
                 return result;
             }
         }
 
-        LOG.fine("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", subject=" + subject);
+        LOG.fine("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", connection=" + connection);
         return false;
     }
+
 }

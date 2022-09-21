@@ -28,7 +28,17 @@ dependencies {
         force = true
     }
 
+    // Exposed via MQTT API
+    api ("io.netty:netty-codec-mqtt:$nettyVersion") {
+        force = true
+    }
+
     implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
+        exclude group: "org.osgi"
+    }
+
+    // Needed for reference in tests
+    api("org.apache.activemq:artemis-core-client:$activeMQVersion") {
         exclude group: "org.osgi"
     }
 

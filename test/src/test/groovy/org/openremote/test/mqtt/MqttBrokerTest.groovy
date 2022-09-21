@@ -4,7 +4,6 @@ import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
-import io.moquette.BrokerConstants
 import io.netty.channel.socket.SocketChannel
 import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
@@ -59,8 +58,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def username = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
         def password = keycloakTestSetup.serviceUser.secret
 
-        def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST)
-        def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT)
+        def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0")
+        def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883)
 
         when: "a mqtt client connects with invalid credentials"
         def wrongUsername = "master:" + keycloakTestSetup.serviceUser.username
@@ -81,7 +80,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "mqtt connection should exist"
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId) != null
+            assert mqttBrokerService.server.activeMQServer.getSessions(mqttClientId).size() == 1
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
@@ -112,7 +111,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "No subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId) != null
+            assert mqttBrokerService.server.activeMQServer.getSessions(mqttClientId).size() == 1
             assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
         }
 
@@ -128,7 +127,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
             assert client.topicConsumerMap.get(topic).size() == 1
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId) != null
+            assert mqttBrokerService.server.activeMQServer.getSessions(mqttClientId).size() == 1
             assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
             assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 1
         }
@@ -373,7 +372,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the connection should exist"
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId) != null
+            assert mqttBrokerService.server.activeMQServer.getSessions(mqttClientId).size() == 1
         }
 
         when: "a mqtt client subscribes to assets that are direct children of the realm"
