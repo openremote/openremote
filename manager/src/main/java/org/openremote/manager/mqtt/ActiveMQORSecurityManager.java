@@ -31,6 +31,7 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
@@ -82,13 +83,23 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     }
 
     protected Subject getAuthenticatedSubject(String user,
-                                            final String password,
+                                            String password,
                                             final RemotingConnection remotingConnection,
                                             final String securityDomain) throws LoginException {
         LoginContext lc;
         String realm = null;
         ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
         ClassLoader thisLoader = this.getClass().getClassLoader();
+
+        // A bit of a hack to allow auto provisioned clients to remain connected after authentication and to then have
+        // the usual service user authentication without having to disconnect and reconnect
+        if (user == null) {
+            Pair<String, String> transientCredentials = brokerService.transientCredentials.get(remotingConnection.getClientID());
+            if (transientCredentials != null) {
+                user = transientCredentials.getKey();
+                password = transientCredentials.getValue();
+            }
+        }
 
         if (user != null) {
             String[] realmAndUsername = user.split(":");

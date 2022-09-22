@@ -19,9 +19,8 @@
  */
 package org.openremote.manager.mqtt;
 
-import io.netty.handler.codec.mqtt.MqttPublishMessage;
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import io.netty.handler.codec.mqtt.MqttSubscriptionOption;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
@@ -247,7 +246,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
-            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + connection);
+            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + connection.getTransportConnection());
             return false;
         }
 
@@ -270,7 +269,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void onSubscribe(RemotingConnection connection, Topic topic, MqttSubscriptionOption option) {
+    public void onSubscribe(RemotingConnection connection, Topic topic) {
 
         boolean isAssetTopic = isAssetTopic(topic);
         String subscriptionId = topic.getString(); // Use topic as unique subscription ID
@@ -307,10 +306,18 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void onPublish(RemotingConnection connection, Topic topic, MqttPublishMessage msg) {
+    public Set<String> getPublishListenerTopics() {
+        return Set.of(
+            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD,
+            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD
+        );
+    }
+
+    @Override
+    public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         List<String> topicTokens = topic.getTokens();
         boolean isValueWrite = topicTokens.get(2).equals(ATTRIBUTE_VALUE_WRITE_TOPIC);
-        String payloadContent = msg.payload().toString(StandardCharsets.UTF_8);
+        String payloadContent = body.toString(StandardCharsets.UTF_8);
         AttributeEvent attributeEvent;
 
         if (isValueWrite) {

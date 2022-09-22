@@ -19,9 +19,8 @@
  */
 package org.openremote.manager.provisioning;
 
-import io.netty.handler.codec.mqtt.MqttPublishMessage;
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import io.netty.handler.codec.mqtt.MqttSubscriptionOption;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
@@ -42,6 +41,7 @@ import org.openremote.model.provisioning.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -184,13 +184,20 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void onSubscribe(RemotingConnection connection, Topic topic, MqttSubscriptionOption option) {
+    public void onSubscribe(RemotingConnection connection, Topic topic) {
         // Nothing to do here as we'll publish to this topic in response to client messages
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
 
+    }
+
+    @Override
+    public Set<String> getPublishListenerTopics() {
+        return Set.of(
+            PROVISIONING_TOKEN + "/" + Topic.SINGLE_LEVEL_TOKEN + "/" + REQUEST_TOKEN
+        );
     }
 
     @Override
@@ -206,8 +213,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void onPublish(RemotingConnection connection, Topic topic, MqttPublishMessage msg) {
-        String payloadContent = msg.payload().toString(StandardCharsets.UTF_8);
+    public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+        String payloadContent = body.toString(StandardCharsets.UTF_8);
 
         ProvisioningMessage provisioningMessage = ValueUtil.parse(payloadContent, ProvisioningMessage.class)
             .orElseGet(() -> {
@@ -232,11 +239,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
+        removeTransientCredentials(connection);
         provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
+        removeTransientCredentials(connection);
         provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
     }
 
@@ -362,9 +371,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig);
 
-        // TODO: Implement credential injection
         // Update connection with service user credentials
-        //connection.setCredentials(realm, serviceUser.getUsername(), serviceUser.getSecret());
+        addTransientCredentials(connection, new Pair<>(realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
                 connections = new HashSet<>();

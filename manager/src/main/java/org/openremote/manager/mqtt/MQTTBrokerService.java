@@ -19,13 +19,12 @@
  */
 package org.openremote.manager.mqtt;
 
-import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import io.netty.handler.codec.mqtt.MqttSubscriptionOption;
-import io.netty.handler.codec.mqtt.MqttTopicSubscription;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
 import org.apache.activemq.artemis.api.core.client.*;
+import org.apache.activemq.artemis.api.core.management.CoreNotificationType;
+import org.apache.activemq.artemis.api.core.management.ManagementHelper;
 import org.apache.activemq.artemis.core.client.impl.ClientSessionInternal;
 import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.config.WildcardConfiguration;
@@ -33,9 +32,11 @@ import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.remoting.FailureListener;
+import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnection;
 import org.apache.activemq.artemis.core.server.ServerSession;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPlugin;
+import org.apache.activemq.artemis.core.server.plugin.impl.NotificationActiveMQServerPlugin;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
@@ -52,20 +53,23 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.manager.security.MultiTenantDirectAccessGrantsLoginModule;
+import org.openremote.manager.security.MultiTenantClientCredentialsGrantsLoginModule;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -95,6 +99,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected ScheduledExecutorService executorService;
     protected TimerService timerService;
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
+    // TODO: Make auto provisioning clients disconnect and reconnect with credentials
+    // Temp to prevent breaking existing auto provisioning API
+    protected ConcurrentMap<String, Pair<String, String>> transientCredentials = new ConcurrentHashMap<>();
 
     protected boolean active;
     protected String host;
@@ -141,29 +148,22 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
             .collect(Collectors.toList());
 
-        // Start each custom handler
-        for (MQTTHandler handler : customHandlers) {
-            try {
-                handler.start(container);
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "MQTT custom handler threw an exception whilst starting: handler=" + handler.getName(), e);
-                throw e;
-            }
-        }
-
         // Configure and start the broker
         Configuration config = new ConfigurationImpl();
-        config.addAcceptorConfiguration("in-vm", "vm://0");
+        config.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
         String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port).setParameter("protocols", "MQTT").build().toString();
         config.addAcceptorConfiguration("tcp", serverURI);
-        // Inject this broker service into the interceptor which is constructed using reflection
-        ActiveMQInterceptor.brokerService = this;
 
-        config.setIncomingInterceptorClassNames(Collections.singletonList(ActiveMQInterceptor.class.getName()));
         // TODO: Make this configurable
         config.setMaxDiskUsage(-1);
         config.setSecurityInvalidationInterval(30000);
         config.registerBrokerPlugin(this);
+
+        // Register notification plugin
+        NotificationActiveMQServerPlugin notificationPlugin = new NotificationActiveMQServerPlugin();
+        notificationPlugin.setSendConnectionNotifications(true);
+        config.registerBrokerPlugin(notificationPlugin);
+
         config.setWildCardConfiguration(wildcardConfiguration);
         config.setPersistenceEnabled(false);
 
@@ -174,43 +174,61 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
                 return new AppConfigurationEntry[] {
                     new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true")),
-                    new AppConfigurationEntry(MultiTenantDirectAccessGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(
-                        MultiTenantDirectAccessGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true",
+                    new AppConfigurationEntry(MultiTenantClientCredentialsGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(
+                        MultiTenantClientCredentialsGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true",
                         AbstractKeycloakLoginModule.ROLE_PRINCIPAL_CLASS_OPTION, RolePrincipal.class.getName()
                     )),
                     new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST, KeycloakPrincipal.class.getName()))
                 };
             }
         }));
+
         server.start();
 
         LOG.fine("Started MQTT broker");
 
-        // Create internal producer for sending messages
+
+        // Add notification handler for subscribe/unsubscribe and publish events
+        server.getActiveMQServer().getManagementService().addNotificationListener(notification -> {
+            if (notification.getType() == CoreNotificationType.CONSUMER_CREATED || notification.getType() == CoreNotificationType.CONSUMER_CLOSED) {
+                boolean isSubscribe = notification.getType() == CoreNotificationType.CONSUMER_CREATED;
+                String sessionId = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_SESSION_NAME).toString();
+                String topic = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_ADDRESS).toString();
+                ServerSession session = server.getActiveMQServer().getSessionByID(sessionId);
+
+                // Ignore internal subscriptions
+                boolean isInternal = session.getRemotingConnection().getTransportConnection() instanceof InVMConnection;
+                if (isInternal) {
+                    return;
+                }
+
+                if (isSubscribe) {
+                    onSubscribe(session.getRemotingConnection(), MQTTUtil.convertCoreAddressToMqttTopicFilter(topic, wildcardConfiguration));
+                } else {
+                    onUnsubscribe(session.getRemotingConnection(), MQTTUtil.convertCoreAddressToMqttTopicFilter(topic, wildcardConfiguration));
+                }
+            }
+        });
+
+        // Create internal producer for producing and consuming messages
         ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0");
         ClientSessionFactory factory = serverLocator.createSessionFactory();
         String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
         internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, serverLocator.isPreAcknowledge(), serverLocator.getAckBatchSize(), internalClientID);
         ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
         serverSession.disableSecurity();
+        internalSession.start();
 
-        executorService.scheduleWithFixedDelay(() -> {
+        // Start each custom handler
+        for (MQTTHandler handler : customHandlers) {
             try {
-                ClientProducer producer = internalSession.createProducer("master.client123.asset.1234");
-                ClientMessage message = internalSession.createMessage(false);
-                message.writeBodyBufferString("AssetEvent{\"id\": \"1234\", \"prop1\": true}");
-                producer.send(message);
-
-                producer = internalSession.createProducer("master.client123.asset.5678");
-                message = internalSession.createMessage(false);
-                message.writeBodyBufferString("AssetEvent{\"id\": \"5678\", \"prop1\": true}");
-                producer.send(message);
+                handler.start(container);
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Something went wrong", e);
+                LOG.log(Level.WARNING, "MQTT custom handler threw an exception whilst starting: handler=" + handler.getName(), e);
+                throw e;
             }
-        }, 20, 20, TimeUnit.SECONDS);
+        }
     }
-
 
     @SuppressWarnings("unchecked")
     @Override
@@ -232,7 +250,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     // Force disconnect if certain properties have changed
                     forceDisconnect = Arrays.stream(persistenceEvent.getPropertyNames()).anyMatch((propertyName) ->
                         (propertyName.equals("enabled") && !user.getEnabled())
-                            || propertyName.equals("username"));
+                            || propertyName.equals("username")
+                            || propertyName.equals("secret"));
                 }
 
                 if (forceDisconnect) {
@@ -240,6 +259,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     // Find existing connection for this user
                     forceDisconnectUser(user.getUsername());
                 }
+            })
+            .end()
+            .filter(isPersistenceEventForEntityType(UserAssetLink.class))
+            .process(exchange -> {
+                PersistenceEvent<UserAssetLink> persistenceEvent = (PersistenceEvent<UserAssetLink>)exchange.getIn().getBody(PersistenceEvent.class);
+                UserAssetLink userAssetLink = persistenceEvent.getEntity();
+                String realm = userAssetLink.getId().getRealm();
+                String userId = userAssetLink.getId().getUserId();
+
+                // Disconnect all sessions for this user
             });
     }
 
@@ -296,42 +325,25 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void afterDestroyConnection(RemotingConnection connection) throws ActiveMQException {
     }
 
-    public void onSubscribe(List<MqttTopicSubscription> topicSubscriptions, RemotingConnection connection) {
-        for (MqttTopicSubscription subscription : topicSubscriptions) {
-            Topic topic = Topic.parse(subscription.topicName());
-            MqttSubscriptionOption option = subscription.option();
-
-            for (MQTTHandler handler : getCustomHandlers()) {
-                if (handler.handlesTopic(topic)) {
-                    LOG.fine("Handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
-                    handler.onSubscribe(connection, topic, option);
-                    break;
-                }
-            }
-        }
-    }
-
-    public void onUnsubscribe(List<String> topics, RemotingConnection connection) {
-        for (String topicStr : topics) {
-            Topic topic = Topic.parse(topicStr);
-
-            for (MQTTHandler handler : getCustomHandlers()) {
-                if (handler.handlesTopic(topic)) {
-                    LOG.fine("Handler has handled unsubscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
-                    handler.onUnsubscribe(connection, topic);
-                    break;
-                }
-            }
-        }
-    }
-
-    public void onPublish(MqttPublishMessage publishMessage, RemotingConnection connection) {
-        Topic topic = Topic.parse(publishMessage.variableHeader().topicName());
+    public void onSubscribe(RemotingConnection connection, String topicStr) {
+        Topic topic = Topic.parse(topicStr);
 
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.fine("Handler has handled publish: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
-                handler.onPublish(connection, topic, publishMessage);
+                LOG.fine("Handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                handler.onSubscribe(connection, topic);
+                break;
+            }
+        }
+    }
+
+    public void onUnsubscribe(RemotingConnection connection, String topicStr) {
+        Topic topic = Topic.parse(topicStr);
+
+        for (MQTTHandler handler : getCustomHandlers()) {
+            if (handler.handlesTopic(topic)) {
+                LOG.fine("Handler has handled unsubscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                handler.onUnsubscribe(connection, topic);
                 break;
             }
         }
