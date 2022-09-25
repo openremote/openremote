@@ -44,13 +44,20 @@ class WizardRealmViewController: UIViewController {
             switch configManager!.state {
             case .selectDomain:
                 fatalError("We should never come to this screen in that state")
-            case .selectApp(_, let apps):
+            case .selectApp:
                 fatalError("We should never come to this screen in that state")
-            case .selectRealm(let baseURL, let app, let realms):
+            case .selectRealm(let baseURL, let app, _):
                 orViewController.targetUrl = "\(baseURL)/\(app)/?consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
             case.complete(let baseURL, let app, let realm):
-                orViewController.targetUrl = "\(baseURL)/\(app)/?realm=\(realm)&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+                if let realm = realm {
+                    orViewController.targetUrl = "\(baseURL)/\(app)/?realm=\(realm)&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+                } else {
+                    orViewController.targetUrl = "\(baseURL)/\(app)/?consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+                }
             }
+            
+            
+            // TODO: based on configManager?.appInfos retrieve providers
             
 //            orViewController.targetUrl = "https://demo.openremote.io/manager/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
         }
@@ -60,11 +67,6 @@ class WizardRealmViewController: UIViewController {
         if let realm = realmName {
             _ = try? configManager!.setRealm(realm: realm)
         }
-        /*
-        if let domain = domainName {
-            requestAppConfig(domain)
-        }
-         */
         self.performSegue(withIdentifier: "goToWebView", sender: self)
     }
 }

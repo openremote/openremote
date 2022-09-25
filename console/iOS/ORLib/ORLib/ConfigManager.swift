@@ -27,6 +27,8 @@ public class ConfigManager {
     
     private var apiManagerFactory: ((String) -> ApiManager)
     private var apiManager: ApiManager?
+    
+    public private(set) var appInfos : [String:ORAppInfo] = [:]
 
     public private(set) var state = ConfigManagerState.selectDomain
     
@@ -50,6 +52,9 @@ public class ConfigManager {
                 let cc: ORConsoleConfig
                 do {
                     cc = try await api.getConsoleConfig() ?? ORConsoleConfig()
+                    if let apps = cc.apps {
+                        appInfos = apps
+                    }
                 } catch ApiManagerError.communicationError(let httpStatusCode) {
                     if httpStatusCode == 404 || httpStatusCode == 403 {
                         // 403 is for backwards compatibility of older manager
@@ -112,7 +117,7 @@ public class ConfigManager {
         }
     }
     
-    public func setRealm(realm: String) throws -> ConfigManagerState {
+    public func setRealm(realm: String?) throws -> ConfigManagerState {
         switch state {
         case .selectDomain,
                 .selectApp,

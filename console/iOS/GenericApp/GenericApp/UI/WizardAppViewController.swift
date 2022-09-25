@@ -56,6 +56,9 @@ class WizardAppViewController: UIViewController {
             
             appsSelectionButton.isHidden = false
             appTextInput.isHidden = true
+        } else {
+            appsSelectionButton.isHidden = true
+            appTextInput.isHidden = false
         }
     }
 
@@ -65,7 +68,8 @@ class WizardAppViewController: UIViewController {
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToWizardRealmView" {
-            
+            let realmViewController = segue.destination as! WizardRealmViewController
+            realmViewController.configManager = self.configManager
         }
 /*        if segue.identifier == "goToWebView" {
             let orViewController = segue.destination as! ORViewcontroller

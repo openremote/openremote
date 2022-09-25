@@ -22,7 +22,7 @@
                     <connections>
                         <segue destination="i2l-kx-xKH" kind="presentation" identifier="goToProjectView" modalPresentationStyle="fullScreen" id="PNL-Mf-RkC"/>
                         <segue destination="HSA-l5-YFF" kind="presentation" identifier="goToWebView" modalPresentationStyle="fullScreen" id="5Oq-tw-rj7"/>
-                        <segue destination="Pi7-Rw-ZSt" kind="presentation" identifier="goToWizardDomainView" modalPresentationStyle="fullScreen" id="ttr-A8-IEy"/>
+                        <segue destination="7TF-fh-Sa5" kind="presentation" identifier="goToWizardDomainView" modalPresentationStyle="fullScreen" id="ttr-A8-IEy"/>
                         <segue destination="DsV-vB-k3y" kind="presentation" identifier="goToWizard2" id="xVx-l3-mwJ"/>
                         <segue destination="bzh-PL-yEc" kind="presentation" identifier="goToWizard" id="3Js-X7-mtt"/>
                         <segue destination="Bu2-hc-oJv" kind="presentation" identifier="goToWizard4" id="cBl-wa-iJX"/>
@@ -30,7 +30,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Afh-RU-OvJ" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="216" y="485"/>
+            <point key="canvasLocation" x="1126.0869565217392" y="484.82142857142856"/>
         </scene>
         <!--Project View Controller-->
         <scene sceneID="VQ6-6b-t86">
@@ -108,7 +108,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="n9R-ku-sNp" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1238" y="-234"/>
+            <point key="canvasLocation" x="2147.826086956522" y="-234.375"/>
         </scene>
         <!--Viewcontroller-->
         <scene sceneID="liA-xA-sIe">
@@ -126,7 +126,7 @@
             </objects>
             <point key="canvasLocation" x="1104" y="-1000"/>
         </scene>
-        <!--Wizard Domain View Controller-->
+        <!--Enter Domain-->
         <scene sceneID="eX8-PG-EUH">
             <objects>
                 <viewController id="Pi7-Rw-ZSt" customClass="WizardDomainViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
@@ -135,13 +135,13 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connect to your app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WNe-Oj-DbK">
-                                <rect key="frame" x="30" y="68" width="354" height="21"/>
+                                <rect key="frame" x="30" y="112" width="354" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="RWD-5Z-rop">
-                                <rect key="frame" x="30" y="109" width="354" height="200"/>
+                                <rect key="frame" x="30" y="153" width="354" height="200"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Enter the App Domain" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1O0-Xo-WpU">
                                         <rect key="frame" x="10" y="10" width="167" height="21"/>
@@ -191,33 +191,34 @@
                             <constraint firstItem="RWD-5Z-rop" firstAttribute="top" secondItem="WNe-Oj-DbK" secondAttribute="bottom" constant="20" id="ywL-uw-ANf"/>
                         </constraints>
                     </view>
+                    <navigationItem key="navigationItem" title="Enter Domain" id="BpY-3s-ku9"/>
                     <connections>
                         <outlet property="domainTextInput" destination="LdF-6W-ii0" id="cU5-lf-fnQ"/>
                         <outlet property="nextButton" destination="uoR-Y9-80o" id="F7l-Qe-lg1"/>
-                        <segue destination="ccW-7o-aWn" kind="presentation" identifier="goToWizardAppView" id="okt-Gc-Qir"/>
-                        <segue destination="P3v-2u-Uf5" kind="presentation" identifier="goToWizardRealmView" id="9ZZ-gO-4Go"/>
+                        <segue destination="ccW-7o-aWn" kind="show" identifier="goToWizardAppView" id="okt-Gc-Qir"/>
+                        <segue destination="P3v-2u-Uf5" kind="show" identifier="goToWizardRealmView" id="9ZZ-gO-4Go"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Me9-Tm-nKE" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-614" y="29"/>
+            <point key="canvasLocation" x="295.6521739130435" y="28.794642857142854"/>
         </scene>
-        <!--Wizard Realm View Controller-->
+        <!--Select Realm-->
         <scene sceneID="Hij-HG-Sfv">
             <objects>
                 <viewController id="P3v-2u-Uf5" customClass="WizardRealmViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="AsW-xQ-7Do" customClass="Todo">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="838"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connect to your app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GVA-jq-dIF">
-                                <rect key="frame" x="30" y="68" width="354" height="21"/>
+                                <rect key="frame" x="30" y="112" width="354" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="rds-tC-Xfi">
-                                <rect key="frame" x="30" y="109" width="354" height="200"/>
+                                <rect key="frame" x="30" y="153" width="354" height="200"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Enter the Realm" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8fN-pT-WOs">
                                         <rect key="frame" x="10" y="10" width="121" height="21"/>
@@ -269,6 +270,7 @@
                             <constraint firstItem="C0m-OJ-atI" firstAttribute="trailing" secondItem="GVA-jq-dIF" secondAttribute="trailing" constant="30" id="wjt-sI-o02"/>
                         </constraints>
                     </view>
+                    <navigationItem key="navigationItem" title="Select Realm" id="FZA-KJ-vqn"/>
                     <connections>
                         <outlet property="nextButton" destination="Jn1-hW-fFq" id="7Ex-bk-Rms"/>
                         <outlet property="realmTextInput" destination="QCb-6J-rL4" id="Kf8-36-Kxo"/>
@@ -279,22 +281,22 @@
             </objects>
             <point key="canvasLocation" x="-2249" y="48"/>
         </scene>
-        <!--Wizard App View Controller-->
+        <!--Select your app-->
         <scene sceneID="gwn-Tt-d11">
             <objects>
                 <viewController id="ccW-7o-aWn" customClass="WizardAppViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="R9V-9S-UMe">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="838"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connect to your app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="a8w-Ut-lvr">
-                                <rect key="frame" x="30" y="68" width="354" height="20.5"/>
+                                <rect key="frame" x="30" y="112" width="354" height="20.5"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="bYT-CK-7We">
-                                <rect key="frame" x="30" y="108.5" width="354" height="200"/>
+                                <rect key="frame" x="30" y="152.5" width="354" height="200"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Select an app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Q03-kj-Zcn">
                                         <rect key="frame" x="10" y="10" width="104" height="21"/>
@@ -302,7 +304,7 @@
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Z5X-eO-DYi" customClass="ORTextInput" customModule="ORLib">
+                                    <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Z5X-eO-DYi" customClass="ORTextInput" customModule="ORLib">
                                         <rect key="frame" x="0.0" y="44" width="344" height="40"/>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <constraints>
@@ -320,7 +322,7 @@
                                             <action selector="nextButtonpressed:" destination="ccW-7o-aWn" eventType="touchUpInside" id="W6c-eh-5Rb"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="leading" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Gvc-Wg-7aG">
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="leading" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Gvc-Wg-7aG">
                                         <rect key="frame" x="10" y="41" width="334" height="40"/>
                                         <constraints>
                                             <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="40" id="Eoz-4h-bOg"/>
@@ -360,11 +362,12 @@
                             <constraint firstItem="bYT-CK-7We" firstAttribute="top" secondItem="a8w-Ut-lvr" secondAttribute="bottom" constant="20" id="hbA-NU-sL8"/>
                         </constraints>
                     </view>
+                    <navigationItem key="navigationItem" title="Select your app" id="tRh-VI-Btk"/>
                     <connections>
                         <outlet property="appTextInput" destination="Z5X-eO-DYi" id="L02-fU-0VB"/>
                         <outlet property="appsSelectionButton" destination="Gvc-Wg-7aG" id="9fP-P9-zUk"/>
                         <outlet property="nextButton" destination="LOC-Pp-fDB" id="GUN-8i-a9a"/>
-                        <segue destination="P3v-2u-Uf5" kind="presentation" identifier="goToWizardRealmView" id="61Y-JM-NmK"/>
+                        <segue destination="P3v-2u-Uf5" kind="show" identifier="goToWizardRealmView" id="61Y-JM-NmK"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="XDI-fx-2Io" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -461,6 +464,24 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="wPX-03-m0E" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-97.101449275362327" y="1342.6339285714284"/>
+        </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="0L2-qW-jp0">
+            <objects>
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="7TF-fh-Sa5" sceneMemberID="viewController">
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="iZ9-Dg-hIL">
+                        <rect key="frame" x="0.0" y="48" width="414" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="Pi7-Rw-ZSt" kind="relationship" relationship="rootViewController" id="HVQ-FV-Tm2"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Uzl-KH-s22" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-614.49275362318849" y="28.794642857142854"/>
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
