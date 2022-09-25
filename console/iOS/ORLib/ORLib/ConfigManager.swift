@@ -11,7 +11,7 @@ public enum ConfigManagerState: Equatable {
     case selectDomain
     case selectApp(String, [String]?) // baseURL, list of apps to choose from
     case selectRealm(String, String, [String]?) // baseURL, app, list of realms to choose from
-    case complete(String, String, String?) // baseURL, app, realm
+    case complete(ProjectConfig)
 }
 
 public enum ConfigManagerError: Error {
@@ -84,7 +84,7 @@ public class ConfigManager {
                             if cc.showRealmTextInput {
                                 state = .selectRealm(baseUrl, "manager", nil)
                             } else {
-                                state = .complete(baseUrl, "manager", nil)
+                                state = .complete(ProjectConfig(domain: baseUrl, app: "manager", realm: nil))
                             }
                         }
                     }
@@ -111,7 +111,7 @@ public class ConfigManager {
                 .complete:
             throw ConfigManagerError.invalidState
         case .selectApp(let baseURL, _):
-            // TODO must fill realm values when possible
+            // TODO: must fill realm values when possible
             self.state = .selectRealm(baseURL, app, nil)
             return state
         }
@@ -124,7 +124,11 @@ public class ConfigManager {
                 .complete:
             throw ConfigManagerError.invalidState
         case .selectRealm(let baseURL, let app, _):
-            self.state = .complete(baseURL, app, realm)
+            
+            // TODO: should set the providers on the project config
+            
+            
+            self.state = .complete(ProjectConfig(domain: baseURL, app: app, realm: realm))
             return state
         }
     }

@@ -42,32 +42,56 @@ class WizardRealmViewController: UIViewController {
             let orViewController = segue.destination as! ORViewcontroller
             
             switch configManager!.state {
-            case .selectDomain:
+            case .complete(let project):
+                orViewController.targetUrl = project.targetUrl
+            default:
                 fatalError("We should never come to this screen in that state")
-            case .selectApp:
-                fatalError("We should never come to this screen in that state")
-            case .selectRealm(let baseURL, let app, _):
-                orViewController.targetUrl = "\(baseURL)/\(app)/?consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
-            case.complete(let baseURL, let app, let realm):
-                if let realm = realm {
-                    orViewController.targetUrl = "\(baseURL)/\(app)/?realm=\(realm)&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
-                } else {
-                    orViewController.targetUrl = "\(baseURL)/\(app)/?consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
-                }
             }
             
             
-            // TODO: based on configManager?.appInfos retrieve providers
+            // TODO: based on configManager?.appInfos retrieve providers -> this is done by selectRealm on ConfigMgr
+            
+            
             
 //            orViewController.targetUrl = "https://demo.openremote.io/manager/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
         }
     }
     
     @IBAction func nextButtonpressed(_ sender: UIButton) {
-        if let realm = realmName {
-            _ = try? configManager!.setRealm(realm: realm)
+        
+        // TODO: handle errors and have a proper error message
+        
+            
+        // TODO: handle the case realm is selected from menu
+        
+            
+        let state = try? configManager!.setRealm(realm: realmName)
+        switch state {
+        case let .complete(project):
+            if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement) {
+                // TODO: we really want to add to the existing collection
+                do {
+                    let data = try JSONEncoder().encode([project])
+                    userDefaults.setValue(data, forKey: DefaultsKey.projectsConfigurationKey)
+                    userDefaults.setValue(project.id, forKey: DefaultsKey.projectKey)
+                    self.performSegue(withIdentifier: "goToWebView", sender: self)
+                } catch {
+                    break // Fall through to error message
+                }
+            }
+        default:
+            break // Fall through to error message
         }
-        self.performSegue(withIdentifier: "goToWebView", sender: self)
+
+
+        // If we reached here, an error occured
+        
+        
+        // TODO: proper error message
+        let alertView = UIAlertController(title: "Error", message: "TODO", preferredStyle: .alert)
+        alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        self.present(alertView, animated: true, completion: nil)
+
     }
 }
 

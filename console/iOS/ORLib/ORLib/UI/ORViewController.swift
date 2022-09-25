@@ -151,7 +151,9 @@ open class ORViewcontroller : UIViewController {
         } else {
             if self.presentingViewController != nil {
                 self.dismiss(animated: true) {
-                    self.presentingViewController!.present(alertView, animated: true, completion: nil)
+                    
+                    // TODO: this original code is causing error
+                    // self.presentingViewController!.present(alertView, animated: true, completion: nil)
                 }
             } else {
                 self.present(alertView, animated: true, completion: nil)

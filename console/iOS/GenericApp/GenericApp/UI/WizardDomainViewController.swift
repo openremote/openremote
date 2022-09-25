@@ -50,6 +50,9 @@ class WizardDomainViewController: UIViewController {
             let realmViewController = segue.destination as! WizardRealmViewController
             realmViewController.configManager = self.configManager
         }
+        
+        // TODO: prepare to go to Web view
+        
     }
 
     @IBAction func nextButtonpressed(_ sender: UIButton) {
@@ -89,7 +92,7 @@ extension WizardDomainViewController: UITextFieldDelegate {
                     self.performSegue(withIdentifier: "goToWizardAppView", sender: self)
                 case .selectRealm(_, _, _):
                     self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
-                case.complete(_, _, _):
+                case.complete(_):
                     self.performSegue(withIdentifier: "goToWebView", sender: self)
                 }
             } catch {

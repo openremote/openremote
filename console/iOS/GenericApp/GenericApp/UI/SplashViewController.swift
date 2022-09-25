@@ -11,17 +11,32 @@ import ORLib
 
 class SplashViewController: UIViewController {
 
-    var appconfig: ORAppConfig?
+//    var appconfig: ORAppConfig?
     var host: String?
-
-    @IBAction func unwindToSplashScreen(sender: UIStoryboardSegue) { }
     
+    var project: ProjectConfig?
+   
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-
+        
         if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
-           let savedHost = userDefaults.string(forKey: DefaultsKey.hostKey),
-           let realm = userDefaults.string(forKey: DefaultsKey.realmKey) {
+           let projectsData = userDefaults.data(forKey: DefaultsKey.projectsConfigurationKey),
+           let selectedProject = userDefaults.string(forKey: DefaultsKey.projectKey) {
+            
+            let projects = try? JSONDecoder().decode([ProjectConfig].self, from: projectsData)
+            
+            if let projects = projects {
+                print(projects)
+                print(selectedProject)
+                
+                // TODO: proper lookup per key
+                project = projects[0]
+                
+                
+                // TODO: validate project "correct" before navigating
+                self.performSegue(withIdentifier: "goToWebView", sender: self)
+            }
+               /*
             host = savedHost
             let url = host!.appending("/api/\(realm)")
 
@@ -33,14 +48,15 @@ class SplashViewController: UIViewController {
 
                         self.performSegue(withIdentifier: "goToWebView", sender: self)
                     } else {
-                        self.performSegue(withIdentifier: "goToProjectView", sender: self)
+                        self.performSegue(withIdentifier: "goToWizardDomainView", sender: self)
+//                        self.performSegue(withIdentifier: "goToProjectView", sender: self)
                     }
                 }
-            })
+            })*/
+               
         } else {
 //            self.performSegue(withIdentifier: "goToProjectView", sender: self)
             self.performSegue(withIdentifier: "goToWizardDomainView", sender: self)
-//            self.performSegue(withIdentifier: "goToWizard", sender: self)
         }
     }
 
@@ -48,7 +64,13 @@ class SplashViewController: UIViewController {
         if segue.identifier == "goToWebView" {
             let orViewController = segue.destination as! ORViewcontroller
             
-            orViewController.baseUrl = host
+            if let project = project {
+  
+                // TODO: replace with proper URL creation
+                orViewController.targetUrl = project.targetUrl
+
+//                orViewController.baseUrl = host
+            }
         }
     }
 
