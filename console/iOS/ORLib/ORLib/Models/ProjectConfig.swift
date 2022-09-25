@@ -15,16 +15,21 @@ public struct ProjectConfig: Codable, Equatable {
     var app: String
     var realm: String?
     
+    public var providers: [String]?
+    
     var baseURL: String {
         return domain
     }
     
     public var targetUrl: String {
+        let consoleProviders = self.providers?.joined(separator: " ") ?? "geofence push storage"
         if let realm = realm {
-            return "\(baseURL)/\(app)/?realm=\(realm)&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+            return "\(baseURL)/\(app)/?realm=\(realm)&consoleProviders=\(consoleProviders)&consoleAutoEnable=true#!geofences"
         } else {
-            return "\(baseURL)/\(app)/?consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+            return "\(baseURL)/\(app)/?consoleProviders=\(consoleProviders)&consoleAutoEnable=true#!geofences"
         }
+        
+        // TODO: what's that &consoleAutoEnable=true#!geofences part of the URL for ?
     }
     
     
@@ -42,7 +47,7 @@ public struct ProjectConfig: Codable, Equatable {
     }
     
     public static func ==(lhs: ProjectConfig, rhs: ProjectConfig) -> Bool {
-        return lhs.domain == rhs.domain && lhs.app == rhs.app && lhs.realm == rhs.realm
+        return lhs.domain == rhs.domain && lhs.app == rhs.app && lhs.realm == rhs.realm && lhs.providers == rhs.providers
     }
 
 }
