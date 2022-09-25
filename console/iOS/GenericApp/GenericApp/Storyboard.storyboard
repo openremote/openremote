@@ -123,7 +123,7 @@
             </objects>
             <point key="canvasLocation" x="1454" y="1995"/>
         </scene>
-        <!--Enter Domain-->
+        <!--Domain-->
         <scene sceneID="eX8-PG-EUH">
             <objects>
                 <viewController id="Pi7-Rw-ZSt" customClass="WizardDomainViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
@@ -188,7 +188,7 @@
                             <constraint firstItem="RWD-5Z-rop" firstAttribute="top" secondItem="WNe-Oj-DbK" secondAttribute="bottom" constant="20" id="ywL-uw-ANf"/>
                         </constraints>
                     </view>
-                    <navigationItem key="navigationItem" title="Enter Domain" id="BpY-3s-ku9"/>
+                    <navigationItem key="navigationItem" title="Domain" id="BpY-3s-ku9"/>
                     <connections>
                         <outlet property="domainTextInput" destination="LdF-6W-ii0" id="cU5-lf-fnQ"/>
                         <outlet property="nextButton" destination="uoR-Y9-80o" id="F7l-Qe-lg1"/>
@@ -200,7 +200,7 @@
             </objects>
             <point key="canvasLocation" x="-1090" y="929"/>
         </scene>
-        <!--Select Realm-->
+        <!--Realm-->
         <scene sceneID="Hij-HG-Sfv">
             <objects>
                 <viewController id="P3v-2u-Uf5" customClass="WizardRealmViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
@@ -267,7 +267,7 @@
                             <constraint firstItem="C0m-OJ-atI" firstAttribute="trailing" secondItem="GVA-jq-dIF" secondAttribute="trailing" constant="30" id="wjt-sI-o02"/>
                         </constraints>
                     </view>
-                    <navigationItem key="navigationItem" title="Select Realm" id="FZA-KJ-vqn"/>
+                    <navigationItem key="navigationItem" title="Realm" id="FZA-KJ-vqn"/>
                     <connections>
                         <outlet property="nextButton" destination="Jn1-hW-fFq" id="7Ex-bk-Rms"/>
                         <outlet property="realmTextInput" destination="QCb-6J-rL4" id="Kf8-36-Kxo"/>
@@ -278,7 +278,7 @@
             </objects>
             <point key="canvasLocation" x="-3139" y="929"/>
         </scene>
-        <!--Select your app-->
+        <!--App-->
         <scene sceneID="gwn-Tt-d11">
             <objects>
                 <viewController id="ccW-7o-aWn" customClass="WizardAppViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
@@ -359,7 +359,7 @@
                             <constraint firstItem="bYT-CK-7We" firstAttribute="top" secondItem="a8w-Ut-lvr" secondAttribute="bottom" constant="20" id="hbA-NU-sL8"/>
                         </constraints>
                     </view>
-                    <navigationItem key="navigationItem" title="Select your app" id="tRh-VI-Btk"/>
+                    <navigationItem key="navigationItem" title="App" id="tRh-VI-Btk"/>
                     <connections>
                         <outlet property="appTextInput" destination="Z5X-eO-DYi" id="L02-fU-0VB"/>
                         <outlet property="appsSelectionButton" destination="Gvc-Wg-7aG" id="9fP-P9-zUk"/>
@@ -392,7 +392,7 @@
     </scenes>
     <inferredMetricsTieBreakers>
         <segue reference="61Y-JM-NmK"/>
-        <segue reference="5Oq-tw-rj7"/>
+        <segue reference="4Aa-7e-CLQ"/>
     </inferredMetricsTieBreakers>
     <resources>
         <image name="or_logo" width="1422.6666259765625" height="806.33331298828125"/>
