@@ -146,7 +146,7 @@
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="uoR-Y9-80o" customClass="MDCRaisedButton">
+                                    <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="uoR-Y9-80o" customClass="MDCRaisedButton">
                                         <rect key="frame" x="312" y="160" width="32" height="30"/>
                                         <state key="normal" title="Next"/>
                                         <connections>
@@ -391,7 +391,7 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="61Y-JM-NmK"/>
+        <segue reference="9ZZ-gO-4Go"/>
         <segue reference="4Aa-7e-CLQ"/>
     </inferredMetricsTieBreakers>
     <resources>

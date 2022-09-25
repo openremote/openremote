@@ -66,7 +66,12 @@ extension WizardDomainViewController: UITextFieldDelegate {
 
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         if textField == domainTextInput.textField {
-            domainName = domainTextInput.textField?.text?.appending(string).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let s = domainTextInput.textField?.text {
+                domainName = s.replacingCharacters(in: Range(range, in: s)!, with: string).trimmingCharacters(in: .whitespacesAndNewlines)
+                nextButton.isEnabled = !(domainName?.isEmpty ?? true)
+            } else {
+                nextButton.isEnabled = false
+            }
         }
         return true
     }
