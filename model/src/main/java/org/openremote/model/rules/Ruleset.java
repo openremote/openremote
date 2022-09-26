@@ -22,16 +22,16 @@ package org.openremote.model.rules;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.attribute.MetaMap;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.value.MetaItemDescriptor;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.util.ValueUtil;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Date;
+import java.util.Optional;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
@@ -51,7 +51,10 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 })
 public abstract class Ruleset {
 
-    public static final MetaItemDescriptor<Boolean> SHOW_ON_LIST = new MetaItemDescriptor<>("showOnList", ValueType.BOOLEAN);
+    public static final String SHOW_ON_LIST = "showOnList";
+    public static final String CONTINUE_ON_ERROR = "continueOnError";
+    public static final String VALIDITY = "validity";
+    public static final String TRIGGER_ON_PREDICTED_DATA = "triggerOnPredictedData";
 
     public enum Lang {
         JAVASCRIPT,
@@ -96,17 +99,13 @@ public abstract class Ruleset {
 
     @Column(name = "META", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
-    protected MetaMap meta;
+    protected ObjectNode meta;
 
     @Transient
     protected RulesetStatus status;
 
     @Transient
     protected String error;
-
-    public static final MetaItemDescriptor<Boolean> CONTINUE_ON_ERROR = new MetaItemDescriptor<>("continueOnError", ValueType.BOOLEAN);
-    public static final MetaItemDescriptor<CalendarEvent> VALIDITY = new MetaItemDescriptor<>("validity", ValueType.CALENDAR_EVENT);
-    public static final MetaItemDescriptor<Boolean> TRIGGER_ON_PREDICTED_DATA = new MetaItemDescriptor<>("triggerOnPredictedData", ValueType.BOOLEAN);
 
     protected Ruleset() {
     }
@@ -201,14 +200,14 @@ public abstract class Ruleset {
         return this;
     }
 
-    public MetaMap getMeta() {
+    public ObjectNode getMeta() {
         if (meta == null) {
-            meta = new MetaMap();
+            meta = ValueUtil.createJsonObject();
         }
         return meta;
     }
 
-    public Ruleset setMeta(MetaMap meta) {
+    public Ruleset setMeta(ObjectNode meta) {
         this.meta = meta;
         return this;
     }
@@ -232,31 +231,40 @@ public abstract class Ruleset {
     }
 
     public boolean isContinueOnError() {
-        return getMeta().get(CONTINUE_ON_ERROR).flatMap(MetaItem::getValue).orElse(false);
+        return Optional.ofNullable(getMeta().get(CONTINUE_ON_ERROR)).map(node -> node.asBoolean(false)).orElse(false);
     }
 
     public Ruleset setContinueOnError(boolean continueOnError) {
-        getMeta().set(CONTINUE_ON_ERROR, continueOnError);
+        getMeta().set(CONTINUE_ON_ERROR, BooleanNode.valueOf(continueOnError));
         return this;
     }
 
     @JsonIgnore
     public CalendarEvent getValidity() {
-        return getMeta().get(VALIDITY).flatMap(MetaItem::getValue).orElse(null);
+        return Optional.ofNullable(getMeta().get(VALIDITY)).map(node -> ValueUtil.convert(node, CalendarEvent.class)).orElse(null);
     }
 
     @JsonIgnore
     public Ruleset setValidity(CalendarEvent calendarEvent) {
-        getMeta().set(VALIDITY, calendarEvent);
+        getMeta().set(VALIDITY, ValueUtil.getValue(calendarEvent, ObjectNode.class, true).orElse(null));
         return this;
     }
 
     public boolean isTriggerOnPredictedData() {
-        return getMeta().get(TRIGGER_ON_PREDICTED_DATA).flatMap(MetaItem::getValue).orElse(false);
+        return Optional.ofNullable(getMeta().get(TRIGGER_ON_PREDICTED_DATA)).map(node -> node.asBoolean(false)).orElse(false);
     }
 
     public Ruleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
-        getMeta().set(TRIGGER_ON_PREDICTED_DATA, triggerOnPredictedData);
+        getMeta().set(TRIGGER_ON_PREDICTED_DATA, BooleanNode.valueOf(triggerOnPredictedData));
+        return this;
+    }
+
+    public boolean isShowOnList() {
+        return Optional.ofNullable(getMeta().get(SHOW_ON_LIST)).map(node -> node.asBoolean(false)).orElse(false);
+    }
+
+    public Ruleset setShowOnList(boolean showOn) {
+        getMeta().set(SHOW_ON_LIST, BooleanNode.valueOf(showOn));
         return this;
     }
 }

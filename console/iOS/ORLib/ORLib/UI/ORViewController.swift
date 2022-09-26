@@ -65,14 +65,17 @@ open class ORViewcontroller : UIViewController {
         if let theJSONData = try? JSONSerialization.data(
             withJSONObject: data,
             options: []) {
-            let theJSONText = String(data: theJSONData,
-                                     encoding: .utf8)
-            let returnMessage = "OpenRemoteConsole._handleProviderResponse('\(theJSONText ?? "null")')"
-            DispatchQueue.main.async {
-                self.myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
-                    print(error)
-                    print("JSON string = \(theJSONText!)")
-                })
+            if let theJSONText = String(data: theJSONData,
+                                        encoding: .utf8) {
+                print("notifyClient with message: \(theJSONText)")
+                let returnMessage = "OpenRemoteConsole._handleProviderResponse('\(theJSONText)')"
+                DispatchQueue.main.async {
+                    self.myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
+                        if let err = error {
+                            print(err)
+                        }
+                    })
+                }
             }
         }
     }
@@ -279,6 +282,7 @@ extension ORViewcontroller: UITableViewDataSource {
 
 extension ORViewcontroller: WKScriptMessageHandler {
     public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        print("Received WebApp message \(message.body)")
         let jsonDictionnary = message.body as? [String : Any]
         if let type = jsonDictionnary?["type"] as? String {
             switch (type) {
@@ -315,10 +319,10 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                     sendData(data: initializeData)
                                 case Actions.providerEnable:
                                     if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
-                                        if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
-                                           let host = userdefaults.string(forKey: DefaultsKey.hostKey),
-                                           let realm = userdefaults.string(forKey: DefaultsKey.realmKey) {
-                                            let baseUrl = host.appending("/api/\(realm)")
+                                        if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement){
+                                            let host = userdefaults.string(forKey: DefaultsKey.hostKey) ?? ""
+                                            let realm = userdefaults.string(forKey: DefaultsKey.realmKey) ?? ""
+                                            let baseUrl = host.isEmpty ? "" : host.appending("/api/\(realm)")
                                             geofenceProvider?.enable(baseUrl: baseUrl, consoleId: consoleId,  callback: { enableData in
                                                 self.sendData(data: enableData)
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {

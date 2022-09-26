@@ -5,9 +5,7 @@ import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
-import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.*
-import org.openremote.model.value.MetaItemType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -20,7 +18,6 @@ import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 import static org.openremote.model.rules.Ruleset.Lang.JAVASCRIPT
 import static org.openremote.model.rules.Ruleset.Lang.JSON
-import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST
 
 class BasicRulesetResourceTest extends Specification implements ManagerContainerTrait {
 
@@ -89,7 +86,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some apartment 2 demo rules"
         ruleDefinitions[0].lang == GROOVY
-        ruleDefinitions[0].meta.getValue(SHOW_ON_LIST).orElse(false)
+        (ruleDefinitions[0] as AssetRuleset).isShowOnList()
 
         /* ############################################## WRITE ####################################### */
 
@@ -927,7 +924,6 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
             managerTestSetup.apartment1Id,
             "Test asset definition",
             JAVASCRIPT, "SomeRulesCode")
-        assetRuleset.getMeta().add(new MetaItem<>(MetaItemType.SHOW_ON_DASHBOARD, true))
         rulesetResource.createAssetRuleset(null, assetRuleset)
         def rulesetId = rulesetResource.getAssetRulesets(null, managerTestSetup.apartment1Id, null, false)[1].id
         assetRuleset = rulesetResource.getAssetRuleset(null, rulesetId)
@@ -941,7 +937,6 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.apartment1Id
-        assetRuleset.meta.getValue(MetaItemType.SHOW_ON_DASHBOARD).orElse(false)
 
         and: "the ruleset should reach the engine"
         conditions.eventually {
