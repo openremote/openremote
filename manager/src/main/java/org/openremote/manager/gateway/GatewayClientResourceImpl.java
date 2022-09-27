@@ -99,6 +99,11 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
 
     @Override
     public void setConnection(RequestParams requestParams, String realm, GatewayConnection connection) {
+        if (connection.getId() == null || connection.getId().isEmpty())
+            connection.setId(realm);
+        if (connection.getLocalUser() == null || connection.getLocalUser().isEmpty())
+            connection.setLocalUser("");
+
         connection.setLocalRealm(realm);
 
         if (!connection.getLocalRealm().equals(getAuthenticatedRealmName()) && !isSuperUser()) {
