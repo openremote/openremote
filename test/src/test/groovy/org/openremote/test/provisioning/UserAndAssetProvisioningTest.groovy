@@ -23,7 +23,6 @@ import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
 import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
-import io.moquette.BrokerConstants
 import io.netty.channel.socket.SocketChannel
 import org.keycloak.admin.client.resource.RealmResource
 import org.keycloak.representations.idm.RoleRepresentation
@@ -61,10 +60,6 @@ import spock.util.concurrent.PollingConditions
 
 import java.util.function.Consumer
 
-import static org.openremote.container.util.MapAccess.getInteger
-import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
-import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_PORT
 import static org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler.*
 import static org.openremote.model.value.ValueType.NUMBER
 
@@ -86,8 +81,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def identityService = container.getService(ManagerIdentityService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def userAssetProvisioningMQTTHandler = mqttBrokerService.customHandlers.find {it instanceof UserAssetProvisioningMQTTHandler} as UserAssetProvisioningMQTTHandler
-        def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST)
-        def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT)
+        def mqttHost = mqttBrokerService.host
+        def mqttPort = mqttBrokerService.port
 
         and: "a realm is created with some custom realm roles"
         def realm = new Realm()

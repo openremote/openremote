@@ -38,7 +38,7 @@ dependencies {
     }
 
     // Needed for reference in tests
-    api("org.apache.activemq:artemis-core-client:$activeMQVersion") {
+    api("org.apache.activemq:artemis-server:$activeMQVersion") {
         exclude group: "org.osgi"
     }
 

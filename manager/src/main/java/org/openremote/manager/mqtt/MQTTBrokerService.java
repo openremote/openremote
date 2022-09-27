@@ -60,6 +60,7 @@ import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -77,7 +78,6 @@ import java.util.stream.Collectors;
 import static java.util.stream.StreamSupport.stream;
 import static org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil.MQTT_QOS_LEVEL_KEY;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
@@ -102,6 +102,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     // TODO: Make auto provisioning clients disconnect and reconnect with credentials
     // Temp to prevent breaking existing auto provisioning API
     protected ConcurrentMap<String, Pair<String, String>> transientCredentials = new ConcurrentHashMap<>();
+    protected Debouncer<String> userAssetDisconnectDebouncer;
 
     protected boolean active;
     protected String host;
@@ -125,6 +126,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         messageBrokerService = container.getService(MessageBrokerService.class);
         executorService = container.getExecutorService();
         timerService = container.getService(TimerService.class);
+        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::forceDisconnectUser, 10000);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -235,40 +237,38 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
             .routeId("UserPersistenceChanges")
-            .filter(isPersistenceEventForEntityType(User.class))
+            .filter(body().isInstanceOf(PersistenceEvent.class))
             .process(exchange -> {
-                PersistenceEvent<User> persistenceEvent = (PersistenceEvent<User>)exchange.getIn().getBody(PersistenceEvent.class);
-                User user = persistenceEvent.getEntity();
+                PersistenceEvent<?> persistenceEvent = (PersistenceEvent<?>)exchange.getIn().getBody(PersistenceEvent.class);
 
-                if (!user.isServiceAccount()) {
-                    return;
+                if (persistenceEvent.getEntity() instanceof User user) {
+
+                    if (!user.isServiceAccount()) {
+                        return;
+                    }
+
+                    boolean forceDisconnect = persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE;
+
+                    if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
+                        // Force disconnect if certain properties have changed
+                        forceDisconnect = Arrays.stream(persistenceEvent.getPropertyNames()).anyMatch((propertyName) ->
+                            (propertyName.equals("enabled") && !user.getEnabled())
+                                || propertyName.equals("username")
+                                || propertyName.equals("secret"));
+                    }
+
+                    if (forceDisconnect) {
+                        LOG.info("User modified or deleted so force closing any sessions for this user: " + user);
+                        // Find existing connection for this user
+                        forceDisconnectUser(user.getId());
+                    }
+
+                } else if (persistenceEvent.getEntity() instanceof UserAssetLink userAssetLink) {
+                    String userID = userAssetLink.getId().getUserId();
+
+                    // Debounce force disconnect of this user's sessions
+                    userAssetDisconnectDebouncer.call(userID);
                 }
-
-                boolean forceDisconnect = persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE;
-
-                if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
-                    // Force disconnect if certain properties have changed
-                    forceDisconnect = Arrays.stream(persistenceEvent.getPropertyNames()).anyMatch((propertyName) ->
-                        (propertyName.equals("enabled") && !user.getEnabled())
-                            || propertyName.equals("username")
-                            || propertyName.equals("secret"));
-                }
-
-                if (forceDisconnect) {
-                    LOG.info("User modified or deleted so force closing any sessions for this user: " + user);
-                    // Find existing connection for this user
-                    forceDisconnectUser(user.getUsername());
-                }
-            })
-            .end()
-            .filter(isPersistenceEventForEntityType(UserAssetLink.class))
-            .process(exchange -> {
-                PersistenceEvent<UserAssetLink> persistenceEvent = (PersistenceEvent<UserAssetLink>)exchange.getIn().getBody(PersistenceEvent.class);
-                UserAssetLink userAssetLink = persistenceEvent.getEntity();
-                String realm = userAssetLink.getId().getRealm();
-                String userId = userAssetLink.getId().getUserId();
-
-                // Disconnect all sessions for this user
             });
     }
 
@@ -357,13 +357,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return () -> doForceDisconnect(connection);
     }
 
-    public void forceDisconnectUser(String username) {
-        if (TextUtil.isNullOrEmpty(username)) {
+    public void forceDisconnectUser(String userID) {
+        if (TextUtil.isNullOrEmpty(userID)) {
             return;
         }
         server.getActiveMQServer().getSessions().forEach(session -> {
             Subject subject = session.getRemotingConnection().getSubject();
-            if (username.equals(KeycloakIdentityProvider.getSubjectName(subject))) {
+            if (userID.equals(KeycloakIdentityProvider.getSubjectName(subject))) {
                 doForceDisconnect(session.getRemotingConnection());
             }
         });

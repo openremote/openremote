@@ -58,6 +58,7 @@ import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -430,6 +431,17 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
             .map(Principal::getName).orElse(null);
+    }
+
+    public static String getSubjectId(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return Optional.ofNullable(getSecurityContext(subject))
+            .map(KeycloakSecurityContext::getToken)
+            .map(AccessToken::getId)
+            .orElse(null);
     }
 
     public static boolean isSuperUser(KeycloakSecurityContext securityContext) {

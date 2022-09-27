@@ -200,7 +200,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             throw new WebApplicationException(FORBIDDEN);
         }
 
-        assetStorageService.deleteUserAssetsByUserId(userId);
+        assetStorageService.deleteUserAssetLinks(userId);
     }
 
     @Override

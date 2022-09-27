@@ -841,7 +841,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             T updatedAsset = em.merge(asset);
 
             if (user != null) {
-                storeUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
+                createUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
             }
 
             return updatedAsset;
@@ -1075,30 +1075,33 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return Collections.emptyList();
         }
 
-        return persistenceService.doReturningTransaction(entityManager -> {
-            StringBuilder sb = new StringBuilder();
-            Map<String, Object> parameters = new HashMap<>(3);
-            sb.append("select ua from UserAssetLink ua where 1=1");
+        return persistenceService.doReturningTransaction(em ->
+            buildFindUserAssetLinksQuery(em, realm, userIds, assetIds).getResultList());
+    }
 
-            if (!isNullOrEmpty(realm)) {
-                sb.append(" and ua.id.realm in :realm");
-                parameters.put("realm", realm);
-            }
-            if (userIds != null && !userIds.isEmpty()) {
-                sb.append(" and ua.id.userId in :userId");
-                parameters.put("userId", userIds);
-            }
-            if (assetIds != null && !assetIds.isEmpty()) {
-                sb.append(" and ua.id.assetId in :assetId");
-                parameters.put("assetId", assetIds);
-            }
+    protected TypedQuery<UserAssetLink> buildFindUserAssetLinksQuery(EntityManager em, String realm, List<String> userIds, List<String> assetIds) {
+        StringBuilder sb = new StringBuilder();
+        Map<String, Object> parameters = new HashMap<>(3);
+        sb.append("select ua from UserAssetLink ua where 1=1");
 
-            sb.append(" order by ua.createdOn desc");
+        if (!isNullOrEmpty(realm)) {
+            sb.append(" and ua.id.realm in :realm");
+            parameters.put("realm", realm);
+        }
+        if (userIds != null && !userIds.isEmpty()) {
+            sb.append(" and ua.id.userId in :userId");
+            parameters.put("userId", userIds);
+        }
+        if (assetIds != null && !assetIds.isEmpty()) {
+            sb.append(" and ua.id.assetId in :assetId");
+            parameters.put("assetId", assetIds);
+        }
 
-            TypedQuery<UserAssetLink> query = entityManager.createQuery(sb.toString(), UserAssetLink.class);
-            parameters.forEach(query::setParameter);
-            return query.getResultList();
-        });
+        sb.append(" order by ua.createdOn desc");
+
+        TypedQuery<UserAssetLink> query = em.createQuery(sb.toString(), UserAssetLink.class);
+        parameters.forEach(query::setParameter);
+        return query;
     }
 
     /* ####################################################################################### */
@@ -1107,7 +1110,29 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * Delete specific {@link UserAssetLink}s.
      */
     public void deleteUserAssetLinks(List<UserAssetLink> userAssetLinks) {
+
+        if (userAssetLinks == null || userAssetLinks.isEmpty()) {
+            return;
+        }
+
+        Set<String> assetIds = new HashSet<>(userAssetLinks.size());
+        Set<String> userIds = new HashSet<>(userAssetLinks.size());
+
+        userAssetLinks.forEach(userAssetLink -> {
+            userIds.add(userAssetLink.getId().getUserId());
+            assetIds.add(userAssetLink.getId().getAssetId());
+        });
+
+        List<UserAssetLink> existingLinks = new ArrayList<>();
+
         persistenceService.doTransaction(entityManager -> {
+             existingLinks.addAll(buildFindUserAssetLinksQuery(entityManager, null, userIds.stream().toList(), assetIds.stream().toList())
+                .getResultList().stream().filter(userAssetLinks::contains).toList());
+
+            if (existingLinks.size() != userAssetLinks.size()) {
+                throw new IllegalArgumentException("Cannot delete one or more requested user asset links as they don't exist");
+            }
+
             StringBuilder sb = new StringBuilder("DELETE FROM user_asset_link WHERE (1=0");
 
             IntStream.range(0, userAssetLinks.size()).forEach(i -> sb.append(" OR (asset_id=?")
@@ -1131,27 +1156,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             int deleteCount = query.executeUpdate();
 
             if (deleteCount != userAssetLinks.size()) {
-                throw new IllegalArgumentException("Cannot delete one or more requested user asset link as they don't exist");
+                throw new IllegalArgumentException("Cannot delete one or more requested user asset links as they don't exist");
             }
         });
+
+        existingLinks.forEach(userAssetLink ->
+            persistenceService.publishPersistenceEvent(
+                PersistenceEvent.Cause.DELETE,
+                null,
+                userAssetLink,
+                UserAssetLink.class,
+                null,
+                null));
     }
 
     /**
-     * Delete all {@link UserAssetLink}s for the specified realm (must be called before the realm is removed)
+     * Delete all {@link UserAssetLink}s for the specified {@link User}
      */
-    public void deleteUserAssetsByRealm(String realm) {
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.realm = ?0");
-            query.setParameter(0, realm);
-            int deleteCount = query.executeUpdate();
-            LOG.fine("Deleted all user asset links for realm: realm=" + realm + ", count=" + deleteCount);
-        });
-    }
-
-    /**
-     * Delete all {@link UserAssetLink}s for the specified {@link User} (must be called before the user is removed)
-     */
-    public void deleteUserAssetsByUserId(String userId) {
+    public void deleteUserAssetLinks(String userId) {
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?0");
             query.setParameter(0, userId);
@@ -1161,29 +1183,35 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     /**
-     * Delete all {@link UserAssetLink}s for the specified {@link Asset} (must be called before the asset is removed)
-     */
-    public void deleteUserAssetsByAssetId(String assetId) {
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.assetId = ?0");
-            query.setParameter(0, assetId);
-            int deleteCount = query.executeUpdate();
-            LOG.fine("Deleted all user asset links for asset: asset ID=" + assetId + ", count=" + deleteCount);
-        });
-    }
-
-    /**
      * Create specified {@link UserAssetLink}s.
      */
     public void storeUserAssetLinks(List<UserAssetLink> userAssetLinks) {
 
-        if (userAssetLinks.isEmpty()) {
+        if (userAssetLinks == null || userAssetLinks.isEmpty()) {
             return;
         }
 
-        persistenceService.doTransaction(em -> storeUserAssetLinks(em, userAssetLinks));
+        Set<String> assetIds = new HashSet<>(userAssetLinks.size());
+        Set<String> userIds = new HashSet<>(userAssetLinks.size());
+
+        userAssetLinks.forEach(userAssetLink -> {
+            userIds.add(userAssetLink.getId().getUserId());
+            assetIds.add(userAssetLink.getId().getAssetId());
+        });
+
+        persistenceService.doTransaction(em -> {
+            List<UserAssetLink> existingLinks = buildFindUserAssetLinksQuery(em, null, userIds.stream().toList(), assetIds.stream().toList())
+                .getResultList();
+
+            List<UserAssetLink> newLinks = userAssetLinks.stream()
+                .filter(userAssetLink -> !existingLinks.contains(userAssetLink))
+                .toList();
+
+            createUserAssetLinks(em, newLinks);
+        });
     }
-    protected void storeUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {
+
+    protected void createUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {
 
         em.unwrap(Session.class).doWork(connection -> {
 
@@ -1200,6 +1228,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     st.addBatch();
                 }
                 st.executeBatch();
+
+                // Create a persistence event for each one
+                userAssets.forEach(userAssetLink ->
+                    persistenceService.publishPersistenceEvent(
+                        PersistenceEvent.Cause.CREATE,
+                        userAssetLink,
+                        null,
+                        UserAssetLink.class,
+                        null,
+                        null)
+                );
             } catch (Exception e) {
                 String msg = "Failed to create user assets: count=" + userAssets.size();
                 LOG.log(Level.WARNING, msg, e);

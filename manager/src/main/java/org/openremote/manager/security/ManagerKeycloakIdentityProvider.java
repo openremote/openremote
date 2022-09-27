@@ -357,7 +357,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 (isUpdate ? PersistenceEvent.Cause.UPDATE : PersistenceEvent.Cause.CREATE),
                 updatedUser,
                 existingUser,
-                User.getPropertyFields());
+                User.class,
+                Collections.singletonList("attributes"),
+                null);
+
             return updatedUser;
         });
     }
@@ -386,7 +389,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             return null;
         });
 
-        persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, user, User.getPropertyFields());
+        persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE,
+            null,
+            user,
+            User.class,
+            Collections.singletonList("attributes"),
+            null);
     }
 
     @Override
@@ -847,7 +855,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             Realm updatedRealm = convert(realmRepresentation, Realm.class);
             updatedRealm.setName(realmRepresentation.getRealm());
             updatedRealm.setRealmRoles((realm.getRealmRoles() == null) ? existingRealmRoles : realm.getNormalisedRealmRoles());
-            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.UPDATE, updatedRealm, existingRealm, Realm.getPropertyFields());
+            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.UPDATE, updatedRealm, existingRealm, Realm.class, null, null);
             return null;
         });
     }
@@ -889,7 +897,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 Realm createdRealm = convert(realmRepresentation, Realm.class);
                 createdRealm.setName(realmRepresentation.getRealm());
                 createdRealm.setRealmRoles(realm.getRealmRoles());
-                persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.CREATE, realm, null, Realm.getPropertyFields());
+                persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.CREATE, realm, null, Realm.class, null, null);
                 return createdRealm;
             } catch (Exception e) {
                 LOG.log(Level.INFO, "Failed to create realm: " + realm, e);
@@ -940,7 +948,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 realmsResource.realm(realmName).remove();
                 return null;
             });
-            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, realm, Realm.getPropertyFields());
+            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, realm, Realm.class, null, null);
         });
     }
 
