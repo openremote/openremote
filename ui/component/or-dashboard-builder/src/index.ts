@@ -36,11 +36,24 @@ import { OrKpiWidget } from "./widgets/or-kpi-widget";
 // language=CSS
 const styling = css`
 
+    @media only screen and (max-width: 600px){
+        .hideMobile {
+            display: none !important;
+        }
+    }
+    @media only screen and (min-width: 601px){
+        .showMobile {
+            display: none !important;
+        }
+        #tree {
+            max-width: 300px !important;
+        }
+    }
+    
     #tree {
         flex-shrink: 0;
         align-items: stretch;
         z-index: 1;
-        max-width: 300px;
         box-shadow: rgb(0 0 0 / 21%) 0px 1px 3px 0px;
     }
     
@@ -482,18 +495,23 @@ export class OrDashboardBuilder extends LitElement {
 
     // Rendering the page
     render(): any {
+        if(window.matchMedia("(max-width: 600px)").matches && this.editMode) {
+            this.dispatchEvent(new CustomEvent('editToggle', { detail: false }));
+            this.showDashboardTree = true;
+        }
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
-                ${this.showDashboardTree ? html`
-                    <or-dashboard-tree id="tree" .realm="${this.realm}" .hasChanged="${this.hasChanged}" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}" .userId="${this.userId}"
+                ${(this.showDashboardTree) ? html`
+                    <or-dashboard-tree id="tree" class="${this.selectedDashboard ? 'hideMobile' : undefined}"
+                                       .realm="${this.realm}" .hasChanged="${this.hasChanged}" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}" .userId="${this.userId}"
                                        @created="${(_event: CustomEvent) => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"
                                        @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}"
                                        @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"
                     ></or-dashboard-tree>
                 ` : undefined}
-                <div id="container" style="display: table;">
+                <div id="container" class="${this.selectedDashboard == null ? 'hideMobile' : undefined}" style="display: table;">
                     ${this.editMode ? html`
-                        <div id="header" style="display: ${this.selectedDashboard == null && 'none'}">
+                        <div id="header" class="hideMobile" style="display: ${this.selectedDashboard == null && 'none'}">
                             <div id="header-wrapper">
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
@@ -531,7 +549,8 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="fullscreen-header">
                             <div id="fullscreen-header-wrapper">
                                 <div id="fullscreen-header-title">
-                                    <or-mwc-input type="${InputType.BUTTON}" icon="menu" @or-mwc-input-changed="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-mwc-input>   
+                                    <or-mwc-input class="showMobile" type="${InputType.BUTTON}" icon="chevron-left" @or-mwc-input-changed="${() => { this.selectedDashboard = undefined; }}"></or-mwc-input>
+                                    <or-mwc-input class="hideMobile" type="${InputType.BUTTON}" icon="menu" @or-mwc-input-changed="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-mwc-input>
                                     <span>${this.selectedDashboard?.displayName}</span>
                                 </div>
                                 <div id="fullscreen-header-actions">
@@ -540,10 +559,10 @@ export class OrDashboardBuilder extends LitElement {
                                                       @or-mwc-input-changed="${() => { this.rerenderPending = true; }}">
                                         </or-mwc-input>
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input id="share-btn" ?hidden="${this.selectedDashboard == null}" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
+                                                html`<or-mwc-input id="share-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null}" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="view-btn" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
+                                        <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>
                                 </div>
@@ -578,7 +597,7 @@ export class OrDashboardBuilder extends LitElement {
                             ${when((this.selectedDashboard != null && this.editMode && !this._isReadonly() && this._hasEditAccess()), () => {
                                 const selectedWidget = this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId);
                                 return html`
-                                    <div id="sidebar">
+                                    <div id="sidebar" class="hideMobile">
                                         ${this.selectedWidgetId != null ? html`
                                             <div class="settings-container">
                                                 <div id="menu-header">
