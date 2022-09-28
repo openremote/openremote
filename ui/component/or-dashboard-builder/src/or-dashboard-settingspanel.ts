@@ -208,7 +208,7 @@ export class OrDashboardSettingsPanel extends LitElement {
             this.fetchAssets(this.widget.widgetConfig).then((assets) => {
                 this.loadedAssets = assets;
                 this.requestUpdate("widget");
-                this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                this.forceParentUpdate(new Map<string, any>([["widget", this.widget], ["loadedAssets", assets]]));
             });
         }
     }

@@ -60,7 +60,7 @@ export class OrKpiWidgetContent extends LitElement {
 
     render() {
         return html`
-            <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" showControls="${false}" realm="${this.realm}" style="height: 100%;"></or-attribute-card>
+            <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;"></or-attribute-card>
         `
     }
 
@@ -113,6 +113,7 @@ export class OrKpiWidgetSettings extends LitElement {
 
     // Default values
     private expandedPanels: string[] = [i18next.t('attributes')];
+    private loadedAssets: Asset[] = [];
 
 
     static get styles() {
@@ -130,16 +131,28 @@ export class OrKpiWidgetSettings extends LitElement {
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widget="${this.widget}"
-                                                @updated="${(event: CustomEvent) => { this.forceParentUpdate(event.detail.changes, false); }}"
+                                                @updated="${(event: CustomEvent) => { this.onAttributesUpdate(event.detail.changes); }}"
                     ></or-dashboard-settingspanel>
                 ` : null}
             </div>
         `
     }
 
+    onAttributesUpdate(changes: Map<string, any>) {
+        if(changes.has('loadedAssets')) {
+            this.loadedAssets = changes.get('loadedAssets');
+        }
+        if(changes.has('widget')) {
+            const widget = changes.get('widget') as DashboardWidget;
+            if(widget.widgetConfig.attributeRefs.length > 0) {
+                this.widget!.displayName = this.loadedAssets[0].name + " - " + this.loadedAssets[0].attributes![widget.widgetConfig.attributeRefs[0].name].name;
+            }
+        }
+        this.forceParentUpdate(changes, false);
+    }
+
     // Method to update the Grid. For example after changing a setting.
     forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
-        console.error("Forcing parent update on or-chart-widget now..");
         this.requestUpdate();
         this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }

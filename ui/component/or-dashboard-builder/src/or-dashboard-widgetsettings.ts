@@ -119,6 +119,7 @@ export class OrDashboardWidgetsettings extends LitElement {
 
     // Method to update the Grid. For example after changing a setting.
     forceParentUpdate(force: boolean = false) {
+        this.requestUpdate();
         this.dispatchEvent(new CustomEvent('update', { detail: { force: force }}));
     }
 

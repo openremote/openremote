@@ -208,6 +208,8 @@ export class OrAttributeCard extends LitElement {
     @property()
     public showControls: boolean = true;
     @property()
+    public showTitle: boolean = true;
+    @property()
     protected _loading: boolean = false;
 
     private error: boolean = false;
@@ -336,6 +338,9 @@ export class OrAttributeCard extends LitElement {
     shouldShowControls(): boolean { // Checking for string input as well since that was not working
         return (this.showControls && this.showControls.toString() == "true");
     }
+    shouldShowTitle(): boolean {
+        return (this.showTitle && this.showTitle.toString() == "true");
+    }
 
     protected render() {
 
@@ -377,7 +382,7 @@ export class OrAttributeCard extends LitElement {
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        <span class="panel-title-text">${this.assets[0].name + " - " + i18next.t(this.assetAttributes[0][1].name!)}</span>
+                        ${this.shouldShowTitle() ? html`<span class="panel-title-text">${this.assets[0].name + " - " + i18next.t(this.assetAttributes[0][1].name!)}</span>` : undefined}
                         ${this.shouldShowControls() ? getContentWithMenuTemplate(html`
                             <or-mwc-input icon="dots-vertical" type="button"></or-mwc-input>
                         `,
