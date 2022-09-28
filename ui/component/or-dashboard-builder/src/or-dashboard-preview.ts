@@ -201,6 +201,9 @@ export class OrDashboardPreview extends LitElement {
     @state()
     protected activePreset?: DashboardScreenPreset;
 
+    @state()
+    private rerenderActive: boolean = false;
+
 
     /* ------------------------------------------- */
 
@@ -309,10 +312,19 @@ export class OrDashboardPreview extends LitElement {
             }
         }
 
-        // When parent component requests a forced rerender
         if(changedProperties.has("rerenderPending")) {
             if(this.rerenderPending) {
-                this.rerenderPending = false;
+                this.setupGrid(true, true).then(() => {
+                    this.rerenderPending = false;
+                    this.dispatchEvent(new CustomEvent("rerenderfinished"));
+                });
+            }
+        }
+
+        // When parent component requests a forced rerender
+        if(changedProperties.has("rerenderActive")) {
+            if(this.rerenderActive) {
+                this.rerenderActive = false;
             }
         }
     }
@@ -331,9 +343,9 @@ export class OrDashboardPreview extends LitElement {
 
                 if(force) { // Fully rerender the grid by switching rerenderPending on and off, and continue after that.
                     console.log("Recreating the grid after major changes.");
-                    this.rerenderPending = true;
+                    this.rerenderActive = true;
                     await this.updateComplete;
-                    await this.waitUntil((_: any) => !this.rerenderPending);
+                    await this.waitUntil((_: any) => !this.rerenderActive);
                     gridElement = this.shadowRoot?.getElementById("gridElement");
                     this.grid = undefined;
                 }
@@ -346,9 +358,9 @@ export class OrDashboardPreview extends LitElement {
                         this.grid?.destroy(false);
                     }
                     console.log("Recreating the grid after activePreset change.");
-                    this.rerenderPending = true;
+                    this.rerenderActive = true;
                     await this.updateComplete;
-                    await this.waitUntil((_: any) => !this.rerenderPending);
+                    await this.waitUntil((_: any) => !this.rerenderActive);
                     gridElement = this.shadowRoot?.getElementById("gridElement");
                     this.grid = undefined;
                 }
@@ -502,7 +514,7 @@ export class OrDashboardPreview extends LitElement {
                         </or-mwc-input>
                     </div>
                 ` : undefined}
-                ${this.rerenderPending ? html`
+                ${this.rerenderActive ? html`
                     <div id="container" style="justify-content: center; align-items: center;">
                         <span>${i18next.t('dashboard.renderingGrid')}</span>
                     </div>

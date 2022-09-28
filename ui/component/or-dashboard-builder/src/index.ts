@@ -507,6 +507,9 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="header-actions">
                                     <div id="header-actions-content">
+                                        <or-mwc-input id="refresh-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
+                                                      @or-mwc-input-changed="${() => { this.rerenderPending = true; }}">
+                                        </or-mwc-input>
                                         <or-mwc-input id="responsive-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
                                         </or-mwc-input>
@@ -533,6 +536,9 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
+                                        <or-mwc-input id="refresh-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
+                                                      @or-mwc-input-changed="${() => { this.rerenderPending = true; }}">
+                                        </or-mwc-input>
                                         ${getContentWithMenuTemplate(
                                                 html`<or-mwc-input id="share-btn" ?hidden="${this.selectedDashboard == null}" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
@@ -554,13 +560,14 @@ export class OrDashboardBuilder extends LitElement {
                             <div id="builder" style="${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? 'display: none' : undefined}">
                                 ${(this.selectedDashboard != null) ? html`
                                     <or-dashboard-preview class="editor" style="background: transparent;"
-                                                          .realm="${this.realm}" .template="${this.currentTemplate}"
+                                                          .realm="${this.realm}" .template="${this.currentTemplate}" .rerenderPending="${this.rerenderPending}"
                                                           .selectedWidget="${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)}" .editMode="${this.editMode}"
                                                           .fullscreen="${this.fullscreen}" .readonly="${this._isReadonly()}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
+                                                          @deselected="${() => { this.deselectWidget(); }}"
                                                           @dropped="${(event: CustomEvent) => { this.createWidget(event.detail as ORGridStackNode)}}"
                                                           @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"
-                                                          @deselected="${() => { this.deselectWidget(); }}"
+                                                          @rerenderfinished="${(event: CustomEvent) => { this.rerenderPending = false; }}"
                                     ></or-dashboard-preview>
                                 ` : html`
                                     <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
