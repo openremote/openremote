@@ -80,7 +80,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "mqtt connection should exist"
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
-            assert mqttBrokerService.server.activeMQServer.getSessions(mqttClientId).size() == 1
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
@@ -111,7 +111,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "No subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
-            assert mqttBrokerService.server.activeMQServer.getSessions(mqttClientId).size() == 1
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
         }
 
@@ -127,7 +127,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
             assert client.topicConsumerMap.get(topic).size() == 1
-            assert mqttBrokerService.server.activeMQServer.getSessions(mqttClientId).size() == 1
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
             assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 1
         }

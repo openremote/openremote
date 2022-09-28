@@ -84,6 +84,9 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection);
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        // Ensure any existing subscriptions for this client ID are cancelled
+        // TODO: Decide how to handle retained sessions
+        clientEventService.cancelSubscriptions(connection.getClientID());
         return true;
     }
 
@@ -492,7 +495,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     protected static Map<String, Object> prepareHeaders(RemotingConnection connection) {
         Optional<AuthContext> authContext = getAuthContextFromConnection(connection);
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConnectionConstants.SESSION_KEY, connection.getID());
+        headers.put(ConnectionConstants.SESSION_KEY, connection.getClientID());
         headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
         headers.put(Constants.AUTH_CONTEXT, authContext.orElse(null));
         headers.put(Constants.REALM_PARAM_NAME, authContext.map(AuthContext::getAuthenticatedRealmName));

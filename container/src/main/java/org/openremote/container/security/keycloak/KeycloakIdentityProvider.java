@@ -440,7 +440,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         return Optional.ofNullable(getSecurityContext(subject))
             .map(KeycloakSecurityContext::getToken)
-            .map(AccessToken::getId)
+            .map(AccessToken::getSubject)
             .orElse(null);
     }
 

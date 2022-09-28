@@ -361,12 +361,18 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         if (TextUtil.isNullOrEmpty(userID)) {
             return;
         }
-        server.getActiveMQServer().getSessions().forEach(session -> {
-            Subject subject = session.getRemotingConnection().getSubject();
-            if (userID.equals(KeycloakIdentityProvider.getSubjectName(subject))) {
-                doForceDisconnect(session.getRemotingConnection());
-            }
-        });
+        getUserConnections(userID).forEach(this::doForceDisconnect);
+    }
+
+    public Set<RemotingConnection> getUserConnections(String userID) {
+        if (TextUtil.isNullOrEmpty(userID)) {
+            return Collections.emptySet();
+        }
+
+        return server.getActiveMQServer().getSessions().stream().filter(session -> {
+            Subject subject = session.getRemotingConnection().getAuditSubject();
+            return userID.equals(KeycloakIdentityProvider.getSubjectId(subject));
+        }).map(ServerSession::getRemotingConnection).collect(Collectors.toSet());
     }
 
     protected void doForceDisconnect(RemotingConnection connection) {

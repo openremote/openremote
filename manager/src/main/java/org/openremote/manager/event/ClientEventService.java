@@ -36,6 +36,8 @@ import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -114,7 +116,7 @@ public class ClientEventService implements ContainerService {
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     final protected Collection<Consumer<Exchange>> exchangeInterceptors = new CopyOnWriteArraySet<>();
-    protected Map<String, SessionInfo> sessionKeyInfoMap = new HashMap<>();
+    protected ConcurrentMap<String, SessionInfo> sessionKeyInfoMap = new ConcurrentHashMap<>();
     protected TimerService timerService;
     protected MessageBrokerService messageBrokerService;
     protected ManagerIdentityService identityService;
@@ -313,8 +315,12 @@ public class ClientEventService implements ContainerService {
         return subscriptionId;
     }
 
-    public void cancelInternalSubscription(String subscriptionId) {
-        eventSubscriptions.cancel(INTERNAL_SESSION_KEY, new CancelEventSubscription(subscriptionId));
+    public void cancelInternalSubscription(String sessionId) {
+        eventSubscriptions.cancel(INTERNAL_SESSION_KEY, new CancelEventSubscription(sessionId));
+    }
+
+    public void cancelSubscriptions(String sessionId) {
+        eventSubscriptions.cancelAll(sessionId);
     }
 
     @Override
