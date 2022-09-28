@@ -1,73 +1,17 @@
-import manager from "@openremote/core";
-import {Asset, Attribute, AttributeRef, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import {DashboardWidget } from "@openremote/model";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { until } from "lit/directives/until.js";
-import { cache } from "lit/directives/cache.js";
+import { when } from "lit/directives/when.js";
 import {throttle} from "lodash";
 import {style} from "./style";
+import "@openremote/or-gauge";
+import {widgetTypes} from "./index";
 
 //language=css
 const styling = css`
-    .gridItem {
-        height: 100%;
-        overflow: hidden;
-        box-sizing: border-box;
-    }
 `
-
-/* ------------------------------------ */
-
-// Interfaces that contain Configurations of each Widget Type.
-// The database stores them in any type, however these can be used
-// for type checking.
-
-export interface ChartWidgetConfig {
-    displayName: string;
-    attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
-    timestamp?: Date;
-    compareTimestamp?: Date;
-    decimals: number;
-    deltaFormat: "absolute" | "percentage";
-    showTimestampControls: boolean;
-    showLegend: boolean;
-}
-export interface KPIWidgetConfig {
-    displayName: string;
-    attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
-}
-export function generateWidgetConfig(widget: DashboardWidget): Object {
-    console.error("Generating widget config..")
-    switch (widget.widgetType) {
-        case DashboardWidgetType.LINE_CHART: {
-            return {
-                displayName: widget.displayName,
-                attributeRefs: [],
-                period: "day",
-                timestamp: new Date(),
-                decimals: 2,
-                deltaFormat: "absolute",
-                showTimestampControls: false,
-                showLegend: true
-            } as ChartWidgetConfig
-        }
-        case DashboardWidgetType.KPI: {
-            return {
-                displayName: widget.displayName,
-                attributeRefs: [],
-                period: "day"
-            } as KPIWidgetConfig
-        }
-        default: {
-            return {};
-        }
-    }
-}
 
 /* ------------------------------------ */
 
@@ -82,6 +26,9 @@ export class OrDashboardWidget extends LitElement {
 
     @property()
     protected readonly realm?: string;
+
+    @property()
+    protected loading: boolean = false;
 
     @state()
     protected error?: string;
@@ -101,9 +48,16 @@ export class OrDashboardWidget extends LitElement {
         super();
     }
 
-    updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
+    shouldUpdate(changedProperties: Map<PropertyKey, unknown>): boolean {
+        const changed = changedProperties;
+        changed.delete('resizeObserver');
+        return changed.size > 0;
     }
+
+    updated(changedProperties: Map<string, any>) {
+        console.error(changedProperties);
+    }
+
     firstUpdated(_changedProperties: Map<string, any>) {
         this.updateComplete.then(() => {
             const gridItemElement = this.widgetContainerElement;
@@ -114,7 +68,7 @@ export class OrDashboardWidget extends LitElement {
                         (this.widget.gridItem?.minPixelW < gridItemElement.clientWidth) && (this.widget.gridItem?.minPixelH < gridItemElement.clientHeight)
                     );
                     this.error = (isMinimumSize ? undefined : i18next.t('dashboard.widgetTooSmall'));
-                    this.requestUpdate();
+                    // this.requestUpdate();
                 }, 200));
                 this.resizeObserver.observe(gridItemElement);
             } else {
@@ -125,51 +79,35 @@ export class OrDashboardWidget extends LitElement {
 
 
     protected render() {
-        console.error("Rendering or-dashboard-widget [" + this.widget?.displayName + "]")
+        console.warn("Rendering or-dashboard-widget [" + this.widget?.displayName + "]");
+        console.error(this.widget);
         return html`
-            <div id="widget-container" style="height: 100%; padding: 8px 16px 8px 16px; display: flex; flex-direction: column;">
-                <div style="display: flex; height: 36px; justify-content: space-between; align-items: center; margin-right: -12px;">
+            <div id="widget-container" style="height: 100%; padding: 8px 16px 8px 16px; display: flex; flex-direction: column; overflow: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-right: -12px; height: 36px;">
                     <span class="panel-title">${this.widget?.displayName?.toUpperCase()}</span>
                     <div>
-                        <!--<or-mwc-input type="${InputType.BUTTON}" outlined label="Period"></or-mwc-input>-->
-                        <!--<or-mwc-input type="${InputType.BUTTON}" label="Settings"></or-mwc-input>-->
-                        <or-mwc-input type="${InputType.BUTTON}" icon="refresh" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                            <!--<or-mwc-input type="${InputType.BUTTON}" outlined label="Period"></or-mwc-input>-->
+                            <!--<or-mwc-input type="${InputType.BUTTON}" label="Settings"></or-mwc-input>-->
+                            <!--<or-mwc-input type="${InputType.BUTTON}" icon="refresh" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>-->
                     </div>
                 </div>
-                ${until(this.getWidgetContent(this.widget!).then((content) => {
-                    return content;
-                }), html`${i18next.t('loading')}`)}
+                ${when((!this.error && !this.loading), () => html`
+                    ${this.getWidgetContent(this.widget!)}
+                `, () => html`
+                    ${this.error ? html`${this.error}` : html`${i18next.t('loading')}`}
+                `)}
             </div>
         `
     }
 
-
-    async getWidgetContent(widget: DashboardWidget): Promise<TemplateResult> {
+    getWidgetContent(widget: DashboardWidget): TemplateResult {
         const _widget = Object.assign({}, widget);
         if(_widget.gridItem) {
-            let assets: Asset[] = [];
-            let attributes: [number, Attribute<any>][] = [];
 
-            // Pulling data from database, however only when in editMode!!
-            // KPI widgetType does use real data in EDIT mode as well, so separate check
-            if(!this.editMode || _widget.widgetType == DashboardWidgetType.KPI) {
-                const response = await manager.rest.api.AssetResource.queryAssets({
-                    ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
-                }).catch((reason => {
-                    console.error(reason);
-                    showSnackbar(undefined, i18next.t('errorOccurred'));
-                }));
-                if(response) {
-                    assets = response.data;
-                    attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
-                        const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
-                        const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                        return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-                    }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                }
-            }
+            const widgetEntity = widgetTypes.get(widget.widgetTypeId!);
+            return widgetEntity!.getWidgetHTML(this.widget!, this.editMode!, this.realm!);
 
-            switch (_widget.widgetType) {
+            /*switch (_widget.widgetType) {
                 case DashboardWidgetType.LINE_CHART: {
 
                     // Generation of fake data when in editMode.
@@ -189,10 +127,10 @@ export class OrDashboardWidget extends LitElement {
                             ${cache(this.error ? html`
                                 <span>${this.error}</span>
                             ` : html`
-                                <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" denseLegend="${true}" 
+                                <or-chart .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" denseLegend="${true}"
                                           .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(_widget, startOfPeriod, endOfPeriod, 20); }) : undefined}"
                                           showLegend="${(_widget.widgetConfig?.showLegend != null) ? _widget.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${_widget.widgetConfig?.showTimestampControls}" style="height: 100%"
-                                ></or-chart>                            
+                                ></or-chart>
                             `)}
                         </div>
                     `;
@@ -204,20 +142,34 @@ export class OrDashboardWidget extends LitElement {
                             ${cache(this.error ? html`
                                 <span>${this.error}</span>
                             ` : html`
-                                <or-attribute-card .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}" 
+                                <or-attribute-card .assets="${assets}" .assetAttributes="${attributes}" .period="${widget.widgetConfig?.period}"
                                                    showControls="${false}" .realm="${this.realm}" style="height: 100%;"
                                 ></or-attribute-card>
                             `)}
                         </div>
                     `;
                 }
-            }
+                case DashboardWidgetType.GAUGE: {
+                    const config: OrGaugeConfig = {
+                        attributeRef: widget.widgetConfig.attributeRef
+                    }
+                    return html`
+                        <div class='gridItem' id="gridItem-${widget.id}" style="display: flex;">
+                            ${cache(this.error ? html`
+                                <span>${this.error}</span>
+                            ` : html`
+                                <or-gauge .config="${this.widget?.widgetConfig}" style="width: 100%;"></or-gauge>
+                            `)}
+                        </div>
+                    `;
+                }
+            }*/
         }
         return html`<span>${i18next.t('error')}!</span>`;
     }
 
 
-    @state()
+    /*@state()
     protected cachedMockData?: Map<string, { period: any, data: any[] }> = new Map<string, { period: any, data: any[] }>();
 
     protected generateMockData(widget: DashboardWidget, startOfPeriod: number, _endOfPeriod: number, amount: number = 10): any {
@@ -267,5 +219,5 @@ export class OrDashboardWidget extends LitElement {
             }
         }
         return [];
-    }
+    }*/
 }

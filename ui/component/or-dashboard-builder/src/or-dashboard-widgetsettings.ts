@@ -1,15 +1,11 @@
-import {Asset, AssetModelUtil, AttributeRef, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import {Asset, DashboardWidget } from "@openremote/model";
 import {css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 import {style} from './style';
-import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
-import {DefaultColor5, manager } from "@openremote/core";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {DefaultColor5} from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
-import {ChartWidgetConfig, KPIWidgetConfig} from "./or-dashboard-widget";
+import {widgetTypes} from "./index";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -97,6 +93,9 @@ export class OrDashboardWidgetsettings extends LitElement {
     @property({type: Object})
     protected selectedWidget: DashboardWidget | undefined;
 
+    @property()
+    protected realm?: string;
+
     @state() // list of assets that are loaded in the list
     protected loadedAssets: Asset[] | undefined;
 
@@ -108,26 +107,11 @@ export class OrDashboardWidgetsettings extends LitElement {
         this.expandedPanels = [];
         this.updateComplete.then(() => {
 
-            // Setting what panels are expanded, depending on WidgetType
-            switch (this.selectedWidget?.widgetType) {
-                case DashboardWidgetType.LINE_CHART: {
-                    this.expandedPanels = [i18next.t('attributes'), i18next.t('display')]; break;
-                }
-                case DashboardWidgetType.KPI: {
-                    this.expandedPanels = [i18next.t('attributes'), i18next.t('display'), i18next.t('settings')]; break;
-                }
-            }
+            const settingsElem = this.shadowRoot?.children[0].children[1];
+            settingsElem?.addEventListener('updated', (event: any) => {
+                this.forceParentUpdate(event.detail.value);
+            });
         })
-    }
-
-    updated(changedProperties: Map<string, any>) {
-        super.updated(changedProperties);
-        console.log(changedProperties);
-        if(changedProperties.has("selectedWidget")) {
-            if(this.selectedWidget != null) {
-                this.fetchAssets();
-            }
-        }
     }
 
     /* ------------------------------------ */
@@ -138,29 +122,9 @@ export class OrDashboardWidgetsettings extends LitElement {
         this.dispatchEvent(new CustomEvent('update', { detail: { force: force }}));
     }
 
-    deleteSelectedWidget() {
-        this.dispatchEvent(new CustomEvent("delete", {detail: this.selectedWidget }));
-    }
-
-    /* --------------------------------------- */
-
-    // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required.
-    fetchAssets() {
-        if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
-            manager.rest.api.AssetResource.queryAssets({
-                ids: this.selectedWidget?.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
-            }).then(response => {
-                this.loadedAssets = response.data;
-            }).catch((reason) => {
-                console.error(reason);
-                showSnackbar(undefined, i18next.t('errorOccurred'));
-            })
-        }
-    }
-
     protected render() {
-        if(this.selectedWidget?.widgetType != null && this.selectedWidget.widgetConfig != null) {
-            return this.generateHTML(this.selectedWidget.widgetType, this.selectedWidget.widgetConfig);
+        if(this.selectedWidget?.widgetTypeId != null && this.selectedWidget.widgetConfig != null) {
+            return this.generateHTML(this.selectedWidget.widgetTypeId, this.selectedWidget.widgetConfig);
         }
         return html`<span>${i18next.t('errorOccurred')}</span>`
     }
@@ -172,7 +136,7 @@ export class OrDashboardWidgetsettings extends LitElement {
 
     // UI generation of all settings fields. Depending on the WidgetType it will
     // return different HTML containing different settings.
-    generateHTML(widgetType: DashboardWidgetType, widgetConfig: any): TemplateResult {
+    generateHTML(widgetTypeId: string, widgetConfig: any): TemplateResult {
         let htmlGeneral: TemplateResult;
         let htmlContent: TemplateResult;
         htmlGeneral = html`
@@ -184,7 +148,9 @@ export class OrDashboardWidgetsettings extends LitElement {
                 </div>
             </div>
         `
-        switch (widgetType) {
+        htmlContent = widgetTypes.get(widgetTypeId)!.getSettingsHTML(this.selectedWidget!, this.realm!);
+        console.error(htmlContent);
+        /*switch (widgetType) {
 
             case DashboardWidgetType.LINE_CHART: {
                 const chartConfig = widgetConfig as ChartWidgetConfig;
@@ -278,7 +244,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                         ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                             <div style="padding: 12px;">
                                 ${kpiConfig.attributeRefs && kpiConfig.attributeRefs.length > 0 ? html`
-                                    <div id="attribute-list" style="min-height: 0px;">
+                                    <div id="attribute-list" style="min-height: 0;">
                                         <div class="attribute-list-item">
                                             ${(this.loadedAssets && this.loadedAssets[0] != null) ? html`
                                                 <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.loadedAssets[0].type))}</span>
@@ -321,77 +287,12 @@ export class OrDashboardWidgetsettings extends LitElement {
             default: {
                 htmlContent = html`<span>${i18next.t('errorOccurred')}</span>`
             }
-        }
+        }*/
         return html`
             <div>
                 ${htmlGeneral}
                 ${htmlContent}
             </div>
         `
-    }
-
-
-    // UI generation of an expandable panel header.
-    generateExpandableHeader(name: string): TemplateResult {
-        return html`
-            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
-                <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
-                <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
-            </span>
-        `
-    }
-
-
-
-    /* -------------------------------------------- */
-
-    // Methods for changing the list of attributes. They get triggered when
-    // the attribute picker returns a new list of attributes, or someone
-    // removes an item from the list.
-
-    setWidgetAttributes(selectedAttrs?: AttributeRef[]) {
-        if(this.selectedWidget?.widgetConfig != null) {
-            this.selectedWidget.widgetConfig.attributeRefs = selectedAttrs;
-            this.fetchAssets();
-            this.requestUpdate("selectedWidget");
-            this.forceParentUpdate();
-        }
-    }
-
-    removeWidgetAttribute(attributeRef: AttributeRef) {
-        if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
-            this.selectedWidget.widgetConfig.attributeRefs.splice(this.selectedWidget.widgetConfig.attributeRefs.indexOf(attributeRef), 1);
-            this.fetchAssets();
-            this.requestUpdate("selectedWidget");
-            this.forceParentUpdate();
-        }
-    }
-
-
-
-    /* ---------------------------------------- */
-
-    // Method when a user opens or closes a expansion panel. (UI related)
-    expandPanel(panelName: string): void {
-        if(this.expandedPanels.includes(panelName)) {
-            const indexOf = this.expandedPanels.indexOf(panelName, 0);
-            if(indexOf > -1) { this.expandedPanels.splice(indexOf, 1); }
-        } else {
-            this.expandedPanels.push(panelName);
-        }
-        this.requestUpdate();
-    }
-
-    // Opening the attribute picker dialog, and listening to its result. (UI related)
-    openDialog(attributeRefs: AttributeRef[], multi: boolean) {
-        let dialog: OrAttributePicker;
-        if(attributeRefs != null) {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(true));
-        } else {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(true))
-        }
-        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
-            this.setWidgetAttributes(event.detail);
-        })
     }
 }

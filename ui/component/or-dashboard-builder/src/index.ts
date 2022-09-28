@@ -18,8 +18,7 @@ import {
     DashboardScalingPreset,
     DashboardScreenPreset,
     DashboardTemplate,
-    DashboardWidget,
-    DashboardWidgetType
+    DashboardWidget
 } from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor5} from "@openremote/core";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
@@ -30,7 +29,9 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {i18next} from "@openremote/or-translate";
 import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {DashboardKeyEmitter} from "./or-dashboard-keyhandler";
-import {generateWidgetConfig} from "./or-dashboard-widget";
+import {OrWidgetEntity} from "./widgets/or-base-widget";
+import {OrChartWidget} from "./widgets/or-chart-widget";
+import { OrKpiWidget } from "./widgets/or-kpi-widget";
 
 // language=CSS
 const styling = css`
@@ -185,6 +186,7 @@ export function getActivePreset(gridWidth: number, presets: DashboardScreenPrese
     });
     return activePreset;
 }
+export const widgetTypes: Map<string, OrWidgetEntity> = new Map<string, OrWidgetEntity>();
 
 
 @customElement("or-dashboard-builder")
@@ -260,6 +262,10 @@ export class OrDashboardBuilder extends LitElement {
         this.isLoading = true;
         this.hasChanged = false;
         this.rerenderPending = false;
+
+        this.registerWidgetType("linechart", new OrChartWidget());
+        this.registerWidgetType("kpi", new OrKpiWidget());
+        // this.registerWidgetType("gauge", new OrGaugeWidget());
 
         this.updateComplete.then(async () => {
             await this.updateDashboards(this.realm!);
@@ -342,7 +348,7 @@ export class OrDashboardBuilder extends LitElement {
 
     createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
         const randomId = (Math.random() + 1).toString(36).substring(2);
-        let displayName = generateWidgetDisplayName(this.currentTemplate!, gridStackNode.widgetType);
+        let displayName = widgetTypes.get(gridStackNode.widgetTypeId)?.DISPLAY_NAME;
         if(displayName == undefined) { displayName = (i18next.t('dashboard.widget') + " #" + randomId); } // If no displayName, set random ID as name.
         const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
 
@@ -350,9 +356,9 @@ export class OrDashboardBuilder extends LitElement {
             id: randomId,
             displayName: displayName,
             gridItem: gridItem,
-            widgetType: gridStackNode.widgetType,
+            widgetTypeId: gridStackNode.widgetTypeId,
         } as DashboardWidget;
-        widget.widgetConfig = generateWidgetConfig(widget);
+        widget.widgetConfig = widgetTypes.get(gridStackNode.widgetTypeId)?.getDefaultConfig(widget);
 
         const tempTemplate = JSON.parse(JSON.stringify(this.currentTemplate)) as DashboardTemplate;
         if(tempTemplate.widgets == undefined) {
@@ -583,7 +589,7 @@ export class OrDashboardBuilder extends LitElement {
                                                 </div>
                                                 <div id="content" class="hidescroll" style="flex: 1; overflow: hidden auto;">
                                                     <div style="position: relative;">
-                                                        <or-dashboard-widgetsettings style="position: absolute;" .selectedWidget="${selectedWidget}"
+                                                        <or-dashboard-widgetsettings style="position: absolute;" .selectedWidget="${selectedWidget}" .realm="${this.realm}"
                                                                                      @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
                                                                                      @update="${(event: CustomEvent) => {
                                                                                          this.currentTemplate = Object.assign({}, this.selectedDashboard?.template);
@@ -627,6 +633,10 @@ export class OrDashboardBuilder extends LitElement {
         `
     }
 
+    registerWidgetType(name: string, widget: OrWidgetEntity) {
+        widgetTypes.set(name, widget);
+    }
+
     /* ======================== */
 
 }
@@ -634,44 +644,19 @@ export class OrDashboardBuilder extends LitElement {
 // Generating the Grid Item details like X and Y coordinates for GridStack to work.
 export function generateGridItem(gridstackNode: ORGridStackNode, _displayName: string): DashboardGridItem {
     const randomId = (Math.random() + 1).toString(36).substring(2);
+    const widgetType = widgetTypes.get(gridstackNode.widgetTypeId)!;
     return {
         id: randomId,
         x: gridstackNode.x,
         y: gridstackNode.y,
         w: 2,
         h: 2,
-        minW: getWidgetMinWidth(gridstackNode.widgetType),
-        minH: getWidgetMinWidth(gridstackNode.widgetType),
-        minPixelW: getWidgetMinPixelWidth(gridstackNode.widgetType),
-        minPixelH: getWidgetMinPixelHeight(gridstackNode.widgetType),
+        minW: widgetType.MIN_COLUMN_WIDTH,
+        minH: widgetType.MIN_COLUMN_WIDTH,
+        minPixelW: widgetType.MIN_PIXEL_WIDTH,
+        minPixelH: widgetType.MIN_PIXEL_HEIGHT,
         noResize: false,
         noMove: false,
         locked: false,
-        // content: this.getWidgetContent(gridstackNode.widgetType, displayName)
-    }
-}
-export function generateWidgetDisplayName(template: DashboardTemplate, widgetType: DashboardWidgetType): string | undefined {
-    switch (widgetType) {
-        case DashboardWidgetType.KPI: return (i18next.t('dashboard.widget-kpi') + " " + i18next.t('dashboard.widget'));
-        case DashboardWidgetType.LINE_CHART: return (i18next.t('dashboard.widget-linechart') + " " + i18next.t('dashboard.widget'));
-        default: return undefined;
-    }
-}
-export function getWidgetMinWidth(widgetType: DashboardWidgetType): number {
-    switch (widgetType) {
-        case DashboardWidgetType.LINE_CHART: return 2;
-        case DashboardWidgetType.KPI: return 1;
-    }
-}
-export function getWidgetMinPixelWidth(widgetType: DashboardWidgetType): number {
-    switch (widgetType) {
-        case DashboardWidgetType.LINE_CHART: return 300;
-        case DashboardWidgetType.KPI: return 100;
-    }
-}
-export function getWidgetMinPixelHeight(widgetType: DashboardWidgetType): number {
-    switch (widgetType) {
-        case DashboardWidgetType.LINE_CHART: return 140;
-        case DashboardWidgetType.KPI: return 100;
     }
 }

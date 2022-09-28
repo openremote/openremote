@@ -9,14 +9,9 @@ import {
     DashboardScalingPreset,
     DashboardScreenPreset,
     DashboardTemplate,
-    DashboardWidget,
-    DashboardWidgetType
+    DashboardWidget
 } from "@openremote/model";
-import {
-    generateGridItem,
-    generateWidgetDisplayName,
-    getActivePreset,
-} from "./index";
+import { getActivePreset } from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
@@ -105,7 +100,7 @@ const editorStyling = css`
 /* -------------------------------------------------- */
 
 export interface ORGridStackNode extends GridStackNode {
-    widgetType: DashboardWidgetType;
+    widgetTypeId: string;
 }
 export interface DashboardPreviewSize {
     displayName: string;

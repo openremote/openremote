@@ -434,7 +434,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp")
-            || changedProperties.has("timestamp") || changedProperties.has("assetAttributes") || changedProperties.has("realm");
+            || changedProperties.has("timestamp") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
             this._data = undefined;

@@ -2,8 +2,7 @@ import {GridStack, GridStackNode } from "gridstack";
 import {css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, state} from "lit/decorators.js";
 import {style} from "./style";
-import { DashboardWidgetType } from "@openremote/model";
-import { i18next } from "@openremote/or-translate";
+import {widgetTypes} from "./index";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -63,12 +62,10 @@ export class OrDashboardBrowser extends LitElement {
 
     protected renderGrid() {
         const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
-        const sidebarItems = [
-            {x: 0, y: 0, w: 2, h: 2, widgetType: DashboardWidgetType.LINE_CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span class="itemText">' + i18next.t("dashboard.widget-linechart") + '</span></div>'},
-            {x: 2, y: 0, w: 2, h: 2, widgetType: DashboardWidgetType.KPI, locked: true, content: '<div class="sidebarItem"><or-icon icon="label"></or-icon><span class="itemText">' + i18next.t("dashboard.widget-kpi") + '</span></div>'},
-            {x: 0, y: 2, w: 2, h: 2, locked: true, noMove: true, content: ''}, // Invisible widget
-            {x: 2, y: 2, w: 2, h: 2, locked: true, noMove: true, content: ''} // Invisible widget
-        ];
+        const coords: Array<[number, number]> = new Array<[number, number]>([0,0], [2,0], [0,2], [2,2], [4,2], [4,4], [6,4], [6,6], [8,6], [8,8]) // TODO: make this unlimited possibilities with a formula
+        const sidebarItems: any[] = Array.from(widgetTypes).map((typeArr, index) => {
+            return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].DISPLAY_MDI_ICON}"></or-icon><span class="itemText">${typeArr[1].DISPLAY_NAME}</span>`}
+        });
 
         // Setting Sidebar height depending on sidebarItems
         let sidebarHeight = 0;

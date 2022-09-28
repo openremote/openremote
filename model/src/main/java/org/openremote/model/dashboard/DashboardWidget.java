@@ -17,8 +17,8 @@ public class DashboardWidget {
     @Valid
     protected DashboardGridItem gridItem;
 
-    @NotNull(message = "{Dashboard.widget.widgetType.NotNull}")
-    protected DashboardWidgetType widgetType;
+    @NotNull(message = "{Dashboard.widget.widgetTypeId.NotNull}")
+    protected String widgetTypeId;
 
     protected Object widgetConfig;
 
@@ -28,12 +28,12 @@ public class DashboardWidget {
     public void setId(@NotNull @NotEmpty String id) { this.id = id; }
     public void setDisplayName(@NotNull @NotEmpty String displayName) { this.displayName = displayName; }
     public void setGridItem(@NotNull DashboardGridItem gridItem) { this.gridItem = gridItem; }
-    public void setWidgetType(@NotNull DashboardWidgetType widgetType) { this.widgetType = widgetType; }
+    public void setWidgetTypeId(@NotNull String widgetTypeId) { this.widgetTypeId = widgetTypeId; }
     public void setWidgetConfig(Object widgetConfig) { this.widgetConfig = widgetConfig; }
 
     public String getId() { return id; }
     public String getDisplayName() { return displayName; }
     public DashboardGridItem getGridItem() { return gridItem; }
-    public DashboardWidgetType getWidgetType() { return widgetType; }
+    public String getWidgetTypeId() { return widgetTypeId; }
     public Object getWidgetConfig() { return widgetConfig; }
 }
