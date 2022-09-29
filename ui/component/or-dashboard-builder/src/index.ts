@@ -522,10 +522,6 @@ export class OrDashboardBuilder extends LitElement {
                                         <or-mwc-input id="responsive-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
                                         </or-mwc-input>
-                                        ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
-                                                this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
-                                        )}
                                         <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
                                                       @or-mwc-input-changed="${() => { this.saveDashboard(); }}">
                                         </or-mwc-input>
@@ -549,10 +545,6 @@ export class OrDashboardBuilder extends LitElement {
                                         <or-mwc-input id="refresh-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
                                                       @or-mwc-input-changed="${() => { this.rerenderPending = true; }}">
                                         </or-mwc-input>
-                                        ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input id="share-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null}" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
-                                                this.menuItems, "monitor", (method: any) => { this.shareUrl(method); }
-                                        )}
                                         <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>

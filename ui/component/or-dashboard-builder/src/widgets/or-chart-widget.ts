@@ -16,8 +16,6 @@ export interface ChartWidgetConfig extends OrWidgetConfig {
     period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
     timestamp?: Date;
     compareTimestamp?: Date;
-    decimals: number;
-    deltaFormat: "absolute" | "percentage";
     showTimestampControls: boolean;
     showLegend: boolean;
 }
@@ -38,8 +36,6 @@ export class OrChartWidget implements OrWidgetEntity {
             attributeRefs: [],
             period: "day",
             timestamp: new Date(),
-            decimals: 2,
-            deltaFormat: "absolute",
             showTimestampControls: false,
             showLegend: true
         } as ChartWidgetConfig;
@@ -89,7 +85,7 @@ export class OrChartWidgetContent extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>) {
-        console.error(changedProperties);
+        console.log(changedProperties);
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
                 this.assets = assets!;

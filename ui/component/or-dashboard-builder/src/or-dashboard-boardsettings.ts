@@ -93,7 +93,7 @@ export class OrDashboardBoardsettings extends LitElement {
         if(this.dashboard?.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
             const accessOptions: {key: DashboardAccess, value: string}[] = [];
-            [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].forEach((access) => {
+            [DashboardAccess.PRIVATE, DashboardAccess.SHARED, /*DashboardAccess.PUBLIC*/].forEach((access) => {
                 accessOptions.push({key: access, value: dashboardAccessToString(access)})
             })
             const scalingPresets: {key: DashboardScalingPreset, value: string}[] = [];
@@ -156,11 +156,16 @@ export class OrDashboardBoardsettings extends LitElement {
                                 <div>
                                     <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.maxScreenWidth}" style="width: 70px;"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.dashboard?.template != null) {
-                                                      this.dashboard.template.maxScreenWidth = event.detail.value as number; this.forceParentUpdate(false);
+                                                      this.dashboard.template.maxScreenWidth = event.detail.value as number; this.forceParentUpdate(true);
                                                   }}}">
                                     </or-mwc-input>
                                     <span style="margin-left: 2px;">px</span>                                    
                                 </div>
+                            </div>
+                            <div>
+                                <or-mwc-input type="${InputType.BUTTON}" comfortable label="${i18next.t('dashboard.setToMobilePreset')}"
+                                              @or-mwc-input-changed="${() => { this.setToMobilePreset(); }}">
+                                </or-mwc-input>
                             </div>
                         </div>
                     ` : null}
@@ -199,7 +204,17 @@ export class OrDashboardBoardsettings extends LitElement {
         }
     }
 
-
+    // Button to switch to a mobile preset of layout settings.
+    // TODO: Make these values not hardcoded anymore, and depend on the getDefault functions in or-dashboard-tree (that probably should move to somewhere else)
+    setToMobilePreset() {
+        if(this.dashboard?.template) {
+            this.dashboard.template.columns = 4;
+            this.dashboard.template.screenPresets![0].scalingPreset = DashboardScalingPreset.KEEP_LAYOUT;
+            this.dashboard.template.maxScreenWidth = 700;
+            this.requestUpdate();
+            this.forceParentUpdate(true);
+        }
+    }
 
 
     /* ======================== */

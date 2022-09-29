@@ -7,11 +7,15 @@ import { customElement, property, state } from "lit/decorators.js";
 import {OrWidgetConfig, OrWidgetEntity} from "./or-base-widget";
 import {style} from "../style";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
+import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
 export interface KpiWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
     period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
+    decimals: number;
+    deltaFormat: "absolute" | "percentage";
+    showTimestampControls: boolean;
 }
 
 export class OrKpiWidget implements OrWidgetEntity {
@@ -19,14 +23,17 @@ export class OrKpiWidget implements OrWidgetEntity {
     readonly DISPLAY_MDI_ICON: string = "label";
     readonly DISPLAY_NAME: string = "KPI";
     readonly MIN_COLUMN_WIDTH: number = 2;
-    readonly MIN_PIXEL_HEIGHT: number = 200;
-    readonly MIN_PIXEL_WIDTH: number = 200;
+    readonly MIN_PIXEL_HEIGHT: number = 150;
+    readonly MIN_PIXEL_WIDTH: number = 150;
 
     getDefaultConfig(widget: DashboardWidget): OrWidgetConfig {
         return {
             displayName: widget.displayName,
             attributeRefs: [],
-            period: "day"
+            period: "day",
+            decimals: 2,
+            deltaFormat: "absolute",
+            showTimestampControls: false
         } as KpiWidgetConfig;
     }
 
@@ -60,7 +67,7 @@ export class OrKpiWidgetContent extends LitElement {
 
     render() {
         return html`
-            <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;"></or-attribute-card>
+            <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}" showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;"></or-attribute-card>
         `
     }
 
@@ -111,7 +118,7 @@ export class OrKpiWidgetSettings extends LitElement {
     public widget?: DashboardWidget;
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('attributes')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display')];
     private loadedAssets: Asset[] = [];
 
 
@@ -122,6 +129,7 @@ export class OrKpiWidgetSettings extends LitElement {
     // UI Rendering
     render() {
         console.log("[or-kpi-widget] Rendering..");
+        const config = this.widget?.widgetConfig as KpiWidgetConfig;
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
@@ -131,6 +139,26 @@ export class OrKpiWidgetSettings extends LitElement {
                     <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widget="${this.widget}"
                                                 @updated="${(event: CustomEvent) => { this.onAttributesUpdate(event.detail.changes); }}"
                     ></or-dashboard-settingspanel>
+                ` : null}
+            </div>
+            <div>
+                ${this.generateExpandableHeader(i18next.t('display'))}
+            </div>
+            <div>
+                ${this.expandedPanels.includes(i18next.t('display')) ? html`
+                    <div style="padding: 24px 24px 48px 24px;">
+                        <div>
+                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" 
+                                          .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" 
+                                          .value="${config.period}" label="${i18next.t('timeframe')}" 
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              (this.widget?.widgetConfig as KpiWidgetConfig).period = event.detail.value;
+                                              this.requestUpdate();
+                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                          }}"
+                            ></or-mwc-input>
+                        </div>
+                    </div>
                 ` : null}
             </div>
         `

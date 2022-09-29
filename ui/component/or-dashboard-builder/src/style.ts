@@ -64,7 +64,7 @@ export const style = css`
         flex: 1;
         flex-direction: row;
         text-transform: capitalize;
-        padding-left: 15px;
+        padding-left: 14px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

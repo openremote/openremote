@@ -184,13 +184,9 @@ export class OrDashboardTree extends LitElement {
                             }}}"></or-mwc-input>
                         ` : undefined}
                         <span style="--or-icon-fill: black">
-                            ${getContentWithMenuTemplate(
-                                    html`<or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus" style="--or-icon-fill: white;"></or-mwc-input>`,
-                                    menuItems, "monitor", (value: string | string[]) => {
-                                        const size: DashboardSizeOption = +value;
-                                        this.createDashboard(size);
-                                    }
-                            )}                        
+                            <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus" style="--or-icon-fill: white;"
+                                          @or-mwc-input-changed="${() => { this.createDashboard(DashboardSizeOption.DESKTOP); }}"
+                            ></or-mwc-input>
                         </span>
                     </div>
                 ` : undefined}
@@ -200,7 +196,7 @@ export class OrDashboardTree extends LitElement {
                     ${dashboardItems.map((items, index) => {
                         return (items != null && items.length > 0) ? html`
                             <div style="padding: 8px 0;">
-                                <span style="font-weight: 500; padding-left: 8px; color: #000000;">${(index == 0 ? i18next.t('dashboard.myDashboards') : i18next.t('dashboard.createdByOthers'))}</span>
+                                <span style="font-weight: 500; padding-left: 14px; color: #000000;">${(index == 0 ? i18next.t('dashboard.myDashboards') : i18next.t('dashboard.createdByOthers'))}</span>
                                 <div id="list-container">
                                     <ol id="list">
                                         ${items.map((listItem: ListItem) => {
