@@ -6,7 +6,6 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
 import {throttle} from "lodash";
 import {style} from "./style";
-import "@openremote/or-gauge";
 import {widgetTypes} from "./index";
 
 //language=css
