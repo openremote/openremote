@@ -20,6 +20,7 @@
 package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelId;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
@@ -77,6 +78,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @Override
     public boolean onConnect(RemotingConnection connection) {
+        super.onConnect(connection);
         Map<String, Object> headers = prepareHeaders(connection);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
 
@@ -84,9 +86,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection);
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-        // Ensure any existing subscriptions for this client ID are cancelled
-        // TODO: Decide how to handle retained sessions
-        clientEventService.cancelSubscriptions(connection.getClientID());
         return true;
     }
 
@@ -495,7 +494,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     protected static Map<String, Object> prepareHeaders(RemotingConnection connection) {
         Optional<AuthContext> authContext = getAuthContextFromConnection(connection);
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConnectionConstants.SESSION_KEY, connection.getClientID());
+        headers.put(ConnectionConstants.SESSION_KEY, MQTTBrokerService.getConnectionIDString(connection));
         headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
         headers.put(Constants.AUTH_CONTEXT, authContext.orElse(null));
         headers.put(Constants.REALM_PARAM_NAME, authContext.map(AuthContext::getAuthenticatedRealmName));

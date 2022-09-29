@@ -94,7 +94,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         // A bit of a hack to allow auto provisioned clients to remain connected after authentication and to then have
         // the usual service user authentication without having to disconnect and reconnect
         if (user == null) {
-            Pair<String, String> transientCredentials = brokerService.transientCredentials.get(remotingConnection.getClientID());
+            Pair<String, String> transientCredentials = brokerService.transientCredentials.get(remotingConnection.getID());
             if (transientCredentials != null) {
                 user = transientCredentials.getKey();
                 password = transientCredentials.getValue();

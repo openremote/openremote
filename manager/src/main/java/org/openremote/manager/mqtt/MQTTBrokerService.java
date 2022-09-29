@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.mqtt;
 
+import io.netty.channel.ChannelId;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
@@ -33,10 +34,10 @@ import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.remoting.FailureListener;
 import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnection;
+import org.apache.activemq.artemis.core.security.impl.SecurityStoreImpl;
 import org.apache.activemq.artemis.core.server.ServerSession;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPlugin;
-import org.apache.activemq.artemis.core.server.plugin.impl.NotificationActiveMQServerPlugin;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
@@ -99,9 +100,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected ScheduledExecutorService executorService;
     protected TimerService timerService;
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
+    protected ConcurrentMap<String, RemotingConnection> clientIDConnectionMap = new ConcurrentHashMap<>();
     // TODO: Make auto provisioning clients disconnect and reconnect with credentials
     // Temp to prevent breaking existing auto provisioning API
-    protected ConcurrentMap<String, Pair<String, String>> transientCredentials = new ConcurrentHashMap<>();
+    protected ConcurrentMap<Object, Pair<String, String>> transientCredentials = new ConcurrentHashMap<>();
     protected Debouncer<String> userAssetDisconnectDebouncer;
 
     protected boolean active;
@@ -162,10 +164,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         config.registerBrokerPlugin(this);
 
         // Register notification plugin
-        NotificationActiveMQServerPlugin notificationPlugin = new NotificationActiveMQServerPlugin();
-        notificationPlugin.setSendConnectionNotifications(true);
-        config.registerBrokerPlugin(notificationPlugin);
-
         config.setWildCardConfiguration(wildcardConfiguration);
         config.setPersistenceEnabled(false);
 
@@ -290,6 +288,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void afterCreateConnection(RemotingConnection connection) throws ActiveMQException {
+
+        // Ignore internal connections
+        if (connection.getTransportConnection() instanceof InVMConnection) {
+            return;
+        }
+
         // MQTT seems to only use failure callback even if closed gracefully (need to look at the exception for details)
         connection.addFailureListener(new FailureListener() {
             @Override
@@ -299,6 +303,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
             @Override
             public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
+
+                if (connection.getClientID() != null) {
+                    clientIDConnectionMap.remove(connection.getClientID());
+                }
+
                 // TODO: Force delete session (don't allow retained/durable sessions)
 
                 if (exception.getType() == ActiveMQExceptionType.REMOTE_DISCONNECT) {// Seems to be the type for graceful close of connection
@@ -315,7 +324,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             }
         });
 
-        // Notify handlers of connect
+        // Notify handlers of connect - we don't use client ID as it is sometimes not set on the connection before we
+        // reach here
         for (MQTTHandler handler : getCustomHandlers()) {
             handler.onConnect(connection);
         }
@@ -370,7 +380,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         return server.getActiveMQServer().getSessions().stream().filter(session -> {
-            Subject subject = session.getRemotingConnection().getAuditSubject();
+            Subject subject = session.getRemotingConnection().getSubject();
             return userID.equals(KeycloakIdentityProvider.getSubjectId(subject));
         }).map(ServerSession::getRemotingConnection).collect(Collectors.toSet());
     }
@@ -386,7 +396,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 ClientProducer producer = internalSession.createProducer(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()));
                 ClientMessage message = internalSession.createMessage(false);
                 message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
-                message.writeBodyBufferString(ValueUtil.asJSON(data).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
+                message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
                 producer.send(message);
             }
         } catch (Exception e) {
@@ -396,5 +406,45 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     public WildcardConfiguration getWildcardConfiguration() {
         return wildcardConfiguration;
+    }
+
+    public static String getConnectionIDString(RemotingConnection connection) {
+        if (connection == null) {
+            return null;
+        }
+
+        Object ID = connection.getID();
+        return ID instanceof ChannelId ? ((ChannelId)ID).asLongText() : ID.toString();
+    }
+
+    public RemotingConnection getConnectionFromClientID(String clientID) {
+        if (TextUtil.isNullOrEmpty(clientID)) {
+            return null;
+        }
+
+        // This logic is needed because the connection clientID isn't populated when afterCreateConnection is called
+        RemotingConnection connection = clientIDConnectionMap.get(clientID);
+
+        if (connection == null) {
+            // Try and find the client ID from the sessions
+            for (ServerSession serverSession : server.getActiveMQServer().getSessions()) {
+                if (serverSession.getRemotingConnection() != null && Objects.equals(clientID, serverSession.getRemotingConnection().getClientID())) {
+                    connection = serverSession.getRemotingConnection();
+                    clientIDConnectionMap.put(clientID, connection);
+                    break;
+                }
+            }
+        }
+
+        return connection;
+    }
+
+    public void addTransientCredentials(RemotingConnection connection, Pair<String, String> usernameAndPassword) {
+        transientCredentials.put(connection.getID(), usernameAndPassword);
+        ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthenticationCache();
+    }
+
+    public void removeTransientCredentials(RemotingConnection connection) {
+        transientCredentials.remove(connection.getID());
     }
 }

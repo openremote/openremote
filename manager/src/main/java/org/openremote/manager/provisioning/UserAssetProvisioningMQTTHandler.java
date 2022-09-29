@@ -233,19 +233,14 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean onConnect(RemotingConnection connection) {
-        return super.onConnect(connection);
-    }
-
-    @Override
     public void onConnectionLost(RemotingConnection connection) {
-        removeTransientCredentials(connection);
+        mqttBrokerService.removeTransientCredentials(connection);
         provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
-        removeTransientCredentials(connection);
+        mqttBrokerService.removeTransientCredentials(connection);
         provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
     }
 
@@ -372,7 +367,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig);
 
         // Update connection with service user credentials
-        addTransientCredentials(connection, new Pair<>(realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
+        mqttBrokerService.addTransientCredentials(connection, new Pair<>(realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
                 connections = new HashSet<>();

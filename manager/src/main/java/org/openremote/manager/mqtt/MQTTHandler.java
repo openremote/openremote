@@ -25,7 +25,6 @@ import org.apache.activemq.artemis.api.core.QueueConfiguration;
 import org.apache.activemq.artemis.api.core.RoutingType;
 import org.apache.activemq.artemis.api.core.client.ClientConsumer;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
-import org.apache.activemq.artemis.core.server.ServerSession;
 import org.apache.activemq.artemis.reader.MessageUtil;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
@@ -38,7 +37,6 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.util.Pair;
-import org.openremote.model.util.TextUtil;
 
 import javax.security.auth.Subject;
 import java.util.Objects;
@@ -109,7 +107,7 @@ public abstract class MQTTHandler {
             consumer.setMessageHandler(message -> {
                 Topic publishTopic = Topic.parse(MQTTUtil.convertCoreAddressToMqttTopicFilter(message.getAddress(), mqttBrokerService.wildcardConfiguration));
                 String clientID = message.getStringProperty(MessageUtil.CONNECTION_ID_PROPERTY_NAME);
-                RemotingConnection connection = getConnectionFromClientID(clientID);
+                RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
             });
         } catch (ActiveMQException e) {
@@ -128,6 +126,7 @@ public abstract class MQTTHandler {
      * Will be called when any client connects; if returns false then subsequent handlers will not be called
      */
     public boolean onConnect(RemotingConnection connection) {
+
         return true;
     }
 
@@ -234,28 +233,6 @@ public abstract class MQTTHandler {
      */
     public abstract void onPublish(RemotingConnection connection, Topic topic, ByteBuf body);
 
-    protected void addTransientCredentials(RemotingConnection connection, Pair<String, String> usernameAndPassword) {
-        mqttBrokerService.transientCredentials.put(connection.getClientID(), usernameAndPassword);
-    }
-
-    protected void removeTransientCredentials(RemotingConnection connection) {
-        mqttBrokerService.transientCredentials.remove(connection.getClientID());
-    }
-
-    protected RemotingConnection getConnectionFromClientID(String clientID) {
-        if (TextUtil.isNullOrEmpty(clientID)) {
-            return null;
-        }
-
-        for (ServerSession serverSession : mqttBrokerService.server.getActiveMQServer().getSessions()) {
-            if (Objects.equals(clientID, serverSession.getRemotingConnection().getClientID())) {
-                return serverSession.getRemotingConnection();
-            }
-        }
-
-        return null;
-    }
-
     public static String topicRealm(Topic topic) {
         return topicTokenIndexToString(topic, 0);
     }
@@ -277,7 +254,7 @@ public abstract class MQTTHandler {
     }
 
     protected static Subject getSubjectFromConnection(RemotingConnection connection) {
-        return connection != null ? connection.getAuditSubject() : null;
+        return connection != null ? connection.getSubject() : null;
     }
 
     protected static RemotingConnection getConnectionFromSubject(Subject subject) {
