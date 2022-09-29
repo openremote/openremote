@@ -185,7 +185,7 @@ export class OrDashboardTree extends LitElement {
                         ` : undefined}
                         <span style="--or-icon-fill: black">
                             ${getContentWithMenuTemplate(
-                                    html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" style="--or-icon-fill: white;"></or-mwc-input>`,
+                                    html`<or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus" style="--or-icon-fill: white;"></or-mwc-input>`,
                                     menuItems, "monitor", (value: string | string[]) => {
                                         const size: DashboardSizeOption = +value;
                                         this.createDashboard(size);

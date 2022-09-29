@@ -27,6 +27,17 @@ export const style = css`
         background-color: var(--internal-or-asset-tree-background-color);
     }
 
+    @media only screen and (max-width: 640px){
+        .hideMobile {
+            display: none !important;
+        }
+    }
+    @media only screen and (min-width: 641px){
+        .showMobile {
+            display: none !important;
+        }
+    }
+
     #content {
         display: table-row;
     }
