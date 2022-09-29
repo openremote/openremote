@@ -65,7 +65,7 @@ export class OrKpiWidgetContent extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>) {
-        console.error(changedProperties);
+        console.log(changedProperties);
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
                 this.assets = assets!;
@@ -82,7 +82,6 @@ export class OrKpiWidgetContent extends LitElement {
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
         if(config.attributeRefs) {
-            console.error("Fetching assets in or-chart-widget!");
             if (config.attributeRefs != null) {
                 let assets: Asset[] = [];
                 await manager.rest.api.AssetResource.queryAssets({
@@ -122,8 +121,7 @@ export class OrKpiWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
-        const config = this.widget?.widgetConfig;
-        console.error(this.widget);
+        console.log("[or-kpi-widget] Rendering..");
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}

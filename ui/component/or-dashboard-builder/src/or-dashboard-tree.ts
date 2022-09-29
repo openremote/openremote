@@ -256,14 +256,6 @@ export class OrDashboardTree extends LitElement {
     // TODO: Needs to be moved to probably model itself
     private getDefaultScreenPresets(preset: DashboardSizeOption): DashboardScreenPreset[] {
         switch (preset) {
-            case DashboardSizeOption.DESKTOP: {
-                return [{
-                    id: "mobile",
-                    displayName: 'dashboard.size.mobile',
-                    breakpoint: 640,
-                    scalingPreset: DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN
-                }];
-            }
             case DashboardSizeOption.MOBILE: {
                 return [{
                     id: "mobile",
@@ -272,7 +264,7 @@ export class OrDashboardTree extends LitElement {
                     scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }];
             }
-            default: { // or DashboardSizeOption.DESKTOP since that is the default
+            default: { // DashboardSizeOption.DESKTOP since that is the default
                 return [{
                     id: "mobile",
                     displayName: 'dashboard.size.mobile',

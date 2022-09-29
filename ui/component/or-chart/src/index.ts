@@ -424,7 +424,6 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
-        // console.log(changedProperties);
 
         if (changedProperties.has("realm")) {
             if(changedProperties.get("realm") != undefined) { // Checking whether it was undefined previously, to prevent loading 2 times and resetting attribute properties.
@@ -583,7 +582,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     render() {
         const disabled = this._loading;
         const endDateInputType = this.getInputType();
-        // this.updateComplete.then(() => { this.applyChartResponsiveness(); })
         return html`
             <div id="container">
                 <div id="chart-container">

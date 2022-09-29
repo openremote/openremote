@@ -19,7 +19,6 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 import { when } from "lit/directives/when.js";
 import { cache } from "lit/directives/cache.js";
-import { until } from "lit/directives/until.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -479,7 +478,7 @@ export class OrDashboardPreview extends LitElement {
                     }
                 })
             }
-        } catch (e) { console.warn(e); }
+        } catch (e) { console.error(e); }
 
         // Set manual px height in case of fullscreen, to make scrollbar work without issues (especially when drag-and-dropping widgets)
         if(this.fullscreen) {
@@ -575,7 +574,6 @@ export class OrDashboardPreview extends LitElement {
     // Provides support for > 12 columns in GridStack (which requires manual css edits)
     //language=html
     applyCustomGridstackGridCSS(columns: number): TemplateResult {
-        console.error("Applying custom Gridstack CSS...");
         if(this.cachedGridstackCSS.has(columns)) {
             return html`${this.cachedGridstackCSS.get(columns)!.map((x) => x)}`;
         } else {
@@ -617,7 +615,6 @@ export class OrDashboardPreview extends LitElement {
     }
 
     protected resizeObserverCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
-        console.error((this.previousObserverEntry?.contentRect.width + "px") + " vs " + (entries[0].contentRect.width + "px"));
         if((this.previousObserverEntry?.contentRect.width + "px") !== (entries[0].contentRect.width + "px")) {
             this._onGridResize();
         }

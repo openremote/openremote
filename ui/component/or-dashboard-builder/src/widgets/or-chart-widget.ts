@@ -46,7 +46,6 @@ export class OrChartWidget implements OrWidgetEntity {
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string): TemplateResult {
-        console.error("Getting widget html...");
         return html`<or-chart-widget .widget="${widget}" .editMode="${editMode}" .realm="${realm}" style="overflow: auto; height: 100%;"></or-chart-widget>`;
     }
 
@@ -80,7 +79,7 @@ export class OrChartWidgetContent extends LitElement {
     /* ---------- */
 
     render() {
-        console.error("[or-chart-widget] Rendering..");
+        console.log("[or-chart-widget] Rendering..");
         return html`
             <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}" denseLegend="${true}"
                       .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(this.widget!, startOfPeriod, endOfPeriod, 20); }) : undefined}"
@@ -107,7 +106,6 @@ export class OrChartWidgetContent extends LitElement {
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
         if(config.attributeRefs) {
-            console.error("Fetching assets in or-chart-widget!");
             if (config.attributeRefs != null) {
                 let assets: Asset[] = [];
                 await manager.rest.api.AssetResource.queryAssets({
@@ -134,7 +132,6 @@ export class OrChartWidgetContent extends LitElement {
     private cachedMockData?: Map<string, { period: any, data: any[] }> = new Map<string, { period: any, data: any[] }>();
 
     generateMockData(widget: DashboardWidget, startOfPeriod: number, _endOfPeriod: number, amount: number = 10) {
-        console.error("Generating mock data....");
         const mockTime: number = startOfPeriod;
         const chartData: any[] = [];
         const interval = (Date.now() - startOfPeriod) / amount;
@@ -172,7 +169,6 @@ export class OrChartWidgetContent extends LitElement {
                 pointRadius: 2
             });
         });
-        console.error(chartData);
         return chartData;
     }
 }
@@ -200,7 +196,6 @@ class OrChartWidgetSettings extends LitElement {
     // UI Rendering
     render() {
         const config = this.widget?.widgetConfig;
-        console.error(this.widget);
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
@@ -259,7 +254,6 @@ class OrChartWidgetSettings extends LitElement {
 
     // Method to update the Grid. For example after changing a setting.
     forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
-        console.error("Forcing parent update on or-chart-widget now..");
         this.requestUpdate();
         this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }

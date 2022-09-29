@@ -278,7 +278,6 @@ export class OrDashboardBuilder extends LitElement {
 
         this.registerWidgetType("linechart", new OrChartWidget());
         this.registerWidgetType("kpi", new OrKpiWidget());
-        // this.registerWidgetType("gauge", new OrGaugeWidget());
 
         this.updateComplete.then(async () => {
             await this.updateDashboards(this.realm!);

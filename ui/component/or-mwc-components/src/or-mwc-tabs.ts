@@ -89,12 +89,10 @@ export class OrMwcTabs extends LitElement {
         if (this.noScroll == null) { this.noScroll = false; }
 
         this.updateComplete.then(() => {
-            console.log("Update Complete triggered in or-mwc-tabs!");
             const tabBarElement = this.shadowRoot?.querySelector('.mdc-tab-bar');
             if(tabBarElement != null) {
                 this.mdcTabBar = new MDCTabBar(tabBarElement); // init of material component
                 this.mdcTabBar.listen("MDCTabBar:activated", (event: CustomEvent) => {
-                    console.log("MDCTabBar:activated event triggered!");
                     this.index = event.detail.index;
                 });
             }
@@ -128,11 +126,8 @@ export class OrMwcTabs extends LitElement {
 
     // If an update happens on either the Index or mdcTabBar object.
     protected updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
         if(changedProperties.has('index') || changedProperties.has('mdcTabBar')) {
-            console.warn('Change in index or mdcTabBar..');
             if(this.mdcTabBar != null && this.index != null) {
-                console.warn('Activating tab..')
                 this.mdcTabBar.activateTab(this.index);
                 this.dispatchEvent(new CustomEvent("activated", { detail: { index: this.index }}))
             }
@@ -151,7 +146,7 @@ export class OrMwcTabs extends LitElement {
                 <div class="mdc-tab-bar" role="tablist" id="tab-bar">
                     <div class="mdc-tab-scroller">
                         <div class="mdc-tab-scroller__scroll-area" style="overflow-x: ${this.noScroll ? 'hidden' : undefined}">
-                            <div class="mdc-tab-scroller__scroll-content" @click="${() => { console.log(this.mdcTabBar); }}">
+                            <div class="mdc-tab-scroller__scroll-content">
                                 ${this.items?.map((menuItem => { return html`
                                     <button class="mdc-tab" role="tab" aria-selected="false" tabindex="${this.items?.indexOf(menuItem)}">
                                     <span class="mdc-tab__content">

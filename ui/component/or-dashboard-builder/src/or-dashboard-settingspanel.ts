@@ -109,8 +109,6 @@ export class OrDashboardSettingsPanel extends LitElement {
 
     render() {
         const config = this.widget?.widgetConfig;
-        console.error(this.widget);
-        console.error(config);
         switch (this.type) {
 
             case SettingsPanelType.SINGLE_ATTRIBUTE:
@@ -136,12 +134,10 @@ export class OrDashboardSettingsPanel extends LitElement {
 
     // Method to update the Grid. For example after changing a setting.
     forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
-        console.error("Starting forceParentUpdate on settingsPanel");
         this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }
 
     async getAttributeHTML(config: any, multi: boolean) {
-        console.error(this.loadedAssets);
         if (!this.loadedAssets) {
             this.loadedAssets = await this.fetchAssets(config);
         }
@@ -181,7 +177,6 @@ export class OrDashboardSettingsPanel extends LitElement {
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
         if (config.attributeRefs) {
-            console.error("Fetching assets in or-dashboard-settingspanel!");
             if (config.attributeRefs != null) {
                 let assets: Asset[] = [];
                 await manager.rest.api.AssetResource.queryAssets({
@@ -204,7 +199,6 @@ export class OrDashboardSettingsPanel extends LitElement {
     setWidgetAttributes(selectedAttrs?: AttributeRef[]) {
         if (this.widget?.widgetConfig != null) {
             this.widget.widgetConfig.attributeRefs = selectedAttrs;
-            console.error("Changed the attributeRefs to the new ones!");
             this.fetchAssets(this.widget.widgetConfig).then((assets) => {
                 this.loadedAssets = assets;
                 this.requestUpdate("widget");
