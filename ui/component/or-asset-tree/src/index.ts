@@ -318,8 +318,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _clearIconContainer!: HTMLElement;
     @query("#filterInput")
     protected _filterInput!: OrMwcInput;
-    @query("#asset-tree-filter-setting")
-    protected _filterSetting!: HTMLElement;
+    @state()
+    protected _filterSettingOpen: boolean = false;
     @state()
     protected _assetTypes: AssetDescriptor[] = [];
     @query("#attributeNameFilter")
@@ -440,7 +440,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     
                     ${getContentWithMenuTemplate(
                             html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
-                            ["name", "type", "createdOn", "status"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
+                            ["name", "type", "createdOn"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
                             this.sortBy,
                             (v) => this._onSortClicked(v as string))}
                 </div>
@@ -463,11 +463,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   this._onFilterInput((e.detail.value as string) || undefined, true);
                               }}">
                               </or-mwc-input>
-                <or-icon id="filterSettingsIcon" icon="tune" @click="${() => {
-                    if ( this._filterSetting.classList.contains("visible") ) {
-                        this._filterSetting.classList.remove("visible");
+                <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" @click="${() => {
+                    if (this._filterSettingOpen) {
+                        this._filterSettingOpen = false;
                     } else {
-                        this._filterSetting.classList.add("visible");
+                        this._filterSettingOpen = true;
                         // Avoid to build again the types
                         if ( this._assetTypes.length === 0 ) {
                             let usedTypes: string[] = [];
@@ -492,7 +492,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     }
                 }}"></or-icon>
             </div>
-            <div id="asset-tree-filter-setting">
+            <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
                 <div class="advanced-filter">
                     ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
                         this.assetTypeSelect(), 
@@ -1023,7 +1023,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         this._filterInput.value = newFilterForSearchInput;
 
-        this._filterSetting.classList.remove("visible");
+        this._filterSettingOpen = false;
 
         this._doFiltering();
     }

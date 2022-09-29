@@ -40,7 +40,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         super.updated(changedProps);
 
         if (changedProps.has("ruleset") && this.ruleset) {
-            this._validity = this.ruleset.meta ? this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent : undefined;
+            this._validity = this.ruleset.meta ? this.ruleset.meta["validity"] as CalendarEvent : undefined;
 
             if (this._validity && this._validity.recurrence) {
                 this._rrule = RRule.fromString(this._validity.recurrence);
@@ -192,7 +192,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
         switch (value) {
             case "validityAlways":
-                delete this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY];
+                delete this.ruleset.meta["validity"];
                 this._validity = undefined;
                 this._rrule = undefined;
                 break;
@@ -279,12 +279,12 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     action: () => {
                         if (this.ruleset && this.ruleset.meta) {
                             if (this.getValidityType() === "validityAlways") {
-                                delete this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY];
+                                delete this.ruleset.meta["validity"];
                             } else {
                                 if (this.getValidityType() === "validityRecurrence") {
                                     this._validity!.recurrence = this._rrule!.toString().split("RRULE:")[1];
                                 }
-                                this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] = this._validity;
+                                this.ruleset.meta["validity"] = this._validity;
                             }
                             this.dispatchEvent(new OrRulesRuleChangedEvent(true));
                             this._dialog = undefined;

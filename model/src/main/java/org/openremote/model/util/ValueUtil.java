@@ -581,6 +581,7 @@ public class ValueUtil {
 
     public static Optional<MetaItemDescriptor<?>> getMetaItemDescriptor(String name) {
         if (TextUtil.isNullOrEmpty(name)) return Optional.empty();
+
         return metaItemDescriptors.stream().filter(mid -> mid.getName().equals(name)).findFirst();
     }
 
@@ -636,27 +637,7 @@ public class ValueUtil {
         else if (valueClass == BigInteger.class) valueDescriptor = ValueType.BIG_INTEGER;
         else if (valueClass == BigDecimal.class) valueDescriptor = ValueType.BIG_NUMBER;
         else if (valueClass == Byte.class) valueDescriptor = ValueType.BYTE;
-        else if (Map.class.isAssignableFrom(valueClass)) {
-            Object firstElem = findFirstNonNullEntry((Map<?,?>)value);
-
-            if (firstElem == null) valueDescriptor = ValueType.JSON_OBJECT;
-            else {
-                boolean elemIsArray = firstElem.getClass().isArray();
-                Class<?> elemClass = elemIsArray ? firstElem.getClass() : firstElem.getClass().getComponentType();
-                if (elemIsArray) {
-                    valueDescriptor = elemClass == String.class ? ValueType.MULTIVALUED_TEXT_MAP : ValueType.JSON_OBJECT;
-                } else {
-                    if (elemClass == String.class)
-                        valueDescriptor = ValueType.TEXT_MAP;
-                    else if (elemClass == Double.class || elemClass == Float.class)
-                        valueDescriptor = ValueType.NUMBER_MAP;
-                    else if (elemClass == Integer.class)
-                        valueDescriptor = ValueType.TEXT_MAP;
-                    else if (elemClass == Boolean.class)
-                        valueDescriptor = ValueType.BOOLEAN_MAP;
-                }
-            }
-        }
+        else if (Map.class.isAssignableFrom(valueClass)) valueDescriptor = ValueType.JSON_OBJECT;
 
         return isArray ? valueDescriptor.asArray() : valueDescriptor;
     }

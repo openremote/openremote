@@ -49,7 +49,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
 
     private func checkPermission() -> Bool {
         if CLLocationManager.locationServicesEnabled() {
-            if CLLocationManager.authorizationStatus() == .authorizedAlways {
+            if locationManager.authorizationStatus == .authorizedAlways {
                 return true
             }
         }
@@ -105,7 +105,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
                 DefaultsKey.successKey: true
                 ])
         } else {
-            if CLLocationManager.authorizationStatus() == .notDetermined {
+            if locationManager.authorizationStatus == .notDetermined {
                 registerPermissions()
             } else {
                 enableCallback?([
@@ -131,7 +131,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
     }
 
     public func getLocation(callback:@escaping ([String: Any]) -> (Void)) {
-        if CLLocationManager.authorizationStatus() == .denied {
+        if locationManager.authorizationStatus == .denied {
             callback([
                 DefaultsKey.actionKey: Actions.getLocation,
                 DefaultsKey.providerKey: Providers.geofence,
