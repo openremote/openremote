@@ -36,12 +36,12 @@ import { OrKpiWidget } from "./widgets/or-kpi-widget";
 // language=CSS
 const styling = css`
 
-    @media only screen and (max-width: 600px){
+    @media only screen and (max-width: 640px){
         .hideMobile {
             display: none !important;
         }
     }
-    @media only screen and (min-width: 601px){
+    @media only screen and (min-width: 641px){
         .showMobile {
             display: none !important;
         }

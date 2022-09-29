@@ -373,6 +373,9 @@ export class OrDashboardPreview extends LitElement {
                 const gridHTML = this.shadowRoot?.querySelector(".maingrid");
                 this.setupResizeObserver(gridHTML!);
             }
+
+            gridElement!.style.maxWidth = this.template.maxScreenWidth + "px";
+
             this.grid = GridStack.init({
                 acceptWidgets: (this.editMode),
                 animate: true,
@@ -529,7 +532,7 @@ export class OrDashboardPreview extends LitElement {
                                  style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.editMode && !this.fullscreen ? this.previewZoom : 'normal'}; ${this.editMode && !this.fullscreen ? ('-moz-transform: scale(' + this.previewZoom + ')') : undefined}; transform-origin: top;"
                             >
                                 <!-- Gridstack element on which the Grid will be rendered -->
-                                <div id="gridElement" class="grid-stack ${this.editMode ? 'grid-element' : undefined}">
+                                <div id="gridElement" class="grid-stack ${this.editMode ? 'grid-element' : undefined}" style="margin: auto;">
                                     ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
                                         return html`
                                             <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
@@ -614,6 +617,7 @@ export class OrDashboardPreview extends LitElement {
     }
 
     protected resizeObserverCallback: ResizeObserverCallback = (entries: ResizeObserverEntry[]) => {
+        console.error((this.previousObserverEntry?.contentRect.width + "px") + " vs " + (entries[0].contentRect.width + "px"));
         if((this.previousObserverEntry?.contentRect.width + "px") !== (entries[0].contentRect.width + "px")) {
             this._onGridResize();
         }

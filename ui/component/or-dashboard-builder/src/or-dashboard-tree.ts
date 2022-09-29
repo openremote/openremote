@@ -102,7 +102,7 @@ export class OrDashboardTree extends LitElement {
             template: {
                 id: randomId,
                 columns: this.getDefaultColumns(size),
-                maxScreenWidth: 4000,
+                maxScreenWidth: this.getDefaultMaxScreenWidth(size),
                 screenPresets: this.getDefaultScreenPresets(size),
             }
         } as Dashboard
@@ -280,6 +280,14 @@ export class OrDashboardTree extends LitElement {
                     scalingPreset: DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN
                 }];
             }
+        }
+    }
+
+    // TODO: Needs to be moved to probably model itself
+    private getDefaultMaxScreenWidth(preset: DashboardSizeOption): number {
+        switch (preset) {
+            case DashboardSizeOption.DESKTOP: return 4000;
+            case DashboardSizeOption.MOBILE: return 640;
         }
     }
 }

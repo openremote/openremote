@@ -154,7 +154,7 @@ export class OrDashboardBoardsettings extends LitElement {
                             <div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
                                 <span style="min-width: 150px;">${i18next.t('dashboard.maxScreenWidth')}</span>
                                 <div>
-                                    <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.maxScreenWidth}" disabled style="width: 70px;"
+                                    <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.maxScreenWidth}" style="width: 70px;"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.dashboard?.template != null) {
                                                       this.dashboard.template.maxScreenWidth = event.detail.value as number; this.forceParentUpdate(false);
                                                   }}}">
