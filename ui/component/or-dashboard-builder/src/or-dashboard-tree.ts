@@ -52,6 +52,9 @@ export class OrDashboardTree extends LitElement {
     private readonly userId?: string;
 
     @property()
+    private readonly readonly: boolean = true;
+
+    @property()
     protected hasChanged: boolean = false;
 
     @property()
@@ -179,15 +182,19 @@ export class OrDashboardTree extends LitElement {
                     <div id="header-btns">
                         ${this.selected != null ? html`
                             <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => { this.selectDashboard(undefined); }}"></or-mwc-input>
-                            <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => { if(this.selected != null) {
-                                showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', { dashboard: this.selected.displayName }), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteDashboard(this.selected!); }});
-                            }}}"></or-mwc-input>
+                            ${!this.readonly ? html`
+                                <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => { if(this.selected != null) {
+                                    showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', { dashboard: this.selected.displayName }), i18next.t('delete')).then((ok: boolean) => { if(ok) { this.deleteDashboard(this.selected!); }});
+                                }}}"></or-mwc-input>
+                            ` : undefined}
                         ` : undefined}
-                        <span style="--or-icon-fill: black">
-                            <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus" style="--or-icon-fill: white;"
-                                          @or-mwc-input-changed="${() => { this.createDashboard(DashboardSizeOption.DESKTOP); }}"
-                            ></or-mwc-input>
-                        </span>
+                        ${!this.readonly ? html`
+                            <span style="--or-icon-fill: black">
+                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus" style="--or-icon-fill: white;"
+                                              @or-mwc-input-changed="${() => { this.createDashboard(DashboardSizeOption.DESKTOP); }}"
+                                ></or-mwc-input>
+                            </span>
+                        ` : undefined}
                     </div>
                 ` : undefined}
             </div>
