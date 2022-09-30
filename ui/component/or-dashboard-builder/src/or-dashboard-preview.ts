@@ -481,14 +481,14 @@ export class OrDashboardPreview extends LitElement {
         } catch (e) { console.error(e); }
 
         // Set manual px height in case of fullscreen, to make scrollbar work without issues (especially when drag-and-dropping widgets)
-        if(this.fullscreen) {
-            this.waitUntil((_: any) => this.shadowRoot?.querySelector('.maingrid') != null).then(() => {
-                const grid: HTMLElement = this.shadowRoot?.querySelector('.maingrid') as HTMLElement;
+        this.waitUntil((_: any) => this.shadowRoot?.querySelector('.maingrid') != null).then(() => {
+            const grid: HTMLElement = this.shadowRoot?.querySelector('.maingrid') as HTMLElement;
+            if(this.fullscreen) {
                 grid.style.height = grid.parentElement!.clientHeight + "px";
-                const background: HTMLElement = this.shadowRoot?.getElementById('gridElement') as HTMLElement;
-                background.style.height = grid.scrollHeight + "px";
-            })
-        }
+            }
+            const background: HTMLElement = this.shadowRoot?.getElementById('gridElement') as HTMLElement;
+            background.style.height = grid.scrollHeight + "px";
+        })
 
         const customPreset = "Custom";
         let screenPresets = this.template?.screenPresets?.map(s => s.displayName);
