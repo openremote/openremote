@@ -19,7 +19,7 @@
     "@openremote/core": "^1.0.4",
     "@openremote/model": "^1.0.4",
     "@openremote/rest": "^1.0.4",
-    "gridstack": "^6.0.1",
+    "gridstack": "^6.0.2",
     "lit": "^2.0.2"
   },
   "devDependencies": {

@@ -255,7 +255,7 @@ export class OrDashboardPreview extends LitElement {
                 .then((response) => { this.template = response.data.template!; })
                 .catch((reason) => { console.error(reason); showSnackbar(undefined, i18next.t('errorOccurred')); });
         } else if(this.template == null && this.dashboardId == null) {
-            console.error("Neither the template nor dashboardId attributes have been specified!");
+            console.warn("Neither the template nor dashboardId attributes have been specified!");
         }
 
         // If changes to the template have been made
@@ -478,7 +478,7 @@ export class OrDashboardPreview extends LitElement {
                     }
                 })
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.warn(e); }
 
         // Set manual px height in case of fullscreen, to make scrollbar work without issues (especially when drag-and-dropping widgets)
         this.waitUntil((_: any) => this.shadowRoot?.querySelector('.maingrid') != null).then(() => {
