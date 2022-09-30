@@ -485,6 +485,8 @@ export class OrDashboardPreview extends LitElement {
             this.waitUntil((_: any) => this.shadowRoot?.querySelector('.maingrid') != null).then(() => {
                 const grid: HTMLElement = this.shadowRoot?.querySelector('.maingrid') as HTMLElement;
                 grid.style.height = grid.parentElement!.clientHeight + "px";
+                const background: HTMLElement = this.shadowRoot?.getElementById('gridElement') as HTMLElement;
+                background.style.height = grid.scrollHeight + "px";
             })
         }
 
