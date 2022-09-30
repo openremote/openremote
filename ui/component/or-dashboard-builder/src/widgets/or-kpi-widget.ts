@@ -15,7 +15,6 @@ export interface KpiWidgetConfig extends OrWidgetConfig {
     period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
     decimals: number;
     deltaFormat: "absolute" | "percentage";
-    showTimestampControls: boolean;
 }
 
 export class OrKpiWidget implements OrWidgetEntity {
@@ -31,7 +30,7 @@ export class OrKpiWidget implements OrWidgetEntity {
             displayName: widget.displayName,
             attributeRefs: [],
             period: "day",
-            decimals: 2,
+            decimals: 0,
             deltaFormat: "absolute",
             showTimestampControls: false
         } as KpiWidgetConfig;
@@ -67,7 +66,10 @@ export class OrKpiWidgetContent extends LitElement {
 
     render() {
         return html`
-            <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}" showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;"></or-attribute-card>
+            <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}"
+                               .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}"
+                               showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
+            </or-attribute-card>
         `
     }
 
@@ -118,7 +120,7 @@ export class OrKpiWidgetSettings extends LitElement {
     public widget?: DashboardWidget;
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display'), i18next.t('values')];
     private loadedAssets: Asset[] = [];
 
 
@@ -153,6 +155,33 @@ export class OrKpiWidgetSettings extends LitElement {
                                           .value="${config.period}" label="${i18next.t('timeframe')}" 
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               (this.widget?.widgetConfig as KpiWidgetConfig).period = event.detail.value;
+                                              this.requestUpdate();
+                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                          }}"
+                            ></or-mwc-input>
+                        </div>
+                    </div>
+                ` : null}
+            </div>
+            <div>
+                ${this.generateExpandableHeader(i18next.t('values'))}
+            </div>
+            <div>
+                ${this.expandedPanels.includes(i18next.t('values')) ? html`
+                    <div style="padding: 24px 24px 48px 24px;">
+                        <div>
+                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${config.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              (this.widget?.widgetConfig as KpiWidgetConfig).deltaFormat = event.detail.value;
+                                              this.requestUpdate();
+                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                          }}"
+                            ></or-mwc-input>
+                        </div>
+                        <div style="margin-top: 18px;">
+                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { 
+                                              (this.widget?.widgetConfig as KpiWidgetConfig).decimals = event.detail.value;
                                               this.requestUpdate();
                                               this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
                                           }}"

@@ -88,7 +88,6 @@ const style = css`
         display: flex;
         flex-direction: column;
         width: 100%;
-        justify-content: space-evenly;
         flex: 1;
     }
     
@@ -102,9 +101,8 @@ const style = css`
     
     .graph-wrapper {
         width: 100%;
-        height: 60%;
         display: flex;
-        /*flex: 1;*/
+        flex: 1;
         align-items: center;
     }
     
@@ -352,7 +350,7 @@ export class OrAttributeCard extends LitElement {
                             ${this.shouldShowControls() ? html`
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : html`
-                                <span>No Attributes connected.</span>
+                                <span>${i18next.t('noAttributesConnected')}</span>
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
                             `}
                         </div>
