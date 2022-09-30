@@ -146,7 +146,7 @@ const style = css`
     }
     
     .delta-wrapper {
-        flex: 0 0 75px;
+        flex: 0 0 50px;
         text-align: right;
         
         /*position: absolute;*/

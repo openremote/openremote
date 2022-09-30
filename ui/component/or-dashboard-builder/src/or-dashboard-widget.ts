@@ -81,7 +81,7 @@ export class OrDashboardWidget extends LitElement {
         return html`
             <div id="widget-container" style="height: 100%; padding: 8px 16px 8px 16px; display: flex; flex-direction: column; overflow: auto;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-right: -12px; height: 36px;">
-                    <span class="panel-title">${this.widget?.displayName?.toUpperCase()}</span>
+                    <span class="panel-title" style="width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.widget?.displayName?.toUpperCase()}</span>
                     <div>
                             <!--<or-mwc-input type="${InputType.BUTTON}" outlined label="Period"></or-mwc-input>-->
                             <!--<or-mwc-input type="${InputType.BUTTON}" label="Settings"></or-mwc-input>-->
