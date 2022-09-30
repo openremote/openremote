@@ -21,7 +21,6 @@ import {
     DashboardWidget
 } from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor5} from "@openremote/core";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs";
@@ -56,7 +55,7 @@ const styling = css`
         background: white;
     }
     #header-wrapper {
-        padding: 20px 20px 14px 20px;
+        padding: 14px 30px;
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -84,8 +83,14 @@ const styling = css`
         display: table-row;
         height: 1px;
     }
+    @media screen and (max-width: 700px) {
+        #fullscreen-header-wrapper {
+            padding: 11px !important;
+        }
+    }
     #fullscreen-header-wrapper {
-        padding: 17.5px 20px;
+        min-height: 36px;
+        padding: 20px 30px 15px;
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -144,7 +149,12 @@ const styling = css`
     }
     
     #save-btn { margin-left: 15px; }
-    #view-btn { margin-left: 15px; }
+    #view-btn { margin-left: 18px; }
+    
+    .small-btn {
+        height: 36px;
+        margin-top: -12px;
+    }
     
     .hidescroll {
         -ms-overflow-style: none; /* for Internet Explorer, Edge */
@@ -506,20 +516,20 @@ export class OrDashboardBuilder extends LitElement {
                             <div id="header-wrapper">
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
-                                    <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="${i18next.t('name')}" ?readonly="${this._isReadonly()}"
-                                                  .value="${this.selectedDashboard != null ? this.selectedDashboard.displayName : ' '}"
-                                                  .disabled="${this.isLoading || (this.selectedDashboard == null)}" 
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.changeDashboardName(event.detail.value); }}"
-                                                  style="min-width: 320px;">
-                                        
-                                    </or-mwc-input>
+                                    ${this.selectedDashboard != null ? html`
+                                        <or-mwc-input .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t('name') + '*\xa0'}" 
+                                                      ?readonly="${this._isReadonly()}" .value="${this.selectedDashboard.displayName}" 
+                                                      .disabled="${this.isLoading}" style="width: 300px;" 
+                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.changeDashboardName(event.detail.value); }}"
+                                        ></or-mwc-input>
+                                    ` : undefined}
                                 </div>
                                 <div id="header-actions">
                                     <div id="header-actions-content">
-                                        <or-mwc-input id="refresh-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
+                                        <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
                                                       @or-mwc-input-changed="${() => { this.rerenderPending = true; }}">
                                         </or-mwc-input>
-                                        <or-mwc-input id="responsive-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
+                                        <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
                                         </or-mwc-input>
                                         <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
@@ -535,16 +545,14 @@ export class OrDashboardBuilder extends LitElement {
                     ` : html`
                         <div id="fullscreen-header">
                             <div id="fullscreen-header-wrapper">
-                                <div id="fullscreen-header-title">
-                                    <or-mwc-input class="showMobile" type="${InputType.BUTTON}" icon="chevron-left" @or-mwc-input-changed="${() => { this.selectedDashboard = undefined; }}"></or-mwc-input>
-                                    <or-mwc-input class="hideMobile" type="${InputType.BUTTON}" icon="menu" @or-mwc-input-changed="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-mwc-input>
+                                <div id="fullscreen-header-title" style="display: flex; align-items: center;">
+                                    <or-icon class="showMobile" style="margin-right: 10px;" icon="chevron-left" @click="${() => { this.selectedDashboard = undefined; }}"></or-icon>
+                                    <or-icon class="hideMobile" style="margin-right: 10px;" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-icon>
                                     <span>${this.selectedDashboard?.displayName}</span>
                                 </div>
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
-                                        <or-mwc-input id="refresh-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
-                                                      @or-mwc-input-changed="${() => { this.rerenderPending = true; }}">
-                                        </or-mwc-input>
+                                        <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh" @or-mwc-input-changed="${() => { this.rerenderPending = true; }}"></or-mwc-input>
                                         <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>
