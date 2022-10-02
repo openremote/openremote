@@ -143,8 +143,15 @@ open class ORViewcontroller : UIViewController {
         print("Error requesting '\(failingUrl)': \(errorCode) (\(description))")
 
         let alertView = UIAlertController(title: "Error", message: "Error requesting '\(failingUrl)': \(errorCode) (\(description))", preferredStyle: .alert)
-        alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
 
+        if self.presentingViewController != nil {
+            alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in self.dismiss(animated: true)} ))
+        } else {
+            alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        }
+        self.present(alertView, animated: true, completion: nil)
+
+        /*
         if (false) {
             //TODO need to have case to return to home url of config or go back to wizard to setup project enviroment
 //            self.myWebView?.load(URLRequest(url: URL(string: url.stringByURLEncoding()!)!))
@@ -159,6 +166,7 @@ open class ORViewcontroller : UIViewController {
                 self.present(alertView, animated: true, completion: nil)
             }
         }
+         */
     }
 }
 
