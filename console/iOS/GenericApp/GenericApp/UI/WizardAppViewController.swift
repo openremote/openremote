@@ -78,71 +78,55 @@ class WizardAppViewController: UIViewController {
     }
 
     @IBAction func nextButtonpressed(_ sender: UIButton) {
-        // TODO: handle case of free text field entry
-        // TODO: validation on value provided
-        print("Selected app " + (dropDown.selectedItem ?? "none"))
-        _ = try? configManager!.setApp(app: dropDown.selectedItem ?? "none")
-        /*
-        if let domain = domainName {
-            requestAppConfig(domain)
-        }
-         */
-        self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
+        selectApp()
     }
+    
+    private func selectApp() {
+        let selectedApp: String?
+        if apps != nil {
+            selectedApp = dropDown.selectedItem
+        } else {
+            selectedApp = appName
+        }
 
-  
-/*
-    @IBAction func connectButtonpressed(_ sender: UIButton) {
-        if let project = projectName, let realm = realmName {
-            requestAppConfig(project, realm)
+        if let selectedApp = selectedApp {
+            print("Selected app >\(selectedApp)<")
+            _ = try? configManager!.setApp(app: selectedApp)
+            
+            
+            
+            // TODO: check state, can we go to some other screen ?
+            
+            
+            self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
+        } else {
+            let alertView = UIAlertController(title: "Error", message: "Please \(apps != nil ? "select" : "enter") an application", preferredStyle: .alert)
+            alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+
+            self.present(alertView, animated: true, completion: nil)
         }
     }
-     */
 }
  
 extension WizardAppViewController: UITextFieldDelegate {
 
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         if textField == appTextInput.textField {
-            appName = appTextInput.textField?.text?.appending(string).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let s = appTextInput.textField?.text {
+                appName = s.replacingCharacters(in: Range(range, in: s)!, with: string).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         }
         return true
     }
-
-    /*
-    fileprivate func requestAppConfig(_ project: String, _ realm: String) {
-        host = project.isUrl() ? project : "https://\(project).openremote.app/"
-        let url = project.isUrl() ? project.appending("/api/\(realm)") : "https://\(project).openremote.app/api/\(realm)"
-        
-        let apiManager = ApiManager(baseUrl: url)
-        apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in
-            DispatchQueue.main.async {
-                if (statusCode == 200 || statusCode == 404) && error == nil {
-                    let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
-                    userDefaults?.set(self.host, forKey: DefaultsKey.hostKey)
-                    userDefaults?.set(realm, forKey: DefaultsKey.realmKey)
-                    self.appconfig = orAppConfig
-
-                    self.performSegue(withIdentifier: "goToWebView", sender: self)
-                } else {
-                    let alertView = UIAlertController(title: "Error", message: "Error occurred getting app config. Check your input and try again", preferredStyle: .alert)
-                    alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-
-                    self.present(alertView, animated: true, completion: nil)
-                }
-            }
-        })
-    }
-     */
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         guard let input = textField.text, !input.isEmpty else {
             return false
         }
 
-        if textField == appTextInput.textField, let app = appName {
+        if textField == appTextInput.textField {
             appTextInput.textField?.resignFirstResponder()
-//            requestAppConfig(domain)
+            selectApp()
         }
 
         return true
