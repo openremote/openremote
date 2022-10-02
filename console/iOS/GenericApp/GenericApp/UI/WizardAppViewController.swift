@@ -67,7 +67,7 @@ class WizardAppViewController: UIViewController {
         }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "goToWizardRealmView" {
+        if segue.identifier == Segues.goToWizardRealmView {
             let realmViewController = segue.destination as! WizardRealmViewController
             realmViewController.configManager = self.configManager
         }
@@ -98,7 +98,7 @@ class WizardAppViewController: UIViewController {
             // TODO: check state, can we go to some other screen ?
             
             
-            self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
+            self.performSegue(withIdentifier: Segues.goToWizardRealmView, sender: self)
         } else {
             let alertView = UIAlertController(title: "Error", message: "Please \(apps != nil ? "select" : "enter") an application", preferredStyle: .alert)
             alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))

@@ -34,7 +34,7 @@ class SplashViewController: UIViewController {
                 
                 
                 // TODO: validate project "correct" before navigating
-                self.performSegue(withIdentifier: "goToWebView", sender: self)
+                self.performSegue(withIdentifier: Segues.goToWebView, sender: self)
             }
                /*
             host = savedHost
@@ -56,12 +56,12 @@ class SplashViewController: UIViewController {
                
         } else {
 //            self.performSegue(withIdentifier: "goToProjectView", sender: self)
-            self.performSegue(withIdentifier: "goToWizardDomainView", sender: self)
+            self.performSegue(withIdentifier: Segues.goToWizardDomainView, sender: self)
         }
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "goToWebView" {
+        if segue.identifier == Segues.goToWebView {
             let orViewController = segue.destination as! ORViewcontroller
             
             if let project = project {

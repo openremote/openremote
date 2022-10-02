@@ -38,7 +38,7 @@ class WizardRealmViewController: UIViewController {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "goToWebView" {
+        if segue.identifier == Segues.goToWebView {
             let orViewController = segue.destination as! ORViewcontroller
             
             switch configManager!.state {
@@ -74,7 +74,7 @@ class WizardRealmViewController: UIViewController {
                     let data = try JSONEncoder().encode([project])
                     userDefaults.setValue(data, forKey: DefaultsKey.projectsConfigurationKey)
                     userDefaults.setValue(project.id, forKey: DefaultsKey.projectKey)
-                    self.performSegue(withIdentifier: "goToWebView", sender: self)
+                    self.performSegue(withIdentifier: Segues.goToWebView, sender: self)
                 } catch {
                     break // Fall through to error message
                 }

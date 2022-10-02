@@ -21,6 +21,13 @@
 import Foundation
 import UIKit
 
+public enum Segues {
+    public static var goToWizardDomainView = "goToWizardDomainView"
+    public static var goToWizardAppView = "goToWizardAppView"
+    public static var goToWizardRealmView = "goToWizardRealmView"
+    public static var goToWebView = "goToWebView"
+}
+
 public enum DefaultsKey {
     public static var groupEntitlement = "group.io.openremote.app"
     public static let selectedProjectKey = "SELECTED_PROJECT"

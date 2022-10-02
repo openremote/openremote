@@ -38,7 +38,7 @@ class WizardDomainViewController: UIViewController {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "goToWizardAppView" {
+        if segue.identifier == Segues.goToWizardAppView {
             switch configManager!.state {
             case .selectApp(_, let apps):
                 let appViewController = segue.destination as! WizardAppViewController
@@ -47,10 +47,10 @@ class WizardDomainViewController: UIViewController {
             default:
                 fatalError("Invalid state for segue")
             }
-        } else if segue.identifier == "goToWizardRealmView" {
+        } else if segue.identifier == Segues.goToWizardRealmView {
             let realmViewController = segue.destination as! WizardRealmViewController
             realmViewController.configManager = self.configManager
-        } else if segue.identifier == "goToWebView" {
+        } else if segue.identifier == Segues.goToWebView {
             let orViewController = segue.destination as! ORViewcontroller
             
             switch configManager!.state {
@@ -59,7 +59,7 @@ class WizardDomainViewController: UIViewController {
             default:
                 fatalError("We should never come to this screen in that state")
             }
-        }        
+        }
     }
 
     @IBAction func nextButtonpressed(_ sender: UIButton) {
@@ -100,11 +100,11 @@ extension WizardDomainViewController: UITextFieldDelegate {
 
                     self.present(alertView, animated: true, completion: nil)
                 case .selectApp:
-                    self.performSegue(withIdentifier: "goToWizardAppView", sender: self)
+                    self.performSegue(withIdentifier: Segues.goToWizardAppView, sender: self)
                 case .selectRealm:
-                    self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
+                    self.performSegue(withIdentifier: Segues.goToWizardRealmView, sender: self)
                 case.complete:
-                    self.performSegue(withIdentifier: "goToWebView", sender: self)
+                    self.performSegue(withIdentifier: Segues.goToWebView, sender: self)
                 }
             } catch {
                 let alertView = UIAlertController(title: "Error", message: "Error occurred getting app config. Check your input and try again", preferredStyle: .alert)

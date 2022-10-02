@@ -85,7 +85,7 @@ extension ProjectViewController: UITextFieldDelegate {
                     userDefaults?.set(realm, forKey: DefaultsKey.realmKey)
                     self.appconfig = orAppConfig
 
-                    self.performSegue(withIdentifier: "goToWebView", sender: self)
+                    self.performSegue(withIdentifier: Segues.goToWebView, sender: self)
                 } else {
                     let alertView = UIAlertController(title: "Error", message: "Error occurred getting app config. Check your input and try again", preferredStyle: .alert)
                     alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
