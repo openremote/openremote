@@ -26,8 +26,13 @@ ConsoleConfig with no specified app and a list of apps but requesting the text f
 
 ConsoleConfig with no specified app and no allowed apps but apps list available via Apps call
 
+### Test 7
 
+Similar to Test6 but with a list of realm defined for the selected app
 
+### Test 8
+
+Similar to Test7 but with the realms defined for the default app
 
 
 TODO:

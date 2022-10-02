@@ -111,8 +111,13 @@ public class ConfigManager {
                 .complete:
             throw ConfigManagerError.invalidState
         case .selectApp(let baseURL, _):
-            // TODO: must fill realm values when possible
-            self.state = .selectRealm(baseURL, app, nil)
+            if let appInfo = appInfos[app] {
+                self.state = .selectRealm(baseURL, app, appInfo.realms)
+            } else if let appInfo = appInfos["default"] {
+                self.state = .selectRealm(baseURL, app, appInfo.realms)
+            } else {
+                self.state = .selectRealm(baseURL, app, nil)
+            }
             return state
         }
     }

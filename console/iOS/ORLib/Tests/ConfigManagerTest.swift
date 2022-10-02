@@ -67,4 +67,23 @@ class ConfigManagerTest: XCTestCase {
         state = try configManager.setRealm(realm: "master")
         XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test6.openremote.app", app: "Console 2", realm: "master")))
     }
+    
+    func test7() async throws {
+        var state = try await configManager.setDomain(domain: "test7")
+        XCTAssertEqual(state, ConfigManagerState.selectApp("https://test7.openremote.app", ["Console 1", "Console 2"]))
+        state = try configManager.setApp(app: "Console 1")
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test7.openremote.app", "Console 1", ["master1", "master2"]))
+        state = try configManager.setRealm(realm: "master1")
+        XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test7.openremote.app", app: "Console 1", realm: "master1")))
+    }
+
+    func test8() async throws {
+        var state = try await configManager.setDomain(domain: "test8")
+        XCTAssertEqual(state, ConfigManagerState.selectApp("https://test8.openremote.app", ["Console 1", "Console 2"]))
+        state = try configManager.setApp(app: "Console 1")
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test8.openremote.app", "Console 1", ["master1", "master2"]))
+        state = try configManager.setRealm(realm: "master1")
+        XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test8.openremote.app", app: "Console 1", realm: "master1")))
+    }
+
 }
