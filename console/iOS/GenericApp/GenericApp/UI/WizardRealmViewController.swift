@@ -99,8 +99,11 @@ extension WizardRealmViewController: UITextFieldDelegate {
 
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         if textField == realmTextInput.textField {
-            realmName = realmTextInput.textField?.text?.appending(string).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let s = realmTextInput.textField?.text {
+                realmName = s.replacingCharacters(in: Range(range, in: s)!, with: string).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         }
+
         return true
     }
 
