@@ -125,17 +125,21 @@ public class ConfigManager {
     public func setRealm(realm: String?) throws -> ConfigManagerState {
         switch state {
         case .selectDomain,
-                .selectApp,
-                .complete:
+                .selectApp:
             throw ConfigManagerError.invalidState
+        case .complete(let project):
+            
+            // TODO: should set the providers on the project config
+            
+            self.state = .complete(ProjectConfig(domain: project.baseURL, app: project.app, realm: realm))
         case .selectRealm(let baseURL, let app, _):
             
             // TODO: should set the providers on the project config
             
             
             self.state = .complete(ProjectConfig(domain: baseURL, app: app, realm: realm))
-            return state
         }
+        return state
     }
     
 }
