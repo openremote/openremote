@@ -14,19 +14,16 @@ import DropDown
 class WizardAppViewController: UIViewController {
 
     var configManager: ConfigManager?
-    
-    var appName: String?
-    var appconfig: ORAppConfig?
-    var host: String?
-    
+
     var apps: [String]?
-    
-    var dropDown = DropDown()
+
+    var appName: String?
 
     @IBOutlet weak var appTextInput: ORTextInput!
     @IBOutlet weak var nextButton: MDCRaisedButton!
     
     @IBOutlet weak var appsSelectionButton: UIButton!
+    var dropDown = DropDown()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -68,13 +65,24 @@ class WizardAppViewController: UIViewController {
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == Segues.goToWizardRealmView {
-            let realmViewController = segue.destination as! WizardRealmViewController
-            realmViewController.configManager = self.configManager
-        }
-/*        if segue.identifier == "goToWebView" {
+            switch configManager!.state {
+            case .selectRealm(_, _, let realms):
+                let realmViewController = segue.destination as! WizardRealmViewController
+                realmViewController.realms = realms
+                realmViewController.configManager = self.configManager
+            default:
+                fatalError("Invalid state for segue")
+            }
+        } else if segue.identifier == Segues.goToWebView {
             let orViewController = segue.destination as! ORViewcontroller
             
-        }*/
+            switch configManager!.state {
+            case .complete(let project):
+                orViewController.targetUrl = project.targetUrl
+            default:
+                fatalError("Invalid state for segue")
+            }
+        }
     }
 
     @IBAction func nextButtonpressed(_ sender: UIButton) {

@@ -9,16 +9,23 @@
 import UIKit
 import MaterialComponents.MaterialTextFields
 import ORLib
+import DropDown
+
 
 class WizardRealmViewController: UIViewController {
     
     var configManager: ConfigManager?
+
+    var realms: [String]?
 
     var realmName: String?
     
     @IBOutlet weak var realmTextInput: ORTextInput!
     @IBOutlet weak var nextButton: MDCRaisedButton!
     
+    @IBOutlet weak var realmsSelectionButton: UIButton!
+    var dropDown = DropDown()
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -35,8 +42,29 @@ class WizardRealmViewController: UIViewController {
         realmTextInput.textField?.autocorrectionType = .no
         realmTextInput.textField?.autocapitalizationType = .none
         realmTextInput.textField?.returnKeyType = .next
+        
+        if let realms = realms {
+            dropDown.anchorView = realmsSelectionButton
+            // The list of items to display. Can be changed dynamically
+            dropDown.dataSource = realms
+
+            dropDown.selectionAction = { [weak self] (index, item) in
+                self?.realmsSelectionButton.setTitle(item, for: .normal)
+            }
+            
+            realmsSelectionButton.isHidden = false
+            realmTextInput.isHidden = true
+        } else {
+            realmsSelectionButton.isHidden = true
+            realmTextInput.isHidden = false
+        }
+
     }
     
+    @IBAction func selectRealm(_ sender: AnyObject) {
+            dropDown.show()
+        }
+
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == Segues.goToWebView {
             let orViewController = segue.destination as! ORViewcontroller

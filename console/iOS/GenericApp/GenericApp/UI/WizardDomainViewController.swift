@@ -48,8 +48,14 @@ class WizardDomainViewController: UIViewController {
                 fatalError("Invalid state for segue")
             }
         } else if segue.identifier == Segues.goToWizardRealmView {
-            let realmViewController = segue.destination as! WizardRealmViewController
-            realmViewController.configManager = self.configManager
+            switch configManager!.state {
+            case .selectRealm(_, _, let realms):
+                let realmViewController = segue.destination as! WizardRealmViewController
+                realmViewController.realms = realms
+                realmViewController.configManager = self.configManager
+            default:
+                fatalError("Invalid state for segue")
+            }
         } else if segue.identifier == Segues.goToWebView {
             let orViewController = segue.destination as! ORViewcontroller
             
@@ -57,7 +63,7 @@ class WizardDomainViewController: UIViewController {
             case .complete(let project):
                 orViewController.targetUrl = project.targetUrl
             default:
-                fatalError("We should never come to this screen in that state")
+                fatalError("Invalid state for segue")
             }
         }
     }

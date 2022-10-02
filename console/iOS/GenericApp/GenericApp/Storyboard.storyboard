@@ -209,7 +209,7 @@
         <scene sceneID="Hij-HG-Sfv">
             <objects>
                 <viewController id="P3v-2u-Uf5" customClass="WizardRealmViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="AsW-xQ-7Do" customClass="Todo">
+                    <view key="view" contentMode="scaleToFill" id="AsW-xQ-7Do">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -228,7 +228,7 @@
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="QCb-6J-rL4" customClass="ORTextInput" customModule="ORLib">
+                                    <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="QCb-6J-rL4" customClass="ORTextInput" customModule="ORLib">
                                         <rect key="frame" x="10" y="41" width="334" height="40"/>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <constraints>
@@ -247,13 +247,27 @@
                                             <action selector="nextButtonpressed:" destination="P3v-2u-Uf5" eventType="touchUpInside" id="vMq-g8-g0j"/>
                                         </connections>
                                     </button>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="leading" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pE2-qw-0Zp" userLabel="Realms Selection Button">
+                                        <rect key="frame" x="10" y="41" width="334" height="40"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="40" id="yHY-R2-PoI"/>
+                                        </constraints>
+                                        <state key="normal" title="Button"/>
+                                        <buttonConfiguration key="configuration" style="plain" title="Select realm"/>
+                                        <connections>
+                                            <action selector="selectRealm:" destination="P3v-2u-Uf5" eventType="touchUpInside" id="68N-gt-zek"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <constraints>
+                                    <constraint firstAttribute="trailing" secondItem="pE2-qw-0Zp" secondAttribute="trailing" constant="10" id="402-bI-Cp5"/>
                                     <constraint firstAttribute="trailing" secondItem="QCb-6J-rL4" secondAttribute="trailing" constant="10" id="F9E-3R-zdq"/>
                                     <constraint firstItem="8fN-pT-WOs" firstAttribute="top" secondItem="rds-tC-Xfi" secondAttribute="top" constant="10" id="G7k-sz-LaP"/>
                                     <constraint firstItem="QCb-6J-rL4" firstAttribute="top" secondItem="8fN-pT-WOs" secondAttribute="bottom" constant="10" id="Nam-Bq-MQj"/>
+                                    <constraint firstItem="pE2-qw-0Zp" firstAttribute="top" secondItem="8fN-pT-WOs" secondAttribute="bottom" constant="10" id="Q6R-zK-AuV"/>
                                     <constraint firstAttribute="bottom" secondItem="Jn1-hW-fFq" secondAttribute="bottom" constant="10" id="Us2-Xt-PU7"/>
+                                    <constraint firstItem="pE2-qw-0Zp" firstAttribute="leading" secondItem="8fN-pT-WOs" secondAttribute="leading" id="b55-lA-k2m"/>
                                     <constraint firstItem="8fN-pT-WOs" firstAttribute="leading" secondItem="rds-tC-Xfi" secondAttribute="leading" constant="10" id="bZm-mE-U8J"/>
                                     <constraint firstAttribute="height" constant="200" id="jNQ-3m-Dix"/>
                                     <constraint firstAttribute="trailing" secondItem="Jn1-hW-fFq" secondAttribute="trailing" constant="10" id="te1-Rj-IYd"/>
@@ -276,6 +290,7 @@
                     <connections>
                         <outlet property="nextButton" destination="Jn1-hW-fFq" id="7Ex-bk-Rms"/>
                         <outlet property="realmTextInput" destination="QCb-6J-rL4" id="Kf8-36-Kxo"/>
+                        <outlet property="realmsSelectionButton" destination="pE2-qw-0Zp" id="rSu-57-Pzp"/>
                         <segue destination="HSA-l5-YFF" kind="presentation" identifier="goToWebView" modalPresentationStyle="fullScreen" id="4Aa-7e-CLQ"/>
                     </connections>
                 </viewController>
@@ -396,7 +411,7 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="9ZZ-gO-4Go"/>
+        <segue reference="61Y-JM-NmK"/>
         <segue reference="4Aa-7e-CLQ"/>
     </inferredMetricsTieBreakers>
     <resources>
