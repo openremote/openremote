@@ -15,10 +15,6 @@ class WizardDomainViewController: UIViewController {
     var configManager: ConfigManager?
 
     var domainName: String?
-    var appconfig: ORAppConfig?
-    var host: String?
-    
-    var apps: [String]?
 
     @IBOutlet weak var domainTextInput: ORTextInput!
     @IBOutlet weak var nextButton: MDCRaisedButton!
@@ -43,9 +39,14 @@ class WizardDomainViewController: UIViewController {
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "goToWizardAppView" {
-            let appViewController = segue.destination as! WizardAppViewController
-            appViewController.apps = self.apps
-            appViewController.configManager = self.configManager
+            switch configManager!.state {
+            case .selectApp(_, let apps):
+                let appViewController = segue.destination as! WizardAppViewController
+                appViewController.apps = apps
+                appViewController.configManager = self.configManager
+            default:
+                fatalError("Invalid state for segue")
+            }
         } else if segue.identifier == "goToWizardRealmView" {
             let realmViewController = segue.destination as! WizardRealmViewController
             realmViewController.configManager = self.configManager
@@ -92,12 +93,11 @@ extension WizardDomainViewController: UITextFieldDelegate {
                     alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
 
                     self.present(alertView, animated: true, completion: nil)
-                case .selectApp(_, let apps):
-                    self.apps = apps
+                case .selectApp:
                     self.performSegue(withIdentifier: "goToWizardAppView", sender: self)
-                case .selectRealm(_, _, _):
+                case .selectRealm:
                     self.performSegue(withIdentifier: "goToWizardRealmView", sender: self)
-                case.complete(_):
+                case.complete:
                     self.performSegue(withIdentifier: "goToWebView", sender: self)
                 }
             } catch {
