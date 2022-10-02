@@ -131,7 +131,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connect to your app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WNe-Oj-DbK">
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="     Connect to your app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WNe-Oj-DbK">
                                 <rect key="frame" x="30" y="112" width="354" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
@@ -176,6 +176,9 @@
                                     <constraint firstItem="1O0-Xo-WpU" firstAttribute="top" secondItem="RWD-5Z-rop" secondAttribute="top" constant="10" id="xYE-g9-yPv"/>
                                 </constraints>
                             </view>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="or_push_icon" translatesAutoresizingMaskIntoConstraints="NO" id="SQD-g8-nGt">
+                                <rect key="frame" x="30" y="114.5" width="16" height="16"/>
+                            </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="El4-H3-bSM"/>
                         <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -183,6 +186,8 @@
                             <constraint firstItem="RWD-5Z-rop" firstAttribute="leading" secondItem="El4-H3-bSM" secondAttribute="leading" constant="30" id="83B-XS-r1h"/>
                             <constraint firstItem="WNe-Oj-DbK" firstAttribute="top" secondItem="El4-H3-bSM" secondAttribute="top" constant="20" id="8fa-ya-RZF"/>
                             <constraint firstItem="El4-H3-bSM" firstAttribute="trailing" secondItem="WNe-Oj-DbK" secondAttribute="trailing" constant="30" id="FuU-yE-Y7H"/>
+                            <constraint firstItem="WNe-Oj-DbK" firstAttribute="centerY" secondItem="SQD-g8-nGt" secondAttribute="centerY" id="NwQ-mM-iaz"/>
+                            <constraint firstItem="SQD-g8-nGt" firstAttribute="leading" secondItem="El4-H3-bSM" secondAttribute="leading" constant="30" id="Rr3-wI-WgK"/>
                             <constraint firstItem="WNe-Oj-DbK" firstAttribute="leading" secondItem="El4-H3-bSM" secondAttribute="leading" constant="30" id="uDA-D1-Xe9"/>
                             <constraint firstItem="RWD-5Z-rop" firstAttribute="width" secondItem="WNe-Oj-DbK" secondAttribute="width" id="xWZ-ez-CNg"/>
                             <constraint firstItem="RWD-5Z-rop" firstAttribute="top" secondItem="WNe-Oj-DbK" secondAttribute="bottom" constant="20" id="ywL-uw-ANf"/>
@@ -396,6 +401,7 @@
     </inferredMetricsTieBreakers>
     <resources>
         <image name="or_logo" width="1422.6666259765625" height="806.33331298828125"/>
+        <image name="or_push_icon" width="16" height="16"/>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
