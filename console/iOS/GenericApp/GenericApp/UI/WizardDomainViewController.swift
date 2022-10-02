@@ -50,10 +50,16 @@ class WizardDomainViewController: UIViewController {
         } else if segue.identifier == "goToWizardRealmView" {
             let realmViewController = segue.destination as! WizardRealmViewController
             realmViewController.configManager = self.configManager
-        }
-        
-        // TODO: prepare to go to Web view
-        
+        } else if segue.identifier == "goToWebView" {
+            let orViewController = segue.destination as! ORViewcontroller
+            
+            switch configManager!.state {
+            case .complete(let project):
+                orViewController.targetUrl = project.targetUrl
+            default:
+                fatalError("We should never come to this screen in that state")
+            }
+        }        
     }
 
     @IBAction func nextButtonpressed(_ sender: UIButton) {
