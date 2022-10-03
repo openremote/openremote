@@ -25,13 +25,13 @@ import org.apache.activemq.artemis.core.security.Role;
 import org.apache.activemq.artemis.core.server.ActiveMQServer;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.ActiveMQJAASSecurityManager;
+import org.apache.commons.lang3.tuple.Triple;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
@@ -94,10 +94,11 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         // A bit of a hack to allow auto provisioned clients to remain connected after authentication and to then have
         // the usual service user authentication without having to disconnect and reconnect
         if (user == null) {
-            Pair<String, String> transientCredentials = brokerService.transientCredentials.get(remotingConnection.getID());
+            Triple<String, String, String> transientCredentials = brokerService.transientCredentials.get(remotingConnection.getID());
             if (transientCredentials != null) {
-                user = transientCredentials.getKey();
-                password = transientCredentials.getValue();
+                LOG.finer("Using transient credentials connection: " + remotingConnection.getID() + ", user=" + transientCredentials.getMiddle());
+                user = transientCredentials.getMiddle();
+                password = transientCredentials.getRight();
             }
         }
 
@@ -127,9 +128,11 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             }
             Subject subject = lc.getSubject();
 
-            // Insert remoting connection for use in authorisation
             if (subject != null) {
+                // Insert remoting connection for use in authorisation
                 subject.getPrincipals().add(new MQTTConnectionPrincipal(remotingConnection));
+                // Ensure subject is available when afterCreateConnection is fired
+                remotingConnection.setSubject(subject);
             }
 
             return subject;

@@ -332,7 +332,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Client.topicConsumerMap.get(attributeSubscriptionTopic) == null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
-            assert connection == null
+            assert connection != null
             assert subscribeFailures.size() == 2
             assert subscribeFailures.contains(assetSubscriptionTopic)
             assert subscribeFailures.contains(attributeSubscriptionTopic)
@@ -545,7 +545,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != existingConnection
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
-            assert connection == null
+            assert connection != null
         }
 
         when: "the re-connected client re-authenticates"

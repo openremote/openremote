@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
@@ -41,7 +42,6 @@ import org.openremote.model.provisioning.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -367,7 +367,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig);
 
         // Update connection with service user credentials
-        mqttBrokerService.addTransientCredentials(connection, new Pair<>(realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
+        mqttBrokerService.addTransientCredentials(connection, new ImmutableTriple<>(serviceUser.getId(), realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
                 connections = new HashSet<>();
