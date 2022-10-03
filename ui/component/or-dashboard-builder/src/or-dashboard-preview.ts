@@ -471,9 +471,9 @@ export class OrDashboardPreview extends LitElement {
 
         try { // to correct the list of gridItems each render (Hopefully temporarily since it's quite compute heavy)
             if(this.grid?.getGridItems()) {
-                console.warn("Correcting list of gridItems..");
                 this.grid?.getGridItems().forEach((gridItem: GridItemHTMLElement) => {
                     if(this.template?.widgets?.find((widget) => widget.id == gridItem.id) == undefined) {
+                        console.warn("Correcting " + gridItem.id + "...");
                         this.grid?.removeWidget(gridItem);
                     }
                 })
