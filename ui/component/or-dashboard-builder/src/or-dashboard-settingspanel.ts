@@ -95,16 +95,29 @@ export enum SettingsPanelType {
 export class OrDashboardSettingsPanel extends LitElement {
 
     @property()
-    public type?: SettingsPanelType;
+    public readonly type?: SettingsPanelType;
 
     @property()
-    public widget?: DashboardWidget;
+    public readonly widget?: DashboardWidget;
 
     @state()
     private loadedAssets?: Asset[];
 
     static get styles() {
         return [style, widgetSettingsStyling];
+    }
+
+    updated(changedProperties: Map<string, any>) {
+        console.log(changedProperties);
+        if(changedProperties.has('widget')) {
+            if((changedProperties.get("widget") as DashboardWidget)?.id != this.widget?.id) {
+                if(this.widget?.widgetConfig.attributeRefs) {
+                    this.fetchAssets(this.widget?.widgetConfig).then(assets => {
+                        this.loadedAssets = assets;
+                    });
+                }
+            }
+        }
     }
 
     render() {
@@ -138,9 +151,6 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     async getAttributeHTML(config: any, multi: boolean) {
-        if (!this.loadedAssets) {
-            this.loadedAssets = await this.fetchAssets(config);
-        }
         return html`
             <div style="padding: 0 14px 12px 14px;">
                 ${(config.attributeRefs == null || config.attributeRefs.length == 0) ? html`
@@ -201,7 +211,6 @@ export class OrDashboardSettingsPanel extends LitElement {
             this.widget.widgetConfig.attributeRefs = selectedAttrs;
             this.fetchAssets(this.widget.widgetConfig).then((assets) => {
                 this.loadedAssets = assets;
-                this.requestUpdate("widget");
                 this.forceParentUpdate(new Map<string, any>([["widget", this.widget], ["loadedAssets", assets]]));
             });
         }
