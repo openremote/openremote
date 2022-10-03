@@ -101,21 +101,17 @@ export class OrChartWidgetContent extends LitElement {
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
-        if(config.attributeRefs) {
-            if (config.attributeRefs != null) {
-                let assets: Asset[] = [];
-                await manager.rest.api.AssetResource.queryAssets({
-                    ids: config.attributeRefs?.map((x: AttributeRef) => {
-                        return x.id;
-                    }) as string[]
-                }).then(response => {
-                    assets = response.data;
-                }).catch((reason) => {
-                    console.error(reason);
-                    showSnackbar(undefined, i18next.t('errorOccurred'));
-                });
-                return assets;
-            }
+        if(config.attributeRefs && config.attributeRefs.length > 0) {
+            let assets: Asset[] = [];
+            await manager.rest.api.AssetResource.queryAssets({
+                ids: config.attributeRefs?.map((x: AttributeRef) => x.id) as string[]
+            }).then(response => {
+                assets = response.data;
+            }).catch((reason) => {
+                console.error(reason);
+                showSnackbar(undefined, i18next.t('errorOccurred'));
+            });
+            return assets;
         } else {
             console.error("Error: attributeRefs are not present in widget config!");
         }
