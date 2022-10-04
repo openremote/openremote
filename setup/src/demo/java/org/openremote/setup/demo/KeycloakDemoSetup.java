@@ -44,6 +44,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public String smartCityUserId;
     public Realm realmMaster;
     public Realm realmCity;
+    public Realm realmManufacturer;
 
     public KeycloakDemoSetup(Container container) {
         super(container);
@@ -56,7 +57,9 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         // Realms
         realmMaster = identityService.getIdentityProvider().getRealm(Constants.MASTER_REALM);
         realmCity = createRealm("smartcity", "Smart City", true);
+        realmCity = createRealm("manufacturer", "Manufacturer", true);
         removeManageAccount("smartcity");
+        removeManageAccount("manufacturer");
 
         // Don't allow demo users to write assets
         ClientRole[] demoUserRoles = Arrays.stream(AbstractKeycloakSetup.REGULAR_USER_ROLES)
@@ -67,5 +70,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         User smartCityUser = createUser(realmCity.getName(), "smartcity", "smartcity", "Smart", "City", null, true, demoUserRoles);
         this.smartCityUserId = smartCityUser.getId();
         keycloakProvider.updateUserRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
+        User manufacturerUser = createUser(realmManufacturer.getName(), "manufacturer", "manufacturer", "Agri", "Tech", null, true, demoUserRoles);
+        this.manufacturerUserId = manufacturerUser.getId();
+        keycloakProvider.updateUserRoles(realmManufacturer.getName(), manufacturerUserId, "account"); // Remove all roles for account client
     }
 }
