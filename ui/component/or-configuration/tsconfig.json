@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "src"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../or-translate" },
+    { "path": "../or-icon" },
+    { "path": "../or-components" },
+    { "path": "../or-mwc-components" },
+    { "path": "../or-attribute-input" },
+    { "path": "../or-attribute-picker" },
+    { "path": "../or-asset-tree" }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "@openremote/or-rules",
+  "version": "1.1.0",
+  "description": "OpenRemote rules related UI components",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js"
+  },
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"No tests\" && exit 0",
+    "prepublishOnly": "npx webpack"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
+    "@openremote/or-attribute-input": "^1.1.0",
+    "@openremote/or-components": "^1.1.0",
+    "@openremote/or-icon": "^1.1.0",
+    "@openremote/or-mwc-components": "^1.1.0",
+    "@openremote/or-translate": "^1.1.0",
+    "@openremote/rest": "workspace:*",
+    "ace-builds": "^1.4.13",
+    "linqts": "^1.12.6",
+    "lit": "^2.0.2",
+    "moment": "^2.24.0",
+    "resize-observer": "^1.0.3",
+    "rrule": "^2.6.4",
+    "shortid": "^2.2.15"
+  },
+  "devDependencies": {
+    "@openremote/util": "workspace:*",
+    "@types/shortid": "^0.0.29"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
