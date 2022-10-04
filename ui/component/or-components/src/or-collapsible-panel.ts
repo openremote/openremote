@@ -30,7 +30,7 @@ const style = css`
         font-size: 15px;
         font-weight: 400;
         align-items: center;
-        padding: 0 24px;
+        padding: 0 24px 0 18px;
         border-radius: inherit;
     }
     
@@ -44,7 +44,6 @@ const style = css`
     }
 
     #header.expanded > #indicator {
-        transform: rotate(180deg);
     }
     
     #header-content {
@@ -70,20 +69,11 @@ const style = css`
     
     #indicator {
         align-self: center;
-    }
-    
-    #indicator::after {
-        border-style: solid;
-        border-width: 0 2px 2px 0;
-        content: "";
-        display: inline-block;
-        padding: 3px;
-        transform: rotate(45deg);
-        vertical-align: middle;
+        margin-right: 6px;
+        margin-left: -5px;
     }
     
     #content {
-        display: flex;
         height: 0;
         visibility: hidden;
     }
@@ -122,11 +112,11 @@ export class OrCollapsiblePanel extends LitElement {
 
         return html`
             <div id="header" class="${this.expandable ? "expandable" : ""} ${this.expandable && this.expanded ? "expanded" : ""}" @click="${(ev:MouseEvent) => this._onHeaderClicked(ev)}">
+                ${this.expandable ? html`<or-icon icon="chevron-${this.expanded ? "down" : "right"}"></or-icon>` : ""}
                 <span id="header-content">
                     <span id="header-title"><slot name="header"></slot></span>
                     <span id="header-description"><slot name="header-description"></slot></span>
                 </span>
-                ${this.expandable ? html`<span id="indicator"></span>` : ""}
             </div>
             <div id="content" class="${this.expandable && this.expanded ? "expanded" : ""}">
                 <slot name="content"></slot>
