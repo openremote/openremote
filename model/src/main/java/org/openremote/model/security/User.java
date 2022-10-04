@@ -266,16 +266,6 @@ public class User {
         return secret;
     }
 
-    public static Field[] getPropertyFields() {
-        if (propertyFields == null) {
-            propertyFields = Arrays.stream(User.class.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(Column.class)
-                    || field.getName().equals("attributes"))
-                .toArray(Field[]::new);
-        }
-        return propertyFields;
-    }
-
     @Override
     public String toString() {
         return getClass().getName() + "{" +
@@ -285,7 +275,6 @@ public class User {
             ", firstName='" + firstName + '\'' +
             ", lastName='" + lastName + '\'' +
             ", email='" + email + '\'' +
-            ", secret='" + secret + '\'' +
             ", enabled=" + enabled +
             '}';
     }

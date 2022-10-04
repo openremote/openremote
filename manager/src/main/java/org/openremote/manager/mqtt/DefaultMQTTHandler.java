@@ -19,20 +19,15 @@
  */
 package org.openremote.manager.mqtt;
 
-import io.moquette.broker.subscriptions.Token;
-import io.moquette.broker.subscriptions.Topic;
-import io.moquette.interception.messages.*;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.mqtt.*;
-import org.openremote.agent.protocol.mqtt.MQTTLastWill;
-import org.openremote.container.message.MessageBrokerService;
+import io.netty.channel.ChannelId;
+import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.AssetEvent;
@@ -45,15 +40,11 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.syslog.SyslogCategory.API;
@@ -73,22 +64,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     protected AssetStorageService assetStorageService;
 
-    public static boolean isAttributeTopic(Topic topic) {
-        return ATTRIBUTE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2)) || ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
-
-    public static boolean isAttributeWriteTopic(Topic topic) {
-        return ATTRIBUTE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
-
-    public static boolean isAttributeValueWriteTopic(Topic topic) {
-        return ATTRIBUTE_VALUE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
-
-    public static boolean isAssetTopic(Topic topic) {
-        return ASSET_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
-
     @Override
     public int getPriority() {
         // This handler is intended to be the final handler but this can obviously be overridden by another handler
@@ -102,33 +77,21 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean onConnect(MqttConnection connection, InterceptConnectMessage msg) {
-        super.onConnect(connection, msg);
-
-        // Moquette is awful and client ID rather than socket descriptors are used everywhere so cannot distinguish
-        // between multiple connections using the same client ID
-        // Force disconnect any existing session that is using this client ID
-        clientEventService.closeSession(connection.getClientId());
-
-        // Clear existing subscriptions by sending session close message
+    public boolean onConnect(RemotingConnection connection) {
+        super.onConnect(connection);
         Map<String, Object> headers = prepareHeaders(connection);
-        headers.put(ConnectionConstants.SESSION_CLOSE, true);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-
-        headers.remove(ConnectionConstants.SESSION_CLOSE);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
 
         // Put a close connection runnable into the headers for the client event service
-        // Get the current session which is specific to the current connection
-        Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection.getClientId());
+        Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection);
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         return true;
     }
 
     @Override
-    public void onDisconnect(MqttConnection connection, InterceptDisconnectMessage msg) {
-        super.onDisconnect(connection, msg);
+    public void onDisconnect(RemotingConnection connection) {
+        super.onDisconnect(connection);
 
         Map<String, Object> headers = prepareHeaders(connection);
         headers.put(ConnectionConstants.SESSION_CLOSE, true);
@@ -136,31 +99,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void onConnectionLost(MqttConnection connection, InterceptConnectionLostMessage msg) {
-        super.onConnectionLost(connection, msg);
+    public void onConnectionLost(RemotingConnection connection) {
+        super.onConnectionLost(connection);
         Map<String, Object> headers = prepareHeaders(connection);
         headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-
-        // Try and publish last will if configured
-        if (connection.hasLastWill()) {
-            // Pass through standard canPublish/publish
-            MQTTLastWill lastWill = connection.getLastWill();
-            Topic lastWillTopic = Topic.asTopic(lastWill.getTopic());
-
-            if (handlesTopic(lastWillTopic)) {
-
-                getLogger().info("Processing last will for client: " + connection);
-
-                if (canPublish(connection, lastWillTopic)) {
-                    MqttFixedHeader fixedHeader = new MqttFixedHeader(MqttMessageType.PUBLISH, true, MqttQoS.EXACTLY_ONCE, false, 0);
-                    MqttPublishVariableHeader varHeader = new MqttPublishVariableHeader(lastWill.getTopic(), 0);
-                    ByteBuf payload = Unpooled.wrappedBuffer(lastWill.getPayload().toString().getBytes());
-                    InterceptPublishMessage message = new InterceptPublishMessage(new MqttPublishMessage(fixedHeader, varHeader, payload), msg.getClientID(), msg.getUsername());
-                    doPublish(connection, lastWillTopic, message);
-                }
-            }
-        }
     }
 
     @Override
@@ -175,14 +118,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public boolean canSubscribe(MqttConnection connection, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
         }
 
-        AuthContext authContext = connection.getAuthContext();
+        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
             LOG.fine("Anonymous connection not supported: topic=" + topic + ", connection=" + connection);
@@ -251,7 +194,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         }
 
         // Build filter for the topic and verify that the filter is OK for given auth context
-        AssetFilter<?> filter = buildAssetFilter(connection, topic);
+        AssetFilter<?> filter = buildAssetFilter(topic);
 
         if (filter == null) {
             LOG.info("Failed to process subscription topic: topic=" + topic + ", connection=" + connection);
@@ -263,8 +206,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
             filter
         );
 
-        if (!clientEventService.authorizeEventSubscription(connection.getRealm(), authContext, subscription)) {
-            LOG.info("Subscription was not authorised for this user and topic: topic=" + topic + ", connection=" + connection);
+        if (!clientEventService.authorizeEventSubscription(topicRealm(topic), authContext, subscription)) {
+            LOG.info("Subscription was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
 
@@ -295,17 +238,17 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canPublish(MqttConnection connection, Topic topic) {
-
-        AuthContext authContext = connection.getAuthContext();
+    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
         }
 
+        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
+
         if (authContext == null) {
-            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + connection);
+            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + connection.getTransportConnection());
             return false;
         }
 
@@ -328,11 +271,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void doSubscribe(MqttConnection connection, Topic topic, InterceptSubscribeMessage msg) {
-        boolean isAssetTopic = isAssetTopic(topic);
-        String subscriptionId = msg.getTopicFilter(); // Use topic as subscription ID
+    public void onSubscribe(RemotingConnection connection, Topic topic) {
 
-        AssetFilter filter = buildAssetFilter(connection, topic);
+        boolean isAssetTopic = isAssetTopic(topic);
+        String subscriptionId = topic.getString(); // Use topic as unique subscription ID
+        AssetFilter filter = buildAssetFilter(topic);
         Class subscriptionClass = isAssetTopic ? AssetEvent.class : AttributeEvent.class;
 
         if (filter == null) {
@@ -340,7 +283,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return;
         }
 
-        Consumer<SharedEvent> eventConsumer = getSubscriptionEventConsumer(connection, topic, msg.getRequestedQos());
+        Consumer<SharedEvent> eventConsumer = getSubscriptionEventConsumer(connection, topic);
 
         EventSubscription subscription = new EventSubscription(
             subscriptionClass,
@@ -355,7 +298,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public void doUnsubscribe(MqttConnection connection, Topic topic, InterceptUnsubscribeMessage msg) {
+    public void onUnsubscribe(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
         boolean isAssetTopic = subscriptionId.startsWith(ASSET_TOPIC);
         Map<String, Object> headers = prepareHeaders(connection);
@@ -365,10 +308,18 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void doPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg) {
-        List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
+    public Set<String> getPublishListenerTopics() {
+        return Set.of(
+            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD,
+            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD
+        );
+    }
+
+    @Override
+    public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+        List<String> topicTokens = topic.getTokens();
         boolean isValueWrite = topicTokens.get(2).equals(ATTRIBUTE_VALUE_WRITE_TOPIC);
-        String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
+        String payloadContent = body.toString(StandardCharsets.UTF_8);
         AttributeEvent attributeEvent;
 
         if (isValueWrite) {
@@ -389,11 +340,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
     }
 
-    public static AssetFilter<?> buildAssetFilter(MqttConnection connection, Topic topic) {
+    protected static AssetFilter<?> buildAssetFilter(Topic topic) {
         boolean isAttributeTopic = isAttributeTopic(topic);
         boolean isAssetTopic = isAssetTopic(topic);
 
-        String realm = connection.getRealm();
+        String realm = topicRealm(topic);
         List<String> assetIds = new ArrayList<>();
         List<String> parentIds = new ArrayList<>();
         List<String> paths = new ArrayList<>();
@@ -472,9 +423,12 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return assetFilter;
     }
 
-    protected Consumer<SharedEvent> getSubscriptionEventConsumer(MqttConnection connection, Topic topic, MqttQoS mqttQoS) {
+    protected Consumer<SharedEvent> getSubscriptionEventConsumer(RemotingConnection connection, Topic topic) {
         boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
         boolean isAssetTopic = isAssetTopic(topic);
+
+        // Always publish asset/attribute messages with QoS 0
+        MqttQoS mqttQoS = MqttQoS.AT_MOST_ONCE;
 
         // Build topic expander (replace wildcards) so it isn't computed for each event
         Function<SharedEvent, String> topicExpander;
@@ -519,5 +473,31 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 }
             }
         };
+    }
+
+    protected static boolean isAttributeTopic(Topic topic) {
+        return ATTRIBUTE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2)) || ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+
+    protected static boolean isAttributeWriteTopic(Topic topic) {
+        return ATTRIBUTE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+
+    protected static boolean isAttributeValueWriteTopic(Topic topic) {
+        return ATTRIBUTE_VALUE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+
+    protected static boolean isAssetTopic(Topic topic) {
+        return ASSET_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+
+    protected static Map<String, Object> prepareHeaders(RemotingConnection connection) {
+        Optional<AuthContext> authContext = getAuthContextFromConnection(connection);
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(ConnectionConstants.SESSION_KEY, MQTTBrokerService.getConnectionIDString(connection));
+        headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
+        headers.put(Constants.AUTH_CONTEXT, authContext.orElse(null));
+        headers.put(Constants.REALM_PARAM_NAME, authContext.map(AuthContext::getAuthenticatedRealmName));
+        return headers;
     }
 }

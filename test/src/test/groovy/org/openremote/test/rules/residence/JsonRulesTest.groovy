@@ -591,8 +591,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
         }
 
-        when: "time advances past the next sunrise"
-        sunTimes = sunsetCalculator.on(sunTimes.getSet()).execute()
+        when: "time advances past the sunset"
+        sunTimes = sunsetCalculator.on(sunTimes.getSet().plusHours(1)).execute()
         advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getRise()).getSeconds(), TimeUnit.SECONDS, container)
 
         and: "the updated attribute is cleared"
@@ -609,7 +609,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "time advances slightly past the next sunset time and the rule engine fires"
-        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet()).getSeconds()+1, TimeUnit.SECONDS, container)
+        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet().plusSeconds(10)).getSeconds()+1, TimeUnit.SECONDS, container)
 
         then: "the rule engine should have fired again and the rule should have triggered"
         conditions.eventually {

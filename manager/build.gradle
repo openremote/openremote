@@ -28,8 +28,18 @@ dependencies {
         force = true
     }
 
-    api ("io.moquette:moquette-broker:$moquetteVersion") {
-        exclude module: "slf4j-log4j12" // Don't want log4J
+    // Exposed via MQTT API
+    api ("io.netty:netty-codec-mqtt:$nettyVersion") {
+        force = true
+    }
+
+    implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
+        exclude group: "org.osgi"
+    }
+
+    // Needed for reference in tests
+    api("org.apache.activemq:artemis-server:$activeMQVersion") {
+        exclude group: "org.osgi"
     }
 
     implementation("org.quartz-scheduler:quartz:$quartzVersion") {

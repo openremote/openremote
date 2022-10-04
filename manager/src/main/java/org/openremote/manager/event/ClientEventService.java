@@ -26,7 +26,7 @@ import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.gateway.GatewayService;
-import org.openremote.manager.mqtt.MqttBrokerService;
+import org.openremote.manager.mqtt.MQTTBrokerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
@@ -35,12 +35,11 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
-import javax.websocket.CloseReason;
-import javax.websocket.Session;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.apache.camel.builder.Builder.header;
@@ -117,7 +116,7 @@ public class ClientEventService implements ContainerService {
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     final protected Collection<Consumer<Exchange>> exchangeInterceptors = new CopyOnWriteArraySet<>();
-    protected Map<String, SessionInfo> sessionKeyInfoMap = new HashMap<>();
+    protected ConcurrentMap<String, SessionInfo> sessionKeyInfoMap = new ConcurrentHashMap<>();
     protected TimerService timerService;
     protected MessageBrokerService messageBrokerService;
     protected ManagerIdentityService identityService;
@@ -316,8 +315,12 @@ public class ClientEventService implements ContainerService {
         return subscriptionId;
     }
 
-    public void cancelInternalSubscription(String subscriptionId) {
-        eventSubscriptions.cancel(INTERNAL_SESSION_KEY, new CancelEventSubscription(subscriptionId));
+    public void cancelInternalSubscription(String sessionId) {
+        eventSubscriptions.cancel(INTERNAL_SESSION_KEY, new CancelEventSubscription(sessionId));
+    }
+
+    public void cancelSubscriptions(String sessionId) {
+        eventSubscriptions.cancelAll(sessionId);
     }
 
     @Override
@@ -379,7 +382,7 @@ public class ClientEventService implements ContainerService {
                 );
             } else if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_MQTT)) {
                 messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                        MqttBrokerService.MQTT_CLIENT_QUEUE,
+                        MQTTBrokerService.MQTT_CLIENT_QUEUE,
                         data,
                         ConnectionConstants.SESSION_KEY, sessionKey
                 );
