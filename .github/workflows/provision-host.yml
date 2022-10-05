@@ -31,6 +31,11 @@ on:
         description: 'Override EC2 root EBS volume size to provision (GB)'
         type: string
         required: false
+      ELASTIC_IP:
+        description: 'Create elastic public IP'
+        type: boolean
+        default: false
+        required: false
       PROVISION_S3_BUCKET:
         description: 'Create S3 bucket for backups'
         type: boolean
@@ -61,12 +66,13 @@ jobs:
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
         run: |
           chmod +x .ci_cd/aws/*
-          .ci_cd/aws/provision_host.sh "$ACCOUNT_NAME" "$HOST" "$INSTANCE_TYPE" "$PROVISION_S3_BUCKET"
+          .ci_cd/aws/provision_host.sh "$ACCOUNT_NAME" "$HOST" "$INSTANCE_TYPE" "$DISK_SIZE" "$ELASTIC_IP" "$PROVISION_S3_BUCKET"
         env:
           ACCOUNT_NAME: ${{ github.event.inputs.ACCOUNT_NAME }}
           HOST: ${{ github.event.inputs.HOST }}
           INSTANCE_TYPE: ${{ github.event.inputs.INSTANCE_TYPE }}
           DISK_SIZE: ${{ github.event.inputs.DISK_SIZE }}
+          ELASTIC_IP: ${{ github.event.inputs.ELASTIC_IP }}
           PROVISION_S3_BUCKET: ${{ github.event.inputs.PROVISION_S3_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets._TEMP_AWS_SECRET_ACCESS_KEY }}
