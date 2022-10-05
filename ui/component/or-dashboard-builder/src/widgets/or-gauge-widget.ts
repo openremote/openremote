@@ -1,26 +1,24 @@
-import manager from "@openremote/core";
-import {Asset, Attribute, AttributeRef, DashboardWidget } from "@openremote/model";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { i18next } from "@openremote/or-translate";
-import { html, LitElement, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
 import {OrWidgetConfig, OrWidgetEntity} from "./or-base-widget";
 import {style} from "../style";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
-import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {Asset, Attribute, AttributeRef, DashboardWidget } from "@openremote/model";
+import { html, LitElement, TemplateResult } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import "@openremote/or-gauge";
+import { i18next } from "@openremote/or-translate";
+import manager from "@openremote/core";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { when } from "lit/directives/when.js";
 
-export interface KpiWidgetConfig extends OrWidgetConfig {
+export interface GaugeWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
-    decimals: number;
-    deltaFormat: "absolute" | "percentage";
 }
 
-export class OrKpiWidget implements OrWidgetEntity {
+export class OrGaugeWidget implements OrWidgetEntity {
 
-    readonly DISPLAY_MDI_ICON: string = "label";
-    readonly DISPLAY_NAME: string = "KPI";
+    readonly DISPLAY_MDI_ICON: string = "gauge";
+    readonly DISPLAY_NAME: string = "Gauge";
     readonly MIN_COLUMN_WIDTH: number = 2;
     readonly MIN_PIXEL_HEIGHT: number = 150;
     readonly MIN_PIXEL_WIDTH: number = 150;
@@ -28,26 +26,22 @@ export class OrKpiWidget implements OrWidgetEntity {
     getDefaultConfig(widget: DashboardWidget): OrWidgetConfig {
         return {
             displayName: widget.displayName,
-            attributeRefs: [],
-            period: "day",
-            decimals: 0,
-            deltaFormat: "absolute",
-            showTimestampControls: false
-        } as KpiWidgetConfig;
+            attributeRefs: []
+        } as GaugeWidgetConfig;
     }
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
-        return html`<or-kpi-widgetsettings .widget="${widget}" realm="${realm}"></or-kpi-widgetsettings>`;
+        return html`<or-gauge-widgetsettings .widget="${widget}" realm="${realm}"></or-gauge-widgetsettings>`;
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
-        return html`<or-kpi-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-kpi-widget>`;
+        return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-gauge-widget>`;
     }
 
 }
 
-@customElement("or-kpi-widget")
-export class OrKpiWidgetContent extends LitElement {
+@customElement("or-gauge-widget")
+export class OrGaugeWidgetContent extends LitElement {
 
     @property()
     public readonly widget?: DashboardWidget;
@@ -64,19 +58,41 @@ export class OrKpiWidgetContent extends LitElement {
     @state()
     private assetAttributes: [number, Attribute<any>][] = [];
 
+
     render() {
+        console.warn(this.widget?.widgetConfig.attributeRefs);
+        console.error(this.assets);
+        console.error(this.assetAttributes);
         return html`
-            <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}"
-                               .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}"
-                               showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
-            </or-attribute-card>
+            ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => { 
+                return html`
+                    <or-gauge .asset="${this.assets[0]}" .assetAttribute="${this.assetAttributes[0]}" style="height: 100%;"></or-gauge>
+                `;
+            }, () => {
+                return html`
+                    <span>No attributes selected.</span>
+                `
+            })}
+            <!--<or-gauge .attrRef="${this.widget?.widgetConfig.attributeRefs[0]}"></or-gauge>-->
         `
     }
 
+    willUpdate(changedProperties: Map<string, any>) {
+        console.error(changedProperties);
+    }
+
+    shouldUpdate(changedProperties: Map<string, any>) {
+        const update = super.shouldUpdate(changedProperties);
+        console.log(update);
+        return update;
+    }
+
     updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
+        console.error(changedProperties);
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
+                console.error("Fetched the following assets:");
+                console.error(assets);
                 this.assets = assets!;
                 this.assetAttributes = this.widget?.widgetConfig.attributeRefs.map((attrRef: AttributeRef) => {
                     const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
@@ -90,11 +106,14 @@ export class OrKpiWidgetContent extends LitElement {
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
+        console.error("Fetching assets..")
         if(config.attributeRefs && config.attributeRefs.length > 0) {
+            console.error("Making the call..")
             let assets: Asset[] = [];
             await manager.rest.api.AssetResource.queryAssets({
                 ids: config.attributeRefs?.map((x: AttributeRef) => x.id) as string[]
             }).then(response => {
+                console.error(response.data);
                 assets = response.data;
             }).catch((reason) => {
                 console.error(reason);
@@ -109,16 +128,15 @@ export class OrKpiWidgetContent extends LitElement {
 
 
 
-@customElement("or-kpi-widgetsettings")
-export class OrKpiWidgetSettings extends LitElement {
+@customElement("or-gauge-widgetsettings")
+export class OrGaugeWidgetSettings extends LitElement {
 
     @property()
-    public widget?: DashboardWidget;
+    protected readonly widget?: DashboardWidget;
 
     // Default values
     private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display'), i18next.t('values')];
     private loadedAssets: Asset[] = [];
-
 
     static get styles() {
         return [style, widgetSettingsStyling];
@@ -126,8 +144,8 @@ export class OrKpiWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
-        console.log("[or-kpi-widgetsettings] Rendering..");
-        const config = this.widget?.widgetConfig as KpiWidgetConfig;
+        console.log("[or-gauge-widgetsettings] Rendering..");
+        const config = this.widget?.widgetConfig as GaugeWidgetConfig;
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
@@ -139,57 +157,14 @@ export class OrKpiWidgetSettings extends LitElement {
                     ></or-dashboard-settingspanel>
                 ` : null}
             </div>
-            <div>
-                ${this.generateExpandableHeader(i18next.t('display'))}
-            </div>
-            <div>
-                ${this.expandedPanels.includes(i18next.t('display')) ? html`
-                    <div style="padding: 24px 24px 48px 24px;">
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" 
-                                          .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" 
-                                          .value="${config.period}" label="${i18next.t('timeframe')}" 
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              (this.widget?.widgetConfig as KpiWidgetConfig).period = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
-                                          }}"
-                            ></or-mwc-input>
-                        </div>
-                    </div>
-                ` : null}
-            </div>
-            <div>
-                ${this.generateExpandableHeader(i18next.t('values'))}
-            </div>
-            <div>
-                ${this.expandedPanels.includes(i18next.t('values')) ? html`
-                    <div style="padding: 24px 24px 48px 24px;">
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${config.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              (this.widget?.widgetConfig as KpiWidgetConfig).deltaFormat = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
-                                          }}"
-                            ></or-mwc-input>
-                        </div>
-                        <div style="margin-top: 18px;">
-                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { 
-                                              (this.widget?.widgetConfig as KpiWidgetConfig).decimals = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
-                                          }}"
-                            ></or-mwc-input>
-                        </div>
-                    </div>
-                ` : null}
-            </div>
         `
     }
 
+
+    /* ------------------------------ */
+
     onAttributesUpdate(changes: Map<string, any>) {
+        console.error(changes);
         if(changes.has('loadedAssets')) {
             this.loadedAssets = changes.get('loadedAssets');
         }
