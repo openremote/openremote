@@ -13,6 +13,9 @@ import { when } from "lit/directives/when.js";
 export interface GaugeWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
+    thresholds: [number, string][];
+    min: number,
+    max: number
 }
 
 export class OrGaugeWidget implements OrWidgetEntity {
@@ -26,7 +29,10 @@ export class OrGaugeWidget implements OrWidgetEntity {
     getDefaultConfig(widget: DashboardWidget): OrWidgetConfig {
         return {
             displayName: widget.displayName,
-            attributeRefs: []
+            attributeRefs: [],
+            thresholds: [[0, "#4caf50"],[75, "#ff9800"],[90, "#ef5350"]], // colors from https://mui.com/material-ui/customization/palette/ as reference (since material has no official colors)
+            min: 0,
+            max: 100
         } as GaugeWidgetConfig;
     }
 
@@ -66,7 +72,9 @@ export class OrGaugeWidgetContent extends LitElement {
         return html`
             ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => { 
                 return html`
-                    <or-gauge .asset="${this.assets[0]}" .assetAttribute="${this.assetAttributes[0]}" style="height: 100%;"></or-gauge>
+                    <or-gauge .asset="${this.assets[0]}" .assetAttribute="${this.assetAttributes[0]}" .thresholds="${this.widget?.widgetConfig.thresholds}"
+                              .min="${this.widget?.widgetConfig.min}" .max="${this.widget?.widgetConfig.max}"
+                              style="height: 100%;"></or-gauge>
                 `;
             }, () => {
                 return html`
@@ -79,12 +87,6 @@ export class OrGaugeWidgetContent extends LitElement {
 
     willUpdate(changedProperties: Map<string, any>) {
         console.error(changedProperties);
-    }
-
-    shouldUpdate(changedProperties: Map<string, any>) {
-        const update = super.shouldUpdate(changedProperties);
-        console.log(update);
-        return update;
     }
 
     updated(changedProperties: Map<string, any>) {
@@ -135,7 +137,7 @@ export class OrGaugeWidgetSettings extends LitElement {
     protected readonly widget?: DashboardWidget;
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display'), i18next.t('values')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('thresholds')];
     private loadedAssets: Asset[] = [];
 
     static get styles() {
@@ -155,6 +157,16 @@ export class OrGaugeWidgetSettings extends LitElement {
                     <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widget="${this.widget}"
                                                 @updated="${(event: CustomEvent) => { this.onAttributesUpdate(event.detail.changes); }}"
                     ></or-dashboard-settingspanel>
+                ` : null}
+            </div>
+            <div>
+                ${this.generateExpandableHeader(i18next.t('thresholds'))}
+            </div>
+            <div>
+                ${this.expandedPanels.includes(i18next.t('thresholds')) ? html`
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.THRESHOLDS}" .widget="${this.widget}"
+                                                @updated="${(event: CustomEvent) => { this.forceParentUpdate(event.detail.changes, false); }}">
+                    </or-dashboard-settingspanel>
                 ` : null}
             </div>
         `

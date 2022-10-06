@@ -87,7 +87,7 @@ export const widgetSettingsStyling = css`
 `
 
 export enum SettingsPanelType {
-    SINGLE_ATTRIBUTE, MULTI_ATTRIBUTE,
+    SINGLE_ATTRIBUTE, MULTI_ATTRIBUTE, THRESHOLDS,
 }
 
 
@@ -127,12 +127,19 @@ export class OrDashboardSettingsPanel extends LitElement {
             case SettingsPanelType.SINGLE_ATTRIBUTE:
             case SettingsPanelType.MULTI_ATTRIBUTE: {
                 if (!config.attributeRefs) {
-                    return html`
-                        <span>${i18next.t('errorOccurred')}</span>
-                    `
+                    return html`<span>${i18next.t('errorOccurred')}</span>`;
                 } else {
                     return html`
                         ${until(this.getAttributeHTML(config, (this.type == SettingsPanelType.MULTI_ATTRIBUTE)), html`${i18next.t('loading')}`)}
+                    `;
+                }
+            }
+            case SettingsPanelType.THRESHOLDS: {
+                if (!config.thresholds) {
+                    return html`<span>${i18next.t('errorOccurred')}</span>`;
+                } else {
+                    return html`
+                        ${until(this.getThresholdsHTML(config), html`${i18next.t('loading')}`)}
                     `;
                 }
             }
@@ -235,6 +242,44 @@ export class OrDashboardSettingsPanel extends LitElement {
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
             this.setWidgetAttributes(event.detail);
         })
+    }
+
+
+
+    /* ---------------------------------------------------- */
+
+    async getThresholdsHTML(config: OrWidgetConfig | any) {
+        if(config.thresholds) {
+            return html`
+                <div style="padding: 28px 20px;">
+                    ${(config.thresholds as [number, string][]).map((threshold, index) => {
+                        console.error(threshold[1]);
+                        return html`
+                            <div style="padding: 8px; display: flex; flex-direction: row; align-items: center;">
+                                <div style="height: 100%; padding: 8px 16px 8px 0;">
+                                    <or-mwc-input type="${InputType.COLOUR}" style="width: 32px; height: 32px;" value="${threshold[1]}"
+                                                  @or-mwc-input-changed="${(event: CustomEvent) => {
+                                                      console.error(this.widget!.widgetConfig.thresholds[index]);
+                                                      this.widget!.widgetConfig.thresholds[index][1] = event.detail.value;
+                                                      this.requestUpdate();
+                                                      this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                                  }}"
+                                    ></or-mwc-input>
+                                </div>
+                                <or-mwc-input type="${InputType.TEXT}" comfortable .value="${threshold[0]}"
+                                              @or-mwc-input-changed="${(event: CustomEvent) => {
+                                                  console.error(this.widget!.widgetConfig.thresholds[index]);
+                                                  this.widget!.widgetConfig.thresholds[index][0] = event.detail.value;
+                                                  this.requestUpdate();
+                                                  this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                              }}"
+                                ></or-mwc-input>
+                            </div>
+                        `
+                    })}
+                </div>
+            `
+        }
     }
 
 

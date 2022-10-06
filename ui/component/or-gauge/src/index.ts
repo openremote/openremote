@@ -72,13 +72,8 @@ const styling = css`
 `
 export interface OrGaugeConfig {
     attributeRef?: AttributeRef;
-    thresholds?: OrGaugeThreshold[]
+    thresholds?: [number, string][]
     options?: GaugeOptions;
-}
-export interface OrGaugeThreshold {
-    strokeStyle: number;
-    min: number;
-    max: number;
 }
 
 @customElement("or-gauge")
@@ -102,6 +97,15 @@ export class OrGauge extends LitElement {
 
     @property()
     public unit?: string;
+
+    @property()
+    public min?: number;
+
+    @property()
+    public max?: number;
+
+    @property()
+    public thresholds?: [number, string][];
 
     @property()
     public readonly config?: OrGaugeConfig;
@@ -154,19 +158,43 @@ export class OrGauge extends LitElement {
                 this.value = undefined;
             }
         }
+
+        // Render gauge again if..
+        if(changedProperties.has('min') && this.min) {
+            this.gauge?.setMinValue(this.min);
+        }
+        if(changedProperties.has('max') && this.max && this.gauge) {
+            this.gauge.maxValue = this.max;
+        }
+        if(changedProperties.has('thresholds') && this.thresholds) {
+            this.config!.options!.staticZones = [];
+            this.thresholds.forEach(((threshold, index) => {
+                const zone = {
+                    strokeStyle: threshold[1],
+                    min: threshold[0],
+                    max: (this.thresholds![index + 1] ? this.thresholds![index + 1][0] : this.max)
+                };
+                console.error(zone);
+                this.config?.options?.staticZones?.push(zone as any);
+            }));
+            if(this.gauge) {
+                this.gauge.setOptions(this.config?.options);
+            }
+        }
     }
 
     setupGauge() {
         console.error("Setting up gauge..");
         this.gauge = new Gauge(this._gaugeElem);
         this.gauge.setOptions(this.config?.options);
-        this.gauge.maxValue = 100;
-        this.gauge.setMinValue(0);
+        this.gauge.maxValue = (this.max ? this.max : 100)
+        this.gauge.setMinValue(this.min ? this.min : 0);
         this.gauge.animationSpeed = 1;
         this.gauge.set(this.value ? this.value : NaN);
         if(!this.value && this.attrRef) {
             this.loadData(this.attrRef);
         }
+        console.error(this.gauge);
     }
 
     render() {
@@ -217,6 +245,7 @@ export class OrGauge extends LitElement {
                     strokeWidth: 0.035,
                     color: "#000000",
                 },
+                staticZones: [],
                 limitMax: true,
                 limitMin: false,
                 colorStart: "#000000",
