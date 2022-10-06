@@ -135,3 +135,13 @@ export function headerItemProvisioning<S extends AppStateKeyed, A extends AnyAct
         roles: () => manager.isSuperUser()
     };
 }
+
+export function headerItemConfiguration<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "cog",
+        value: "configuration",
+        href: "configuration",
+        text: "Configuration",
+        roles: ["read:admin", "write:admin"]
+    };
+}

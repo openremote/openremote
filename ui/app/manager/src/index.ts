@@ -6,6 +6,7 @@ import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, Re
 import {
     headerItemAccount,
     headerItemAssets,
+    headerItemConfiguration,
     headerItemExport,
     headerItemGatewayConnection,
     headerItemInsights,
@@ -41,6 +42,7 @@ import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
 import {ManagerConfig} from "@openremote/core";
+import { pageConfigurationProvider } from "./pages/page-configuration";
 
 declare var CONFIG_URL_PREFIX: string;
 
@@ -93,7 +95,8 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageUsersProvider(store),
     pageRealmsProvider(store),
     pageExportProvider(store),
-    pageProvisioningProvider(store)
+    pageProvisioningProvider(store),
+    pageConfigurationProvider(store)
 ];
 
 export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
@@ -113,6 +116,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     realms: headerItemRealms(orApp),
     export: headerItemExport(orApp),
     provisioning: headerItemProvisioning(orApp),
+    configuration: headerItemConfiguration(orApp),
     logout: headerItemLogout(orApp)
 };
 
