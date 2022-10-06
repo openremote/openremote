@@ -1,12 +1,12 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement ,property} from "lit/decorators.js";
-import manager from "@openremote/core";
+import manager, { ManagerAppConfig, ManagerConfig } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
-import { DefaultAppConfig, ManagerAppConfig } from "../index";
+import { DefaultAppConfig } from "../index";
 import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import '@openremote/or-configuration/or-conf-realm/index'
@@ -73,18 +73,19 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             `;
         }
 
-        const configURL =  "/manager/manager_config.json";
+        const configURL = "/manager/manager_config.json";
 
-        fetch(configURL).then(async (result) => {
-            if (!result.ok) {
-                return DefaultAppConfig;
-            }
+        // const managerConfiguration = fetch(configURL).then(async (result) => {
+        //     if (!result.ok) {
+        //         return DefaultAppConfig;
+        //     }
+        //
+        //     return await result.json();
+        // }) as ManagerAppConfig
 
-            return await result.json() as ManagerAppConfig;
+        const managerConfiguration = manager.managerAppConfig
 
-        }).then(async (settings: ManagerAppConfig) => {
-            console.log(settings)
-        })
+        console.log(managerConfiguration)
 
         return html`
             <div class="conf-navigation-container">
@@ -93,10 +94,11 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 </div>
             </div>
             <div class="conf-category-content-container">
-                <or-conf-realm></or-conf-realm>
+                <or-conf-realm .realms="${managerConfiguration?.realms}"></or-conf-realm>
             </div>
-
         `;
+
+
     }
 
     public stateChanged(state: AppStateKeyed) {

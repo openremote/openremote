@@ -15,7 +15,7 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, normaliseConfig, Manager} from "@openremote/core";
+import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, normaliseConfig, Manager, ManagerAppConfig} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -77,6 +77,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     @property({type: Object})
     public managerConfig?: ManagerConfig;
+
+    @property({type: Object})
+    public managerAppConfig?: ManagerAppConfig;
 
     @query("main")
     protected _mainElem!: HTMLElement;

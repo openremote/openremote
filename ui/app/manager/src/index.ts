@@ -41,7 +41,7 @@ import {pageRolesProvider} from "./pages/page-roles";
 import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
-import {ManagerConfig} from "@openremote/core";
+import { ManagerAppConfig } from "@openremote/core";
 import { pageConfigurationProvider } from "./pages/page-configuration";
 
 declare var CONFIG_URL_PREFIX: string;
@@ -56,30 +56,6 @@ type RootState = ReturnType<typeof rootReducer>;
 export const store = configureStore({
     reducer: rootReducer
 });
-
-type HeaderName = "map" | "assets" | "rules" | "insights" | "gateway" | "logs" | "account" | "users" | "roles" | "realms" | "logout" | "language" | "export";
-
-export interface ManagerRealmConfig {
-    appTitle?: string;
-    logo?: HTMLTemplateElement | string;
-    logoMobile?: HTMLTemplateElement | string;
-    favicon?: HTMLTemplateElement | string;
-    headers?: HeaderName[];
-    language?: string;
-    styles?: string;
-}
-
-export interface ManagerAppConfig {
-    pages?: {
-        [name in HeaderName]: any;
-    },
-    realms?: {
-        default?: ManagerRealmConfig;
-        [realm: string]: ManagerRealmConfig;
-    };
-    loadLocales?: boolean;
-    manager?: ManagerConfig;
-}
 
 const orApp = new OrApp(store);
 
@@ -173,6 +149,7 @@ fetch(configURL).then(async (result) => {
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {
+        manager.managerAppConfig = appConfig
 
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];

@@ -116,6 +116,43 @@ export interface ManagerConfig {
     basicLoginProvider?: (username: string | undefined, password: string | undefined) => PromiseLike<BasicLoginResult>;
 }
 
+export enum HeaderNames {
+    rules = "rules",
+    insights = "insights" ,
+    gateway = "gateway" ,
+    logs = "logs" ,
+    account = "account" ,
+    users = "users" ,
+    assets = "assets",
+    roles = "roles" ,
+    realms = "realms" ,
+    logout = "logout" ,
+    language = "language" ,
+    export = "export",
+    map = "map",
+}
+
+export interface ManagerRealmConfig {
+    appTitle?: string;
+    logo?: HTMLTemplateElement | string;
+    logoMobile?: HTMLTemplateElement | string;
+    favicon?: HTMLTemplateElement | string;
+    headers?: HeaderNames[];
+    language?: string;
+    styles?: string;
+}
+
+export interface ManagerAppConfig {
+    pages?: {
+        [name in HeaderNames]: any;
+    },
+    realms?: {
+        [realm: string]: ManagerRealmConfig;
+    };
+    loadLocales?: boolean;
+    manager?: ManagerConfig;
+}
+
 export function normaliseConfig(config: ManagerConfig): ManagerConfig {
     const normalisedConfig: ManagerConfig = config ? Object.assign({}, config) : {};
 
@@ -205,6 +242,14 @@ export class Manager implements EventProviderFactory {
 
     get config() {
         return this._config;
+    }
+
+    get managerAppConfig(){
+        return this._managerAppConfig;
+    }
+
+    set managerAppConfig(config: ManagerAppConfig){
+        this._managerAppConfig = config;
     }
 
     get roles(): Map<string, string[]> {
@@ -297,6 +342,7 @@ export class Manager implements EventProviderFactory {
 
     private _error?: ORError;
     private _config!: ManagerConfig;
+    private _managerAppConfig : ManagerAppConfig = {}
     private _authenticated: boolean = false;
     private _ready: boolean = false;
     private _readyCallback?: () => PromiseLike<any>;
