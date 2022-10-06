@@ -121,6 +121,7 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     render() {
+        console.error("Rendering or-dashboard-settingspanel.")
         const config = this.widget?.widgetConfig;
         switch (this.type) {
 
@@ -249,13 +250,14 @@ export class OrDashboardSettingsPanel extends LitElement {
     /* ---------------------------------------------------- */
 
     async getThresholdsHTML(config: OrWidgetConfig | any) {
+        console.error("Rendering thresholdsHTML!");
         if(config.thresholds) {
             return html`
-                <div style="padding: 28px 20px;">
-                    ${(config.thresholds as [number, string][]).map((threshold, index) => {
+                <div style="padding: 12px 24px 48px 24px;">
+                    ${(config.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {
                         console.error(threshold[1]);
                         return html`
-                            <div style="padding: 8px; display: flex; flex-direction: row; align-items: center;">
+                            <div style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                                 <div style="height: 100%; padding: 8px 16px 8px 0;">
                                     <or-mwc-input type="${InputType.COLOUR}" style="width: 32px; height: 32px;" value="${threshold[1]}"
                                                   @or-mwc-input-changed="${(event: CustomEvent) => {
@@ -266,12 +268,15 @@ export class OrDashboardSettingsPanel extends LitElement {
                                                   }}"
                                     ></or-mwc-input>
                                 </div>
-                                <or-mwc-input type="${InputType.TEXT}" comfortable .value="${threshold[0]}"
+                                <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${threshold[0]}" ?disabled="${index == 0}"
+                                              .min="${config.min ? config.min : undefined}" .max="${config.max ? config.max : undefined}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
-                                                  console.error(this.widget!.widgetConfig.thresholds[index]);
-                                                  this.widget!.widgetConfig.thresholds[index][0] = event.detail.value;
-                                                  this.requestUpdate();
-                                                  this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                                  if(event.detail.value > config.min && event.detail.value < config.max) {
+                                                      console.error(this.widget!.widgetConfig.thresholds[index]);
+                                                      this.widget!.widgetConfig.thresholds[index][0] = event.detail.value;
+                                                      this.requestUpdate();
+                                                      this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                                  }
                                               }}"
                                 ></or-mwc-input>
                             </div>

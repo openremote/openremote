@@ -162,9 +162,13 @@ export class OrGauge extends LitElement {
         // Render gauge again if..
         if(changedProperties.has('min') && this.min) {
             this.gauge?.setMinValue(this.min);
+            this.gauge?.set(this.value ? this.value : NaN);
+            console.error(this.gauge);
         }
         if(changedProperties.has('max') && this.max && this.gauge) {
             this.gauge.maxValue = this.max;
+            this.gauge?.set(this.value ? this.value : NaN);
+            console.error(this.gauge);
         }
         if(changedProperties.has('thresholds') && this.thresholds) {
             this.config!.options!.staticZones = [];
@@ -247,7 +251,7 @@ export class OrGauge extends LitElement {
                 },
                 staticZones: [],
                 limitMax: true,
-                limitMin: false,
+                limitMin: true,
                 colorStart: "#000000",
                 colorStop: "#707070",
                 strokeColor: "#ABCDEF",

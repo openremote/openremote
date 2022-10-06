@@ -8,12 +8,14 @@ import "@openremote/or-gauge";
 import { i18next } from "@openremote/or-translate";
 import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import { when } from "lit/directives/when.js";
 
 export interface GaugeWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
     thresholds: [number, string][];
+    deltaFormat: "absolute" | "percentage";
     min: number,
     max: number
 }
@@ -31,6 +33,7 @@ export class OrGaugeWidget implements OrWidgetEntity {
             displayName: widget.displayName,
             attributeRefs: [],
             thresholds: [[0, "#4caf50"],[75, "#ff9800"],[90, "#ef5350"]], // colors from https://mui.com/material-ui/customization/palette/ as reference (since material has no official colors)
+            deltaFormat: "absolute",
             min: 0,
             max: 100
         } as GaugeWidgetConfig;
@@ -133,21 +136,30 @@ export class OrGaugeWidgetContent extends LitElement {
 @customElement("or-gauge-widgetsettings")
 export class OrGaugeWidgetSettings extends LitElement {
 
-    @property()
+    @property({hasChanged(oldVal, newVal) { return JSON.stringify(oldVal) == JSON.stringify(newVal); }})
     protected readonly widget?: DashboardWidget;
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('thresholds')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('values'), i18next.t('thresholds')];
     private loadedAssets: Asset[] = [];
 
     static get styles() {
         return [style, widgetSettingsStyling];
     }
 
+    updated(changedProperties: Map<string, any>) {
+        console.error(changedProperties);
+    }
+    shouldUpdate(changedProperties: Map<string, any>) {
+        console.error(changedProperties);
+        return super.shouldUpdate(changedProperties);
+    }
+
     // UI Rendering
     render() {
-        console.log("[or-gauge-widgetsettings] Rendering..");
+        console.error("[or-gauge-widgetsettings] Rendering..");
         const config = this.widget?.widgetConfig as GaugeWidgetConfig;
+        console.error(config);
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
@@ -157,6 +169,39 @@ export class OrGaugeWidgetSettings extends LitElement {
                     <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widget="${this.widget}"
                                                 @updated="${(event: CustomEvent) => { this.onAttributesUpdate(event.detail.changes); }}"
                     ></or-dashboard-settingspanel>
+                ` : null}
+            </div>
+            <div>
+                ${this.generateExpandableHeader(i18next.t('values'))}
+            </div>
+            <div>
+                ${this.expandedPanels.includes(i18next.t('values')) ? html`
+                    <div style="padding: 12px 24px 48px 24px; display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; gap: 8px;">
+                            <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('min')}" .value="${this.widget?.widgetConfig.min}"
+                                          @or-mwc-input-changed="${(event: CustomEvent) => {
+                                              this.widget!.widgetConfig.min = event.detail.value;
+                                              (this.widget!.widgetConfig as GaugeWidgetConfig).thresholds.sort((x, y) => (x[0] < y[0]) ? -1 : 1).forEach((threshold, index) => {
+                                                  if(threshold[0] < event.detail.value || (index == 0 && threshold[0] != event.detail.value)) {
+                                                      (this.widget!.widgetConfig as GaugeWidgetConfig).thresholds[index][0] = event.detail.value;
+                                                  }
+                                              });
+                                              this.requestUpdate("widget");
+                                              this.forceParentUpdate(new Map<string, any>([['widget', this.widget]]));
+                                          }}"
+                            ></or-mwc-input>
+                            <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('max')}" .value="${this.widget?.widgetConfig.max}"
+                                          @or-mwc-input-changed="${(event: CustomEvent) => {
+                                              this.widget!.widgetConfig.max = event.detail.value;
+                                              this.forceParentUpdate(new Map<string, any>([['widget', this.widget]]));
+                                          }}"
+                            ></or-mwc-input>
+                        </div>
+                        <div>
+                            <or-mwc-input type="${InputType.SELECT}" .options="${['absolute', 'percentage']}" .value="${'absolute'}" 
+                                          label="${i18next.t('dashboard.showValueAs')}" style="width: 100%;"></or-mwc-input>
+                        </div>
+                    </div>
                 ` : null}
             </div>
             <div>
