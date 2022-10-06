@@ -1,4 +1,4 @@
-import {DefaultColor4, DefaultColor5 } from "@openremote/core";
+import {DefaultColor3, DefaultColor4, DefaultColor5 } from "@openremote/core";
 import { css, html, unsafeCSS } from "lit";
 
 // language=CSS
@@ -140,12 +140,18 @@ export const addItemOrParameterDialogStyle = html`
         #parameter-list {
             display: block;
         }
+        #parameter-title {
+            text-transform: capitalize;
+            color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+            font-size: 18px;
+            font-weight: bold;
+        }
         #parameter-desc {
-            text-align: justify;
             padding: 15px;
             flex: 1;
             display: flex;
             flex-direction: column;
+            justify-content: flex-start;
         }
     </style>
 `;

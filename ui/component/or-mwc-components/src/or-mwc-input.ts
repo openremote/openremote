@@ -1530,7 +1530,7 @@ export class OrMwcInput extends LitElement {
                 slider.setDisabled(this.disabled || this.readonly);
                 // slider.getDefaultFoundation(). getDefaultFoundation()..getMax() = this.min;
                 // slider.max = this.max;
-                // slider.setValue(this.value);
+                slider.setValue(this.value);
             } else if (this.type === InputType.SWITCH && this._mdcComponent) {
                 const swtch = this._mdcComponent as MDCSwitch;
                 swtch.checked = this.value;

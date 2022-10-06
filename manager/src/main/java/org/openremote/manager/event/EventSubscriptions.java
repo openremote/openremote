@@ -31,6 +31,8 @@ import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 
 /**
@@ -41,7 +43,7 @@ public class EventSubscriptions {
     private static final Logger LOG = Logger.getLogger(EventSubscriptions.class.getName());
 
     final protected TimerService timerService;
-    final protected Map<String, SessionSubscriptions> sessionSubscriptionIdMap = new HashMap<>();
+    final protected ConcurrentMap<String, SessionSubscriptions> sessionSubscriptionIdMap = new ConcurrentHashMap<>();
 
     class SessionSubscriptions extends HashSet<SessionSubscription<?>> {
         protected void createOrUpdate(boolean restrictedUser, boolean anonymousUser, EventSubscription<?> eventSubscription) {
@@ -90,41 +92,35 @@ public class EventSubscriptions {
     }
 
     protected void createOrUpdate(String sessionKey, boolean restrictedUser, boolean anonymousUser, EventSubscription<?> subscription) {
-        synchronized (this.sessionSubscriptionIdMap) {
-            LOG.finer("For session '" + sessionKey + "', creating/updating: " + subscription);
-            SessionSubscriptions sessionSubscriptions =
-                this.sessionSubscriptionIdMap.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
-            sessionSubscriptions.createOrUpdate(restrictedUser, anonymousUser, subscription);
-        }
+        LOG.finer("For session '" + sessionKey + "', creating/updating: " + subscription);
+        SessionSubscriptions sessionSubscriptions =
+            this.sessionSubscriptionIdMap.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
+        sessionSubscriptions.createOrUpdate(restrictedUser, anonymousUser, subscription);
     }
 
     protected void cancel(String sessionKey, CancelEventSubscription subscription) {
-        synchronized (this.sessionSubscriptionIdMap) {
-            if (!this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
-                return;
-            }
-            if (subscription.getEventType() == null && subscription.getSubscriptionId() == null) {
-                return;
-            }
-            LOG.finer("For session '" + sessionKey + "', cancelling: " + subscription);
-            SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
-            if (!TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
-                sessionSubscriptions.cancelById(subscription.getSubscriptionId());
-            } else {
-                sessionSubscriptions.cancelByType(subscription.getEventType());
-            }
-            if (sessionSubscriptions.isEmpty()) {
-                this.sessionSubscriptionIdMap.remove(sessionKey);
-            }
+        if (!this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
+            return;
+        }
+        if (subscription.getEventType() == null && subscription.getSubscriptionId() == null) {
+            return;
+        }
+        LOG.finer("For session '" + sessionKey + "', cancelling: " + subscription);
+        SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
+        if (!TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
+            sessionSubscriptions.cancelById(subscription.getSubscriptionId());
+        } else {
+            sessionSubscriptions.cancelByType(subscription.getEventType());
+        }
+        if (sessionSubscriptions.isEmpty()) {
+            this.sessionSubscriptionIdMap.remove(sessionKey);
         }
     }
 
     protected void cancelAll(String sessionKey) {
-        synchronized (this.sessionSubscriptionIdMap) {
-            if (this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
-                LOG.finer("Cancelling all subscriptions for session: " + sessionKey);
-                this.sessionSubscriptionIdMap.remove(sessionKey);
-            }
+        if (this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
+            LOG.finer("Cancelling all subscriptions for session: " + sessionKey);
+            this.sessionSubscriptionIdMap.remove(sessionKey);
         }
     }
 

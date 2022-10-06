@@ -321,12 +321,14 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                             </div>
                         `}
                         <div id="parameter-desc" class="col">
-                            ${!selectedParameter ? `` : html`<p>${selectedParameter.description}</p>`}
+                            ${!selectedParameter ? `` : html`
+                                <or-translate id="parameter-title" value="${selectedParameter.label}"></or-translate>
+                                <p>${selectedParameter.description}</p>`}
                             ${!dynamic ? !schemaPicker ? `` : html`
                                 <style>
                                     #schema-picker {
                                         align-self: stretch;
-                                        margin: auto 10px;
+                                        margin: 10px;
                                         display: flex;
                                         align-items: center;
                                     }
