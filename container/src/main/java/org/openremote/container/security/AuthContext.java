@@ -24,6 +24,7 @@ import org.openremote.model.Constants;
 /**
  * Services should use this interface to access a user's identity and perform authorization checks.
  */
+// TODO: Remove this and just use AccessToken from Subject's KeycloakPrincipal
 public interface AuthContext {
 
     String getAuthenticatedRealmName();

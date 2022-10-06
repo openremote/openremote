@@ -373,7 +373,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                 <or-mwc-input .label="${i18next.t("ignoreExpiryDate")}"
                               .type="${InputType.CHECKBOX}"
                               .value="${data.ignoreExpiryDate}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.disabled = !e.detail.value}"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => data.ignoreExpiryDate = !e.detail.value}"
                               style="height: 56px;"></or-mwc-input>
             `;
         } else {
@@ -432,7 +432,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                                 <or-mwc-input .label="${i18next.t("createAsRestrictedUser")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${config.restrictedUser}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.disabled = e.detail.value}"></or-mwc-input>
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.restrictedUser = e.detail.value}"></or-mwc-input>
                                 <or-mwc-input .label="${i18next.t("disabled")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${config.disabled}"
