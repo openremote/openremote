@@ -185,16 +185,9 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id=" + id +
-            ", createdOn=" + createdOn +
-            ", lastModified=" + lastModified +
             ", name='" + name + '\'' +
             ", type='" + type + '\'' +
             ", realm='" + realm + '\'' +
-            ", assetTemplateSet='" + (assetTemplate != null) + '\'' +
-            ", restrictedUser=" + restrictedUser +
-            ", userRoles=" + Arrays.toString(userRoles) +
-            ", disabled=" + disabled +
-            ", data=" + getData() +
             '}';
     }
 }

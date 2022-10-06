@@ -31,27 +31,34 @@ import io.undertow.servlet.api.LoginConfig;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.admin.client.resource.RealmsResource;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.web.OAuthFilter;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 
+import javax.security.auth.Subject;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -377,6 +384,9 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                         keycloakServiceUri.clone().build().toString()
                     );
 
+                    // Set preferred username as principal attribute
+                    adapterConfig.setPrincipalAttribute("preferred_username");
+
                     return KeycloakDeploymentBuilder.build(adapterConfig);
                 }
             };
@@ -403,4 +413,38 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
      * There must be _some_ valid redirect URIs for the application or authentication will not be possible.
      */
     abstract protected void addClientRedirectUris(String client, List<String> redirectUrls, boolean devMode);
+
+    public static KeycloakSecurityContext getSecurityContext(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
+            .map(keycloakPrincipal ->
+                ((KeycloakPrincipal<?>)keycloakPrincipal).getKeycloakSecurityContext()).orElse(null);
+    }
+
+    public static String getSubjectName(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
+            .map(Principal::getName).orElse(null);
+    }
+
+    public static String getSubjectId(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return Optional.ofNullable(getSecurityContext(subject))
+            .map(KeycloakSecurityContext::getToken)
+            .map(AccessToken::getSubject)
+            .orElse(null);
+    }
+
+    public static boolean isSuperUser(KeycloakSecurityContext securityContext) {
+        return securityContext != null && Constants.MASTER_REALM.equals(securityContext.getRealm()) && securityContext.getToken().getRealmAccess().isUserInRole(Constants.REALM_ADMIN_ROLE);
+    }
 }

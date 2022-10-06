@@ -163,16 +163,20 @@ public class JsonRulesBuilder extends RulesBuilder {
                     timePredicate = (time) -> {
                         long nextExecute = nextExecuteMillis.get();
                         if (time >= nextExecute) {
-                            // Advance the calculator to when the previous occurrence ends
-                            sunTimes.set(sunCalculator.on(sunTimes.get().getSet()).execute());
+                            // Advance the calculator beyond now or next occurrence (whichever is later)
+                            long calcMillis = Math.max(sunTimes.get().getSet().toEpochSecond()*1000, time);
+                            sunTimes.set(sunCalculator.on(new Date(calcMillis)).execute());
                             ZonedDateTime nextOccurrence = ruleCondition.sun.getPosition() == SunPositionTrigger.Position.SUNSET ? sunTimes.get().getSet() : sunTimes.get().getRise();
+
+                            log(Level.INFO, "Rule condition sun position has triggered at: " + timerService.getCurrentTimeMillis());
 
                             if (nextOccurrence == null) {
                                 log(Level.WARNING, "Rule condition requested sun position never occurs at the specified location: " + ruleCondition.sun);
                             } else {
-                                nextExecuteMillis.set(nextOccurrence.toInstant().toEpochMilli() + offsetMillis);
+                                long nextMillis = nextOccurrence.toInstant().toEpochMilli() + offsetMillis;
+                                log(Level.FINE, "Rule condition sun position next trigger time = " + nextMillis);
+                                nextExecuteMillis.set(nextMillis);
                             }
-                            log(Level.INFO, "Rule condition sun position has triggered");
                             return true;
                         }
                         return false;
@@ -607,7 +611,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         // Insert a temporal fact if we have a time trigger (this will cause the engine to fire periodically)
         if (hasTimeTrigger.get()) {
             String tempFactName = TIMER_TEMPORAL_FACT_NAME_PREFIX + jsonRuleset.getId();
-            facts.putTemporary(tempFactName, Long.MAX_VALUE - timerService.getCurrentTimeMillis(), ""); // current time + expiration shouldn't overflow
+            facts.putTemporary(tempFactName, Long.MAX_VALUE - timerService.getCurrentTimeMillis() - 5000, ""); // current time + expiration shouldn't overflow
         }
     }
 
