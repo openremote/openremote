@@ -925,11 +925,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                   .type="${InputType.BUTTON}"
                                                   @click="${() => {
                                                       this._createUpdateUser(user).then(() => {
-                                                          if(user.serviceAccount) {
-                                                              showSnackbar(undefined, (user.username + " " + i18next.t("savedSuccessfully")), i18next.t("copySecret"), () => { navigator.clipboard.writeText(user.secret); });
-                                                          } else {
-                                                              showSnackbar(undefined, (user.username + " " + i18next.t("savedSuccessfully")));
-                                                          }
+                                                          showSnackbar(undefined, (user.username + " " + i18next.t("savedSuccessfully")));
                                                       })
                                                   }}">
                                     </or-mwc-input>

@@ -36,7 +36,7 @@ export interface PageAssetsConfig {
     tree?: AssetTreeConfig;
 }
 export interface AssetsState {
-    expandedParents: string[];
+    expandedParents: {realm: string, ids: string[]}[]
 }
 export interface AssetsStateKeyed extends AppStateKeyed {
     assets: AssetsState;
@@ -49,17 +49,18 @@ const pageAssetsSlice = createSlice({
     initialState: INITIAL_STATE,
     reducers: {
         updateExpandedParents(state, action: PayloadAction<[string, boolean]>) {
-            if(!action.payload[1] && state.expandedParents.includes(action.payload[0])) {
-                return {
-                    ...state,
-                    expandedParents: state.expandedParents.filter((parent) => parent != action.payload[0])
-                }
-            } else if(action.payload[1] && !state.expandedParents.includes(action.payload[0])) {
-                return {
-                    ...state,
-                    expandedParents: [...state.expandedParents, action.payload[0]]
-                }
+            const expandedParents = JSON.parse(JSON.stringify(state.expandedParents)); // copy state to prevent issues inserting it back
+            const expanded = expandedParents.find(x => x.realm == manager.displayRealm);
+            if(!expanded) {
+                expandedParents.push({ realm: manager.displayRealm, ids: []});
             }
+            const expandedId = expandedParents.findIndex(x => x.realm == manager.displayRealm);
+            if(!action.payload[1] && expanded.ids.includes(action.payload[0])) {
+                expandedParents[expandedId].ids = expanded.ids.filter((parent) => parent != action.payload[0]); // filter out collapsed ones
+            } else if(!expanded || (action.payload[1] && !expanded.ids.includes(action.payload[0]))) {
+                expandedParents[expandedId].ids.push(action.payload[0]); // add new extended ones
+            }
+            return { ...state, expandedParents: expandedParents }
         }
     }
 })
@@ -192,7 +193,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     public connectedCallback() {
         super.connectedCallback();
-        this._expandedIds = this._store.getState().assets.expandedParents;
+        this._expandedIds = this._store.getState().assets.expandedParents.find(x => x.realm == manager.displayRealm)?.ids;
     }
 
 
@@ -331,7 +332,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     }
 
     protected _onAssetExpandToggle(event: OrAssetTreeToggleExpandEvent) {
-        this._store.dispatch(updateExpandedParents([ event.detail.node.asset.id, event.detail.node.expanded]))
+        this._store.dispatch(updateExpandedParents([ event.detail.node.asset.id, event.detail.node.expanded]));
     }
 
 
