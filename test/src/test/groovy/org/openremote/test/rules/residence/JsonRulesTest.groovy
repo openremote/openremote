@@ -386,7 +386,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             Date.from(validityStart),
             Date.from(validityEnd),
             recur)
-        ruleset.getMeta().add(new MetaItem<Object>(Ruleset.VALIDITY ,calendarEvent))
+        ruleset.setValidity(calendarEvent)
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the ruleset should be redeployed and paused until 1st occurrence"
@@ -591,13 +591,13 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
         }
 
-        when: "the updated attribute is cleared"
-        thingAsset.getAttribute("sunset").get().setValue(null)
-        thingAsset = assetStorageService.merge(thingAsset)
-
-        and: "time advances past the next sunrise"
+        when: "time advances past the next sunrise"
         sunTimes = sunsetCalculator.on(sunTimes.getSet()).execute()
         advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getRise()).getSeconds(), TimeUnit.SECONDS, container)
+
+        and: "the updated attribute is cleared"
+        thingAsset.getAttribute("sunset").get().setValue(null)
+        thingAsset = assetStorageService.merge(thingAsset)
 
         then: "the rule engine should have fired again and the rule should not have triggered"
         conditions.eventually {

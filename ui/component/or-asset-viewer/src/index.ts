@@ -15,7 +15,7 @@ import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog}
 import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {subscribe, Util} from "@openremote/core";
+import manager, {subscribe, Util, DefaultColor5} from "@openremote/core";
 import {OrMwcTable} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
@@ -511,11 +511,11 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         if (descriptor.assetImport) {
             content = html`
                 <div id="fileupload">
-                    <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
+                    <or-mwc-input style="flex: 0 1 auto;" outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
                         <input id="fileupload-elem" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
                     </or-mwc-input>
-                    <or-mwc-input id="filename-elem" .type="${InputType.TEXT}" disabled></or-mwc-input>
-                    <or-mwc-input id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => doImport()}" disabled></or-mwc-input>
+                    <or-mwc-input style="flex: 1 1 auto; margin: 0 4px 0 10px;" id="filename-elem" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled></or-mwc-input>
+                    <or-mwc-input style="flex: 0 1 auto;" id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => doImport()}" disabled></or-mwc-input>
                     <progress id="progress-circular" class="hidden pure-material-progress-circular"></progress>
                 </div>
             `;
@@ -585,7 +585,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             <style>
                #attribute-picker {
                    flex: 0;
-                   margin: 10px 0;
+                   margin: 0 0 10px 0;
                    position: unset;
                }
                
@@ -595,7 +595,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 
                 or-attribute-history {
                     width: 100%;
-                    --or-attribute-history-controls-margin: 10px 0 10px -5px;
+                    --or-attribute-history-controls-margin: 0 0 10px -5px;
                     --or-attribute-history-controls-justify-content: flex-start;
                 }
 
@@ -605,7 +605,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                    }
 
                    or-attribute-history {
-                       --or-attribute-history-controls-margin: 10px 0;
+                       --or-attribute-history-controls-margin: 0 0 10px 0;
                        --or-attribute-history-controls-justify-content: flex-end;
                        min-height: 70px;
                    }
@@ -810,7 +810,7 @@ export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, ho
     }
 
     return html`
-        <or-attribute-input class="force-btn-padding" disablesubscribe .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}" .fullWidth="${attribute.name === 'location' ? true : false}"></or-attribute-input>
+        <or-attribute-input class="force-btn-padding" disablesubscribe .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" resizeVertical .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}" .fullWidth="${attribute.name === 'location' ? true : false}"></or-attribute-input>
     `;
 }
 
@@ -1277,19 +1277,24 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                                 flex: 1;    
                                 overflow: visible;
                                 min-height: 0;
+                                padding: 0;
+                            }
+                            footer.mdc-dialog__actions {
+                                border-top: 1px solid ${unsafeCSS(DefaultColor5)};
                             }
                             or-asset-tree {
                                 height: 100%;
                             }
                         </style>
                     `)
+            .setHeading(i18next.t("setParent"))
             .setDismissAction(null));
     }
 
     protected render(): TemplateResult | void {
 
         const noSelection = !this.asset && (!this.ids || this.ids.length === 0);
-        const multiSelection = !this.asset && (!this.ids || this.ids.length > 1);
+        const multiSelection = !this.asset && (this.ids && this.ids.length > 1);
 
         if (multiSelection) {
             return html `

@@ -26,7 +26,7 @@ import org.openremote.model.rules.SunPositionTrigger;
  * Consists of one of the following triggers in order of precedence:
  * <ol>
  * <li>{@link #duration} - ISO8601 duration expression (e.g. 'PT1H') after which the condition becomes true - 1min precision</li>
- * <li>{@link #cron} - CRON expression (e.g. "*&#47;5 * * * *") at which time the condition becomes true - 1min precision</li>
+ * <li>{@link #cron} - CRON expression (e.g. "*&#47;5 * * * *") in UTC at which time the condition becomes true - 1min precision</li>
  * <li>{@link #sun} - {@link SunPositionTrigger} at which time the condition becomes true - 1min precision</li>
  * <li>{@link #assets} - {@link AssetQuery} to be applied to the {@link org.openremote.model.rules.AssetState}s
  * available within the rule engine this rule is loaded into. Evaluates to true when one or more
@@ -45,7 +45,7 @@ public class RuleCondition {
     public String duration;
 
     /**
-     * CRON expression (e.g. *&#47;5 * * * *)
+     * CRON expression in UTC (e.g. *&#47;5 * * * *)
      */
     public String cron;
 

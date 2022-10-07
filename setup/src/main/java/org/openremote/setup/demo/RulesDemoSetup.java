@@ -22,15 +22,12 @@ package org.openremote.setup.demo;
 import org.apache.commons.io.IOUtils;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RealmRuleset;
+import org.openremote.model.rules.Ruleset;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
-
-import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST;
 
 public class RulesDemoSetup extends ManagerSetup {
 
@@ -57,9 +54,7 @@ public class RulesDemoSetup extends ManagerSetup {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new RealmRuleset(
                 keycloakDemoSetup.realmCity.getName(), "De Kuip", Ruleset.Lang.JSON, rules
-            ).setAccessPublicRead(true);
-            ruleset.getMeta().addOrReplace(
-                new MetaItem<>(SHOW_ON_LIST));
+            ).setAccessPublicRead(true).setShowOnList(true);
             realmSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
 
@@ -67,9 +62,7 @@ public class RulesDemoSetup extends ManagerSetup {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new RealmRuleset(
                 keycloakDemoSetup.realmCity.getName(), "Euromast", Ruleset.Lang.JSON, rules
-            ).setAccessPublicRead(true);
-            ruleset.getMeta().addOrReplace(
-                new MetaItem<>(SHOW_ON_LIST));
+            ).setAccessPublicRead(true).setShowOnList(true);
             realmSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
 
@@ -77,9 +70,7 @@ public class RulesDemoSetup extends ManagerSetup {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new RealmRuleset(
                 keycloakDemoSetup.realmCity.getName(), "Markthal", Ruleset.Lang.JSON, rules
-            ).setAccessPublicRead(true);
-            ruleset.getMeta().addOrReplace(
-                new MetaItem<>(SHOW_ON_LIST));
+            ).setAccessPublicRead(true).setShowOnList(true);
             realmSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
 

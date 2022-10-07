@@ -230,7 +230,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected _realmRoles: Role[] = [];
 
     protected _realmRolesFilter = (role: Role) => {
-        return !["uma_authorization", "offline_access", "admin"].includes(role.name) && !role.name.startsWith("default-roles")
+        return !role.composite && !["uma_authorization", "offline_access", "admin"].includes(role.name) && !role.name.startsWith("default-roles")
     };
 
     @state()
@@ -442,7 +442,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const realmRoleOptions: string[] = this._realmRoles ? this._realmRoles.filter(r => this._realmRolesFilter(r)).filter(r => !r.composite).map(r => i18next.t("realmRole." + r.name, r.name.replace("_", " ").replace("-", " "))) : [];
+        const realmRoleOptions: [string, string][] = this._realmRoles ? this._realmRoles.filter(r => this._realmRolesFilter(r)).map(r => [r.name, i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name.replace("_", " ").replace("-", " ")))]) : [];
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
         return html`
@@ -726,7 +726,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         return this._compositeRoles.filter((role) => user.roles.some(ur => ur.name === role.name)).flatMap((role) => role.compositeRoleIds).map(id => this._roles.find(r => r.id === id).name);
     }
 
-    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], realmRoleOptions: string[],  suffix: string): TemplateResult {
+    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], realmRoleOptions: [string, string][],  suffix: string): TemplateResult {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
@@ -839,25 +839,24 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"
                                                   style="height: 56px;"></or-mwc-input>
 
-                                    <!-- realmRoles roles -->
+                                    <!-- realm roles -->
                                     <or-mwc-input
                                             ?readonly="${readonly}"
                                             ?disabled="${isSameUser}"
-                                            .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => !this._realmRolesFilter(r)).filter(r =>!r.composite).map(r => r.name) : undefined}"
+                                            .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => this._realmRolesFilter(r)).map(r => r.name) : undefined}"
                                             .type="${InputType.SELECT}" multiple
                                             .options="${realmRoleOptions}"
                                             .label="${i18next.t("realm_role_plural")}"
                                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                 const roleNames = e.detail.value as string[];
-                                                const excludedAndCompositeRoles = user.realmRoles.filter(r => this._realmRolesFilter(r) || r.composite);
+                                                const excludedAndCompositeRoles = user.realmRoles.filter(r => !this._realmRolesFilter(r));
                                                 const selectedRoles = this._realmRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
                                                     return {...r, assigned: true} as Role;
                                                 });
                                                 user.realmRoles = [...excludedAndCompositeRoles, ...selectedRoles];
-                                                this._updateUserSelectedRoles(user, suffix);
                                             }}"></or-mwc-input>
 
-                                    <!-- composite roles -->
+                                    <!-- composite client roles -->
                                     <or-mwc-input
                                             ?readonly="${readonly}"
                                             ?disabled="${isSameUser}"

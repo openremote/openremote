@@ -146,7 +146,8 @@ public class ManagerSetup implements Setup {
         room.getAttributes().addOrReplace(
                 new Attribute<>("motionSensor", INTEGER).addMeta(new MetaItem<>(LABEL, "Motion sensor"),
                         new MetaItem<>(READ_ONLY, true), new MetaItem<>(RULE_STATE, true),
-                        new MetaItem<>(STORE_DATA_POINTS)),
+                        new MetaItem<>(STORE_DATA_POINTS),
+                        new MetaItem<>(ACCESS_RESTRICTED_WRITE)),
                 new Attribute<>("presenceDetected", BOOLEAN).addMeta(new MetaItem<>(LABEL, "Presence detected"),
                         new MetaItem<>(RULE_STATE, true), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                         new MetaItem<>(READ_ONLY, true), new MetaItem<>(STORE_DATA_POINTS, true)),

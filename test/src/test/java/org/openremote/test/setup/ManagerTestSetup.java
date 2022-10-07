@@ -40,6 +40,7 @@ import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
 import static org.openremote.model.Constants.*;
@@ -597,10 +598,16 @@ public class ManagerTestSetup extends ManagerSetup {
                 keycloakTestSetup.buildingUserId,
                 apartment2BathroomId)));
 
+        assetStorageService.storeUserAssetLinks(List.of(
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                keycloakTestSetup.serviceUser2.getId(),
+                apartment1HallwayId)));
+
         // ################################ Make users restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
         identityProvider.updateUserRealmRoles(realmBuilding.getName(), keycloakTestSetup.testuser3Id, identityProvider.addRealmRoles(realmBuilding.getName(), keycloakTestSetup.testuser3Id, RESTRICTED_USER_REALM_ROLE));
         identityProvider.updateUserRealmRoles(realmBuilding.getName(), keycloakTestSetup.buildingUserId, identityProvider.addRealmRoles(realmBuilding.getName(), keycloakTestSetup.buildingUserId, RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), keycloakTestSetup.serviceUser2.getId(), identityProvider.addRealmRoles(realmBuilding.getName(), keycloakTestSetup.serviceUser2.getId(), RESTRICTED_USER_REALM_ROLE));
 
         // ################################ Realm smartcity ###################################
 

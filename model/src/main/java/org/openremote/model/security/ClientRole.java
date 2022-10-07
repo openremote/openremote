@@ -39,7 +39,6 @@ public enum ClientRole {
     READ_MAP(Constants.READ_MAP_ROLE, "View map"),
     READ_ASSETS(Constants.READ_ASSETS_ROLE, "Read asset data"),
     READ_RULES(Constants.READ_RULES_ROLE, "Read rulesets"),
-    READ_LAST_WILL(Constants.READ_LAST_WILL, "Subscribe to last will messages"),
 
     WRITE_USER(Constants.WRITE_USER_ROLE, "Write data of the authenticated user"),
     WRITE_ADMIN(Constants.WRITE_ADMIN_ROLE, "Write system settings, realms, and users"),
@@ -54,8 +53,7 @@ public enum ClientRole {
         READ_USERS,
         READ_MAP,
         READ_ASSETS,
-        READ_RULES,
-        READ_LAST_WILL
+        READ_RULES
     }),
 
     WRITE("write", "Write all data", new ClientRole[]{

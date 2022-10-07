@@ -19,6 +19,7 @@
  */
 package org.openremote.model.rules;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.calendar.CalendarEvent;
 
@@ -117,7 +118,7 @@ public class RealmRuleset extends Ruleset {
     }
 
     @Override
-    public RealmRuleset setMeta(MetaMap meta) {
+    public RealmRuleset setMeta(ObjectNode meta) {
         super.setMeta(meta);
         return this;
     }

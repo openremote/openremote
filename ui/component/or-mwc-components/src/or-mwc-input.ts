@@ -1365,7 +1365,7 @@ export class OrMwcInput extends LitElement {
                                         <div class="mdc-slider__thumb-knob"></div>
                                     </div>
                                 </div>
-                                ${inputElem ? html`<div style="width: 75px; margin-left: 20px;">${inputElem}</div>` : ``}
+                                ${inputElem ? html`<div style="min-width: 70px; width: 70px;">${inputElem}</div>` : ``}
                             </span>
                         `;
                     }

@@ -177,9 +177,17 @@ export class OrHeader extends LitElement {
             }
             
             #menu-btn-mobile {
+                display: flex;
                 margin-left: auto;
                 --or-icon-height: calc(var(--internal-or-header-item-size) - 8px);
                 --or-icon-width: calc(var(--internal-or-header-item-size) - 8px);
+            }
+
+            #menu-btn-mobile #realm-picker > span{
+                max-width: 70px;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                white-space: nowrap;
             }
     
             #menu-btn-desktop {
@@ -305,14 +313,6 @@ export class OrHeader extends LitElement {
                     display: none;
                 }
                 
-                #drawer {
-                    display: none;
-                }
-                
-                #desktop-right {
-                    display: flex;
-                }
-                
                 #desktop-left ::slotted(*) {
                     display: inline-block;
                 }
@@ -406,6 +406,7 @@ export class OrHeader extends LitElement {
                         (value) => this._onSecondaryMenuSelect(value as string)) : ``}
                     </div>
                     <div id="menu-btn-mobile">
+                        ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
                         <button id="menu-btn" class="menu-btn" title="Menu" @click="${this._toggleDrawer}"><or-icon icon="${this._drawerOpened ? "close" : "menu"}"></or-icon></button>
                     </div>
                 </div>
