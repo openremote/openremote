@@ -243,13 +243,16 @@ fetch(configURL).then(async (result) => {
                     });
                 }
 
-                if (normalisedConfig.language) {
-                    manager.language = normalisedConfig.language;
-                }
-
                 orAppConfig.realms[name] = { ...defaultRealm, header: headers, ...(realmConfig as RealmAppConfig) };
             });
         }
+
+        // Check local storage for set language, otherwise use language set in config
+        manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
+            manager.language = (value ? value : orAppConfig.realms[manager.displayRealm].language);
+        }).catch(() => {
+            manager.language = orAppConfig.realms[manager.displayRealm].language;
+        })
 
         // Add config prefix if defined (used in dev)
         if (CONFIG_URL_PREFIX) {

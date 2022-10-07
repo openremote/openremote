@@ -25,6 +25,8 @@ import org.openremote.model.value.MetaItemType;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * An asset can be linked to many users, and a user can have links to many assets.
@@ -165,6 +167,19 @@ public class UserAssetLink {
 
     public void setCreatedOn(Date createdOn) {
         this.createdOn = createdOn;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UserAssetLink that = (UserAssetLink) o;
+        return id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     @Override

@@ -288,15 +288,6 @@ public class Realm {
         return this;
     }
 
-    public static Field[] getPropertyFields() {
-        if (propertyFields == null) {
-            propertyFields = Arrays.stream(Realm.class.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(JoinColumn.class) || field.isAnnotationPresent(Formula.class))
-                .toArray(Field[]::new);
-        }
-        return propertyFields;
-    }
-
     protected static List<RealmRole> getDefaultRealmRoles(String realm) {
         if (MASTER_REALM.equals(realm)) {
             return Arrays.asList(
