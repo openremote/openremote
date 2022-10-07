@@ -93,7 +93,14 @@ export async function showOkCancelDialog(title: string, content: string | Templa
                     }
                 ]
             )
-            .setHeading(title),
+            .setHeading(title)
+            .setStyles(html`
+                    <style>
+                        .mdc-dialog__content {
+                            white-space: pre-wrap
+                        }
+                    </style>
+                `),
         hostElement);
 
     return await deferred.promise;

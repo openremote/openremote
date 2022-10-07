@@ -1483,14 +1483,16 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return;
         }
 
+        // Get all descendant IDs of selected nodes
+        const assetIds: string[] = [];
+        const assetNames: string[] = [];
+        OrAssetTree._forEachNodeRecursive(this._selectedNodes, (node) => {
+            assetIds.push(node.asset!.id!);
+            assetNames.push(node.asset!.name!);
+        });
+
         const doDelete = () => {
             this.disabled = true;
-
-            // Get all descendant IDs of selected nodes
-            const assetIds: string[] = [];
-            OrAssetTree._forEachNodeRecursive(this._selectedNodes, (node) => {
-                assetIds.push(node.asset!.id!);
-            });
 
             manager.rest.api.AssetResource.delete({
                 assetId: assetIds
@@ -1512,7 +1514,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteAssetsConfirm"), i18next.t("delete"))
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteAssetsConfirm", { assetNames: assetNames.join(", ") }), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     doDelete();
