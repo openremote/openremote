@@ -262,12 +262,12 @@ export class OrDashboardSettingsPanel extends LitElement {
                         console.error(threshold[1]);
                         return html`
                             <div class="threshold-list-item" style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
-                                <div style="height: 100%; padding: 8px 16px 8px 0;">
+                                <div style="height: 100%; padding: 8px 14px 8px 0;">
                                     <or-mwc-input type="${InputType.COLOUR}" style="width: 32px; height: 32px;" value="${threshold[1]}"
                                                   @or-mwc-input-changed="${(event: CustomEvent) => {
                                                       console.error(this.widget!.widgetConfig.thresholds[index]);
                                                       this.widget!.widgetConfig.thresholds[index][1] = event.detail.value;
-                                                      // this.requestUpdate();
+                                                      this.requestUpdate();
                                                       this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
                                                   }}"
                                     ></or-mwc-input>
@@ -278,12 +278,13 @@ export class OrDashboardSettingsPanel extends LitElement {
                                                   if(event.detail.value > config.min && event.detail.value < config.max) {
                                                       console.error(this.widget!.widgetConfig.thresholds[index]);
                                                       this.widget!.widgetConfig.thresholds[index][0] = event.detail.value;
-                                                      // this.requestUpdate();
+                                                      this.requestUpdate();
                                                       this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
                                                   }
                                               }}"
                                 ></or-mwc-input>
-                                <button class="button-clear" style="margin-left: 8px;" @click="${() => this.removeThreshold(this.widget!, threshold)}">
+                                <button class="button-clear" style="margin-left: 8px; ${index == 0 ? 'visibility: hidden;' : undefined}"
+                                        @click="${() => { if(index != 0) { this.removeThreshold(this.widget!, threshold); }}}">
                                     <or-icon icon="close-circle"></or-icon>
                                 </button>
                             </div>
