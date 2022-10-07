@@ -270,7 +270,7 @@ export class PageRoles extends Page<AppStateKeyed> {
   }
 
   private _deleteRole(role, rowIndex) {
-    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm"), i18next.t("delete"))
+    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm", { roleName: role.name }), i18next.t("delete"))
     .then((ok) => {
         if (ok) {
           this.doDelete(role, rowIndex);
