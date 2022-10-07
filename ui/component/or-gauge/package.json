@@ -21,13 +21,13 @@
     "@openremote/or-icon": "^1.1.0",
     "@openremote/or-mwc-components": "^1.1.0",
     "@openremote/or-translate": "^1.1.0",
-    "@types/gaugejs": "^1.3.1",
     "gaugeJS": "^1.3.7",
     "lit": "^2.0.2"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
-    "@types/chart.js": "^2.9.34"
+    "@types/chart.js": "^2.9.34",
+    "@types/gaugejs": "^1.3.1"
   },
   "publishConfig": {
     "access": "public"

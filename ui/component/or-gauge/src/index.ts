@@ -1,7 +1,7 @@
 import {css, html, LitElement} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {Asset, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
-import { Gauge, GaugeOptions } from 'gaugejs';
+import { Gauge, GaugeOptions } from "gaugeJS";
 import manager, { Util } from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import {debounce} from "lodash";
