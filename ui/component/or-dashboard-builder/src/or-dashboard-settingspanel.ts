@@ -84,6 +84,10 @@ export const widgetSettingsStyling = css`
     }
 
     /* ---------------------------- */
+
+    .threshold-list-item:hover .button-clear {
+        visibility: visible;
+    }
 `
 
 export enum SettingsPanelType {
@@ -253,17 +257,17 @@ export class OrDashboardSettingsPanel extends LitElement {
         console.error("Rendering thresholdsHTML!");
         if(config.thresholds) {
             return html`
-                <div style="padding: 12px 24px 48px 24px;">
+                <div style="padding: 0 14px 12px 14px;">
                     ${(config.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {
                         console.error(threshold[1]);
                         return html`
-                            <div style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
+                            <div class="threshold-list-item" style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                                 <div style="height: 100%; padding: 8px 16px 8px 0;">
                                     <or-mwc-input type="${InputType.COLOUR}" style="width: 32px; height: 32px;" value="${threshold[1]}"
                                                   @or-mwc-input-changed="${(event: CustomEvent) => {
                                                       console.error(this.widget!.widgetConfig.thresholds[index]);
                                                       this.widget!.widgetConfig.thresholds[index][1] = event.detail.value;
-                                                      this.requestUpdate();
+                                                      // this.requestUpdate();
                                                       this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
                                                   }}"
                                     ></or-mwc-input>
@@ -274,18 +278,38 @@ export class OrDashboardSettingsPanel extends LitElement {
                                                   if(event.detail.value > config.min && event.detail.value < config.max) {
                                                       console.error(this.widget!.widgetConfig.thresholds[index]);
                                                       this.widget!.widgetConfig.thresholds[index][0] = event.detail.value;
-                                                      this.requestUpdate();
+                                                      // this.requestUpdate();
                                                       this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
                                                   }
                                               }}"
                                 ></or-mwc-input>
+                                <button class="button-clear" style="margin-left: 8px;" @click="${() => this.removeThreshold(this.widget!, threshold)}">
+                                    <or-icon icon="close-circle"></or-icon>
+                                </button>
                             </div>
                         `
                     })}
+                    <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('threshold')}" icon="plus"
+                                  style="margin-top: 24px; margin-left: -7px;"
+                                  @or-mwc-input-changed="${() => this.addNewThreshold(this.widget!)}">
+                    </or-mwc-input>
                 </div>
             `
         }
     }
 
+    removeThreshold(widget: DashboardWidget, threshold: [number, string]) {
+        widget.widgetConfig.thresholds = (widget.widgetConfig.thresholds as [number, string][]).filter((x) => x != threshold);
+        this.requestUpdate();
+        this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+    }
+    addThreshold(widget: DashboardWidget, threshold: [number, string]) {
+        (widget.widgetConfig.thresholds as [number, string][]).push(threshold);
+        this.requestUpdate();
+        this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+    }
+    addNewThreshold(widget: DashboardWidget) {
+        this.addThreshold(widget, [widget.widgetConfig.max, "#000000"])
+    }
 
 }

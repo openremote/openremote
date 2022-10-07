@@ -1199,7 +1199,7 @@ export class OrMwcInput extends LitElement {
                 case InputType.COLOUR:
                     return html`
                         <div id="component" style="width: 100%; height: 100%;">
-                            <input type="color" id="elem" style="border: none; height: 100%; width: 100%;" value="${this.value}"
+                            <input type="color" id="elem" style="border: none; height: 100%; width: 100%; padding: 1px 3px; min-height: 22px; min-width: 30px;" value="${this.value}"
                                    ?disabled="${this.disabled || this.readonly}"
                                    ?required="${this.required}"
                                    @change="${(e: any) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"

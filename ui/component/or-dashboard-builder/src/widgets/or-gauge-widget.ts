@@ -197,10 +197,6 @@ export class OrGaugeWidgetSettings extends LitElement {
                                           }}"
                             ></or-mwc-input>
                         </div>
-                        <div>
-                            <or-mwc-input type="${InputType.SELECT}" .options="${['absolute', 'percentage']}" .value="${'absolute'}" 
-                                          label="${i18next.t('dashboard.showValueAs')}" style="width: 100%;"></or-mwc-input>
-                        </div>
                     </div>
                 ` : null}
             </div>
