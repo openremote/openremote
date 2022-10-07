@@ -8,7 +8,7 @@ import "@openremote/or-gauge";
 import { i18next } from "@openremote/or-translate";
 import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import { when } from "lit/directives/when.js";
 
 export interface GaugeWidgetConfig extends OrWidgetConfig {
@@ -69,9 +69,6 @@ export class OrGaugeWidgetContent extends LitElement {
 
 
     render() {
-        console.warn(this.widget?.widgetConfig.attributeRefs);
-        console.error(this.assets);
-        console.error(this.assetAttributes);
         return html`
             ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => { 
                 return html`
@@ -88,16 +85,10 @@ export class OrGaugeWidgetContent extends LitElement {
         `
     }
 
-    willUpdate(changedProperties: Map<string, any>) {
-        console.error(changedProperties);
-    }
-
     updated(changedProperties: Map<string, any>) {
-        console.error(changedProperties);
+        console.log(changedProperties);
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
-                console.error("Fetched the following assets:");
-                console.error(assets);
                 this.assets = assets!;
                 this.assetAttributes = this.widget?.widgetConfig.attributeRefs.map((attrRef: AttributeRef) => {
                     const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
@@ -111,14 +102,11 @@ export class OrGaugeWidgetContent extends LitElement {
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
-        console.error("Fetching assets..")
         if(config.attributeRefs && config.attributeRefs.length > 0) {
-            console.error("Making the call..")
             let assets: Asset[] = [];
             await manager.rest.api.AssetResource.queryAssets({
                 ids: config.attributeRefs?.map((x: AttributeRef) => x.id) as string[]
             }).then(response => {
-                console.error(response.data);
                 assets = response.data;
             }).catch((reason) => {
                 console.error(reason);
@@ -148,18 +136,12 @@ export class OrGaugeWidgetSettings extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>) {
-        console.error(changedProperties);
-    }
-    shouldUpdate(changedProperties: Map<string, any>) {
-        console.error(changedProperties);
-        return super.shouldUpdate(changedProperties);
+        console.log(changedProperties);
     }
 
     // UI Rendering
     render() {
-        console.error("[or-gauge-widgetsettings] Rendering..");
-        const config = this.widget?.widgetConfig as GaugeWidgetConfig;
-        console.error(config);
+        console.log("[or-gauge-widgetsettings] Rendering..");
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
@@ -187,13 +169,13 @@ export class OrGaugeWidgetSettings extends LitElement {
                                                   }
                                               });
                                               this.requestUpdate("widget");
-                                              this.forceParentUpdate(new Map<string, any>([['widget', this.widget]]));
+                                              this.forceParentUpdate(new Map<string, any>([['widget', this.widget]]), true);
                                           }}"
                             ></or-mwc-input>
                             <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('max')}" .value="${this.widget?.widgetConfig.max}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
                                               this.widget!.widgetConfig.max = event.detail.value;
-                                              this.forceParentUpdate(new Map<string, any>([['widget', this.widget]]));
+                                              this.forceParentUpdate(new Map<string, any>([['widget', this.widget]]), true);
                                           }}"
                             ></or-mwc-input>
                         </div>
@@ -217,7 +199,6 @@ export class OrGaugeWidgetSettings extends LitElement {
     /* ------------------------------ */
 
     onAttributesUpdate(changes: Map<string, any>) {
-        console.error(changes);
         if(changes.has('loadedAssets')) {
             this.loadedAssets = changes.get('loadedAssets');
         }

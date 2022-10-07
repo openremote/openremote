@@ -7,7 +7,6 @@ import {Dashboard, DashboardScalingPreset, DashboardScreenPreset} from "@openrem
 import manager from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -149,10 +148,6 @@ export class OrDashboardTree extends LitElement {
     /* ---------------------- */
 
     protected render() {
-        const menuItems: ListItem[] = [
-            { icon: "monitor", text: i18next.t('dashboard.size.desktop'), value: DashboardSizeOption.DESKTOP },
-            { icon: "cellphone", text: i18next.t('dashboard.size.mobile'), value: DashboardSizeOption.MOBILE }
-        ]
         const dashboardItems: ListItem[][] = []
         if(this.dashboards!.length > 0) {
             if(this.userId) {

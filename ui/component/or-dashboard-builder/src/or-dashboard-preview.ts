@@ -525,7 +525,9 @@ export class OrDashboardPreview extends LitElement {
                 ` : html`
                     <div id="container" style="justify-content: center; overflow: ${this.fullscreen ? undefined : 'hidden auto'}; position: relative;">
                         ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
-                            <div style="position: absolute; z-index: 3; height: ${this.previewHeight}px; line-height: ${this.previewHeight}px; user-select: none;"><span>${i18next.t('dashboard.deviceNotSupported')}</span></div>
+                            <div style="position: absolute; z-index: 3; height: 100%; display: flex; align-items: center;">
+                                <span>${i18next.t('dashboard.deviceNotSupported')}</span>
+                            </div>
                         ` : undefined}
                         <div class="${this.fullscreen ? 'maingridContainer__fullscreen' : 'maingridContainer'}">
                             <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined }" 

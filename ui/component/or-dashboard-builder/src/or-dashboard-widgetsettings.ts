@@ -109,7 +109,7 @@ export class OrDashboardWidgetsettings extends LitElement {
 
             const settingsElem = this.shadowRoot?.children[0].children[1];
             settingsElem?.addEventListener('updated', (event: any) => {
-                this.forceParentUpdate(event.detail.value);
+                this.forceParentUpdate(event.detail.changes, event.detail.force);
             });
         })
     }
@@ -118,9 +118,9 @@ export class OrDashboardWidgetsettings extends LitElement {
 
 
     // Method to update the Grid. For example after changing a setting.
-    forceParentUpdate(force: boolean = false) {
+    forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
         this.requestUpdate();
-        this.dispatchEvent(new CustomEvent('update', { detail: { force: force }}));
+        this.dispatchEvent(new CustomEvent('update', { detail: { changes: changes, force: force }}));
     }
 
     protected render() {
@@ -144,7 +144,9 @@ export class OrDashboardWidgetsettings extends LitElement {
             <div style="padding: 12px;">
                 <div>
                     <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;" .value="${this.selectedWidget?.displayName}" label="${i18next.t('name')}" 
-                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.selectedWidget!.displayName = event.detail.value; this.forceParentUpdate(); }}"
+                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                      this.selectedWidget!.displayName = event.detail.value;
+                                      this.forceParentUpdate(new Map<string, any>([['widget', this.selectedWidget]])); }}"
                     ></or-mwc-input>
                 </div>
             </div>

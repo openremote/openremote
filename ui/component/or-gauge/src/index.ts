@@ -152,7 +152,7 @@ export class OrGauge extends LitElement {
         }
         if(changedProperties.has('attrRef')) {
             if(this.attrRef) {
-                this.loadData(this.attrRef!);
+                this.loadData(this.attrRef);
             } else {
                 this.assetAttribute = undefined;
                 this.value = undefined;
@@ -163,12 +163,10 @@ export class OrGauge extends LitElement {
         if(changedProperties.has('min') && this.min) {
             this.gauge?.setMinValue(this.min);
             this.gauge?.set(this.value ? this.value : NaN);
-            console.error(this.gauge);
         }
         if(changedProperties.has('max') && this.max && this.gauge) {
             this.gauge.maxValue = this.max;
             this.gauge?.set(this.value ? this.value : NaN);
-            console.error(this.gauge);
         }
         if(changedProperties.has('thresholds') && this.thresholds) {
             this.config!.options!.staticZones = [];
@@ -178,7 +176,6 @@ export class OrGauge extends LitElement {
                     min: threshold[0],
                     max: (this.thresholds![index + 1] ? this.thresholds![index + 1][0] : this.max)
                 };
-                console.error(zone);
                 this.config?.options?.staticZones?.push(zone as any);
             }));
             if(this.gauge) {
@@ -188,7 +185,6 @@ export class OrGauge extends LitElement {
     }
 
     setupGauge() {
-        console.error("Setting up gauge..");
         this.gauge = new Gauge(this._gaugeElem);
         this.gauge.setOptions(this.config?.options);
         this.gauge.maxValue = (this.max ? this.max : 100)
@@ -198,11 +194,9 @@ export class OrGauge extends LitElement {
         if(!this.value && this.attrRef) {
             this.loadData(this.attrRef);
         }
-        console.error(this.gauge);
     }
 
     render() {
-        console.error("Rendering or-gauge..");
         return html`
             <div style="position: relative; height: 100%; width: 100%;">
                 <div class="chart-wrapper" style="display: ${this.loading ? 'none' : 'flex'}; flex-direction: column; justify-content: center; height: 100%;">
@@ -226,11 +220,11 @@ export class OrGauge extends LitElement {
 
     async loadData(attrRef: AttributeRef) {
         const response = await manager.rest.api.AssetResource.queryAssets({ ids: [attrRef.id!] });
-        const assets = response.data as Asset[];
+        const assets = response.data;
         const assetAttributes = [attrRef].map((attrRef) => {
             const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
             const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-            return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
+            return asset && asset.attributes ? [assetIndex, asset.attributes[attrRef.name!]] : undefined;
         }).filter((indexAndAttr) => !!indexAndAttr) as [number, Attribute<any>][];
 
         this.asset = assets[0];
