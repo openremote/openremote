@@ -113,7 +113,7 @@ export class OrKpiWidgetContent extends LitElement {
 export class OrKpiWidgetSettings extends LitElement {
 
     @property()
-    public widget?: DashboardWidget;
+    public readonly widget?: DashboardWidget;
 
     // Default values
     private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display'), i18next.t('values')];

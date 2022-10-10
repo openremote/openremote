@@ -38,13 +38,13 @@ export class OrGaugeWidget implements OrWidgetEntity {
             max: 100
         } as GaugeWidgetConfig;
     }
-
-    getSettingsHTML(widget: DashboardWidget, realm: string) {
-        return html`<or-gauge-widgetsettings .widget="${widget}" realm="${realm}"></or-gauge-widgetsettings>`;
-    }
-
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
         return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-gauge-widget>`;
+    }
+
+    getSettingsHTML(widget: DashboardWidget, realm: string) {
+        console.error("getSettingsHTML() in or-gauge-widget");
+        return html`<or-gauge-widgetsettings .widget="${widget}" realm="${realm}"></or-gauge-widgetsettings>`;
     }
 
 }
@@ -124,8 +124,8 @@ export class OrGaugeWidgetContent extends LitElement {
 @customElement("or-gauge-widgetsettings")
 export class OrGaugeWidgetSettings extends LitElement {
 
-    @property({hasChanged(oldVal, newVal) { return JSON.stringify(oldVal) == JSON.stringify(newVal); }})
-    protected readonly widget?: DashboardWidget;
+    @property()
+    public readonly widget?: DashboardWidget;
 
     // Default values
     private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('values'), i18next.t('thresholds')];
@@ -141,7 +141,6 @@ export class OrGaugeWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
-        console.log("[or-gauge-widgetsettings] Rendering..");
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
