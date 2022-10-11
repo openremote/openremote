@@ -75,7 +75,6 @@ export class OrChartWidgetContent extends LitElement {
     /* ---------- */
 
     render() {
-        console.log("[or-chart-widget] Rendering..");
         return html`
             <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}" denseLegend="${true}"
                       .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(this.widget!, startOfPeriod, endOfPeriod, 20); }) : undefined}"
@@ -85,7 +84,6 @@ export class OrChartWidgetContent extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
                 this.assets = assets!;
@@ -187,7 +185,6 @@ class OrChartWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
-        console.log("[or-chart-widgetsettings] Rendering...");
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ChartWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
         return html`
             <div>

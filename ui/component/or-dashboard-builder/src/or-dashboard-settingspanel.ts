@@ -1,5 +1,5 @@
 import manager, { DefaultColor5 } from "@openremote/core";
-import {Asset, AssetModelUtil, AttributeRef, DashboardWidget} from "@openremote/model";
+import {Asset, AssetModelUtil, AttributeRef} from "@openremote/model";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -131,15 +131,10 @@ export class OrDashboardSettingsPanel extends LitElement {
         }
     }
 
-    updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
-    }
-
 
     /* ---------------------------------- */
 
     render() {
-        console.log("[or-dashboard-settingspanel] Rendering..");
         switch (this.type) {
 
             case SettingsPanelType.SINGLE_ATTRIBUTE:
@@ -213,23 +208,21 @@ export class OrDashboardSettingsPanel extends LitElement {
         return this.loadedAssets?.find((asset) => asset.id == attrRef.id)
     }
 
-    // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
+    // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required.
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
         if (config.attributeRefs) {
-            if (config.attributeRefs != null) {
-                let assets: Asset[] = [];
-                await manager.rest.api.AssetResource.queryAssets({
-                    ids: config.attributeRefs?.map((x: AttributeRef) => {
-                        return x.id;
-                    }) as string[]
-                }).then(response => {
-                    assets = response.data;
-                }).catch((reason) => {
-                    console.error(reason);
-                    showSnackbar(undefined, i18next.t('errorOccurred'));
-                });
-                return assets;
-            }
+            let assets: Asset[] = [];
+            await manager.rest.api.AssetResource.queryAssets({
+                ids: config.attributeRefs?.map((x: AttributeRef) => {
+                    return x.id;
+                }) as string[]
+            }).then(response => {
+                assets = response.data;
+            }).catch((reason) => {
+                console.error(reason);
+                showSnackbar(undefined, i18next.t('errorOccurred'));
+            });
+            return assets;
         } else {
             console.error("Error: attributeRefs are not present in widget config!");
         }
@@ -249,7 +242,6 @@ export class OrDashboardSettingsPanel extends LitElement {
 
     removeWidgetAttribute(attributeRef: AttributeRef) {
         if (this._config.attributeRefs != null) {
-            const attributeRefs = JSON.parse(JSON.stringify(this._config.attributeRefs)); //
             this._config.attributeRefs.splice(this._config.attributeRefs.indexOf(attributeRef), 1);
             this.updateParent(new Map<string, any>([["config", this._config]]));
         }
@@ -288,7 +280,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                                     ></or-mwc-input>
                                 </div>
                                 <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${threshold[0]}" ?disabled="${index == 0}"
-                                              .min="${config.min ? config.min : undefined}" .max="${config.max ? config.max : undefined}"
+                                              .min="${config.min}" .max="${config.max}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   if(event.detail.value >= config.min && event.detail.value <= config.max) {
                                                       this._config.thresholds[index][0] = event.detail.value;
@@ -297,7 +289,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                                               }}"
                                 ></or-mwc-input>
                                 <button class="button-clear" style="margin-left: 8px; ${index == 0 ? 'visibility: hidden;' : undefined}"
-                                        @click="${() => { if(index != 0) { this.removeThreshold(this._config, threshold); }}}">
+                                        @click="${() => { this.removeThreshold(this._config, threshold); }}">
                                     <or-icon icon="close-circle"></or-icon>
                                 </button>
                             </div>

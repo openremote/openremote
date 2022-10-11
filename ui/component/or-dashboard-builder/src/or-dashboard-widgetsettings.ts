@@ -105,13 +105,6 @@ export class OrDashboardWidgetsettings extends LitElement {
     constructor() {
         super();
         this.expandedPanels = [];
-        this.updateComplete.then(() => {
-
-            const settingsElem = this.shadowRoot?.children[0].children[1];
-            settingsElem?.addEventListener('updated', (event: any) => {
-                this.forceParentUpdate(event.detail.changes, event.detail.force);
-            });
-        })
     }
 
     /* ------------------------------------ */
@@ -124,6 +117,12 @@ export class OrDashboardWidgetsettings extends LitElement {
     }
 
     protected render() {
+        this.updateComplete.then(() => {
+            const settingElem = this.shadowRoot?.children[0].children[1];
+            settingElem!.addEventListener('updated', (event: any) => {
+                this.forceParentUpdate(event.detail.changes, event.detail.force);
+            });
+        });
         if(this.selectedWidget?.widgetTypeId != null && this.selectedWidget.widgetConfig != null) {
             return this.generateHTML(this.selectedWidget.widgetTypeId, this.selectedWidget.widgetConfig);
         }

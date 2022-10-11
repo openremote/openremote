@@ -65,7 +65,6 @@ export class OrKpiWidgetContent extends LitElement {
     private assetAttributes: [number, Attribute<any>][] = [];
 
     render() {
-        console.log("[or-kpi-widget] Rendering..");
         return html`
             <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}"
                                .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}"
@@ -75,7 +74,6 @@ export class OrKpiWidgetContent extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
                 this.assets = assets!;
@@ -127,7 +125,6 @@ export class OrKpiWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
-        console.log("[or-kpi-widgetsettings] Rendering..");
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as KpiWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
         return html`
             <div>

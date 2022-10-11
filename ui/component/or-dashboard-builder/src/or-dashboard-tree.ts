@@ -82,7 +82,6 @@ export class OrDashboardTree extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
         if(changedProperties.has("dashboards") && changedProperties.get("dashboards") != null) {

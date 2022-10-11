@@ -53,10 +53,6 @@ export class OrDashboardWidget extends LitElement {
         return changed.size > 0;
     }
 
-    updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
-    }
-
     firstUpdated(_changedProperties: Map<string, any>) {
         this.updateComplete.then(() => {
             const gridItemElement = this.widgetContainerElement;
@@ -77,7 +73,6 @@ export class OrDashboardWidget extends LitElement {
 
 
     protected render() {
-        console.warn("Rendering or-dashboard-widget [" + this.widget?.displayName + "]");
         return html`
             <div id="widget-container" style="height: 100%; padding: 8px 16px 8px 16px; display: flex; flex-direction: column; overflow: auto;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-right: -12px; height: 36px;">

@@ -324,7 +324,6 @@ export class OrDashboardBuilder extends LitElement {
 
     // On every property update
     updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
         this.isLoading = (this.dashboards == undefined);
         this.isInitializing = (this.dashboards == undefined);
         if(this.realm == undefined) { this.realm = manager.displayRealm; }

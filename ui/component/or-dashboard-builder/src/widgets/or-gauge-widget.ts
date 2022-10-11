@@ -10,7 +10,6 @@ import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import { when } from "lit/directives/when.js";
-import {KpiWidgetConfig} from "./or-kpi-widget";
 
 export interface GaugeWidgetConfig extends OrWidgetConfig {
     displayName: string;
@@ -69,7 +68,6 @@ export class OrGaugeWidgetContent extends LitElement {
 
 
     render() {
-        console.log("[or-gauge-widget] Rendering..");
         return html`
             ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => { 
                 return html`
@@ -87,7 +85,6 @@ export class OrGaugeWidgetContent extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
                 this.assets = assets!;
@@ -136,13 +133,8 @@ export class OrGaugeWidgetSettings extends LitElement {
         return [style, widgetSettingsStyling];
     }
 
-    updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
-    }
-
     // UI Rendering
     render() {
-        console.log("[or-gauge-widgetsettings] Rendering...");
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as GaugeWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
         return html`
             <div>

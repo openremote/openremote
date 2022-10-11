@@ -169,11 +169,10 @@ export class OrGauge extends LitElement {
             this.gauge?.set(this.value ? this.value : NaN);
         }
         if(changedProperties.has('thresholds') && this.thresholds) {
-            this.config!.options!.staticZones = [];
-            console.error(this.thresholds);
 
             // Make staticZones out of the thresholds.
             // If below the minimum or above the maximum, set the value according to it.
+            this.config!.options!.staticZones = [];
             this.thresholds.sort((x, y) => (x[0] < y[0]) ? -1 : 1).forEach(((threshold, index) => {
                 const min = threshold[0];
                 const max = (this.thresholds![index + 1] ? this.thresholds![index + 1][0] : this.max);
