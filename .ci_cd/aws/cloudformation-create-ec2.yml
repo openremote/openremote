@@ -704,7 +704,7 @@ Resources:
   DiskUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      Namespace: Cloudwatch
+      Namespace: CWAgent
       MetricName: disk_used_percent
       Statistic: Average
       Period: 600
@@ -718,6 +718,36 @@ Resources:
       Dimensions:
         - Name: InstanceId
           Value: !Ref EC2Instance
+        - Name: ImageId
+          Value: !Ref ImageId
+        - Name: InstanceType
+          Value: !Ref InstanceType
+        - Name: path
+          Value: /
+        - Name: fstype
+          Value: xfs
+
+  MemoryUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: CWAgent
+      MetricName: mem_used_percent
+      Statistic: Average
+      Period: 600
+      EvaluationPeriods: 3
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+        - Name: ImageId
+          Value: !Ref ImageId
+        - Name: InstanceType
+          Value: !Ref InstanceType
 
   HealthCheckAlarm:
     Type: AWS::CloudWatch::Alarm

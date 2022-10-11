@@ -478,7 +478,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 return;
             }
 
-            LOG.info("Linking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() +  ", protocol=" + protocol);
+            LOG.fine("Linking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() +  ", protocol=" + protocol);
 
             attributes.forEach(attribute -> {
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
@@ -502,7 +502,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 return;
             }
 
-            LOG.info("Unlinking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() +  ", protocol=" + protocol);
+            LOG.fine("Unlinking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() +  ", protocol=" + protocol);
 
             attributes.forEach(attribute -> {
                 try {
@@ -612,10 +612,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         // Fully load agent asset if path and parent info not loaded
         if (agent.getPath() == null || (agent.getPath().length > 1 && agent.getParentId() == null)) {
-            LOG.info("Agent is not fully loaded so retrieving the agent from the DB: " + agent.getId());
+            LOG.fine("Agent is not fully loaded so retrieving the agent from the DB: " + agent.getId());
             final Agent<?, ?, ?> loadedAgent = assetStorageService.find(agent.getId(), true, Agent.class);
             if (loadedAgent == null) {
-                LOG.info("Agent not found in the DB, maybe it has been removed: " + agent.getId());
+                LOG.fine("Agent not found in the DB, maybe it has been removed: " + agent.getId());
                 return null;
             }
             agent = loadedAgent;
@@ -665,7 +665,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     @Override
     public void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
         if (!getAgents().containsKey(agentId)) {
-            LOG.info("Attempt to subscribe to child asset changes with an invalid agent ID: " +agentId);
+            LOG.fine("Attempt to subscribe to child asset changes with an invalid agent ID: " +agentId);
             return;
         }
 
@@ -719,7 +719,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 Future<Void> discoveryFuture = instanceDiscovery.startInstanceDiscovery(onDiscovered);
                 discoveryFuture.get();
             } catch (InterruptedException e) {
-                LOG.info("Protocol instance discovery was cancelled");
+                LOG.fine("Protocol instance discovery was cancelled");
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "Failed to do protocol instance discovery: Provider = " + instanceDiscoveryProviderClass, e);
             } finally {
@@ -758,7 +758,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     Future<Void> discoveryFuture = assetDiscovery.startAssetDiscovery(onDiscovered);
                     discoveryFuture.get();
                 } catch (InterruptedException e) {
-                    LOG.info("Protocol asset discovery was cancelled");
+                    LOG.fine("Protocol asset discovery was cancelled");
                 } catch (Exception e) {
                     LOG.log(Level.WARNING, "Failed to do protocol asset discovery: Agent = " + agent, e);
                 } finally {
@@ -800,7 +800,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     Future<Void> discoveryFuture = assetImport.startAssetImport(fileData, onDiscovered);
                     discoveryFuture.get();
                 } catch (InterruptedException e) {
-                    LOG.info("Protocol asset import was cancelled");
+                    LOG.fine("Protocol asset import was cancelled");
                 } catch (Exception e) {
                     LOG.log(Level.WARNING, "Failed to do protocol asset import: Agent = " + agent, e);
                 } finally {
@@ -818,7 +818,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected void okToContinueWithImportOrDiscovery(String agentId) {
         if (agentDiscoveryImportFutureMap.containsKey(agentId)) {
             String msg = "Protocol asset discovery or import already running for requested agent: " + agentId;
-            LOG.info(msg);
+            LOG.fine(msg);
             throw new IllegalStateException(msg);
         }
     }

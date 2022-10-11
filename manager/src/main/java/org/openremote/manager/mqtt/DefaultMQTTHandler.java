@@ -46,6 +46,7 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -128,7 +129,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
-            LOG.fine("Anonymous connection not supported: topic=" + topic + ", connection=" + connection);
+            LOG.fine("Anonymous connection not supported: topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
 
@@ -136,58 +137,58 @@ public class DefaultMQTTHandler extends MQTTHandler {
         boolean isAssetTopic = isAssetTopic(topic);
 
         if (!isAssetTopic && !isAttributeTopic) {
-            LOG.fine("Topic must have 3 or more tokens and third token must be 'asset, attribute or attributevalue': topic=" + topic  + ", connection=" + connection);
+            LOG.fine("Topic must have 3 or more tokens and third token must be 'asset, attribute or attributevalue': topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
 
         if (isAssetTopic) {
             if (topic.getTokens().size() < 4 || topic.getTokens().size() > 5) {
-                LOG.fine("Asset subscribe token count should be 4 or 5: topic=" + topic + ", connection=" + connection);
+                LOG.fine("Asset subscribe token count should be 4 or 5: topic=" + topic + ", " + connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().size() == 4) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().size() == 5) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Asset subscribe forth token must be an asset ID: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Asset subscribe forth token must be an asset ID: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
                 if (!TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Asset subscribe fifth token must be a wildcard: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Asset subscribe fifth token must be a wildcard: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
             }
         } else {
             // Attribute topic
             if (topic.getTokens().size() < 5 || topic.getTokens().size() > 6) {
-                LOG.fine("Attribute subscribe token count should be 5 or 6: topic=" + topic + ", connection=" + connection);
+                LOG.fine("Attribute subscribe token count should be 5 or 6: topic=" + topic + ", " + connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().size() == 5) {
                 if (TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().size() == 6) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
                 if (!TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 5))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 5))) {
-                    LOG.fine("Attribute subscribe sixth token must be a wildcard: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Attribute subscribe sixth token must be a wildcard: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
             }
@@ -197,7 +198,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AssetFilter<?> filter = buildAssetFilter(topic);
 
         if (filter == null) {
-            LOG.info("Failed to process subscription topic: topic=" + topic + ", connection=" + connection);
+            LOG.fine("Failed to process subscription topic: topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
 
@@ -207,7 +208,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         );
 
         if (!clientEventService.authorizeEventSubscription(topicRealm(topic), authContext, subscription)) {
-            LOG.info("Subscription was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+            LOG.fine("Subscription was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
 

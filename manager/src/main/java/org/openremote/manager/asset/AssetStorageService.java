@@ -665,6 +665,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      */
     @SuppressWarnings("unchecked")
     public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean skipGatewayCheck, String userName) throws IllegalStateException, ConstraintViolationException {
+
+        LOG.fine("Merging asset: " + asset);
+
         return persistenceService.doReturningTransaction(em -> {
 
             String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
@@ -677,7 +680,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // Validate realm
             if (asset.getRealm() == null) {
                 String msg = "Asset realm must be set : asset=" + asset;
-                LOG.info(msg);
+                LOG.fine(msg);
                 throw new IllegalStateException(msg);
             }
 
@@ -698,13 +701,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // Verify type has not been changed
                 if (!existingAsset.getType().equals(asset.getType())) {
                     String msg = "Asset type cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 if (!existingAsset.getRealm().equals(asset.getRealm())) {
                     String msg = "Asset realm cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
@@ -730,13 +733,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (!identityService.getIdentityProvider().realmExists(asset.getRealm())) {
                 String msg = "Asset realm not found or is inactive: asset=" + asset;
-                LOG.info(msg);
+                LOG.fine(msg);
                 throw new IllegalStateException(msg);
             }
 
             if (asset.getParentId() != null && asset.getParentId().equals(asset.getId())) {
                 String msg = "Asset parent cannot be the asset: asset=" + asset;
-                LOG.info(msg);
+                LOG.fine(msg);
                 throw new IllegalStateException(msg);
             }
 
@@ -749,21 +752,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // The parent must exist
                 if (parent == null) {
                     String msg = "Asset parent not found: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 // The parent can not be a child of the asset
                 if (parent.pathContains(asset.getId())) {
                     String msg = "Asset parent cannot be a descendant of the asset: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 // The parent should be in the same realm
                 if (!parent.getRealm().equals(asset.getRealm())) {
                     String msg = "Asset parent must be in the same realm: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
@@ -772,7 +775,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     String childAssetType = parent.getAttributes().getValue(GroupAsset.CHILD_ASSET_TYPE)
                         .orElseThrow(() -> {
                             String msg = "Asset parent is of type GROUP but the childAssetType attribute is invalid: asset=" + asset;
-                            LOG.info(msg);
+                            LOG.fine(msg);
                             return new IllegalStateException(msg);
                         });
 
@@ -787,7 +790,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                     if (!typeMatch) {
                         String msg = "Asset type does not match parent GROUP asset's childAssetType attribute: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.fine(msg);
                         throw new IllegalStateException(msg);
                     }
                 }
@@ -799,7 +802,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     .map(childAssetTypeString -> TextUtil.isNullOrEmpty(childAssetTypeString) ? null : childAssetTypeString)
                     .orElseThrow(() -> {
                         String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.fine(msg);
                         return new IllegalStateException(msg);
                     });
 
@@ -807,13 +810,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     .getChildAssetType()
                     .orElseThrow(() -> {
                         String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.fine(msg);
                         return new IllegalStateException(msg);
                     }) : childAssetType;
 
                 if (!childAssetType.equals(existingChildAssetType)) {
                     String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
             }
@@ -833,7 +836,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 user = identityService.getIdentityProvider().getUserByUsername(asset.getRealm(), userName);
                 if (user == null) {
                     String msg = "User not found: " + userName;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
             }
@@ -1296,7 +1299,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         boolean containsCalendarPredicate = queryAndContainsCalendarPredicate.value;
 
         if (containsCalendarPredicate && (query.select != null && (query.select.attributes == null))) {
-            LOG.info("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
+            LOG.fine("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
             throw new IllegalArgumentException("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
         }
 

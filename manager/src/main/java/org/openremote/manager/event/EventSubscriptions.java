@@ -87,7 +87,6 @@ public class EventSubscriptions {
     }
 
     public EventSubscriptions(TimerService timerService) {
-        LOG.info("Starting background task checking for expired event subscriptions from clients");
         this.timerService = timerService;
     }
 

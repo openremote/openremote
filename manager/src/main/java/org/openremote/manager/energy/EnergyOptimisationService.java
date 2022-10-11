@@ -161,7 +161,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     }
 
     protected void processAssetChange(PersistenceEvent<EnergyOptimisationAsset> persistenceEvent) {
-        LOG.info("Processing optimisation asset change: " + persistenceEvent);
+        LOG.fine("Processing optimisation asset change: " + persistenceEvent);
         stopOptimisation(persistenceEvent.getEntity().getId());
 
         if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
@@ -185,7 +185,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             && attributeEvent.<Boolean>getValue().orElse(false)) {
             // Look for forced charge asset
             if (forceChargeAssetIds.remove(attributeEvent.getAssetId())) {
-                LOG.info("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getAssetId());
+                LOG.fine("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getAssetId());
             }
             return;
         }
@@ -205,15 +205,15 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
                 double maxEnergyLevel = getElectricityStorageAssetEnergyLevelMax(storageAsset);
                 double currentEnergyLevel = storageAsset.getEnergyLevel().orElse(0d);
-                LOG.info("Request to force charge asset '" + attributeEvent.getAssetId() + "': attempting to set powerSetpoint=" + powerImportMax);
+                LOG.fine("Request to force charge asset '" + attributeEvent.getAssetId() + "': attempting to set powerSetpoint=" + powerImportMax);
 
                 if (forceChargeAssetIds.contains(attributeEvent.getAssetId())) {
-                    LOG.info("Request to force charge asset will be ignored as force charge already requested for asset: " + storageAsset);
+                    LOG.fine("Request to force charge asset will be ignored as force charge already requested for asset: " + storageAsset);
                     return;
                 }
 
                 if (currentEnergyLevel >= maxEnergyLevel) {
-                    LOG.info("Request to force charge asset will be ignored as asset is already at or above maxEnergyLevel: " + storageAsset);
+                    LOG.fine("Request to force charge asset will be ignored as asset is already at or above maxEnergyLevel: " + storageAsset);
                     return;
                 }
 

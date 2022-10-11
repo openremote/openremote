@@ -42,6 +42,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -170,7 +171,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             // Get MQTT topic from address
             topic = Topic.fromAddress(address, brokerService.getWildcardConfiguration());
         } catch (IllegalArgumentException e) {
-            LOG.log(Level.WARNING, "Invalid topic provided by client '" + address + "', connection=" + connection, e);
+            LOG.log(Level.WARNING, "Invalid topic provided by client '" + address + "', " + connectionToString(connection), e);
             return false;
         }
 
@@ -181,7 +182,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         // See if a custom handler wants to handle authorisation for this topic pub/sub
         for (MQTTHandler handler : brokerService.getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.fine("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                LOG.fine("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
                 boolean result;
 
                 if (isWrite) {
@@ -193,7 +194,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             }
         }
 
-        LOG.fine("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", connection=" + connection);
+        LOG.fine("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
         return false;
     }
 

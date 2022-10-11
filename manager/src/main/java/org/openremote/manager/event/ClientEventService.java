@@ -280,7 +280,7 @@ public class ClientEventService implements ContainerService {
                                 .stop()
                         .endChoice()
                     .otherwise()
-                        .process(exchange -> LOG.info("Unsupported message body: " + exchange.getIn().getBody()))
+                        .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
             }
         });
@@ -371,7 +371,7 @@ public class ClientEventService implements ContainerService {
             LOG.finer("Sending to session '" + sessionKey + "': " + data);
             SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
             if (sessionInfo == null) {
-                LOG.info("Cannot send to requested session it doesn't exist or is disconnected");
+                LOG.fine("Cannot send to requested session it doesn't exist or is disconnected");
                 return;
             }
             if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
