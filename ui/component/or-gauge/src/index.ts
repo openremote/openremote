@@ -170,14 +170,27 @@ export class OrGauge extends LitElement {
         }
         if(changedProperties.has('thresholds') && this.thresholds) {
             this.config!.options!.staticZones = [];
-            this.thresholds.forEach(((threshold, index) => {
+            console.error(this.thresholds);
+
+            // Make staticZones out of the thresholds.
+            // If below the minimum or above the maximum, set the value according to it.
+            this.thresholds.sort((x, y) => (x[0] < y[0]) ? -1 : 1).forEach(((threshold, index) => {
+                const min = threshold[0];
+                const max = (this.thresholds![index + 1] ? this.thresholds![index + 1][0] : this.max);
                 const zone = {
                     strokeStyle: threshold[1],
-                    min: threshold[0],
-                    max: (this.thresholds![index + 1] ? this.thresholds![index + 1][0] : this.max)
+                    min: ((this.min && min && this.min > min) ? this.min : ((this.max && min && this.max < min) ? this.max : min)),
+                    max: ((this.max && max && this.max < max) ? this.max : ((this.min && max && this.min > max) ? this.min : max))
                 };
                 this.config?.options?.staticZones?.push(zone as any);
             }));
+
+            // The lowest staticZone should ALWAYS have the minimum value, to prevent the graphic displaying incorrectly.
+            if(this.min && this.config?.options?.staticZones) {
+                this.config.options.staticZones[0].min = this.min;
+            }
+
+            // Applying the options we changed.
             if(this.gauge) {
                 this.gauge.setOptions(this.config?.options);
             }

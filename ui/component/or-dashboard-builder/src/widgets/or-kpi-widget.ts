@@ -65,6 +65,7 @@ export class OrKpiWidgetContent extends LitElement {
     private assetAttributes: [number, Attribute<any>][] = [];
 
     render() {
+        console.log("[or-kpi-widget] Rendering..");
         return html`
             <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}"
                                .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}"
@@ -127,15 +128,18 @@ export class OrKpiWidgetSettings extends LitElement {
     // UI Rendering
     render() {
         console.log("[or-kpi-widgetsettings] Rendering..");
-        const config = this.widget?.widgetConfig as KpiWidgetConfig;
+        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as KpiWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
-                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widget="${this.widget}"
-                                                @updated="${(event: CustomEvent) => { this.onAttributesUpdate(event.detail.changes); }}"
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widgetConfig="${this.widget!.widgetConfig}"
+                                                @updated="${(event: CustomEvent) => {
+                                                    this.onAttributesUpdate(event.detail.changes);
+                                                    this.updateConfig(this.widget!, event.detail.changes.get('config'));
+                                                }}"
                     ></or-dashboard-settingspanel>
                 ` : null}
             </div>
@@ -150,9 +154,8 @@ export class OrKpiWidgetSettings extends LitElement {
                                           .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" 
                                           .value="${config.period}" label="${i18next.t('timeframe')}" 
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              (this.widget?.widgetConfig as KpiWidgetConfig).period = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                              config.period = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
                         </div>
@@ -168,18 +171,16 @@ export class OrKpiWidgetSettings extends LitElement {
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${config.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              (this.widget?.widgetConfig as KpiWidgetConfig).deltaFormat = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                              config.deltaFormat = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
                         </div>
                         <div style="margin-top: 18px;">
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { 
-                                              (this.widget?.widgetConfig as KpiWidgetConfig).decimals = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                              config.decimals = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
                         </div>
@@ -189,17 +190,23 @@ export class OrKpiWidgetSettings extends LitElement {
         `
     }
 
+    updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
+        const oldWidget = JSON.parse(JSON.stringify(widget)) as DashboardWidget;
+        widget.widgetConfig = config;
+        this.requestUpdate("widget", oldWidget);
+        this.forceParentUpdate(new Map<string, any>([["widget", widget]]), force);
+    }
+
     onAttributesUpdate(changes: Map<string, any>) {
         if(changes.has('loadedAssets')) {
             this.loadedAssets = changes.get('loadedAssets');
         }
-        if(changes.has('widget')) {
-            const widget = changes.get('widget') as DashboardWidget;
-            if(widget.widgetConfig.attributeRefs.length > 0) {
-                this.widget!.displayName = this.loadedAssets[0].name + " - " + this.loadedAssets[0].attributes![widget.widgetConfig.attributeRefs[0].name].name;
+        if(changes.has('config')) {
+            const config = changes.get('config') as KpiWidgetConfig;
+            if(config.attributeRefs.length > 0) {
+                this.widget!.displayName = this.loadedAssets[0].name + " - " + this.loadedAssets[0].attributes![config.attributeRefs[0].name!].name;
             }
         }
-        this.forceParentUpdate(changes, false);
     }
 
     // Method to update the Grid. For example after changing a setting.

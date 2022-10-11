@@ -187,15 +187,16 @@ class OrChartWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
-        const config = this.widget?.widgetConfig;
+        console.log("[or-chart-widgetsettings] Rendering...");
+        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ChartWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
-                    <or-dashboard-settingspanel .type="${SettingsPanelType.MULTI_ATTRIBUTE}" .widget="${this.widget}"
-                                                @updated="${(event: CustomEvent) => { this.forceParentUpdate(event.detail.changes, false); }}"
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.MULTI_ATTRIBUTE}" .widgetConfig="${this.widget?.widgetConfig}"
+                                                @updated="${(event: CustomEvent) => { this.updateConfig(this.widget!, event.detail.changes.get('config')) }}"
                     ></or-dashboard-settingspanel>
                 ` : null}
             </div>
@@ -210,9 +211,8 @@ class OrChartWidgetSettings extends LitElement {
                                           .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}"
                                           .value="${config.period}" label="${i18next.t('timeframe')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              (this.widget?.widgetConfig as ChartWidgetConfig).period = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                              config.period = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
                         </div>
@@ -221,9 +221,8 @@ class OrChartWidgetSettings extends LitElement {
                             <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                           .value="${config.showTimestampControls}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              (this.widget?.widgetConfig as ChartWidgetConfig).showTimestampControls = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]), false);
+                                              config.showTimestampControls = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
                         </div>
@@ -232,9 +231,8 @@ class OrChartWidgetSettings extends LitElement {
                             <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                           .value="${config.showLegend}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              (this.widget?.widgetConfig as ChartWidgetConfig).showLegend = event.detail.value;
-                                              this.requestUpdate();
-                                              this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]), false);
+                                              config.showLegend = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
                         </div>
@@ -244,9 +242,15 @@ class OrChartWidgetSettings extends LitElement {
         `
     }
 
+    updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
+        const oldWidget = JSON.parse(JSON.stringify(widget)) as DashboardWidget;
+        widget.widgetConfig = config;
+        this.requestUpdate("widget", oldWidget);
+        this.forceParentUpdate(new Map<string, any>([["widget", widget]]), force);
+    }
+
     // Method to update the Grid. For example after changing a setting.
     forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
-        this.requestUpdate();
         this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }
 

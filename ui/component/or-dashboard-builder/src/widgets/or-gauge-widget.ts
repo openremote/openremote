@@ -10,6 +10,7 @@ import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import { when } from "lit/directives/when.js";
+import {KpiWidgetConfig} from "./or-kpi-widget";
 
 export interface GaugeWidgetConfig extends OrWidgetConfig {
     displayName: string;
@@ -43,7 +44,6 @@ export class OrGaugeWidget implements OrWidgetEntity {
     }
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
-        console.error("getSettingsHTML() in or-gauge-widget");
         return html`<or-gauge-widgetsettings .widget="${widget}" realm="${realm}"></or-gauge-widgetsettings>`;
     }
 
@@ -69,6 +69,7 @@ export class OrGaugeWidgetContent extends LitElement {
 
 
     render() {
+        console.log("[or-gauge-widget] Rendering..");
         return html`
             ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => { 
                 return html`
@@ -141,14 +142,19 @@ export class OrGaugeWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
+        console.log("[or-gauge-widgetsettings] Rendering...");
+        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as GaugeWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
-                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widget="${this.widget}"
-                                                @updated="${(event: CustomEvent) => { this.onAttributesUpdate(event.detail.changes); }}"
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widgetConfig="${this.widget?.widgetConfig}"
+                                                @updated="${(event: CustomEvent) => {
+                                                    this.updateConfig(this.widget!, event.detail.changes.get('config'));
+                                                    this.onAttributesUpdate(event.detail.changes);
+                                                }}"
                     ></or-dashboard-settingspanel>
                 ` : null}
             </div>
@@ -159,22 +165,23 @@ export class OrGaugeWidgetSettings extends LitElement {
                 ${this.expandedPanels.includes(i18next.t('values')) ? html`
                     <div style="padding: 12px 24px 48px 24px; display: flex; flex-direction: column; gap: 16px;">
                         <div style="display: flex; gap: 8px;">
-                            <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('min')}" .value="${this.widget?.widgetConfig.min}"
+                            <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('min')}" .max="${this.widget?.widgetConfig.max}" .value="${this.widget?.widgetConfig.min}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
-                                              this.widget!.widgetConfig.min = event.detail.value;
-                                              (this.widget!.widgetConfig as GaugeWidgetConfig).thresholds.sort((x, y) => (x[0] < y[0]) ? -1 : 1).forEach((threshold, index) => {
-                                                  if(threshold[0] < event.detail.value || (index == 0 && threshold[0] != event.detail.value)) {
-                                                      (this.widget!.widgetConfig as GaugeWidgetConfig).thresholds[index][0] = event.detail.value;
+                                              if(event.detail.value < this.widget?.widgetConfig.max) {
+                                                  config.min = event.detail.value;
+                                                  if(config.thresholds[1][0] > event.detail.value) {
+                                                      config.thresholds[0][0] = event.detail.value;
                                                   }
-                                              });
-                                              this.requestUpdate("widget");
-                                              this.forceParentUpdate(new Map<string, any>([['widget', this.widget]]), true);
+                                                  this.updateConfig(this.widget!, config);
+                                              }
                                           }}"
                             ></or-mwc-input>
-                            <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('max')}" .value="${this.widget?.widgetConfig.max}"
+                            <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('max')}" .min="${this.widget?.widgetConfig.min}" .value="${this.widget?.widgetConfig.max}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
-                                              this.widget!.widgetConfig.max = event.detail.value;
-                                              this.forceParentUpdate(new Map<string, any>([['widget', this.widget]]), true);
+                                              if(event.detail.value > this.widget?.widgetConfig.min) {
+                                                  config.max = event.detail.value;
+                                                  this.updateConfig(this.widget!, config);
+                                              }
                                           }}"
                             ></or-mwc-input>
                         </div>
@@ -186,12 +193,19 @@ export class OrGaugeWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('thresholds')) ? html`
-                    <or-dashboard-settingspanel .type="${SettingsPanelType.THRESHOLDS}" .widget="${this.widget}"
-                                                @updated="${(event: CustomEvent) => { this.forceParentUpdate(event.detail.changes, false); }}">
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.THRESHOLDS}" .widgetConfig="${this.widget?.widgetConfig}"
+                                                @updated="${(event: CustomEvent) => { this.updateConfig(this.widget!, event.detail.changes.get('config')); }}">
                     </or-dashboard-settingspanel>
                 ` : null}
             </div>
         `
+    }
+
+    updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
+        const oldWidget = JSON.parse(JSON.stringify(widget)) as DashboardWidget;
+        widget.widgetConfig = config;
+        this.requestUpdate("widget", oldWidget);
+        this.forceParentUpdate(new Map<string, any>([["widget", widget]]), force);
     }
 
 
@@ -201,18 +215,16 @@ export class OrGaugeWidgetSettings extends LitElement {
         if(changes.has('loadedAssets')) {
             this.loadedAssets = changes.get('loadedAssets');
         }
-        if(changes.has('widget')) {
-            const widget = changes.get('widget') as DashboardWidget;
-            if(widget.widgetConfig.attributeRefs.length > 0) {
-                this.widget!.displayName = this.loadedAssets[0].name + " - " + this.loadedAssets[0].attributes![widget.widgetConfig.attributeRefs[0].name].name;
+        if(changes.has('config')) {
+            const config = changes.get('config') as GaugeWidgetConfig;
+            if(config.attributeRefs.length > 0) {
+                this.widget!.displayName = this.loadedAssets[0].name + " - " + this.loadedAssets[0].attributes![config.attributeRefs[0].name!].name;
             }
         }
-        this.forceParentUpdate(changes, false);
     }
 
     // Method to update the Grid. For example after changing a setting.
     forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
-        this.requestUpdate();
         this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }
 

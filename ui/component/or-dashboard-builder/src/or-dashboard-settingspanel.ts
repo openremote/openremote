@@ -99,10 +99,11 @@ export enum SettingsPanelType {
 export class OrDashboardSettingsPanel extends LitElement {
 
     @property()
-    public readonly type?: SettingsPanelType;
+    private readonly type?: SettingsPanelType;
 
     @property()
-    public readonly widget?: DashboardWidget;
+    private readonly widgetConfig: OrWidgetConfig | any;
+    private _config?: OrWidgetConfig | any; // local duplicate that does not update parent. Sent back in dispatchEvent() only.
 
     @state()
     private loadedAssets?: Asset[];
@@ -111,39 +112,52 @@ export class OrDashboardSettingsPanel extends LitElement {
         return [style, widgetSettingsStyling];
     }
 
-    updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
-        if(changedProperties.has('widget')) {
-            if((changedProperties.get("widget") as DashboardWidget)?.id != this.widget?.id) {
-                if(this.widget?.widgetConfig.attributeRefs) {
-                    this.fetchAssets(this.widget?.widgetConfig).then(assets => {
+
+    /* ---------------------------- */
+
+    // Setting local duplicate config before triggering update,
+    // and fetching assets if any of the AttributeRefs are not pulled yet.
+    willUpdate(changedProperties: Map<string, any>) {
+        if(changedProperties.has("widgetConfig")) {
+            if(!this._config || (changedProperties.get("widgetConfig") != this._config) && this.widgetConfig.attributeRefs) {
+                const loadedRefs: AttributeRef[] = this.widgetConfig.attributeRefs.filter((attrRef: AttributeRef) => this.isAttributeRefLoaded(attrRef));
+                if(loadedRefs.length != this.widgetConfig.attributeRefs.length) {
+                    this.fetchAssets(this.widgetConfig).then(assets => {
                         this.loadedAssets = assets;
                     });
                 }
             }
+            this._config = (this.widgetConfig ? JSON.parse(JSON.stringify(this.widgetConfig)) : undefined);
         }
     }
 
+    updated(changedProperties: Map<string, any>) {
+        console.log(changedProperties);
+    }
+
+
+    /* ---------------------------------- */
+
     render() {
-        const config = this.widget?.widgetConfig;
+        console.log("[or-dashboard-settingspanel] Rendering..");
         switch (this.type) {
 
             case SettingsPanelType.SINGLE_ATTRIBUTE:
             case SettingsPanelType.MULTI_ATTRIBUTE: {
-                if (!config.attributeRefs) {
+                if (!this._config.attributeRefs) {
                     return html`<span>${i18next.t('errorOccurred')}</span>`;
                 } else {
                     return html`
-                        ${until(this.getAttributeHTML(config, (this.type == SettingsPanelType.MULTI_ATTRIBUTE)), html`${i18next.t('loading')}`)}
+                        ${until(this.getAttributeHTML(this._config, (this.type == SettingsPanelType.MULTI_ATTRIBUTE)), html`${i18next.t('loading')}`)}
                     `;
                 }
             }
             case SettingsPanelType.THRESHOLDS: {
-                if (!config.thresholds) {
+                if (!this._config.thresholds) {
                     return html`<span>${i18next.t('errorOccurred')}</span>`;
                 } else {
                     return html`
-                        ${until(this.getThresholdsHTML(config), html`${i18next.t('loading')}`)}
+                        ${until(this.getThresholdsHTML(this._config), html`${i18next.t('loading')}`)}
                     `;
                 }
             }
@@ -157,7 +171,7 @@ export class OrDashboardSettingsPanel extends LitElement {
 
 
     // Method to update the Grid. For example after changing a setting.
-    forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
+    updateParent(changes: Map<string, any>, force: boolean = false) {
         this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }
 
@@ -195,6 +209,10 @@ export class OrDashboardSettingsPanel extends LitElement {
         `
     }
 
+    isAttributeRefLoaded(attrRef: AttributeRef) {
+        return this.loadedAssets?.find((asset) => asset.id == attrRef.id)
+    }
+
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
         if (config.attributeRefs) {
@@ -218,20 +236,22 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     setWidgetAttributes(selectedAttrs?: AttributeRef[]) {
-        if (this.widget?.widgetConfig != null) {
-            this.widget.widgetConfig.attributeRefs = selectedAttrs;
-            this.fetchAssets(this.widget.widgetConfig).then((assets) => {
+        if (this._config != null) {
+            this._config.attributeRefs = selectedAttrs;
+            this.fetchAssets(this._config).then((assets) => {
                 this.loadedAssets = assets;
-                this.forceParentUpdate(new Map<string, any>([["widget", this.widget], ["loadedAssets", assets]]));
+                this.updateComplete.then(() => {
+                    this.updateParent(new Map<string, any>([["config", this._config], ["loadedAssets", assets]]));
+                });
             });
         }
     }
 
     removeWidgetAttribute(attributeRef: AttributeRef) {
-        if (this.widget?.widgetConfig?.attributeRefs != null) {
-            this.widget.widgetConfig.attributeRefs.splice(this.widget.widgetConfig.attributeRefs.indexOf(attributeRef), 1);
-            this.requestUpdate("widget");
-            this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+        if (this._config.attributeRefs != null) {
+            const attributeRefs = JSON.parse(JSON.stringify(this._config.attributeRefs)); //
+            this._config.attributeRefs.splice(this._config.attributeRefs.indexOf(attributeRef), 1);
+            this.updateParent(new Map<string, any>([["config", this._config]]));
         }
     }
 
@@ -260,11 +280,10 @@ export class OrDashboardSettingsPanel extends LitElement {
                         return html`
                             <div class="threshold-list-item" style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                                 <div style="height: 100%; padding: 8px 14px 8px 0;">
-                                    <or-mwc-input type="${InputType.COLOUR}" style="width: 32px; height: 32px;" value="${threshold[1]}"
+                                    <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}" style="width: 32px; height: 32px;"
                                                   @or-mwc-input-changed="${(event: CustomEvent) => {
-                                                      this.widget!.widgetConfig.thresholds[index][1] = event.detail.value;
-                                                      this.requestUpdate();
-                                                      this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                                      this._config.thresholds[index][1] = event.detail.value;
+                                                      this.updateParent(new Map<string, any>([["config", this._config]]));
                                                   }}"
                                     ></or-mwc-input>
                                 </div>
@@ -272,14 +291,13 @@ export class OrDashboardSettingsPanel extends LitElement {
                                               .min="${config.min ? config.min : undefined}" .max="${config.max ? config.max : undefined}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   if(event.detail.value >= config.min && event.detail.value <= config.max) {
-                                                      this.widget!.widgetConfig.thresholds[index][0] = event.detail.value;
-                                                      this.requestUpdate();
-                                                      this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+                                                      this._config.thresholds[index][0] = event.detail.value;
+                                                      this.updateParent(new Map<string, any>([["config", this._config]]));
                                                   }
                                               }}"
                                 ></or-mwc-input>
                                 <button class="button-clear" style="margin-left: 8px; ${index == 0 ? 'visibility: hidden;' : undefined}"
-                                        @click="${() => { if(index != 0) { this.removeThreshold(this.widget!, threshold); }}}">
+                                        @click="${() => { if(index != 0) { this.removeThreshold(this._config, threshold); }}}">
                                     <or-icon icon="close-circle"></or-icon>
                                 </button>
                             </div>
@@ -287,31 +305,28 @@ export class OrDashboardSettingsPanel extends LitElement {
                     })}
                     <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('threshold')}" icon="plus"
                                   style="margin-top: 24px; margin-left: -7px;"
-                                  @or-mwc-input-changed="${() => this.addNewThreshold(this.widget!)}">
+                                  @or-mwc-input-changed="${() => this.addNewThreshold(this._config)}">
                     </or-mwc-input>
                 </div>
             `
         }
     }
 
-    removeThreshold(widget: DashboardWidget, threshold: [number, string]) {
-        widget.widgetConfig.thresholds = (widget.widgetConfig.thresholds as [number, string][]).filter((x) => x != threshold);
-        this.requestUpdate();
-        this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+    removeThreshold(config: any, threshold: [number, string]) {
+        config.thresholds = (config.thresholds as [number, string][]).filter((x) => x != threshold);
+        this.updateParent(new Map<string, any>([["config", this._config]]));
     }
-    addThreshold(widget: DashboardWidget, threshold: [number, string]) {
-        (widget.widgetConfig.thresholds as [number, string][]).push(threshold);
-        this.requestUpdate();
-        this.forceParentUpdate(new Map<string, any>([["widget", this.widget]]));
+    addThreshold(config: any, threshold: [number, string]) {
+        (config.thresholds as [number, string][]).push(threshold);
+        this.updateParent(new Map<string, any>([["config", this._config]]));
     }
-    addNewThreshold(widget: DashboardWidget) {
-        const suggestedValue = (widget.widgetConfig.thresholds[widget.widgetConfig.thresholds.length - 1][0] + 10);
-        this.addThreshold(widget, [(suggestedValue <= widget.widgetConfig.max ? suggestedValue : widget.widgetConfig.max), "#000000"]);
+    addNewThreshold(config: any) {
+        const suggestedValue = (config.thresholds[config.thresholds.length - 1][0] + 10);
+        this.addThreshold(config, [(suggestedValue <= config.max ? suggestedValue : config.max), "#000000"]);
         this.updateComplete.then(() => {
             const elem = this.shadowRoot?.getElementById('thresholds-list') as HTMLElement;
             const inputField = Array.from(elem.children)[elem.children.length - 2] as HTMLElement;
             (inputField.children[1] as HTMLElement).setAttribute('focused', 'true');
         })
     }
-
 }
