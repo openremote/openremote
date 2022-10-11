@@ -140,7 +140,6 @@ export class OrGauge extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
         if(changedProperties.has('value')) {
             this.gauge?.set(this.value ? this.value : NaN);
         }

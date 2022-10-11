@@ -73,7 +73,6 @@ export class PageInsights extends Page<AppStateKeyed>  {
     /* ------------------ */
 
     updated(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
         if(changedProperties.has("_dashboardId")) {
             this._updateRoute();
         }
