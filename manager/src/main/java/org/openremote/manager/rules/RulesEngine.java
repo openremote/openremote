@@ -537,6 +537,8 @@ public class RulesEngine<T extends Ruleset> {
 
                 // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
                 if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
+                    // Why aren't we handling the exception?
+                    // Does this mean that we will just crash?
                     stop();
                     break;
                 }
