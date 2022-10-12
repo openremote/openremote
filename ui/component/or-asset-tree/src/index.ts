@@ -132,6 +132,21 @@ export class OrAssetTreeChangeParentEvent extends CustomEvent<any> {
         });
     }
 }
+export interface ToggleExpandEventDetail {
+    node: UiAssetTreeNode;
+}
+export class OrAssetTreeToggleExpandEvent extends CustomEvent<ToggleExpandEventDetail> {
+
+    public static readonly NAME = "or-asset-tree-expand";
+
+    constructor(detail: ToggleExpandEventDetail) {
+        super(OrAssetTreeToggleExpandEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: detail
+        });
+    }
+}
 
 enum FilterElementType {
     SEARCH_FILTER, ASSET_TYPE,ATTRIBUTE_NAME, ATTRIBUTE_VALUE
@@ -295,7 +310,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public sortBy?: string = "name";
 
     @property({type: Boolean})
-    public expandNodes?: boolean = false;
+    public expandAllNodes?: boolean = false;
+
+    @property({type: Array})
+    public expandedIds?: string[] = [];
 
     @property({type: Boolean})
     public checkboxes?: boolean = false;
@@ -605,6 +623,23 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return result;
     }
 
+    protected updated(_changedProperties: PropertyValues) {
+
+        // After nodes have been rendered, expand entries if necessary
+        // (for example reopening parents after switching back to the asset page)
+        if (_changedProperties.has("_nodes")) {
+            if(!this.expandAllNodes && this.expandedIds && this.expandedIds.length > 0) {
+                this.expandedIds.forEach((id) => {
+                    const node = this._findNodeFromAssetId(id);
+                    let elem = this.shadowRoot?.querySelector('[node-asset-id="' + id + '"]');
+                    if(elem && node && !node.expanded) {
+                        this._toggleExpander(elem.firstElementChild!.firstElementChild! as HTMLElement, node);
+                    }
+                });
+            }
+        }
+    }
+
     protected _updateSelectedNodes() {
         const actuallySelectedIds: string[] = [];
         const selectedNodes: UiAssetTreeNode[] = [];
@@ -675,6 +710,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             const elem = expander.parentElement!.parentElement!.parentElement!;
             elem.toggleAttribute("data-expanded");
+            this.dispatchEvent(new OrAssetTreeToggleExpandEvent({ node: node }));
         }
     }
 
@@ -1349,7 +1385,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             const selectedOptionalAttributes = addAssetDialog.selectedAttributes;
                             const name = addAssetDialog.name.trim();
                             const parent = addAssetDialog.parent;
-                            
+
                             if (!descriptor) {
                                 return;
                             }
@@ -1376,7 +1412,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             name: attributeDescriptor.name,
                                             type: attributeDescriptor.type,
                                             meta: attributeDescriptor.meta ? {...attributeDescriptor.meta} : undefined
-                                        } as Attribute<any>; 
+                                        } as Attribute<any>;
                                     });
                             }
 
@@ -1711,7 +1747,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._updateSelectedNodes();
         }
 
-        if (this.expandNodes) {
+        if (this.expandAllNodes) {
             OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
                 if (node.children && node.children.length > 0) {
                     node.expanded = true;
