@@ -270,7 +270,7 @@ export class OrGauge extends LitElement {
     waitUntil(conditionFunction: any) {
         const poll = (resolve: any) => {
             if(conditionFunction()) resolve();
-            else setTimeout(_ => poll(resolve), 400);
+            else setTimeout((_: any) => poll(resolve), 400);
         }
         return new Promise(poll);
     }
