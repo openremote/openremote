@@ -59,14 +59,14 @@ export class OrKpiWidgetContent extends LitElement {
     public realm?: string;
 
     @state()
-    private assets: Asset[] = [];
+    private loadedAssets: Asset[] = [];
 
     @state()
     private assetAttributes: [number, Attribute<any>][] = [];
 
     render() {
         return html`
-            <or-attribute-card .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}"
+            <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}"
                                .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}"
                                showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
             </or-attribute-card>
@@ -76,7 +76,7 @@ export class OrKpiWidgetContent extends LitElement {
     updated(changedProperties: Map<string, any>) {
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
-                this.assets = assets!;
+                this.loadedAssets = (assets ? assets : []);
                 this.assetAttributes = this.widget?.widgetConfig.attributeRefs.map((attrRef: AttributeRef) => {
                     const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
                     const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
@@ -92,7 +92,10 @@ export class OrKpiWidgetContent extends LitElement {
         if(config.attributeRefs && config.attributeRefs.length > 0) {
             let assets: Asset[] = [];
             await manager.rest.api.AssetResource.queryAssets({
-                ids: config.attributeRefs?.map((x: AttributeRef) => x.id) as string[]
+                ids: config.attributeRefs?.map((x: AttributeRef) => x.id) as string[],
+                select: {
+                    attributes: config.attributeRefs?.map((x: AttributeRef) => x.name) as string[]
+                }
             }).then(response => {
                 assets = response.data;
             }).catch((reason) => {

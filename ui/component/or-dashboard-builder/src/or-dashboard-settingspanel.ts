@@ -213,9 +213,10 @@ export class OrDashboardSettingsPanel extends LitElement {
         if (config.attributeRefs) {
             let assets: Asset[] = [];
             await manager.rest.api.AssetResource.queryAssets({
-                ids: config.attributeRefs?.map((x: AttributeRef) => {
-                    return x.id;
-                }) as string[]
+                ids: config.attributeRefs?.map((x: AttributeRef) => x.id) as string[],
+                select: {
+                    attributes: config.attributeRefs?.map((x: AttributeRef) => x.name) as string[]
+                }
             }).then(response => {
                 assets = response.data;
             }).catch((reason) => {
