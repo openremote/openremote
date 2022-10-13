@@ -3,10 +3,11 @@
   "compilerOptions": {
     "outDir": "./lib",
     "rootDir": "src",
-    "types": ["gaugejs"]
+    "typeRoots": ["./@types"]
   },
   "include": [
-    "./src"
+    "./src",
+    "./@types"
   ],
   "references": [
     { "path": "../core" },
