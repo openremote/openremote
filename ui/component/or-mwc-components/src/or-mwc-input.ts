@@ -827,7 +827,6 @@ export class OrMwcInput extends LitElement {
     }
 
     public focus() {
-        console.error("Focussing or-mwc-input!");
         if (this.type === InputType.RANGE && this._mdcComponent2) {
             (this._mdcComponent2 as any).focus();
         } else if (this._mdcComponent && typeof (this._mdcComponent as any).focus === "function") {

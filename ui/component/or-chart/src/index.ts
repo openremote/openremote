@@ -552,13 +552,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         });
 
     }
-
-    shouldShowControls(): boolean {
-        return (this.showControls && this.showControls.toString() == "true");
-    }
-    shouldShowLegend(): boolean {
-        return (this.showLegend && this.showLegend.toString() == "true");
-    }
     applyChartResponsiveness(): void {
         if(this.shadowRoot) {
             const container = this.shadowRoot.getElementById('container');
@@ -589,8 +582,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 </div>
 
                 <div id="chart-controls" style="overflow: hidden auto;">
-                    <!-- Checking whether showControls is set to true. Had to do string check as well -->
-                    ${cache(this.shouldShowControls() ? html`
+                    ${cache(this.showControls ? html`
                         <div id="controls">
                             <div class="interval-controls" style="margin-right: 6px;">
                                 ${getContentWithMenuTemplate(
@@ -636,7 +628,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
                         </div>
                     ` : undefined)} 
-                    ${cache(this.shouldShowLegend() ? html`
+                    ${cache(this.showLegend ? html`
                         <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="padding: ${this.denseLegend ? '6px' : '12px'};">
                             ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                 <div>

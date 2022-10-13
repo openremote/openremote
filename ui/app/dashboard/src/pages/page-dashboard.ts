@@ -54,7 +54,6 @@ export class PageDashboard extends Page<AppStateKeyed> {
         manager.rest.api.DashboardResource.get(dashboardId).then((dashboard) => {
             this.template = (dashboard.data as Dashboard).template;
             this.isLoading = false;
-            console.log(this.template);
         });
     }
 
@@ -69,7 +68,9 @@ export class PageDashboard extends Page<AppStateKeyed> {
     protected render(): TemplateResult {
         return html`
             ${this.template != undefined ? html`
-                <or-dashboard-editor .editMode="${false}" .template="${this.template}"></or-dashboard-editor>
+                <or-dashboard-preview .template="${this.template}" .realm="${manager.displayRealm}"
+                                     .editMode="${false}" .readonly="${true}" .fullscreen="${true}"
+                ></or-dashboard-preview>
             ` : (this.isLoading ? html`
                 <span class="text">Loading..</span>
             ` : html`

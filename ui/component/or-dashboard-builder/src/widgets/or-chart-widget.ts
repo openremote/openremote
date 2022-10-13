@@ -78,7 +78,7 @@ export class OrChartWidgetContent extends LitElement {
         return html`
             <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}" denseLegend="${true}"
                       .dataProvider="${this.editMode ? (async (startOfPeriod: number, endOfPeriod: number, _timeUnits: any, _stepSize: number) => { return this.generateMockData(this.widget!, startOfPeriod, endOfPeriod, 20); }) : undefined}"
-                      showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${this.widget?.widgetConfig?.showTimestampControls}" style="height: 100%"
+                      .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${this.widget?.widgetConfig?.showTimestampControls}" style="height: 100%"
             ></or-chart>
         `
     }
