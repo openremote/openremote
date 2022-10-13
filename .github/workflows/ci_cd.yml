@@ -751,12 +751,6 @@ jobs:
         run: |
           ${{ steps.deployment-docker-command.outputs.value }}
 
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          ## limits ssh access and adds the ssh public keys of the listed GitHub users
-          limit-access-to-actor: true
-
       - name: Do deployments
         if: steps.deployments.outputs.value != ''
         shell: python
@@ -883,3 +877,9 @@ jobs:
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
+
+#       - name: Setup upterm session
+#         uses: lhotari/action-upterm@v1
+#         with:
+#           ## limits ssh access and adds the ssh public keys of the listed GitHub users
+#           limit-access-to-actor: true
