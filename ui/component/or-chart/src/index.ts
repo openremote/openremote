@@ -1020,8 +1020,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                 stepSize = 1;
                 break;
             case "week":
-                interval = DatapointInterval.DAY;
-                stepSize = 1;
+                interval = DatapointInterval.HOUR;
+                stepSize = 6;
                 break;
             case "month":
                 interval = DatapointInterval.DAY;

@@ -2129,7 +2129,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openremote/core@^1.0.4, @openremote/core@workspace:*, @openremote/core@workspace:ui/component/core":
+"@openremote/core@workspace:*, @openremote/core@workspace:ui/component/core":
   version: 0.0.0-use.local
   resolution: "@openremote/core@workspace:ui/component/core"
   dependencies:
@@ -2239,7 +2239,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/model@^1.0.4, @openremote/model@workspace:*, @openremote/model@workspace:ui/component/model":
+"@openremote/model@workspace:*, @openremote/model@workspace:ui/component/model":
   version: 0.0.0-use.local
   resolution: "@openremote/model@workspace:ui/component/model"
   dependencies:
@@ -2423,10 +2423,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder"
   dependencies:
-    "@openremote/core": ^1.0.4
-    "@openremote/model": ^1.0.4
-    "@openremote/rest": ^1.0.4
-    "@openremote/util": ^1.0.4
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
     gridstack: ^6.0.2
     lit: ^2.0.2
   languageName: unknown
@@ -2658,7 +2658,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/rest@^1.0.4, @openremote/rest@workspace:*, @openremote/rest@workspace:ui/component/rest":
+"@openremote/rest@workspace:*, @openremote/rest@workspace:ui/component/rest":
   version: 0.0.0-use.local
   resolution: "@openremote/rest@workspace:ui/component/rest"
   dependencies:
@@ -2670,7 +2670,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/util@^1.0.4, @openremote/util@workspace:*, @openremote/util@workspace:ui/util":
+"@openremote/util@workspace:*, @openremote/util@workspace:ui/util":
   version: 0.0.0-use.local
   resolution: "@openremote/util@workspace:ui/util"
   dependencies:
