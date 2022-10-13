@@ -22,7 +22,7 @@ const boardSettingsStyling = css`
 export class OrDashboardBoardsettings extends LitElement {
 
     @property()
-    protected readonly dashboard?: Dashboard;
+    protected readonly dashboard!: Dashboard;
 
     @property()
     protected readonly showPerms?: boolean;
@@ -69,28 +69,28 @@ export class OrDashboardBoardsettings extends LitElement {
     /* -------------------------------- */
 
     private setViewAccess(access: DashboardAccess) {
-        this.dashboard!.viewAccess = access;
+        this.dashboard.viewAccess = access;
         if(access == DashboardAccess.PRIVATE) {
-            this.dashboard!.editAccess = DashboardAccess.PRIVATE;
-        } else if(this.dashboard?.editAccess == DashboardAccess.PRIVATE) {
+            this.dashboard.editAccess = DashboardAccess.PRIVATE;
+        } else if(this.dashboard.editAccess == DashboardAccess.PRIVATE) {
             this.dashboard.editAccess = access;
         }
         this.requestUpdate();
         this.forceParentUpdate(false);
     }
     private setEditAccess(access: DashboardAccess) {
-        this.dashboard!.editAccess = access;
+        this.dashboard.editAccess = access;
         this.requestUpdate();
         this.forceParentUpdate(false);
     }
     private setBreakpoint(presetIndex: number, value: number) {
-        this.dashboard!.template!.screenPresets![presetIndex].breakpoint = value;
+        this.dashboard.template!.screenPresets![presetIndex].breakpoint = value;
         this.requestUpdate();
         this.forceParentUpdate(true);
     }
 
     protected render() {
-        if(this.dashboard?.template?.screenPresets != null) {
+        if(this.dashboard.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
             const accessOptions: {key: DashboardAccess, value: string}[] = [];
             [DashboardAccess.PRIVATE, DashboardAccess.SHARED, /*DashboardAccess.PUBLIC*/].forEach((access) => {
@@ -139,7 +139,7 @@ export class OrDashboardBoardsettings extends LitElement {
                             <div style="margin-bottom: 24px; display: flex; align-items: center;">
                                 <span style="min-width: 180px;">${i18next.t("dashboard.numberOfColumns")}</span>
                                 <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.columns}" min="1" max="24" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                    if(this.dashboard?.template != null && event.detail.value as number <= 24 && event.detail.value as number >= 1) {
+                                    if(this.dashboard.template != null && event.detail.value as number <= 24 && event.detail.value as number >= 1) {
                                         this.dashboard.template.columns = event.detail.value as number; this.forceParentUpdate(true); 
                                     }
                                 }}"></or-mwc-input>
@@ -155,7 +155,7 @@ export class OrDashboardBoardsettings extends LitElement {
                                 <span style="min-width: 150px;">${i18next.t('dashboard.maxScreenWidth')}</span>
                                 <div>
                                     <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.maxScreenWidth}" style="width: 70px;"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.dashboard?.template != null) {
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.dashboard.template != null) {
                                                       this.dashboard.template.maxScreenWidth = event.detail.value as number; this.forceParentUpdate(true);
                                                   }}}">
                                     </or-mwc-input>
@@ -207,13 +207,11 @@ export class OrDashboardBoardsettings extends LitElement {
     // Button to switch to a mobile preset of layout settings.
     // TODO: Make these values not hardcoded anymore, and depend on the getDefault functions in or-dashboard-tree (that probably should move to somewhere else)
     setToMobilePreset() {
-        if(this.dashboard?.template) {
-            this.dashboard.template.columns = 4;
-            this.dashboard.template.screenPresets![0].scalingPreset = DashboardScalingPreset.KEEP_LAYOUT;
-            this.dashboard.template.maxScreenWidth = 700;
-            this.requestUpdate();
-            this.forceParentUpdate(true);
-        }
+        this.dashboard.template!.columns = 4;
+        this.dashboard.template!.screenPresets![0].scalingPreset = DashboardScalingPreset.KEEP_LAYOUT;
+        this.dashboard.template!.maxScreenWidth = 700;
+        this.requestUpdate();
+        this.forceParentUpdate(true);
     }
 
 

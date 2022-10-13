@@ -119,7 +119,7 @@ export class OrKpiWidgetSettings extends LitElement {
 
     // Default values
     private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display'), i18next.t('values')];
-    private loadedAssets: Asset[] = [];
+    private loadedAsset?: Asset;
 
 
     static get styles() {
@@ -199,12 +199,12 @@ export class OrKpiWidgetSettings extends LitElement {
 
     onAttributesUpdate(changes: Map<string, any>) {
         if(changes.has('loadedAssets')) {
-            this.loadedAssets = changes.get('loadedAssets');
+            this.loadedAsset = changes.get('loadedAssets')[0];
         }
         if(changes.has('config')) {
             const config = changes.get('config') as KpiWidgetConfig;
             if(config.attributeRefs.length > 0) {
-                this.widget!.displayName = this.loadedAssets[0].name + " - " + this.loadedAssets[0].attributes![config.attributeRefs[0].name!].name;
+                this.widget!.displayName = this.loadedAsset?.name + " - " + this.loadedAsset?.attributes![config.attributeRefs[0].name!].name;
             }
         }
     }

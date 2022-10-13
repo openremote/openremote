@@ -130,7 +130,7 @@ export class OrGaugeWidgetSettings extends LitElement {
 
     // Default values
     private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('values'), i18next.t('thresholds')];
-    private loadedAssets: Asset[] = [];
+    private loadedAsset?: Asset;
 
     static get styles() {
         return [style, widgetSettingsStyling];
@@ -208,12 +208,12 @@ export class OrGaugeWidgetSettings extends LitElement {
 
     onAttributesUpdate(changes: Map<string, any>) {
         if(changes.has('loadedAssets')) {
-            this.loadedAssets = changes.get('loadedAssets');
+            this.loadedAsset = changes.get('loadedAssets')[0];
         }
         if(changes.has('config')) {
             const config = changes.get('config') as GaugeWidgetConfig;
             if(config.attributeRefs.length > 0) {
-                this.widget!.displayName = this.loadedAssets[0].name + " - " + this.loadedAssets[0].attributes![config.attributeRefs[0].name!].name;
+                this.widget!.displayName = this.loadedAsset?.name + " - " + this.loadedAsset?.attributes![config.attributeRefs[0].name!].name;
             }
         }
     }
