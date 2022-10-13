@@ -1,6 +1,5 @@
 package org.openremote.manager.dashboard;
 
-import com.google.gson.Gson;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -72,15 +71,11 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     public void update(RequestParams requestParams, Dashboard dashboard) {
         try {
 
-            System.out.println("ResourceImpl update() has following dashboard:");
-            System.out.println(new Gson().toJson(dashboard));
-
             // Check if access to realm
             if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            Dashboard d = this.dashboardStorageService.update(ValueUtil.clone(dashboard), getUserId());
-            System.out.println(d);
+            this.dashboardStorageService.update(ValueUtil.clone(dashboard), getUserId());
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);

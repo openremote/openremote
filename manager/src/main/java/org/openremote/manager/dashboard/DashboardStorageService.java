@@ -1,6 +1,5 @@
 package org.openremote.manager.dashboard;
 
-import com.google.gson.Gson;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -20,7 +19,6 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.ws.rs.WebApplicationException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -77,7 +75,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     @SuppressWarnings("java:S2326")
     protected <T extends Dashboard> Dashboard[] findAllOfRealm(String realm, String userId, Boolean editable) {
-        Object[] result = persistenceService.doReturningTransaction(em -> {
+        return persistenceService.doReturningTransaction(em -> {
             try {
                 CriteriaBuilder cb = em.getCriteriaBuilder();
                 CriteriaQuery<Dashboard> cq = cb.createQuery(Dashboard.class);
@@ -98,18 +96,14 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                     ));
                 }
                 CriteriaQuery<Dashboard> all = cq.select(root).where(predicates.toArray(new Predicate[]{}));
-                        //.where(cb.and(root.get("viewAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId)));
                 TypedQuery<Dashboard> allQuery = em.createQuery(all);
-                Dashboard[] dashboards = allQuery.getResultList().toArray(new Dashboard[0]);
-                return dashboards;
+                return allQuery.getResultList().toArray(new Dashboard[0]);
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            return new ArrayList<Dashboard>().toArray(); // Empty array if nothing found.
+            return new Dashboard[0]; // Empty array if nothing found.
         });
-        // Object[] to Dashboard[]
-        return Arrays.copyOf(result, result.length, Dashboard[].class);
     }
 
     @SuppressWarnings("java:S2326")
@@ -123,7 +117,6 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         return persistenceService.doReturningTransaction(em -> {
             if(dashboard.getId() != null && dashboard.getId().length() > 0) {
                 Dashboard d = em.find(Dashboard.class, dashboard.getId()); // checking whether dashboard is already in database
-                System.out.println(d);
                 if(d != null) {
                     throw new IllegalArgumentException("This dashboard has already been created.");
                 }
@@ -136,8 +129,6 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     protected <T extends Dashboard> T update(T dashboard, String userId) {
         return persistenceService.doReturningTransaction(em -> {
             Dashboard d = em.find(Dashboard.class, dashboard.getId());
-            System.out.println("StorageService update() has following dashboard:");
-            System.out.println(new Gson().toJson(d));
             if(d != null) {
                 if(d.getEditAccess() == DashboardAccess.PRIVATE) {
                     if(!(d.getOwnerId().equals(userId))) {
@@ -162,16 +153,11 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                         toDelete.add(d.getId());
                     }
                 }
-                if(toDelete.size() > 0) {
+                if(!toDelete.isEmpty()) {
                     Query query = em.createQuery("DELETE from Dashboard d WHERE d.id in (?1)");
                     query.setParameter(1, toDelete);
                     query.executeUpdate();
                 }
-                /*for(String id : dashboardIds) {
-                    Query query = em.createQuery("DELETE FROM Dashboard d WHERE d.id = :id");
-                    query.setParameter("id", id);
-                    query.executeUpdate();
-                }*/
                 return true;
             } catch (Exception e) {
                 e.printStackTrace();
