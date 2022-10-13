@@ -1,4 +1,4 @@
-declare module 'gaugejs' {
+declare module 'gaugeJS' {
 
     interface PointerOptions {
         length: number;
