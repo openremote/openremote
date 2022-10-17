@@ -367,10 +367,10 @@ export class OrDashboardPreview extends LitElement {
             this.grid = GridStack.init({
                 acceptWidgets: (this.editMode),
                 animate: true,
-                cellHeight: (this.activePreset?.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / 2) : 'initial'),
-                cellHeightThrottle: 100,
+                cellHeight: (this.activePreset?.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / (this.template?.columns ? (this.template.columns / 4) : 2)) : 'initial'),
                 column: this.template?.columns,
                 disableOneColumnMode: (this.activePreset?.scalingPreset != DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN),
+                oneColumnModeDomSort: true,
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                 },
