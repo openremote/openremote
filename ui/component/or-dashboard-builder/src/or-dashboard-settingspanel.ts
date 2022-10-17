@@ -1,4 +1,4 @@
-import manager, { DefaultColor5 } from "@openremote/core";
+import manager, { DefaultColor5, Util } from "@openremote/core";
 import {Asset, AssetModelUtil, AttributeRef} from "@openremote/model";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -184,19 +184,25 @@ export class OrDashboardSettingsPanel extends LitElement {
                         const asset = this.loadedAssets?.find((x: Asset) => {
                             return x.id == attributeRef.id;
                         }) as Asset;
-                        return (asset != null) ? html`
-                            <div class="attribute-list-item">
-                                <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
-                                <div class="attribute-list-item-label">
-                                    <span>${asset.name}</span>
-                                    <span style="font-size:14px; color:grey;">${attributeRef.name}</span>
+                        if(asset) {
+                            const attribute = asset.attributes![attributeRef.name!];
+                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
+                            const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
+                            return html`
+                                <div class="attribute-list-item">
+                                    <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
+                                    <div class="attribute-list-item-label">
+                                        <span>${asset.name}</span>
+                                        <span style="font-size:14px; color:grey;">${label}</span>
+                                    </div>
+                                    <button class="button-clear" @click="${() => this.removeWidgetAttribute(attributeRef)}">
+                                        <or-icon icon="close-circle"></or-icon>
+                                    </button>
                                 </div>
-                                <button class="button-clear"
-                                        @click="${() => this.removeWidgetAttribute(attributeRef)}">
-                                    <or-icon icon="close-circle"></or-icon>
-                                </button>
-                            </div>
-                        ` : undefined;
+                            `;
+                        } else {
+                            return undefined;
+                        }
                     }) : undefined}
                 </div>
                 <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('attribute')}" icon="plus"
