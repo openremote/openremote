@@ -240,6 +240,7 @@ export class OrDashboardBoardsettings extends LitElement {
                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                           preset.scalingPreset = scalingPresets.find((p) => p.value == event.detail.value)?.key;
                                           this.forceParentUpdate(true);
+                                          this.requestUpdate();
                                       }}"
                         ></or-mwc-input>
                     </div>
