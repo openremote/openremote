@@ -26,7 +26,9 @@ import {
     RuleCondition,
     RulesetLang,
     RulesetUnion,
-    WellknownAssets
+    WellknownAssets,
+    Asset,
+    AssetQueryOrderBy$Property
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
@@ -489,6 +491,27 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
         });
 
     });
+}
+export async function getAssetsByType(type: string, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
+    if(loadedAssets?.has(type)) {
+        return {
+            assets: loadedAssets?.get(type),
+            loadedAssets: loadedAssets
+        }
+    } else {
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            types: [ type ],
+            orderBy: {
+                property: AssetQueryOrderBy$Property.NAME
+            }
+        });
+        loadedAssets?.set(type, response.data);
+        return {
+            assets: response.data,
+            loadedAssets: loadedAssets
+        };
+    }
+
 }
 
 export class OrRulesRuleChangedEvent extends CustomEvent<boolean> {
