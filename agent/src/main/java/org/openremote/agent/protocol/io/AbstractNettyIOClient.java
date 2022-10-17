@@ -343,6 +343,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     protected void doDisconnect() {
+        LOG.finer("Performing disconnect: " + getClientUri());
         try {
             if (channelStartFuture != null) {
                 channelStartFuture.cancel(true);
