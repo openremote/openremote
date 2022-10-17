@@ -40,6 +40,7 @@ import javax.persistence.OptimisticLockException;
 import javax.validation.ConstraintViolationException;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -76,18 +77,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 return new Asset<?>[0];
             }
 
-            AssetQuery assetQuery = new AssetQuery();
-
-            if (!isRestrictedUser()) {
-                assetQuery
-                    .realm(new RealmPredicate(getAuthenticatedRealmName()))
-                    .recursive(true);
-            } else {
-                assetQuery
-                    .userIds(getUserId());
+            if (!isAuthenticated()) {
+                throw new NotAuthorizedException("Must be authenticated");
             }
 
-            List<Asset<?>> assets = assetStorageService.findAll(assetQuery);
+            AssetQuery query = new AssetQuery().userIds(getUserId());
+
+            if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+                throw new NotAuthorizedException("User not authorized to execute specified query");
+            }
+
+            List<Asset<?>> assets = assetStorageService.findAll(query);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
@@ -571,19 +571,20 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public Asset<?>[] queryAssets(RequestParams requestParams, AssetQuery query) {
-        try {
-            query = assetStorageService.prepareAssetQuery(query, getAuthContext(), getRequestRealmName());
-
-            List<Asset<?>> result = assetStorageService.findAll(query);
-
-            // Compress response (the request attribute enables the interceptor)
-            request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-
-            return result.toArray(new Asset[0]);
-
-        } catch (IllegalStateException ex) {
-            throw new BadRequestException(ex);
+        if (query == null) {
+            query = new AssetQuery();
         }
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new NotAuthorizedException("User not authorized to execute specified query");
+        }
+
+        List<Asset<?>> result = assetStorageService.findAll(query);
+
+        // Compress response (the request attribute enables the interceptor)
+        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+
+        return result.toArray(new Asset[0]);
     }
 
     protected AttributeWriteResult doAttributeWrite(AttributeRef ref, Object value, Map<String, Object> headers) {

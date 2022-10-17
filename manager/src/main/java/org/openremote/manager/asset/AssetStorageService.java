@@ -76,7 +76,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.groupingBy;
-import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
@@ -325,6 +324,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return assetEventAuthorizer.authorise(realm, auth, subscription);
         });
 
+        clientEventService.addEventAuthorizer((realm, auth, event) -> {
+            boolean authorize = event instanceof HasAssetQuery;
+
+            if (event instanceof ReadAssetEvent readAssetEvent) {
+                if (readAssetEvent.getAssetQuery() == null) {
+                    LOG.fine("Read asset event must specify an asset ID");
+                    return false;
+                }
+            } else if (event instanceof ReadAttributeEvent readAttributeEvent) {
+                if (readAttributeEvent.getAssetQuery() == null) {
+                    LOG.fine("Read attribute event must specify an asset ID");
+                    return false;
+                }
+            }
+
+            return authorize && authorizeAssetQuery(((HasAssetQuery)event).getAssetQuery(), auth, realm);
+        });
+
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
@@ -366,108 +383,63 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // React if a client wants to read assets and attributes
         from(CLIENT_EVENT_TOPIC)
             .routeId("FromClientReadRequests")
-            .filter(
-                or(body().isInstanceOf(ReadAssetsEvent.class), body().isInstanceOf(ReadAssetEvent.class), body().isInstanceOf(ReadAttributeEvent.class)))
-            .choice()
-                .when(or(body().isInstanceOf(ReadAssetEvent.class), body().isInstanceOf(ReadAttributeEvent.class)))
-                    .process(exchange -> {
-                        LOG.finer("Handling from client: " + exchange.getIn().getBody());
+            .filter(body().isInstanceOf(HasAssetQuery.class))
+            .process(exchange -> {
+                HasAssetQuery hasAssetQuery = exchange.getIn().getBody(HasAssetQuery.class);
+                AssetQuery assetQuery = hasAssetQuery.getAssetQuery();
+                String sessionKey = ClientEventService.getSessionKey(exchange);
+                String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+                Object response = null;
 
-                        String assetId;
-                        String attributeName = null;
+                if (hasAssetQuery instanceof ReadAssetsEvent) {
+                    List<Asset<?>> assets = findAll(assetQuery);
+                    response = new AssetsEvent(assets);
+                } else {
+                    Asset<?> asset = find(assetQuery);
+                    String assetId;
+                    String attributeName = null;
 
-                        if (exchange.getIn().getBody() instanceof ReadAssetEvent) {
-                            assetId = exchange.getIn().getBody(ReadAssetEvent.class).getAssetId();
+                    if (asset != null) {
+                        if (hasAssetQuery instanceof ReadAttributeEvent readAttributeEvent) {
+                            assetId = readAttributeEvent.getAttributeRef().getId();
+                            attributeName = readAttributeEvent.getAttributeRef().getName();
                         } else {
-                            ReadAttributeEvent assetAttributeEvent = exchange.getIn().getBody(ReadAttributeEvent.class);
-                            assetId = assetAttributeEvent.getAttributeRef().getId();
-                            attributeName = assetAttributeEvent.getAttributeRef().getName();
+                            assetId = ((ReadAssetEvent) hasAssetQuery).getAssetId();
                         }
 
-                        if (TextUtil.isNullOrEmpty(assetId)) {
-                            return;
-                        }
-
-                        String sessionKey = ClientEventService.getSessionKey(exchange);
-                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                        boolean isAttributeRead = !TextUtil.isNullOrEmpty(attributeName);
-                        String requestRealm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
-
-                        AssetQuery assetQuery = new AssetQuery()
-                            .ids(assetId);
-
-                        assetQuery = prepareAssetQuery(assetQuery, authContext, requestRealm);
-
-                        Asset<?> asset = find(assetQuery);
-
-                        if (asset != null) {
-                            String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
-                            Object response = null;
-
-                            if (isAttributeRead) {
-                                Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
-                                if (assetAttribute != null) {
-
-                                    // Check access constraints
-                                    if (assetQuery.access == null
-                                        || assetQuery.access == PRIVATE
-                                        || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
-                                        || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
-                                        response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
-                                    }
-                                }
-                            } else {
-
+                        if (!TextUtil.isNullOrEmpty(attributeName)) {
+                            Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
+                            if (assetAttribute != null) {
                                 // Check access constraints
-                                if (assetQuery.access != PUBLIC  || asset.isAccessPublicRead()) {
-                                    response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+                                if (assetQuery.access == null
+                                    || assetQuery.access == PRIVATE
+                                    || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
+                                    || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
+                                    response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
                                 }
                             }
-
-                            if (response != null) {
-                                if (!isNullOrEmpty(messageId)) {
-                                    response = new EventRequestResponseWrapper<>(messageId, (SharedEvent)response);
-                                }
-                                clientEventService.sendToSession(sessionKey, response);
-                            }
+                        } else {
+                            response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
                         }
-                    })
-                .when(body().isInstanceOf(ReadAssetsEvent.class))
-                    .process(exchange -> {
-                        ReadAssetsEvent readAssets = exchange.getIn().getBody(ReadAssetsEvent.class);
-                        String sessionKey = ClientEventService.getSessionKey(exchange);
-                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                        String requestRealm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
-                        AssetQuery query = readAssets.getAssetQuery();
-                        try {
-                            query = prepareAssetQuery(query, authContext, requestRealm);
+                    }
+                }
 
-                            List<Asset<?>> assets = findAll(query);
+                if (response != null) {
+                    if (!isNullOrEmpty(messageId)) {
+                        response = new EventRequestResponseWrapper<>(messageId, (SharedEvent)response);
+                    }
+                    clientEventService.sendToSession(sessionKey, response);
+                }
 
-                            String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
-
-                            if (isNullOrEmpty(messageId)) {
-                                clientEventService.sendToSession(sessionKey, new AssetsEvent(assets));
-                            } else {
-                                clientEventService.sendToSession(sessionKey, new EventRequestResponseWrapper<>(messageId, new AssetsEvent(assets)));
-                            }
-                        } catch (IllegalStateException ignored) {
-                        }
-                    })
-                    .stop()
-            .endChoice()
+            })
             .end();
     }
 
     /**
-     * Prepares an {@link AssetQuery} by validating it against security constraints and/or applying default options to the query
+     * Authorizes an {@link AssetQuery} by validating it against security constraints and/or applying default options to the query
      * based on security constraints.
      */
-    public AssetQuery prepareAssetQuery(AssetQuery query, AuthContext authContext, String requestRealm) throws IllegalStateException {
-
-        if (query == null) {
-            query = new AssetQuery();
-        }
+    public boolean authorizeAssetQuery(AssetQuery query, AuthContext authContext, String requestRealm) {
 
         boolean isAnonymous = authContext == null;
         boolean isSuperUser = authContext != null && authContext.isSuperUser();
@@ -480,21 +452,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (TextUtil.isNullOrEmpty(realm)) {
                 String msg = "Realm must be specified to read assets";
                 LOG.finer(msg);
-                throw new IllegalStateException(msg);
+                return false;
             }
 
             if (isAnonymous) {
                 if (query.access != null && query.access != PUBLIC) {
                     String msg = "Only public access allowed for anonymous requests";
                     LOG.finer(msg);
-                    throw new IllegalStateException(msg);
+                    return false;
                 }
                 query.access = PUBLIC;
             } else if (isRestricted) {
                 if (query.access == PRIVATE) {
                     String msg = "Only public or restricted access allowed for restricted requests";
                     LOG.finer(msg);
-                    throw new IllegalStateException(msg);
+                    return false;
                 }
                 if (query.access == null) {
                     query.access = PROTECTED;
@@ -503,14 +475,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (query.access != PUBLIC && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 String msg = "User must have '" + ClientRole.READ_ASSETS.getValue() + "' role to read non public assets";
-                LOG.fine(msg);
-                throw new IllegalStateException(msg);
+                LOG.finer(msg);
+                return false;
             }
 
             if (query.access != PUBLIC && !realm.equals(authContext.getAuthenticatedRealmName())) {
                 String msg = "Realm must match authenticated realm for non public access queries";
                 LOG.finer(msg);
-                throw new IllegalStateException(msg);
+                return false;
             }
 
             query.realm = new RealmPredicate(realm);
@@ -523,10 +495,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realm)) {
             String msg = "Realm is not present or is inactive";
             LOG.finer(msg);
-            throw new IllegalStateException(msg);
+            return false;
         }
 
-        return query;
+        return true;
     }
 
     public Asset<?> find(String assetId) {

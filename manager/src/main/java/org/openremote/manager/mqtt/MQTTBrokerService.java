@@ -111,6 +111,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected String host;
     protected int port;
     protected EmbeddedActiveMQ server;
+    protected ClientProducer producer;
     protected ClientSessionInternal internalSession;
 
     @Override
@@ -219,6 +220,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
         serverSession.disableSecurity();
         internalSession.start();
+
+        // Create producer
+        producer = internalSession.createProducer();
 
         // Start each custom handler
         for (MQTTHandler handler : customHandlers) {
@@ -411,11 +415,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void publishMessage(String topic, Object data, MqttQoS qoS) {
         try {
             if (internalSession != null) {
-                ClientProducer producer = internalSession.createProducer(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()));
                 ClientMessage message = internalSession.createMessage(false);
                 message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
                 message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
-                producer.send(message);
+                producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()), message);
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Couldn't send AttributeEvent to MQTT client", e);

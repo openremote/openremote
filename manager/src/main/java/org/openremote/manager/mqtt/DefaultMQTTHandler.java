@@ -20,7 +20,6 @@
 package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelId;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
@@ -80,7 +79,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public boolean onConnect(RemotingConnection connection) {
         super.onConnect(connection);
-        Map<String, Object> headers = prepareHeaders(connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
 
         // Put a close connection runnable into the headers for the client event service
@@ -94,7 +93,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onDisconnect(RemotingConnection connection) {
         super.onDisconnect(connection);
 
-        Map<String, Object> headers = prepareHeaders(connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_CLOSE, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
     }
@@ -102,14 +101,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void onConnectionLost(RemotingConnection connection) {
         super.onConnectionLost(connection);
-        Map<String, Object> headers = prepareHeaders(connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
     }
 
     @Override
     public boolean topicMatches(Topic topic) {
-        return isAttributeTopic(topic) || isAssetTopic(topic) || isAttributeWriteTopic(topic) || isAttributeValueWriteTopic(topic);
+        return isAttributeTopic(topic) || isAssetTopic(topic) || isAttributeValueWriteTopic(topic);
     }
 
     @Override
@@ -249,25 +248,27 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
-            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + connection.getTransportConnection());
+            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + connectionToString(connection));
             return false;
         }
 
-        if (isAttributeWriteTopic(topic)) {
-            if (topic.getTokens().size() != 3) {
-                LOG.fine("Publish attribute events topic should be {realm}/{clientId}/writeattribute: topic=" + topic + ", connection=" + connection);
-                return false;
-            }
-            return true;
-        } else if (isAttributeValueWriteTopic(topic)) {
+        if (isAttributeValueWriteTopic(topic)) {
             if (topic.getTokens().size() != 5 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                LOG.fine("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + connection);
+                LOG.fine("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + connectionToString(connection));
                 return false;
             }
-            return true;
+        } else {
+            return false;
         }
 
-        return false;
+        // We don't know the value at this point so just use a null value for authorization (value type will be handled
+        // when the event is processed)
+        if (clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
+            LOG.info("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+            return false;
+        }
+
+        return true;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -293,7 +294,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             eventConsumer
         );
 
-        Map<String, Object> headers = prepareHeaders(connection);
+        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
     }
 
@@ -302,7 +303,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
         boolean isAssetTopic = subscriptionId.startsWith(ASSET_TOPIC);
-        Map<String, Object> headers = prepareHeaders(connection);
+        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
         CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
@@ -319,26 +320,17 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         List<String> topicTokens = topic.getTokens();
-        boolean isValueWrite = topicTokens.get(2).equals(ATTRIBUTE_VALUE_WRITE_TOPIC);
         String payloadContent = body.toString(StandardCharsets.UTF_8);
-        AttributeEvent attributeEvent;
-
-        if (isValueWrite) {
-            String attributeName = topicTokens.get(3);
-            String assetId = topicTokens.get(4);
-            Object value = ValueUtil.parse(payloadContent).orElse(null);
-            attributeEvent = new AttributeEvent(assetId, attributeName, value);
-        } else {
-            attributeEvent = ValueUtil.parse(payloadContent, AttributeEvent.class).orElse(null);
-        }
-
-        if (attributeEvent == null) {
-            LOG.fine("Failed to parse payload for publish topic '" + topic + "': " + connection);
-            return;
-        }
-
-        Map<String, Object> headers = prepareHeaders(connection);
+        Object value = ValueUtil.parse(payloadContent).orElse(null);
+        AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
+        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+    }
+
+    protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
+        String attributeName = topicTokens.get(3);
+        String assetId = topicTokens.get(4);
+        return new AttributeEvent(assetId, attributeName, value);
     }
 
     protected static AssetFilter<?> buildAssetFilter(Topic topic) {
@@ -480,10 +472,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return ATTRIBUTE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2)) || ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
     }
 
-    protected static boolean isAttributeWriteTopic(Topic topic) {
-        return ATTRIBUTE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
-
     protected static boolean isAttributeValueWriteTopic(Topic topic) {
         return ATTRIBUTE_VALUE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
     }
@@ -492,13 +480,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return ASSET_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
     }
 
-    protected static Map<String, Object> prepareHeaders(RemotingConnection connection) {
-        Optional<AuthContext> authContext = getAuthContextFromConnection(connection);
+    protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
         Map<String, Object> headers = new HashMap<>();
         headers.put(ConnectionConstants.SESSION_KEY, MQTTBrokerService.getConnectionIDString(connection));
         headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
-        headers.put(Constants.AUTH_CONTEXT, authContext.orElse(null));
-        headers.put(Constants.REALM_PARAM_NAME, authContext.map(AuthContext::getAuthenticatedRealmName));
+        headers.put(Constants.REALM_PARAM_NAME, requestRealm);
         return headers;
     }
 }

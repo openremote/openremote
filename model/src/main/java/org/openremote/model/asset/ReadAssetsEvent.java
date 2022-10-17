@@ -29,7 +29,7 @@ import org.openremote.model.query.AssetQuery;
  * A client sends this event to the server to query assets, expecting
  * the server to answer "soon" with an {@link AssetsEvent} with the results.
  */
-public class ReadAssetsEvent extends SharedEvent {
+public class ReadAssetsEvent extends SharedEvent implements HasAssetQuery {
 
     protected AssetQuery assetQuery;
 
@@ -39,6 +39,9 @@ public class ReadAssetsEvent extends SharedEvent {
     }
 
     public AssetQuery getAssetQuery() {
+        if (assetQuery == null) {
+            assetQuery = new AssetQuery();
+        }
         return assetQuery;
     }
 
