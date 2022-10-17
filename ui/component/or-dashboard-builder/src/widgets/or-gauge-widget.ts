@@ -145,7 +145,7 @@ export class OrGaugeWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
-                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widgetConfig="${this.widget?.widgetConfig}"
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .onlyDataAttrs="${false}" .widgetConfig="${this.widget?.widgetConfig}"
                                                 @updated="${(event: CustomEvent) => {
                                                     this.updateConfig(this.widget!, event.detail.changes.get('config'));
                                                     this.onAttributesUpdate(event.detail.changes);

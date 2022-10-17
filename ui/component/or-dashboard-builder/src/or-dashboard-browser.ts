@@ -18,6 +18,9 @@ const browserStyling = css`
         grid-column: 1;
         grid-row: 1;
     }
+    .grid-stack-item {
+        cursor: grab;
+    }
     .sidebarItem {
         height: 100%;
         background: white;

@@ -105,6 +105,9 @@ export class OrDashboardSettingsPanel extends LitElement {
     private readonly widgetConfig: OrWidgetConfig | any;
     private _config?: OrWidgetConfig | any; // local duplicate that does not update parent. Sent back in dispatchEvent() only.
 
+    @property({type: Boolean}) // used for SINGLE_ATTRIBUTE and MULTI_ATTRIBUTE types.
+    private readonly onlyDataAttrs: boolean = true;
+
     @state()
     private loadedAssets?: Asset[];
 
@@ -143,7 +146,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                     return html`<span>${i18next.t('errorOccurred')}</span>`;
                 } else {
                     return html`
-                        ${until(this.getAttributeHTML(this._config, (this.type == SettingsPanelType.MULTI_ATTRIBUTE)), html`${i18next.t('loading')}`)}
+                        ${until(this.getAttributeHTML(this._config, (this.type == SettingsPanelType.MULTI_ATTRIBUTE), this.onlyDataAttrs), html`${i18next.t('loading')}`)}
                     `;
                 }
             }
@@ -170,7 +173,7 @@ export class OrDashboardSettingsPanel extends LitElement {
         this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }
 
-    async getAttributeHTML(config: any, multi: boolean) {
+    async getAttributeHTML(config: any, multi: boolean, onlyDataAttrs: boolean = true) {
         return html`
             <div style="padding: 0 14px 12px 14px;">
                 ${(config.attributeRefs == null || config.attributeRefs.length == 0) ? html`
@@ -198,7 +201,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                 </div>
                 <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('attribute')}" icon="plus"
                               style="margin-top: 24px; margin-left: -7px;"
-                              @or-mwc-input-changed="${() => this.openDialog(config.attributeRefs, multi)}">
+                              @or-mwc-input-changed="${() => this.openDialog(config.attributeRefs, multi, onlyDataAttrs)}">
                 </or-mwc-input>
             </div>
         `
@@ -249,12 +252,12 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     // Opening the attribute picker dialog, and listening to its result. (UI related)
-    openDialog(attributeRefs: AttributeRef[], multi: boolean) {
+    openDialog(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs: boolean = true) {
         let dialog: OrAttributePicker;
         if (attributeRefs != null) {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(true));
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs));
         } else {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(true))
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs))
         }
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
             this.setWidgetAttributes(event.detail);
