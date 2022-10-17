@@ -59,8 +59,8 @@ export class OrDashboardWidget extends LitElement {
             if(gridItemElement) {
                 this.resizeObserver?.disconnect();
                 this.resizeObserver = new ResizeObserver(throttle(() => {
-                    const isMinimumSize = (this.widget?.gridItem?.minPixelW && this.widget.gridItem?.minPixelH &&
-                        (this.widget.gridItem?.minPixelW < gridItemElement.clientWidth) && (this.widget.gridItem?.minPixelH < gridItemElement.clientHeight)
+                    const isMinimumSize: boolean = (this.widget?.gridItem?.minPixelW != null && this.widget.gridItem.minPixelH != null &&
+                        (this.widget.gridItem.minPixelW < gridItemElement.clientWidth) && (this.widget.gridItem.minPixelH < gridItemElement.clientHeight)
                     );
                     this.error = (isMinimumSize ? undefined : i18next.t('dashboard.widgetTooSmall'));
                 }, 200));

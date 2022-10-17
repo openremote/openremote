@@ -45,6 +45,7 @@ const styling = css`
     .main-number-icon {
         font-size: 24px;
         margin-right: 10px;
+        display: flex;
     }
 
     .main-number-unit {
@@ -113,6 +114,9 @@ export class OrGauge extends LitElement {
     @property({type: String})
     public realm?: string;
 
+    @property()
+    private mainValueSize: "xs" | "s" | "m" | "l" | "xl" = "m";
+
 
     @state()
     protected loading: boolean = false;
@@ -133,7 +137,9 @@ export class OrGauge extends LitElement {
         }
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-                this.setupGauge();
+                this.setupGauge(); // recreate gauge since the library is not 100% responsive.
+                const gaugeSize = entries[0].devicePixelContentBoxSize[0].blockSize; // since gauge elem width == value elem width
+                this.setLabelSize(gaugeSize);
             }, 200))
             this.resizeObserver.observe(this.shadowRoot!.getElementById('chart')!);
         })
@@ -207,18 +213,30 @@ export class OrGauge extends LitElement {
         }
     }
 
+    setLabelSize(blockSize: number) {
+        if(blockSize < 60) {
+            this.mainValueSize = "s";
+        } else if(blockSize < 100) {
+            this.mainValueSize = "m";
+        } else if(blockSize < 200) {
+            this.mainValueSize = "l"
+        } else {
+            this.mainValueSize = "xl"
+        }
+    }
+
     render() {
         return html`
             <div style="position: relative; height: 100%; width: 100%;">
                 <div class="chart-wrapper" style="display: ${this.loading ? 'none' : 'flex'}; flex-direction: column; justify-content: center; height: 100%;">
-                    <div style="flex: 0 0 0%;">
-                        <canvas id="chart" style="width: 100% !important; height: auto !important;"></canvas>
+                    <div style="flex: 0 0 0;">
+                        <canvas id="chart"></canvas>
                     </div>
-                    <div style="flex: 1 0 60px;">
+                    <div>
                         <div class="mainvalue-wrapper">
                             <span class="main-number-icon">${this.asset ? getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset.type)) : ""}</span>
-                            <span class="main-number main-number.xl">${this.value ? this.value : NaN}</span>
-                            <span class="main-number-unit main-number.m">${this.unit ? this.unit : ""}</span>
+                            <span class="main-number ${this.mainValueSize}">${this.value ? this.value : NaN}</span>
+                            <span class="main-number-unit ${this.mainValueSize}">${this.unit ? this.unit : ""}</span>
                         </div>
                     </div>
                 </div>

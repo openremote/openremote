@@ -22,8 +22,8 @@ export class OrKpiWidget implements OrWidgetEntity {
     readonly DISPLAY_MDI_ICON: string = "label";
     readonly DISPLAY_NAME: string = "KPI";
     readonly MIN_COLUMN_WIDTH: number = 2;
-    readonly MIN_PIXEL_HEIGHT: number = 150;
-    readonly MIN_PIXEL_WIDTH: number = 150;
+    readonly MIN_PIXEL_HEIGHT: number = 0;
+    readonly MIN_PIXEL_WIDTH: number = 0;
 
     getDefaultConfig(widget: DashboardWidget): OrWidgetConfig {
         return {

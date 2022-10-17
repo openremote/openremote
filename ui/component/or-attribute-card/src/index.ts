@@ -26,6 +26,7 @@ import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {debounce} from "lodash";
 
 export type ContextMenuOption = "editAttribute" | "editDelta" | "editCurrentValue" | "delete";
 
@@ -114,6 +115,7 @@ const style = css`
     .main-number-icon {   
         font-size: 24px;
         margin-right: 10px;
+        display: flex;
     }
     
     .main-number-unit {
@@ -220,6 +222,7 @@ export class OrAttributeCard extends LitElement {
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart<"line", ScatterDataPoint[]>;
+    private resizeObserver?: ResizeObserver;
 
     static get styles() {
         return [
@@ -375,6 +378,14 @@ export class OrAttributeCard extends LitElement {
                 </div>
             `;
         }
+
+        this.updateComplete.then(() => {
+            this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
+                const elemSize = entries[0].devicePixelContentBoxSize[0].blockSize;
+                this.setLabelSizeByWidth(elemSize);
+            }, 200))
+            this.resizeObserver.observe(this.shadowRoot!.querySelector(".graph-wrapper")!);
+        })
 
         return html`
             <div class="panel" id="attribute-card">
@@ -761,7 +772,7 @@ export class OrAttributeCard extends LitElement {
         const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.assets[0].type!);
         const units = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.assets[0].type));
-        this.setMainValueSize(roundedVal.toString());
+        this.setLabelSizeByLength(roundedVal.toString());
 
         if (!units) { return {value: roundedVal, unit: "" }; }
         return {
@@ -815,12 +826,19 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
-    protected setMainValueSize(value: string) {
+    protected setLabelSizeByLength(value: string) {
         if (value.length >= 20) { this.mainValueSize = "xs" }
         if (value.length < 20) { this.mainValueSize = "s" }
         if (value.length < 15) { this.mainValueSize = "m" }
         if (value.length < 10) { this.mainValueSize = "l" }
         if (value.length < 5) { this.mainValueSize = "xl" }
+    }
+
+    protected setLabelSizeByWidth(blockSize: number) {
+        if(blockSize < 60) { this.mainValueSize = "s"; }
+        else if(blockSize < 100) { this.mainValueSize = "m"; }
+        else if(blockSize < 200) { this.mainValueSize = "l"; }
+        else { this.mainValueSize = "xl"; }
     }
 
     protected _setPeriodOption(value: any) {

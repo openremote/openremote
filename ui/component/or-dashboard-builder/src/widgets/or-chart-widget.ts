@@ -27,8 +27,8 @@ export class OrChartWidget implements OrWidgetEntity {
     readonly DISPLAY_NAME: string = "Line Chart";
     readonly DISPLAY_MDI_ICON: string = "chart-bell-curve-cumulative"; // https://materialdesignicons.com;
     readonly MIN_COLUMN_WIDTH: number = 2;
-    readonly MIN_PIXEL_WIDTH: number = 200;
-    readonly MIN_PIXEL_HEIGHT: number = 200;
+    readonly MIN_PIXEL_WIDTH: number = 0;
+    readonly MIN_PIXEL_HEIGHT: number = 0;
 
     getDefaultConfig(widget: DashboardWidget): ChartWidgetConfig {
         return {
