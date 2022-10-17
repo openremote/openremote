@@ -77,7 +77,9 @@ export class OrChartWidgetContent extends LitElement {
     render() {
         return html`
             <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}" denseLegend="${true}"
-                      .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}" .realm="${this.realm}" .showControls="${this.widget?.widgetConfig?.showTimestampControls}" style="height: 100%"
+                      .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}" .realm="${this.realm}"
+                      .attributeControls="${false}" .timestampControls="${this.widget?.widgetConfig?.showTimestampControls}"
+                      .compareTimestamp="${false}" style="height: 100%"
             ></or-chart>
         `
     }

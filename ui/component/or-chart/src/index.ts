@@ -373,7 +373,10 @@ export class OrChart extends translate(i18next)(LitElement) {
     public panelName?: string;
 
     @property()
-    public showControls: boolean = true;
+    public attributeControls: boolean = true;
+
+    @property()
+    public timestampControls: boolean = true;
 
     @property()
     public showLegend: boolean = true;
@@ -582,15 +585,15 @@ export class OrChart extends translate(i18next)(LitElement) {
                 </div>
 
                 <div id="chart-controls" style="overflow: hidden auto;">
-                    ${cache(this.showControls ? html`
-                        <div id="controls">
+                    <div id="controls">
+                        ${this.timestampControls ? html`
                             <div class="interval-controls" style="margin-right: 6px;">
                                 ${getContentWithMenuTemplate(
-                                    html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`, 
-                                    this._getPeriodOptions(),
-                                    this.period,
-                                    (value) => this.setPeriodOption(value)
-                                )}
+                                        html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`, 
+                                        this._getPeriodOptions(), 
+                                        this.period, 
+                                        (value) => this.setPeriodOption(value)
+                                )} 
                                 ${!!this.compareTimestamp ? html`
                                     <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @or-mwc-input-changed="${() => this.setPeriodCompare(false)}" icon="minus"></or-mwc-input>
                                 ` : html`
@@ -599,35 +602,30 @@ export class OrChart extends translate(i18next)(LitElement) {
                             </div>
                           
                             <div class="period-controls">
-        
                                 ${!!this.compareTimestamp ? html `
                                     <span class="line-label solid"></span>
                                 `: ``}
-                                <or-mwc-input id="ending-date" 
-                                    .checkAssetWrite="${false}"
-                                    .type="${endDateInputType}" 
-                                    ?disabled="${disabled}" 
-                                    .value="${this.timestamp}" 
-                                    @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
+                                <or-mwc-input id="ending-date" .checkAssetWrite="${false}" .type="${endDateInputType}" ?disabled="${disabled}" .value="${this.timestamp}" 
+                                        @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}">
+                                </or-mwc-input>
                                 <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false, undefined, 0)}"></or-icon>
                                 <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true, undefined, 0)}"></or-icon>
                             </div>
                             ${!!this.compareTimestamp ? html `
                                 <div class="period-controls">
-                                <span class="line-label dashed"></span>
-                                    <or-mwc-input id="ending-date" 
-                                        .checkAssetWrite="${false}"
-                                        .type="${endDateInputType}" 
-                                        ?disabled="${disabled}" 
-                                        .value="${this.compareTimestamp}" 
-                                        @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-mwc-input>
+                                    <span class="line-label dashed"></span>
+                                    <or-mwc-input id="ending-date" .checkAssetWrite="${false}" .type="${endDateInputType}" ?disabled="${disabled}" .value="${this.compareTimestamp}" 
+                                            @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}">
+                                    </or-mwc-input>
                                     <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true, 0)}"></or-icon>
                                     <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true, 0)}"></or-icon>
                                 </div>
                             ` : html``}
+                        ` : undefined}
+                        ${this.attributeControls ? html`
                             <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
-                        </div>
-                    ` : undefined)} 
+                        ` : undefined}
+                    </div>
                     ${cache(this.showLegend ? html`
                         <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="padding: ${this.denseLegend ? '6px' : '12px'};">
                             ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
