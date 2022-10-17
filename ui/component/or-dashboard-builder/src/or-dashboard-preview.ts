@@ -459,7 +459,7 @@ export class OrDashboardPreview extends LitElement {
     protected render() {
 
         try { // to correct the list of gridItems each render (Hopefully temporarily since it's quite compute heavy)
-            if(this.grid?.getGridItems()) {
+            if(this.grid?.el && this.grid?.getGridItems()) {
                 this.grid?.getGridItems().forEach((gridItem: GridItemHTMLElement) => {
                     if(this.template?.widgets?.find((widget) => widget.id == gridItem.id) == undefined) {
                         this.grid?.removeWidget(gridItem);
@@ -471,11 +471,13 @@ export class OrDashboardPreview extends LitElement {
         // Set manual px height in case of fullscreen, to make scrollbar work without issues (especially when drag-and-dropping widgets)
         this.waitUntil((_: any) => this.shadowRoot?.querySelector('.maingrid') != null).then(() => {
             const grid: HTMLElement = this.shadowRoot?.querySelector('.maingrid') as HTMLElement;
-            if(this.fullscreen) {
+            if(grid && this.fullscreen) {
                 grid.style.height = grid.parentElement!.clientHeight + "px";
             }
             const background: HTMLElement = this.shadowRoot?.getElementById('gridElement') as HTMLElement;
-            background.style.height = grid.scrollHeight + "px";
+            if(background) {
+                background.style.height = grid.scrollHeight + "px";
+            }
         })
 
         const customPreset = "Custom";
