@@ -86,15 +86,16 @@ export class OrChartWidgetContent extends LitElement {
 
     updated(changedProperties: Map<string, any>) {
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
-            this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
-                this.assets = assets!;
-                this.assetAttributes = this.widget?.widgetConfig.attributeRefs.map((attrRef: AttributeRef) => {
-                    const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
-                    const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
-                    return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-                }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                this.requestUpdate();
-            });
+            if(this.assetAttributes.length != this.widget!.widgetConfig.attributeRefs.length) {
+                this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
+                    this.assets = assets!;
+                    this.assetAttributes = this.widget?.widgetConfig.attributeRefs.map((attrRef: AttributeRef) => {
+                        const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
+                        const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
+                        return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
+                    }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                });
+            }
         }
     }
 
@@ -114,7 +115,7 @@ export class OrChartWidgetContent extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else {
+        } else if(!config.attributeRefs) {
             console.error("Error: attributeRefs are not present in widget config!");
         }
     }
