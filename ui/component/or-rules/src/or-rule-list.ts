@@ -57,6 +57,7 @@ const style = css`
         height: var(--internal-or-asset-tree-header-height);
         line-height: var(--internal-or-asset-tree-header-height);
         color: var(--internal-or-asset-tree-header-text-color);
+        background-color: var(--internal-or-rules-header-background-color);
     }
     
     #header-btns {
@@ -68,11 +69,8 @@ const style = css`
     }
 
     .node-status {
-        width: 10px;
-        height: 10px;
-        border-radius: 5px;
-        margin-right: 10px;
-        display: none;
+        --or-icon-width: 18px; 
+        margin-right: 8px;
     }
 
     .node-language{
@@ -80,20 +78,12 @@ const style = css`
         opacity: 50%;
     }
 
-    .bg-green {
-        background-color: #28b328;
+    .iconfill-gray {
+        --or-icon-fill: var(--internal-or-rules-list-icon-color-ok);
     }
 
-    .bg-red {
-        background-color: red;
-    }
-    
-    .bg-blue {
-        background-color: #3e92dc;
-    }
-
-    .bg-grey {
-        background-color: #b7b7b7;
+    .iconfill-red {
+        --or-icon-fill: var(--internal-or-rules-list-icon-color-error);
     }
 `;
 
@@ -230,7 +220,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
 
         const allowedLanguages = this._allowedLanguages;
-        const sortOptions = ["name", "createdOn"]
+        const sortOptions = ["name", "createdOn", "status"]
         if (allowedLanguages && allowedLanguages.length > 1) sortOptions.push("lang")
         
         let addTemplate: TemplateResult | string = ``;
@@ -305,11 +295,52 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected _nodeTemplate(node: RulesetNode): TemplateResult | string {
+
+        let statusIcon: string = "help";
+        let statusClass: string = "iconfill-gray";
+        let statusTitle: string = "statusUnknown";
+        switch (node.ruleset.status){
+            case "DEPLOYED":
+                statusIcon = "";
+                statusClass = "iconfill-gray";
+                break;
+            case "READY":
+                statusIcon = "check";
+                statusClass = "iconfill-gray";
+                break;
+            case "COMPILATION_ERROR":
+            case "LOOP_ERROR":
+            case "EXECUTION_ERROR":
+                statusIcon = "alert-octagon";
+                statusClass = "iconfill-red";
+                break;
+            case "DISABLED":
+                statusIcon = "minus-circle";
+                statusClass = "iconfill-gray";
+                break;
+            case "PAUSED":
+                statusIcon = "calendar-arrow-right";
+                statusClass = "iconfill-gray";
+                break;
+            case "EXPIRED":
+                statusIcon = "calendar-remove";
+                statusClass = "iconfill-gray";
+                break;
+            case "REMOVED":
+                statusIcon = "close";
+                statusClass = "iconfill-gray";
+                break;
+            default:
+                statusIcon = "stop";
+                statusClass = "iconfill-gray";
+        }
+
         return html`
             <li ?data-selected="${node.selected}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, node)}">
                 <div class="node-container">
-                    <span class="node-status ${OrRuleList._getNodeStatusClasses(node.ruleset)}"></span>
-                    <span class="node-name">${node.ruleset.name}<span class="node-language">${node.ruleset.lang !== RulesetLang.JSON ? node.ruleset.lang : ""}</span></span>
+                    <or-icon style="--or-icon-fill: --or-color-3; --or-icon-width: 18px; margin-right: 8px;" icon="${node.ruleset.lang !== RulesetLang.JSON ? ( node.ruleset.lang == RulesetLang.FLOW ? "transit-connection-variant" : "alpha-g-box") : "ray-start-arrow"}"></or-icon>
+                    <span class="node-name">${node.ruleset.name}</span>
+                    <or-icon class="node-status ${statusClass}" title="${i18next.t("rulesetStatus." + (node.ruleset.status ? node.ruleset.status : "NOSTATUS"))}" icon="${statusIcon}"></or-icon>
                 </div>
             </li>
         `;
@@ -566,6 +597,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         switch (this.sortBy) {
             case "createdOn":
                 return Util.sortByNumber((node: RulesetNode) => (node.ruleset as any)![this.sortBy!]);
+            case "status":
+                return Util.sortByString((node: RulesetNode) => (node.ruleset as any)![this.sortBy!]);
             default:
                 return Util.sortByString((node: RulesetNode) => (node.ruleset as any)![this.sortBy!]);
         }
