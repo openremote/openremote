@@ -66,7 +66,7 @@ export class OrKpiWidgetContent extends LitElement {
 
     render() {
         return html`
-            <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}"
+            <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig.period}"
                                .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}"
                                showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
             </or-attribute-card>

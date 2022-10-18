@@ -250,7 +250,7 @@ export class OrAttributeCard extends LitElement {
 
     updated(changedProperties: PropertyValues) {
 
-        if (changedProperties.has("realm")) {
+        if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.assets = [];
             this.loadSettings();
         }
@@ -560,12 +560,12 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
-    protected async loadSettings() {
+    protected async loadSettings(reset: boolean = false) {
 
         this.assetAttributes = [];
-        this.period = "day";
-        this.deltaFormat = "absolute";
-        this.mainValueDecimals = 0;
+        if(!this.period || reset) { this.period = "day"; }
+        if(!this.deltaFormat || reset) { this.deltaFormat = "absolute"; }
+        if(!this.mainValueDecimals || reset) { this.mainValueDecimals = 0; }
 
         if (!this.realm) {
             this.realm = manager.getRealm();
