@@ -2148,6 +2148,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@openremote/dashboard@workspace:ui/app/dashboard":
+  version: 0.0.0-use.local
+  resolution: "@openremote/dashboard@workspace:ui/app/dashboard"
+  dependencies:
+    "@openremote/or-app": ^1.1.0
+    "@openremote/util": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@openremote/demo-core@^1.0.4, @openremote/demo-core@workspace:ui/demo/demo-core":
   version: 0.0.0-use.local
   resolution: "@openremote/demo-core@workspace:ui/demo/demo-core"
@@ -2248,6 +2257,8 @@ __metadata:
     "@openremote/or-attribute-input": ^1.1.0
     "@openremote/or-attribute-picker": ^1.1.0
     "@openremote/or-chart": ^1.1.0
+    "@openremote/or-dashboard-builder": ^1.0.0
+    "@openremote/or-gauge": ^1.0.0
     "@openremote/or-map": ^1.1.0
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/or-rules": ^1.1.0
@@ -2408,6 +2419,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@openremote/or-dashboard-builder@^1.0.0, @openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder"
+  dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
+    gridstack: ^6.0.2
+    lit: ^2.0.2
+  languageName: unknown
+  linkType: soft
+
 "@openremote/or-data-viewer@workspace:ui/component/or-data-viewer":
   version: 0.0.0-use.local
   resolution: "@openremote/or-data-viewer@workspace:ui/component/or-data-viewer"
@@ -2425,6 +2449,21 @@ __metadata:
     "@openremote/or-translate": ^1.1.0
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
+    lit: ^2.0.2
+  languageName: unknown
+  linkType: soft
+
+"@openremote/or-gauge@^1.0.0, @openremote/or-gauge@workspace:ui/component/or-gauge":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-gauge@workspace:ui/component/or-gauge"
+  dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/or-components": ^1.1.0
+    "@openremote/or-icon": ^1.1.0
+    "@openremote/or-mwc-components": ^1.1.0
+    "@openremote/or-translate": ^1.1.0
+    "@openremote/util": "workspace:*"
+    gaugeJS: ^1.3.7
     lit: ^2.0.2
   languageName: unknown
   linkType: soft
@@ -5327,6 +5366,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"gaugeJS@npm:^1.3.7":
+  version: 1.3.7
+  resolution: "gaugeJS@npm:1.3.7"
+  checksum: cf7d5a58816c9fab3fb071e36b9339eea89da01264fed32c284243c9de6813b09ec16ca76e04ccaabfb8adfd6c9e6a07abfecd140a7bc443fbc5461a5be55d2f
+  languageName: node
+  linkType: hard
+
 "gensync@npm:^1.0.0-beta.2":
   version: 1.0.0-beta.2
   resolution: "gensync@npm:1.0.0-beta.2"
@@ -5484,6 +5530,13 @@ __metadata:
   version: 1.1.0
   resolution: "grid-index@npm:1.1.0"
   checksum: 0e9d427b606ac644a723719116bb067639c01dccc881f161525e8eddb13b2de3b8a274641ef6d926d7629877ad8ed06b45290d52dd2d8af45532c50ccbbefe43
+  languageName: node
+  linkType: hard
+
+"gridstack@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "gridstack@npm:6.0.2"
+  checksum: 6ed7b323d549e7e7a4a09617994de61a8a22ec7949c1f3042eab274f4e931a0e9df49e9797bfc13cad1f7f6f06ed680137c1356c0b9e075f6bf05447b9a4eec9
   languageName: node
   linkType: hard
 

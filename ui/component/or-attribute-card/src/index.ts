@@ -26,6 +26,7 @@ import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {debounce} from "lodash";
 
 export type ContextMenuOption = "editAttribute" | "editDelta" | "editCurrentValue" | "delete";
 
@@ -45,6 +46,7 @@ const style = css`
     
     .panel {
         position: relative;
+        height: 100%;
     }
     .panel.panel-empty {
         display: flex;
@@ -60,7 +62,7 @@ const style = css`
     }
     
     .panel-content-wrapper {
-        height: 200px;
+        height: 100%;
         display: flex;
         flex-direction: column;
     }
@@ -68,7 +70,7 @@ const style = css`
     .panel-title {
         display: flex;
         align-items: center;
-        margin: -15px -15px 0 0; /* compensate for the click-space of the plusminus button */
+        /*margin: -15px -15px 0 0;*/ /* compensate for the click-space of the plusminus button */
         font-weight: bolder;
         line-height: 1em;
         color: var(--internal-or-asset-viewer-title-text-color);
@@ -113,6 +115,7 @@ const style = css`
     .main-number-icon {   
         font-size: 24px;
         margin-right: 10px;
+        display: flex;
     }
     
     .main-number-unit {
@@ -145,7 +148,7 @@ const style = css`
     }
     
     .delta-wrapper {
-        flex: 0 0 75px;
+        flex: 0 0 50px;
         text-align: right;
         
         /*position: absolute;*/
@@ -160,7 +163,7 @@ const style = css`
     
     .period-selector {
         position: absolute;
-        right: -16px;
+        right: -12px;
         bottom: 0;
     }
     
@@ -203,6 +206,10 @@ export class OrAttributeCard extends LitElement {
     @property()
     private deltaFormat: "absolute" | "percentage" = "absolute";
     @property()
+    public showControls: boolean = true;
+    @property()
+    public showTitle: boolean = true;
+    @property()
     protected _loading: boolean = false;
 
     private error: boolean = false;
@@ -215,6 +222,7 @@ export class OrAttributeCard extends LitElement {
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart<"line", ScatterDataPoint[]>;
+    private resizeObserver?: ResizeObserver;
 
     static get styles() {
         return [
@@ -242,7 +250,7 @@ export class OrAttributeCard extends LitElement {
 
     updated(changedProperties: PropertyValues) {
 
-        if (changedProperties.has("realm")) {
+        if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.assets = [];
             this.loadSettings();
         }
@@ -328,6 +336,13 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
+    shouldShowControls(): boolean { // Checking for string input as well since that was not working
+        return (this.showControls && this.showControls.toString() == "true");
+    }
+    shouldShowTitle(): boolean {
+        return (this.showTitle && this.showTitle.toString() == "true");
+    }
+
     protected render() {
 
         if (!this.assets || !this.assetAttributes || this.assetAttributes.length === 0) {
@@ -335,7 +350,12 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ${this.shouldShowControls() ? html`
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ` : html`
+                                <span>${i18next.t('noAttributesConnected')}</span>
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                            `}
                         </div>
                     </div>
                 </div>
@@ -348,19 +368,31 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ${this.shouldShowControls() ? html`
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ` : html`
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                            `}
                         </div>
                     </div>
                 </div>
             `;
         }
 
+        this.updateComplete.then(() => {
+            this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
+                const elemSize = entries[0].devicePixelContentBoxSize[0].blockSize;
+                this.setLabelSizeByWidth(elemSize);
+            }, 200))
+            this.resizeObserver.observe(this.shadowRoot!.querySelector(".graph-wrapper")!);
+        })
+
         return html`
             <div class="panel" id="attribute-card">
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
-                        <span class="panel-title-text">${this.assets[0].name + " - " + i18next.t(this.assetAttributes[0][1].name!)}</span>
-                        ${getContentWithMenuTemplate(html`
+                        ${this.shouldShowTitle() ? html`<span class="panel-title-text">${this.assets[0].name + " - " + i18next.t(this.assetAttributes[0][1].name!)}</span>` : undefined}
+                        ${this.shouldShowControls() ? getContentWithMenuTemplate(html`
                             <or-mwc-input icon="dots-vertical" type="button"></or-mwc-input>
                         `,
                         [
@@ -382,7 +414,7 @@ export class OrAttributeCard extends LitElement {
                             }
                         ],
                         undefined,
-                        (option) => this.handleMenuSelect(option as ContextMenuOption))}
+                        (option) => this.handleMenuSelect(option as ContextMenuOption)) : undefined}
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
@@ -398,17 +430,21 @@ export class OrAttributeCard extends LitElement {
                                 <span class="delta">${this.delta ? this.deltaPlus + (this.delta.val !== undefined && this.delta.val !== null ? this.delta.val : "") + (this.delta.unit || "") : ""}</span>
                             </div>
                             
-                            <div class="period-selector-wrapper">
-                                ${getContentWithMenuTemplate(
-            html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
-            [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}]
-                .map((option) => {
-                    option.text = i18next.t(option.value);
-                    return option;
-                }),
-            this.period,
-            (value) => this._setPeriodOption(value))}
-                            </div>
+                            ${this.shouldShowControls() ? html`
+                                <div class="period-selector-wrapper">
+                                    ${getContentWithMenuTemplate(
+                                        html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
+                                        [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}].map((option) => {
+                                            option.text = i18next.t(option.value);
+                                            return option;
+                                        }),
+                                        this.period,
+                                        (value) => this._setPeriodOption(value)
+                                    )}
+                                </div>
+                            ` : html`
+                                <or-mwc-input class="period-selector" .type="${InputType.BUTTON}" disabled .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>
+                            `}
                         </div>
                     </div>
                 </div>
@@ -524,12 +560,12 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
-    protected async loadSettings() {
+    protected async loadSettings(reset: boolean = false) {
 
         this.assetAttributes = [];
-        this.period = "day";
-        this.deltaFormat = "absolute";
-        this.mainValueDecimals = 0;
+        if(!this.period || reset) { this.period = "day"; }
+        if(!this.deltaFormat || reset) { this.deltaFormat = "absolute"; }
+        if(!this.mainValueDecimals || reset) { this.mainValueDecimals = 0; }
 
         if (!this.realm) {
             this.realm = manager.getRealm();
@@ -736,7 +772,7 @@ export class OrAttributeCard extends LitElement {
         const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.assets[0].type!);
         const units = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.assets[0].type));
-        this.setMainValueSize(roundedVal.toString());
+        this.setLabelSizeByLength(roundedVal.toString());
 
         if (!units) { return {value: roundedVal, unit: "" }; }
         return {
@@ -790,12 +826,19 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
-    protected setMainValueSize(value: string) {
+    protected setLabelSizeByLength(value: string) {
         if (value.length >= 20) { this.mainValueSize = "xs" }
         if (value.length < 20) { this.mainValueSize = "s" }
         if (value.length < 15) { this.mainValueSize = "m" }
         if (value.length < 10) { this.mainValueSize = "l" }
         if (value.length < 5) { this.mainValueSize = "xl" }
+    }
+
+    protected setLabelSizeByWidth(blockSize: number) {
+        if(blockSize < 60) { this.mainValueSize = "s"; }
+        else if(blockSize < 100) { this.mainValueSize = "m"; }
+        else if(blockSize < 200) { this.mainValueSize = "l"; }
+        else { this.mainValueSize = "xl"; }
     }
 
     protected _setPeriodOption(value: any) {
