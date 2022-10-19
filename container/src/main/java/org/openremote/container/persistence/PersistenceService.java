@@ -37,6 +37,7 @@ import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.notification.SentNotification;
@@ -307,6 +308,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(SyslogEvent.class.getName());
         entityClasses.add(GatewayConnection.class.getName());
         entityClasses.add(ConsoleAppConfig.class.getName());
+        entityClasses.add(Dashboard.class.getName());
         entityClasses.add(ProvisioningConfig.class.getName());
         entityClasses.add(X509ProvisioningConfig.class.getName());
 
