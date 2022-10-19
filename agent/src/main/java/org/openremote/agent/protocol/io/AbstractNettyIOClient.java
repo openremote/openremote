@@ -240,6 +240,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
 
             if (success) {
+                connectRetry = null;
                 onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                 execution.recordResult(null);
             } else {
