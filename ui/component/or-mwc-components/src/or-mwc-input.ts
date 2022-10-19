@@ -14,7 +14,7 @@ import {MDCList, MDCListActionEvent} from "@material/list";
 
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
-import {DefaultColor4, DefaultColor8, Util} from "@openremote/core";
+import {DefaultColor4, DefaultColor5, DefaultColor8, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import {OrIcon} from "@openremote/or-icon";
 import {
@@ -511,9 +511,9 @@ const style = css`
 
     #select-searchable {
         background-color: transparent; 
-        border: 1px solid var(--or-app-color5); 
-        margin: 16px 16px 8px; 
-        width: calc(100% - 66px); 
+        border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)}); 
+        margin: 8px 8px 0; 
+        width: calc(100% - 50px); 
         border-radius: 4px; 
         padding: 4px 16px;
     }
@@ -670,7 +670,7 @@ export class OrMwcInput extends LitElement {
     @property({type: String})
     public placeHolder?: string;
 
-    @property({type: Array})
+    @property({type: Array, hasChanged(oldVal, newVal) { return JSON.stringify(oldVal) !== JSON.stringify(newVal); }})
     public options?: any[] | any;
 
     @property({type: Boolean})

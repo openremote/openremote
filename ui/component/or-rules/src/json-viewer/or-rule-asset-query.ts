@@ -187,7 +187,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const operators = attributeName ? this.getOperators(assetDescriptor, descriptors ? descriptors[0] : undefined, descriptors ? descriptors[1] : undefined, attribute, attributeName) : [];
 
         return html`
-            <or-mwc-input type="${InputType.SELECT}" class="min-width" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-mwc-input>
+            <or-mwc-input type="${InputType.SELECT}" class="min-width" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" ?searchable="${(attributes.length >= 25)}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-mwc-input>
             ${attributeName ? html`<or-mwc-input type="${InputType.SELECT}" class="min-width" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-mwc-input>` : ``}
             ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, asset, attributePredicate) : ``}
         `;
@@ -300,7 +300,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         return html`
             <div class="attribute-group">
             
-                <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .options="${idOptions}" .value="${idValue}" .label="${i18next.t("asset")}"></or-mwc-input>
+                <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .searchable="${(idOptions.length >= 25)}" .options="${idOptions}" .value="${idValue}" .label="${i18next.t("asset")}"></or-mwc-input>
             
                 ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
                     

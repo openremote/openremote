@@ -149,9 +149,9 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         }
 
         return html`
-            <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .options="${idOptions}" .value="${idValue}"></or-mwc-input>
+            <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" ?searchable="${(idOptions.length >= 25)}" .options="${idOptions}" .value="${idValue}"></or-mwc-input>
             ${attributes.length > 0 ? html`
-                <or-mwc-input id="attributeSelect" class="min-width" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>
+                <or-mwc-input id="attributeSelect" class="min-width" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" ?searchable="${(attributes.length >= 25)}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>
                 ${attributeInput}
             ` : html`
                 <or-translate value="No attributes with write permission"></or-translate>
