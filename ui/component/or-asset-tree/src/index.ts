@@ -352,6 +352,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _expandTimer?: number = undefined;
     private _latestSelected: UiAssetTreeNode | undefined = undefined;
 
+    protected assetsChildren: {
+        [key: string]: UiAssetTreeNode[]
+    } = {};
+
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
     }
@@ -1688,6 +1692,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._nodes = [];
         } else {
             if (manager.isRestrictedUser()) {
+                console.log('isRestricted');
                 // Any assets whose parents aren't accessible need to be re-parented
                 assets.forEach(asset => {
                     if (!!asset.parentId && !!asset.path && assets.find(a => a.id === asset.parentId) === undefined) {
@@ -1728,6 +1733,28 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 });
             }
 
+            this.assetsChildren = {};
+
+            assets.forEach((asset: AssetWithReparentId) => {
+                if (asset.parentId) {
+                    if (!this.assetsChildren[asset.parentId]) {
+                        this.assetsChildren[asset.parentId] = [];
+                    }
+                    this.assetsChildren[asset.parentId].push({
+                        asset: asset
+                    } as UiAssetTreeNode);
+                }
+
+                if (asset.reparentId) {
+                    if (!this.assetsChildren[asset.reparentId]) {
+                        this.assetsChildren[asset.reparentId] = [];
+                    }
+                    this.assetsChildren[asset.reparentId].push({
+                        asset: asset
+                    } as UiAssetTreeNode);
+                }
+            });
+
             rootAssets.sort(sortFunction);
             rootAssets.forEach((rootAsset) => this._buildChildTreeNodes(rootAsset, assets, sortFunction));
             this._nodes = rootAssets;
@@ -1757,11 +1784,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _buildChildTreeNodes(treeNode: UiAssetTreeNode, assets: AssetWithReparentId[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
-        treeNode.children = assets.filter((asset) => asset.parentId === treeNode.asset!.id || asset.reparentId === treeNode.asset!.id).map((asset) => {
-            return {
-                asset: asset
-            } as UiAssetTreeNode;
-        }).sort(sortFunction);
+        let children: UiAssetTreeNode[] | undefined = this.assetsChildren[treeNode.asset!.id!];
+        treeNode.children = children ? children.sort(sortFunction) : [];
 
         if (treeNode.children.length > 0) {
             treeNode.expandable = true;
