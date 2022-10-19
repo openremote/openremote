@@ -149,21 +149,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             return;
         }
 
-        // Load custom handlers
-        this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
-            .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
-            .collect(Collectors.toList());
-
-        // Start each custom handler
-        for (MQTTHandler handler : customHandlers) {
-            try {
-                handler.start(container);
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "MQTT custom handler threw an exception whilst starting: handler=" + handler.getName(), e);
-                throw e;
-            }
-        }
-
         // Configure and start the broker
         Configuration config = new ConfigurationImpl();
         config.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
@@ -196,7 +181,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }));
 
         server.start();
-
         LOG.fine("Started MQTT broker");
 
         // Add notification handler for subscribe/unsubscribe and publish events
@@ -232,6 +216,21 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // Create producer
         producer = internalSession.createProducer();
+
+        // Load custom handlers
+        this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
+            .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
+            .collect(Collectors.toList());
+
+        // Start each custom handler
+        for (MQTTHandler handler : customHandlers) {
+            try {
+                handler.start(container);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "MQTT custom handler threw an exception whilst starting: handler=" + handler.getName(), e);
+                throw e;
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -434,6 +433,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     }
 
     public static String connectionToString(RemotingConnection connection) {
+        if (connection == null) {
+            return "";
+        }
         return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + connection.getSubject();
     }
 

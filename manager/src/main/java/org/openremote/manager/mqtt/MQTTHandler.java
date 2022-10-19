@@ -243,11 +243,11 @@ public abstract class MQTTHandler {
     }
 
     public static boolean topicRealmAllowed(KeycloakSecurityContext securityContext, Topic topic) {
-        return securityContext.getRealm().equals(topicRealm(topic)) || KeycloakIdentityProvider.isSuperUser(securityContext);
+        return securityContext != null && securityContext.getRealm().equals(topicRealm(topic)) || KeycloakIdentityProvider.isSuperUser(securityContext);
     }
 
     public static boolean topicClientIdMatches(RemotingConnection connection, Topic topic) {
-        return Objects.equals(connection.getClientID(), topicTokenIndexToString(topic, 1));
+        return connection != null && Objects.equals(connection.getClientID(), topicTokenIndexToString(topic, 1));
     }
 
     public static boolean topicTokenCountGreaterThan(Topic topic, int size) {

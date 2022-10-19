@@ -46,8 +46,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         given: "the container environment is started"
         List<SharedEvent> receivedEvents = []
         List<Object> receivedValues = []
-        MQTT_IOClient client
-        MQTT_IOClient newClient
+        MQTT_IOClient client = null
+        MQTT_IOClient newClient = null
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -198,8 +198,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "The value of the attribute should be updated and the client should have received the event"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
-            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
-            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 70d
+            assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 70d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
             assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
@@ -215,8 +214,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the value of the attribute should be updated and the client should have received the event"
         conditions.eventually {
-            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
-            assert !asset.getAttribute("lights").get().value.orElse(true)
+            assert !assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("lights").get().value.orElse(true)
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
             assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
@@ -232,8 +230,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the value of the attribute should be updated and the client should have received the event"
         conditions.eventually {
-            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
-            assert asset.getAttribute("lights").get().value.orElse(false)
+            assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("lights").get().value.orElse(false)
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
             assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
@@ -509,8 +506,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "The value of the attribute should be updated and the first client should have received the event"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
-            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
-            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 170d
+            assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 170d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
             assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
@@ -532,8 +528,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         and: "The last will message should have updated the value of the attribute and the first client should have received the event"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
-            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
-            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 1000d
+            assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 1000d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
             assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
@@ -549,8 +544,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "The value of the attribute should be updated and the first client should have received the event"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
-            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
-            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 170d
+            assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 170d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
             assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
