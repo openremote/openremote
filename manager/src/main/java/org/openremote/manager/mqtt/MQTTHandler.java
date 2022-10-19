@@ -36,7 +36,6 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
-import org.openremote.model.util.Pair;
 
 import javax.security.auth.Subject;
 import java.util.Objects;
@@ -44,6 +43,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 
 /**
  * This allows custom handlers to be discovered by the {@link MQTTBrokerService} during system startup using the
@@ -166,11 +167,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().fine("Anonymous connection subscriptions not supported by this handler, topic=" + topic);
+            getLogger().finest("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
         if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", user=" + securityContext);
+            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
         return canSubscribe(connection, securityContext, topic);
@@ -182,11 +183,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic);
+            getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
         if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", user=" + securityContext);
+            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
         return canPublish(connection, securityContext, topic);

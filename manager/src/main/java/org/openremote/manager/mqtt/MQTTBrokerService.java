@@ -439,7 +439,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     }
 
     public static String connectionToString(RemotingConnection connection) {
-        return "connection=" + connection.getRemoteAddress() + ", subject=" + connection.getSubject();
+        return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + connection.getSubject();
     }
 
     public RemotingConnection getConnectionFromClientID(String clientID) {
