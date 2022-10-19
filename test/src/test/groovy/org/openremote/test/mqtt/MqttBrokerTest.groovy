@@ -46,7 +46,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         given: "the container environment is started"
         List<SharedEvent> receivedEvents = []
         List<Object> receivedValues = []
-
+        MQTT_IOClient client
+        MQTT_IOClient newClient
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -64,7 +65,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a mqtt client connects with invalid credentials"
         def wrongUsername = "master:" + keycloakTestSetup.serviceUser.username
-        MQTT_IOClient client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(wrongUsername, password), null, null)
+        client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(wrongUsername, password), null, null)
         client.connect()
 
         then: "the client connection status should be in error"
@@ -489,7 +490,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         newClientId = "newClient"
         def username2 = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser2.username // realm and OAuth client id
         def password2 = keycloakTestSetup.serviceUser2.secret
-        MQTT_IOClient newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString(), ValueUtil.parse("1000").orElse(null), false))
+        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString(), ValueUtil.parse("1000").orElse(null), false))
         newClient.connect()
 
         then: "the client should be connected"
@@ -542,9 +543,9 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "the new client tries to publish again"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
         payload = "170"
-        client.sendMessage(new MQTTMessage<String>(topic, payload))
+        newClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "The value of the attribute should be updated and the first client should have received the event"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
@@ -606,6 +607,14 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert newClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).isEmpty()
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
+        }
+
+        cleanup: "disconnect the clients"
+        if (client != null) {
+            client.disconnect()
+        }
+        if (newClient != null) {
+            newClient.disconnect()
         }
     }
 }

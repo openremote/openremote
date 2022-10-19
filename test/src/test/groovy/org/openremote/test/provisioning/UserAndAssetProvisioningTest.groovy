@@ -72,6 +72,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        MQTT_IOClient device1Client
+        MQTT_IOClient deviceNClient
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -148,7 +150,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         List<String> subscribeFailures = []
         List<ConnectionStatus> connectionStatuses = []
         Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
-        MQTT_IOClient device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
+        device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         device1Client.addConnectionStatusConsumer({connectionStatus ->
             connectionStatuses.add(connectionStatus)})
@@ -384,7 +386,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         def deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         def mqttDeviceNClientId = UniqueIdentifierGenerator.generateId("deviceN")
-        MQTT_IOClient deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
         deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
