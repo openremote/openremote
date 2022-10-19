@@ -87,6 +87,8 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, ActiveMQServerSessionPlugin {
 
+    public static final String MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS = "MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS";
+    public static int MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT = 5000;
     public static final int PRIORITY = MED_PRIORITY;
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
@@ -123,14 +125,14 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void init(Container container) throws Exception {
         host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0");
         port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883);
-
+        int debounceMillis = getInteger(container.getConfig(), MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS, MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT);
         authorisationService = container.getService(AuthorisationService.class);
         clientEventService = container.getService(ClientEventService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         executorService = container.getExecutorService();
         timerService = container.getService(TimerService.class);
-        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::forceDisconnectUser, 10000);
+        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::forceDisconnectUser, debounceMillis);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -267,6 +269,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 } else if (persistenceEvent.getEntity() instanceof UserAssetLink userAssetLink) {
                     String userID = userAssetLink.getId().getUserId();
 
+                    LOG.fine("User asset links modified for user so force disconnecting to renew authorisations: userID=" + userID);
                     // Debounce force disconnect of this user's sessions
                     userAssetDisconnectDebouncer.call(userID);
                 }
@@ -275,6 +278,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void stop(Container container) throws Exception {
+
+        userAssetDisconnectDebouncer.cancelAll(true);
+
         server.stop();
         LOG.fine("Stopped MQTT broker");
 
