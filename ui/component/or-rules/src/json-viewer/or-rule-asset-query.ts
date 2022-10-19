@@ -56,6 +56,12 @@ const style = css`
     .attribute-group > * {
         margin: 10px 3px 6px 3px;
     }
+    .invalidLabel {
+        display: flex;
+        align-items: center;
+        margin: 14px 3px auto 0;
+        height: 48px; /* Same as the icon size */
+    }
 `;
 
 @customElement("or-rule-asset-query")
@@ -259,18 +265,18 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetType = getAssetTypeFromQuery(this.query);
 
         if (!assetType) {
-            return html``;
+            return html`<span class="invalidLabel">${i18next.t('errorOccurred')}</span>`;
         }
 
         const assetTypeInfo = this.assetInfos ? this.assetInfos.find((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
 
         if (!assetTypeInfo) {
-            return html``;
+            return html`<span class="invalidLabel">${i18next.t('errorOccurred')}</span>`;
         }
 
         if (!this._assets) {
             this.loadAssets(assetType);
-            return html``;
+            return html`<span class="invalidLabel">${i18next.t('loading')}</span>`;
         }
 
         if (!this.query.attributes) {

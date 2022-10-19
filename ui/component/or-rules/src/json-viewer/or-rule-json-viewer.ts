@@ -202,27 +202,27 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         const targetTypeMap = getTargetTypeMap(this._rule);
         return html`
             <div class="section-container">                                    
-                <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetInfos="${this._whenAssetInfos}" ?readonly="${this.readonly}"
-                              .assetProvider="${async (type: string) => {
-                                  if(this._activeAssetPromises.has(type)) {
-                                      const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch
-                                      return data.assets;
-                                  } else {
-                                      const promise = getAssetsByType(type, this._loadedAssets);
-                                      this._activeAssetPromises.set(type, promise);
-                                      const data = await promise;
-                                      this._activeAssetPromises.delete(type);
-                                      this._loadedAssets = data.loadedAssets!;
-                                      return data.assets;
-                                  }
-                              }}"
-                ></or-rule-when>
+                <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetInfos="${this._whenAssetInfos}" .assetProvider="${async (type: string) => this.loadAssets(type)}" ?readonly="${this.readonly}"></or-rule-when>
             </div>
         
             <div class="section-container">              
-                <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetInfos="${this._actionAssetInfos}" ?readonly="${this.readonly}"></or-rule-then-otherwise>
+                <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetInfos="${this._actionAssetInfos}" .assetProvier="${async (type: string) => this.loadAssets(type)}" ?readonly="${this.readonly}"></or-rule-then-otherwise>
             </div>
         `;
+    }
+
+    protected async loadAssets(type: string): Promise<Asset[] | undefined> {
+        if(this._activeAssetPromises.has(type)) {
+            const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch
+            return data.assets;
+        } else {
+            const promise = getAssetsByType(type, this._loadedAssets);
+            this._activeAssetPromises.set(type, promise);
+            const data = await promise;
+            this._activeAssetPromises.delete(type);
+            this._loadedAssets = data.loadedAssets!;
+            return data.assets;
+        }
     }
 
     protected loadAssetDescriptors(useActionConfig: boolean) {

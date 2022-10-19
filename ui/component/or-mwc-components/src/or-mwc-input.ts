@@ -1032,7 +1032,7 @@ export class OrMwcInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}">
+                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}" style="width: inherit !important;">
                                     ${this.searchable ? html`
                                         <input class="mdc-text-field__input" 
                                             autofocus
@@ -1453,7 +1453,11 @@ export class OrMwcInput extends LitElement {
                         (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
 
                         // Set width of fixed select menu to match the component width
-                        this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
+                        const observer = new IntersectionObserver((entries, observer) => {
+                            (entries[0].target as HTMLElement).style.width = entries[0].boundingClientRect.width + "px";
+                            observer.unobserve(entries[0].target);
+                        })
+                        observer.observe(this.shadowRoot!.getElementById("component")!);
 
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents

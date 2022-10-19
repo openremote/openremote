@@ -59,6 +59,9 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetInfos?: AssetTypeInfo[];
 
+    @property({type: Object})
+    public assetProvider?: (type: string) => Promise<Asset[] | undefined>
+
     @property({type: Array, attribute: false})
     protected _assets?: Asset[];
 
@@ -201,13 +204,19 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
     }
 
     protected loadAssets(type: string) {
-        manager.rest.api.AssetResource.queryAssets({
-            types: [
-                type
-            ],
-            orderBy: {
-                property: AssetQueryOrderBy$Property.NAME
-            }
-        }).then((response) => this._assets = response.data);
+        if(this.assetProvider != null) {
+            this.assetProvider(type).then(assets => {
+                this._assets = assets;
+            })
+        } else {
+            manager.rest.api.AssetResource.queryAssets({
+                types: [
+                    type
+                ],
+                orderBy: {
+                    property: AssetQueryOrderBy$Property.NAME
+                }
+            }).then((response) => this._assets = response.data);
+        }
     }
 }
