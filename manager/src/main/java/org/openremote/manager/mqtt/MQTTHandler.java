@@ -238,6 +238,10 @@ public abstract class MQTTHandler {
         return topicTokenIndexToString(topic, 0);
     }
 
+    public static String topicClientID(Topic topic) {
+        return topicTokenIndexToString(topic, 1);
+    }
+
     public static boolean topicRealmAllowed(KeycloakSecurityContext securityContext, Topic topic) {
         return securityContext.getRealm().equals(topicRealm(topic)) || KeycloakIdentityProvider.isSuperUser(securityContext);
     }
@@ -256,15 +260,6 @@ public abstract class MQTTHandler {
 
     protected static Subject getSubjectFromConnection(RemotingConnection connection) {
         return connection != null ? connection.getSubject() : null;
-    }
-
-    protected static RemotingConnection getConnectionFromSubject(Subject subject) {
-        return subject.getPrincipals()
-            .stream()
-            .filter(p -> p instanceof MQTTConnectionPrincipal)
-            .findFirst()
-            .map(p -> ((MQTTConnectionPrincipal)p).getConnection())
-            .orElse(null);
     }
 
     protected static KeycloakSecurityContext getSecurityContextFromSubject(Subject subject) {

@@ -82,7 +82,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(ConnectionConstants.SESSION_OPEN, true);
 
         // Put a close connection runnable into the headers for the client event service
-        Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection);
+        Runnable closeRunnable = () -> {
+            if (mqttBrokerService != null) {
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        };
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         return true;

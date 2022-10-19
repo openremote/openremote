@@ -154,6 +154,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
             .collect(Collectors.toList());
 
+        // Start each custom handler
+        for (MQTTHandler handler : customHandlers) {
+            try {
+                handler.start(container);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "MQTT custom handler threw an exception whilst starting: handler=" + handler.getName(), e);
+                throw e;
+            }
+        }
+
         // Configure and start the broker
         Configuration config = new ConfigurationImpl();
         config.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
@@ -189,7 +199,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         LOG.fine("Started MQTT broker");
 
-
         // Add notification handler for subscribe/unsubscribe and publish events
         server.getActiveMQServer().getManagementService().addNotificationListener(notification -> {
             if (notification.getType() == CoreNotificationType.CONSUMER_CREATED || notification.getType() == CoreNotificationType.CONSUMER_CLOSED) {
@@ -223,16 +232,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // Create producer
         producer = internalSession.createProducer();
-
-        // Start each custom handler
-        for (MQTTHandler handler : customHandlers) {
-            try {
-                handler.start(container);
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "MQTT custom handler threw an exception whilst starting: handler=" + handler.getName(), e);
-                throw e;
-            }
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -377,10 +376,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return customHandlers;
     }
 
-    public Runnable getForceDisconnectRunnable(RemotingConnection connection) {
-        return () -> doForceDisconnect(connection);
-    }
-
     public void forceDisconnectUser(String userID) {
         if (TextUtil.isNullOrEmpty(userID)) {
             return;
@@ -452,9 +447,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         if (connection == null) {
             // Try and find the client ID from the sessions
-            for (ServerSession serverSession : server.getActiveMQServer().getSessions()) {
-                if (serverSession.getRemotingConnection() != null && Objects.equals(clientID, serverSession.getRemotingConnection().getClientID())) {
-                    connection = serverSession.getRemotingConnection();
+            for (RemotingConnection remotingConnection : server.getActiveMQServer().getRemotingService().getConnections()) {
+                if (Objects.equals(clientID, remotingConnection.getClientID())) {
+                    connection = remotingConnection;
                     clientIDConnectionMap.put(clientID, connection);
                     break;
                 }
@@ -462,6 +457,25 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         return connection;
+    }
+
+    // TODO: Remove this if/when ActiveMQ implements https://issues.apache.org/jira/browse/ARTEMIS-4059
+    /**
+     * Tries to find the correct {@link RemotingConnection} for the specified subject with the assumption that the
+     * client ID is contained in the address (this is important for multiple connections from the same subject)
+     */
+    protected RemotingConnection getConnectionFromSubjectAndTopic(Subject subject, Topic topic) {
+        String clientID = MQTTHandler.topicClientID(topic);
+
+        if (clientID == null) {
+            return null;
+        }
+
+        return server.getActiveMQServer().getRemotingService().getConnections().stream().filter(connection ->
+                connection.getSubject() == subject && Objects.equals(clientID, connection.getClientID())
+            )
+            .findFirst()
+            .orElse(null);
     }
 
     // TODO: Remove this

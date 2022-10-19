@@ -130,8 +130,6 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             Subject subject = lc.getSubject();
 
             if (subject != null) {
-                // Insert remoting connection for use in authorisation
-                subject.getPrincipals().add(new MQTTConnectionPrincipal(remotingConnection));
                 // Ensure subject is available when afterCreateConnection is fired
                 remotingConnection.setSubject(subject);
             }
@@ -163,17 +161,18 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     protected boolean verifyRights(Subject subject, String address, boolean isWrite) {
-        KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
-        RemotingConnection connection = MQTTHandler.getConnectionFromSubject(subject);
         Topic topic;
 
         try {
             // Get MQTT topic from address
             topic = Topic.fromAddress(address, brokerService.getWildcardConfiguration());
         } catch (IllegalArgumentException e) {
-            LOG.log(Level.WARNING, "Invalid topic provided by client '" + address + "', " + connectionToString(connection), e);
+            LOG.log(Level.INFO, "Invalid topic provided by client '" + address, e);
             return false;
         }
+
+        KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
+        RemotingConnection connection = brokerService.getConnectionFromSubjectAndTopic(subject, topic);
 
         if (isWrite && topic.hasWildcard()) {
             return false;
