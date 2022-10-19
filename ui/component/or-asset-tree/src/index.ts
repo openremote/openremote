@@ -1692,7 +1692,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._nodes = [];
         } else {
             if (manager.isRestrictedUser()) {
-                console.log('isRestricted');
                 // Any assets whose parents aren't accessible need to be re-parented
                 assets.forEach(asset => {
                     if (!!asset.parentId && !!asset.path && assets.find(a => a.id === asset.parentId) === undefined) {
