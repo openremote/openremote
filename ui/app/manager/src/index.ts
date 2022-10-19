@@ -23,7 +23,7 @@ import {
 import "./pages/page-map";
 import {PageMapConfig, pageMapProvider, pageMapReducer} from "./pages/page-map";
 import "./pages/page-assets";
-import {PageAssetsConfig, pageAssetsProvider} from "./pages/page-assets";
+import {PageAssetsConfig, pageAssetsProvider, pageAssetsReducer} from "./pages/page-assets";
 import "./pages/page-gateway";
 import {pageGatewayProvider} from "./pages/page-gateway";
 import "./pages/page-insights";
@@ -48,7 +48,8 @@ declare var CONFIG_URL_PREFIX: string;
 
 const rootReducer = combineReducers({
     app: appReducer,
-    map: pageMapReducer
+    map: pageMapReducer,
+    assets: pageAssetsReducer
 });
 
 type RootState = ReturnType<typeof rootReducer>;

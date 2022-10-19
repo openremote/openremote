@@ -1107,6 +1107,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @query("#editor")
     protected editor!: OrEditAssetPanel;
 
+    @query("#asset-header")
+    protected headerElem!: HTMLDivElement;
+
+    @query("#view-container")
+    protected containerElem!: HTMLDivElement;
+
+
     constructor() {
         super();
         this.addEventListener(OrEditAssetModifiedEvent.NAME, (ev: OrEditAssetModifiedEvent) => this._onAssetModified(ev.detail));
@@ -1369,7 +1376,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }});
 
                 content = html`                
-                    <div id="view-container" style="${viewerConfig.viewerStyles ? styleMap(viewerConfig.viewerStyles) : ""}">
+                    <div id="view-container" style="${viewerConfig.viewerStyles ? styleMap(viewerConfig.viewerStyles) : ""}" @scroll="${this._toggleHeaderShadow}">
                         <div id="left-column" class="panelContainer">
                             ${leftColumn}
                         </div>
@@ -1404,6 +1411,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 ${content}
             </div>
         `;
+    }
+
+    protected _toggleHeaderShadow() {
+        (this.containerElem.scrollTop > 0) ? this.headerElem.classList.add('scrolled') : this.headerElem.classList.remove('scrolled');
     }
 
     protected _isReadonly() {
