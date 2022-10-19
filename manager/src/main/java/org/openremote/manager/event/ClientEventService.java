@@ -268,11 +268,7 @@ public class ClientEventService implements ContainerService {
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
                             EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
-                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                            boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
-                            boolean anonymousUser = authContext == null;
-
-                            eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, anonymousUser, subscription);
+                            eventSubscriptions.createOrUpdate(sessionKey, subscription);
                             subscription.setSubscribed(true);
                             sendToSession(sessionKey, subscription);
                         })
@@ -305,7 +301,7 @@ public class ClientEventService implements ContainerService {
         // Add pending internal subscriptions
         if (!pendingInternalSubscriptions.isEmpty()) {
             pendingInternalSubscriptions.forEach(subscription ->
-                eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, false, subscription));
+                eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, subscription));
         }
 
         pendingInternalSubscriptions = null;
@@ -327,7 +323,7 @@ public class ClientEventService implements ContainerService {
             }
             pendingInternalSubscriptions.add(subscription);
         } else {
-            eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, false, subscription);
+            eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, subscription);
         }
         return subscriptionId;
     }

@@ -22,6 +22,7 @@ package org.openremote.manager.asset;
 import com.fasterxml.jackson.databind.node.NullNode;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
@@ -60,14 +61,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
     protected final AssetStorageService assetStorageService;
     protected final MessageBrokerService messageBrokerService;
+    protected final ClientEventService clientEventService;
 
     public AssetResourceImpl(TimerService timerService,
                              ManagerIdentityService identityService,
                              AssetStorageService assetStorageService,
-                             MessageBrokerService messageBrokerService) {
+                             MessageBrokerService messageBrokerService,
+                             ClientEventService clientEventService) {
         super(timerService, identityService);
         this.assetStorageService = assetStorageService;
         this.messageBrokerService = messageBrokerService;
+        this.clientEventService = clientEventService;
     }
 
     @Override
@@ -84,7 +88,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             AssetQuery query = new AssetQuery().userIds(getUserId());
 
             if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
-                throw new NotAuthorizedException("User not authorized to execute specified query");
+                throw new ForbiddenException("User not authorized to execute specified query");
             }
 
             List<Asset<?>> assets = assetStorageService.findAll(query);
@@ -417,20 +421,19 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             value = null;
         }
 
-        // Process asynchronously but block for a little while waiting for the result
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
+        AttributeEvent event = new AttributeEvent(assetId, attributeName, value);
 
-        if (isAuthenticated()) {
-            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+        // Check authorisation
+        if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
+            throw new ForbiddenException("Cannot write specified attribute: " + event);
         }
 
-        AttributeWriteResult result = doAttributeWrite(new AttributeRef(assetId, attributeName), value, headers);
+        // Process asynchronously but block for a little while waiting for the result
+        AttributeWriteResult result = doAttributeWrite(event);
 
         if (result.getFailure() != null) {
             switch (result.getFailure()) {
                 case ILLEGAL_SOURCE:
-                case NO_AUTH_CONTEXT:
                 case INSUFFICIENT_ACCESS:
                 case INVALID_REALM:
                     status = FORBIDDEN;
@@ -457,16 +460,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeState[] attributeStates) {
 
         // Process asynchronously but block for a little while waiting for the result
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
-
-        if (isAuthenticated()) {
-            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
-        }
-
-        return Arrays.stream(attributeStates).map(attributeState ->
-             doAttributeWrite(attributeState.getRef(), attributeState.getValue().orElse(null), headers)
-        ).toArray(AttributeWriteResult[]::new);
+        return Arrays.stream(attributeStates).map(attributeState -> {
+            AttributeEvent event = new AttributeEvent(attributeState);
+            if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
+                return new AttributeWriteResult(event.getAttributeRef(), AttributeWriteFailure.INSUFFICIENT_ACCESS);
+            }
+            return doAttributeWrite(event);
+        }).toArray(AttributeWriteResult[]::new);
     }
 
     @Override
@@ -576,7 +576,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
-            throw new NotAuthorizedException("User not authorized to execute specified query");
+            throw new ForbiddenException("User not authorized to execute specified query");
         }
 
         List<Asset<?>> result = assetStorageService.findAll(query);
@@ -587,22 +587,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         return result.toArray(new Asset[0]);
     }
 
-    protected AttributeWriteResult doAttributeWrite(AttributeRef ref, Object value, Map<String, Object> headers) {
+    protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
         AttributeWriteFailure failure = null;
 
         try {
-            AttributeEvent event = new AttributeEvent(
-                ref, value, timerService.getCurrentTimeMillis()
-            );
-
             if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Write attribute value request: " + event);
             }
 
             // Process synchronously
-            Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
-                AssetProcessingService.ASSET_QUEUE, event, headers
-            );
+            Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeader(
+                AssetProcessingService.ASSET_QUEUE, event, AttributeEvent.HEADER_SOURCE, CLIENT);
 
             if (result instanceof AssetProcessingException) {
                 AssetProcessingException processingException = (AssetProcessingException) result;
@@ -615,7 +610,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             failure = AttributeWriteFailure.UNKNOWN;
         }
 
-        return new AttributeWriteResult(ref, failure);
+        return new AttributeWriteResult(event.getAttributeRef(), failure);
     }
 
     @Override

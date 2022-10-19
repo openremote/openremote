@@ -47,10 +47,7 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.EntityManager;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -148,7 +145,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             StringBuilder error = new StringBuilder();
 
-            Source source = exchange.getIn().getHeader(HEADER_SOURCE, "unknown source", Source.class);
+            Source source = exchange.getIn().getHeader(HEADER_SOURCE, CLIENT, Source.class);
             if (source != null) {
                 error.append("Error processing from ").append(source);
             }
@@ -208,21 +205,39 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 return false;
             }
 
-            // Check realm
+            if (authContext != null && authContext.isSuperUser()) {
+                return true;
+            }
+
+            // Check realm against user
             if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
                 requestedRealm)) {
                 LOG.fine("Realm is inactive, inaccessible or nonexistent: " + requestedRealm);
                 return false;
             }
 
-            if (authContext != null) {
-                // Users must have write attributes role
-                if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
-                    Constants.KEYCLOAK_CLIENT_ID)) {
-                    LOG.finer("User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
-                    return false;
-                }
+            // Users must have write attributes role
+            if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
+                Constants.KEYCLOAK_CLIENT_ID)) {
+                LOG.finer("User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                return false;
+            }
 
+            // Have to load the asset and attribute to perform additional checks - should permissions be moved out of the
+            // asset model (possibly if the performance is determined to be not good enough)
+            // TODO: Use a targeted query to retrieve just the info we need
+            Asset<?> asset = assetStorageService.find(attributeEvent.getAssetId());
+            Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getAttributeName()).orElse(null) : null;
+
+            if (asset == null || !asset.hasAttribute(attributeEvent.getAttributeName())) {
+                LOG.finer("Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getAssetId());
+                return false;
+            } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
+                LOG.finer("Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getAttributeRef());
+                return false;
+            }
+
+            if (authContext != null) {
                 // Check restricted user
                 if (identityService.getIdentityProvider().isRestrictedUser(authContext)) {
                     // Must be asset linked to user
@@ -231,9 +246,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         LOG.finer("User is not linked to asset '" + attributeEvent.getAssetId() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
                         return false;
                     }
-                    // Must be writable by restricted client
-                    Asset<?> asset = assetStorageService.find(attributeEvent.getAssetId());
-                    Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getAttributeName()).orElse(null) : null;
 
                     if (attribute == null || !attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
                         LOG.finer("Asset attribute doesn't support restricted write on '" + attributeEvent.getAttributeRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
@@ -242,8 +254,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
             } else {
                 // Check attribute has public write flag for anonymous write
-                Asset<?> asset = assetStorageService.find(attributeEvent.getAssetId());
-                Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getAttributeName()).orElse(null) : null;
                 if (attribute == null || !attribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
                     LOG.finer("Asset doesn't support public write on '" + attributeEvent.getAttributeRef() + "': username=null");
                     return false;

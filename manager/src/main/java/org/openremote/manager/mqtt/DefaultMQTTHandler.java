@@ -58,7 +58,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public static final int PRIORITY = Integer.MIN_VALUE + 1000;
     public static final String ASSET_TOPIC = "asset";
     public static final String ATTRIBUTE_TOPIC = "attribute";
-    public static final String ATTRIBUTE_WRITE_TOPIC = "writeattribute";
     public static final String ATTRIBUTE_VALUE_TOPIC = "attributevalue";
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
@@ -263,7 +262,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
         // We don't know the value at this point so just use a null value for authorization (value type will be handled
         // when the event is processed)
-        if (clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
+        if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
             LOG.info("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
@@ -312,7 +311,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public Set<String> getPublishListenerTopics() {
         return Set.of(
-            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD,
             TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD
         );
     }

@@ -178,7 +178,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
              }
 
              // Regular user must have role
-             if (!filter.isPublicEvents() && !isAnonymous && !auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+             if (!filter.isPublicEvents() && (isAnonymous || !auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID))) {
                  return false;
              }
 
@@ -347,7 +347,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 container.getService(TimerService.class),
                 identityService,
                 this,
-                container.getService(MessageBrokerService.class)
+                container.getService(MessageBrokerService.class),
+                clientEventService
             )
         );
 

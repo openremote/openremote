@@ -261,8 +261,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "the client updates one of the provisioned asset's attributes"
         device1Client.sendMessage(
             new MQTTMessage<String>(
-                    "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC",
-                    ValueUtil.asJSON(new AttributeEvent(asset.id, "customAttribute", 99d)).orElse(null)
+                    "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/customAttribute/${asset.id}",
+                    "99"
             )
         )
 

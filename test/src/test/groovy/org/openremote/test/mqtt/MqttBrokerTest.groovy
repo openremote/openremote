@@ -191,8 +191,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "a mqtt client publishes to an asset attribute"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC".toString()
-        def payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 70)).get()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
+        def payload = "70"
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "The value of the attribute should be updated and the client should have received the event"
@@ -208,7 +208,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "a mqtt client publishes to an asset attribute"
-        payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "lights", false)).get()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/lights/${managerTestSetup.apartment1HallwayId}".toString()
+        payload = Boolean.FALSE.toString()
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the value of the attribute should be updated and the client should have received the event"
@@ -501,8 +502,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         client.addMessageConsumer(topic, eventConsumer)
 
         and: "the new client publishes to a an attribute topic"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC".toString()
-        payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 170)).get()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
+        payload = "170"
         newClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "The value of the attribute should be updated and the first client should have received the event"
@@ -541,8 +542,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         receivedEvents.clear()
 
         when: "the new client tries to publish again"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC".toString()
-        payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 170)).get()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
+        payload = "170"
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "The value of the attribute should be updated and the first client should have received the event"

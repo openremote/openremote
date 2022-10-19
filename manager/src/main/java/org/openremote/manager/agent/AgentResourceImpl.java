@@ -81,7 +81,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
                 throw new NotFoundException("Parent asset does not exist");
             }
             if (realm != null && !asset.getRealm().equals(realm)) {
-                throw new NotAuthorizedException("Parent asset not in the correct realm: agent ID =" + parentId);
+                throw new ForbiddenException("Parent asset not in the correct realm: agent ID =" + parentId);
             }
         }
 
@@ -119,7 +119,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         }
 
         if (realm != null && !realm.equals(agent.getRealm())) {
-            throw new NotAuthorizedException("Agent not in the correct realm: agent ID =" + agentId);
+            throw new ForbiddenException("Agent not in the correct realm: agent ID =" + agentId);
         }
 
         List<AssetTreeNode> foundAssets = new ArrayList<>();
@@ -159,7 +159,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         }
 
         if (realm != null && !realm.equals(agent.getRealm())) {
-            throw new NotAuthorizedException("Agent not in the correct realm: agent ID =" + agentId);
+            throw new ForbiddenException("Agent not in the correct realm: agent ID =" + agentId);
         }
 
         List<AssetTreeNode> foundAssets = new ArrayList<>();
