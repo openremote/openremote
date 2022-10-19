@@ -41,6 +41,7 @@ import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.WeatherAsset
 import org.openremote.model.attribute.Attribute
@@ -177,6 +178,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the client publishes a valid x509 certificate that has been signed by the CA stored in the provisioning config"
+        def existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
         device1Client.sendMessage(
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
@@ -194,9 +196,14 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
+        and: "the connection should have been maintained"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 0.5).eventually {
+            assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) == existingConnection
+        }
+
         when: "the client gets abruptly disconnected"
         device1Responses.clear()
-        def existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
+        existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
 //        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).config().setOption(ChannelOption.SO_LINGER, 0I)
         ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).close()
 

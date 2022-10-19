@@ -194,6 +194,13 @@ public abstract class MQTTHandler {
     }
 
     /**
+     * Called when {@link org.openremote.model.asset.UserAssetLink}s for a restricted user are changed and that user
+     * has an active connection (subject can be accessed from the connection).
+     */
+    public void onUserAssetLinksChanged(RemotingConnection connection) {
+    }
+
+    /**
      * Indicates if this handler will handle the specified topic; independent of whether it is a publish or subscribe.
      * Should generally check the third token onwards unless {@link #handlesTopic} has been overridden.
      */

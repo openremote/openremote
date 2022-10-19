@@ -40,6 +40,8 @@ import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Logger;
@@ -62,6 +64,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     protected AssetStorageService assetStorageService;
+    protected final Map<RemotingConnection, Integer> subscribedConnections = new HashMap<>();
 
     @Override
     public int getPriority() {
@@ -99,6 +102,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_CLOSE, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        subscribedConnections.remove(connection);
     }
 
     @Override
@@ -107,6 +111,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        subscribedConnections.remove(connection);
     }
 
     @Override
@@ -299,9 +304,19 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
+
+        // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
+        synchronized (subscribedConnections) {
+            subscribedConnections.compute(connection, (existingConnection, subscriptionCount) -> {
+                if (subscriptionCount == null) {
+                    subscriptionCount = 0;
+                }
+                return subscriptionCount + 1;
+            });
+        }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes", "ConstantConditions"})
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
@@ -310,6 +325,16 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
         CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
+
+        // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
+        synchronized (subscribedConnections) {
+            subscribedConnections.compute(connection, (existingConnection, subscriptionCount) -> {
+                if (subscriptionCount == 1) {
+                    return null;
+                }
+                return subscriptionCount - 1;
+            });
+        }
     }
 
     @Override
@@ -327,6 +352,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+    }
+
+    @Override
+    public void onUserAssetLinksChanged(RemotingConnection connection) {
+        if (subscribedConnections.containsKey(connection)) {
+            LOG.fine("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + connectionToString(connection));
+            mqttBrokerService.doForceDisconnect(connection);
+        }
     }
 
     protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {

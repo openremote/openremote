@@ -57,6 +57,7 @@ import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.security.MultiTenantClientCredentialsGrantsLoginModule;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
@@ -132,7 +133,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         messageBrokerService = container.getService(MessageBrokerService.class);
         executorService = container.getExecutorService();
         timerService = container.getService(TimerService.class);
-        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::forceDisconnectUser, debounceMillis);
+        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::processUserAssetLinkChange, debounceMillis);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -263,14 +264,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     if (forceDisconnect) {
                         LOG.fine("User modified or deleted so force closing any sessions for this user: " + user);
                         // Find existing connection for this user
-                        forceDisconnectUser(user.getId());
+                        getUserConnections(user.getId()).forEach(this::doForceDisconnect);
                     }
 
                 } else if (persistenceEvent.getEntity() instanceof UserAssetLink userAssetLink) {
                     String userID = userAssetLink.getId().getUserId();
-
-                    LOG.fine("User asset links modified for user so force disconnecting to renew authorisations: userID=" + userID);
-                    // Debounce force disconnect of this user's sessions
+                    // Debounce force disconnect check of this user's sessions as there could be many asset links changing
                     userAssetDisconnectDebouncer.call(userID);
                 }
             });
@@ -381,11 +380,26 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return customHandlers;
     }
 
-    public void forceDisconnectUser(String userID) {
+    public void processUserAssetLinkChange(String userID) {
         if (TextUtil.isNullOrEmpty(userID)) {
             return;
         }
-        getUserConnections(userID).forEach(this::doForceDisconnect);
+
+        // Check if user has any active connections
+        Set<RemotingConnection> userConnections = getUserConnections(userID);
+        Subject subject = userConnections.stream().filter(connection -> connection.getSubject() != null).findFirst().map(RemotingConnection::getSubject).orElse(null);
+
+        // Only notify handlers if subject is a restricted user
+        if (subject != null && KeycloakIdentityProvider.getSecurityContext(subject).getToken().getRealmAccess().isUserInRole(Constants.RESTRICTED_USER_REALM_ROLE)) {
+            LOG.fine("User asset links modified for connected restricted user so passing to handlers to decide what to do: user=" + subject);
+            // Pass to handlers to decide what to do
+            userConnections.forEach(connection -> {
+                for (MQTTHandler handler : customHandlers) {
+                    connection.setSubject(subject);
+                    handler.onUserAssetLinksChanged(connection);
+                }
+            });
+        }
     }
 
     public Set<RemotingConnection> getUserConnections(String userID) {

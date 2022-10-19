@@ -189,6 +189,13 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 } else {
                     result = handler.checkCanSubscribe(connection, securityContext, topic);
                 }
+                if (LOG.isLoggable(Level.FINE)) {
+                    if (result) {
+                        LOG.fine("Handler has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
+                    } else {
+                        LOG.fine("Handler has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
+                    }
+                }
                 return result;
             }
         }

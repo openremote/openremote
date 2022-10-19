@@ -211,8 +211,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public User getUser(String realm, String userId) {
-        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, realm, userId);
+    public User getUser(String userId) {
+        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, userId);
     }
 
     @Override
@@ -232,7 +232,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
 
             boolean isUpdate = false;
-            User existingUser = user.getId() != null ? getUser(realm, user.getId()) : getUserByUsername(realm, user.getUsername());
+            User existingUser = user.getId() != null ? getUser(user.getId()) : getUserByUsername(realm, user.getUsername());
             ClientRepresentation clientRepresentation;
             UserRepresentation userRepresentation;
 
@@ -368,7 +368,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public void deleteUser(String realm, String userId) {
 
-        User user = getUser(realm, userId);
+        User user = getUser(userId);
 
         if (user == null) {
             return;

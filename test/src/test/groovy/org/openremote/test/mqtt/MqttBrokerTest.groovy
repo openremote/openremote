@@ -18,6 +18,7 @@ import org.openremote.manager.mqtt.MQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
@@ -590,6 +591,55 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             def asst = assetStorageService.find(managerTestSetup.apartment2LivingroomId)
             assert asst.getAttribute("co2Level").get().value.orElse(-100) == currentCO2Level
         }
+
+        when: "a restricted mqtt client subscribes to an unlinked asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1KitchenId".toString()
+        newClient.addMessageConsumer(topic, {msg ->})
+
+        then: "no subscription should exist"
+        conditions.eventually {
+            assert newClient.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+        }
+
+        when: "a restricted mqtt client subscribes to a linked asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        newClient.addMessageConsumer(topic, {msg ->})
+
+        then: "a subscription should exist"
+        conditions.eventually {
+            assert newClient.topicConsumerMap.get(topic) != null
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+        }
+
+        when: "user asset links are updated for a connected restricted user"
+        existingConnection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+        assetStorageService.storeUserAssetLinks(List.of(
+                new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                        keycloakTestSetup.serviceUser2.getId(),
+                        managerTestSetup.apartment1BathroomId)))
+
+        then: "the existing connection should be terminated and the client should reconnect"
+        conditions.eventually {
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0] !== existingConnection
+        }
+
+        // TODO: Further MQTT tests
+//        when: "an attribute event occurs on an attribute that the restricted user can access"
+//
+//        then: "they should receive the event"
+//
+//        when: "an attribute event occurs on an attribute that the restricted user cannot access"
+//
+//        then: "they should not receive the event"
+//
+//        when: "an asset event occurs on an asset that the restricted user can access"
+//
+//        then: "they should receive the event but it should only contain restricted attributes"
 
         when: "both MQTT clients disconnect"
         client.disconnect()
