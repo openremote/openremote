@@ -170,7 +170,7 @@ export class OrDashboardTree extends LitElement {
         return html`
             <div id="menu-header">
                 <div id="title-container">
-                    <span id="title">${i18next.t('dashboards')}</span>
+                    <span id="title">${i18next.t('insights')}</span>
                 </div>
                 ${this.showControls ? html`
                     <div id="header-btns">
