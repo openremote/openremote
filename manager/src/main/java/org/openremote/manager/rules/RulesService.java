@@ -334,6 +334,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             realmEngines.clear();
 
             if (globalEngine != null) {
+                LOG.log(Level.WARNING, "Stopping globalEngine");
                 globalEngine.stop(true);
                 globalEngine = null;
             }
@@ -670,6 +671,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             }
 
             if (globalEngine.removeRuleset(ruleset)) {
+                LOG.log(Level.WARNING, "Stopping globalEngine");
                 globalEngine.stop();
                 globalEngine = null;
             }

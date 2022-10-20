@@ -259,7 +259,7 @@ public class RulesEngine<T extends Ruleset> {
         RulesetDeployment deployment = deployments.get(ruleset.getId());
         boolean wasRunning = this.running;
 
-        stop();
+        stop(); // Why?
 
         if (deployment != null) {
             removeRuleset(deployment.ruleset);
@@ -539,6 +539,7 @@ public class RulesEngine<T extends Ruleset> {
                 if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
                     // Why aren't we handling the exception?
                     // Does this mean that we will just crash?
+                    LOG.log(Level.SEVERE, "Stopping rules engine because of privious error");
                     stop();
                     break;
                 }
