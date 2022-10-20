@@ -1,15 +1,15 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement ,property} from "lit/decorators.js";
-import manager, { ManagerAppConfig, ManagerConfig } from "@openremote/core";
+import manager from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
-import { DefaultAppConfig } from "../index";
 import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import '@openremote/or-configuration/or-conf-realm/index'
+import '@openremote/or-configuration/or-conf-rules/index'
 import '@openremote/or-configuration/or-conf-navigation/index'
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -51,6 +51,9 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 min-width: 150px;
                 width: 100%;
             }
+            :host {
+                --or-collapisble-panel-background-color: #fff;
+            }
         `;
     }
 
@@ -73,19 +76,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             `;
         }
 
-        const configURL = "/manager/manager_config.json";
-
-        // const managerConfiguration = fetch(configURL).then(async (result) => {
-        //     if (!result.ok) {
-        //         return DefaultAppConfig;
-        //     }
-        //
-        //     return await result.json();
-        // }) as ManagerAppConfig
-
         const managerConfiguration = manager.managerAppConfig
-
-        console.log(managerConfiguration)
 
         return html`
             <div class="conf-navigation-container">
@@ -95,6 +86,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             </div>
             <div class="conf-category-content-container">
                 <or-conf-realm .realms="${managerConfiguration?.realms}"></or-conf-realm>
+                <or-conf-rules .rules="${managerConfiguration?.pages?.rules}"></or-conf-rules>
             </div>
         `;
 
