@@ -59,6 +59,9 @@ export class OrConfRealmCard extends LitElement {
   @property({attribute: true})
   public name: string = "";
 
+  @property({attribute: true})
+  public onRemove: CallableFunction = () => {};
+
   protected _getColors(){
     //TODO settings default colors
     const colors : {[name:string] : string} = {
@@ -111,9 +114,9 @@ export class OrConfRealmCard extends LitElement {
               return html`<or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${value}" label="${key}"></or-mwc-input>`
             })}
           </div>
-
+          <or-mwc-input id="name-input" .type="${InputType.BUTTON}" label="Remove" @click="${() => {this.onRemove()}}"></or-mwc-input>
+          <or-mwc-input id="name-input" .type="${InputType.BUTTON}" label="Save"></or-mwc-input>
         </div>
-        <or-mwc-input id="name-input" .type="${InputType.BUTTON}" label="Save"></or-mwc-input>
       </or-collapsible-panel>
 `;
   }

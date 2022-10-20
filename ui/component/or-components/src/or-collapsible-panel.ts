@@ -59,10 +59,6 @@ const style = css`
         display: inline-flex;
         align-items: center;
     }
-
-    #header-title {
-        flex: 0;
-    }
     
     #header-description {
         flex-grow: 2;

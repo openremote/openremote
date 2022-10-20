@@ -28,6 +28,12 @@ export class OrConfRealm extends LitElement {
     });
   }
 
+  protected _removeRealm(realm:string){
+    delete this.realms[realm]
+    this._loadListOfAvailableRealms()
+    this.requestUpdate()
+  }
+
   protected _loadListOfAvailableRealms(){
     const app = this
     this._availableRealms = this._allRealms.filter(function(realm){
@@ -89,11 +95,11 @@ export class OrConfRealm extends LitElement {
   }
 
   render() {
-
+    const app = this;
     return html`
       <div class="panels">
         ${Object.entries(this.realms === undefined ? {} : this.realms).map(function([key , value]){
-          return html`<or-conf-realm-card .name="${key}" .realm="${value}"></or-conf-realm-card>`
+          return html`<or-conf-realm-card .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
         })}
       </div>
       
