@@ -18,7 +18,6 @@ export class OrConfRealm extends LitElement {
   public rules: {rules?: {controls?: {allowedLanguages?: RulesetLang[]}}} = {};
 
   render() {
-    console.log(this.rules)
     const rules = this.rules?.rules
     return html`
       <or-collapsible-panel>

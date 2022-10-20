@@ -228,7 +228,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 // Load available realm info
                 const response = await manager.rest.api.RealmResource.getAccessible();
                 this._realms = response.data;
-                console.log(this._realms)
+
                 let realm: string | null | undefined = undefined;
 
                 // Set current display realm if super user
