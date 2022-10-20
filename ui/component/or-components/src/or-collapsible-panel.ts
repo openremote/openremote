@@ -13,6 +13,7 @@ const style = css`
         transition: margin 225ms cubic-bezier(0.4, 0, 0.2, 1),box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        background-color: var(--or-collapisble-panel-background-color);
         border-radius: 4px;
         border-width: 1px;
         border-style: solid;
