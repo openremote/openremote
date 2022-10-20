@@ -153,6 +153,21 @@ export interface ManagerAppConfig {
     manager?: ManagerConfig;
 }
 
+export interface Languages {
+    [langKey: string]: string;
+}
+
+export const DEFAULT_LANGUAGES: Languages = {
+    en: "english",
+    cn: "chinese",
+    nl: "dutch",
+    fr: "french",
+    de: "german",
+    it: "italian",
+    pt: "portuguese",
+    es: "spanish"
+};
+
 export function normaliseConfig(config: ManagerConfig): ManagerConfig {
     const normalisedConfig: ManagerConfig = config ? Object.assign({}, config) : {};
 
