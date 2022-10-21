@@ -20,6 +20,7 @@
 package org.openremote.test.setup;
 
 import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -32,6 +33,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
 /**
  * We have the following demo users:
@@ -127,5 +129,11 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
             Constants.KEYCLOAK_CLIENT_ID,
             Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
         );
+
+        // ################################ Make users restricted ###################################
+        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), testuser3Id, identityProvider.addRealmRoles(realmBuilding.getName(), testuser3Id, RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), buildingUserId, identityProvider.addRealmRoles(realmBuilding.getName(), buildingUserId, RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(realmBuilding.getName(), serviceUser2.getId(), identityProvider.addRealmRoles(realmBuilding.getName(), serviceUser2.getId(), RESTRICTED_USER_REALM_ROLE));
     }
 }

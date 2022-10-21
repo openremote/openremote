@@ -1,5 +1,5 @@
 /*
- * Copyright 2021, OpenRemote Inc.
+ * Copyright 2022, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,39 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.provisioning;
+package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import org.openremote.model.query.AssetQuery;
 
-public class ErrorResponseMessage extends ProvisioningMessage {
-
-    public enum Error {
-        MESSAGE_INVALID,
-        CERTIFICATE_INVALID,
-        UNAUTHORIZED,
-        FORBIDDEN,
-        UNIQUE_ID_MISMATCH,
-        CONFIG_DISABLED,
-        USER_DISABLED,
-        SERVER_ERROR,
-        ASSET_ERROR
-    }
-
-    protected Error error;
-
-    @JsonCreator
-    public ErrorResponseMessage(Error error) {
-        this.error = error;
-    }
-
-    public Error getError() {
-        return error;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "error=" + error +
-            '}';
-    }
+public interface HasAssetQuery {
+    AssetQuery getAssetQuery();
 }

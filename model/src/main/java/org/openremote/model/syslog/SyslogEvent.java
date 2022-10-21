@@ -70,9 +70,9 @@ public class SyslogEvent extends SharedEvent {
         }
 
         @Override
-        public boolean apply(SyslogEvent event) {
+        public SyslogEvent apply(SyslogEvent event) {
             return (getCategories().isEmpty() || getCategories().contains(event.getCategory()))
-                && (getLevel() == null || getLevel().ordinal() <= event.getLevel().ordinal());
+                && (getLevel() == null || getLevel().ordinal() <= event.getLevel().ordinal()) ? event : null;
         }
 
         @Override

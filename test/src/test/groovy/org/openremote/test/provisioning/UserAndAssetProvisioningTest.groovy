@@ -41,6 +41,7 @@ import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.WeatherAsset
 import org.openremote.model.attribute.Attribute
@@ -72,6 +73,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        MQTT_IOClient device1Client
+        MQTT_IOClient deviceNClient
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -148,7 +151,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         List<String> subscribeFailures = []
         List<ConnectionStatus> connectionStatuses = []
         Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
-        MQTT_IOClient device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
+        device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         device1Client.addConnectionStatusConsumer({connectionStatus ->
             connectionStatuses.add(connectionStatus)})
@@ -175,6 +178,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the client publishes a valid x509 certificate that has been signed by the CA stored in the provisioning config"
+        def existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
         device1Client.sendMessage(
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
@@ -192,9 +196,14 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
+        and: "the connection should have been maintained"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 0.5).eventually {
+            assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) == existingConnection
+        }
+
         when: "the client gets abruptly disconnected"
         device1Responses.clear()
-        def existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
+        existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
 //        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).config().setOption(ChannelOption.SO_LINGER, 0I)
         ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).close()
 
@@ -261,8 +270,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "the client updates one of the provisioned asset's attributes"
         device1Client.sendMessage(
             new MQTTMessage<String>(
-                    "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC",
-                    ValueUtil.asJSON(new AttributeEvent(asset.id, "customAttribute", 99d)).orElse(null)
+                    "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/customAttribute/${asset.id}",
+                    "99"
             )
         )
 
@@ -384,7 +393,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         def deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         def mqttDeviceNClientId = UniqueIdentifierGenerator.generateId("deviceN")
-        MQTT_IOClient deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
         deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 

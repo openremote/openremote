@@ -17,39 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.manager.event;
 
-public class RealmFilter<T extends RealmScopedEvent> extends EventFilter<T> {
+import org.openremote.container.security.AuthContext;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.SharedEvent;
 
-    public static final String FILTER_TYPE = "realm";
-
-    protected String name;
-
-    protected RealmFilter() {
-    }
-
-    public RealmFilter(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public String getFilterType() {
-        return FILTER_TYPE;
-    }
-
-    @Override
-    public RealmScopedEvent apply(RealmScopedEvent event) {
-        return getName().equals(event.getRealm()) ? event : null;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "realm='" + name + '\'' +
-            '}';
-    }
+/**
+ * Authorizes events sent from clients.
+ */
+@FunctionalInterface
+public interface EventAuthorizer {
+    boolean authorise(String requestRealm, AuthContext authContext, SharedEvent event);
 }

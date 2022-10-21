@@ -57,6 +57,7 @@ import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.security.MultiTenantClientCredentialsGrantsLoginModule;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
@@ -87,6 +88,8 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, ActiveMQServerSessionPlugin {
 
+    public static final String MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS = "MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS";
+    public static int MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT = 5000;
     public static final int PRIORITY = MED_PRIORITY;
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
@@ -111,6 +114,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected String host;
     protected int port;
     protected EmbeddedActiveMQ server;
+    protected ClientProducer producer;
     protected ClientSessionInternal internalSession;
 
     @Override
@@ -122,14 +126,14 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void init(Container container) throws Exception {
         host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0");
         port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883);
-
+        int debounceMillis = getInteger(container.getConfig(), MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS, MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT);
         authorisationService = container.getService(AuthorisationService.class);
         clientEventService = container.getService(ClientEventService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         executorService = container.getExecutorService();
         timerService = container.getService(TimerService.class);
-        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::forceDisconnectUser, 10000);
+        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::processUserAssetLinkChange, debounceMillis);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -147,11 +151,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         if (!active) {
             return;
         }
-
-        // Load custom handlers
-        this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
-            .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
-            .collect(Collectors.toList());
 
         // Configure and start the broker
         Configuration config = new ConfigurationImpl();
@@ -185,9 +184,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }));
 
         server.start();
-
         LOG.fine("Started MQTT broker");
-
 
         // Add notification handler for subscribe/unsubscribe and publish events
         server.getActiveMQServer().getManagementService().addNotificationListener(notification -> {
@@ -219,6 +216,14 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
         serverSession.disableSecurity();
         internalSession.start();
+
+        // Create producer
+        producer = internalSession.createProducer();
+
+        // Load custom handlers
+        this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
+            .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
+            .collect(Collectors.toList());
 
         // Start each custom handler
         for (MQTTHandler handler : customHandlers) {
@@ -257,15 +262,14 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     }
 
                     if (forceDisconnect) {
-                        LOG.info("User modified or deleted so force closing any sessions for this user: " + user);
+                        LOG.fine("User modified or deleted so force closing any sessions for this user: " + user);
                         // Find existing connection for this user
-                        forceDisconnectUser(user.getId());
+                        getUserConnections(user.getId()).forEach(this::doForceDisconnect);
                     }
 
                 } else if (persistenceEvent.getEntity() instanceof UserAssetLink userAssetLink) {
                     String userID = userAssetLink.getId().getUserId();
-
-                    // Debounce force disconnect of this user's sessions
+                    // Debounce force disconnect check of this user's sessions as there could be many asset links changing
                     userAssetDisconnectDebouncer.call(userID);
                 }
             });
@@ -273,6 +277,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void stop(Container container) throws Exception {
+
+        userAssetDisconnectDebouncer.cancelAll(true);
+
         server.stop();
         LOG.fine("Stopped MQTT broker");
 
@@ -289,6 +296,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void afterCreateConnection(RemotingConnection connection) throws ActiveMQException {
+
+        LOG.fine("New client connection: "+ connectionToString(connection));
 
         // MQTT seems to only use failure callback even if closed gracefully (need to look at the exception for details)
         connection.addFailureListener(new FailureListener() {
@@ -329,7 +338,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         if (!clientIDConnectionMap.containsKey(remotingConnection.getClientID())) {
-            LOG.info("Session created");
             clientIDConnectionMap.put(remotingConnection.getClientID(), remotingConnection);
 
             // We do this here as connection plugin afterCreateConnection callback fires before client ID and subject are populated
@@ -341,7 +349,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void afterDestroyConnection(RemotingConnection connection) throws ActiveMQException {
-
+        LOG.fine("Destroyed client connection: " + connectionToString(connection));
     }
 
     public void onSubscribe(RemotingConnection connection, String topicStr) {
@@ -349,7 +357,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.fine("Handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                LOG.fine("Handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
                 handler.onSubscribe(connection, topic);
                 break;
             }
@@ -361,7 +369,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.fine("Handler has handled unsubscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                LOG.fine("Handler has handled unsubscribe: handler=" + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
                 handler.onUnsubscribe(connection, topic);
                 break;
             }
@@ -372,15 +380,26 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return customHandlers;
     }
 
-    public Runnable getForceDisconnectRunnable(RemotingConnection connection) {
-        return () -> doForceDisconnect(connection);
-    }
-
-    public void forceDisconnectUser(String userID) {
+    public void processUserAssetLinkChange(String userID) {
         if (TextUtil.isNullOrEmpty(userID)) {
             return;
         }
-        getUserConnections(userID).forEach(this::doForceDisconnect);
+
+        // Check if user has any active connections
+        Set<RemotingConnection> userConnections = getUserConnections(userID);
+        Subject subject = userConnections.stream().filter(connection -> connection.getSubject() != null).findFirst().map(RemotingConnection::getSubject).orElse(null);
+
+        // Only notify handlers if subject is a restricted user
+        if (subject != null && KeycloakIdentityProvider.getSecurityContext(subject).getToken().getRealmAccess().isUserInRole(Constants.RESTRICTED_USER_REALM_ROLE)) {
+            LOG.fine("User asset links modified for connected restricted user so passing to handlers to decide what to do: user=" + subject);
+            // Pass to handlers to decide what to do
+            userConnections.forEach(connection -> {
+                for (MQTTHandler handler : customHandlers) {
+                    connection.setSubject(subject);
+                    handler.onUserAssetLinksChanged(connection);
+                }
+            });
+        }
     }
 
     public Set<RemotingConnection> getUserConnections(String userID) {
@@ -403,18 +422,17 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     }
 
     protected void doForceDisconnect(RemotingConnection connection) {
-        LOG.fine("Force disconnecting session: " + connection);
+        LOG.fine("Force disconnecting client connection: " + connectionToString(connection));
         connection.disconnect(false);
     }
 
     public void publishMessage(String topic, Object data, MqttQoS qoS) {
         try {
             if (internalSession != null) {
-                ClientProducer producer = internalSession.createProducer(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()));
                 ClientMessage message = internalSession.createMessage(false);
                 message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
                 message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
-                producer.send(message);
+                producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()), message);
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Couldn't send AttributeEvent to MQTT client", e);
@@ -434,6 +452,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return ID instanceof ChannelId ? ((ChannelId)ID).asLongText() : ID.toString();
     }
 
+    public static String connectionToString(RemotingConnection connection) {
+        if (connection == null) {
+            return "";
+        }
+        return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + connection.getSubject();
+    }
+
     public RemotingConnection getConnectionFromClientID(String clientID) {
         if (TextUtil.isNullOrEmpty(clientID)) {
             return null;
@@ -444,9 +469,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         if (connection == null) {
             // Try and find the client ID from the sessions
-            for (ServerSession serverSession : server.getActiveMQServer().getSessions()) {
-                if (serverSession.getRemotingConnection() != null && Objects.equals(clientID, serverSession.getRemotingConnection().getClientID())) {
-                    connection = serverSession.getRemotingConnection();
+            for (RemotingConnection remotingConnection : server.getActiveMQServer().getRemotingService().getConnections()) {
+                if (Objects.equals(clientID, remotingConnection.getClientID())) {
+                    connection = remotingConnection;
                     clientIDConnectionMap.put(clientID, connection);
                     break;
                 }
@@ -454,6 +479,25 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         return connection;
+    }
+
+    // TODO: Remove this if/when ActiveMQ implements https://issues.apache.org/jira/browse/ARTEMIS-4059
+    /**
+     * Tries to find the correct {@link RemotingConnection} for the specified subject with the assumption that the
+     * client ID is contained in the address (this is important for multiple connections from the same subject)
+     */
+    protected RemotingConnection getConnectionFromSubjectAndTopic(Subject subject, Topic topic) {
+        String clientID = MQTTHandler.topicClientID(topic);
+
+        if (clientID == null) {
+            return null;
+        }
+
+        return server.getActiveMQServer().getRemotingService().getConnections().stream().filter(connection ->
+                connection.getSubject() == subject && Objects.equals(clientID, connection.getClientID())
+            )
+            .findFirst()
+            .orElse(null);
     }
 
     // TODO: Remove this

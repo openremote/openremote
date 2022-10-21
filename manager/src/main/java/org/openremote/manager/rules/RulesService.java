@@ -250,7 +250,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     public void start(Container container) throws Exception {
 
         if (!geofenceAssetAdapters.isEmpty()) {
-            LOG.info("GeoefenceAssetAdapters found: " + geofenceAssetAdapters.size());
+            LOG.fine("GeoefenceAssetAdapters found: " + geofenceAssetAdapters.size());
             locationPredicateRulesConsumer = this::onEngineLocationRulesChanged;
 
             for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
@@ -258,7 +258,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             }
         }
 
-        LOG.info("Deploying global rulesets");
+        LOG.fine("Deploying global rulesets");
         rulesetStorageService.findAll(
             GlobalRuleset.class,
             new RulesetQuery()
@@ -266,7 +266,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 .setFullyPopulate(true)
         ).forEach(this::deployGlobalRuleset);
 
-        LOG.info("Deploying realm rulesets");
+        LOG.fine("Deploying realm rulesets");
         realms = Arrays.stream(identityService.getIdentityProvider().getRealms()).filter(Realm::getEnabled).toArray(Realm[]::new);
         rulesetStorageService.findAll(
             RealmRuleset.class,
@@ -279,7 +279,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     .anyMatch(realm -> rd.getRealm().equals(realm.getName()))
             ).forEach(this::deployRealmRuleset);
 
-        LOG.info("Deploying asset rulesets");
+        LOG.fine("Deploying asset rulesets");
         // Group by asset ID then realm and check realm is enabled
         //noinspection ResultOfMethodCallIgnored
         deployAssetRulesets(
@@ -290,7 +290,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     .setFullyPopulate(true)))
             .count();//Needed in order to execute the stream. TODO: can this be done differently?
 
-        LOG.info("Loading all assets with fact attributes to initialize state of rules engines");
+        LOG.fine("Loading all assets with fact attributes to initialize state of rules engines");
         Stream<Pair<Asset<?>, Stream<Attribute<?>>>> stateAttributes = findRuleStateAttributes();
 
         // Push each attribute as an asset update through the rule engine chain
