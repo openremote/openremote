@@ -115,7 +115,6 @@ export class OrConfRealmCard extends LitElement {
             })}
           </div>
           <or-mwc-input id="name-input" .type="${InputType.BUTTON}" label="Remove" @click="${() => {this.onRemove()}}"></or-mwc-input>
-          <or-mwc-input id="name-input" .type="${InputType.BUTTON}" label="Save"></or-mwc-input>
         </div>
       </or-collapsible-panel>
 `;

@@ -20,16 +20,9 @@ export class OrConfRealm extends LitElement {
   render() {
     const rules = this.rules?.rules
     return html`
-      <or-collapsible-panel>
-        <div slot="header">
-          Rules
-        </div>
-        <div slot="content">
-          ${Object.entries(OrConfRealm.DEFAULT_ALLOWED_LANGUAGES).map(function([key, value]){
-            return html`<or-mwc-input .type="${InputType.CHECKBOX}" class="col" label="${value.toUpperCase()}" .value="${rules?.controls?.allowedLanguages !== undefined ? rules?.controls?.allowedLanguages.includes(value) : false }"></or-mwc-input>`
-          })}
-        </div>
-      </or-collapsible-panel>
+      ${Object.entries(OrConfRealm.DEFAULT_ALLOWED_LANGUAGES).map(function([key, value]){
+        return html`<or-mwc-input .type="${InputType.CHECKBOX}" class="col" label="${value.toUpperCase()}" .value="${rules?.controls?.allowedLanguages !== undefined ? rules?.controls?.allowedLanguages.includes(value) : false }"></or-mwc-input>`
+      })}
     `
   }
 }
