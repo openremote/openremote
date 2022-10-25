@@ -702,6 +702,29 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
+    /**
+     * This method is used to avoid to re-render and erase all the this.selectedIds attribute
+     *
+     * @param expander
+     * @param node
+     * @protected
+     */
+    protected _toggleExpanderWithoutEventDispatch(expander: HTMLElement, node: UiAssetTreeNode | null) {
+        if (node && node.expandable) {
+            node.expanded = !node.expanded;
+
+            if (node.expanded) {
+                this._expandedNodes.push(node);
+            } else {
+                this._expandedNodes = this._expandedNodes.filter(n => n !== node);
+            }
+
+            const elem = expander.parentElement!.parentElement!.parentElement!;
+            elem.toggleAttribute("data-expanded");
+            this.requestUpdate();
+        }
+    }
+
     private _buildPaths(node: UiAssetTreeNode): string[] {
         let paths: string[] = [];
 
@@ -1844,16 +1867,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (assetId && this.isExpandable(assetId) && !this._expandTimer) {
             this._expandTimer = window.setTimeout(() => {
-                this.expandeNode(assetId);
+                this.expandNode(assetId);
             }, 1000);
         }
     }
 
-    protected expandeNode(assetId: string | null): void {
+    protected expandNode(assetId: string | null): void {
         if (this.shadowRoot && assetId && assetId === this._dragDropParentId) {
-            let elem: HTMLElement | null = this.shadowRoot.querySelector('[node-asset-id="' + assetId + '"]');
+            const node = this._findNodeFromAssetId(assetId);
+            let elem: HTMLElement | null = this.shadowRoot?.querySelector('[node-asset-id="' + assetId + '"]');
+            if(elem && node && !node.expanded) {
 
-            elem?.parentElement?.setAttribute('data-expanded','');
+                this._toggleExpanderWithoutEventDispatch(elem.firstElementChild!.firstElementChild! as HTMLElement, node);
+            }
         }
     }
 
