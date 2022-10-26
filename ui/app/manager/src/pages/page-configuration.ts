@@ -10,6 +10,7 @@ import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import '@openremote/or-configuration/or-conf-realm/index'
 import '@openremote/or-configuration/or-conf-rules/index'
+import '@openremote/or-configuration/or-conf-assets/index'
 import '@openremote/or-configuration/or-conf-json'
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -125,6 +126,15 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             `;
         }
 
+
+
+        const app = this
+        document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
+            manager.managerAppConfig = e.detail?.value
+            console.log(e.detail?.value)
+            this.requestUpdate()
+        })
+
         const managerConfiguration = manager.managerAppConfig
 
         return html`
@@ -138,7 +148,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                         <div id="header-actions">
                             <div id="header-actions-content">
                                 <or-conf-json .managerConfig="${managerConfiguration}"></or-conf-json>
-                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan"></or-mwc-input>
+                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan" @click="${()=>{document.dispatchEvent(new CustomEvent('saveManagerConfig', {detail: {value: managerConfiguration}}))}}"></or-mwc-input>
                             </div>
                         </div>
                     </div>
@@ -147,6 +157,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <div class="panel-title">
                         Assets
                     </div>
+                    <or-conf-assets .assets="${managerConfiguration?.pages?.assets}"></or-conf-assets>
                 </div>
                 <div class="panel">
                     <div class="panel-title">

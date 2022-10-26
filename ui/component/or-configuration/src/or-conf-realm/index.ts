@@ -49,9 +49,13 @@ export class OrConfRealm extends LitElement {
   protected _showAddingRealmDialog(){
     let selectedRealm = "";
     const _AddRealmToView =  () => {
-      this.realms[selectedRealm] = this.realms["default"] ? this.realms["default"] : {}
-      this._loadListOfAvailableRealms()
-      this.requestUpdate()
+      if (selectedRealm){
+        this.realms[selectedRealm] = this.realms["default"] ? this.realms["default"] : {}
+        this._loadListOfAvailableRealms()
+        this.requestUpdate()
+        return true
+      }
+      return false
     }
     const dialogActions: DialogAction[] = [
       {
@@ -67,9 +71,10 @@ export class OrConfRealm extends LitElement {
 
     ];
     const dialog = showDialog(new OrMwcDialog()
+      .setHeading("Add Realm customization")
       .setActions(dialogActions)
       .setContent(html `
-        <or-mwc-input label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => selectedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
+        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => selectedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
       `)
       .setStyles(html`
                         <style>
@@ -81,6 +86,11 @@ export class OrConfRealm extends LitElement {
                                 overflow: visible;
                                 min-height: 0;
                                 padding: 0;
+                            }
+                            or-mwc-input.selector {
+                              width: 300px;
+                              display: block;
+                              padding: 10px 20px;
                             }
                         </style>
                     `)
@@ -103,7 +113,7 @@ export class OrConfRealm extends LitElement {
         })}
       </div>
       
-      <or-mwc-input class="btn-add-realm" id="name-input" .type="${InputType.BUTTON}" label="Add Realm" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
+      <or-mwc-input class="btn-add-realm" .type="${InputType.BUTTON}" label="Add realm customization" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
     `
   }
 }
