@@ -1,16 +1,32 @@
 apply plugin: "java-library"
 
-dependencies {
-    api resolveProject(":manager")
+sourceSets {
+    integration
+    demo
 }
 
+//// dependencies declaration
+//configurations {
+//    integrationCompileOnly.extendsFrom(compileOnly)
+//    integrationImplementation.extendsFrom(implementation)
+//}
+
+dependencies {
+    implementation sourceSets.integration.output
+    implementation sourceSets.demo.output
+    integrationImplementation resolveProject(":manager")
+    demoImplementation resolveProject(":manager")
+}
+
+// Use demo sourceset for jar
 jar {
     archivesBaseName = "openremote-demo-${project.name}"
+    from sourceSets.demo.output
 }
 
 task installDist(type: Copy) {
     dependsOn jar
     dependsOn resolveTask(":manager:installDist")
     from jar.archiveFile
-    into "${resolveProject(":manager").buildDir}/install/manager/lib"
+    into "${resolveProject(":manager").buildDir}/install/manager/extensions"
 }

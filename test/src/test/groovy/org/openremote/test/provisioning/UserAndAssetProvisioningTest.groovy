@@ -41,7 +41,6 @@ import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
-import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.WeatherAsset
 import org.openremote.model.attribute.Attribute
@@ -56,7 +55,7 @@ import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -114,7 +113,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "a provisioning realm config is added to the system"
         def provisioningConfig = new X509ProvisioningConfig("Valid Test Config",
                 new X509ProvisioningData()
-                        .setCACertPEM(getClass().getResource("/org/openremote/test/provisioning/ca_long.pem").text)
+                        .setCACertPEM(getClass().getResource("/org/openremote/test/provisioning/ca.pem").text)
         ).setAssetTemplate(
                 ValueUtil.asJSON(
                         new WeatherAsset("Weather Asset")

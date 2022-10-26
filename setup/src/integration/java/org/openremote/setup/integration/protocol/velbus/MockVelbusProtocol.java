@@ -17,29 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.protocol.http;
+package org.openremote.setup.integration.protocol.velbus;
 
-import org.openremote.agent.protocol.http.AbstractHTTPServerAgent;
-import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.DefaultAgentLink;
+import org.openremote.agent.protocol.io.IOClient;
+import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol;
+import org.openremote.agent.protocol.velbus.VelbusPacket;
 
-import javax.persistence.Entity;
+public class MockVelbusProtocol extends AbstractVelbusProtocol<MockVelbusProtocol, MockVelbusAgent> {
 
-@Entity
-public class HTTPServerTestAgent extends AbstractHTTPServerAgent<HTTPServerTestAgent, TestHTTPServerProtocol, DefaultAgentLink> {
+    public MockVelbusClient messageProcessor;
 
-    public static final AgentDescriptor<HTTPServerTestAgent, TestHTTPServerProtocol, DefaultAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        HTTPServerTestAgent.class, TestHTTPServerProtocol.class, DefaultAgentLink.class
-    );
-
-    protected HTTPServerTestAgent() {}
-
-    public HTTPServerTestAgent(String name) {
-        super(name);
+    public MockVelbusProtocol(MockVelbusAgent agent) {
+        super(agent);
     }
 
     @Override
-    public TestHTTPServerProtocol getProtocolInstance() {
-        return new TestHTTPServerProtocol(this);
+    public String getProtocolName() {
+        return "Mock VELBUS";
+    }
+
+    @Override
+    protected IOClient<VelbusPacket> createIoClient(MockVelbusAgent agent) throws RuntimeException {
+        messageProcessor = new MockVelbusClient();
+        return messageProcessor;
     }
 }

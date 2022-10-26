@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,28 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.protocol.velbus;
+package org.openremote.setup.integration;
 
-import org.openremote.agent.protocol.io.IOClient;
-import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol;
-import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.Container;
+import org.openremote.model.setup.Setup;
+import org.openremote.model.setup.SetupTasks;
 
-public class MockVelbusProtocol extends AbstractVelbusProtocol<MockVelbusProtocol, MockVelbusAgent> {
+import java.util.Arrays;
+import java.util.List;
 
-    public MockVelbusClient messageProcessor;
-
-    public MockVelbusProtocol(MockVelbusAgent agent) {
-        super(agent);
-    }
-
-    @Override
-    public String getProtocolName() {
-        return "Mock VELBUS";
-    }
+/**
+ * Test setup tasks.
+ */
+public class TestSetupTasks implements SetupTasks {
 
     @Override
-    protected IOClient<VelbusPacket> createIoClient(MockVelbusAgent agent) throws RuntimeException {
-        messageProcessor = new MockVelbusClient();
-        return messageProcessor;
+    public List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled) {
+        return Arrays.asList(
+            new KeycloakTestSetup(container),
+            new ManagerTestSetup(container),
+            new ManagerTestAgentSetup(container)
+        );
     }
 }

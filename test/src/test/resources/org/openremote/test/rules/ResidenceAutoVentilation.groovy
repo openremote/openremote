@@ -1,4 +1,4 @@
-package org.openremote.test.rules
+package org.openremote.setup.integration.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.manager.rules.RulesFacts

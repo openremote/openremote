@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.protocol.http;
+package org.openremote.setup.integration.protocol.http;
 
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;

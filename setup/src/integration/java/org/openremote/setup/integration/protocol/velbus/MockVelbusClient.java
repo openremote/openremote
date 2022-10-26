@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.protocol.velbus;
+package org.openremote.setup.integration.protocol.velbus;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.agent.protocol.io.NettyIOClient;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.asset.agent.ConnectionStatus;

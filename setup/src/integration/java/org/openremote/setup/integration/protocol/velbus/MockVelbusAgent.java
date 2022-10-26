@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.protocol.velbus;
+package org.openremote.setup.integration.protocol.velbus;
 
 import org.openremote.agent.protocol.velbus.VelbusAgent;
 import org.openremote.agent.protocol.velbus.VelbusAgentLink;

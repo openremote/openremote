@@ -17,26 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.setup;
+package org.openremote.setup.integration.protocol.http;
 
-import org.openremote.model.Container;
-import org.openremote.model.setup.Setup;
-import org.openremote.model.setup.SetupTasks;
+import org.openremote.model.asset.Asset;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Test setup tasks.
- */
-public class TestSetupTasks implements SetupTasks {
+public class TestResourceImpl implements TestResource {
+
+    public List<Asset<?>> postedAssets = new ArrayList<>();
 
     @Override
-    public List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled) {
-        return Arrays.asList(
-            new KeycloakTestSetup(container),
-            new ManagerTestSetup(container),
-            new ManagerTestAgentSetup(container)
-        );
+    public void postAsset(Asset<?> asset) {
+        postedAssets.add(asset);
+    }
+
+    @Override
+    public Asset<?> getAsset(String assetId) {
+        return postedAssets.stream().filter(asset -> asset.getId().equals(assetId)).findFirst().orElse(null);
     }
 }

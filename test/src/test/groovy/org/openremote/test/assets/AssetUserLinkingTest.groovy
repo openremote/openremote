@@ -5,8 +5,8 @@ import org.openremote.container.security.keycloak.AccessTokenAuthContext
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.test.ManagerContainerTrait
