@@ -215,6 +215,9 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         `;
     }
 
+    // loadAssets function that also tracks what promises/fetches are active.
+    // If so, await for those to finish to prevent multiple API requests.
+    // Also using caching with the _loadedAssets object.
     protected async loadAssets(type: string): Promise<Asset[] | undefined> {
         if(this._activeAssetPromises.has(type)) {
             const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch

@@ -693,6 +693,7 @@ export class OrMwcInput extends LitElement {
     @property({type: String})
     public placeHolder?: string;
 
+    // includes JSON check to prevent updates when the content of the array did not change.
     @property({type: Array, hasChanged(oldVal, newVal) { return JSON.stringify(oldVal) !== JSON.stringify(newVal); }})
     public options?: any[] | any;
 
@@ -1006,7 +1007,7 @@ export class OrMwcInput extends LitElement {
                             this._tempValue = inputValue;
                         }
 
-                        // searchable field does not always trigger @MDCSelect, so using itemClickHandler instead.
+                        // A narrowed down list with search does not always trigger @MDCSelect:change, so using itemClickHandler instead.
                         else if(this.searchable) {
                             this.onValueChange(undefined, item.value);
                         }
@@ -1034,7 +1035,7 @@ export class OrMwcInput extends LitElement {
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
                             @MDCSelect:change="${(e: MDCSelectEvent) => {
-                                if(!this.searchable) { // searchable field does not always trigger @MDCSelect, so using itemClickHandler instead.
+                                if(!this.searchable) { // A narrowed down list with search does not always trigger @MDCSelect:change, so using itemClickHandler instead.
                                     this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(opts![e.detail.index]) ? opts![e.detail.index][0] : opts![e.detail.index]);
                                 }
                             }}">
@@ -1089,7 +1090,7 @@ export class OrMwcInput extends LitElement {
                                     })}
                                     ${getListTemplate(
                                         this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                            (opts && opts.length > 0) ? html`${opts.map(([optValue, optDisplay], index) => {
+                                            opts && opts.length > 0 ? html`${opts.map(([optValue, optDisplay], index) => {
                                             return getItemTemplate(
                                                 {
                                                     text: optDisplay,
@@ -1509,6 +1510,7 @@ export class OrMwcInput extends LitElement {
                         (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
 
                         // Set width of fixed select menu to match the component width
+                        // Using an observer to prevent forced reflow / DOM measurements; prevents blocking the thread
                         const observer = new IntersectionObserver((entries, observer) => {
                             (entries[0].target as HTMLElement).style.width = entries[0].boundingClientRect.width + "px";
                             observer.unobserve(entries[0].target);
