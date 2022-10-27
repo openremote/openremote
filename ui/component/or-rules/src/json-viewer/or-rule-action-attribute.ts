@@ -130,7 +130,9 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 <or-mwc-input id="matchSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
             `, () => {
                 
-                // Set list of displayed assets
+                // Set list of displayed assets, and filtering assets out if needed.
+                // If <= 100 assets: display everything
+                // If > 100 assets: only display if in line with search input
                 if(this._assets!.length <= 100) {
                     idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
                 } else if(this._assetSearchValue.length > 0) {
