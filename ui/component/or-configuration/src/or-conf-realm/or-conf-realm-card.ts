@@ -1,5 +1,5 @@
 import { css, html, LitElement } from "lit";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType,OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
 import { ManagerRealmConfig, HeaderNames, DEFAULT_LANGUAGES } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
@@ -91,8 +91,32 @@ export class OrConfRealmCard extends LitElement {
     return colors
   }
 
+  protected _setColor(key:string, value:string){
+    const colors  = this._getColors()
+    colors[key] = value
+    let css = ":host > * {"
+    Object.entries(colors).map(([key, value]) => {
+      css += key +":" +value + ";"
+    })
+    this.realm.styles = css
+  }
+
+  protected _setHeader(key:HeaderNames, value:boolean){
+    if (!('headers' in this.realm)){
+      this.realm.headers = []
+    }
+    if (value){
+      this.realm.headers?.push(key)
+    } else {
+      this.realm.headers =  this.realm.headers?.filter(function(ele){
+        return ele != key;
+      });
+    }
+  }
+
   render() {
     const realm = this.realm
+    const app = this
     return html`
       <or-collapsible-panel>
         <div slot="header" class="header-container">
@@ -100,14 +124,14 @@ export class OrConfRealmCard extends LitElement {
         </div>
         <div slot="content">
           <div class="d-inline-flex">
-            <or-mwc-input class="appTitle" .type="${InputType.TEXT}" value="${this.realm?.appTitle}" label="App Title"></or-mwc-input>
-            <or-mwc-input class="language" .type="${InputType.SELECT}" value="${this.realm?.language}" .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {return [key, i18next.t(value)]})}" label="Default language"></or-mwc-input>
+            <or-mwc-input class="appTitle" .type="${InputType.TEXT}" value="${this.realm?.appTitle}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.appTitle = e.detail.value}" label="App Title"></or-mwc-input>
+            <or-mwc-input class="language" .type="${InputType.SELECT}" value="${this.realm?.language}" .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {return [key, i18next.t(value)]})}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.language = e.detail.value}" label="Default language"></or-mwc-input>
           </div>
           <div class="d-inline-flex">
             <div class="header-group">
               <div class="subheader">Headers</div>
-              ${Object.entries(HeaderNames).map(function([key, value]){
-                return html`<or-mwc-input .type="${InputType.CHECKBOX}" class="header-item" label="${key}" .value="${realm.headers !== undefined ? realm.headers.includes(HeaderNames[value]) : false }"></or-mwc-input>`
+              ${Object.entries(HeaderNames).map(function([key , value]){
+                return html`<or-mwc-input .type="${InputType.CHECKBOX}" class="header-item" label="${key}" .value="${realm.headers !== undefined ? realm.headers.includes(HeaderNames[value]) : false }" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(HeaderNames[value], e.detail.value)}"></or-mwc-input>`
               })}
             </div>
             <div class="logo-group">
@@ -119,10 +143,10 @@ export class OrConfRealmCard extends LitElement {
           <div class="color-group">
             <div class="subheader">Manager colors</div>
             ${Object.entries(this._getColors()).map(function([key, value]){
-              return html`<or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${value}" label="${key}"></or-mwc-input>`
+              return html`<or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${value}" label="${key}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor(key, e.detail.value)}"></or-mwc-input>`
             })}
           </div>
-          <or-mwc-input id="remove-realm" .type="${InputType.BUTTON}" label="Remove" @click="${() => {this.onRemove()}}"></or-mwc-input>
+          <or-mwc-input id="remove-realm" .type="${InputType.BUTTON}" label="Remove" @click="${() => {this.onRemove()}}" ></or-mwc-input>
         </div>
       </or-collapsible-panel>
 `;

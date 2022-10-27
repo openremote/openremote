@@ -28,7 +28,7 @@ export class OrConfJson extends LitElement {
     const _saveConfig = ()=>{
       this.beforeSave()
       document.dispatchEvent(
-        new CustomEvent('saveManagerConfig',
+        new CustomEvent('saveLocalManagerConfig',
           {detail: {value: this.managerConfig}}
         )
       )
@@ -40,7 +40,7 @@ export class OrConfJson extends LitElement {
       },
       {
         actionName: "ok",
-        content: i18next.t("save"),
+        content: i18next.t("update"),
         action: _saveConfig
       },
 

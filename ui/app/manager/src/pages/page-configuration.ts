@@ -1,6 +1,6 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement} from "lit/decorators.js";
-import manager from "@openremote/core";
+import manager, { ManagerAppConfig, ManagerConfig } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
@@ -129,9 +129,8 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
 
         const app = this
-        document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
-            manager.managerAppConfig = e.detail?.value
-            console.log(e.detail?.value)
+        document.addEventListener('saveLocalManagerConfig', (e:CustomEvent) => {
+            manager.managerAppConfig = e.detail?.value as ManagerAppConfig
             this.requestUpdate()
         })
 
@@ -148,7 +147,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                         <div id="header-actions">
                             <div id="header-actions-content">
                                 <or-conf-json .managerConfig="${managerConfiguration}"></or-conf-json>
-                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan" @click="${()=>{document.dispatchEvent(new CustomEvent('saveManagerConfig', {detail: {value: managerConfiguration}}))}}"></or-mwc-input>
+                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan" @click="${()=>{document.dispatchEvent(new CustomEvent('saveLocalManagerConfig', {detail: {value: managerConfiguration}}))}}"></or-mwc-input>
                             </div>
                         </div>
                     </div>
