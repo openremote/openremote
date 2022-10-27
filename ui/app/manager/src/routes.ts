@@ -16,3 +16,11 @@ export function getAssetsRoute(editMode?: boolean, assetId?: string) {
 
     return route;
 }
+
+export function getInsightsRoute(editMode?: boolean, dashboardId?: string) {
+    let route = "insights/" + (editMode ? "true" : "false");
+    if(dashboardId) {
+        route += "/" + dashboardId;
+    }
+    return route;
+}

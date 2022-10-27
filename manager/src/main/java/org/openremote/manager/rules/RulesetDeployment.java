@@ -468,12 +468,12 @@ public class RulesetDeployment {
             NodeCollection nodeCollection = ValueUtil.JSON.readValue(ruleset.getRules(), NodeCollection.class);
             flowRulesBuilder.add(nodeCollection);
             for (Rule rule : flowRulesBuilder.build()) {
-                RulesEngine.LOG.info("Registering rule: " + rule.getName());
+                RulesEngine.LOG.info("Compiling flow rule: " + rule.getName());
                 rules.register(rule);
             }
             return true;
         } catch (Exception e) {
-            RulesEngine.LOG.log(Level.SEVERE, "Error evaluating ruleset: " + ruleset, e);
+            RulesEngine.LOG.log(Level.SEVERE, "Error evaluating flow rule ruleset: " + ruleset, e);
             setError(e);
             return false;
         }

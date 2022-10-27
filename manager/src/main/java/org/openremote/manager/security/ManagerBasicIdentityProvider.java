@@ -87,8 +87,8 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public User getUser(String realm, String userId) {
-        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, realm, userId);
+    public User getUser(String userId) {
+        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, userId);
     }
 
     @Override

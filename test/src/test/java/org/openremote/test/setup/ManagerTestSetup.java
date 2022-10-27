@@ -603,12 +603,6 @@ public class ManagerTestSetup extends ManagerSetup {
                 keycloakTestSetup.serviceUser2.getId(),
                 apartment1HallwayId)));
 
-        // ################################ Make users restricted ###################################
-        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
-        identityProvider.updateUserRealmRoles(realmBuilding.getName(), keycloakTestSetup.testuser3Id, identityProvider.addRealmRoles(realmBuilding.getName(), keycloakTestSetup.testuser3Id, RESTRICTED_USER_REALM_ROLE));
-        identityProvider.updateUserRealmRoles(realmBuilding.getName(), keycloakTestSetup.buildingUserId, identityProvider.addRealmRoles(realmBuilding.getName(), keycloakTestSetup.buildingUserId, RESTRICTED_USER_REALM_ROLE));
-        identityProvider.updateUserRealmRoles(realmBuilding.getName(), keycloakTestSetup.serviceUser2.getId(), identityProvider.addRealmRoles(realmBuilding.getName(), keycloakTestSetup.serviceUser2.getId(), RESTRICTED_USER_REALM_ROLE));
-
         // ################################ Realm smartcity ###################################
 
         CityAsset smartCity = new CityAsset("Smart city");

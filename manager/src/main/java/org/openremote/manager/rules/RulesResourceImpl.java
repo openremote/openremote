@@ -253,7 +253,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException(BAD_REQUEST);
         }
         if (!isRealmActiveAndAccessible(realm) || isRestrictedUser()) {
-            LOG.info("Forbidden access for user '" + getUsername() + "': " + realm);
+            LOG.fine("Realm '" + realm + "' is nonexistent, inactive or inaccessible: username=" + getUsername());
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
