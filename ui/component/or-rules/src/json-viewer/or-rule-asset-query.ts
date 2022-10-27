@@ -322,7 +322,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                                       @or-mwc-inputsearch-changed="${debounce((event: OrInputSearchChangedEvent) => { this._assetSearchValue = event.detail.value; }, 500)}"
                         ></or-mwc-input>
                         ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
-                            console.log(attributePredicate);
                             return html`
                                 ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
                                 ${showRemoveAttribute ? html`
