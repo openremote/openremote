@@ -3,19 +3,18 @@ apply plugin: "java-library"
 sourceSets {
     integration
     demo
+    load1
 }
 
-//// dependencies declaration
-//configurations {
-//    integrationCompileOnly.extendsFrom(compileOnly)
-//    integrationImplementation.extendsFrom(implementation)
-//}
+// dependencies declaration
+configurations {
+    integrationImplementation.extendsFrom(implementation)
+    demoImplementation.extendsFrom(implementation)
+    load1Implementation.extendsFrom(implementation)
+}
 
 dependencies {
-    implementation sourceSets.integration.output
-    implementation sourceSets.demo.output
-    integrationImplementation resolveProject(":manager")
-    demoImplementation resolveProject(":manager")
+    implementation resolveProject(":manager")
 }
 
 // Use demo sourceset for jar
