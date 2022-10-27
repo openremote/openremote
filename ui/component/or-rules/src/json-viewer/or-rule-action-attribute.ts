@@ -176,7 +176,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 
                 return html`
                     <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}"
-                                  .searchable="${true}" .options="${idOptions}" .value="${idValue}" .readonly="${this.readonly || false}"
+                                  .searchable="${this._assets!.length > 25}" .options="${idOptions}" .value="${idValue}" .readonly="${this.readonly || false}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this._assetSearchValue = ''; this.refresh(); }}"
                                   @or-mwc-inputsearch-changed="${debounce((event: OrInputSearchChangedEvent) => { this._assetSearchValue = event.detail.value; }, 500)}"
                     ></or-mwc-input>
