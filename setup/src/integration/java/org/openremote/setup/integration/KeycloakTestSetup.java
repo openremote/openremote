@@ -78,13 +78,13 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         realmEnergy = createRealm("energy", "Energy Test", true);
 
         // Don't allow demo users to write assets
-        ClientRole[] demoUserRoles = Arrays.stream(REGULAR_USER_ROLES)
+        ClientRole[] noWriteAccess = Arrays.stream(REGULAR_USER_ROLES)
             .filter(clientRole -> clientRole != ClientRole.WRITE_ASSETS)
             .toArray(ClientRole[]::new);
 
 
         // Users
-        User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
+        User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, REGULAR_USER_ROLES);
         this.testuser1Id = testuser1.getId();
         keycloakProvider.updateUserRoles(MASTER_REALM, testuser1Id, "account"); // Remove all roles for account client
         User testuser2 = createUser(realmBuilding.getName(), "testuser2", "testuser2", "DemoA2", "DemoLast", "testuser2@openremote.local", true, false, true, new ClientRole[] {
@@ -94,13 +94,13 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         });
         this.testuser2Id = testuser2.getId();
         keycloakProvider.updateUserRoles(realmBuilding.getName(), testuser2Id, "account"); // Remove all roles for account client
-        User testuser3 = createUser(realmBuilding.getName(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, true, false, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
+        User testuser3 = createUser(realmBuilding.getName(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, true, false, REGULAR_USER_ROLES);
         this.testuser3Id = testuser3.getId();
         keycloakProvider.updateUserRoles(realmBuilding.getName(), testuser3Id, "account"); // Remove all roles for account client
-        User buildingUser = createUser(realmBuilding.getName(), "building", "building", "Building", "User", "building@openremote.local", true, demoUserRoles);
+        User buildingUser = createUser(realmBuilding.getName(), "building", "building", "Building", "User", "building@openremote.local", true, noWriteAccess);
         this.buildingUserId = buildingUser.getId();
         keycloakProvider.updateUserRoles(realmBuilding.getName(), buildingUserId, "account"); // Remove all roles for account client
-        User smartCityUser = createUser(realmCity.getName(), "smartcity", "smartcity", "Smart", "City", null, true, demoUserRoles);
+        User smartCityUser = createUser(realmCity.getName(), "smartcity", "smartcity", "Smart", "City", null, true, noWriteAccess);
         this.smartCityUserId = smartCityUser.getId();
         keycloakProvider.updateUserRoles(realmCity.getName(), smartCityUserId, "account"); // Remove all roles for account client
 

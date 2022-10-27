@@ -1,0 +1,49 @@
+execution:
+- concurrency: 1
+  ramp-up: 1m
+  hold-for: 5m
+  scenario: mqtt-client-auto-provision-sub
+- concurrency: 1
+  hold-for: 15s
+  scenario: mqtt-client-auto-provision-pub
+
+scenarios:
+
+  mqtt-client-auto-provision-sub:
+    protocol: mqtt
+    requests:
+    - cmd: connect
+      addr: 127.0.0.1
+    - cmd: subscribe
+      topic: provisioning/${id}/response
+      time: 5s
+      min-count: 1
+    - cmd: disconnect
+
+    data-sources:
+    - devices.csv
+      delimiter: ','
+      quoted: false
+      encoding: "utf-8"
+      loop: true
+      variable-names: id,cert
+      random-order: false
+      
+  mqtt-client-auto-provision-pub:
+    protocol: mqtt
+    requests:
+    - cmd: connect
+      addr: 127.0.0.1    
+    - cmd: publish
+      topic: provisioning/${id}/request
+      message: { "type" : "x509", "cert" : "${cert}"}
+    - cmd: disconnect
+    
+    data-sources:
+    - devices.csv
+      delimiter: ','
+      quoted: false
+      encoding: "utf-8"
+      loop: true
+      variable-names: id,cert
+      random-order: false
