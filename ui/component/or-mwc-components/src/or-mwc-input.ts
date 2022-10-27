@@ -3,6 +3,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import {Ref, ref, createRef} from "lit/directives/ref.js";
 import {classMap} from "lit/directives/class-map.js";
 import {ifDefined} from "lit/directives/if-defined.js";
+import {when} from 'lit/directives/when.js';
 import {MDCTextField} from "@material/textfield";
 import {MDCComponent} from "@material/base";
 import {MDCRipple} from "@material/ripple";
@@ -77,6 +78,18 @@ export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> 
                 previousValue: previousValue,
                 enterPressed: enterPressed
             },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+export class OrInputSearchChangedEvent extends CustomEvent<OrInputChangedEventDetail> {
+
+    public static readonly NAME = "or-mwc-inputsearch-changed";
+
+    constructor(detail: OrInputChangedEventDetail) {
+        super(OrInputSearchChangedEvent.NAME, {
+            detail: detail,
             bubbles: true,
             composed: true
         });
@@ -459,7 +472,7 @@ const style = css`
     }
 
     .mdc-list {
-        flex: 1 1 0;
+        flex: 1;
         overflow: auto;
     }
 
@@ -511,11 +524,14 @@ const style = css`
 
     #select-searchable {
         background-color: transparent; 
-        border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)}); 
-        margin: 8px 8px 0; 
-        width: calc(100% - 50px); 
-        border-radius: 4px; 
+        border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        margin: 8px; 
+        width: calc(100% - 16px); 
+        border-radius: 4px;
         padding: 4px 16px;
+        flex: 0 0 auto;
+        align-items: center;
+        height: 48px;
     }
 
     .mdc-text-field__input::-webkit-calendar-picker-indicator {
@@ -591,6 +607,13 @@ const style = css`
 
     .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
         --or-icon-fill: var(--or-app-color4);
+    }
+    .mdc-menu__searchable {
+        overflow: hidden;
+        flex-direction: column;
+    }
+    .mdc-menu__searchable.mdc-menu-surface--is-open-below {
+        display: flex;
     }
 `;
 
@@ -683,6 +706,9 @@ export class OrMwcInput extends LitElement {
 
     @property({type: Boolean})
     public searchable?: boolean;
+
+    @property({type: Boolean})
+    public searching: boolean = false;
 
     /* STYLING PROPERTIES BELOW */
 
@@ -979,6 +1005,12 @@ export class OrMwcInput extends LitElement {
                             }
                             this._tempValue = inputValue;
                         }
+
+                        // searchable field does not always trigger @MDCSelect, so using itemClickHandler instead.
+                        else if(this.searchable) {
+                            this.onValueChange(undefined, item.value);
+                        }
+
                     };
 
                     const menuCloseHandler = () => {
@@ -1001,7 +1033,11 @@ export class OrMwcInput extends LitElement {
                     return html`
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
-                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(opts![e.detail.index]) ? opts![e.detail.index][0] : opts![e.detail.index])}">
+                            @MDCSelect:change="${(e: MDCSelectEvent) => {
+                                if(!this.searchable) { // searchable field does not always trigger @MDCSelect, so using itemClickHandler instead.
+                                    this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(opts![e.detail.index]) ? opts![e.detail.index][0] : opts![e.detail.index]);
+                                }
+                            }}">
                                 <div class="mdc-select__anchor" role="button"
                                      aria-haspopup="listbox"
                                      aria-expanded="false"
@@ -1032,17 +1068,28 @@ export class OrMwcInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}" style="width: inherit !important;">
-                                    ${this.searchable ? html`
-                                        <input class="mdc-text-field__input" 
-                                            autofocus
-                                            id="select-searchable" 
-                                            type="text"
-                                            @keyup="${(e:MDCSelectEvent) =>  this.searchableValue = (e.target as HTMLInputElement).value}"/>   
-                                    ` : ``}
+                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed ${this.searchable ? 'mdc-menu__searchable' : undefined}" @MDCMenuSurface:closed="${menuCloseHandler}" style="width: inherit !important;">
+                                    ${when(this.searchable, () => {
+                                        return html`
+                                            <label id="select-searchable" class="mdc-text-field mdc-text-field--filled">
+                                                <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">${i18next.t('search')}</span>
+                                                <input class="mdc-text-field__input" type="text"
+                                                       @keyup="${(e: KeyboardEvent) => {
+                                                           if(this.searchableValue != (e.target as HTMLInputElement).value) {
+                                                               this.dispatchEvent(new OrInputSearchChangedEvent({value: (e.target as HTMLInputElement).value, previousValue: this.searchableValue }))
+                                                               this.searchableValue = (e.target as HTMLInputElement).value;
+                                                           }
+                                                       }}"
+                                                />
+                                            </label>
+                                            ${this.searching || (this.searchable && this.searchableValue && (!opts || opts.length == 0)) ? html`
+                                                <span class="mdc-text-field-helper-line" style="margin: 0 8px 8px;">${this.searching ? i18next.t('loading') : i18next.t('noResults')}</span>
+                                            ` : undefined}
+                                        `
+                                    })}
                                     ${getListTemplate(
                                         this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                        opts ? html`${opts.map(([optValue, optDisplay], index) => {
+                                            (opts && opts.length > 0) ? html`${opts.map(([optValue, optDisplay], index) => {
                                             return getItemTemplate(
                                                 {
                                                     text: optDisplay,
@@ -1521,7 +1568,7 @@ export class OrMwcInput extends LitElement {
             // some components need to be kept in sync with the DOM
             if (this.type === InputType.SELECT && this._mdcComponent) {
                 if (_changedProperties.has("options")) {
-                    (this._mdcComponent as MDCSelect).layoutOptions();
+                    (this._mdcComponent as MDCSelect).layoutOptions(); // has big impact on performance when the MDCSelect list is large.
                 }
                 (this._mdcComponent as MDCSelect).disabled = !!(this.disabled || this.readonly);
                 (this._mdcComponent as MDCSelect).useDefaultValidation = !this.multiple;
@@ -1671,7 +1718,7 @@ export class OrMwcInput extends LitElement {
         }
 
         if(this.searchable) {
-            const searchableElement = this.shadowRoot?.getElementById('select-searchable');
+            const searchableElement = this.shadowRoot?.getElementById('select-searchable')?.children[1];
             if(searchableElement) {
                 this.searchableValue = undefined;
                 (searchableElement as HTMLInputElement).value = "";

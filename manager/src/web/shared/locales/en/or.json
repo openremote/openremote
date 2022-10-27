@@ -119,6 +119,7 @@
   "setParent": "Select parent asset",
   "noAssetTypeSelected": "Please select an asset type on the left",
   "loading": "Loading...",
+  "noResults": "No results found.",
   "noAssetsFound": "No assets found",
   "filterInvite": "Filter with at least 3 characters",
   "location": "Location",

@@ -28,7 +28,8 @@ import {
     RulesetUnion,
     WellknownAssets,
     Asset,
-    AssetQueryOrderBy$Property
+    AssetQueryOrderBy$Property,
+    AssetQueryMatch
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
@@ -492,6 +493,9 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 
     });
 }
+
+// Function for getting assets by type
+// loadedAssets is an object given as parameter that will be updated if new assets are fetched.
 export async function getAssetsByType(type: string, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
     if(loadedAssets?.has(type)) {
         return {

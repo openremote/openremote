@@ -119,6 +119,7 @@
   "setParent": "Kies parent asset",
   "noAssetTypeSelected": "Kies een asset type uit de lijst aan de linkerkant",
   "loading": "Aan het laden...",
+  "noResults": "Geen resultaten gevonden.",
   "noAssetsFound": "Geen assets gevonden",
   "location": "Locatie",
   "longPressSetLoc": "Druk lang op de kaart om locatie in te stellen",
