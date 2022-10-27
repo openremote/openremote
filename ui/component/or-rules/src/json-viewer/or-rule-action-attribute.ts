@@ -73,8 +73,6 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
     protected _assetSearchValue: string = '';
 
 
-    /* -------------------- */
-
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("action")) {
             this._assets = undefined;
@@ -107,15 +105,15 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             return html``;
         }
 
-        if (!this._assets) {
-            this.loadAssets(assetType);
-        }
-
         const query = this.action.target.assets ? this.action.target.assets : this.action.target.matchedAssets ? this.action.target.matchedAssets : undefined;
         const assetDescriptor = this.assetInfos ? this.assetInfos.find((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
 
         if (!assetDescriptor) {
             return html``;
+        }
+
+        if (!this._assets) {
+            this.loadAssets(assetType);
         }
 
         // TODO: Add multiselect support
@@ -168,9 +166,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 }
 
                 attributes.sort(Util.sortByString((attr) => attr[1]));
-
                 let attributeInput: TemplateResult | undefined;
-
                 if (this.action.attributeName) {
                     const label = descriptors[1] && (descriptors[1].name === WellknownValueTypes.BOOLEAN) ? "" : i18next.t("value");
                     let inputType;
