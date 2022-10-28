@@ -20,6 +20,7 @@
 package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelId;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;

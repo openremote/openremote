@@ -358,7 +358,7 @@ export class Manager implements EventProviderFactory {
             success = await this.doAuthInit();
         } else {
 
-            if (this._authServerUrl) {
+            if (!this._config.keycloakUrl) {
                 this.config.keycloakUrl = this._authServerUrl;
             }
 
