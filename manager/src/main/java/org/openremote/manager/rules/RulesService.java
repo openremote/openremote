@@ -490,73 +490,43 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected void processAssetChange(Asset<?> asset, PersistenceEvent<Asset<?>> persistenceEvent) {
         withLock(getClass().getSimpleName() + "::processAssetChange", () -> {
 
-            // We must load the asset from database (only when required), as the
-            // persistence event might not contain a completely loaded asset
-            BiFunction<Asset<?>, Attribute<?>, AssetState<?>> buildAssetState = (loadedAsset, attribute) ->
-                new AssetState<>(loadedAsset, ValueUtil.clone(attribute), Source.INTERNAL);
-
             switch (persistenceEvent.getCause()) {
                 case CREATE: {
-                    // New asset has been created so get attributes that don't have RULE_STATE=false meta
-                    List<Attribute<?>> ruleStateAttributes = asset
+                    // Load rule state attributes into rules engine
+                    asset
                         .getAttributes()
                         .stream()
-                        .filter(RulesService::attributeIsRuleState).collect(Collectors.toList());
-
-                    // Asset<?> used to be loaded for each attribute which is inefficient
-                    Asset<?> loadedAsset = ruleStateAttributes.isEmpty() ? null : assetStorageService.find(asset.getId(),
-                        true);
-
-                    // Build an update with a fully loaded asset
-                    ruleStateAttributes.forEach(attribute -> {
-
-                        // If the asset is now gone it was deleted immediately after being inserted, nothing more to do
-                        if (loadedAsset == null)
-                            return;
-
-                        AssetState<?> assetState = buildAssetState.apply(loadedAsset, attribute);
-                        LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
-                        updateAssetState(assetState);
-                    });
+                        .filter(RulesService::attributeIsRuleState)
+                        .forEach(attribute -> {
+                            AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
+                            LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
+                            updateAssetState(assetState);
+                        });
                     break;
                 }
                 case UPDATE: {
-                    int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
-                    if (attributesIndex < 0) {
-                        return;
-                    }
 
-                    // Fully load the asset to get parent and path info
-                    Asset<?> loadedAsset = assetStorageService.find(asset.getId(), true);
+                    boolean attributesChanged = Arrays.asList(persistenceEvent.getPropertyNames()).contains("attributes");
+                    AttributeMap oldAttributes = attributesChanged ? ((AttributeMap) persistenceEvent.getPreviousState("attributes")) : asset.getAttributes();
+                    AttributeMap currentAttributes = asset.getAttributes();
 
-                    // If the asset is now gone it was deleted immediately after being updated, nothing more to do
-                    if (loadedAsset == null)
-                        return;
-
-                    List<Attribute<?>> oldStateAttributes = ((AttributeMap) persistenceEvent.getPreviousState("attributes"))
+                    List<Attribute<?>> oldStateAttributes = oldAttributes
                         .stream()
-                        .filter(RulesService::attributeIsRuleState)
-                        .collect(toList());
+                        .filter(RulesService::attributeIsRuleState).toList();
 
-                    List<Attribute<?>> newStateAttributes = ((AttributeMap) persistenceEvent.getCurrentState("attributes"))
+                    List<Attribute<?>> newStateAttributes = currentAttributes
                         .stream()
-                        .filter(RulesService::attributeIsRuleState)
-                        .collect(Collectors.toList());
+                        .filter(RulesService::attributeIsRuleState).toList();
 
-                    // Retract obsolete or modified attributes
-                    List<Attribute<?>> obsoleteOrModified = getAddedOrModifiedAttributes(newStateAttributes, oldStateAttributes).collect(toList());
-
-                    obsoleteOrModified.forEach(attribute -> {
-                        AssetState<?> assetState = buildAssetState.apply(loadedAsset, attribute);
+                    oldStateAttributes.forEach(attribute -> {
+                        AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
                         LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);
                     });
 
-                    // Insert new or modified attributes
-                    newStateAttributes.stream().filter(attr ->
-                        !oldStateAttributes.contains(attr) || obsoleteOrModified.contains(attr))
-                        .forEach(attribute -> {
-                            AssetState<?> assetState = buildAssetState.apply(loadedAsset, attribute);
+                    // Insert new states
+                    newStateAttributes.forEach(attribute -> {
+                            AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
                             LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
                             updateAssetState(assetState);
                         });

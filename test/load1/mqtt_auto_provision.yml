@@ -1,8 +1,10 @@
 execution:
 - concurrency: 1
+  ramp-up: 1m
+  hold-for: 5m
   scenario: mqtt-client-auto-provision-sub
 - concurrency: 1
-  delay: 10s
+  hold-for: 15s
   scenario: mqtt-client-auto-provision-pub
 
 scenarios:
@@ -11,19 +13,19 @@ scenarios:
     protocol: mqtt
     requests:
     - cmd: connect
-      addr: localhost
+      addr: 127.0.0.1
     - cmd: subscribe
       topic: provisioning/${id}/response
-      time: 15s
+      time: 5s
       min-count: 1
     - cmd: disconnect
 
     data-sources:
-    - path: devices.csv
+    - devices.csv
       delimiter: ','
       quoted: false
       encoding: "utf-8"
-      loop: false
+      loop: true
       variable-names: id,cert
       random-order: false
       
@@ -31,17 +33,17 @@ scenarios:
     protocol: mqtt
     requests:
     - cmd: connect
-      addr: localhost
+      addr: 127.0.0.1    
     - cmd: publish
       topic: provisioning/${id}/request
-      message: "{\"type\":\"x509\",\"cert\":\"${cert}\"}"
+      message: { "type" : "x509", "cert" : "${cert}"}
     - cmd: disconnect
-
+    
     data-sources:
-    - path: devices.csv
+    - devices.csv
       delimiter: ','
       quoted: false
       encoding: "utf-8"
-      loop: false
+      loop: true
       variable-names: id,cert
       random-order: false
