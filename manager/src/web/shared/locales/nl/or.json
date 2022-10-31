@@ -488,6 +488,11 @@
       "indexedItem": "Item {{index}}"
     }
   },
+  "rowsPerPage": "Rijen per pagina",
+  "createUserFailed": "Aanmaken gebruiker mislukt",
+  "saveUserFailed": "Opslaan gebruiker mislukt",
+  "invalidUsername": "De gebruikersnaam mag 3-255 numerieke tekens bevatten",
+  "invalidEmail": "Ongeldig emailadres",
   "yes": "Ja",
   "no": "Nee",
   "filter": {

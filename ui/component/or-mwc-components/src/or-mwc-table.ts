@@ -1,17 +1,15 @@
-import {css, html, LitElement, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query, state} from "lit/decorators.js";
 import {classMap} from "lit/directives/class-map.js";
-import {ifDefined} from "lit/directives/if-defined.js";
+import {until} from 'lit/directives/until.js';
 import {MDCDataTable} from "@material/data-table";
-
+import {when} from 'lit/directives/when.js';
 import {DefaultColor3, DefaultColor2, DefaultColor1} from "@openremote/core";
+import {i18next} from "@openremote/or-translate";
+import {InputType, OrInputChangedEvent} from "./or-mwc-input";
+
 
 const dataTableStyle = require("@material/data-table/dist/mdc.data-table.css");
-
-interface TableOptions {
-    columnFilter?: string[];
-    stickyFirstColumn?: boolean;
-}
 
 // language=CSS
 const style = css`
@@ -28,6 +26,11 @@ const style = css`
         width: 100%;
         overflow: auto;
         max-height: 500px;
+    }
+    .mdc-data-table__paginated {
+        overflow: hidden;
+        max-height: 700px;
+        justify-content: space-between;
     }
 
     /* first column should be sticky*/
@@ -68,11 +71,29 @@ const style = css`
     }
 
     .mdc-data-table__header-cell {
-        font-weight: 500;
+        font-weight: bold;
         color: ${unsafeCSS(DefaultColor3)};
         font-size: 14px;
     }
+    .mdc-data-table__pagination-rows-per-page-select {
+        /*min-width: 112px;*/
+    }
+    .mdc-data-table__pagination {
+        min-height: 64px;
+    }
 `;
+
+interface TableConfig {
+    columnFilter?: string[];
+    stickyFirstColumn?: boolean;
+    pagination?: {
+        enable?: boolean
+    }
+}
+interface TableColumn {
+    title?: string,
+    isNumeric?: boolean
+}
 
 @customElement("or-mwc-table")
 export class OrMwcTable extends LitElement {
@@ -85,45 +106,155 @@ export class OrMwcTable extends LitElement {
     }
 
     @property({type: Array})
-    public headers?: string[];
+    public columns?: TableColumn[] | string[];
 
     @property({type: Array})
     public rows?: string[][];
 
+    @property({type: Object})
+    protected rowsTemplate?: TemplateResult;
+
+    @property({type: Number})
+    protected paginationIndex: number = 0;
+
+    @property({type: Number})
+    protected paginationSize: number = 10;
+
     @property({type: Array})
-    public options?: TableOptions = {
+    protected config: TableConfig = {
         columnFilter: [],
-        stickyFirstColumn: true
+        stickyFirstColumn: true,
+        pagination: {
+            enable: false
+        }
     };
 
-    protected render() {
+    @state()
+    protected _dataTable?: MDCDataTable;
 
-        const headerTemplate = (!this.headers) ? html`` : html`
-            <thead>
-                <tr class="mdc-data-table__header-row">
-                    ${this.headers.map(item => html`
-                        <th class="mdc-data-table__header-cell" role="columnheader" scope="col" title="${item}">
-                            ${item}
-                        </th>
-                    `)}
-                </tr>
-            </thead>`;
+
+    /* ------------------- */
+
+    protected firstUpdated(changedProperties: Map<string, any>) {
+        const elem = this.shadowRoot!.querySelector('.mdc-data-table');
+        this._dataTable = new MDCDataTable(elem!);
+        this.updateComplete.then(() => {
+            (elem as HTMLElement).style.maxHeight = elem!.clientHeight + 2 + "px";
+            (elem as HTMLElement).style.minHeight = elem!.clientHeight + 2 + "px";
+        })
+    }
+
+    protected updated(changedProperties: Map<string, any>) {
+        if((changedProperties.has('paginationIndex') || changedProperties.has('paginationSize')) && this.config.pagination?.enable) {
+            this.shadowRoot!.querySelector('.mdc-data-table__table-container')?.scrollTo(0, 0);
+        }
+    }
+
+    protected render() {
+        const tableClasses = {
+            "mdc-data-table": true,
+            "mdc-data-table__paginated": !!this.config.pagination,
+            "has-sticky-first-column": !!this.config.stickyFirstColumn
+        }
         return html`
-            <div class="mdc-data-table ${classMap({"has-sticky-first-column": !!this.options!.stickyFirstColumn})}">
-                <table class="mdc-data-table__table">
-                    ${headerTemplate}
-                    <tbody class="mdc-data-table__content">
-                        ${!this.rows ? `` : this.rows.map(item => html`
-                            <tr class="mdc-data-table__row">
-                                ${item.map((cell: string|number) => {
-                                    return html`<td class="mdc-data-table__cell ${classMap({"mdc-data-table__cell--numeric": typeof cell === "number"})}" title="${cell}">${cell}</td>`;
-                                })}  
-                            </tr>
-                        `)}
-                    </tbody>
-                </table>
+            <div class="${classMap(tableClasses)}">
+                <div class="mdc-data-table__table-container">
+                    <table class="mdc-data-table__table">
+                        ${when(this.columns, () => {
+                            return html`
+                                <thead>
+                                    <tr class="mdc-data-table__header-row">
+                                        ${this.columns!.map((column: TableColumn | string) => {
+                                            if(typeof column == "string") {
+                                                return html`<th class="mdc-data-table__header-cell" role="columnheader" scope="col" title="${column}">${column}</th>`
+                                            } else {
+                                                return html`<th class="mdc-data-table__header-cell ${classMap({ 'mdc-data-table__cell--numeric': !!column.isNumeric })}" role="columnheader" scope="col" title="${column.title}">${column.title}</th>`;
+                                            }
+                                        })}
+                                    </tr>
+                                </thead>
+                            `
+                        })}
+                        <tbody class="mdc-data-table__content">
+                            ${when(this.rowsTemplate, () => {
+                                this.updateComplete.then(async () => {
+                                    const elem = await this.getTableElem(false);
+                                    const rows = elem?.querySelectorAll('tr');
+                                    rows?.forEach((row, index) => {
+                                        const hidden = (index <= (this.paginationIndex * this.paginationSize) || index > (this.paginationIndex * this.paginationSize) + this.paginationSize) && !row.classList.contains('mdc-data-table__header-row');
+                                        row.style.display = (hidden ? 'none' : 'table-row');
+                                    })
+                                })
+                                return html`${this.rowsTemplate}`;
+                            }, () => {
+                                return this.rows ? this.rows
+                                        .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
+                                        .map(item => html`
+                                            <tr class="mdc-data-table__row">
+                                                ${item.map((cell: string|number) => html`<td class="mdc-data-table__cell ${classMap({"mdc-data-table__cell--numeric": typeof cell === "number"})}" title="${cell}">${cell}</td>`)}
+                                            </tr>
+                                        `)
+                                : undefined;
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+                ${when(this.config.pagination, () => {
+                    return html`
+                        <div class="mdc-data-table__pagination">
+                            <div class="mdc-data-table__pagination-trailing">
+                                <div class="mdc-data-table__pagination-rows-per-page">
+                                    <div class="mdc-data-table__pagination-rows-per-page-label">
+                                        ${i18next.t('rowsPerPage')}
+                                    </div>
+                                    <or-mwc-input class="mdc-data-table__pagination-rows-per-page-select" .type="${InputType.SELECT}" compact comfortable outlined .value="${this.paginationSize}" .options="${[10, 25, 100]}"
+                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.paginationSize = ev.detail.value; this.paginationIndex = 0; }}"
+                                    ></or-mwc-input>
+                                </div>
+                                ${until(this.getPaginationControls(), html`${i18next.t('loading')}`)}
+                            </div>
+                        </div>
+                    `
+                })}
             </div>
         `;
+    }
+
+    async getPaginationControls(): Promise<TemplateResult> {
+        const max: number = await this.getRowCount();
+        const start: number = (this.paginationIndex * this.paginationSize) + 1;
+        let end: number = this.paginationIndex * this.paginationSize + this.paginationSize;
+        if(end > max) { end = max; }
+        return html`
+            <div class="mdc-data-table__pagination-navigation">
+                <div class="mdc-data-table__pagination-total">
+                    <span>${start}-${end} of ${max}</span>
+                </div>
+                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}" data-first-page="true" icon="page-first" .disabled="${this.paginationIndex == 0}" @or-mwc-input-changed="${() => this.paginationIndex = 0}"></or-mwc-input>
+                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}" data-prev-page="true" icon="chevron-left" .disabled="${this.paginationIndex == 0}" @or-mwc-input-changed="${() => this.paginationIndex--}"></or-mwc-input>
+                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}" data-next-page="true" icon="chevron-right" .disabled="${this.paginationIndex * this.paginationSize + this.paginationSize >= max}" @or-mwc-input-changed="${() => this.paginationIndex++}"></or-mwc-input>
+                <or-mwc-input class="mdc-data-table__pagination-button" .type="${InputType.BUTTON}" data-last-page="true" icon="page-last" .disabled="${this.paginationIndex * this.paginationSize + this.paginationSize >= max}" @or-mwc-input-changed="${async () => {
+                    let pages: number = max / this.paginationSize;
+                    pages = pages.toString().includes('.') ? Math.floor(pages) : (pages - 1);
+                    this.paginationIndex = pages;
+                }}"></or-mwc-input>
+            </div>
+        `;
+    }
+
+    async getTableElem(wait: boolean = false): Promise<HTMLElement | undefined> {
+        if(wait) { await this.updateComplete; }
+        if(this._dataTable) { return this._dataTable.root as HTMLElement; }
+        else { return this.shadowRoot!.querySelector('.mdc-data-table') as HTMLElement; }
+    }
+
+    async getRowCount(wait: boolean = true, tableElem?: HTMLElement): Promise<number> {
+        if(this.rows?.length) { return this.rows?.length; }
+        if(!tableElem) {
+            tableElem = await this.getTableElem(wait);
+        }
+        const rowElems = tableElem?.querySelectorAll('tr');
+        return rowElems!.length;
     }
 
 }

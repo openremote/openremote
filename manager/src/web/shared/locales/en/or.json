@@ -489,6 +489,7 @@
       "indexedItem": "Item {{index}}"
     }
   },
+  "rowsPerPage": "Rows per page",
   "createUserFailed": "Create user failed",
   "saveUserFailed": "Save user failed",
   "invalidUsername": "Username must be 3-255 alpha numerical characters",

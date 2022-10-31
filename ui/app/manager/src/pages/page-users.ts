@@ -445,6 +445,50 @@ export class PageUsers extends Page<AppStateKeyed> {
         const realmRoleOptions: [string, string][] = this._realmRoles ? this._realmRoles.filter(r => this._realmRolesFilter(r)).map(r => [r.name, i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name.replace("_", " ").replace("-", " ")))]) : [];
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
+        const userTableColumns: any[] = [
+            { title: i18next.t('username') },
+            { title: i18next.t('email') },
+            { title: i18next.t('role') },
+            { title: i18next.t('status') }
+        ];
+
+        const userTableRowsTemplate: TemplateResult = html`
+            ${this._users.map((user, index) => {
+                const isServiceUser = user.serviceAccount;
+                return html`
+                    <tr id="${(user.serviceAccount ? 'serviceuser-' : 'user-') + user.username}" class="mdc-data-table__row" @click="${(ev) => {
+                        console.error("Clicked " + user.username); 
+                    }}">
+                        <td class="padded-cell mdc-data-table__cell">
+                            <span>${user.username}</span>
+                        </td>
+                        <td class="padded-cell mdc-data-table__cell  hide-mobile">
+                            ${isServiceUser ? undefined : user.email}
+                        </td>
+                        <td class="padded-cell mdc-data-table__cell">
+                            ${user.roles ? user.roles.filter(r => r.composite).map(r => r.name).join(",") : null}
+                        </td>
+                        <td class="padded-cell mdc-data-table__cell hide-mobile">
+                            <or-translate .value="${user.enabled ? "enabled" : "disabled"}"></or-translate>
+                        </td>
+                    </tr>
+                `
+            })}
+        `
+
+        const serviceTableRows: string[][] = [];
+        for(let i = 0; i < 1000; i++) {
+            serviceTableRows.push([`user ${i}`, `user${i}@email.com`, '', 'offline'])
+        }
+
+        const tableConfig = {
+            columnFilter: [],
+            stickyFirstColumn: false,
+            pagination: {
+                enable: true
+            }
+        }
+
         return html`
             <div id="wrapper">
                 <div id="title">
@@ -452,6 +496,17 @@ export class PageUsers extends Page<AppStateKeyed> {
                     ${i18next.t("user_plural")}
                 </div>
 
+                <div id="content" class="panel">
+                    <p class="panel-title">${i18next.t("regularUser_plural")}</p>
+                    <or-mwc-table .columns="${userTableColumns}" .rowsTemplate="${userTableRowsTemplate}" .config="${tableConfig}"></or-mwc-table>
+                </div>
+                
+                <div id="content" class="panel">
+                    <p class="panel-title">${i18next.t("serviceUser_plural")}</p>
+                    <or-mwc-table .columns="${userTableColumns}" .rows="${serviceTableRows}" .config="${tableConfig}"></or-mwc-table>
+                </div>
+                
+                
                 <div class="panel">
                     <p class="panel-title">${i18next.t("regularUser_plural")}</p>
                     <div id="table-users" class="mdc-data-table">
