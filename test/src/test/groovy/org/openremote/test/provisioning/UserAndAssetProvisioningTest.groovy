@@ -706,7 +706,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the broker should have published to the response topic an error message"
         conditions.eventually {
-            assert deviceNResponses.size() == 1s
+            assert deviceNResponses.size() == 1
             assert deviceNResponses.get(0) instanceof ErrorResponseMessage
             assert ((ErrorResponseMessage)deviceNResponses.get(0)).error == ErrorResponseMessage.Error.USER_DISABLED
         }
