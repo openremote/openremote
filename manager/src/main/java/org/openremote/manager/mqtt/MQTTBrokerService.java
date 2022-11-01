@@ -297,7 +297,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     @Override
     public void afterCreateConnection(RemotingConnection connection) throws ActiveMQException {
 
-        LOG.fine("New client connection: "+ connectionToString(connection));
+        LOG.info("Client connection created: "+ connectionToString(connection));
 
         // MQTT seems to only use failure callback even if closed gracefully (need to look at the exception for details)
         connection.addFailureListener(new FailureListener() {
@@ -312,11 +312,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
                 if (exception.getType() == ActiveMQExceptionType.REMOTE_DISCONNECT) {// Seems to be the type for graceful close of connection
                     // Notify handlers of connection close
+                    LOG.info("Client connection closed: "+ connectionToString(connection));
                     for (MQTTHandler handler : getCustomHandlers()) {
                         handler.onDisconnect(connection);
                     }
                 } else {
                     // Notify handlers of connection failure
+                    LOG.info("Client connection failed: "+ connectionToString(connection));
                     for (MQTTHandler handler : getCustomHandlers()) {
                         handler.onConnectionLost(connection);
                     }
@@ -349,7 +351,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     @Override
     public void afterDestroyConnection(RemotingConnection connection) throws ActiveMQException {
-        LOG.fine("Destroyed client connection: " + connectionToString(connection));
     }
 
     public void onSubscribe(RemotingConnection connection, String topicStr) {
@@ -359,6 +360,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             if (handler.handlesTopic(topic)) {
                 LOG.fine("Handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
                 handler.onSubscribe(connection, topic);
+                LOG.info("Client subscribed '" + topicStr + "': " + connectionToString(connection));
                 break;
             }
         }
@@ -371,6 +373,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             if (handler.handlesTopic(topic)) {
                 LOG.fine("Handler has handled unsubscribe: handler=" + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
                 handler.onUnsubscribe(connection, topic);
+                LOG.info("Client unsubscribed '" + topicStr + "': " + connectionToString(connection));
                 break;
             }
         }
@@ -422,7 +425,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     }
 
     protected void doForceDisconnect(RemotingConnection connection) {
-        LOG.fine("Force disconnecting client connection: " + connectionToString(connection));
+        LOG.info("Force disconnecting client connection: " + connectionToString(connection));
         connection.disconnect(false);
     }
 

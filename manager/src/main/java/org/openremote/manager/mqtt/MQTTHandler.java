@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 
 /**
@@ -109,7 +110,14 @@ public abstract class MQTTHandler {
                 Topic publishTopic = Topic.parse(MQTTUtil.convertCoreAddressToMqttTopicFilter(message.getAddress(), mqttBrokerService.wildcardConfiguration));
                 String clientID = message.getStringProperty(MessageUtil.CONNECTION_ID_PROPERTY_NAME);
                 RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
+
+                if (connection == null) {
+                    LOG.warning("Failed to find connection for connected client so dropping publish to topic '" + topic + "': clientID=" +  clientID);
+                    return;
+                }
+
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
+                getLogger().info("Client published '" + topic + "': " + connectionToString(connection));
             });
         } catch (ActiveMQException e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
