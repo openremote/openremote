@@ -3,8 +3,8 @@ name: CI/CD
 on:
   # Push on master excluding tags
   push:
-    branches:
-        - 'master'
+    branches:   
+      - 'master'
     tags-ignore:
       - '*.*'
 
