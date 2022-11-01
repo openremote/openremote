@@ -445,6 +445,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         deviceNUniqueId = "device4"
         deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -492,6 +494,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         deviceNUniqueId = "device3"
         deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -573,6 +577,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "another device re-connects"
         deviceNResponses.clear()
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -671,6 +677,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "a device with disabled user account connects"
         deviceNResponses.clear()
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -698,7 +706,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the broker should have published to the response topic an error message"
         conditions.eventually {
-            assert deviceNResponses.size() == 1
+            assert deviceNResponses.size() == 2
             assert deviceNResponses.get(0) instanceof ErrorResponseMessage
             assert ((ErrorResponseMessage)deviceNResponses.get(0)).error == ErrorResponseMessage.Error.USER_DISABLED
         }
