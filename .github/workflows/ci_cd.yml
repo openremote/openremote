@@ -533,6 +533,7 @@ jobs:
         id: install-command
         shell: bash
         run: |
+          REF_NAME=${REF_NAME//\//_}
           if [ -n "$MANAGER_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew installDist -PopenremoteVersion=$REF_NAME"
           elif [ -n "$DEPLOYMENT_DOCKER_CMD" ]; then
