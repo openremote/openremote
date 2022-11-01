@@ -134,6 +134,13 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             this.requestUpdate()
         })
 
+        document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
+            manager.rest.api.ConfigurationResource.update(manager.managerAppConfig).then(()=>{
+                manager.managerAppConfig = e.detail?.value as ManagerAppConfig
+                app.requestUpdate()
+            })
+        })
+
         const managerConfiguration = manager.managerAppConfig
 
         return html`
@@ -147,7 +154,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                         <div id="header-actions">
                             <div id="header-actions-content">
                                 <or-conf-json .managerConfig="${managerConfiguration}"></or-conf-json>
-                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan" @click="${()=>{document.dispatchEvent(new CustomEvent('saveLocalManagerConfig', {detail: {value: managerConfiguration}}))}}"></or-mwc-input>
+                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan" @click="${()=>{document.dispatchEvent(new CustomEvent('saveManagerConfig', {detail: {value: managerConfiguration}}))}}"></or-mwc-input>
                             </div>
                         </div>
                     </div>

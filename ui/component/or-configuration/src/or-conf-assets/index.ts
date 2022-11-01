@@ -1,6 +1,7 @@
 import { html, LitElement, css, PropertyValues } from "lit";
 import {customElement, property} from "lit/decorators.js";
 import './or-conf-asset-panels'
+import manager from "@openremote/core";
 
 export interface AssetsPanel{
   type: string,
@@ -50,6 +51,7 @@ export class OrConfAssets extends LitElement {
     const assets = (this.assets?.viewer?.assetTypes ? this.assets?.viewer?.assetTypes : {})
     return html`
       ${Object.entries(assets).map(function([key, asset]){
+        manager.rest.api.AssetModelResource.getAssetInfo(key).then(response => console.log(response))
         return html`
           <or-collapsible-panel>
             <div slot="header" class="header-container">
