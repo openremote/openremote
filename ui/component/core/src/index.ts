@@ -356,6 +356,10 @@ export class Manager implements EventProviderFactory {
                 const managerURL = new URL(this._config.managerUrl!);
                 let authServerURL: URL;
 
+                if (this._authServerUrl.startsWith("//")) {
+                    this._authServerUrl = managerURL.protocol + this._authServerUrl;
+                }
+
                 try {
                     authServerURL = new URL(this._authServerUrl);
                 } catch (e) {
