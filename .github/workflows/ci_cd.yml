@@ -1,4 +1,3 @@
-# ---------------------------------------------------------------------------------------------------------------------
 # This workflow handles all CI/CD related tasks and can be re-used in custom projects
 # (https://github.com/openremote/custom-project i.e. has openremote submodule) or forks of this repo, it handles:
 #
