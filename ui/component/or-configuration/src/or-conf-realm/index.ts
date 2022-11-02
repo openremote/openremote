@@ -50,7 +50,7 @@ export class OrConfRealm extends LitElement {
     let selectedRealm = "";
     const _AddRealmToView =  () => {
       if (selectedRealm){
-        this.realms[selectedRealm] = this.realms["default"] ? this.realms["default"] : {}
+        this.realms[selectedRealm] = {}
         this._loadListOfAvailableRealms()
         this.requestUpdate()
         return true

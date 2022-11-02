@@ -1,7 +1,14 @@
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, unsafeCSS } from "lit";
 import { InputType,OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
-import { ManagerRealmConfig, HeaderNames, DEFAULT_LANGUAGES } from "@openremote/core";
+import {
+  ManagerRealmConfig,
+  HeaderNames,
+  DEFAULT_LANGUAGES,
+  DefaultColor1,
+  DefaultColor2,
+  DefaultColor3, DefaultColor4, DefaultColor5, DefaultColor6,
+} from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import { ManagerConfRealm, ManagerHeaders } from "@openremote/model";
 
@@ -60,6 +67,7 @@ export class OrConfRealmCard extends LitElement {
   public realm: ManagerConfRealm = {
     appTitle: "OpenRemote Demo",
     language: "en",
+    styles: "",
     headers:[]
   };
 
@@ -84,12 +92,12 @@ export class OrConfRealmCard extends LitElement {
   protected _getColors(){
     //TODO settings default colors
     const colors : {[name:string] : string} = {
-      '--or-app-color1': '',
-      '--or-app-color2': '',
-      '--or-app-color3': '',
-      '--or-app-color4': '',
-      '--or-app-color5': '',
-      '--or-app-color6': '',
+      '--or-app-color1': unsafeCSS(DefaultColor1).toString(),
+      '--or-app-color2': unsafeCSS(DefaultColor2).toString(),
+      '--or-app-color3': unsafeCSS(DefaultColor3).toString(),
+      '--or-app-color4': unsafeCSS(DefaultColor4).toString(),
+      '--or-app-color5': unsafeCSS(DefaultColor5).toString(),
+      '--or-app-color6': unsafeCSS(DefaultColor6).toString(),
     }
     if (this.realm?.styles){
       //TODO use regex for filtering and getting color codes CSS
@@ -111,6 +119,7 @@ export class OrConfRealmCard extends LitElement {
     Object.entries(colors).map(([key, value]) => {
       css += key +":" +value + ";"
     })
+    console.log(colors, css, this.realm.appTitle)
     this.realm.styles = css
   }
 
@@ -128,9 +137,7 @@ export class OrConfRealmCard extends LitElement {
   }
 
   render() {
-    const realm = this.realm
     const app = this
-    console.log(realm)
     return html`
       <or-collapsible-panel>
         <div slot="header" class="header-container">
@@ -148,7 +155,7 @@ export class OrConfRealmCard extends LitElement {
                   return html`<or-mwc-input 
                     .type="${InputType.CHECKBOX}" 
                     class="header-item" label="${value}" 
-                    .value="${!!realm.headers ? realm.headers?.includes(<ManagerHeaders>value) : true }" 
+                    .value="${!!app.realm.headers ? app.realm.headers?.includes(<ManagerHeaders>value) : true }" 
                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(value, e.detail.value)}"
                   ></or-mwc-input>`
               })}

@@ -132,7 +132,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         const app = this
         document.addEventListener('saveLocalManagerConfig', (e:CustomEvent) => {
             manager.managerAppConfig = e.detail?.value as ManagerConf
-            this.requestUpdate()
+            app.requestUpdate()
         })
 
         document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
@@ -162,26 +162,9 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 </div>
                 <div class="panel">
                     <div class="panel-title">
-                        Assets
-                    </div>
-<!--                    <or-conf-assets .assets=""></or-conf-assets>-->
-                </div>
-                <div class="panel">
-                    <div class="panel-title">
-                        Map
-                    </div>
-                </div>
-                <div class="panel">
-                    <div class="panel-title">
                         Realms
                     </div>
                     <or-conf-realm .realms="${managerConfiguration?.realms}"></or-conf-realm>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-title">
-                        Rules
-                    </div>
                 </div>
             </div>
         `;

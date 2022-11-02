@@ -1,16 +1,16 @@
 package org.openremote.model.configuration;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.io.Serializable;
 import java.util.Map;
 
 public class ManagerConf implements Serializable {
+    protected boolean loadLocales;
+    protected Map<String, String> languages;
     protected Map<String, ManagerConfRealm> realms;
+    protected Map<String, Object> pages;
 }
 
 class ManagerConfRealm {
-    @JsonProperty
     protected String appTitle = null;
     protected String styles = null;
     protected String logo = null;

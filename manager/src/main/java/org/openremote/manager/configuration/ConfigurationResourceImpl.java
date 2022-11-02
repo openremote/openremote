@@ -32,6 +32,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
                 .enable(SerializationFeature.INDENT_OUTPUT);
         out.write(mapper.writeValueAsString(managerConfiguration).getBytes());
         out.close();
+        
         return managerConfiguration;
     }
 }
