@@ -138,6 +138,7 @@ export class OrConfRealmCard extends LitElement {
 
   render() {
     const app = this
+    const colors = this._getColors()
     return html`
       <or-collapsible-panel>
         <div slot="header" class="header-container">
@@ -168,9 +169,13 @@ export class OrConfRealmCard extends LitElement {
           </div>
           <div class="color-group">
             <div class="subheader">Manager colors</div>
-            ${Object.entries(this._getColors()).map(function([key, value]){
-              return html`<or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${value}" label="${key}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor(key, e.detail.value)}"></or-mwc-input>`
-            })}
+            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}" label="Primary" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
+            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}" label="Borders and lines" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
+            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}" label="Invalid and error" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
+        
+            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}" label="Surface" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
+            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}" label="Background" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
+            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}" label="Text" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
           </div>
           <or-mwc-input id="remove-realm" .type="${InputType.BUTTON}" label="Remove" @click="${() => {this.onRemove()}}" ></or-mwc-input>
         </div>
