@@ -246,6 +246,8 @@
   "user_plural": "Users",
   "regularUser_plural": "Regular users",
   "serviceUser_plural": "Service users",
+  "creating_regularUser": "Creating a new user",
+  "creating_serviceUser": "Creating a new service user",
   "regenerateSecret": "Regenerate secret",
   "generateSecretInfo": "A secret will be generated on user creation.",
   "copySecret": "Copy Secret",

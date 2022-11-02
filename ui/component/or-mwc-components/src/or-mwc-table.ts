@@ -1,5 +1,5 @@
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {classMap} from "lit/directives/class-map.js";
 import {until} from 'lit/directives/until.js';
 import {MDCDataTable} from "@material/data-table";
@@ -90,9 +90,28 @@ interface TableConfig {
         enable?: boolean
     }
 }
-interface TableColumn {
+export interface TableColumn {
     title?: string,
-    isNumeric?: boolean
+    isNumeric?: boolean,
+    hideMobile?: boolean
+}
+export interface OrMwcTableRowClickDetail {
+    index: number
+}
+
+export class OrMwcTableRowClickEvent extends CustomEvent<OrMwcTableRowClickDetail> {
+
+    public static readonly NAME = "or-mwc-table-row-click";
+
+    constructor(index: number) {
+        super(OrMwcTableRowClickEvent.NAME, {
+            detail: {
+                index: index
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
 }
 
 @customElement("or-mwc-table")
@@ -108,10 +127,13 @@ export class OrMwcTable extends LitElement {
     @property({type: Array})
     public columns?: TableColumn[] | string[];
 
+    @property({type: Object})
+    protected columnsTemplate?: TemplateResult;
+
     @property({type: Array})
     public rows?: string[][];
 
-    @property({type: Object})
+    @property({type: Object}) // to manually control HTML (requires td and tr elements)
     protected rowsTemplate?: TemplateResult;
 
     @property({type: Number})
@@ -139,14 +161,21 @@ export class OrMwcTable extends LitElement {
         const elem = this.shadowRoot!.querySelector('.mdc-data-table');
         this._dataTable = new MDCDataTable(elem!);
         this.updateComplete.then(() => {
-            (elem as HTMLElement).style.maxHeight = elem!.clientHeight + 2 + "px";
+            (elem as HTMLElement).style.maxHeight = elem!.clientHeight + 2 + "px"; // to keep initial height of table, instead of making it larger when paginationSize changes.
             (elem as HTMLElement).style.minHeight = elem!.clientHeight + 2 + "px";
         })
     }
 
     protected updated(changedProperties: Map<string, any>) {
         if((changedProperties.has('paginationIndex') || changedProperties.has('paginationSize')) && this.config.pagination?.enable) {
-            this.shadowRoot!.querySelector('.mdc-data-table__table-container')?.scrollTo(0, 0);
+            const elem = (this._dataTable ? this._dataTable.root.children[0] : this.shadowRoot!.querySelector('.mdc-data-table__table-container'));
+
+            // Using an observer to prevent forced reflow / DOM measurements; prevents blocking the thread
+            const observer = new IntersectionObserver((entries, observer) => {
+                (entries[0].target as HTMLElement).scrollTop = 0;
+                observer.unobserve(entries[0].target);
+            })
+            observer.observe(elem!);
         }
     }
 
@@ -160,11 +189,11 @@ export class OrMwcTable extends LitElement {
             <div class="${classMap(tableClasses)}">
                 <div class="mdc-data-table__table-container">
                     <table class="mdc-data-table__table">
-                        ${when(this.columns, () => {
-                            return html`
+                        ${when(this.columnsTemplate, () => this.columnsTemplate, () => {
+                            return this.columns ? html`
                                 <thead>
                                     <tr class="mdc-data-table__header-row">
-                                        ${this.columns!.map((column: TableColumn | string) => {
+                                        ${this.columns.map((column: TableColumn | string) => {
                                             if(typeof column == "string") {
                                                 return html`<th class="mdc-data-table__header-cell" role="columnheader" scope="col" title="${column}">${column}</th>`
                                             } else {
@@ -173,7 +202,7 @@ export class OrMwcTable extends LitElement {
                                         })}
                                     </tr>
                                 </thead>
-                            `
+                            ` : undefined;
                         })}
                         <tbody class="mdc-data-table__content">
                             ${when(this.rowsTemplate, () => {
@@ -190,7 +219,7 @@ export class OrMwcTable extends LitElement {
                                 return this.rows ? this.rows
                                         .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
                                         .map(item => html`
-                                            <tr class="mdc-data-table__row">
+                                            <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent(this.rows?.indexOf(item)!))}">
                                                 ${item.map((cell: string|number) => html`<td class="mdc-data-table__cell ${classMap({"mdc-data-table__cell--numeric": typeof cell === "number"})}" title="${cell}">${cell}</td>`)}
                                             </tr>
                                         `)
@@ -220,6 +249,8 @@ export class OrMwcTable extends LitElement {
         `;
     }
 
+    // HTML for the controls on the bottom of the table.
+    // Includes basic pagination for browsing pages, with calculations of where to go.
     async getPaginationControls(): Promise<TemplateResult> {
         const max: number = await this.getRowCount();
         const start: number = (this.paginationIndex * this.paginationSize) + 1;
@@ -242,12 +273,8 @@ export class OrMwcTable extends LitElement {
         `;
     }
 
-    async getTableElem(wait: boolean = false): Promise<HTMLElement | undefined> {
-        if(wait) { await this.updateComplete; }
-        if(this._dataTable) { return this._dataTable.root as HTMLElement; }
-        else { return this.shadowRoot!.querySelector('.mdc-data-table') as HTMLElement; }
-    }
-
+    // Getting the amount of rows/entries in the table.
+    // Makes sure that both the rows, and rowsTemplate properties work.
     async getRowCount(wait: boolean = true, tableElem?: HTMLElement): Promise<number> {
         if(this.rows?.length) { return this.rows?.length; }
         if(!tableElem) {
@@ -255,6 +282,12 @@ export class OrMwcTable extends LitElement {
         }
         const rowElems = tableElem?.querySelectorAll('tr');
         return rowElems!.length;
+    }
+
+    async getTableElem(wait: boolean = false): Promise<HTMLElement | undefined> {
+        if(wait) { await this.updateComplete; }
+        if(this._dataTable) { return this._dataTable.root as HTMLElement; }
+        else { return this.shadowRoot!.querySelector('.mdc-data-table') as HTMLElement; }
     }
 
 }

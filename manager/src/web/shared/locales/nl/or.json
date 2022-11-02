@@ -244,6 +244,8 @@
   "user_plural": "Gebruikers",
   "regularUser_plural": "Gebruikers",
   "serviceUser_plural": "Service gebruikers",
+  "creating_regularUser": "Een nieuwe gebruiker aanmaken",
+  "creating_serviceUser": "Een nieuwe service gebruiker aanmaken",
   "regenerateSecret": "Regenereer secret",
   "generateSecretInfo": "Een secret wordt gegenereerd bij het maken van een gebruiker.",
   "copySecret": "Kopieer secret",
