@@ -103,7 +103,7 @@ if (project == rootProject) {
                     envs = [
                             OR_SETUP_TYPE: "demo",
                             OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "443"
+                            OR_SSL_PORT: "-1"
                     ]
                 }
                 "Test Setup"(Application) {
@@ -113,7 +113,7 @@ if (project == rootProject) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.integration" : ".setup.integration")
                     envs = [
                             OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "443"
+                            OR_SSL_PORT: "-1"
                     ]
                 }
                 "Empty"(Application) {
@@ -123,7 +123,7 @@ if (project == rootProject) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
                             OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "443"
+                            OR_SSL_PORT: "-1"
                     ]
                 }
             }
