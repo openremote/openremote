@@ -2,9 +2,15 @@
 
 # Provisions the standard stack of resources using CloudFormation template (cloudformation-create-ec2.yml) in the
 # specified AWS member account; if no account specified then the account of the authenticated user will be used.
-# The account must already exist and be provisioned in the standard way (see provision_account.sh). To access the
-# account the $AWS_ROLE_NAME role in that account will be assumed (this role must exist and must have sufficient
-# privileges to run the commands contained in this script). This script will determine the DNS hosted
+# The account must already exist and be provisioned in the standard way (see provision_account.sh).
+# Also provisions an SMTP user in the caller account using CloudFormation template (cloudformation-create-smtp-user.yml)
+# so this user can be used to send emails from the newly provisioned host (credentials are injected into the host
+# environment variables).
+# Also provisions a Route 53 Healthcheck alarm using CloudFormation template (cloudformation-healthcheck-alarm.yml) in
+# the same AWS member account but in the us-east-1 region (this is the region where Route 53 health checks are
+# automatically created).
+# To access the account the $AWS_ROLE_NAME role in that account will be assumed (this role must exist and must have
+# sufficient privileges to run the commands contained in this script). This script will determine the DNS hosted
 # zone into which the A record for the host should be inserted by searching up the domain levels of the hosts FQDN.
 # Will also provision an S3 bucket with the name of host (periods replaced with hyphens) unless set to false.
 #
@@ -59,6 +65,7 @@ fi
 
 STACK_NAME=$(tr '.' '-' <<< "$HOST")
 SMTP_STACK_NAME="$STACK_NAME-smtp"
+HEALTH_STACK_NAME="$STACK_NAME-healthcheck"
 
 # Provision SMTP user using cloud formation (if stack doesn't already exist)
 echo "Provisioning SMTP user"
@@ -268,6 +275,57 @@ if [ "$PROVISION_S3_BUCKET" != 'false' ]; then
       echo "Bucket created successfully '$LOCATION'"
       aws s3api put-bucket-versioning --bucket $HOST --versioning-configuration Status=Enabled $ACCOUNT_PROFILE
       aws s3api put-public-access-block --bucket $HOST --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" $ACCOUNT_PROFILE
+    fi
+  fi
+fi
+
+# Provision Route 53 healthcheck alarm cloud formation (if stack doesn't already exist)
+echo "Provisioning Healthcheck Alarm"
+STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
+
+if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
+  echo "Stack already exists for this host's Healthcheck '$HOST' current status is '$STATUS'"
+  STACK_ID=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[0].StackId" --output text 2>/dev/null)
+else
+
+  if [ -f "${awsDir}cloudformation-healthcheck-alarm.yml" ]; then
+    SMTP_TEMPLATE_PATH="${awsDir}cloudformation-healthcheck-alarm.yml"
+  elif [ -f ".ci_cd/aws/cloudformation-healthcheck-alarm.yml" ]; then
+    SMTP_TEMPLATE_PATH=".ci_cd/aws/cloudformation-healthcheck-alarm.yml"
+  elif [ -f "openremote/.ci_cd/aws/cloudformation-healthcheck-alarm.yml" ]; then
+    SMTP_TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-healthcheck-alarm.yml"
+  else
+    echo "Cannot determine location of cloudformation-healthcheck-alarm.yml"
+    exit 1
+  fi
+
+  #Configure parameters
+  PARAMS="ParameterKey=Host,ParameterValue='$HOST'"
+
+  # Create standard stack resources in specified account in us-east-1 region
+  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --template-body file://$SMTP_TEMPLATE_PATH --parameters $PARAMS --output text --region us-east-1)
+
+  if [ $? -ne 0 ]; then
+    echo "Create stack failed"
+    exit 1
+  fi
+
+  if [ "$WAIT_FOR_STACK" != 'false' ]; then
+    # Wait for cloud formation stack status to be CREATE_*
+    echo "Waiting for stack to be created"
+    STATUS=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null --region us-east-1)
+
+    while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
+      echo "Stack creation is still in progress .. Sleeping 30 seconds"
+      sleep 30
+      STATUS=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null --region us-east-1)
+    done
+
+    if [ "$STATUS" != 'CREATE_COMPLETE' ]; then
+      echo "Stack creation has failed status is '$STATUS'"
+      exit 1
+    else
+      echo "Stack creation is complete"
     fi
   fi
 fi
