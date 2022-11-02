@@ -173,12 +173,12 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
                     if (assetStateLocationPredicates.getLocationPredicates().isEmpty()) {
                         if (assetLocationPredicatesMap.remove(assetStateLocationPredicates.getAssetId()) != null) {
-                            LOG.info("Clearing location predicates for asset: " + assetStateLocationPredicates.getAssetId());
+                            LOG.fine("Clearing location predicates for asset: " + assetStateLocationPredicates.getAssetId());
                             notifyAssets.add(assetStateLocationPredicates.getAssetId());
                             notifierDebounce.set(true);
                         }
                     } else {
-                        LOG.info("Setting "
+                        LOG.fine("Setting "
                             + assetStateLocationPredicates.getLocationPredicates().size()
                             + " location predicate(s) for asset: " + assetStateLocationPredicates.getAssetId());
 
@@ -187,7 +187,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     }
                 } else if (assetLocationPredicatesMap.remove(assetStateLocationPredicates.getAssetId()) != null) {
                     // Used to be in this map so must have been deleted so ask console to delete its geofences also
-                    LOG.info("Clearing location predicates for asset: " + assetStateLocationPredicates.getAssetId());
+                    LOG.fine("Clearing location predicates for asset: " + assetStateLocationPredicates.getAssetId());
                     notifyAssets.add(assetStateLocationPredicates.getAssetId());
                     notifierDebounce.set(true);
                 }
@@ -215,7 +215,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         String realm = consoleIdRealmMap.get(assetId);
 
         if (realm == null) {
-            LOG.info("Console ID not found in map so cannot retrieve geofences");
+            LOG.fine("Console ID not found in map so cannot retrieve geofences");
             // Asset<?> not supported by this adapter
             return null;
         }
@@ -274,7 +274,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 notification.setTargets(subTargets);
 
                 executorService.schedule(() -> {
-                    LOG.info("Notifiying consoles that geofences have changed: " + notification.getTargets());
+                    LOG.fine("Notifiying consoles that geofences have changed: " + notification.getTargets());
                     notificationService.sendNotification(notification);
                 }, (long) i * NOTIFY_ASSETS_BATCH_MILLIS, TimeUnit.MILLISECONDS);
             });

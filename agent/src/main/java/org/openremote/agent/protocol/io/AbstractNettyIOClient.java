@@ -240,6 +240,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
 
             if (success) {
+                connectRetry = null;
                 onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                 execution.recordResult(null);
             } else {
@@ -343,6 +344,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     protected void doDisconnect() {
+        LOG.finer("Performing disconnect: " + getClientUri());
         try {
             if (channelStartFuture != null) {
                 channelStartFuture.cancel(true);

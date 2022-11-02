@@ -93,6 +93,52 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
                 assert light.getAttribute(LightAsset.ON_OFF).flatMap { it.getTimestamp()}.orElse(0) == parentAsset.getAttribute(LightAsset.ON_OFF).flatMap { it.getTimestamp()}.orElse(-1)
             }
         }
+
+        when: "a new child asset is added to the root"
+        def lightAsset = new LightAsset("Light 101")
+                .setId(UniqueIdentifierGenerator.generateId("Light 101"))
+                .setRealm(Constants.MASTER_REALM)
+
+        lightAsset.getAttribute(LightAsset.ON_OFF).ifPresentOrElse(attr -> {attr.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}, null)
+        lightAsset.getAttribute(LightAsset.BRIGHTNESS).ifPresentOrElse(attr -> {attr.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}, null)
+        lightAsset.getAttribute(LightAsset.COLOUR_RGB).ifPresentOrElse(attr -> {attr.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}, null)
+        lightAsset.getAttribute(LightAsset.COLOUR_TEMPERATURE).ifPresentOrElse(attr -> {attr.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}, null)
+        lightAsset.getAttribute(LightAsset.ON_OFF).ifPresent { it.setValue(true)}
+        lightAsset = assetStorageService.merge(lightAsset)
+
+        then: "the child asset states should be loaded into the rule engine"
+        conditions.eventually {
+            assert engine.assetStates.count { it.id == lightAsset.id} == 4
+        }
+
+        when: "the child asset is moved under the group parent"
+        lightAsset.setParent(parentAsset)
+        lightAsset = assetStorageService.merge(lightAsset)
+
+        then: "the child asset states should be loaded into the rule engine"
+        conditions.eventually {
+            assert engine.assetStates.count { it.id == lightAsset.id && it.parentId == parentAsset.id} == 4
+        }
+
+        when: "The on/off attribute of the parent asset is written to"
+        assetProcessingService.sendAttributeEvent(
+                new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, false)
+        )
+
+        then: "the parent asset attribute should be updated"
+        conditions.eventually {
+            parentAsset = assetStorageService.find(parentAsset.id, true) as LightAsset
+            assert !parentAsset.getAttribute(LightAsset.ON_OFF).flatMap{it.value}.orElse(true)
+        }
+
+        and: "all child lights on/off attributes should now show the same value"
+        conditions.eventually {
+            for (int i=1; i<=101; i++) {
+                def light = assetStorageService.find(UniqueIdentifierGenerator.generateId("Light ${i}"), true) as LightAsset
+                assert !light.getOnOff().orElse(true)
+                assert light.getAttribute(LightAsset.ON_OFF).flatMap { it.getTimestamp()}.orElse(0) == parentAsset.getAttribute(LightAsset.ON_OFF).flatMap { it.getTimestamp()}.orElse(-1)
+            }
+        }
     }
 
 }

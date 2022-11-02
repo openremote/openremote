@@ -14,7 +14,7 @@ import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointInterval
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 

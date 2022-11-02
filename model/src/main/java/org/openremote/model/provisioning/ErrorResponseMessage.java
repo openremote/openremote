@@ -45,4 +45,11 @@ public class ErrorResponseMessage extends ProvisioningMessage {
     public Error getError() {
         return error;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "error=" + error +
+            '}';
+    }
 }

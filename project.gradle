@@ -93,17 +93,27 @@ if (project == rootProject) {
                     workingDirectory = (isCustomProject() ? project(":openremote").projectDir.toString() : projectDir.toString())
                 }
                 "Demo Setup"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.demo" : ".setup.demo")
                     envs = [
                             OR_SETUP_TYPE: "demo"
                     ]
                 }
                 "Demo Setup with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.demo" : ".setup.demo")
                     envs = [
                             OR_SETUP_TYPE: "demo",
                             OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "443"
+                            OR_SSL_PORT: "-1"
+                    ]
+                }
+                "Test Setup"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.integration" : ".setup.integration")
+                }
+                "Test Setup with Proxy"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.integration" : ".setup.integration")
+                    envs = [
+                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            OR_SSL_PORT: "-1"
                     ]
                 }
                 "Empty"(Application) {
@@ -113,7 +123,7 @@ if (project == rootProject) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
                             OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "443"
+                            OR_SSL_PORT: "-1"
                     ]
                 }
             }
@@ -235,12 +245,6 @@ ext {
     isCustomProject = this.&isCustomProject
     getYarnInstallTask = this.&getYarnInstallTask
     getDeploymentJars = this.&getDeploymentJars
-}
-
-if (project.convention.findPlugin(JavaPluginConvention)) {
-    // Change the output directory for the main and test source sets back to the old path
-    sourceSets.main.java.outputDir = new File(buildDir, "classes/main")
-    sourceSets.test.java.outputDir = new File(buildDir, "classes/test")
 }
 
 // Add UI tasks

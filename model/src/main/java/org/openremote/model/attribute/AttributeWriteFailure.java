@@ -72,11 +72,6 @@ public enum AttributeWriteFailure {
     INVALID_ATTRIBUTE_EXECUTE_STATUS,
 
     /**
-     * No authentication/authorization context available.
-     */
-    NO_AUTH_CONTEXT,
-
-    /**
      * Realm configuration or user privileges do not allow update (e.g. realm inactive, user is missing required role,
      * attribute is read-only).
      */

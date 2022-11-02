@@ -158,7 +158,7 @@ public class GatewayConnector {
         this.disconnectRunnable = disconnectRunnable;
         initialSyncInProgress = true;
 
-        LOG.info("Gateway connector starting: Gateway ID=" + gatewayId);
+        LOG.fine("Gateway connector starting: Gateway ID=" + gatewayId);
         assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTING), AttributeEvent.Source.GATEWAY);
 
         // Reinitialise state
@@ -180,7 +180,7 @@ public class GatewayConnector {
             return;
         }
 
-        LOG.info("Gateway connector disconnected: Gateway ID=" + gatewayId);
+        LOG.fine("Gateway connector disconnected: Gateway ID=" + gatewayId);
 
         this.gatewayMessageConsumer = null;
         Runnable disconnectRunnable = this.disconnectRunnable;
@@ -228,7 +228,7 @@ public class GatewayConnector {
             if (isConnected()) {
                 disconnect();
             }
-            LOG.info("Gateway connector disabled: Gateway ID=" + gatewayId);
+            LOG.fine("Gateway connector disabled: Gateway ID=" + gatewayId);
             assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISABLED), AttributeEvent.Source.GATEWAY);
         } else {
             LOG.info("Gateway connector enabled: Gateway ID=" + gatewayId);

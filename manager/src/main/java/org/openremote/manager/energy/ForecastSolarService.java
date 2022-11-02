@@ -122,7 +122,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     @Override
     public void start(Container container) throws Exception {
         if (forecastSolarApiKey == null) {
-            LOG.info("No value found for OR_FORECAST_SOLAR_API_KEY, ForecastSolarService won't start");
+            LOG.fine("No value found for OR_FORECAST_SOLAR_API_KEY, ForecastSolarService won't start");
             return;
         }
 
@@ -180,7 +180,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                 return;
             }
 
-            LOG.info("Processing producer solar asset attribute event: " + attributeEvent);
+            LOG.fine("Processing producer solar asset attribute event: " + attributeEvent);
             stopProcessing(attributeEvent.getAssetId());
 
             // Get latest asset from storage
@@ -203,7 +203,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     }
 
     protected void processAssetChange(PersistenceEvent<ElectricityProducerSolarAsset> persistenceEvent) {
-        LOG.info("Processing producer solar asset change: " + persistenceEvent);
+        LOG.fine("Processing producer solar asset change: " + persistenceEvent);
         stopProcessing(persistenceEvent.getEntity().getId());
 
         if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
