@@ -515,7 +515,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             <div id="wrapper">
 
                 <!-- Breadcrumb on top of the page-->
-                ${when(((this.userId && index != undefined) || this.creationState), () => html`
+                ${when((this.userId && index != undefined) || this.creationState, () => html`
                     <div style="padding: 0 20px; width: calc(100% - 40px); max-width: 1360px; margin: 12px auto 0; display: flex; align-items: center;">
                         <span class="breadcrumb-text" style="cursor: pointer; color: ${DefaultColor4}"
                               @click="${() => this.reset()}">${i18next.t("user_plural")}</span>
@@ -531,13 +531,16 @@ export class PageUsers extends Page<AppStateKeyed> {
                 </div>
 
                 <!-- User Specific page -->
-                ${when(((this.userId && index != undefined) || this.creationState), () => html`
-                    ${when(mergedUserList[index] != undefined, () => html`
-                        <div id="content" class="panel">
-                            <p class="panel-title">User Settings</p>
-                            ${until(this.getUserViewTemplate((index != undefined ? mergedUserList[index] : this.creationState.userModel), compositeRoleOptions, realmRoleOptions, ("user" + index), readonly), html`${i18next.t('loading')}`)}
-                        </div>
-                    `, () => html`${i18next.t('errorOccured')}`)}
+                ${when((this.userId && index != undefined) || this.creationState, () => html`
+                    ${when(mergedUserList[index] != undefined || this.creationState, () => {
+                        const user: UserModel = (index != undefined ? mergedUserList[index] : this.creationState.userModel);
+                        return html`
+                            <div id="content" class="panel">
+                                <p class="panel-title">${user.serviceAccount ? i18next.t('serviceUser') : i18next.t('user')} ${i18next.t('settings')}</p>
+                                ${until(this.getUserViewTemplate((index != undefined ? mergedUserList[index] : this.creationState.userModel), compositeRoleOptions, realmRoleOptions, ("user" + index), readonly), html`${i18next.t('loading')}`)}
+                            </div>
+                        `; 
+                    }, () => html`${i18next.t('errorOccured')}`)}
 
                     <!-- List of Users page -->
                 `, () => html`
@@ -936,12 +939,12 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="row" style="margin-bottom: 0;">
 
                     ${!isSameUser && user.id ? html`
-                        <or-mwc-input style="margin: 0;"
+                        <or-mwc-input style="margin: 0;" outlined
                                       .label="${i18next.t("delete")}"
                                       .type="${InputType.BUTTON}"
                                       @click="${() => this._deleteUser(user)}"></or-mwc-input>
                     ` : ``}
-                    <or-mwc-input id="savebtn-${suffix}" style="margin: 0 0 0 auto;"
+                    <or-mwc-input id="savebtn-${suffix}" style="margin: 0 0 0 auto;" raised
                                   .label="${i18next.t(user.id ? "save" : "create")}"
                                   .type="${InputType.BUTTON}"
                                   @click="${() => {

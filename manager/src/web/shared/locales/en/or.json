@@ -243,6 +243,7 @@
   "realm_plural": "Realms",
   "displayName":"Friendly name",
   "deleteRealmConfirm":"Are you sure you want to delete this Realm?",
+  "serviceUser": "Service user",
   "user_plural": "Users",
   "regularUser_plural": "Regular users",
   "serviceUser_plural": "Service users",

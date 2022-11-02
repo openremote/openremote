@@ -241,6 +241,7 @@
   "realm_plural": "Realms",
   "displayName":"Vriendelijke naam",
   "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
+  "serviceUser": "Service gebruiker",
   "user_plural": "Gebruikers",
   "regularUser_plural": "Gebruikers",
   "serviceUser_plural": "Service gebruikers",
