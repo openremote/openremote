@@ -13,8 +13,6 @@ Resources:
 
   HealthCheck:
     Type: AWS::Route53::HealthCheck
-    Condition: CreateHealthChecks
-    DependsOn: EC2Instance
     Properties:
       HealthCheckConfig:
         Port: 443
