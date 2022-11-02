@@ -6,7 +6,7 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {AssetModelUtil, ConsoleAppConfig, Role, User} from "@openremote/model";
+import { AssetModelUtil, ConsoleAppConfig, ManagerConf, Role, User } from "@openremote/model";
 import * as Util from "./util";
 import {IconSets, createSvgIconSet, createMdiIconSet, OrIconSet} from "@openremote/or-icon";
 
@@ -263,7 +263,7 @@ export class Manager implements EventProviderFactory {
         return this._managerAppConfig;
     }
 
-    set managerAppConfig(config: ManagerAppConfig){
+    set managerAppConfig(config: ManagerConf){
         this._managerAppConfig = config;
     }
 
@@ -357,7 +357,7 @@ export class Manager implements EventProviderFactory {
 
     private _error?: ORError;
     private _config!: ManagerConfig;
-    private _managerAppConfig : ManagerAppConfig = {}
+    private _managerAppConfig : ManagerConf = {}
     private _authenticated: boolean = false;
     private _ready: boolean = false;
     private _readyCallback?: () => PromiseLike<any>;

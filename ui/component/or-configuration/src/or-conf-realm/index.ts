@@ -2,8 +2,8 @@ import { html, LitElement, css, PropertyValues } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "./or-conf-realm-card";
 import {customElement, property} from "lit/decorators.js";
-import manager, { DEFAULT_ICONSET, DefaultColor5, ManagerRealmConfig } from "@openremote/core";
-import { Realm } from "@openremote/model";
+import manager from "@openremote/core";
+import { ManagerConfRealm, Realm } from "@openremote/model";
 import { OrMwcDialog, showDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 
@@ -14,7 +14,7 @@ export class OrConfRealm extends LitElement {
     `;
 
   @property({attribute: false})
-  public realms: { [name: string]: ManagerRealmConfig } = {};
+  public realms: { [name: string]: ManagerConfRealm } = {};
 
   protected _availableRealms: Realm[] = [];
   protected _allRealms: Realm[] = [];

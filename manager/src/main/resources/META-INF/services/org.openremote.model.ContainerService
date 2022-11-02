@@ -31,3 +31,4 @@ org.openremote.manager.energy.ForecastSolarService
 org.openremote.manager.provisioning.ProvisioningService
 org.openremote.manager.dashboard.DashboardStorageService
 org.openremote.manager.security.AuthorisationService
+org.openremote.manager.configuration.ConfigurationService

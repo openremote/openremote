@@ -12,6 +12,7 @@ import '@openremote/or-configuration/or-conf-realm/index'
 import '@openremote/or-configuration/or-conf-rules/index'
 import '@openremote/or-configuration/or-conf-assets/index'
 import '@openremote/or-configuration/or-conf-json'
+import { ManagerConf } from "@openremote/model";
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -130,13 +131,13 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
         const app = this
         document.addEventListener('saveLocalManagerConfig', (e:CustomEvent) => {
-            manager.managerAppConfig = e.detail?.value as ManagerAppConfig
+            manager.managerAppConfig = e.detail?.value as ManagerConf
             this.requestUpdate()
         })
 
         document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
-            manager.rest.api.ConfigurationResource.update(manager.managerAppConfig).then(()=>{
-                manager.managerAppConfig = e.detail?.value as ManagerAppConfig
+            manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(()=>{
+                manager.managerAppConfig = e.detail?.value as ManagerConf
                 app.requestUpdate()
             })
         })
@@ -163,7 +164,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <div class="panel-title">
                         Assets
                     </div>
-                    <or-conf-assets .assets="${managerConfiguration?.pages?.assets}"></or-conf-assets>
+<!--                    <or-conf-assets .assets=""></or-conf-assets>-->
                 </div>
                 <div class="panel">
                     <div class="panel-title">
@@ -181,7 +182,6 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <div class="panel-title">
                         Rules
                     </div>
-                    <or-conf-rules .rules="${managerConfiguration?.pages?.rules}"></or-conf-rules>
                 </div>
             </div>
         `;

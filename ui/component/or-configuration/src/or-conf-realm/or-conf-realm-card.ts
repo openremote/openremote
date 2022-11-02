@@ -3,6 +3,7 @@ import { InputType,OrInputChangedEvent } from "@openremote/or-mwc-components/or-
 import { customElement, property } from "lit/decorators.js";
 import { ManagerRealmConfig, HeaderNames, DEFAULT_LANGUAGES } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
+import { ManagerConfRealm, ManagerHeaders } from "@openremote/model";
 
 
 @customElement("or-conf-realm-card")
@@ -56,7 +57,7 @@ export class OrConfRealmCard extends LitElement {
   `;
 
   @property({attribute: false})
-  public realm: ManagerRealmConfig = {
+  public realm: ManagerConfRealm = {
     appTitle: "OpenRemote Demo",
     language: "en",
     headers:[]
@@ -67,6 +68,18 @@ export class OrConfRealmCard extends LitElement {
 
   @property({attribute: true})
   public onRemove: CallableFunction = () => {};
+
+  protected headerList = [
+    ManagerHeaders.realms,
+    ManagerHeaders.map,
+    ManagerHeaders.language,
+    ManagerHeaders.export,
+    ManagerHeaders.roles,
+    ManagerHeaders.account,
+    ManagerHeaders.assets,
+    ManagerHeaders.gateway,
+    ManagerHeaders.users,
+  ]
 
   protected _getColors(){
     //TODO settings default colors
@@ -101,7 +114,7 @@ export class OrConfRealmCard extends LitElement {
     this.realm.styles = css
   }
 
-  protected _setHeader(key:HeaderNames, value:boolean){
+  protected _setHeader(key:ManagerHeaders, value:boolean){
     if (!('headers' in this.realm)){
       this.realm.headers = []
     }
@@ -117,6 +130,7 @@ export class OrConfRealmCard extends LitElement {
   render() {
     const realm = this.realm
     const app = this
+    console.log(realm)
     return html`
       <or-collapsible-panel>
         <div slot="header" class="header-container">
@@ -130,8 +144,13 @@ export class OrConfRealmCard extends LitElement {
           <div class="d-inline-flex">
             <div class="header-group">
               <div class="subheader">Headers</div>
-              ${Object.entries(HeaderNames).map(function([key , value]){
-                return html`<or-mwc-input .type="${InputType.CHECKBOX}" class="header-item" label="${key}" .value="${realm.headers !== undefined ? realm.headers.includes(HeaderNames[value]) : false }" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(HeaderNames[value], e.detail.value)}"></or-mwc-input>`
+              ${Object.entries(this.headerList).map(function([key , value]){
+                  return html`<or-mwc-input 
+                    .type="${InputType.CHECKBOX}" 
+                    class="header-item" label="${value}" 
+                    .value="${!!realm.headers ? realm.headers?.includes(<ManagerHeaders>value) : true }" 
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(value, e.detail.value)}"
+                  ></or-mwc-input>`
               })}
             </div>
             <div class="logo-group">
