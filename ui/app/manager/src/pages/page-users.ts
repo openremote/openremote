@@ -241,6 +241,8 @@ export class PageUsers extends Page<AppStateKeyed> {
 
     @state()
     protected _loadUsersPromise?: Promise<any>;
+    @state()
+    protected _saveUserPromise?: Promise<any>;
 
     get name(): string {
         return "user_plural";
@@ -248,7 +250,6 @@ export class PageUsers extends Page<AppStateKeyed> {
 
 
     public shouldUpdate(changedProperties: PropertyValues): boolean {
-        console.log(changedProperties);
         if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.reset();
             this.loadUsers();
@@ -446,7 +447,6 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected render(): TemplateResult | void {
-        console.error("Rendering!");
         if (!manager.authenticated) {
             return html`
                 <or-translate value="notAuthenticated"></or-translate>
@@ -492,11 +492,6 @@ export class PageUsers extends Page<AppStateKeyed> {
         const mergedUserList: UserModel[] = [...this._users, ...this._serviceUsers];
         const index: number | undefined = (this.userId ? mergedUserList.findIndex((user) => user.id == this.userId) : undefined);
 
-        console.warn(mergedUserList);
-        console.warn(index);
-        console.warn(this.userId);
-        console.warn(mergedUserList[index]);
-
         return html`
             <div id="wrapper">
 
@@ -517,21 +512,15 @@ export class PageUsers extends Page<AppStateKeyed> {
                 </div>
 
                 <!-- User Specific page -->
-                ${when((this.userId && index != undefined) || this.creationState, () => html`
-                    ${when(mergedUserList[index] != undefined || this.creationState, () => {
+                ${when((this.userId && index != undefined) || this.creationState || this._saveUserPromise, () => html`
+                    ${when(mergedUserList[index] != undefined || this.creationState || this._saveUserPromise, () => {
                         const user: UserModel = (index != undefined ? mergedUserList[index] : this.creationState.userModel);
                         return html`
                             <div id="content" class="panel">
                                 <p class="panel-title">${user.serviceAccount ? i18next.t('serviceUser') : i18next.t('user')} ${i18next.t('settings')}</p>
-                                ${until(this.getUserViewTemplate((index != undefined ? mergedUserList[index] : this.creationState.userModel), compositeRoleOptions, realmRoleOptions, ("user" + index), readonly), html`${i18next.t('loading')}`)}
+                                ${until(this.getUserViewTemplate((index != undefined ? mergedUserList[index] : this.creationState.userModel), compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined)), html`${i18next.t('loading')}`)}
                             </div>
                         `; 
-                    }, () => {
-                        return html`
-                            <div id="content" class="panel">
-                                ${i18next.t('errorOccurred')}
-                            </div>
-                        `;
                     })}
 
                     <!-- List of Users page -->
@@ -590,7 +579,6 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     public stateChanged(state: AppStateKeyed) {
-        console.warn(state);
         this.realm = state.app.realm;
         this.userId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
         this.creationState = (state.app.params?.type ? {userModel: this.getNewUserModel(state.app.params.type == 'serviceuser')} : undefined);
@@ -910,28 +898,29 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- restricted access -->
                     <div>
                         <span>${i18next.t("linkedAssets")}:</span>
-                        <or-mwc-input outlined
+                        <or-mwc-input outlined ?disabled="${readonly}"
                                       .type="${InputType.BUTTON}"
                                       .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
                                       @click="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly)}"></or-mwc-input>
                     </div>
                 </div>
             </div>
-            ${readonly ? `` : html`
+            ${readonly && !this._saveUserPromise ? `` : html`
                 <div class="row" style="margin-bottom: 0;">
 
                     ${!isSameUser && user.id ? html`
-                        <or-mwc-input style="margin: 0;" outlined
+                        <or-mwc-input style="margin: 0;" outlined ?disabled="${readonly}"
                                       .label="${i18next.t("delete")}"
                                       .type="${InputType.BUTTON}"
                                       @click="${() => this._deleteUser(user)}"></or-mwc-input>
                     ` : ``}
-                    <or-mwc-input id="savebtn-${suffix}" style="margin: 0 0 0 auto;" raised
+                    <or-mwc-input id="savebtn-${suffix}" style="margin: 0 0 0 auto;" raised ?disabled="${readonly}"
                                   .label="${i18next.t(user.id ? "save" : "create")}"
                                   .type="${InputType.BUTTON}"
                                   @click="${() => {
-                                      this._createUpdateUser(user).then(() => {
+                                      this._saveUserPromise = this._createUpdateUser(user).then(() => {
                                           showSnackbar(undefined, (user.username + " " + i18next.t("savedSuccessfully")));
+                                          this._saveUserPromise = undefined;
                                           this.reset();
                                       })
                                   }}">
@@ -942,7 +931,6 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected reset() {
-        console.error("RESETTING PAGE!");
         this.userId = undefined;
         this.creationState = undefined;
     }
