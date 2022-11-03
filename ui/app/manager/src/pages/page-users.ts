@@ -121,7 +121,6 @@ export class PageUsers extends Page<AppStateKeyed> {
 
                 or-mwc-input {
                     margin-bottom: 20px;
-                    margin-right: 16px;
                 }
 
                 or-icon {
@@ -137,6 +136,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     flex-direction: row;
                     margin: 10px 0;
                     flex: 1 1 0;
+                    gap: 24px;
                 }
 
                 .column {
@@ -144,7 +144,6 @@ export class PageUsers extends Page<AppStateKeyed> {
                     flex-direction: column;
                     margin: 0px;
                     flex: 1 1 0;
-                    max-width: 50%;
                 }
 
                 .item-row td {
@@ -196,6 +195,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     .row {
                         display: block;
                         flex-direction: column;
+                        gap: 0;
                     }
 
                     .panel {
@@ -898,7 +898,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- restricted access -->
                     <div>
                         <span>${i18next.t("linkedAssets")}:</span>
-                        <or-mwc-input outlined ?disabled="${readonly}"
+                        <or-mwc-input outlined ?disabled="${readonly}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
                                       .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
                                       @click="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly)}"></or-mwc-input>
