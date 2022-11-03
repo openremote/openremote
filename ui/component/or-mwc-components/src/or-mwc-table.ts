@@ -81,6 +81,9 @@ const style = css`
     .mdc-data-table__pagination {
         min-height: 64px;
     }
+    .mdc-data-table__cell--clickable {
+        cursor: pointer;
+    }
 `;
 
 interface TableConfig {
@@ -94,6 +97,10 @@ export interface TableColumn {
     title?: string,
     isNumeric?: boolean,
     hideMobile?: boolean
+}
+export interface TableRow {
+    content?: string[]
+    clickable?: boolean
 }
 export interface OrMwcTableRowClickDetail {
     index: number
@@ -131,7 +138,7 @@ export class OrMwcTable extends LitElement {
     protected columnsTemplate?: TemplateResult;
 
     @property({type: Array})
-    public rows?: string[][];
+    public rows?: TableRow[] | string[][];
 
     @property({type: Object}) // to manually control HTML (requires td and tr elements)
     protected rowsTemplate?: TemplateResult;
@@ -216,13 +223,23 @@ export class OrMwcTable extends LitElement {
                                 })
                                 return html`${this.rowsTemplate}`;
                             }, () => {
-                                return this.rows ? this.rows
+                                return this.rows ? (this.rows as any[])
                                         .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
-                                        .map(item => html`
-                                            <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent(this.rows?.indexOf(item)!))}">
-                                                ${item.map((cell: string|number) => html`<td class="mdc-data-table__cell ${classMap({"mdc-data-table__cell--numeric": typeof cell === "number"})}" title="${cell}">${cell}</td>`)}
-                                            </tr>
-                                        `)
+                                        .map((item: TableRow | string[], index) => {
+                                            const content: string[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
+                                            return html`
+                                                <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent(index))}">
+                                                    ${content?.map((cell: string|number) => {
+                                                        const classes = {
+                                                            "mdc-data-table__cell": true,
+                                                            "mdc-data-table__cell--numeric": typeof cell === "number",
+                                                            "mdc-data-table__cell--clickable": (!Array.isArray(item) && (item as TableRow).clickable)!
+                                                        }
+                                                        return html`<td class="${classMap(classes)}" title="${cell}">${cell}</td>`
+                                                    })}
+                                                </tr>
+                                            `
+                                        })
                                 : undefined;
                             })}
                         </tbody>

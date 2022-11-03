@@ -15,7 +15,7 @@ import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@open
 import {getNewUserRoute, getUsersRoute} from "../routes";
 import {when} from 'lit/directives/when.js';
 import {until} from 'lit/directives/until.js';
-import {OrMwcTableRowClickEvent, TableColumn} from "@openremote/or-mwc-components/or-mwc-table";
+import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -85,7 +85,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     border: 1px solid #e5e5e5;
                     border-radius: 5px;
                     position: relative;
-                    margin: 5px auto;
+                    margin: 0 auto 10px;
                     padding: 12px 24px 24px;
                 }
 
@@ -106,16 +106,6 @@ export class PageUsers extends Page<AppStateKeyed> {
                 #table-users table {
                     width: 100%;
                     white-space: nowrap;
-                }
-
-                .mdc-data-table__row {
-                    cursor: pointer;
-                    border-top-color: #D3D3D3;
-                }
-
-                .mdc-data-table__row.disabled {
-                    cursor: progress;
-                    opacity: 0.4;
                 }
 
                 .table-actions-container {
@@ -155,15 +145,6 @@ export class PageUsers extends Page<AppStateKeyed> {
                     margin: 0px;
                     flex: 1 1 0;
                     max-width: 50%;
-                }
-
-                .mdc-data-table__header-cell {
-                    font-weight: bold;
-                    color: ${unsafeCSS(DefaultColor3)};
-                }
-
-                .mdc-data-table__header-cell:first-child {
-                    padding-left: 36px;
                 }
 
                 .item-row td {
@@ -479,20 +460,25 @@ export class PageUsers extends Page<AppStateKeyed> {
         // Content of User Table
         const userTableColumns: TableColumn[] = [
             {title: i18next.t('username')},
+            {title: i18next.t('firstName')},
+            {title: i18next.t('surname')},
             {title: i18next.t('email'), hideMobile: true},
-            {title: i18next.t('role')},
             {title: i18next.t('status')}
         ];
-        const userTableRows: string[][] = this._users.map((user) => [user.username, user.email, user.roles?.filter(r => r.composite).map(r => r.name).join(","), user.enabled ? i18next.t('enabled') : i18next.t('disabled')])
+        const userTableRows: TableRow[] = this._users.map((user) => { return {
+            content: [user.username, user.firstName, user.lastName, user.email, user.enabled ? i18next.t('enabled') : i18next.t('disabled')],
+            clickable: true
+        }});
 
         // Content of Service user Table
         const serviceUserTableColumns: TableColumn[] = [
             {title: i18next.t('username')},
-            {title: i18next.t('email'), hideMobile: true},
-            {title: ''},
             {title: i18next.t('status')}
         ];
-        const serviceUserTableRows: string[][] = this._serviceUsers.map((user) => [user.username, user.email, '', user.enabled ? i18next.t('enabled') : i18next.t('disabled')]);
+        const serviceUserTableRows: TableRow[] = this._serviceUsers.map((user) => { return {
+            content: [user.username, user.enabled ? i18next.t('enabled') : i18next.t('disabled')],
+            clickable: true
+        }})
 
         // Configuration
         const tableConfig = {
@@ -540,7 +526,13 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 ${until(this.getUserViewTemplate((index != undefined ? mergedUserList[index] : this.creationState.userModel), compositeRoleOptions, realmRoleOptions, ("user" + index), readonly), html`${i18next.t('loading')}`)}
                             </div>
                         `; 
-                    }, () => html`${i18next.t('errorOccured')}`)}
+                    }, () => {
+                        return html`
+                            <div id="content" class="panel">
+                                ${i18next.t('errorOccurred')}
+                            </div>
+                        `;
+                    })}
 
                     <!-- List of Users page -->
                 `, () => html`
@@ -572,17 +564,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         `;
     }
 
-    protected getRowsTemplate(columns: TableColumn[], values: any[]): TemplateResult {
-        return html`
-            ${columns.map((column, index) => html`
-                <td class="padded-cell mdc-data-table__cell${column.hideMobile ? ' hide-mobile' : undefined}">
-                    <span>${values[index]}</span>
-                </td>
-            `)}
-        `
-    }
-
-    protected async getUsersTable(columns: TemplateResult | any[], rows: TemplateResult | string[][], config: any, onRowClick: (event: OrMwcTableRowClickEvent) => void): Promise<TemplateResult> {
+    protected async getUsersTable(columns: TemplateResult | TableColumn[] | string[], rows: TemplateResult | TableRow[] | string[][], config: any, onRowClick: (event: OrMwcTableRowClickEvent) => void): Promise<TemplateResult> {
         if (this._loadUsersPromise) {
             await this._loadUsersPromise;
         }
