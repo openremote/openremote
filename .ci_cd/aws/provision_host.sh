@@ -279,13 +279,13 @@ if [ "$PROVISION_S3_BUCKET" != 'false' ]; then
   fi
 fi
 
-# Provision Route 53 healthcheck alarm cloud formation (if stack doesn't already exist)
+# Provision Route 53 healthcheck alarm cloud formation (if stack doesn't already exist) - must be in the us-east-1 region
 echo "Provisioning Healthcheck Alarm"
-STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null)
+STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null --region us-east-1)
 
 if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
   echo "Stack already exists for this host's Healthcheck '$HOST' current status is '$STATUS'"
-  STACK_ID=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[0].StackId" --output text 2>/dev/null)
+  STACK_ID=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[0].StackId" --output text 2>/dev/null --region us-east-1)
 else
 
   if [ -f "${awsDir}cloudformation-healthcheck-alarm.yml" ]; then
@@ -303,7 +303,7 @@ else
   PARAMS="ParameterKey=Host,ParameterValue='$HOST'"
 
   # Create standard stack resources in specified account in us-east-1 region
-  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --template-body file://$SMTP_TEMPLATE_PATH --parameters $PARAMS --output text --region us-east-1)
+  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --parameters $PARAMS --output text --region us-east-1)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"
@@ -313,12 +313,12 @@ else
   if [ "$WAIT_FOR_STACK" != 'false' ]; then
     # Wait for cloud formation stack status to be CREATE_*
     echo "Waiting for stack to be created"
-    STATUS=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null --region us-east-1)
+    STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null --region us-east-1)
 
     while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
       echo "Stack creation is still in progress .. Sleeping 30 seconds"
       sleep 30
-      STATUS=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null --region us-east-1)
+      STATUS=$(aws cloudformation describe-stacks --stack-name $HEALTH_STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text 2>/dev/null --region us-east-1)
     done
 
     if [ "$STATUS" != 'CREATE_COMPLETE' ]; then
