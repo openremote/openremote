@@ -20,6 +20,7 @@
 package org.openremote.manager.system;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.grpc.netty.shaded.io.netty.internal.tcnative.SSL;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -57,6 +58,10 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
     public void init(Container container) throws Exception {
         
         int SSLPort = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1);
+
+        if (SSLPort < 0) {
+            SSLPort = 443;
+        }
         
         if (SSLPort > 0 && SSLPort <= 65536) {
             this.SSLPort = SSLPort;
