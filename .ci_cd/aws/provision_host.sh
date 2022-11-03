@@ -289,11 +289,11 @@ if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
 else
 
   if [ -f "${awsDir}cloudformation-healthcheck-alarm.yml" ]; then
-    SMTP_TEMPLATE_PATH="${awsDir}cloudformation-healthcheck-alarm.yml"
+    HEALTH_TEMPLATE_PATH="${awsDir}cloudformation-healthcheck-alarm.yml"
   elif [ -f ".ci_cd/aws/cloudformation-healthcheck-alarm.yml" ]; then
-    SMTP_TEMPLATE_PATH=".ci_cd/aws/cloudformation-healthcheck-alarm.yml"
+    HEALTH_TEMPLATE_PATH=".ci_cd/aws/cloudformation-healthcheck-alarm.yml"
   elif [ -f "openremote/.ci_cd/aws/cloudformation-healthcheck-alarm.yml" ]; then
-    SMTP_TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-healthcheck-alarm.yml"
+    HEALTH_TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-healthcheck-alarm.yml"
   else
     echo "Cannot determine location of cloudformation-healthcheck-alarm.yml"
     exit 1
@@ -303,7 +303,7 @@ else
   PARAMS="ParameterKey=Host,ParameterValue='$HOST'"
 
   # Create standard stack resources in specified account in us-east-1 region
-  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --parameters $PARAMS --output text $ACCOUNT_PROFILE --region us-east-1)
+  STACK_ID=$(aws cloudformation create-stack --stack-name $HEALTH_STACK_NAME --template-body file://$HEALTH_TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE --region us-east-1)
 
   if [ $? -ne 0 ]; then
     echo "Create stack failed"
