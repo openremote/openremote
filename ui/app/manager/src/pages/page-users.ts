@@ -107,6 +107,13 @@ export class PageUsers extends Page<AppStateKeyed> {
                     cursor: progress;
                     opacity: 0.4;
                 }
+                
+                .table-actions-container {
+                    text-align: right;
+                    position: absolute;
+                    right: 0;
+                    margin: 2px;
+                }
 
                 td, th {
                     width: 25%
@@ -353,7 +360,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 }
             }
         } finally {
-            this.loadUsers();
+            await this.loadUsers();
         }
     }
 
@@ -397,7 +404,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             await manager.rest.api.AssetResource.createUserAssetLinks(addedLinks);
         }
     }
-    
+
     private _deleteUser(user) {
         showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"), i18next.t("delete"))
             .then((ok) => {
@@ -410,9 +417,15 @@ export class PageUsers extends Page<AppStateKeyed> {
     private doDelete(user) {
         manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then(response => {
             if (user.serviceAccount) {
-                this._serviceUsers = [...this._serviceUsers.filter(u => u.id !== user.id)];
+                const elem = this.shadowRoot?.querySelector('#serviceuser-' + user.username);
+                this._toggleUserExpand(elem as HTMLTableRowElement, user).then(() => {
+                    this._serviceUsers = [...this._serviceUsers.filter(u => u.id !== user.id)];
+                });
             } else {
-                this._users = [...this._users.filter(u => u.id !== user.id)];
+                const elem = this.shadowRoot?.querySelector('#user-' + user.username);
+                this._toggleUserExpand(elem as HTMLTableRowElement, user).then(() => {
+                    this._users = [...this._users.filter(u => u.id !== user.id)];
+                });
             }
         })
     }
@@ -486,9 +499,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
                                     <or-translate value="username"></or-translate>
                                 </th>
-                                <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col">
-                                    <or-translate value="email"></or-translate>
-                                </th>
+                                <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col"><!-- Empty --></th>
                                 <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
                                     <or-translate value="role"></or-translate>
                                 </th>
@@ -530,8 +541,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         this.realm = state.app.realm;
     }
 
-    protected async _toggleUserExpand(ev: MouseEvent, user: UserModel) {
-        const trElem = ev.currentTarget as HTMLTableRowElement;
+    protected async _toggleUserExpand(trElem: HTMLTableRowElement, user: UserModel, autoScroll: boolean = false) {
         const expanderIcon = trElem.getElementsByTagName("or-icon")[0] as OrIcon;
         const userRow = (trElem.parentElement! as HTMLTableElement).rows[trElem.rowIndex];
 
@@ -585,6 +595,10 @@ export class PageUsers extends Page<AppStateKeyed> {
         if (expanderIcon.icon === "chevron-right") {
             expanderIcon.icon = "chevron-down";
             userRow.classList.add("expanded");
+            if(autoScroll) {
+                await this.updateComplete;
+                userRow.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
+            }
         } else {
             expanderIcon.icon = "chevron-right";
             userRow.classList.remove("expanded");
@@ -718,13 +732,17 @@ export class PageUsers extends Page<AppStateKeyed> {
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
 
         return html`
-            <tr class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev, user)}">
+            <tr id="${(user.serviceAccount ? 'serviceuser-' : 'user-') + user.username}" class="mdc-data-table__row" @click="${(ev) => {
+                if((ev.path[0].tagName != 'SPAN' || ev.path[0].className == '' || ev.path[0].className == 'mdi-chevron-right' || ev.path[0].className == 'mdi-chevron-down') && ev.path[0].tagName != 'BUTTON') { 
+                    this._toggleUserExpand(ev.currentTarget, user); // Only toggling when not hovering an action button 
+                }
+            }}">
                 <td class="padded-cell mdc-data-table__cell">
                     <or-icon icon="chevron-right"></or-icon>
                     <span>${user.username}</span>
                 </td>
                 <td class="padded-cell mdc-data-table__cell  hide-mobile">
-                    ${user.email}
+                    ${isServiceUser ? undefined : user.email}
                 </td>
                 <td class="padded-cell mdc-data-table__cell">
                     ${user.roles ? user.roles.filter(r => r.composite).map(r => r.name).join(",") : null}
@@ -732,6 +750,16 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <td class="padded-cell mdc-data-table__cell hide-mobile">
                     <or-translate .value="${user.enabled ? "enabled" : "disabled"}"></or-translate>
                 </td>
+                ${(isServiceUser) ? html`
+                    <span class="table-actions-container">
+                        ${user.secret ? html`
+                            <or-mwc-input type="${InputType.BUTTON}" icon="key" style="margin: 0;" title="${i18next.t("copySecret")}" @click="${() => {
+                                navigator.clipboard.writeText(user.secret);
+                                showSnackbar(undefined, i18next.t("copiedSecretToClipboard"));
+                            }}"></or-mwc-input>
+                        ` : undefined}
+                    </span>
+                ` : undefined}
             </tr>
             <tr class="item-row${!user.id ? " expanded" : ""}">
                 <td colspan="4">
@@ -741,7 +769,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 <div class="column">
                                     <h5>${i18next.t("details")}</h5>
                                     <!-- user details -->
-                                    <or-mwc-input ?readonly="${!!user.id || readonly}"
+                                    <or-mwc-input ?readonly="${!!user.id || readonly}" .disabled="${!!user.id}"
                                                   .label="${i18next.t("username")}"
                                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" required
                                                   pattern="[a-zA-Z0-9-_]+"
@@ -769,15 +797,19 @@ export class PageUsers extends Page<AppStateKeyed> {
                                     <!-- password -->
                                     <h5>${i18next.t("password")}</h5>
                                     ${isServiceUser ? html`
-                                                <or-mwc-input id="password-${suffix}" readonly
-                                                              .label="${i18next.t("secret")}"
-                                                              .value="${user.secret}"
-                                                              .type="${InputType.TEXT}"></or-mwc-input>
-                                                <or-mwc-input ?readonly="${!user.id || readonly}"
+                                                ${user.secret ? html`
+                                                    <or-mwc-input id="password-${suffix}" readonly
+                                                                  .label="${i18next.t("secret")}"
+                                                                  .value="${user.secret}"
+                                                                  .type="${InputType.TEXT}"></or-mwc-input>
+                                                    <or-mwc-input ?readonly="${!user.id || readonly}"
                                                               .label="${i18next.t("regenerateSecret")}"
                                                               .type="${InputType.BUTTON}"
-                                                              @or-mwc-input-changed="${(ev) => this._regenerateSecret(ev, user, "password-" + suffix)}"></or-mwc-input>`
-                                            : html`
+                                                              @or-mwc-input-changed="${(ev) => this._regenerateSecret(ev, user, "password-" + suffix)}"></or-mwc-input>
+                                                ` : html`
+                                                    <span>${i18next.t("generateSecretInfo")}</span>
+                                                `}
+                                            ` : html`
                                                 <or-mwc-input id="password-${suffix}"
                                                               ?readonly="${readonly}"
                                                               .label="${i18next.t("password")}"
@@ -890,7 +922,12 @@ export class PageUsers extends Page<AppStateKeyed> {
                                     <or-mwc-input id="savebtn-${suffix}" style="margin-left: auto;"
                                                   .label="${i18next.t(user.id ? "save" : "create")}"
                                                   .type="${InputType.BUTTON}"
-                                                  @click="${() => this._createUpdateUser(user)}"></or-mwc-input>
+                                                  @click="${() => {
+                                                      this._createUpdateUser(user).then(() => {
+                                                          showSnackbar(undefined, (user.username + " " + i18next.t("savedSuccessfully")));
+                                                      })
+                                                  }}">
+                                    </or-mwc-input>
                                 </div>
                             `}
                         </div>

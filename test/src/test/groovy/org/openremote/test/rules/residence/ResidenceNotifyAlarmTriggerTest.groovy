@@ -2,6 +2,9 @@ package org.openremote.test.rules.residence
 
 
 import com.google.firebase.messaging.Message
+import net.fortuna.ical4j.model.Date
+import net.fortuna.ical4j.model.Recur
+import net.fortuna.ical4j.model.parameter.Value
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -10,10 +13,13 @@ import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetDeployment
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.model.calendar.CalendarEvent
+import org.openremote.model.rules.RulesetStatus
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
@@ -32,9 +38,12 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
+import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
@@ -87,7 +96,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             managerTestSetup.apartment1Id,
             "Demo Apartment - Notify Alarm Trigger",
             Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/ResidenceNotifyAlarmTrigger.groovy").text)
-        rulesetStorageService.merge(ruleset)
+        ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
@@ -234,6 +243,98 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         then: "still only two notifications should have been sent"
         conditions.eventually {
             assert notificationIds.size() == 2
+        }
+
+        when: "a validity period is added to the ruleset that enables the ruleset for the next day of the week repeating for 2 weeks"
+        stopPseudoClock()
+        def tomorrowMidnight = Instant.ofEpochMilli(getClockTimeOf(container)).truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS)
+        def from = tomorrowMidnight.plus(6, ChronoUnit.HOURS)
+        def to = tomorrowMidnight.plus(8, ChronoUnit.HOURS)
+        def recur = new Recur(Recur.WEEKLY, 2)
+        def validity = new CalendarEvent(from.atZone(ZoneOffset.UTC).toDate(), to.atZone(ZoneOffset.UTC).toDate(), recur)
+        ruleset.setValidity(validity)
+        rulesetStorageService.merge(ruleset)
+        ruleset = rulesetStorageService.find(AssetRuleset.class, ruleset.id)
+
+        then: "the ruleset should have saved successfully and the validity should also have been stored"
+        assert ruleset != null
+        assert ruleset.getValidity() != null
+        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).key == from.toEpochMilli()
+        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).value == to.toEpochMilli()
+        assert ruleset.getValidity().getRecurrence() != null
+        def recurrenceList = ruleset.getValidity().getRecurrence().getDates(new net.fortuna.ical4j.model.Date(getClockTimeOf(container)), new net.fortuna.ical4j.model.Period(new net.fortuna.ical4j.model.DateTime(new Date(getClockTimeOf(container))), new net.fortuna.ical4j.model.DateTime(tomorrowMidnight.plus(30, ChronoUnit.DAYS).toDate())), Value.DATE)
+        assert recurrenceList.size() == 2
+
+        and: "the ruleset state should be deployed and paused"
+        RulesetDeployment rulesetDeployment
+        conditions.eventually {
+            apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
+            assert apartment1Engine != null
+            assert apartment1Engine.isRunning()
+            assert apartment1Engine.deployments.size() == 1
+            rulesetDeployment = apartment1Engine.deployments.get(ruleset.getId())
+            assert rulesetDeployment != null
+            assert rulesetDeployment.status == RulesetStatus.PAUSED
+            assert apartment1Engine.pauseTimers.size() == 0
+            assert apartment1Engine.unpauseTimers.size() == 1
+            // Assert scheduled future delay is correct
+            assert from.toEpochMilli() - getClockTimeOf(container) - apartment1Engine.unpauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
+        }
+
+        when: "time advances to within the first valid time period"
+        advancePseudoClock((from.toEpochMilli()-getClockTimeOf(container))+10000, TimeUnit.MILLISECONDS, container)
+        apartment1Engine.unPauseRuleset(rulesetDeployment)
+
+        then: "the ruleset status should be un-paused"
+        conditions.eventually {
+            assert rulesetDeployment.status == RulesetStatus.DEPLOYED
+        }
+
+        and: "the next pause of the ruleset should be scheduled"
+        assert apartment1Engine.pauseTimers.size() == 1
+        assert apartment1Engine.unpauseTimers.size() == 0
+        // Assert scheduled future delay is correct
+        assert to.toEpochMilli() - getClockTimeOf(container) - apartment1Engine.pauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
+
+        when: "time advances past the first expiry the ruleset is paused again"
+        advancePseudoClock((to.toEpochMilli()-getClockTimeOf(container))+10000, TimeUnit.MILLISECONDS, container)
+        apartment1Engine.pauseRuleset(rulesetDeployment)
+
+        then: "the ruleset status should be paused"
+        conditions.eventually {
+            assert rulesetDeployment.status == RulesetStatus.PAUSED
+        }
+
+        and: "the next unpause of the ruleset should be scheduled"
+        assert apartment1Engine.pauseTimers.size() == 0
+        assert apartment1Engine.unpauseTimers.size() == 1
+        // Assert scheduled future delay is correct
+        assert from.plus(7, ChronoUnit.DAYS).toEpochMilli() - getClockTimeOf(container) - apartment1Engine.unpauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
+
+        when: "time advances to within the next valid time period"
+        advancePseudoClock((from.plus(7, ChronoUnit.DAYS).plus(61, ChronoUnit.MINUTES).toEpochMilli() - getClockTimeOf(container)), TimeUnit.MILLISECONDS, container)
+        apartment1Engine.unPauseRuleset(rulesetDeployment)
+
+        then: "the ruleset status should be un-paused"
+        conditions.eventually {
+            assert rulesetDeployment.status == RulesetStatus.DEPLOYED
+        }
+
+        and: "the next pause of the ruleset should be scheduled"
+        assert apartment1Engine.pauseTimers.size() == 1
+        assert apartment1Engine.unpauseTimers.size() == 0
+        // Assert scheduled future delay is correct
+        assert to.plus(7, ChronoUnit.DAYS).toEpochMilli() - getClockTimeOf(container) - apartment1Engine.pauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
+
+        when: "time advances past the second expiry the ruleset is paused again"
+        advancePseudoClock((to.plus(7, ChronoUnit.DAYS).plus(61, ChronoUnit.MINUTES).toEpochMilli()-getClockTimeOf(container)), TimeUnit.MILLISECONDS, container)
+        apartment1Engine.pauseRuleset(rulesetDeployment)
+
+        then: "the ruleset status should be expired"
+        conditions.eventually {
+            assert rulesetDeployment.status == RulesetStatus.EXPIRED
+            assert apartment1Engine.pauseTimers.size() == 0
+            assert apartment1Engine.unpauseTimers.size() == 0
         }
 
         cleanup: "the mock is removed"

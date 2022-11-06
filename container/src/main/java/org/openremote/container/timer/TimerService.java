@@ -21,6 +21,7 @@ package org.openremote.container.timer;
 
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.rules.RulesClock;
 
 import java.time.Instant;
 import java.util.Date;
@@ -36,7 +37,7 @@ import static org.openremote.container.util.MapAccess.getString;
 /**
  * Wall real clock timer or pseudo clock time (for testing).
  */
-public class TimerService implements ContainerService {
+public class TimerService implements ContainerService, RulesClock {
 
     private static final Logger LOG = Logger.getLogger(TimerService.class.getName());
     public static final String TIMER_CLOCK_TYPE = "TIMER_CLOCK_TYPE";
@@ -105,14 +106,13 @@ public class TimerService implements ContainerService {
 
             @Override
             public void start() {
-                if (stopTime != null) {
-                    stopTime = null;
-                }
+                stopTime = null;
             }
 
             @Override
             public void reset() {
                 offset.set(0L);
+                stopTime = null;
             }
         };
 

@@ -1,4 +1,30 @@
+apply plugin: "java-library"
+
+dependencies {
+    api resolveProject(":setup")
+}
+
+task license {
+    doLast {
+        def toConcatenate = isCustomProject() ? files("${project(":openremote").projectDir}/LICENSE.txt", "${rootDir}/LICENSE.txt") : files("${rootDir}/LICENSE.txt")
+        def outputFileName = "${buildDir}/image/manager/app/LICENSE.txt"
+        def output = new File(outputFileName)
+        if (output.exists()) {
+            output.delete()
+        }
+        output.getParentFile().mkdirs()
+        output.createNewFile()
+        output.write('') // truncate output if needed
+        toConcatenate.each { f -> output << f.text }
+    }
+}
+
 task installDist(type: Copy) {
+    dependsOn (parent.getTasksByName('installDist', true).findAll {
+        // Don't create circular dependency or depend on built in openremote submodule apps
+        it.project != project && !it.project.path.startsWith(":openremote:ui:app")
+    })
+
     into("$buildDir")
 
     from "Dockerfile"
@@ -6,5 +32,9 @@ task installDist(type: Copy) {
     into("image") {
         from projectDir
         exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src", "**/*.md", ".gitignore", "**/*.encrypted"
+    }
+
+    into("image/manager/extensions") {
+        from getDeploymentJars()
     }
 }

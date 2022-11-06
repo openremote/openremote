@@ -32,6 +32,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
+import org.openremote.model.rules.RulesClock;
 import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.util.TimeUtil;
 
@@ -555,7 +556,7 @@ public class RulesFacts extends Facts implements RuleListener {
         return haveLog;
     }
 
-    public TimerService getClock() {
+    public RulesClock getClock() {
         return timerService;
     }
 

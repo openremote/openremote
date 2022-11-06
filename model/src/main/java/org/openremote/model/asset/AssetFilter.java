@@ -19,13 +19,18 @@
  */
 package org.openremote.model.asset;
 
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.MetaItemType;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 // TODO: Merge this with AssetQuery and use AssetQueryPredicate to resolve
 public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<T> {
@@ -115,48 +120,79 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return FILTER_TYPE;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public boolean apply(T event) {
+    public T apply(T event) {
 
-        if (restrictedEvents && !event.canAccessRestrictedRead()) {
-            return false;
+        MetaItemDescriptor<?> filterAttributesBy = null;
+
+        if (restrictedEvents) {
+            if (event instanceof AttributeEvent attributeEvent) {
+                if (!attributeEvent.isRestrictedRead()) {
+                    return null;
+                }
+            } else {
+                filterAttributesBy = MetaItemType.ACCESS_RESTRICTED_READ;
+            }
         }
 
-        if (publicEvents && !event.canAccessPublicRead()) {
-            return false;
+        if (publicEvents) {
+            if (event instanceof AttributeEvent attributeEvent) {
+                if (!attributeEvent.isPublicRead()) {
+                    return null;
+                }
+            } else if (event instanceof AssetEvent assetEvent) {
+                if (!assetEvent.isAccessPublicRead()) {
+                    return null;
+                } else {
+                    filterAttributesBy = MetaItemType.ACCESS_PUBLIC_READ;
+                }
+            }
         }
 
         if (assetIds != null && assetIds.length > 0) {
             if (!Arrays.asList(assetIds).contains(event.getAssetId())) {
-                return false;
+                return null;
             }
         }
 
         if (parentIds != null && parentIds.length > 0) {
             if (!Arrays.asList(parentIds).contains(event.getParentId())) {
-                return false;
+                return null;
             }
         }
 
         if(path != null && path.length > 0) {
             List<String> pathList = Arrays.asList(event.getPath());
             if (Arrays.stream(path).noneMatch(pathList::contains)) {
-                return false;
+                return null;
             }
         }
 
         if (!TextUtil.isNullOrEmpty(realm)) {
             if (!realm.equals(event.getRealm())) {
-                return false;
+                return null;
             }
         }
 
         if (attributeNames != null && attributeNames.length > 0) {
+            if (filterAttributesBy != null) {
+                // Filter attributes before doing name match
+                AssetEvent assetEvent = (AssetEvent) event;
+                if (assetEvent.getAsset() != null) {
+                    Asset<?> asset = ValueUtil.clone(assetEvent.getAsset());
+                    MetaItemDescriptor<?> finalFilterAttributesBy = filterAttributesBy;
+                    asset.setAttributes(asset.getAttributes().values().stream().filter(attribute -> attribute.hasMeta(finalFilterAttributesBy)).collect(Collectors.toList()));
+                    event = (T) new AssetEvent(assetEvent.getCause(), asset, assetEvent.getUpdatedProperties());
+                }
+            }
             List<String> eventAttributeNames = Arrays.asList(event.getAttributeNames());
-            return Arrays.stream(attributeNames).anyMatch(eventAttributeNames::contains);
+            if (Arrays.stream(attributeNames).noneMatch(eventAttributeNames::contains)) {
+                return null;
+            }
         }
 
-        return true;
+        return event;
     }
 
     @Override

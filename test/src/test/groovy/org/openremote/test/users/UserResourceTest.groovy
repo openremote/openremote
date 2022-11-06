@@ -23,7 +23,7 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
-import org.openremote.test.setup.KeycloakTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.model.security.ClientRole
 import org.openremote.model.security.Role
 import org.openremote.model.security.UserResource

@@ -12,8 +12,10 @@
 # 1 - AWS_ACCOUNT_NAME where resources should be created (defaults to callers account)
 # 2 - HOST FQDN for e.g. staging.demo.openremote.app
 # 3 - INSTANCE_TYPE EC2 instance type see cloud formation template parameter
-# 4 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
-# 5 - WAIT_FOR_STACK if 'false' script will not wait until the cloud formation stack is running
+# 4 - DISK_SIZE to use for created EBS root volume (GB)
+# 5 - ELASTIC_IP if 'true' then create an elastic public IP for this host
+# 6 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
+# 7 - WAIT_FOR_STACK if 'false' script will not wait until the cloud formation stack is running
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -24,8 +26,10 @@ fi
 AWS_ACCOUNT_NAME=${1,,}
 HOST=${2,,}
 INSTANCE_TYPE=${3,,}
-PROVISION_S3_BUCKET=${4,,}
-WAIT_FOR_STACK=${5,,}
+DISK_SIZE=${4,,}
+ELASTIC_IP=${5,,}
+PROVISION_S3_BUCKET=${6,,}
+WAIT_FOR_STACK=${7,,}
 
 if [ -z "$HOST" ]; then
   echo "Host must be set"
@@ -121,6 +125,14 @@ else
     PARAMS="$PARAMS ParameterKey=InstanceType,ParameterValue=$INSTANCE_TYPE"
   fi
 
+  if [ -n "$DISK_SIZE" ]; then
+    PARAMS="$PARAMS ParameterKey=DiskSize,ParameterValue=$DISK_SIZE"
+  fi
+
+  if [ -n "$ELASTIC_IP" ]; then
+    PARAMS="$PARAMS ParameterKey=ElasticIP,ParameterValue=$ELASTIC_IP"
+  fi
+
   # Get SMTP credentials
   SMTP_HOST="email-smtp.$AWS_REGION.amazonaws.com"
   SMTP_USER=$(aws cloudformation describe-stacks --stack-name $SMTP_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='SMTPUserKey'].OutputValue" --output text 2>/dev/null)
@@ -193,7 +205,7 @@ EOF
   if [ -n "$DNSHostedZoneRoleArn" ]; then
     PARAMS="$PARAMS ParameterKey=DNSHostedZoneRoleArn,ParameterValue=$DNSHostedZoneRoleArn"
   fi
-  
+
   # Get OR VPC ID, Subnet ID, SSH Security Group ID and EFS MOUNT TARGET IP
   VPCID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
   SUBNET_NUMBER=$(( $RANDOM % 3 + 1 ))

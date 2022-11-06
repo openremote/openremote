@@ -26,6 +26,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.output.MigrateResult;
 import org.hibernate.Session;
+import org.hibernate.annotations.Formula;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
@@ -36,6 +37,7 @@ import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.notification.SentNotification;
@@ -306,6 +308,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(SyslogEvent.class.getName());
         entityClasses.add(GatewayConnection.class.getName());
         entityClasses.add(ConsoleAppConfig.class.getName());
+        entityClasses.add(Dashboard.class.getName());
         entityClasses.add(ProvisioningConfig.class.getName());
         entityClasses.add(X509ProvisioningConfig.class.getName());
 
@@ -418,7 +421,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     /**
      * Generate {@link PersistenceEvent}s for entities not managed by JPA (i.e. Keycloak entities)
      */
-    public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object currentEntity, Object previousEntity, Field[] propertyFields) {
+    public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object currentEntity, Object previousEntity, Class<?> clazz, List<String> includeFields, List<String> excludeFields) {
+
+        Field[] propertyFields = getEntityPropertyFields(clazz, includeFields, excludeFields);
+
         switch (cause) {
             case CREATE:
                 publishPersistenceEvent(cause, currentEntity, null, null, null);
@@ -539,5 +545,12 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             "database=" + database +
             ", persistenceUnitName='" + persistenceUnitName + '\'' +
             '}';
+    }
+
+    public static Field[] getEntityPropertyFields(Class<?> clazz, List<String> includeFields, List<String> excludeFields) {
+        return Arrays.stream(clazz.getDeclaredFields())
+            .filter(field -> ((field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(EmbeddedId.class) || field.isAnnotationPresent(JoinColumn.class) || field.isAnnotationPresent(Formula.class)) && (excludeFields == null || !excludeFields.contains(field.getName())))
+                || (includeFields != null && includeFields.contains(field.getName())))
+            .toArray(Field[]::new);
     }
 }

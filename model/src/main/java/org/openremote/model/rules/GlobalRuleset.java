@@ -19,6 +19,7 @@
  */
 package org.openremote.model.rules;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.calendar.CalendarEvent;
 
@@ -91,7 +92,7 @@ public class GlobalRuleset extends Ruleset {
     }
 
     @Override
-    public GlobalRuleset setMeta(MetaMap meta) {
+    public GlobalRuleset setMeta(ObjectNode meta) {
         super.setMeta(meta);
         return this;
     }

@@ -197,7 +197,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                         }).toList();
 
                     if (userTargets.isEmpty()) {
-                        LOG.info("No email targets have been mapped");
+                        LOG.fine("No email targets have been mapped");
                     } else {
                         mappedTargets.addAll(
                             userTargets

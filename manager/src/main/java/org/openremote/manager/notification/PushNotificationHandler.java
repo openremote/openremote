@@ -282,7 +282,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 }
 
                 if (consoleAssetIds.isEmpty()) {
-                    LOG.info("No console asset targets have been mapped");
+                    LOG.fine("No console asset targets have been mapped");
                 } else {
                     mappedTargets.addAll(
                         consoleAssetIds

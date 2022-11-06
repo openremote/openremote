@@ -38,7 +38,7 @@ import java.util.Objects;
 public class MetaItem<T> extends AbstractNameValueHolder<T> {
 
     /**
-     * Serialise the meta item as just the value
+     * Serialise the meta item as just the value to make it less verbose
      */
     @SuppressWarnings("rawtypes")
     public static class MetaItemSerializer extends StdSerializer<MetaItem> {

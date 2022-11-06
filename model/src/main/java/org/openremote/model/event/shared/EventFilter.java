@@ -50,7 +50,7 @@ public abstract class EventFilter<E extends SharedEvent> {
 
     /**
      *
-     * @return <code>false</code> if the filter doesn't match the given event.
+     * @return the event or a filtered copy of it if the filter matches; do not modify the supplied event.
      */
-    public abstract boolean apply(E event);
+    public abstract E apply(E event);
 }

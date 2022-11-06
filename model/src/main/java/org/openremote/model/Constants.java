@@ -34,12 +34,14 @@ public interface Constants {
     String READ_MAP_ROLE = "read:map";
     String READ_ASSETS_ROLE = "read:assets";
     String READ_RULES_ROLE = "read:rules";
+    String READ_INSIGHTS_ROLE = "read:insights";
     String WRITE_USER_ROLE = "write:user";
     String WRITE_ADMIN_ROLE = "write:admin";
     String WRITE_LOGS_ROLE = "write:logs";
     String WRITE_ASSETS_ROLE = "write:assets";
     String WRITE_ATTRIBUTES_ROLE = "write:attributes";
     String WRITE_RULES_ROLE = "write:rules";
+    String WRITE_INSIGHTS_ROLE = "write:insights";
     String RESTRICTED_USER_REALM_ROLE = "restricted_user";
     String AUTH_CONTEXT = "AUTH_CONTEXT";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute

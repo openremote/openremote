@@ -5,6 +5,7 @@ import org.apache.camel.spi.BrowsableEndpoint
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.timer.TimerService
+import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.rules.RulesService
 import org.openremote.model.ContainerService
 import spock.util.concurrent.PollingConditions
@@ -16,7 +17,7 @@ import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.Clock.REAL
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
-import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
+import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
 
 trait ManagerContainerTrait extends ContainerTrait {
 
@@ -26,7 +27,8 @@ trait ManagerContainerTrait extends ContainerTrait {
         }
         [
                 (OR_WEBSERVER_LISTEN_PORT): Integer.toString(serverPort),
-                (MQTT_SERVER_LISTEN_HOST) : "127.0.0.1", // Works best for cross platform test running
+                (MQTT_SERVER_LISTEN_HOST) : "127.0.0.1", // Works best for cross platform test running,
+                (MQTTBrokerService.MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS): "10",
                 (TIMER_CLOCK_TYPE)        : PSEUDO.name()
         ]
     }

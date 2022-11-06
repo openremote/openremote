@@ -22,6 +22,8 @@ package org.openremote.model.asset;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.util.TextUtil;
 
 /**
  * A client sends this event to the server to read the specified asset, optionally restricting which attributes
@@ -29,9 +31,10 @@ import org.openremote.model.event.shared.SharedEvent;
  * the right permissions, or if anything else is not in order (e.g. the asset doesn't exist), the server might not react
  * at all.
  */
-public class ReadAssetEvent extends SharedEvent {
+public class ReadAssetEvent extends SharedEvent implements HasAssetQuery {
 
     protected String assetId;
+    protected AssetQuery assetQuery;
 
     @JsonCreator
     public ReadAssetEvent(@JsonProperty("assetId") String assetId) {
@@ -44,6 +47,15 @@ public class ReadAssetEvent extends SharedEvent {
 
     public void setAssetId(String assetId) {
         this.assetId = assetId;
+    }
+
+    public AssetQuery getAssetQuery() {
+        if (assetQuery == null) {
+            if (!TextUtil.isNullOrEmpty(assetId)) {
+                assetQuery = new AssetQuery().ids(assetId);
+            }
+        }
+        return assetQuery;
     }
 
     @Override

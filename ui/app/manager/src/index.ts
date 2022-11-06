@@ -22,7 +22,7 @@ import {
 import "./pages/page-map";
 import {PageMapConfig, pageMapProvider, pageMapReducer} from "./pages/page-map";
 import "./pages/page-assets";
-import {PageAssetsConfig, pageAssetsProvider} from "./pages/page-assets";
+import {PageAssetsConfig, pageAssetsProvider, pageAssetsReducer} from "./pages/page-assets";
 import "./pages/page-gateway";
 import {pageGatewayProvider} from "./pages/page-gateway";
 import "./pages/page-insights";
@@ -46,7 +46,8 @@ declare var CONFIG_URL_PREFIX: string;
 
 const rootReducer = combineReducers({
     app: appReducer,
-    map: pageMapReducer
+    map: pageMapReducer,
+    assets: pageAssetsReducer
 });
 
 type RootState = ReturnType<typeof rootReducer>;
@@ -242,13 +243,16 @@ fetch(configURL).then(async (result) => {
                     });
                 }
 
-                if (normalisedConfig.language) {
-                    manager.language = normalisedConfig.language;
-                }
-
                 orAppConfig.realms[name] = { ...defaultRealm, header: headers, ...(realmConfig as RealmAppConfig) };
             });
         }
+
+        // Check local storage for set language, otherwise use language set in config
+        manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
+            manager.language = (value ? value : orAppConfig.realms[manager.displayRealm].language);
+        }).catch(() => {
+            manager.language = orAppConfig.realms[manager.displayRealm].language;
+        })
 
         // Add config prefix if defined (used in dev)
         if (CONFIG_URL_PREFIX) {

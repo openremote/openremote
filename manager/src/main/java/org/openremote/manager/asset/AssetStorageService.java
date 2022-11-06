@@ -76,7 +76,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.groupingBy;
-import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
@@ -179,7 +178,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
              }
 
              // Regular user must have role
-             if (!filter.isPublicEvents() && !isAnonymous && !auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+             if (!filter.isPublicEvents() && (isAnonymous || !auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID))) {
                  return false;
              }
 
@@ -325,12 +324,31 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return assetEventAuthorizer.authorise(realm, auth, subscription);
         });
 
+        clientEventService.addEventAuthorizer((realm, auth, event) -> {
+            boolean authorize = event instanceof HasAssetQuery;
+
+            if (event instanceof ReadAssetEvent readAssetEvent) {
+                if (readAssetEvent.getAssetQuery() == null) {
+                    LOG.fine("Read asset event must specify an asset ID");
+                    return false;
+                }
+            } else if (event instanceof ReadAttributeEvent readAttributeEvent) {
+                if (readAttributeEvent.getAssetQuery() == null) {
+                    LOG.fine("Read attribute event must specify an asset ID");
+                    return false;
+                }
+            }
+
+            return authorize && authorizeAssetQuery(((HasAssetQuery)event).getAssetQuery(), auth, realm);
+        });
+
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
                 identityService,
                 this,
-                container.getService(MessageBrokerService.class)
+                container.getService(MessageBrokerService.class),
+                clientEventService
             )
         );
 
@@ -366,108 +384,63 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // React if a client wants to read assets and attributes
         from(CLIENT_EVENT_TOPIC)
             .routeId("FromClientReadRequests")
-            .filter(
-                or(body().isInstanceOf(ReadAssetsEvent.class), body().isInstanceOf(ReadAssetEvent.class), body().isInstanceOf(ReadAttributeEvent.class)))
-            .choice()
-                .when(or(body().isInstanceOf(ReadAssetEvent.class), body().isInstanceOf(ReadAttributeEvent.class)))
-                    .process(exchange -> {
-                        LOG.finer("Handling from client: " + exchange.getIn().getBody());
+            .filter(body().isInstanceOf(HasAssetQuery.class))
+            .process(exchange -> {
+                HasAssetQuery hasAssetQuery = exchange.getIn().getBody(HasAssetQuery.class);
+                AssetQuery assetQuery = hasAssetQuery.getAssetQuery();
+                String sessionKey = ClientEventService.getSessionKey(exchange);
+                String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+                Object response = null;
 
-                        String assetId;
-                        String attributeName = null;
+                if (hasAssetQuery instanceof ReadAssetsEvent) {
+                    List<Asset<?>> assets = findAll(assetQuery);
+                    response = new AssetsEvent(assets);
+                } else {
+                    Asset<?> asset = find(assetQuery);
+                    String assetId;
+                    String attributeName = null;
 
-                        if (exchange.getIn().getBody() instanceof ReadAssetEvent) {
-                            assetId = exchange.getIn().getBody(ReadAssetEvent.class).getAssetId();
+                    if (asset != null) {
+                        if (hasAssetQuery instanceof ReadAttributeEvent readAttributeEvent) {
+                            assetId = readAttributeEvent.getAttributeRef().getId();
+                            attributeName = readAttributeEvent.getAttributeRef().getName();
                         } else {
-                            ReadAttributeEvent assetAttributeEvent = exchange.getIn().getBody(ReadAttributeEvent.class);
-                            assetId = assetAttributeEvent.getAttributeRef().getId();
-                            attributeName = assetAttributeEvent.getAttributeRef().getName();
+                            assetId = ((ReadAssetEvent) hasAssetQuery).getAssetId();
                         }
 
-                        if (TextUtil.isNullOrEmpty(assetId)) {
-                            return;
-                        }
-
-                        String sessionKey = ClientEventService.getSessionKey(exchange);
-                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                        boolean isAttributeRead = !TextUtil.isNullOrEmpty(attributeName);
-                        String requestRealm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
-
-                        AssetQuery assetQuery = new AssetQuery()
-                            .ids(assetId);
-
-                        assetQuery = prepareAssetQuery(assetQuery, authContext, requestRealm);
-
-                        Asset<?> asset = find(assetQuery);
-
-                        if (asset != null) {
-                            String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
-                            Object response = null;
-
-                            if (isAttributeRead) {
-                                Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
-                                if (assetAttribute != null) {
-
-                                    // Check access constraints
-                                    if (assetQuery.access == null
-                                        || assetQuery.access == PRIVATE
-                                        || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
-                                        || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
-                                        response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
-                                    }
-                                }
-                            } else {
-
+                        if (!TextUtil.isNullOrEmpty(attributeName)) {
+                            Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
+                            if (assetAttribute != null) {
                                 // Check access constraints
-                                if (assetQuery.access != PUBLIC  || asset.isAccessPublicRead()) {
-                                    response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+                                if (assetQuery.access == null
+                                    || assetQuery.access == PRIVATE
+                                    || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
+                                    || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
+                                    response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
                                 }
                             }
-
-                            if (response != null) {
-                                if (!isNullOrEmpty(messageId)) {
-                                    response = new EventRequestResponseWrapper<>(messageId, (SharedEvent)response);
-                                }
-                                clientEventService.sendToSession(sessionKey, response);
-                            }
+                        } else {
+                            response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
                         }
-                    })
-                .when(body().isInstanceOf(ReadAssetsEvent.class))
-                    .process(exchange -> {
-                        ReadAssetsEvent readAssets = exchange.getIn().getBody(ReadAssetsEvent.class);
-                        String sessionKey = ClientEventService.getSessionKey(exchange);
-                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                        String requestRealm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
-                        AssetQuery query = readAssets.getAssetQuery();
-                        try {
-                            query = prepareAssetQuery(query, authContext, requestRealm);
+                    }
+                }
 
-                            List<Asset<?>> assets = findAll(query);
+                if (response != null) {
+                    if (!isNullOrEmpty(messageId)) {
+                        response = new EventRequestResponseWrapper<>(messageId, (SharedEvent)response);
+                    }
+                    clientEventService.sendToSession(sessionKey, response);
+                }
 
-                            String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
-
-                            if (isNullOrEmpty(messageId)) {
-                                clientEventService.sendToSession(sessionKey, new AssetsEvent(assets));
-                            } else {
-                                clientEventService.sendToSession(sessionKey, new EventRequestResponseWrapper<>(messageId, new AssetsEvent(assets)));
-                            }
-                        } catch (IllegalStateException ignored) {
-                        }
-                    })
-                    .stop()
-            .endChoice()
+            })
             .end();
     }
 
     /**
-     * Prepares an {@link AssetQuery} by validating it against security constraints and/or applying default options to the query
+     * Authorizes an {@link AssetQuery} by validating it against security constraints and/or applying default options to the query
      * based on security constraints.
      */
-    public AssetQuery prepareAssetQuery(AssetQuery query, AuthContext authContext, String requestRealm) throws IllegalStateException {
-
-        if (query == null) {
-            query = new AssetQuery();
-        }
+    public boolean authorizeAssetQuery(AssetQuery query, AuthContext authContext, String requestRealm) {
 
         boolean isAnonymous = authContext == null;
         boolean isSuperUser = authContext != null && authContext.isSuperUser();
@@ -480,21 +453,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (TextUtil.isNullOrEmpty(realm)) {
                 String msg = "Realm must be specified to read assets";
                 LOG.finer(msg);
-                throw new IllegalStateException(msg);
+                return false;
             }
 
             if (isAnonymous) {
                 if (query.access != null && query.access != PUBLIC) {
                     String msg = "Only public access allowed for anonymous requests";
                     LOG.finer(msg);
-                    throw new IllegalStateException(msg);
+                    return false;
                 }
                 query.access = PUBLIC;
             } else if (isRestricted) {
                 if (query.access == PRIVATE) {
                     String msg = "Only public or restricted access allowed for restricted requests";
                     LOG.finer(msg);
-                    throw new IllegalStateException(msg);
+                    return false;
                 }
                 if (query.access == null) {
                     query.access = PROTECTED;
@@ -503,14 +476,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (query.access != PUBLIC && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 String msg = "User must have '" + ClientRole.READ_ASSETS.getValue() + "' role to read non public assets";
-                LOG.fine(msg);
-                throw new IllegalStateException(msg);
+                LOG.finer(msg);
+                return false;
             }
 
             if (query.access != PUBLIC && !realm.equals(authContext.getAuthenticatedRealmName())) {
                 String msg = "Realm must match authenticated realm for non public access queries";
                 LOG.finer(msg);
-                throw new IllegalStateException(msg);
+                return false;
             }
 
             query.realm = new RealmPredicate(realm);
@@ -523,10 +496,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realm)) {
             String msg = "Realm is not present or is inactive";
             LOG.finer(msg);
-            throw new IllegalStateException(msg);
+            return false;
         }
 
-        return query;
+        return true;
     }
 
     public Asset<?> find(String assetId) {
@@ -665,6 +638,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      */
     @SuppressWarnings("unchecked")
     public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean skipGatewayCheck, String userName) throws IllegalStateException, ConstraintViolationException {
+
+        LOG.fine("Merging asset: " + asset);
+
         return persistenceService.doReturningTransaction(em -> {
 
             String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
@@ -672,6 +648,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (!skipGatewayCheck && gatewayId != null) {
                 LOG.fine("Sending asset merge request to gateway: Gateway ID=" + gatewayId);
                 return gatewayService.mergeGatewayAsset(gatewayId, asset);
+            }
+
+            // Validate realm
+            if (asset.getRealm() == null) {
+                String msg = "Asset realm must be set : asset=" + asset;
+                LOG.fine(msg);
+                throw new IllegalStateException(msg);
             }
 
             // Do standard JSR-380 validation on the asset (includes custom validation)
@@ -691,13 +674,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // Verify type has not been changed
                 if (!existingAsset.getType().equals(asset.getType())) {
                     String msg = "Asset type cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 if (!existingAsset.getRealm().equals(asset.getRealm())) {
                     String msg = "Asset realm cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
@@ -721,22 +704,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            // Validate realm
-            if (asset.getRealm() == null) {
-                String msg = "Asset realm must be set : asset=" + asset;
-                LOG.info(msg);
-                throw new IllegalStateException(msg);
-            }
-
             if (!identityService.getIdentityProvider().realmExists(asset.getRealm())) {
                 String msg = "Asset realm not found or is inactive: asset=" + asset;
-                LOG.info(msg);
+                LOG.fine(msg);
                 throw new IllegalStateException(msg);
             }
 
             if (asset.getParentId() != null && asset.getParentId().equals(asset.getId())) {
                 String msg = "Asset parent cannot be the asset: asset=" + asset;
-                LOG.info(msg);
+                LOG.fine(msg);
                 throw new IllegalStateException(msg);
             }
 
@@ -749,21 +725,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // The parent must exist
                 if (parent == null) {
                     String msg = "Asset parent not found: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 // The parent can not be a child of the asset
                 if (parent.pathContains(asset.getId())) {
                     String msg = "Asset parent cannot be a descendant of the asset: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 // The parent should be in the same realm
                 if (!parent.getRealm().equals(asset.getRealm())) {
                     String msg = "Asset parent must be in the same realm: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
 
@@ -772,7 +748,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     String childAssetType = parent.getAttributes().getValue(GroupAsset.CHILD_ASSET_TYPE)
                         .orElseThrow(() -> {
                             String msg = "Asset parent is of type GROUP but the childAssetType attribute is invalid: asset=" + asset;
-                            LOG.info(msg);
+                            LOG.fine(msg);
                             return new IllegalStateException(msg);
                         });
 
@@ -787,7 +763,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                     if (!typeMatch) {
                         String msg = "Asset type does not match parent GROUP asset's childAssetType attribute: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.fine(msg);
                         throw new IllegalStateException(msg);
                     }
                 }
@@ -799,7 +775,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     .map(childAssetTypeString -> TextUtil.isNullOrEmpty(childAssetTypeString) ? null : childAssetTypeString)
                     .orElseThrow(() -> {
                         String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.fine(msg);
                         return new IllegalStateException(msg);
                     });
 
@@ -807,13 +783,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     .getChildAssetType()
                     .orElseThrow(() -> {
                         String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.fine(msg);
                         return new IllegalStateException(msg);
                     }) : childAssetType;
 
                 if (!childAssetType.equals(existingChildAssetType)) {
                     String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
             }
@@ -833,7 +809,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 user = identityService.getIdentityProvider().getUserByUsername(asset.getRealm(), userName);
                 if (user == null) {
                     String msg = "User not found: " + userName;
-                    LOG.info(msg);
+                    LOG.fine(msg);
                     throw new IllegalStateException(msg);
                 }
             }
@@ -841,7 +817,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             T updatedAsset = em.merge(asset);
 
             if (user != null) {
-                storeUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
+                createUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
             }
 
             return updatedAsset;
@@ -1075,30 +1051,33 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return Collections.emptyList();
         }
 
-        return persistenceService.doReturningTransaction(entityManager -> {
-            StringBuilder sb = new StringBuilder();
-            Map<String, Object> parameters = new HashMap<>(3);
-            sb.append("select ua from UserAssetLink ua where 1=1");
+        return persistenceService.doReturningTransaction(em ->
+            buildFindUserAssetLinksQuery(em, realm, userIds, assetIds).getResultList());
+    }
 
-            if (!isNullOrEmpty(realm)) {
-                sb.append(" and ua.id.realm in :realm");
-                parameters.put("realm", realm);
-            }
-            if (userIds != null && !userIds.isEmpty()) {
-                sb.append(" and ua.id.userId in :userId");
-                parameters.put("userId", userIds);
-            }
-            if (assetIds != null && !assetIds.isEmpty()) {
-                sb.append(" and ua.id.assetId in :assetId");
-                parameters.put("assetId", assetIds);
-            }
+    protected TypedQuery<UserAssetLink> buildFindUserAssetLinksQuery(EntityManager em, String realm, List<String> userIds, List<String> assetIds) {
+        StringBuilder sb = new StringBuilder();
+        Map<String, Object> parameters = new HashMap<>(3);
+        sb.append("select ua from UserAssetLink ua where 1=1");
 
-            sb.append(" order by ua.createdOn desc");
+        if (!isNullOrEmpty(realm)) {
+            sb.append(" and ua.id.realm in :realm");
+            parameters.put("realm", realm);
+        }
+        if (userIds != null && !userIds.isEmpty()) {
+            sb.append(" and ua.id.userId in :userId");
+            parameters.put("userId", userIds);
+        }
+        if (assetIds != null && !assetIds.isEmpty()) {
+            sb.append(" and ua.id.assetId in :assetId");
+            parameters.put("assetId", assetIds);
+        }
 
-            TypedQuery<UserAssetLink> query = entityManager.createQuery(sb.toString(), UserAssetLink.class);
-            parameters.forEach(query::setParameter);
-            return query.getResultList();
-        });
+        sb.append(" order by ua.createdOn desc");
+
+        TypedQuery<UserAssetLink> query = em.createQuery(sb.toString(), UserAssetLink.class);
+        parameters.forEach(query::setParameter);
+        return query;
     }
 
     /* ####################################################################################### */
@@ -1107,7 +1086,29 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * Delete specific {@link UserAssetLink}s.
      */
     public void deleteUserAssetLinks(List<UserAssetLink> userAssetLinks) {
+
+        if (userAssetLinks == null || userAssetLinks.isEmpty()) {
+            return;
+        }
+
+        Set<String> assetIds = new HashSet<>(userAssetLinks.size());
+        Set<String> userIds = new HashSet<>(userAssetLinks.size());
+
+        userAssetLinks.forEach(userAssetLink -> {
+            userIds.add(userAssetLink.getId().getUserId());
+            assetIds.add(userAssetLink.getId().getAssetId());
+        });
+
+        List<UserAssetLink> existingLinks = new ArrayList<>();
+
         persistenceService.doTransaction(entityManager -> {
+             existingLinks.addAll(buildFindUserAssetLinksQuery(entityManager, null, userIds.stream().toList(), assetIds.stream().toList())
+                .getResultList().stream().filter(userAssetLinks::contains).toList());
+
+            if (existingLinks.size() != userAssetLinks.size()) {
+                throw new IllegalArgumentException("Cannot delete one or more requested user asset links as they don't exist");
+            }
+
             StringBuilder sb = new StringBuilder("DELETE FROM user_asset_link WHERE (1=0");
 
             IntStream.range(0, userAssetLinks.size()).forEach(i -> sb.append(" OR (asset_id=?")
@@ -1131,27 +1132,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             int deleteCount = query.executeUpdate();
 
             if (deleteCount != userAssetLinks.size()) {
-                throw new IllegalArgumentException("Cannot delete one or more requested user asset link as they don't exist");
+                throw new IllegalArgumentException("Cannot delete one or more requested user asset links as they don't exist");
             }
         });
+
+        existingLinks.forEach(userAssetLink ->
+            persistenceService.publishPersistenceEvent(
+                PersistenceEvent.Cause.DELETE,
+                null,
+                userAssetLink,
+                UserAssetLink.class,
+                null,
+                null));
     }
 
     /**
-     * Delete all {@link UserAssetLink}s for the specified realm (must be called before the realm is removed)
+     * Delete all {@link UserAssetLink}s for the specified {@link User}
      */
-    public void deleteUserAssetsByRealm(String realm) {
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.realm = ?0");
-            query.setParameter(0, realm);
-            int deleteCount = query.executeUpdate();
-            LOG.fine("Deleted all user asset links for realm: realm=" + realm + ", count=" + deleteCount);
-        });
-    }
-
-    /**
-     * Delete all {@link UserAssetLink}s for the specified {@link User} (must be called before the user is removed)
-     */
-    public void deleteUserAssetsByUserId(String userId) {
+    public void deleteUserAssetLinks(String userId) {
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?0");
             query.setParameter(0, userId);
@@ -1161,29 +1159,35 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     /**
-     * Delete all {@link UserAssetLink}s for the specified {@link Asset} (must be called before the asset is removed)
-     */
-    public void deleteUserAssetsByAssetId(String assetId) {
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.assetId = ?0");
-            query.setParameter(0, assetId);
-            int deleteCount = query.executeUpdate();
-            LOG.fine("Deleted all user asset links for asset: asset ID=" + assetId + ", count=" + deleteCount);
-        });
-    }
-
-    /**
      * Create specified {@link UserAssetLink}s.
      */
     public void storeUserAssetLinks(List<UserAssetLink> userAssetLinks) {
 
-        if (userAssetLinks.isEmpty()) {
+        if (userAssetLinks == null || userAssetLinks.isEmpty()) {
             return;
         }
 
-        persistenceService.doTransaction(em -> storeUserAssetLinks(em, userAssetLinks));
+        Set<String> assetIds = new HashSet<>(userAssetLinks.size());
+        Set<String> userIds = new HashSet<>(userAssetLinks.size());
+
+        userAssetLinks.forEach(userAssetLink -> {
+            userIds.add(userAssetLink.getId().getUserId());
+            assetIds.add(userAssetLink.getId().getAssetId());
+        });
+
+        persistenceService.doTransaction(em -> {
+            List<UserAssetLink> existingLinks = buildFindUserAssetLinksQuery(em, null, userIds.stream().toList(), assetIds.stream().toList())
+                .getResultList();
+
+            List<UserAssetLink> newLinks = userAssetLinks.stream()
+                .filter(userAssetLink -> !existingLinks.contains(userAssetLink))
+                .toList();
+
+            createUserAssetLinks(em, newLinks);
+        });
     }
-    protected void storeUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {
+
+    protected void createUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {
 
         em.unwrap(Session.class).doWork(connection -> {
 
@@ -1200,6 +1204,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     st.addBatch();
                 }
                 st.executeBatch();
+
+                // Create a persistence event for each one
+                userAssets.forEach(userAssetLink ->
+                    persistenceService.publishPersistenceEvent(
+                        PersistenceEvent.Cause.CREATE,
+                        userAssetLink,
+                        null,
+                        UserAssetLink.class,
+                        null,
+                        null)
+                );
             } catch (Exception e) {
                 String msg = "Failed to create user assets: count=" + userAssets.size();
                 LOG.log(Level.WARNING, msg, e);
@@ -1257,7 +1272,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         boolean containsCalendarPredicate = queryAndContainsCalendarPredicate.value;
 
         if (containsCalendarPredicate && (query.select != null && (query.select.attributes == null))) {
-            LOG.info("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
+            LOG.fine("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
             throw new IllegalArgumentException("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
         }
 

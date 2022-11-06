@@ -22,6 +22,7 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -66,7 +67,7 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
                     Optional<ValueDescriptor<?>> valueDescriptor = ValueUtil.getMetaItemDescriptor(metaItemName)
                         .map(MetaItemDescriptor::getType);
 
-                    Class valueType = valueDescriptor.map(ValueDescriptor::getType).orElseGet(() -> (Class) Object.class);
+                    Class valueType = valueDescriptor.map(ValueDescriptor::getType).orElseGet(() -> (Class) JsonNode.class);
                     metaItem.setValue(jp.readValueAs(valueType));
 
                     // Get the value descriptor from the value if it isn't known
@@ -112,11 +113,6 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
         MetaItem<S> metaItem = get(metaDescriptor).orElse(new MetaItem<>(metaDescriptor));
         addOrReplace(metaItem);
         return metaItem;
-    }
-
-    public <T> void set(MetaItemDescriptor<T> descriptor, T value) {
-        MetaItem<T> metaItem = get(descriptor).orElse(new MetaItem<>(descriptor, null));
-        metaItem.setValue(value);
     }
 
     /**

@@ -25,6 +25,8 @@ import org.openremote.model.value.MetaItemType;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * An asset can be linked to many users, and a user can have links to many assets.
@@ -129,7 +131,7 @@ public class UserAssetLink {
     @Formula("(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID where a.ID = ASSET_ID)")
     protected String parentAssetName;
 
-    @Formula("(select u.USERNAME ||  ' (' || u.FIRST_NAME || ' ' || u.LAST_NAME || ')' from PUBLIC.USER_ENTITY u where u.ID = USER_ID)")
+    @Formula("(select u.USERNAME || CASE WHEN COALESCE(NULLIF(u.FIRST_NAME, ''), NULLIF(u.LAST_NAME, '')) IS NULL THEN '' ELSE ' (' END || COALESCE(u.FIRST_NAME, '') || CASE WHEN NULLIF(u.FIRST_NAME, '') IS NOT NULL AND NULLIF(u.LAST_NAME, '') IS NOT NULL THEN ' ' ELSE '' END || COALESCE(u.LAST_NAME, '') || CASE WHEN COALESCE(NULLIF(u.FIRST_NAME, ''), NULLIF(u.LAST_NAME, '')) IS NULL THEN '' ELSE ')' END from PUBLIC.USER_ENTITY u where u.ID = USER_ID)")
     protected String userFullName;
 
     protected UserAssetLink() {
@@ -165,6 +167,19 @@ public class UserAssetLink {
 
     public void setCreatedOn(Date createdOn) {
         this.createdOn = createdOn;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UserAssetLink that = (UserAssetLink) o;
+        return id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     @Override

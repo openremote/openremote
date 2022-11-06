@@ -220,7 +220,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                             break;
                     }
 
-                    LOG.info("Sending " + notification.getMessage().getType() + " notification '" + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> " + notification.getTargets());
+                    LOG.fine("Sending " + notification.getMessage().getType() + " notification '" + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> " + notification.getTargets());
 
                     // Check access permissions
                     checkAccess(source, sourceId.get(), notification.getTargets(), realm, userId, isSuperUser, isRestrictedUser, assetId);
@@ -269,7 +269,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                         notification.getMessage());
 
                                     if (result.isSuccess()) {
-                                        LOG.info("Notification sent '" + id + "': " + target);
+                                        LOG.fine("Notification sent '" + id + "': " + target);
                                     } else {
                                         LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + result.getMessage());
                                         sentNotification.setError(TextUtil.isNullOrEmpty(result.getMessage()) ? "Unknown error" : result.getMessage());
@@ -403,7 +403,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
 
         if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
-            LOG.info("No filters set for remove notifications request so not allowed");
+            LOG.fine("No filters set for remove notifications request so not allowed");
             throw new IllegalArgumentException("No criteria specified");
         }
 

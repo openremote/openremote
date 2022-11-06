@@ -3,17 +3,14 @@ package org.openremote.test.rules
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
-import org.openremote.model.attribute.MetaItem
-import org.openremote.model.attribute.MetaMap
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
-import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RealmRuleset
+import org.openremote.model.rules.Ruleset
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
-import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 
 class BasicRulesImport {
@@ -84,7 +81,7 @@ class BasicRulesImport {
             "Some apartment 2 demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-        .setMeta(new MetaMap(Collections.singletonList(new MetaItem<>(SHOW_ON_LIST))))
+        .setShowOnList(true)
         apartment2RulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(

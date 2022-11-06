@@ -45,6 +45,9 @@ services:
       file: deploy.yml
       service: manager
     image: openremote/manager:${MANAGER_VERSION:-develop}
+    build:
+      context: ../manager/build/install/manager/
+      dockerfile: Dockerfile
     depends_on:
       postgresql:
         condition: service_healthy
@@ -53,6 +56,5 @@ services:
     environment:
       OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-true}
       OR_DEV_MODE: ${OR_DEV_MODE:-true}
-      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
     ports:
       - "8080:8080"

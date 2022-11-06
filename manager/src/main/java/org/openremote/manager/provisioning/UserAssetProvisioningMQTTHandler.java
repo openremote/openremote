@@ -19,25 +19,23 @@
  */
 package org.openremote.manager.provisioning;
 
-import io.moquette.broker.subscriptions.Topic;
-import io.moquette.interception.messages.InterceptConnectionLostMessage;
-import io.moquette.interception.messages.InterceptPublishMessage;
-import io.moquette.interception.messages.InterceptSubscribeMessage;
-import io.moquette.interception.messages.InterceptUnsubscribeMessage;
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.Constants;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.mqtt.MQTTHandler;
-import org.openremote.manager.mqtt.MqttBrokerService;
-import org.openremote.manager.mqtt.MqttConnection;
+import org.openremote.manager.mqtt.Topic;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.provisioning.*;
@@ -53,11 +51,14 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -110,18 +111,16 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     public static final String PROVISIONING_USER_PREFIX = "ps-";
     protected ProvisioningService provisioningService;
     protected TimerService timerService;
-    protected MqttBrokerService brokerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
-    protected final Map<Long, Set<MqttConnection>> provisioningConfigAuthenticatedConnectionMap = new HashMap<>();
+    protected final ConcurrentMap<Long, Set<RemotingConnection>> provisioningConfigAuthenticatedConnectionMap = new ConcurrentHashMap<>();
 
     @Override
     public void start(Container container) throws Exception {
         super.start(container);
         provisioningService = container.getService(ProvisioningService.class);
         timerService = container.getService(TimerService.class);
-        brokerService = container.getService(MqttBrokerService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
 
@@ -142,9 +141,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean checkCanSubscribe(MqttConnection connection, Topic topic) {
+    public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         // Skip standard checks
-        if (!canSubscribe(connection, topic)) {
+        if (!canSubscribe(connection, securityContext, topic)) {
             getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", connection" + connection);
             return false;
         }
@@ -152,9 +151,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean checkCanPublish(MqttConnection connection, Topic topic) {
+    public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         // Skip standard checks
-        if (!canPublish(connection, topic)) {
+        if (!canPublish(connection, securityContext, topic)) {
             getLogger().fine("Cannot publish to this topic, topic=" + topic + ", connection" + connection);
             return false;
         }
@@ -174,7 +173,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canSubscribe(MqttConnection connection, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
@@ -186,17 +185,24 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void doSubscribe(MqttConnection connection, Topic topic, InterceptSubscribeMessage msg) {
+    public void onSubscribe(RemotingConnection connection, Topic topic) {
         // Nothing to do here as we'll publish to this topic in response to client messages
     }
 
     @Override
-    public void doUnsubscribe(MqttConnection connection, Topic topic, InterceptUnsubscribeMessage msg) {
+    public void onUnsubscribe(RemotingConnection connection, Topic topic) {
 
     }
 
     @Override
-    public boolean canPublish(MqttConnection connection, Topic topic) {
+    public Set<String> getPublishListenerTopics() {
+        return Set.of(
+            PROVISIONING_TOKEN + "/" + Topic.SINGLE_LEVEL_TOKEN + "/" + REQUEST_TOKEN
+        );
+    }
+
+    @Override
+    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
@@ -208,13 +214,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void doPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg) {
-        String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
+    public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+        String payloadContent = body.toString(StandardCharsets.UTF_8);
 
         ProvisioningMessage provisioningMessage = ValueUtil.parse(payloadContent, ProvisioningMessage.class)
             .orElseGet(() -> {
-                LOG.fine("Failed to parse message from client: topic=" + topic + ", connection=" + connection);
-                brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
+                LOG.fine("Failed to parse message from client: topic=" + topic+ connectionToString(connection));
+                mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
                 return null;
             });
 
@@ -228,10 +234,15 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void onConnectionLost(MqttConnection connection, InterceptConnectionLostMessage msg) {
-        synchronized (provisioningConfigAuthenticatedConnectionMap) {
-            provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
-        }
+    public void onConnectionLost(RemotingConnection connection) {
+        mqttBrokerService.removeTransientCredentials(connection);
+        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
+    }
+
+    @Override
+    public void onDisconnect(RemotingConnection connection) {
+        mqttBrokerService.removeTransientCredentials(connection);
+        provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
     }
 
     protected static boolean isProvisioningTopic(Topic topic) {
@@ -250,11 +261,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         return PROVISIONING_TOKEN + "/" + topicTokenIndexToString(topic, 1) + "/" + RESPONSE_TOKEN;
     }
 
-    protected void processX509ProvisioningMessage(MqttConnection connection, Topic topic, X509ProvisioningMessage provisioningMessage) {
+    protected void processX509ProvisioningMessage(RemotingConnection connection, Topic topic, X509ProvisioningMessage provisioningMessage) {
+
+        LOG.finer("Processing provisioning message on: topic=" + topic + connectionToString(connection));
 
         if (TextUtil.isNullOrEmpty(provisioningMessage.getCert())) {
-            LOG.fine("Certificate is missing from X509 provisioning message: topic=" + topic + ", connection=" + connection);
-            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+            LOG.info("Certificate is missing from X509 provisioning message: topic=" + topic + connectionToString(connection));
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -263,23 +276,23 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         try {
             clientCertificate = ProvisioningUtil.getX509Certificate(provisioningMessage.getCert());
         } catch (CertificateException e) {
-            LOG.log(Level.INFO, "Failed to parse client X.509 certificate: topic=" + topic + ", connection=" + connection, e);
-            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+            LOG.log(Level.INFO, "Failed to parse client X.509 certificate: topic=" + topic+ connectionToString(connection), e);
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         X509ProvisioningConfig matchingConfig = getMatchingX509ProvisioningConfig(connection, clientCertificate);
 
         if (matchingConfig == null) {
-            LOG.fine("No matching provisioning config found for client certificate: topic=" + topic + ", connection=" + connection);
-            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
+            LOG.fine("No matching provisioning config found for client certificate: topic=" + topic+ connectionToString(connection));
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         // Check if config is disabled
         if (matchingConfig.isDisabled()) {
-            LOG.fine("Matching provisioning config is disabled for client certificate: topic=" + topic + ", connection=" + connection);
-            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
+            LOG.fine("Matching provisioning config is disabled for client certificate: topic=" + topic+ connectionToString(connection));
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -288,14 +301,14 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         String uniqueId = topicTokenIndexToString(topic, 1);
 
         if (TextUtil.isNullOrEmpty(certUniqueId)) {
-            LOG.info("Client X.509 certificate missing unique ID in subject CN: topic=" + topic + ", connection=" + connection);
-            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
+            LOG.info("Client X.509 certificate missing unique ID in subject CN: topic=" + topic+ connectionToString(connection));
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         if (TextUtil.isNullOrEmpty(uniqueId) || !certUniqueId.equals(uniqueId)) {
-            LOG.info("Client X.509 certificate unique ID doesn't match topic unique ID: topic=" + topic + ", connection=" + connection);
-            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
+            LOG.info("Client X.509 certificate unique ID doesn't match topic unique ID: topic=" + topic+ connectionToString(connection));
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -314,16 +327,16 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
             if (serviceUser != null) {
                 if (!serviceUser.getEnabled()) {
-                    LOG.info("Client service user has been disabled: topic=" + topic + ", connection=" + connection);
-                    brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
+                    LOG.info("Client service user has been disabled: topic=" + topic+ connectionToString(connection));
+                    mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
                     return;
                 }
             } else {
                 serviceUser = createClientServiceUser(realm, serviceUsername, matchingConfig);
             }
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic + ", connection=" + connection, e);
-            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
+            LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic+ connectionToString(connection), e);
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -331,48 +344,45 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         // Prepend realm name to unique ID to generate asset ID to further improve uniqueness
         String assetId = UniqueIdentifierGenerator.generateId(matchingConfig.getRealm() + uniqueId);
-        LOG.fine("Client unique ID '" + uniqueId + "' mapped to asset ID '" + assetId + "': topic=" + topic + ", connection=" + connection);
+        LOG.fine("Client unique ID '" + uniqueId + "' mapped to asset ID '" + assetId + "': topic=" + topic+ connectionToString(connection));
 
         try {
             // Look for existing asset
             asset = assetStorageService.find(assetId);
 
             if (asset != null) {
-                LOG.finer("Client asset found: topic=" + topic + ", connection=" + connection + ", assetId=" + assetId);
+                LOG.finer("Client asset found: topic=" + topic+ connectionToString(connection) + ", assetId=" + assetId);
 
                 if (!matchingConfig.getRealm().equals(asset.getRealm())) {
-                    LOG.info("Client asset realm mismatch : topic=" + topic + ", connection=" + connection + ", assetId=" + assetId);
-                    brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.ASSET_ERROR), MqttQoS.AT_MOST_ONCE);
+                    LOG.info("Client asset realm mismatch : topic=" + topic+ connectionToString(connection) + ", assetId=" + assetId);
+                    mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.ASSET_ERROR), MqttQoS.AT_MOST_ONCE);
                     return;
                 }
             } else {
                 asset = createClientAsset(realm, assetId, uniqueId, serviceUser, matchingConfig);
             }
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to retrieve/create asset: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig, e);
-            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
+            LOG.log(Level.WARNING, "Failed to retrieve/create asset: topic=" + topic+ connectionToString(connection) + ", config=" + matchingConfig, e);
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
-        LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig);
+        LOG.fine("Client successfully initialised: topic=" + topic+ connectionToString(connection) + ", config=" + matchingConfig);
 
         // Update connection with service user credentials
-        connection.setCredentials(realm, serviceUser.getUsername(), serviceUser.getSecret());
+        mqttBrokerService.addTransientCredentials(connection, new ImmutableTriple<>(serviceUser.getId(), realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
+        provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
+            if (connections == null) {
+                connections = new HashSet<>();
+            }
+            connections.add(connection);
+            return connections;
+        });
 
-        synchronized (provisioningConfigAuthenticatedConnectionMap) {
-            provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
-                if (connections == null) {
-                    connections = new HashSet<>();
-                }
-                connections.remove(connection);
-                connections.add(connection);
-                return connections;
-            });
-            brokerService.publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
-        }
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
     }
 
-    protected X509ProvisioningConfig getMatchingX509ProvisioningConfig(MqttConnection connection, X509Certificate clientCertificate) {
+    protected X509ProvisioningConfig getMatchingX509ProvisioningConfig(RemotingConnection connection, X509Certificate clientCertificate) {
         return provisioningService
             .getProvisioningConfigs()
             .stream()
@@ -475,12 +485,17 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     protected void forceClientDisconnects(long provisioningConfigId) {
-        synchronized (provisioningConfigAuthenticatedConnectionMap) {
-            provisioningConfigAuthenticatedConnectionMap.computeIfPresent(provisioningConfigId, (id, connections) -> {
-                // Force disconnect of each connection and the disconnect handler will remove the connection from the map
-                connections.forEach(connection -> brokerService.forceDisconnect(connection.getClientId()));
-                return connections;
+        provisioningConfigAuthenticatedConnectionMap.computeIfPresent(provisioningConfigId, (id, connections) -> {
+            // Force disconnect of each connection and the disconnect handler will remove the connection from the map
+            connections.forEach(connection -> {
+                try {
+                    connection.disconnect(false);
+                } catch (Exception e) {
+                    getLogger().log(Level.INFO, "Failed to disconnect client: connection=" + connection, e);
+                }
             });
-        }
+            connections.clear();
+            return connections;
+        });
     }
 }

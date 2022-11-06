@@ -1,18 +1,14 @@
 package org.openremote.test.rules
 
 import org.openremote.manager.rules.RulesEngine
-import org.openremote.manager.rules.RulesFacts
-import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
-import org.openremote.model.attribute.MetaItem
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
-import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -238,7 +234,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             "Throw Failure Exception",
             GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text)
-        ruleset.getMeta().add(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
+            .setContinueOnError(true)
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the realms A rule engine should run with one deployment as error"

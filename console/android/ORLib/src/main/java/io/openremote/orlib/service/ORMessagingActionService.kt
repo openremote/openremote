@@ -1,12 +1,13 @@
 package io.openremote.orlib.service
 
 import android.app.IntentService
-import android.content.Intent
 import android.app.NotificationManager
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
-import io.openremote.orlib.R
 import android.text.TextUtils
 import io.openremote.orlib.ORConstants
+import io.openremote.orlib.R
 import io.openremote.orlib.ui.OrMainActivity
 
 class ORMessagingActionService : IntentService("org.openremote.android.ORMessagingActionService") {
@@ -55,13 +56,14 @@ class ORMessagingActionService : IntentService("org.openremote.android.ORMessagi
                     notificationResource!!.executeRequest(httpMethod!!, appUrl, data)
                 }
                 else -> {
-                    val activityIntent = Intent(applicationContext, OrMainActivity::class.java)
-                    activityIntent.addFlags(
+                    val pm: PackageManager = packageManager
+                    val launchIntent: Intent = pm.getLaunchIntentForPackage(applicationContext.packageName) ?: Intent(applicationContext, OrMainActivity::class.java)
+                    launchIntent.addFlags(
                         Intent.FLAG_ACTIVITY_NEW_TASK or
                                 Intent.FLAG_ACTIVITY_SINGLE_TOP
                     )
-                    activityIntent.putExtra("appUrl", appUrl)
-                    startActivity(activityIntent)
+                    launchIntent.putExtra("appUrl", appUrl)
+                    startActivity(launchIntent)
                 }
             }
         }

@@ -47,19 +47,15 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.EntityManager;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
-import static org.openremote.model.attribute.AttributeWriteFailure.*;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.attribute.AttributeEvent.Source.*;
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+import static org.openremote.model.attribute.AttributeWriteFailure.*;
 
 /**
  * Receives {@link AttributeEvent} from {@link Source} and processes them.
@@ -149,7 +145,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             StringBuilder error = new StringBuilder();
 
-            Source source = exchange.getIn().getHeader(HEADER_SOURCE, "unknown source", Source.class);
+            Source source = exchange.getIn().getHeader(HEADER_SOURCE, CLIENT, Source.class);
             if (source != null) {
                 error.append("Error processing from ").append(source);
             }
@@ -202,6 +198,71 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return assetEventAuthorizer.authorise(requestedRealm, auth, subscription);
         });
 
+        // TODO: Introduce caching here similar to ActiveMQ auth caching
+        clientEventService.addEventAuthorizer((requestedRealm, authContext, event) -> {
+
+            if (!(event instanceof AttributeEvent attributeEvent)) {
+                return false;
+            }
+
+            if (authContext != null && authContext.isSuperUser()) {
+                return true;
+            }
+
+            // Check realm against user
+            if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
+                requestedRealm)) {
+                LOG.fine("Realm is inactive, inaccessible or nonexistent: " + requestedRealm);
+                return false;
+            }
+
+            // Users must have write attributes role
+            if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
+                Constants.KEYCLOAK_CLIENT_ID)) {
+                LOG.finer("User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                return false;
+            }
+
+            // Have to load the asset and attribute to perform additional checks - should permissions be moved out of the
+            // asset model (possibly if the performance is determined to be not good enough)
+            // TODO: Use a targeted query to retrieve just the info we need
+            Asset<?> asset = assetStorageService.find(attributeEvent.getAssetId());
+            Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getAttributeName()).orElse(null) : null;
+
+            if (asset == null || !asset.hasAttribute(attributeEvent.getAttributeName())) {
+                LOG.finer("Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getAssetId());
+                return false;
+            } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
+                LOG.finer("Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getAttributeRef());
+                return false;
+            }
+
+            if (authContext != null) {
+                // Check restricted user
+                if (identityService.getIdentityProvider().isRestrictedUser(authContext)) {
+                    // Must be asset linked to user
+                    if (!assetStorageService.isUserAsset(authContext.getUserId(),
+                        attributeEvent.getAssetId())) {
+                        LOG.finer("User is not linked to asset '" + attributeEvent.getAssetId() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                        return false;
+                    }
+
+                    if (attribute == null || !attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
+                        LOG.finer("Asset attribute doesn't support restricted write on '" + attributeEvent.getAttributeRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                        return false;
+                    }
+                }
+            } else {
+                // Check attribute has public write flag for anonymous write
+                if (attribute == null || !attribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
+                    LOG.finer("Asset doesn't support public write on '" + attributeEvent.getAttributeRef() + "': username=null");
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
         processors.add(gatewayService);
         processors.add(agentService);
         processors.add(rulesService);
@@ -246,7 +307,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
          - Make AssetUpdateProcessor transactional with a two-phase commit API
          - Replace at-most-once ClientEventService with at-least-once capable, embeddable message broker/protocol
          - See pseudocode here: http://activemq.apache.org/should-i-use-xa.html
-         - Do we want JMS/AMQP/WSS or SOME_API/MQTT/WSS? ActiveMQ or Moquette?
         */
         from(ASSET_QUEUE)
             .routeId("AssetQueueProcessor")
@@ -293,52 +353,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         throw new AssetProcessingException(ATTRIBUTE_NOT_FOUND);
                     }
 
-                    switch (source) {
-                        case CLIENT -> {
-                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                            if (authContext == null) {
-                                // Check attribute has public write flag
-                                if (!oldAttribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
-                                    throw new AssetProcessingException(NO_AUTH_CONTEXT);
-                                }
-                            } else {
-                                // Check realm, must be accessible
-                                if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
-                                    asset.getRealm())) {
-                                    throw new AssetProcessingException(INVALID_REALM);
-                                }
-
-                                // Regular user must have write attributes role
-                                if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
-                                    Constants.KEYCLOAK_CLIENT_ID)) {
-                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                                }
-
-                                // Check restricted user
-                                if (identityService.getIdentityProvider().isRestrictedUser(authContext)) {
-                                    // Must be asset linked to user
-                                    if (!assetStorageService.isUserAsset(authContext.getUserId(),
-                                        event.getAssetId())) {
-                                        throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                                    }
-                                    // Must be writable by restricted client
-                                    if (!oldAttribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
-                                        throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                                    }
-                                }
-                            }
-                        }
-                        case SENSOR -> {
-                            Optional<Protocol<?>> protocol = oldAttribute.getMetaValue(AGENT_LINK)
-                                .map(agentLink -> agentService.getProtocolInstance(agentLink.getId()));
-
-                            // Sensor event must be for an attribute linked to an agent
-                            if (protocol.isEmpty()) {
-                                throw new AssetProcessingException(INVALID_AGENT_LINK);
-                            }
-                        }
-                    }
-
                     // For executable attributes, non-sensor sources can set a writable attribute execute status
                     if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
                         Optional<AttributeExecuteStatus> status = event.getValue()
@@ -354,7 +368,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     Object value = event.getValue().map(eventValue -> {
                         Class<?> attributeValueType = oldAttribute.getType().getType();
                         return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                            LOG.info("Failed to coerce attribute event value into the correct value type: event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
+                            LOG.fine("Failed to coerce attribute event value into the correct value type: event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
                             return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
                         });
 

@@ -20,13 +20,11 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
-import org.openremote.model.rules.json.JsonRule
 import org.openremote.model.value.ValueType
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.attribute.MetaItem
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
@@ -54,7 +52,7 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
-import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
+import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.util.ValueUtil.parse
 
@@ -378,15 +376,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "a validity period is added to the ruleset (fictional times to ensure firing in sensible time within test)"
         version = ruleset.version
-        def validityStart = Instant.ofEpochMilli(getClockTimeOf(container)).plus(2000, ChronoUnit.MILLIS)
-        def validityEnd = Instant.ofEpochMilli(getClockTimeOf(container)).plus(4000, ChronoUnit.MILLIS)
+        def validityStart = Instant.ofEpochMilli(getClockTimeOf(container)).plus(2, ChronoUnit.HOURS)
+        def validityEnd = Instant.ofEpochMilli(getClockTimeOf(container)).plus(4, ChronoUnit.HOURS)
         def recur = new Recur(Recur.DAILY, 3)
         recur.setInterval(2)
         def calendarEvent = new CalendarEvent(
             Date.from(validityStart),
             Date.from(validityEnd),
             recur)
-        ruleset.getMeta().add(new MetaItem<Object>(Ruleset.VALIDITY ,calendarEvent))
+        ruleset.setValidity(calendarEvent)
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the ruleset should be redeployed and paused until 1st occurrence"
@@ -591,8 +589,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
         }
 
-        when: "time advances past the next sunrise"
-        sunTimes = sunsetCalculator.on(sunTimes.getSet()).execute()
+        when: "time advances past the sunset"
+        sunTimes = sunsetCalculator.on(sunTimes.getSet().plusHours(1)).execute()
         advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getRise()).getSeconds(), TimeUnit.SECONDS, container)
 
         and: "the updated attribute is cleared"
@@ -609,7 +607,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "time advances slightly past the next sunset time and the rule engine fires"
-        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet()).getSeconds()+1, TimeUnit.SECONDS, container)
+        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet().plusSeconds(10)).getSeconds()+1, TimeUnit.SECONDS, container)
 
         then: "the rule engine should have fired again and the rule should have triggered"
         conditions.eventually {

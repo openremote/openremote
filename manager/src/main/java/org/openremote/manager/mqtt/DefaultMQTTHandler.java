@@ -19,20 +19,15 @@
  */
 package org.openremote.manager.mqtt;
 
-import io.moquette.broker.subscriptions.Token;
-import io.moquette.broker.subscriptions.Topic;
-import io.moquette.interception.messages.*;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.mqtt.*;
-import org.openremote.agent.protocol.mqtt.MQTTLastWill;
-import org.openremote.container.message.MessageBrokerService;
+import io.netty.channel.ChannelId;
+import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.AssetEvent;
@@ -45,16 +40,15 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -67,27 +61,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public static final int PRIORITY = Integer.MIN_VALUE + 1000;
     public static final String ASSET_TOPIC = "asset";
     public static final String ATTRIBUTE_TOPIC = "attribute";
-    public static final String ATTRIBUTE_WRITE_TOPIC = "writeattribute";
     public static final String ATTRIBUTE_VALUE_TOPIC = "attributevalue";
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     protected AssetStorageService assetStorageService;
-
-    public static boolean isAttributeTopic(Topic topic) {
-        return ATTRIBUTE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2)) || ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
-
-    public static boolean isAttributeWriteTopic(Topic topic) {
-        return ATTRIBUTE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
-
-    public static boolean isAttributeValueWriteTopic(Topic topic) {
-        return ATTRIBUTE_VALUE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
-
-    public static boolean isAssetTopic(Topic topic) {
-        return ASSET_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
-    }
+    protected final Map<RemotingConnection, Integer> subscribedConnections = new HashMap<>();
 
     @Override
     public int getPriority() {
@@ -102,70 +80,44 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean onConnect(MqttConnection connection, InterceptConnectMessage msg) {
-        super.onConnect(connection, msg);
-
-        // Moquette is awful and client ID rather than socket descriptors are used everywhere so cannot distinguish
-        // between multiple connections using the same client ID
-        // Force disconnect any existing session that is using this client ID
-        clientEventService.closeSession(connection.getClientId());
-
-        // Clear existing subscriptions by sending session close message
-        Map<String, Object> headers = prepareHeaders(connection);
-        headers.put(ConnectionConstants.SESSION_CLOSE, true);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-
-        headers.remove(ConnectionConstants.SESSION_CLOSE);
+    public boolean onConnect(RemotingConnection connection) {
+        super.onConnect(connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
 
         // Put a close connection runnable into the headers for the client event service
-        // Get the current session which is specific to the current connection
-        Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection.getClientId());
+        Runnable closeRunnable = () -> {
+            if (mqttBrokerService != null) {
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        };
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         return true;
     }
 
     @Override
-    public void onDisconnect(MqttConnection connection, InterceptDisconnectMessage msg) {
-        super.onDisconnect(connection, msg);
+    public void onDisconnect(RemotingConnection connection) {
+        super.onDisconnect(connection);
 
-        Map<String, Object> headers = prepareHeaders(connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_CLOSE, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        subscribedConnections.remove(connection);
     }
 
     @Override
-    public void onConnectionLost(MqttConnection connection, InterceptConnectionLostMessage msg) {
-        super.onConnectionLost(connection, msg);
-        Map<String, Object> headers = prepareHeaders(connection);
+    public void onConnectionLost(RemotingConnection connection) {
+        super.onConnectionLost(connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-
-        // Try and publish last will if configured
-        if (connection.hasLastWill()) {
-            // Pass through standard canPublish/publish
-            MQTTLastWill lastWill = connection.getLastWill();
-            Topic lastWillTopic = Topic.asTopic(lastWill.getTopic());
-
-            if (handlesTopic(lastWillTopic)) {
-
-                getLogger().info("Processing last will for client: " + connection);
-
-                if (canPublish(connection, lastWillTopic)) {
-                    MqttFixedHeader fixedHeader = new MqttFixedHeader(MqttMessageType.PUBLISH, true, MqttQoS.EXACTLY_ONCE, false, 0);
-                    MqttPublishVariableHeader varHeader = new MqttPublishVariableHeader(lastWill.getTopic(), 0);
-                    ByteBuf payload = Unpooled.wrappedBuffer(lastWill.getPayload().toString().getBytes());
-                    InterceptPublishMessage message = new InterceptPublishMessage(new MqttPublishMessage(fixedHeader, varHeader, payload), msg.getClientID(), msg.getUsername());
-                    doPublish(connection, lastWillTopic, message);
-                }
-            }
-        }
+        subscribedConnections.remove(connection);
     }
 
     @Override
     public boolean topicMatches(Topic topic) {
-        return isAttributeTopic(topic) || isAssetTopic(topic) || isAttributeWriteTopic(topic) || isAttributeValueWriteTopic(topic);
+        return isAttributeTopic(topic) || isAssetTopic(topic) || isAttributeValueWriteTopic(topic);
     }
 
     @Override
@@ -175,17 +127,17 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public boolean canSubscribe(MqttConnection connection, Topic topic) {
+    public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
         }
 
-        AuthContext authContext = connection.getAuthContext();
+        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
-            LOG.fine("Anonymous connection not supported: topic=" + topic + ", connection=" + connection);
+            LOG.fine("Anonymous connection not supported: topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
 
@@ -193,68 +145,68 @@ public class DefaultMQTTHandler extends MQTTHandler {
         boolean isAssetTopic = isAssetTopic(topic);
 
         if (!isAssetTopic && !isAttributeTopic) {
-            LOG.fine("Topic must have 3 or more tokens and third token must be 'asset, attribute or attributevalue': topic=" + topic  + ", connection=" + connection);
+            LOG.fine("Topic must have 3 or more tokens and third token must be 'asset, attribute or attributevalue': topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
 
         if (isAssetTopic) {
             if (topic.getTokens().size() < 4 || topic.getTokens().size() > 5) {
-                LOG.fine("Asset subscribe token count should be 4 or 5: topic=" + topic + ", connection=" + connection);
+                LOG.fine("Asset subscribe token count should be 4 or 5: topic=" + topic + ", " + connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().size() == 4) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().size() == 5) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Asset subscribe forth token must be an asset ID: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Asset subscribe forth token must be an asset ID: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
                 if (!TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Asset subscribe fifth token must be a wildcard: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Asset subscribe fifth token must be a wildcard: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
             }
         } else {
             // Attribute topic
             if (topic.getTokens().size() < 5 || topic.getTokens().size() > 6) {
-                LOG.fine("Attribute subscribe token count should be 5 or 6: topic=" + topic + ", connection=" + connection);
+                LOG.fine("Attribute subscribe token count should be 5 or 6: topic=" + topic + ", " + connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().size() == 5) {
                 if (TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().size() == 6) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
                 if (!TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 5))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 5))) {
-                    LOG.fine("Attribute subscribe sixth token must be a wildcard: topic=" + topic + ", connection=" + connection);
+                    LOG.fine("Attribute subscribe sixth token must be a wildcard: topic=" + topic + ", " + connectionToString(connection));
                     return false;
                 }
             }
         }
 
         // Build filter for the topic and verify that the filter is OK for given auth context
-        AssetFilter<?> filter = buildAssetFilter(connection, topic);
+        AssetFilter<?> filter = buildAssetFilter(topic);
 
         if (filter == null) {
-            LOG.info("Failed to process subscription topic: topic=" + topic + ", connection=" + connection);
+            LOG.fine("Failed to process subscription topic: topic=" + topic + ", " + connectionToString(connection));
             return false;
         }
 
@@ -263,8 +215,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
             filter
         );
 
-        if (!clientEventService.authorizeEventSubscription(connection.getRealm(), authContext, subscription)) {
-            LOG.info("Subscription was not authorised for this user and topic: topic=" + topic + ", connection=" + connection);
+        if (!clientEventService.authorizeEventSubscription(topicRealm(topic), authContext, subscription)) {
+            LOG.fine("Subscription was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
 
@@ -295,44 +247,46 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean canPublish(MqttConnection connection, Topic topic) {
-
-        AuthContext authContext = connection.getAuthContext();
+    public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
             LOG.fine("Identity provider is not keycloak");
             return false;
         }
 
+        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
+
         if (authContext == null) {
-            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + connection);
+            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + connectionToString(connection));
             return false;
         }
 
-        if (isAttributeWriteTopic(topic)) {
-            if (topic.getTokens().size() != 3) {
-                LOG.fine("Publish attribute events topic should be {realm}/{clientId}/writeattribute: topic=" + topic + ", connection=" + connection);
-                return false;
-            }
-            return true;
-        } else if (isAttributeValueWriteTopic(topic)) {
+        if (isAttributeValueWriteTopic(topic)) {
             if (topic.getTokens().size() != 5 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                LOG.fine("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + connection);
+                LOG.fine("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + connectionToString(connection));
                 return false;
             }
-            return true;
+        } else {
+            return false;
         }
 
-        return false;
+        // We don't know the value at this point so just use a null value for authorization (value type will be handled
+        // when the event is processed)
+        if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
+            LOG.info("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+            return false;
+        }
+
+        return true;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public void doSubscribe(MqttConnection connection, Topic topic, InterceptSubscribeMessage msg) {
-        boolean isAssetTopic = isAssetTopic(topic);
-        String subscriptionId = msg.getTopicFilter(); // Use topic as subscription ID
+    public void onSubscribe(RemotingConnection connection, Topic topic) {
 
-        AssetFilter filter = buildAssetFilter(connection, topic);
+        boolean isAssetTopic = isAssetTopic(topic);
+        String subscriptionId = topic.getString(); // Use topic as unique subscription ID
+        AssetFilter filter = buildAssetFilter(topic);
         Class subscriptionClass = isAssetTopic ? AssetEvent.class : AttributeEvent.class;
 
         if (filter == null) {
@@ -340,7 +294,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return;
         }
 
-        Consumer<SharedEvent> eventConsumer = getSubscriptionEventConsumer(connection, topic, msg.getRequestedQos());
+        Consumer<SharedEvent> eventConsumer = getSubscriptionEventConsumer(connection, topic);
 
         EventSubscription subscription = new EventSubscription(
             subscriptionClass,
@@ -349,51 +303,77 @@ public class DefaultMQTTHandler extends MQTTHandler {
             eventConsumer
         );
 
-        Map<String, Object> headers = prepareHeaders(connection);
+        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
+
+        // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
+        synchronized (subscribedConnections) {
+            subscribedConnections.compute(connection, (existingConnection, subscriptionCount) -> {
+                if (subscriptionCount == null) {
+                    subscriptionCount = 0;
+                }
+                return subscriptionCount + 1;
+            });
+        }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes", "ConstantConditions"})
     @Override
-    public void doUnsubscribe(MqttConnection connection, Topic topic, InterceptUnsubscribeMessage msg) {
+    public void onUnsubscribe(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
         boolean isAssetTopic = subscriptionId.startsWith(ASSET_TOPIC);
-        Map<String, Object> headers = prepareHeaders(connection);
+        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
         CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
+
+        // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
+        synchronized (subscribedConnections) {
+            subscribedConnections.compute(connection, (existingConnection, subscriptionCount) -> {
+                if (subscriptionCount == 1) {
+                    return null;
+                }
+                return subscriptionCount - 1;
+            });
+        }
     }
 
     @Override
-    public void doPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg) {
-        List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
-        boolean isValueWrite = topicTokens.get(2).equals(ATTRIBUTE_VALUE_WRITE_TOPIC);
-        String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
-        AttributeEvent attributeEvent;
+    public Set<String> getPublishListenerTopics() {
+        return Set.of(
+            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD
+        );
+    }
 
-        if (isValueWrite) {
-            String attributeName = topicTokens.get(3);
-            String assetId = topicTokens.get(4);
-            Object value = ValueUtil.parse(payloadContent).orElse(null);
-            attributeEvent = new AttributeEvent(assetId, attributeName, value);
-        } else {
-            attributeEvent = ValueUtil.parse(payloadContent, AttributeEvent.class).orElse(null);
-        }
-
-        if (attributeEvent == null) {
-            LOG.fine("Failed to parse payload for publish topic '" + topic + "': " + connection);
-            return;
-        }
-
-        Map<String, Object> headers = prepareHeaders(connection);
+    @Override
+    public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+        List<String> topicTokens = topic.getTokens();
+        String payloadContent = body.toString(StandardCharsets.UTF_8);
+        Object value = ValueUtil.parse(payloadContent).orElse(null);
+        AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
+        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
     }
 
-    public static AssetFilter<?> buildAssetFilter(MqttConnection connection, Topic topic) {
+    @Override
+    public void onUserAssetLinksChanged(RemotingConnection connection) {
+        if (subscribedConnections.containsKey(connection)) {
+            LOG.fine("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + connectionToString(connection));
+            mqttBrokerService.doForceDisconnect(connection);
+        }
+    }
+
+    protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
+        String attributeName = topicTokens.get(3);
+        String assetId = topicTokens.get(4);
+        return new AttributeEvent(assetId, attributeName, value);
+    }
+
+    protected static AssetFilter<?> buildAssetFilter(Topic topic) {
         boolean isAttributeTopic = isAttributeTopic(topic);
         boolean isAssetTopic = isAssetTopic(topic);
 
-        String realm = connection.getRealm();
+        String realm = topicRealm(topic);
         List<String> assetIds = new ArrayList<>();
         List<String> parentIds = new ArrayList<>();
         List<String> paths = new ArrayList<>();
@@ -472,9 +452,12 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return assetFilter;
     }
 
-    protected Consumer<SharedEvent> getSubscriptionEventConsumer(MqttConnection connection, Topic topic, MqttQoS mqttQoS) {
+    protected Consumer<SharedEvent> getSubscriptionEventConsumer(RemotingConnection connection, Topic topic) {
         boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
         boolean isAssetTopic = isAssetTopic(topic);
+
+        // Always publish asset/attribute messages with QoS 0
+        MqttQoS mqttQoS = MqttQoS.AT_MOST_ONCE;
 
         // Build topic expander (replace wildcards) so it isn't computed for each event
         Function<SharedEvent, String> topicExpander;
@@ -519,5 +502,25 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 }
             }
         };
+    }
+
+    protected static boolean isAttributeTopic(Topic topic) {
+        return ATTRIBUTE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2)) || ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+
+    protected static boolean isAttributeValueWriteTopic(Topic topic) {
+        return ATTRIBUTE_VALUE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+
+    protected static boolean isAssetTopic(Topic topic) {
+        return ASSET_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+
+    protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(ConnectionConstants.SESSION_KEY, MQTTBrokerService.getConnectionIDString(connection));
+        headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
+        headers.put(Constants.REALM_PARAM_NAME, requestRealm);
+        return headers;
     }
 }
