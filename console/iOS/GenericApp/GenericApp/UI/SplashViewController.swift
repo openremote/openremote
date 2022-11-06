@@ -20,24 +20,22 @@ class SplashViewController: UIViewController {
         
         if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
            let projectsData = userDefaults.data(forKey: DefaultsKey.projectsConfigurationKey),
-           let selectedProject = userDefaults.string(forKey: DefaultsKey.projectKey) {
+           let selectedProjectId = userDefaults.string(forKey: DefaultsKey.projectKey) {
             
             let projects = try? JSONDecoder().decode([ProjectConfig].self, from: projectsData)
             
             if let projects = projects {
-                print(projects)
-                print(selectedProject)
+                print("Known projects \(projects)")
+                print("Selected project \(selectedProjectId)")
                 
-                // TODO: proper lookup per key
-                project = projects[0]
-                
-                
-                // TODO: validate project "correct" before navigating
-                self.performSegue(withIdentifier: Segues.goToWebView, sender: self)
+                if let selectedProject = projects.first(where: { $0.id == selectedProjectId } ) {
+                    project = selectedProject
+                    self.performSegue(withIdentifier: Segues.goToWebView, sender: self)
+                    return
+                }
             }
-        } else {
-            self.performSegue(withIdentifier: Segues.goToWizardDomainView, sender: self)
         }
+        self.performSegue(withIdentifier: Segues.goToWizardDomainView, sender: self)
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
