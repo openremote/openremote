@@ -22,7 +22,6 @@
 		4CF5D07327143F2000D705BE /* UIColor+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05E27143F1F00D705BE /* UIColor+Utils.swift */; };
 		4CF5D07427143F2000D705BE /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05F27143F1F00D705BE /* Reachability.swift */; };
 		4CF5D07527143F2000D705BE /* String+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06027143F1F00D705BE /* String+Utils.swift */; };
-		4CF5D07627143F2000D705BE /* ORAppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06227143F1F00D705BE /* ORAppConfig.swift */; };
 		4CF5D07727143F2000D705BE /* ORLinkConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06327143F1F00D705BE /* ORLinkConfig.swift */; };
 		4CF5D07827143F2000D705BE /* ORPushNotificationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */; };
 		4CF5D07927143F2000D705BE /* ORPushNotificationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */; };
@@ -95,7 +94,6 @@
 		4CF5D05E27143F1F00D705BE /* UIColor+Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Utils.swift"; sourceTree = "<group>"; };
 		4CF5D05F27143F1F00D705BE /* Reachability.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
 		4CF5D06027143F1F00D705BE /* String+Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "String+Utils.swift"; sourceTree = "<group>"; };
-		4CF5D06227143F1F00D705BE /* ORAppConfig.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORAppConfig.swift; sourceTree = "<group>"; };
 		4CF5D06327143F1F00D705BE /* ORLinkConfig.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORLinkConfig.swift; sourceTree = "<group>"; };
 		4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationButton.swift; sourceTree = "<group>"; };
 		4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationAction.swift; sourceTree = "<group>"; };
@@ -228,7 +226,6 @@
 		4CF5D06127143F1F00D705BE /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				4CF5D06227143F1F00D705BE /* ORAppConfig.swift */,
 				4CF5D06327143F1F00D705BE /* ORLinkConfig.swift */,
 				4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */,
 				4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */,
@@ -437,7 +434,6 @@
 				4CF5D07527143F2000D705BE /* String+Utils.swift in Sources */,
 				4C0E4A10274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift in Sources */,
 				4CF5D07427143F2000D705BE /* Reachability.swift in Sources */,
-				4CF5D07627143F2000D705BE /* ORAppConfig.swift in Sources */,
 				4CF5D07927143F2000D705BE /* ORPushNotificationAction.swift in Sources */,
 				91A9A8FD28BF6A9900DF8928 /* ConfigManager.swift in Sources */,
 			);

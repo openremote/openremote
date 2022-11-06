@@ -187,35 +187,6 @@ public class HttpApiManager: NSObject, ApiManager {
         }
     }
 
-    
-    
-    
-    public func getAppConfig(realm: String, callback: ResponseBlock<ORAppConfig>?) {
-        var urlRequest = URLRequest(url: URL(string: "\(self.baseUrl.scheme!)://\(self.baseUrl.host!)/consoleappconfig/\(realm).json")!)
-        urlRequest.httpMethod = HttpMethod.get.rawValue
-        
-        if let accessToken = HttpApiManager.accessToken {
-            urlRequest.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        }
-                
-        session.dataTask(with: urlRequest, completionHandler: { responseData, response, error in
-            let httpStatusCode = (response as? HTTPURLResponse)?.statusCode ?? 500
-
-            guard let responseData = responseData else {
-                callback?(httpStatusCode, nil, error);
-                return
-            }
-
-            guard let responseModel = try? self.decoder.decode(ORAppConfig.self, from: responseData) else {
-                print("Couldn't parse response: \(String(data: responseData, encoding: .utf8)!)")
-                callback?(httpStatusCode, nil,  error);
-                return;
-            }
-
-            callback?(httpStatusCode, responseModel, nil)
-        }).resume()
-    }
-
     //REST METHODS
     private func createRequest(method: HttpMethod, pathComponents:[String], queryParameters: [String: Any]? = nil) -> URLRequest {
         var url: URL
