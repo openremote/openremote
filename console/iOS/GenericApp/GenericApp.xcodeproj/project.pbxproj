@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AA632546B251006ED5DD /* ProjectViewController.swift */; };
 		4C8BA085271460B1001084A4 /* libORLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8BA084271460B1001084A4 /* libORLib.a */; };
 		4C8BA087271461C7001084A4 /* libORLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8BA086271461C7001084A4 /* libORLib.a */; };
 		4CEDA25D25405B1E00C47E3B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */; };
@@ -56,7 +55,6 @@
 		46FD90D41833A0E2C4C7DDA6 /* Pods-NotificationService.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.release.xcconfig"; path = "Target Support Files/Pods-NotificationService/Pods-NotificationService.release.xcconfig"; sourceTree = "<group>"; };
 		4C38E9C02548089A00E381C6 /* OpenRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenRemote.entitlements; sourceTree = "<group>"; };
 		4C38E9C12548090200E381C6 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
-		4C81AA632546B251006ED5DD /* ProjectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectViewController.swift; sourceTree = "<group>"; };
 		4C8BA084271460B1001084A4 /* libORLib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libORLib.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C8BA086271461C7001084A4 /* libORLib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libORLib.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -184,7 +182,6 @@
 			isa = PBXGroup;
 			children = (
 				4CEDA2CD254075D400C47E3B /* SplashViewController.swift */,
-				4C81AA632546B251006ED5DD /* ProjectViewController.swift */,
 				9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */,
 				910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */,
 				91658F942889C15D000FF05C /* WizardRealmViewController.swift */,
@@ -376,7 +373,6 @@
 			files = (
 				91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */,
 				4CF3439127A13F2200EB5A0E /* String+Utils.swift in Sources */,
-				4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */,
 				878D2D0D249A490300011484 /* AppDelegate.swift in Sources */,
 				910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */,
 				910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */,

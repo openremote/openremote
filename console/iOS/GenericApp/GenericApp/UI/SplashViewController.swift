@@ -49,13 +49,11 @@ class SplashViewController: UIViewController {
                         self.performSegue(withIdentifier: "goToWebView", sender: self)
                     } else {
                         self.performSegue(withIdentifier: "goToWizardDomainView", sender: self)
-//                        self.performSegue(withIdentifier: "goToProjectView", sender: self)
                     }
                 }
             })*/
                
         } else {
-//            self.performSegue(withIdentifier: "goToProjectView", sender: self)
             self.performSegue(withIdentifier: Segues.goToWizardDomainView, sender: self)
         }
     }
