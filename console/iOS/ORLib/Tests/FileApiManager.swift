@@ -62,4 +62,11 @@ class FileApiManager: ApiManager {
         return fixture.apps
     }
 
+    public func getAppInfo(appName: String) async throws -> ORAppInfo? {
+        if let returnCode = fixture.appsInfoReturnCode {
+            throw ApiManagerError.communicationError(returnCode)
+        }
+        return fixture.appsInfo?[appName]
+    }
+
 }

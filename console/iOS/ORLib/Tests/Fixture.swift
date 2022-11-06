@@ -13,9 +13,12 @@ struct Fixture: Codable {
     var consoleConfig: ORConsoleConfig?
     var appsReturnCode: Int?
     var apps: [String]?
+    var appsInfoReturnCode: Int?
+    var appsInfo: [String: ORAppInfo]?
     
     init() {
         consoleConfigReturnCode = 404
         appsReturnCode = 404
+        appsInfoReturnCode = 404
     }
 }

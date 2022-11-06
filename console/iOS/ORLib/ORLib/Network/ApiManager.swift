@@ -24,5 +24,7 @@ public protocol ApiManager {
     func getApps(callback: ResponseBlock<[String]>?)
     
     func getApps() async throws -> [String]?
+    
+    func getAppInfo(appName: String) async throws -> ORAppInfo?
 
 }

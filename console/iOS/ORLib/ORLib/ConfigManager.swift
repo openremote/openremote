@@ -28,7 +28,8 @@ public class ConfigManager {
     private var apiManagerFactory: ((String) -> ApiManager)
     private var apiManager: ApiManager?
     
-    public private(set) var appInfos : [String:ORAppInfo] = [:]
+    public private(set) var globalAppInfos : [String:ORAppInfo] = [:] // app infos from the top level consoleConfig information
+    public private(set) var appInfos : [String:ORAppInfo] = [:] // app infos from each specific app info.json
 
     public private(set) var state = ConfigManagerState.selectDomain
     
@@ -53,7 +54,7 @@ public class ConfigManager {
                 do {
                     cc = try await api.getConsoleConfig() ?? ORConsoleConfig()
                     if let apps = cc.apps {
-                        appInfos = apps
+                        globalAppInfos = apps
                     }
                 } catch ApiManagerError.communicationError(let httpStatusCode) {
                     if httpStatusCode == 404 || httpStatusCode == 403 {
@@ -65,6 +66,10 @@ public class ConfigManager {
                 }
                 
                 if let selectedApp = cc.app {
+                    
+                    // TODO: we should potentially set the realms, either from console config or from specific app config
+                    
+                    
                     state = .selectRealm(baseUrl, selectedApp, nil)
                     return state
                 }
@@ -78,7 +83,7 @@ public class ConfigManager {
                 if cc.allowedApps == nil || cc.allowedApps!.isEmpty {
                     do {
                         let apps = try await api.getApps()
-                        state = .selectApp(baseUrl, apps)
+                        await state = .selectApp(baseUrl, filterPotentialApps(apiManager: api, potentialApps: apps))
                     } catch ApiManagerError.communicationError(let httpStatusCode) {
                         if httpStatusCode == 404 || httpStatusCode == 403 {
                             if cc.showRealmTextInput {
@@ -89,7 +94,7 @@ public class ConfigManager {
                         }
                     }
                 } else {
-                    self.state = .selectApp(baseUrl, cc.allowedApps)
+                    await self.state = .selectApp(baseUrl, filterPotentialApps(apiManager: api, potentialApps: cc.allowedApps))
                 }
                 return state
             } catch {
@@ -104,6 +109,35 @@ public class ConfigManager {
         
     }
     
+    private func filterPotentialApps(apiManager: ApiManager, potentialApps: [String]?) async -> [String]? {
+        var filteredApps : [String]?
+        if let appNames = potentialApps {
+            filteredApps = []
+            for appName in appNames {
+                if let appInfo = globalAppInfos[appName] {
+                    if !appInfo.consoleAppIncompatible {
+                        filteredApps!.append(appName)
+                    }
+                } else {
+                    do {
+                        if let appInfo = try await apiManager.getAppInfo(appName: appName) {
+                            if !appInfo.consoleAppIncompatible {
+                                appInfos[appName] = appInfo
+                                filteredApps!.append(appName)
+                            }
+                        } else {
+                            filteredApps!.append(appName)
+                        }
+                    } catch {
+                        // We couldn't fetch app info, just include app in list
+                        filteredApps!.append(appName)
+                    }
+                }
+            }
+        }
+        return filteredApps
+    }
+    
     public func setApp(app: String) throws -> ConfigManagerState {
         switch state {
         case .selectDomain,
@@ -111,9 +145,11 @@ public class ConfigManager {
                 .complete:
             throw ConfigManagerError.invalidState
         case .selectApp(let baseURL, _):
-            if let appInfo = appInfos[app] {
+            if let appInfo = globalAppInfos[app] {
                 self.state = .selectRealm(baseURL, app, appInfo.realms)
-            } else if let appInfo = appInfos["default"] {
+            } else if let appInfo = appInfos[app] {
+                self.state = .selectRealm(baseURL, app, appInfo.realms)
+            } else if let appInfo = globalAppInfos["default"] {
                 self.state = .selectRealm(baseURL, app, appInfo.realms)
             } else {
                 self.state = .selectRealm(baseURL, app, nil)

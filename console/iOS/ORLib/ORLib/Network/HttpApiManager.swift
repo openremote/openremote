@@ -153,6 +153,40 @@ public class HttpApiManager: NSObject, ApiManager {
     }
 
     
+    public func getAppInfo(appName: String) async throws -> ORAppInfo? {
+        var urlRequest = URLRequest(url: self.baseUrl.appendingPathComponent("apps").appendingPathComponent(appName).appendingPathComponent("info.json"))
+        urlRequest.httpMethod = HttpMethod.get.rawValue
+
+        return try await withCheckedThrowingContinuation { continuation in
+            session.dataTask(with: urlRequest, completionHandler: { responseData, response, error in
+                let httpStatusCode = (response as? HTTPURLResponse)?.statusCode ?? 500
+
+                if httpStatusCode == 404 {
+                    continuation.resume(throwing: ApiManagerError.notFound)
+                    return
+                }
+                
+                if httpStatusCode != 200 {
+                    continuation.resume(throwing: ApiManagerError.communicationError(httpStatusCode))
+                    return
+                }
+                
+                guard let responseData = responseData else {
+                    continuation.resume(throwing: ApiManagerError.communicationError(httpStatusCode))
+                    return
+                }
+
+                guard let responseModel = try? self.decoder.decode(ORAppInfo.self, from: responseData) else {
+                    print("Couldn't parse response: \(String(data: responseData, encoding: .utf8)!)")
+                    continuation.resume(throwing: ApiManagerError.parsingError(httpStatusCode))
+                    return
+                }
+
+                continuation.resume(returning: responseModel)
+            }).resume()
+        }
+    }
+
     
     
     

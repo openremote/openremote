@@ -98,4 +98,31 @@ class ConfigManagerTest: XCTestCase {
         XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test8.openremote.app", app: "Console 1", realm: "master2")))
     }
     
+    func test9() async throws {
+        var state = try await configManager.setDomain(domain: "test9")
+        XCTAssertEqual(state, ConfigManagerState.selectApp("https://test9.openremote.app", ["Console 1", "Console 2"]))
+        state = try configManager.setApp(app: "Console 1")
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test9.openremote.app", "Console 1", ["master1", "master2"]))
+        state = try configManager.setRealm(realm: "master1")
+        XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test9.openremote.app", app: "Console 1", realm: "master1")))
+    }
+
+    func test10() async throws {
+        var state = try await configManager.setDomain(domain: "test10")
+        XCTAssertEqual(state, ConfigManagerState.selectApp("https://test10.openremote.app", ["Console 1", "Console 2"]))
+        state = try configManager.setApp(app: "Console 1")
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test10.openremote.app", "Console 1", ["master3", "master4"]))
+        state = try configManager.setRealm(realm: "master3")
+        XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test10.openremote.app", app: "Console 1", realm: "master3")))
+    }
+
+    func test11() async throws {
+        var state = try await configManager.setDomain(domain: "test11")
+        XCTAssertEqual(state, ConfigManagerState.selectApp("https://test11.openremote.app", ["Console 2"]))
+        state = try configManager.setApp(app: "Console 2")
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test11.openremote.app", "Console 2", nil))
+        state = try configManager.setRealm(realm: "master3")
+        XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test11.openremote.app", app: "Console 2", realm: "master3")))
+    }
+
 }

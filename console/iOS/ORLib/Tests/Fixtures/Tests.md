@@ -34,6 +34,17 @@ Similar to Test6 but with a list of realm defined for the selected app
 
 Similar to Test7 but with the realms defined for the default app
 
+### Test 9
+
+Similar to Test6 but with a project specific Info.json
+
+### Test 10
+
+Similar to Test 9 but with global override of realms
+
+### Test 11
+Similar to Test 9 but Console 1 is not selectable as app
+
 
 TODO:
 - add test for full URLs entry
