@@ -128,8 +128,6 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     @Override
     public User create(RequestParams requestParams, String realm, User user) {
 
-        throwIfIllegalMasterAdminUserMutation(requestParams, realm, user);
-
         try {
             return identityService.getIdentityProvider().createUpdateUser(realm, user, null, false);
         } catch (ClientErrorException ex) {

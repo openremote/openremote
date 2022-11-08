@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.security;
 
-import com.google.gson.Gson;
 import io.undertow.util.Headers;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.utils.URIBuilder;
