@@ -2,6 +2,7 @@ import { css, html, LitElement, unsafeCSS } from "lit";
 import { InputType,OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-img-uploader";
+import "@openremote/or-components/or-file-uploader";
 import {
   DEFAULT_LANGUAGES,
   DefaultColor1,
@@ -160,9 +161,7 @@ export class OrConfRealmCard extends LitElement {
               })}
             </div>
             <div class="logo-group">
-              <or-img-uploader @change="${(e:CustomEvent) => {this.realm.favicon = e?.detail?.value}}" .src="${this.realm?.favicon}"></or-img-uploader>
-              <or-img-uploader @change="${(e:CustomEvent) => {this.realm.logoMobile = e?.detail?.value}}" .src="${this.realm?.logoMobile}"></or-img-uploader>
-              <or-img-uploader @change="${(e:CustomEvent) => {this.realm.logo = e?.detail?.value}}" .src="${this.realm?.logo}"></or-img-uploader>
+              <or-file-uploader @change="${(e:CustomEvent) => {this.realm.logo = e?.detail?.value}}" .src="${this.realm?.logo}"></or-file-uploader>
             </div>
           </div>
           <div class="color-group">
