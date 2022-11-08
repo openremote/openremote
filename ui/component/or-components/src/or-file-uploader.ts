@@ -7,34 +7,29 @@ export class OrFileUploader extends LitElement {
     @property({attribute: false})
     public src: string = "";
 
-    public imageContent: string = "";
-
     static get styles() {
         return css`
             .image-container{
                 position: relative;
-            }
-            .image-container img{
-                position: absolute;
                 width: 200px;
                 height: 200px;
                 background-color: red;
                 cursor: pointer;
+                border-radius: 2px;
             }
-            .image-container or-mwc-input{
+            .image-container img{
+                max-height: 100%;
+                max-width: 100%;
                 position: absolute;
-                bottom: 0;
-                right: 0;
             }
             input{
-                //display: none;
+                display: none;
             }
         `;
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        this.imageContent = this.src
         const fileInput = this.shadowRoot?.getElementById('fileInput')
         const imageContainer = this.shadowRoot?.getElementById('imageContainer')
         fileInput?.addEventListener("change", (e) => {
@@ -45,25 +40,19 @@ export class OrFileUploader extends LitElement {
         })
     }
 
-    _onChange(e: any) {
-        if (e.target) {
-            if (!!e.target.files) {
-                const file = e.target.files[0]
-                if (file.type.startsWith("image/")){
-                    this._convertToBase64(file)
-                      .then((base64) => {
-                          console.log(base64)
-                          this.src = base64 as string
-                          this.dispatchEvent(new CustomEvent('change', {
-                              detail: {value: this.src}
-                          }))
-                      })
-                }
-            }
+    async _onChange(e: any) {
+        const files = e?.target?.files
+        if (files) {
+            this.src = await this.convertBase64(files[0]) as string;
+            this.requestUpdate()
+            this.dispatchEvent(new CustomEvent('change', {
+                detail: { value: files}
+            }))
         }
     }
 
-    _convertToBase64(file:any){
+
+    convertBase64 (file:any) {
         return new Promise((resolve, reject) => {
             const fileReader = new FileReader();
             fileReader.readAsDataURL(file);
@@ -73,22 +62,21 @@ export class OrFileUploader extends LitElement {
             };
 
             fileReader.onerror = (error) => {
-                console.error(error)
                 reject(error);
             };
         });
-    }
+    };
 
 
     render() {
         return html`
         <div class="container">
             <div class="image-container">
-                <img src="${this.src}" alt="OR-File-Uploader" id="imageContainer">
-<!--                <or-mwc-input type="button" icon="pencil"></or-mwc-input>-->
+                <img .src="${this.src.startsWith('data') ? this.src : '/manager' + this.src}" alt="OR-File-Uploader" id="imageContainer">
             </div>
             <input type="file" id="fileInput">
         </div>
+        ${this.src}
    `;
     }
 }

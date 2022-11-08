@@ -1,16 +1,18 @@
 import { css, html, LitElement, unsafeCSS } from "lit";
-import { InputType,OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
-import "@openremote/or-components/or-img-uploader";
 import "@openremote/or-components/or-file-uploader";
-import {
+import manager, {
   DEFAULT_LANGUAGES,
   DefaultColor1,
   DefaultColor2,
-  DefaultColor3, DefaultColor4, DefaultColor5, DefaultColor6,
+  DefaultColor3,
+  DefaultColor4,
+  DefaultColor5,
+  DefaultColor6,
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
-import { ManagerConfRealm, ManagerHeaders } from "@openremote/model";
+import { FileInfo, ManagerConfRealm, ManagerHeaders } from "@openremote/model";
 
 
 @customElement("or-conf-realm-card")
@@ -51,8 +53,12 @@ export class OrConfRealmCard extends LitElement {
       width: 50%;
     }
     .logo-group{
-      width: 50%;
-      height: 300px;
+      //width: 50%;
+      //height: 300px;
+      display: inline-flex;
+    }
+    .logo-group or-file-uploader{
+      margin: 8px;
     }
     #remove-realm{
       margin: 8px 4px;
@@ -135,9 +141,56 @@ export class OrConfRealmCard extends LitElement {
     }
   }
 
+  protected _getImagePath(file:File, fileName: string){
+    let extension = "";
+    switch (file.type){
+      case "image/png":
+        extension = "png"
+        break;
+    }
+    return "/images/" + this.name + "/" + fileName + "." +  extension
+  }
+
+  protected files: {[name:string] : FileInfo} = {}
+
+  protected async _setImageForUpload(file: File, fileName: string) {
+    const path = this._getImagePath(file, fileName)
+    console.log(path)
+    this.files[path] = {
+      // name: 'filename',
+      contents: await this.convertBase64(file),
+      // binary: true
+    } as FileInfo;
+
+
+    console.log(this.files)
+    return path;
+  }
+
+  convertBase64 (file:any) {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+
+      fileReader.onload = () => {
+        resolve(fileReader.result);
+      };
+
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
+  };
+
   render() {
     const app = this
     const colors = this._getColors()
+    document.addEventListener('saveManagerConfig', () => {
+      Object.entries(this.files).map(async ([x, y]) => {
+        await manager.rest.api.ConfigurationResource.fileUpload(y, { path: x })
+      })
+    });
+
     return html`
       <or-collapsible-panel>
         <div slot="header" class="header-container">
@@ -161,7 +214,9 @@ export class OrConfRealmCard extends LitElement {
               })}
             </div>
             <div class="logo-group">
-              <or-file-uploader @change="${(e:CustomEvent) => {this.realm.logo = e?.detail?.value}}" .src="${this.realm?.logo}"></or-file-uploader>
+              <or-file-uploader @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], 'logo')}" .src="${this.realm?.logo}"></or-file-uploader>
+              <or-file-uploader @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], 'logoMobile')}" .src="${this.realm?.logoMobile}"></or-file-uploader>
+              <or-file-uploader @change="${async (e: CustomEvent) => this.realm.favicon = await this._setImageForUpload(e.detail.value[0], 'favicon')}" .src="${this.realm?.favicon}"></or-file-uploader>
             </div>
           </div>
           <div class="color-group">

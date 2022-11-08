@@ -6,13 +6,16 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.CodecUtil;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.configuration.ConfigurationResource;
 import org.openremote.model.configuration.ManagerConf;
+import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
 import java.io.*;
+import java.util.Base64;
 
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
 
@@ -34,5 +37,15 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
         out.close();
         
         return managerConfiguration;
+    }
+
+    @Override
+    public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) throws IOException {
+        String serverPath = System.getProperty("user.dir") + (System.getenv("OR_CUSTOM_APP_DOCROOT") != null ? System.getenv("OR_CUSTOM_APP_DOCROOT") : "/deployment/manager/app");
+        File file = new File(serverPath + path);
+        file.getParentFile().mkdirs();
+        OutputStream out = new FileOutputStream(file);
+        out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
+        return path;
     }
 }
