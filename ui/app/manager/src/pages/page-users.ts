@@ -344,8 +344,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         this._loading = false;
     }
 
-    private async _createUpdateUser(user: UserModel) {
-
+    private async _createUpdateUser(user: UserModel, action: 'update' | 'create') {
         if (!user.username) {
             return;
         }
@@ -358,7 +357,9 @@ export class PageUsers extends Page<AppStateKeyed> {
         const isUpdate = !!user.id;
 
         try {
-            const response = await manager.rest.api.UserResource.createUpdate(manager.displayRealm, user);
+            const response = action == 'update'
+                ? await manager.rest.api.UserResource.update(manager.displayRealm, user)
+                : await manager.rest.api.UserResource.create(manager.displayRealm, user);
 
             // Ensure user ID is set
             user.id = response.data.id;
@@ -377,8 +378,12 @@ export class PageUsers extends Page<AppStateKeyed> {
 
                 if (e.response.status === 400) {
                     showSnackbar(undefined, i18next.t(isUpdate ? "saveUserFailed" : "createUserFailed"), i18next.t("dismiss"));
+                } else if (e.response.status === 403) {
+                    showSnackbar(undefined, i18next.t('userAlreadyExists'))
                 }
             }
+            throw e; // Throw exception anyhow to handle individual cases
+
         } finally {
             await this.loadUsers();
         }
@@ -465,20 +470,24 @@ export class PageUsers extends Page<AppStateKeyed> {
             {title: i18next.t('email'), hideMobile: true},
             {title: i18next.t('status')}
         ];
-        const userTableRows: TableRow[] = this._users.map((user) => { return {
-            content: [user.username, user.firstName, user.lastName, user.email, user.enabled ? i18next.t('enabled') : i18next.t('disabled')],
-            clickable: true
-        }});
+        const userTableRows: TableRow[] = this._users.map((user) => {
+            return {
+                content: [user.username, user.firstName, user.lastName, user.email, user.enabled ? i18next.t('enabled') : i18next.t('disabled')],
+                clickable: true
+            }
+        });
 
         // Content of Service user Table
         const serviceUserTableColumns: TableColumn[] = [
             {title: i18next.t('username')},
             {title: i18next.t('status')}
         ];
-        const serviceUserTableRows: TableRow[] = this._serviceUsers.map((user) => { return {
-            content: [user.username, user.enabled ? i18next.t('enabled') : i18next.t('disabled')],
-            clickable: true
-        }})
+        const serviceUserTableRows: TableRow[] = this._serviceUsers.map((user) => {
+            return {
+                content: [user.username, user.enabled ? i18next.t('enabled') : i18next.t('disabled')],
+                clickable: true
+            }
+        })
 
         // Configuration
         const tableConfig = {
@@ -512,15 +521,17 @@ export class PageUsers extends Page<AppStateKeyed> {
                 </div>
 
                 <!-- User Specific page -->
-                ${when((this.userId && index != undefined) || this.creationState || this._saveUserPromise, () => html`
-                    ${when(mergedUserList[index] != undefined || this.creationState || this._saveUserPromise, () => {
+                ${when((this.userId && index != undefined) || this.creationState, () => html`
+                    ${when(mergedUserList[index] != undefined || this.creationState, () => {
                         const user: UserModel = (index != undefined ? mergedUserList[index] : this.creationState.userModel);
                         return html`
                             <div id="content" class="panel">
-                                <p class="panel-title">${user.serviceAccount ? i18next.t('serviceUser') : i18next.t('user')} ${i18next.t('settings')}</p>
-                                ${until(this.getUserViewTemplate((index != undefined ? mergedUserList[index] : this.creationState.userModel), compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined)), html`${i18next.t('loading')}`)}
+                                <p class="panel-title">
+                                    ${user.serviceAccount ? i18next.t('serviceUser') : i18next.t('user')}
+                                    ${i18next.t('settings')}</p>
+                                ${this.getSingleUserView((index != undefined ? mergedUserList[index] : this.creationState.userModel), compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined))}
                             </div>
-                        `; 
+                        `;
                     })}
 
                     <!-- List of Users page -->
@@ -572,7 +583,9 @@ export class PageUsers extends Page<AppStateKeyed> {
         return {
             password: undefined,
             roles: [],
+            previousRoles: [],
             realmRoles: [],
+            previousRealmRoles: [],
             userAssetLinks: [],
             serviceAccount: serviceAccount
         }
@@ -686,9 +699,9 @@ export class PageUsers extends Page<AppStateKeyed> {
             }));
     }
 
-    protected onUserChanged(e: OrInputChangedEvent, suffix: string) {
+    protected onUserChanged(e: OrInputChangedEvent | OrMwcInput, suffix: string) {
         // Don't have form-associated custom element support in lit at time of writing which would be the way to go here
-        const formElement = (e.target as HTMLElement).parentElement;
+        const formElement = e instanceof OrInputChangedEvent ? (e.target as HTMLElement).parentElement : e.parentElement;
         const saveBtn = this.shadowRoot.getElementById("savebtn-" + suffix) as OrMwcInput;
 
         if (formElement) {
@@ -742,8 +755,24 @@ export class PageUsers extends Page<AppStateKeyed> {
         return this._compositeRoles.filter((role) => user.roles.some(ur => ur.name === role.name)).flatMap((role) => role.compositeRoleIds).map(id => this._roles.find(r => r.id === id).name);
     }
 
-    protected async getUserViewTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): Promise<TemplateResult> {
-        await this.loadUser(user);
+    protected getSingleUserView(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
+        return html`
+            ${when((user.loaded || (user.roles && user.realmRoles)), () => {
+                return this.getSingleUserTemplate(user, compositeRoleOptions, realmRoleOptions, suffix, readonly);
+            }, () => {
+                const getTemplate = async () => {
+                    await this.loadUser(user);
+                    return this.getSingleUserTemplate(user, compositeRoleOptions, realmRoleOptions, suffix, readonly);
+                }
+                const content: Promise<TemplateResult> = getTemplate();
+                return html`
+                    ${until(content, html`${i18next.t('loading')}`)}
+                `;
+            })}
+        `;
+    }
+
+    protected getSingleUserTemplate(user: UserModel, compositeRoleOptions: string[], realmRoleOptions: [string, string][], suffix: string, readonly: boolean = true): TemplateResult {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         const implicitRoleNames = user.loaded ? this.getImplicitUserRoles(user) : [];
@@ -752,7 +781,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("details")}</h5>
                     <!-- user details -->
-                    <or-mwc-input ?readonly="${!!user.id || readonly}" .disabled="${!!user.id}"
+                    <or-mwc-input id="username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id}"
                                   .label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" required
                                   pattern="[a-zA-Z0-9-_]+"
@@ -901,12 +930,12 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <or-mwc-input outlined ?disabled="${readonly}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
                                       .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
-                                      @click="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly)}"></or-mwc-input>
+                                      @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly)}"></or-mwc-input>
                     </div>
                 </div>
             </div>
             ${readonly && !this._saveUserPromise ? `` : html`
-                <div class="row" style="margin-bottom: 0;">
+                <div class="row" style="margin-bottom: 0; justify-content: space-between;">
 
                     ${!isSameUser && user.id ? html`
                         <or-mwc-input style="margin: 0;" outlined ?disabled="${readonly}"
@@ -914,22 +943,45 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       .type="${InputType.BUTTON}"
                                       @click="${() => this._deleteUser(user)}"></or-mwc-input>
                     ` : ``}
-                    <or-mwc-input id="savebtn-${suffix}" style="margin: 0 0 0 auto;" raised ?disabled="${readonly}"
-                                  .label="${i18next.t(user.id ? "save" : "create")}"
-                                  .type="${InputType.BUTTON}"
-                                  @click="${() => {
-                                      this._saveUserPromise = this._createUpdateUser(user).then(() => {
-                                          showSnackbar(undefined, (user.username + " " + i18next.t("savedSuccessfully")));
-                                          this._saveUserPromise = undefined;
-                                          this.reset();
-                                      })
-                                  }}">
-                    </or-mwc-input>
+                    <div style="display: flex; align-items: center; gap: 16px; margin: 0 0 0 auto;">
+                        <or-mwc-input id="savebtn-${suffix}" style="margin: 0;" raised ?disabled="${readonly}"
+                                      .label="${i18next.t(user.id ? "save" : "create")}"
+                                      .type="${InputType.BUTTON}"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                          let error: { status?: number, text: string };
+                                          this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then(() => {
+                                              showSnackbar(undefined, i18next.t("saveUserSucceeded"));
+                                              this.reset();
+                                          }).catch((ex) => {
+                                              if (isAxiosError(ex)) {
+                                                  error = {
+                                                      status: ex.response.status,
+                                                      text: (ex.response.status == 403 ? i18next.t('userAlreadyExists') : i18next.t('errorOccurred'))
+                                                  }
+                                              }
+                                          }).finally(() => {
+                                              this._saveUserPromise = undefined;
+                                              if (error) {
+                                                  this.updateComplete.then(() => {
+                                                      showSnackbar(undefined, error.text);
+                                                      if (error.status == 403) {
+                                                          const elem = this.shadowRoot.getElementById('username-' + suffix) as OrMwcInput;
+                                                          elem.setCustomValidity(error.text);
+                                                          (elem.shadowRoot.getElementById("elem") as HTMLInputElement).reportValidity(); // manually reporting was required since we're not editing the username at all.
+                                                          this.onUserChanged(elem, suffix); // onUserChanged to trigger validation of all fields again.
+                                                      }
+                                                  })
+                                              }
+                                          })
+                                      }}">
+                        </or-mwc-input>
+                    </div>
                 </div>
             `}
         `;
     }
 
+    // Reset selected user or creation page, and go back to the list
     protected reset() {
         this.userId = undefined;
         this.creationState = undefined;

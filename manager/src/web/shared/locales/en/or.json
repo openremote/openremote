@@ -495,6 +495,8 @@
   "rowsPerPage": "Rows per page",
   "createUserFailed": "Create user failed",
   "saveUserFailed": "Save user failed",
+  "saveUserSucceeded": "Saved user successfully!",
+  "userAlreadyExists": "Error occurred! This user already exists.",
   "invalidUsername": "Username must be 3-255 alpha numerical characters",
   "invalidEmail": "Invalid email address",
   "yes": "Yes",
