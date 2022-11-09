@@ -2167,7 +2167,7 @@ __metadata:
     "@types/qs": ^6.9.7
     i18next: ^21.5.3
     i18next-http-backend: ^1.3.1
-    moment: ^2.24.0
+    moment: ^2.29.4
     platform: ^1.3.6
     qs: ^6.8.0
     url-search-params-polyfill: ^8.1.0
@@ -2297,7 +2297,7 @@ __metadata:
     "@reduxjs/toolkit": ^1.8.1
     "@webcomponents/webcomponentsjs": ^2.6.0
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
     navigo: ^8.11.1
     pwa-helpers: ^0.9.0
   languageName: unknown
@@ -2316,7 +2316,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2353,7 +2353,7 @@ __metadata:
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2432,7 +2432,7 @@ __metadata:
     chartjs-plugin-annotation: ^1.1.0
     jsonpath-plus: ^6.0.1
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2531,7 +2531,7 @@ __metadata:
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
     parse-link-header: ^2.0.0
     url: ^0.11.0
   languageName: unknown
@@ -2606,7 +2606,7 @@ __metadata:
     ace-builds: ^1.4.13
     linqts: ^1.12.6
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
     resize-observer: ^1.0.3
     rrule: ^2.6.4
     shortid: ^2.2.15
@@ -2625,7 +2625,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2651,7 +2651,7 @@ __metadata:
     "@types/lodash-es": ^4.17.5
     lit: ^2.0.2
     lodash-es: ^4.17.15
-    moment: 2.29.2
+    moment: 2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2670,7 +2670,7 @@ __metadata:
   dependencies:
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -6433,13 +6433,13 @@ __metadata:
   linkType: hard
 
 "loader-utils@npm:^2.0.0":
-  version: 2.0.2
-  resolution: "loader-utils@npm:2.0.2"
+  version: 2.0.3
+  resolution: "loader-utils@npm:2.0.3"
   dependencies:
     big.js: ^5.2.2
     emojis-list: ^3.0.0
     json5: ^2.1.2
-  checksum: 9078d1ed47cadc57f4c6ddbdb2add324ee7da544cea41de3b7f1128e8108fcd41cd3443a85b7ee8d7d8ac439148aa221922774efe4cf87506d4fb054d5889303
+  checksum: d055c61ce5927b64cb4af40218606603a7d3a39adb7b6eec116bb31d19203875950e478152dea056de404eced8e87e9bfd336ec636591ded040ea451f63c7d88
   languageName: node
   linkType: hard
 
@@ -6820,14 +6820,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"moment@npm:2.29.2":
-  version: 2.29.2
-  resolution: "moment@npm:2.29.2"
-  checksum: ee850b5776485e2af0775ceb3cfebaa7d7638f0a750fe0678fcae24c310749f96c1938808384bd422a55e5703834a71fcb09c8a1d36d9cf847f6ed0205d7a3e5
+"moment@npm:2.29.4, moment@npm:^2.29.4":
+  version: 2.29.4
+  resolution: "moment@npm:2.29.4"
+  checksum: 0ec3f9c2bcba38dc2451b1daed5daded747f17610b92427bebe1d08d48d8b7bdd8d9197500b072d14e326dd0ccf3e326b9e3d07c5895d3d49e39b6803b76e80e
   languageName: node
   linkType: hard
 
-"moment@npm:^2.10.2, moment@npm:^2.24.0":
+"moment@npm:^2.10.2":
   version: 2.29.3
   resolution: "moment@npm:2.29.3"
   checksum: 2e780e36d9a1823c08a1b6313cbb08bd01ecbb2a9062095820a34f42c878991ccba53abaa6abb103fd5c01e763724f295162a8c50b7e95b4f1c992ef0772d3f0
