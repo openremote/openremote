@@ -244,11 +244,7 @@ export class OrMwcTable extends LitElement {
                                             .map((item: TableRow | string[], index) => {
                                                 const content: string[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
                                                 return html`
-                                                    <tr class="mdc-data-table__row" @mousedown="${(ev: MouseEvent) => {
-                                                        if ((ev.target as HTMLElement).classList[0] == 'mdc-data-table__cell') {
-                                                            this.dispatchEvent(new OrMwcTableRowClickEvent(index));
-                                                        }
-                                                    }}">
+                                                    <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent(index))}">
                                                         ${content?.map((cell: string | number, index: number) => {
                                                             const classes = {
                                                                 "mdc-data-table__cell": true,
@@ -258,7 +254,7 @@ export class OrMwcTable extends LitElement {
                                                             }
                                                             return html`
                                                                 <td class="${classMap(classes)}" title="${cell}">
-                                                                    <span style="cursor: auto; z-index: 20;">${cell}</span>
+                                                                    <span style="z-index: 20;">${cell}</span>
                                                                 </td>`
                                                         })}
                                                     </tr>

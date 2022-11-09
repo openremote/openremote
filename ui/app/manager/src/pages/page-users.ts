@@ -102,23 +102,6 @@ export class PageUsers extends Page<AppStateKeyed> {
                     min-height: 36px;
                 }
 
-                #table-users,
-                #table-users table {
-                    width: 100%;
-                    white-space: nowrap;
-                }
-
-                .table-actions-container {
-                    text-align: right;
-                    position: absolute;
-                    right: 0;
-                    margin: 2px;
-                }
-
-                td, th {
-                    width: 25%
-                }
-
                 or-mwc-input {
                     margin-bottom: 20px;
                 }
@@ -146,50 +129,14 @@ export class PageUsers extends Page<AppStateKeyed> {
                     flex: 1 1 0;
                 }
 
-                .item-row td {
-                    padding: 0;
-                }
-
-                .item-row-content {
-                    flex-direction: row;
-                    overflow: hidden;
-                    max-height: 0;
-                    padding-left: 16px;
-                }
-
-                .item-row.expanded .item-row-content {
-                    overflow: visible;
-                    max-height: unset;
-                }
-
-                .button {
-                    cursor: pointer;
-                    display: flex;
-                    flex-direction: row;
-                    align-content: center;
-                    padding: 16px;
-                    align-items: center;
-                    font-size: 14px;
-                    text-transform: uppercase;
-                    color: var(--or-app-color4);
-                }
-
                 .hidden {
                     display: none;
-                }
-
-                .breadcrumb-text:hover {
-                    text-decoration: underline;
                 }
 
                 @media screen and (max-width: 768px) {
                     #title {
                         padding: 0;
                         width: 100%;
-                    }
-
-                    .hide-mobile {
-                        display: none;
                     }
 
                     .row {
@@ -203,10 +150,6 @@ export class PageUsers extends Page<AppStateKeyed> {
                         border-left: 0px;
                         border-right: 0px;
                         width: calc(100% - 48px);
-                    }
-
-                    td, th {
-                        width: 50%
                     }
                 }
             `,
@@ -507,7 +450,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <!-- Breadcrumb on top of the page-->
                 ${when((this.userId && index != undefined) || this.creationState, () => html`
                     <div style="padding: 0 20px; width: calc(100% - 40px); max-width: 1360px; margin: 12px auto 0; display: flex; align-items: center;">
-                        <span class="breadcrumb-text" style="cursor: pointer; color: ${DefaultColor4}"
+                        <span style="cursor: pointer; color: ${DefaultColor4}"
                               @click="${() => this.reset()}">${i18next.t("user_plural")}</span>
                         <or-icon icon="chevron-right"
                                  style="margin: 0 5px -3px 5px; --or-icon-width: 16px; --or-icon-height: 16px;"></or-icon>
@@ -589,12 +532,6 @@ export class PageUsers extends Page<AppStateKeyed> {
             userAssetLinks: [],
             serviceAccount: serviceAccount
         }
-    }
-
-    public stateChanged(state: AppStateKeyed) {
-        this.realm = state.app.realm;
-        this.userId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
-        this.creationState = (state.app.params?.type ? {userModel: this.getNewUserModel(state.app.params.type == 'serviceuser')} : undefined);
     }
 
     protected async loadUser(user: UserModel) {
@@ -985,6 +922,14 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected reset() {
         this.userId = undefined;
         this.creationState = undefined;
+    }
+
+    public stateChanged(state: AppStateKeyed) {
+        if(state.app.page == 'users') { // it seems that the check is necessary here
+            this.realm = state.app.realm;
+            this.userId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
+            this.creationState = (state.app.params?.type ? {userModel: this.getNewUserModel(state.app.params.type == 'serviceuser')} : undefined);
+        }
     }
 
     protected _updateRoute(silent: boolean = false) {
