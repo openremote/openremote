@@ -147,6 +147,15 @@ export class OrConfRealmCard extends LitElement {
       case "image/png":
         extension = "png"
         break;
+      case "image/jpg":
+        extension = "jpg"
+        break;
+      case "image/jpeg":
+        extension = "jpeg"
+        break;
+      case "image/x-icon":
+        extension = "ico"
+        break;
     }
     return "/images/" + this.name + "/" + fileName + "." +  extension
   }
