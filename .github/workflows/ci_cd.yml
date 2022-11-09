@@ -160,7 +160,7 @@ jobs:
 
       - name: Public IP
         id: ip-address
-        uses: haythem/public-ip@v1.2
+        uses: haythem/public-ip@v1.3
 
       - name: Checkout
         uses: actions/checkout@v3
