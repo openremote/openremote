@@ -27,7 +27,7 @@
     "ace-builds": "^1.4.13",
     "linqts": "^1.12.6",
     "lit": "^2.0.2",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "resize-observer": "^1.0.3",
     "rrule": "^2.6.4",
     "shortid": "^2.2.15"
