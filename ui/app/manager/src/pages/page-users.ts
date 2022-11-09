@@ -1,6 +1,6 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import manager, {DefaultColor3, DefaultColor4, Util} from "@openremote/core";
+import manager, {DefaultColor4, Util} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
@@ -131,6 +131,26 @@ export class PageUsers extends Page<AppStateKeyed> {
 
                 .hidden {
                     display: none;
+                }
+
+                .breadcrumb-container {
+                    padding: 0 20px;
+                    width: calc(100% - 40px);
+                    max-width: 1360px;
+                    margin: 12px auto 0;
+                    display: flex;
+                    align-items: center;
+                }
+
+                .breadcrumb-clickable {
+                    cursor: pointer;
+                    color: ${unsafeCSS(DefaultColor4)}
+                }
+
+                .breadcrumb-arrow {
+                    margin: 0 5px -3px 5px;
+                    --or-icon-width: 16px;
+                    --or-icon-height: 16px;
                 }
 
                 @media screen and (max-width: 768px) {
@@ -449,11 +469,10 @@ export class PageUsers extends Page<AppStateKeyed> {
 
                 <!-- Breadcrumb on top of the page-->
                 ${when((this.userId && index != undefined) || this.creationState, () => html`
-                    <div style="padding: 0 20px; width: calc(100% - 40px); max-width: 1360px; margin: 12px auto 0; display: flex; align-items: center;">
-                        <span style="cursor: pointer; color: ${DefaultColor4}"
+                    <div class="breadcrumb-container">
+                        <span class="breadcrumb-clickable"
                               @click="${() => this.reset()}">${i18next.t("user_plural")}</span>
-                        <or-icon icon="chevron-right"
-                                 style="margin: 0 5px -3px 5px; --or-icon-width: 16px; --or-icon-height: 16px;"></or-icon>
+                        <or-icon class="breadcrumb-arrow" icon="chevron-right"></or-icon>
                         <span style="margin-left: 2px;">${index != undefined ? mergedUserList[index]?.username : (this.creationState.userModel.serviceAccount ? i18next.t('creating_serviceUser') : i18next.t('creating_regularUser'))}</span>
                     </div>
                 `)}
@@ -760,7 +779,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <!-- password -->
                     <h5>${i18next.t("password")}</h5>
                     ${isServiceUser ? html`
-                        ${user.secret ? html`
+                        ${when(user.secret, () => html`
                             <or-mwc-input id="password-${suffix}" readonly
                                           .label="${i18next.t("secret")}"
                                           .value="${user.secret}"
@@ -769,9 +788,9 @@ export class PageUsers extends Page<AppStateKeyed> {
                                           .label="${i18next.t("regenerateSecret")}"
                                           .type="${InputType.BUTTON}"
                                           @or-mwc-input-changed="${(ev) => this._regenerateSecret(ev, user, "password-" + suffix)}"></or-mwc-input>
-                        ` : html`
+                        `, () => html`
                             <span>${i18next.t("generateSecretInfo")}</span>
-                        `}
+                        `)}
                     ` : html`
                         <or-mwc-input id="password-${suffix}"
                                       ?readonly="${readonly}"
@@ -871,15 +890,17 @@ export class PageUsers extends Page<AppStateKeyed> {
                     </div>
                 </div>
             </div>
-            ${readonly && !this._saveUserPromise ? `` : html`
+            <!-- Bottom controls (save/update and delete button) -->
+            ${when(!(readonly && !this._saveUserPromise), () => html`
                 <div class="row" style="margin-bottom: 0; justify-content: space-between;">
 
-                    ${!isSameUser && user.id ? html`
+                    ${when((!isSameUser && user.id), () => html`
                         <or-mwc-input style="margin: 0;" outlined ?disabled="${readonly}"
                                       .label="${i18next.t("delete")}"
                                       .type="${InputType.BUTTON}"
-                                      @click="${() => this._deleteUser(user)}"></or-mwc-input>
-                    ` : ``}
+                                      @click="${() => this._deleteUser(user)}"
+                        ></or-mwc-input>
+                    `)}
                     <div style="display: flex; align-items: center; gap: 16px; margin: 0 0 0 auto;">
                         <or-mwc-input id="savebtn-${suffix}" style="margin: 0;" raised ?disabled="${readonly}"
                                       .label="${i18next.t(user.id ? "save" : "create")}"
@@ -914,7 +935,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                         </or-mwc-input>
                     </div>
                 </div>
-            `}
+            `)}
         `;
     }
 
@@ -925,7 +946,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     public stateChanged(state: AppStateKeyed) {
-        if(state.app.page == 'users') { // it seems that the check is necessary here
+        if (state.app.page == 'users') { // it seems that the check is necessary here
             this.realm = state.app.realm;
             this.userId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
             this.creationState = (state.app.params?.type ? {userModel: this.getNewUserModel(state.app.params.type == 'serviceuser')} : undefined);
