@@ -869,7 +869,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                         .value="${!!user.roles.find(userRole => userRole.name === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}"
                                         .type="${InputType.CHECKBOX}"
                                         .label="${r.name}"
-                                        style="width:25%;margin:0"
+                                        style="flex: 0 1 160px; margin: 0; overflow: hidden;"
                                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                             if (!!e.detail.value) {
                                                 user.roles.push({...r, assigned: true});
