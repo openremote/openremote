@@ -543,6 +543,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
     protected getNewUserModel(serviceAccount: boolean): UserModel {
         return {
+            enabled: true,
             password: undefined,
             roles: [],
             previousRoles: [],

@@ -241,10 +241,10 @@ export class OrMwcTable extends LitElement {
                         }, () => {
                             return this.rows ? (this.rows as any[])
                                             .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
-                                            .map((item: TableRow | string[], index) => {
+                                            .map((item: TableRow | string[]) => {
                                                 const content: string[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
                                                 return html`
-                                                    <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent(index))}">
+                                                    <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent((this.rows as any[]).indexOf(item)))}">
                                                         ${content?.map((cell: string | number, index: number) => {
                                                             const classes = {
                                                                 "mdc-data-table__cell": true,
@@ -254,7 +254,7 @@ export class OrMwcTable extends LitElement {
                                                             }
                                                             return html`
                                                                 <td class="${classMap(classes)}" title="${cell}">
-                                                                    <span style="z-index: 20;">${cell}</span>
+                                                                    <span>${cell}</span>
                                                                 </td>`
                                                         })}
                                                     </tr>
