@@ -91,6 +91,7 @@ const style = css`
     .mdc-data-table__cell--clickable {
         cursor: pointer;
     }
+
     @media screen and (max-width: 768px) {
         .hide-mobile {
             display: none;
@@ -149,7 +150,7 @@ export class OrMwcTable extends LitElement {
     @property({type: Array})
     public columns?: TableColumn[] | string[];
 
-    @property({type: Object})
+    @property({type: Object}) // to manually control HTML
     protected columnsTemplate?: TemplateResult;
 
     @property({type: Array})
@@ -207,6 +208,7 @@ export class OrMwcTable extends LitElement {
             <div class="${classMap(tableClasses)}">
                 <div class="mdc-data-table__table-container">
                     <table class="mdc-data-table__table">
+                        <!-- Header row that normally includes entries like 'id' and 'name'. You can use either a template or a list of columns -->
                         ${when(this.columnsTemplate, () => this.columnsTemplate, () => {
                             return this.columns ? html`
                                 <thead>
@@ -217,7 +219,10 @@ export class OrMwcTable extends LitElement {
                                                 title="${column}">${column}
                                             </th>
                                         ` : html`
-                                            <th class="mdc-data-table__header-cell ${classMap({'mdc-data-table__cell--numeric': !!column.isNumeric, 'hide-mobile': !!column.hideMobile})}"
+                                            <th class="mdc-data-table__header-cell ${classMap({
+                                                'mdc-data-table__cell--numeric': !!column.isNumeric,
+                                                'hide-mobile': !!column.hideMobile
+                                            })}"
                                                 role="columnheader" scope="col" title="${column.title}">
                                                 ${column.title}
                                             </th>
@@ -227,16 +232,19 @@ export class OrMwcTable extends LitElement {
                                 </thead>
                             ` : undefined;
                         })}
+                        <!-- Table content, where either the template or an array of rows is displayed -->
                         <tbody class="mdc-data-table__content">
                         ${when(this.rowsTemplate, () => {
-                            this.updateComplete.then(async () => {
-                                const elem = await this.getTableElem(false);
-                                const rows = elem?.querySelectorAll('tr');
-                                rows?.forEach((row, index) => {
-                                    const hidden = (index <= (this.paginationIndex * this.paginationSize) || index > (this.paginationIndex * this.paginationSize) + this.paginationSize) && !row.classList.contains('mdc-data-table__header-row');
-                                    row.style.display = (hidden ? 'none' : 'table-row');
-                                })
-                            })
+                            if (this.config.pagination) { // if paginated, filter out the rows by index by manually collecting a list of <tr> elements.
+                                this.updateComplete.then(async () => {
+                                    const elem = await this.getTableElem(false);
+                                    const rows = elem?.querySelectorAll('tr');
+                                    rows?.forEach((row, index) => {
+                                        const hidden = (index <= (this.paginationIndex * this.paginationSize) || index > (this.paginationIndex * this.paginationSize) + this.paginationSize) && !row.classList.contains('mdc-data-table__header-row');
+                                        row.style.display = (hidden ? 'none' : 'table-row');
+                                    });
+                                });
+                            }
                             return html`${this.rowsTemplate}`;
                         }, () => {
                             return this.rows ? (this.rows as any[])
@@ -244,7 +252,8 @@ export class OrMwcTable extends LitElement {
                                             .map((item: TableRow | string[]) => {
                                                 const content: string[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
                                                 return html`
-                                                    <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent((this.rows as any[]).indexOf(item)))}">
+                                                    <tr class="mdc-data-table__row"
+                                                        @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent((this.rows as any[]).indexOf(item)))}">
                                                         ${content?.map((cell: string | number, index: number) => {
                                                             const classes = {
                                                                 "mdc-data-table__cell": true,
@@ -255,7 +264,8 @@ export class OrMwcTable extends LitElement {
                                                             return html`
                                                                 <td class="${classMap(classes)}" title="${cell}">
                                                                     <span>${cell}</span>
-                                                                </td>`
+                                                                </td>
+                                                            `;
                                                         })}
                                                     </tr>
                                                 `
@@ -265,6 +275,7 @@ export class OrMwcTable extends LitElement {
                         </tbody>
                     </table>
                 </div>
+                <!-- Pagination HTML, shown on the bottom right. Same as Material Design spec -->
                 ${when(this.config.pagination, () => {
                     return html`
                         <div class="mdc-data-table__pagination">
@@ -322,7 +333,8 @@ export class OrMwcTable extends LitElement {
                                   let pages: number = max / this.paginationSize;
                                   pages = pages.toString().includes('.') ? Math.floor(pages) : (pages - 1);
                                   this.paginationIndex = pages;
-                              }}"></or-mwc-input>
+                              }}"
+                ></or-mwc-input>
             </div>
         `;
     }
