@@ -8,9 +8,7 @@ modules:
 
 execution:
 - concurrency: 1
-  scenario: mqtt-client-auto-provision-sub
-- concurrency: 1
-  delay: 10s
+  iterations: 3
   scenario: mqtt-client-auto-provision-pub
 
 scenarios:
@@ -45,9 +43,10 @@ scenarios:
     - cmd: publish
       topic: provisioning/${id}/request
       message: "{\"type\":\"x509\",\"cert\":\"${cert}\"}"
-    - cmd: publish
-      topic: provisioning/${id}/request
-      message: "{\"type\":\"x509\",\"cert\":\"${cert}\"}"
+    - cmd: subscribe
+      topic: master/${id}/attributevalue/+/#
+      time: 20s
+      min-count: 1
     - cmd: disconnect
 
     data-sources:

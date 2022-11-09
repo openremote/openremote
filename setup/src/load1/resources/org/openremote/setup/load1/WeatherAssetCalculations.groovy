@@ -48,7 +48,6 @@ rules.add()
 
                     if (!updates.isEmpty()) {
                         facts.bind("updates", updates)
-                        LOG.info("Re-calculated asset count: " + updates.size())
                     }
 
                     // Trigger the rule action if we have one or more changes to process

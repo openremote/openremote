@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2022, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,27 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.datapoint;
+package org.openremote.manager.system;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import org.apache.camel.Endpoint;
+import org.apache.camel.component.direct.DirectEndpoint;
+import org.apache.camel.component.seda.SedaEndpoint;
+import org.apache.camel.health.HealthCheck;
+import org.apache.camel.health.HealthCheckHelper;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.protocol.zwave.model.commandclasses.channel.value.Value;
 
-public class AssetDatapointHealthStatusProvider implements HealthStatusProvider, ContainerService {
+import java.util.Collection;
 
-    public static final String NAME = "datapoints";
-    protected AssetDatapointService assetDatapointService;
+import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_QUEUE;
 
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
+public class CamelHealthStatusProvider implements HealthStatusProvider, ContainerService {
+
+    public static final String NAME = "camel";
+    protected MessageBrokerService brokerService;
 
     @Override
     public void init(Container container) throws Exception {
-        assetDatapointService = container.getService(AssetDatapointService.class);
+        brokerService = container.getService(MessageBrokerService.class);
     }
 
     @Override
@@ -57,8 +65,7 @@ public class AssetDatapointHealthStatusProvider implements HealthStatusProvider,
 
     @Override
     public Object getHealthStatus() {
-        ObjectNode value = ValueUtil.JSON.createObjectNode();
-        value.put("totalDatapoints", assetDatapointService.getDatapointsCount());
-        return value;
+        Collection<HealthCheck.Result> results = HealthCheckHelper.invoke(brokerService.getContext());
+        return ValueUtil.asJSON(results).orElse(null);
     }
 }

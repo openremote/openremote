@@ -48,6 +48,7 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_QUEUE;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.syslog.SyslogCategory.API;
@@ -88,11 +89,15 @@ public class DefaultMQTTHandler extends MQTTHandler {
         // Put a close connection runnable into the headers for the client event service
         Runnable closeRunnable = () -> {
             if (mqttBrokerService != null) {
+                LOG.fine("Calling client session closed force disconnect runnable: " + connectionToString(connection));
                 mqttBrokerService.doForceDisconnect(connection);
             }
         };
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        messageBrokerService.getFluentProducerTemplate()
+            .withHeaders(headers)
+            .to(CLIENT_EVENT_QUEUE)
+            .asyncSend();
         return true;
     }
 
@@ -102,7 +107,10 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
         Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_CLOSE, true);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        messageBrokerService.getFluentProducerTemplate()
+            .withHeaders(headers)
+            .to(CLIENT_EVENT_QUEUE)
+            .asyncSend();
         subscribedConnections.remove(connection);
     }
 
@@ -111,7 +119,10 @@ public class DefaultMQTTHandler extends MQTTHandler {
         super.onConnectionLost(connection);
         Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        messageBrokerService.getFluentProducerTemplate()
+            .withHeaders(headers)
+            .to(CLIENT_EVENT_QUEUE)
+            .asyncSend();
         subscribedConnections.remove(connection);
     }
 
@@ -304,7 +315,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
         );
 
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
+        messageBrokerService.getFluentProducerTemplate()
+            .withHeaders(headers)
+            .withBody(subscription)
+            .to(CLIENT_EVENT_QUEUE)
+            .asyncSend();
 
         // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
         synchronized (subscribedConnections) {
@@ -325,7 +340,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
         CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
+        messageBrokerService.getFluentProducerTemplate()
+            .withHeaders(headers)
+            .withBody(cancelEventSubscription)
+            .to(CLIENT_EVENT_QUEUE)
+            .asyncSend();
 
         // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
         synchronized (subscribedConnections) {
@@ -352,7 +371,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+        messageBrokerService.getFluentProducerTemplate()
+            .withHeaders(headers)
+            .withBody(attributeEvent)
+            .to(CLIENT_EVENT_QUEUE)
+            .asyncSend();
     }
 
     @Override

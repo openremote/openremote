@@ -19,22 +19,29 @@
  */
 package org.openremote.container.message;
 
-import org.apache.camel.Processor;
+import org.apache.camel.CamelContext;
+import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.component.snmp.SnmpComponent;
-import org.apache.camel.impl.DefaultStreamCachingStrategy;
-import org.apache.camel.spi.*;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.engine.DefaultStreamCachingStrategy;
+import org.apache.camel.spi.ExecutorServiceManager;
+import org.apache.camel.spi.StreamCachingStrategy;
+import org.apache.camel.spi.ThreadPoolFactory;
+import org.apache.camel.spi.ThreadPoolProfile;
+import org.apache.camel.support.DefaultRegistry;
+import org.apache.camel.support.SimpleRegistry;
 import org.apache.camel.util.StringHelper;
 import org.apache.camel.util.concurrent.CamelThreadFactory;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
-import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.DefaultWebsocketComponent;
-import org.openremote.container.web.WebService;
 import org.openremote.container.web.socket.WebsocketComponent;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -50,7 +57,8 @@ public class MessageBrokerService implements ContainerService {
     public static final int PRIORITY = ContainerService.HIGH_PRIORITY;
 
     protected ProducerTemplate producerTemplate;
-    protected MessageBrokerContext context;
+    protected FluentProducerTemplate fluentProducerTemplate;
+    protected DefaultCamelContext context;
 
     @Override
     public int getPriority() {
@@ -61,7 +69,7 @@ public class MessageBrokerService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
 
-        context = new MessageBrokerContext();
+        context = new DefaultCamelContext();
 
         final ExecutorServiceManager executorServiceManager = context.getExecutorServiceManager();
         executorServiceManager.setThreadNamePattern("#counter# #name#");
@@ -122,15 +130,9 @@ public class MessageBrokerService implements ContainerService {
         streamCachingStrategy.setSpoolThreshold(524288); // Half megabyte
         context.setStreamCachingStrategy(streamCachingStrategy);
 
-        context.setErrorHandlerBuilder(new org.apache.camel.builder.LoggingErrorHandlerBuilder() {
-            @Override
-            public Processor createErrorHandler(RouteContext routeContext, Processor processor) {
-                // TODO: Custom error handler?
-                return super.createErrorHandler(routeContext, processor);
-            }
-        });
+        context.setErrorHandlerFactory(new DefaultErrorHandlerBuilder());
 
-        context.getRegistry().put(Container.class.getName(), container);
+        ((SimpleRegistry)((DefaultRegistry)context.getRegistry()).getFallbackRegistry()).put("OpenRemote", Map.of(Container.class, container));
 
         String allowedOrigin = getString(container.getConfig(), MESSAGE_SESSION_ALLOWED_ORIGIN, MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT);
         WebsocketComponent websocketComponent = new DefaultWebsocketComponent(
@@ -145,6 +147,7 @@ public class MessageBrokerService implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         producerTemplate = context.createProducerTemplate();
+        fluentProducerTemplate = context.createFluentProducerTemplate();
         LOG.info("Starting Camel message broker");
         context.start();
     }
@@ -156,12 +159,16 @@ public class MessageBrokerService implements ContainerService {
         }
     }
 
-    public MessageBrokerContext getContext() {
+    public DefaultCamelContext getContext() {
         return context;
     }
 
     public ProducerTemplate getProducerTemplate() {
         return producerTemplate;
+    }
+
+    public FluentProducerTemplate getFluentProducerTemplate() {
+        return fluentProducerTemplate;
     }
 
     @Override

@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -116,6 +117,7 @@ public class ClientEventService implements ContainerService {
     public static final String CLIENT_EVENT_TOPIC = "seda://ClientEventTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
 
     public static final String CLIENT_EVENT_QUEUE = "seda://ClientEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
+//    public static final String CLIENT_EVENT_QUEUE = "direct://ClientEventQueue";
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     final protected Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
@@ -133,7 +135,7 @@ public class ClientEventService implements ContainerService {
      * Method to stop further processing of the exchange
      */
     public static void stopMessage(Exchange exchange) {
-        exchange.setProperty(Exchange.ROUTE_STOP, Boolean.TRUE);
+        exchange.setRouteStop(true);
     }
 
     public static boolean isInbound(Exchange exchange) {
@@ -163,6 +165,7 @@ public class ClientEventService implements ContainerService {
         messageBrokerService = container.getService(MessageBrokerService.class);
         identityService = container.getService(ManagerIdentityService.class);
         gatewayService = container.getService(GatewayService.class);
+        ExecutorService executorService = container.getExecutorService();
 
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class)
@@ -232,6 +235,7 @@ public class ClientEventService implements ContainerService {
 
                 from(ClientEventService.CLIENT_EVENT_QUEUE)
                     .routeId("ClientEvents")
+                    .threads().executorService(executorService)
                     .choice()
                     .when(header(ConnectionConstants.SESSION_OPEN))
                         .process(exchange -> {
@@ -404,18 +408,20 @@ public class ClientEventService implements ContainerService {
             return;
         }
 
-        if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
+        if (messageBrokerService != null && messageBrokerService.getFluentProducerTemplate() != null) {
             // Don't log that we are publishing a syslog event,
             if (!(event instanceof SyslogEvent)) {
                 LOG.finer("Publishing: " + event);
             }
-            messageBrokerService.getProducerTemplate()
-                .sendBody(CLIENT_EVENT_QUEUE, event);
+            messageBrokerService.getFluentProducerTemplate()
+                .withBody(event)
+                .to(CLIENT_EVENT_QUEUE)
+                .asyncSend();
         }
     }
 
     public void sendToSession(String sessionKey, Object data) {
-        if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
+        if (messageBrokerService != null && messageBrokerService.getFluentProducerTemplate() != null) {
             LOG.finer("Sending to session '" + sessionKey + "': " + data);
             SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
             if (sessionInfo == null) {
@@ -423,17 +429,17 @@ public class ClientEventService implements ContainerService {
                 return;
             }
             if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
-                messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                        "websocket://" + WEBSOCKET_EVENTS,
-                        data,
-                        ConnectionConstants.SESSION_KEY, sessionKey
-                );
+                messageBrokerService.getFluentProducerTemplate()
+                    .withBody(data)
+                    .withHeader(ConnectionConstants.SESSION_KEY, sessionKey)
+                    .to("websocket://" + WEBSOCKET_EVENTS)
+                    .asyncSend();
             } else if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_MQTT)) {
-                messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                        MQTTBrokerService.MQTT_CLIENT_QUEUE,
-                        data,
-                        ConnectionConstants.SESSION_KEY, sessionKey
-                );
+                messageBrokerService.getFluentProducerTemplate()
+                    .withBody(data)
+                    .withHeader(ConnectionConstants.SESSION_KEY, sessionKey)
+                    .to(MQTTBrokerService.MQTT_CLIENT_QUEUE)
+                    .asyncSend();
             }
         }
     }
@@ -453,7 +459,7 @@ public class ClientEventService implements ContainerService {
         // Pass to each interceptor and stop if any interceptor marks the exchange as stop routing
         if (exchangeInterceptors.stream().anyMatch(interceptor -> {
             interceptor.accept(exchange);
-            boolean stop = exchange.getProperty(Exchange.ROUTE_STOP, false, Boolean.class);
+            boolean stop = exchange.isRouteStop();
             if (stop) {
                 LOG.finer("Client event interceptor marked exchange as `stop routing`");
             }

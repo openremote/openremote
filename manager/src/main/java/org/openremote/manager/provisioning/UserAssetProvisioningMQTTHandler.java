@@ -59,6 +59,7 @@ import java.util.logging.Logger;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
+import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -489,6 +490,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             // Force disconnect of each connection and the disconnect handler will remove the connection from the map
             connections.forEach(connection -> {
                 try {
+                    LOG.finer("Force disconnecting client that is using provisioning config ID '" + provisioningConfigId + "': " + connectionToString(connection));
                     connection.disconnect(false);
                 } catch (Exception e) {
                     getLogger().log(Level.INFO, "Failed to disconnect client: connection=" + connection, e);
