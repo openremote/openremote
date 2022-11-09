@@ -103,7 +103,7 @@ jobs:
     steps:
 
       - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.10.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -160,7 +160,7 @@ jobs:
 
       - name: Public IP
         id: ip-address
-        uses: haythem/public-ip@v1.2
+        uses: haythem/public-ip@v1.3
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -225,25 +225,25 @@ jobs:
           
       - name: Check deployment build.gradle
         id: check_deployment_gradle
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "deployment/build.gradle"
           
       - name: Check deployment dockerfile
         id: check_deployment_dockerfile
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "deployment/Dockerfile"
 
       - name: Check custom project
         id: check_custom_project
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "openremote,.gitmodules"
 
       - name: Check ci_cd existence
         id: check_cicd_json
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: ".ci_cd/ci_cd.json"
 
