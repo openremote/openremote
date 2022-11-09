@@ -22,7 +22,7 @@
     "@openremote/or-chart": "^1.1.0",
     "@openremote/or-mwc-components": "^1.1.0",
     "lit": "^2.0.2",
-    "moment": "^2.24.0"
+    "moment": "^2.29.4"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
