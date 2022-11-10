@@ -239,7 +239,7 @@ fetch(configURL).then(async (result) => {
         // Add config prefix if defined (used in dev)
         if (CONFIG_URL_PREFIX) {
             Object.values(orAppConfig.realms).forEach((realmConfig) => {
-                if (typeof (realmConfig.logo) === "string" && !realmConfig.logo.startsWith("data:")) {
+                if (typeof (realmConfig.logo) === "string" && !realmConfig.logo.startsWith(" data:")) {
                     realmConfig.logo = CONFIG_URL_PREFIX + realmConfig.logo;
                 }
                 if (typeof (realmConfig.logoMobile) === "string" && !realmConfig.logoMobile.startsWith("data:")) {

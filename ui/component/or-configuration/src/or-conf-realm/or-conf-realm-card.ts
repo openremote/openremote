@@ -30,32 +30,19 @@ export class OrConfRealmCard extends LitElement {
       width: 50%;
       padding: 8px 4px;
     }
-    .d-inline-flex{
-      display: inline-flex;
-    }
-    .flex-wrap{
-      flex-wrap: wrap;
-      justify-content: space-between;
-    }
     .header-group{
-      width: 50%;
+      width: 100%;
     }
     .header-group .header-item{
       width: 50%;
     }
     .color-group{
       width: 50%;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
+      padding: 8px;
     }
     .color-group .color-item{
-      width: 50%;
-    }
-    .logo-group{
-      //width: 50%;
-      //height: 300px;
-      display: inline-flex;
+      width: 32%;
+      margin: 4px 0;
     }
     .logo-group or-file-uploader{
       margin: 8px;
@@ -66,6 +53,10 @@ export class OrConfRealmCard extends LitElement {
     .subheader{
       margin: 4px 8px;
       font-weight: bold;
+    }
+    .d-inline-flex{
+      display: inline-flex;
+      width: 100%;
     }
   `;
 
@@ -83,17 +74,22 @@ export class OrConfRealmCard extends LitElement {
   @property({attribute: true})
   public onRemove: CallableFunction = () => {};
 
-  protected headerList = [
-    ManagerHeaders.realms,
-    ManagerHeaders.map,
-    ManagerHeaders.language,
-    ManagerHeaders.export,
-    ManagerHeaders.roles,
-    ManagerHeaders.account,
-    ManagerHeaders.assets,
-    ManagerHeaders.gateway,
-    ManagerHeaders.users,
-  ]
+  protected headerList = {
+    'map': ManagerHeaders.map,
+    'assets': ManagerHeaders.assets,
+    'rules': ManagerHeaders.rules,
+    'insight': ManagerHeaders.insights,
+    'realm':ManagerHeaders.realms,
+
+    'language': ManagerHeaders.language,
+    'dataExport': ManagerHeaders.export,
+    'role': ManagerHeaders.roles,
+    'account': ManagerHeaders.account,
+    'logs': ManagerHeaders.logs,
+
+    'gatewayConnection': ManagerHeaders.gateway,
+    'user' :ManagerHeaders.users,
+  }
 
   protected _getColors(){
     //TODO settings default colors
@@ -153,7 +149,7 @@ export class OrConfRealmCard extends LitElement {
       case "image/jpeg":
         extension = "jpeg"
         break;
-      case "image/x-icon":
+      case "image/vnd.microsoft.icon":
         extension = "ico"
         break;
     }
@@ -170,9 +166,6 @@ export class OrConfRealmCard extends LitElement {
       contents: await this.convertBase64(file),
       // binary: true
     } as FileInfo;
-
-
-    console.log(this.files)
     return path;
   }
 
@@ -216,29 +209,30 @@ export class OrConfRealmCard extends LitElement {
               ${Object.entries(this.headerList).map(function([key , value]){
                   return html`<or-mwc-input 
                     .type="${InputType.CHECKBOX}" 
-                    class="header-item" label="${value}" 
+                    class="header-item" label="${i18next.t(key)}" 
                     .value="${!!app.realm.headers ? app.realm.headers?.includes(<ManagerHeaders>value) : true }" 
                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(value, e.detail.value)}"
                   ></or-mwc-input>`
               })}
             </div>
-            <div class="logo-group">
-              <or-file-uploader @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], 'logo')}" .src="${this.realm?.logo}"></or-file-uploader>
-              <or-file-uploader @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], 'logoMobile')}" .src="${this.realm?.logoMobile}"></or-file-uploader>
-              <or-file-uploader @change="${async (e: CustomEvent) => this.realm.favicon = await this._setImageForUpload(e.detail.value[0], 'favicon')}" .src="${this.realm?.favicon}"></or-file-uploader>
+            <div class="logo-group d-inline-flex">
+              <or-file-uploader title="${'Logo'}" @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], 'logo')}" .src="${this.realm?.logo}"></or-file-uploader>
+              <or-file-uploader title="${'Logo mobile'}" @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], 'logoMobile')}" .src="${this.realm?.logoMobile}"></or-file-uploader>
+              <or-file-uploader title="${'Favicon'}" @change="${async (e: CustomEvent) => this.realm.favicon = await this._setImageForUpload(e.detail.value[0], 'favicon')}" .src="${this.realm?.favicon}"></or-file-uploader>
             </div>
           </div>
-          <div class="color-group">
             <div class="subheader">Manager colors</div>
-            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}" label="Primary" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
-            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}" label="Borders and lines" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
-            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}" label="Invalid and error" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
-        
-            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}" label="Surface" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
-            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}" label="Background" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
-            <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}" label="Text" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
-          </div>
-          <or-mwc-input id="remove-realm" .type="${InputType.BUTTON}" label="Remove" @click="${() => {this.onRemove()}}" ></or-mwc-input>
+              <div class="d-inline-flex">
+                <div class="color-group">
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}" label="Primary" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}" label="Borders and lines" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}" label="Invalid and error" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}" label="Surface" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}" label="Background" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}" label="Text" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
+              </div>
+            </div>
+          <or-mwc-input id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t('delete')}" @click="${() => {this.onRemove()}}" ></or-mwc-input>
         </div>
       </or-collapsible-panel>
 `;

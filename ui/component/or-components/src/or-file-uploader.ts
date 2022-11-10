@@ -7,23 +7,45 @@ export class OrFileUploader extends LitElement {
     @property({attribute: false})
     public src: string = "";
 
+    @property()
+    public title: string = "";
+
+    @property({attribute: false})
+    public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon";
+
     static get styles() {
         return css`
-            .image-container{
+            #imageContainer{
                 position: relative;
-                width: 200px;
-                height: 200px;
-                background-color: red;
+                min-width: 75px;
+                min-height: 75px;
+                max-width: 150px;
+                max-height: 150px;
+                background-color: whitesmoke;
                 cursor: pointer;
                 border-radius: 2px;
+                padding: 4px;
             }
-            .image-container img{
-                max-height: 100%;
-                max-width: 100%;
-                position: absolute;
+            #imageContainer img{
+                width: 100%;
+                border-radius: 2px;
             }
             input{
                 display: none;
+            }
+            .title{
+                margin-left: 4px;
+            }
+            .placeholder-container{
+                text-align: center;
+                width: 100%;
+            }
+            .placeholder-container or-icon{
+                font-size: 24px;
+                margin: 16px 0;
+                max-height: 24px;
+                width: 100%;
+                text-align: center;
             }
         `;
     }
@@ -36,6 +58,7 @@ export class OrFileUploader extends LitElement {
             this._onChange(e)
         })
         imageContainer?.addEventListener("click", (e) => {
+            console.log("Click container")
             fileInput?.click()
         })
     }
@@ -71,12 +94,21 @@ export class OrFileUploader extends LitElement {
     render() {
         return html`
         <div class="container">
-            <div class="image-container">
-                <img .src="${this.src.startsWith('data') ? this.src : '/manager' + this.src}" alt="OR-File-Uploader" id="imageContainer">
+            <div class="title">${this.title}</div>
+            <div id="imageContainer">
+                ${ !!this.src ? 
+                  html`<img .src="${this.src?.startsWith('data') ? this.src : '/manager' + this.src}" alt="OR-File-Uploader">` 
+                  : 
+                  html`
+                  <div class="placeholder-container">
+                      <or-icon icon="upload"></or-icon>
+                      Upload your file...
+                  </div>
+                  ` 
+        }
             </div>
-            <input type="file" id="fileInput">
+            <input type="file" id="fileInput" accept="${this.accept}">
         </div>
-        ${this.src}
    `;
     }
 }
