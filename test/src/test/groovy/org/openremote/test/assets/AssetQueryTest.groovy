@@ -7,8 +7,8 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.RoomAsset

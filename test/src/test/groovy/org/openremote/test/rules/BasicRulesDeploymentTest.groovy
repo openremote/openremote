@@ -1,18 +1,14 @@
 package org.openremote.test.rules
 
 import org.openremote.manager.rules.RulesEngine
-import org.openremote.manager.rules.RulesFacts
-import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
-import org.openremote.model.attribute.MetaItem
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
-import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification

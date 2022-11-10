@@ -10,14 +10,12 @@ import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.ParentPredicate
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.BadRequestException
 import javax.ws.rs.ForbiddenException
-import javax.ws.rs.NotAuthorizedException
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString

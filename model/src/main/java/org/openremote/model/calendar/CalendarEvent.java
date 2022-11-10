@@ -75,6 +75,7 @@ import java.util.Date;
 }
  * }</pre></blockquote>
  */
+// TODO: Update to ical4j 4 once released with DST bug fix https://github.com/ical4j/ical4j/issues/117
 public class CalendarEvent implements Serializable {
     protected Date start;
     protected Date end;

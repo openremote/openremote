@@ -6,15 +6,15 @@ import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.agent.DefaultAgentLink
-import org.openremote.test.protocol.MockAgentLink
-import org.openremote.test.setup.KeycloakTestSetup
+import org.openremote.setup.integration.protocol.MockAgentLink
+import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.*
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.protocol.MockAgent
-import org.openremote.test.protocol.MockProtocol
+import org.openremote.setup.integration.protocol.MockAgent
+import org.openremote.setup.integration.protocol.MockProtocol
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
