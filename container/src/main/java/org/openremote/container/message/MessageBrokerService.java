@@ -24,8 +24,14 @@ import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.component.snmp.SnmpComponent;
+import org.apache.camel.health.HealthCheckRegistry;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.engine.DefaultHealthCheckResolver;
 import org.apache.camel.impl.engine.DefaultStreamCachingStrategy;
+import org.apache.camel.impl.health.ConsumersHealthCheckRepository;
+import org.apache.camel.impl.health.ContextHealthCheck;
+import org.apache.camel.impl.health.DefaultHealthCheckRegistry;
+import org.apache.camel.impl.health.RoutesHealthCheckRepository;
 import org.apache.camel.spi.ExecutorServiceManager;
 import org.apache.camel.spi.StreamCachingStrategy;
 import org.apache.camel.spi.ThreadPoolFactory;
@@ -120,6 +126,15 @@ public class MessageBrokerService implements ContainerService {
 
         // Don't use JMS, we do our own correlation
         context.setUseBreadcrumb(false);
+
+        // Enable health checks - Have to manually add built in ones for some reason
+        context.setLoadHealthChecks(true);
+        final var checkRegistry = new DefaultHealthCheckRegistry();
+        checkRegistry.setExposureLevel("full");
+        checkRegistry.register(new RoutesHealthCheckRepository());
+        checkRegistry.register(new ConsumersHealthCheckRepository());
+        checkRegistry.register(new ContextHealthCheck());
+        context.setExtension(HealthCheckRegistry.class, checkRegistry);
 
         // Force a quick shutdown of routes with in-flight exchanges
         context.getShutdownStrategy().setTimeout(1);

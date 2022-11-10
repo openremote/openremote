@@ -21,22 +21,19 @@ package org.openremote.manager.system;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import org.apache.camel.Endpoint;
-import org.apache.camel.component.direct.DirectEndpoint;
 import org.apache.camel.component.seda.SedaEndpoint;
 import org.apache.camel.health.HealthCheck;
 import org.apache.camel.health.HealthCheckHelper;
+import org.apache.camel.support.service.BaseService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.protocol.zwave.model.commandclasses.channel.value.Value;
 
-import java.util.Collection;
-
-import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_QUEUE;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CamelHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
@@ -46,6 +43,8 @@ public class CamelHealthStatusProvider implements HealthStatusProvider, Containe
     @Override
     public void init(Container container) throws Exception {
         brokerService = container.getService(MessageBrokerService.class);
+        // Add mixin for health check results
+        ValueUtil.JSON.addMixIn(HealthCheck.Result.class, HealthCheckResultMixin.class);
     }
 
     @Override
@@ -65,7 +64,24 @@ public class CamelHealthStatusProvider implements HealthStatusProvider, Containe
 
     @Override
     public Object getHealthStatus() {
-        Collection<HealthCheck.Result> results = HealthCheckHelper.invoke(brokerService.getContext());
-        return ValueUtil.asJSON(results).orElse(null);
+        Map<String, Object> result = new HashMap<>();
+        ArrayNode endpointInfos = ValueUtil.JSON.createArrayNode();
+
+        for (Endpoint endpoint : brokerService.getContext().getEndpoints()) {
+            ObjectNode endpointInfo = ValueUtil.createJsonObject();
+            endpointInfo.put("uri", endpoint.getEndpointUri());
+            if (endpoint instanceof BaseService baseService) {
+                endpointInfo.put("status", baseService.getStatus().name());
+            }
+            if (endpoint instanceof SedaEndpoint sedaEndpoint) {
+                endpointInfo.put("queueSize", sedaEndpoint.getCurrentQueueSize());
+                endpointInfo.put("queueMax", sedaEndpoint.getSize());
+            }
+            endpointInfos.add(endpointInfo);
+        }
+
+        result.put("healthChecks", HealthCheckHelper.invoke(brokerService.getContext()));
+        result.put("endpoints", endpointInfos);
+        return result;
     }
 }
