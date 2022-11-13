@@ -27,6 +27,7 @@
 		4CF5D07927143F2000D705BE /* ORPushNotificationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */; };
 		4CF5D07A27143F2000D705BE /* ORNotificationResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06727143F1F00D705BE /* ORNotificationResource.swift */; };
 		4CF5D07B27143F2000D705BE /* HttpApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06827143F1F00D705BE /* HttpApiManager.swift */; };
+		914F7D4429215D3500655A22 /* test12.json in Resources */ = {isa = PBXBuildFile; fileRef = 914F7D4329215D3500655A22 /* test12.json */; };
 		9156512A28FC6D6700062E16 /* test9.json in Resources */ = {isa = PBXBuildFile; fileRef = 9156512928FC6D6700062E16 /* test9.json */; };
 		91658F9128897E55000FF05C /* ORConsoleConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9028897E55000FF05C /* ORConsoleConfig.swift */; };
 		91658F9328897EDD000FF05C /* ORAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9228897EDD000FF05C /* ORAppInfo.swift */; };
@@ -99,6 +100,7 @@
 		4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationAction.swift; sourceTree = "<group>"; };
 		4CF5D06727143F1F00D705BE /* ORNotificationResource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORNotificationResource.swift; sourceTree = "<group>"; };
 		4CF5D06827143F1F00D705BE /* HttpApiManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HttpApiManager.swift; sourceTree = "<group>"; };
+		914F7D4329215D3500655A22 /* test12.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test12.json; sourceTree = "<group>"; };
 		9156512928FC6D6700062E16 /* test9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test9.json; sourceTree = "<group>"; };
 		91658F9028897E55000FF05C /* ORConsoleConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORConsoleConfig.swift; sourceTree = "<group>"; };
 		91658F9228897EDD000FF05C /* ORAppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORAppInfo.swift; sourceTree = "<group>"; };
@@ -269,6 +271,7 @@
 				9156512928FC6D6700062E16 /* test9.json */,
 				91DD9FED2910280900912F79 /* test10.json */,
 				91DD9FEF29102A8B00912F79 /* test11.json */,
+				914F7D4329215D3500655A22 /* test12.json */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -375,6 +378,7 @@
 				91932F9828C6738A00BABBA3 /* test3.json in Resources */,
 				91932F9C28C673DC00BABBA3 /* test4.json in Resources */,
 				91932F9E28C6752C00BABBA3 /* test6.json in Resources */,
+				914F7D4429215D3500655A22 /* test12.json in Resources */,
 				91932F9B28C673DC00BABBA3 /* test5.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

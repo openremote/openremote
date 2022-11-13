@@ -45,6 +45,11 @@ Similar to Test 9 but with global override of realms
 ### Test 11
 Similar to Test 9 but Console 1 is not selectable as app
 
+### Test 12
+Similar to Test 7 but with no realms defined in the AppInfo
+
+
+
 
 TODO:
 - add test for full URLs entry
