@@ -1044,7 +1044,7 @@ export class OrMwcInput extends LitElement {
                                      aria-expanded="false"
                                      aria-disabled="${""+(this.disabled || this.readonly)}"
                                      aria-labelledby="label selected-text">
-                                    <span class="mdc-select__ripple"></span>
+                                    ${!outlined ? html`<span class="mdc-select__ripple"></span>` : undefined}
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                     <span class="mdc-select__selected-text-container">
                                       <span id="selected-text" class="mdc-select__selected-text"></span>

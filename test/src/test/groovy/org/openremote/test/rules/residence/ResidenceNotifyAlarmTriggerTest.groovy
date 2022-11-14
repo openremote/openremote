@@ -19,7 +19,7 @@ import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.rules.RulesetStatus
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
@@ -38,15 +38,12 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.time.Clock
 import java.time.Instant
-import java.time.Period
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
+import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
@@ -315,7 +312,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         assert from.plus(7, ChronoUnit.DAYS).toEpochMilli() - getClockTimeOf(container) - apartment1Engine.unpauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
 
         when: "time advances to within the next valid time period"
-        advancePseudoClock((from.plus(7, ChronoUnit.DAYS).toEpochMilli()-getClockTimeOf(container))+10000, TimeUnit.MILLISECONDS, container)
+        advancePseudoClock((from.plus(7, ChronoUnit.DAYS).plus(61, ChronoUnit.MINUTES).toEpochMilli() - getClockTimeOf(container)), TimeUnit.MILLISECONDS, container)
         apartment1Engine.unPauseRuleset(rulesetDeployment)
 
         then: "the ruleset status should be un-paused"
@@ -330,7 +327,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         assert to.plus(7, ChronoUnit.DAYS).toEpochMilli() - getClockTimeOf(container) - apartment1Engine.pauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
 
         when: "time advances past the second expiry the ruleset is paused again"
-        advancePseudoClock((to.plus(7, ChronoUnit.DAYS).toEpochMilli()-getClockTimeOf(container))+10000, TimeUnit.MILLISECONDS, container)
+        advancePseudoClock((to.plus(7, ChronoUnit.DAYS).plus(61, ChronoUnit.MINUTES).toEpochMilli()-getClockTimeOf(container)), TimeUnit.MILLISECONDS, container)
         apartment1Engine.pauseRuleset(rulesetDeployment)
 
         then: "the ruleset status should be expired"

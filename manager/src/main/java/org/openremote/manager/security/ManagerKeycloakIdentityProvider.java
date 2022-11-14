@@ -121,8 +121,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             setActiveCredentials(grant);
         }
 
-        String hostname = getString(container.getConfig(), Constants.OR_HOSTNAME, "localhost");
-        int port = getInteger(container.getConfig(), Constants.OR_SSL_PORT, 8080); // Should just be called port
+        String hostname = getString(container.getConfig(), Constants.OR_HOSTNAME, null);
+        int port = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1); // Should just be called port
         String keycloakHostname = getString(container.getConfig(), KC_HOSTNAME, hostname);
         int keycloakPort = getInteger(container.getConfig(), KC_HOSTNAME_PORT, port);
         String keycloakHostnamePath = getString(container.getConfig(), KC_HOSTNAME_PATH, "auth");

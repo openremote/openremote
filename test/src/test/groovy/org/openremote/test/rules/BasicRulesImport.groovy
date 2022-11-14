@@ -7,8 +7,8 @@ import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED

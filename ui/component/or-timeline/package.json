@@ -17,7 +17,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "lit": "^2.0.2",
-    "moment": "^2.24.0"
+    "moment": "^2.29.4"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
