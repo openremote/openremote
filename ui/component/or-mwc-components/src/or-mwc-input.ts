@@ -83,18 +83,6 @@ export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> 
         });
     }
 }
-export class OrInputSearchChangedEvent extends CustomEvent<OrInputChangedEventDetail> {
-
-    public static readonly NAME = "or-mwc-inputsearch-changed";
-
-    constructor(detail: OrInputChangedEventDetail) {
-        super(OrInputSearchChangedEvent.NAME, {
-            detail: detail,
-            bubbles: true,
-            composed: true
-        });
-    }
-}
 
 export interface OrInputChangedEventDetail {
     value?: any;
@@ -708,8 +696,8 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public searchable?: boolean;
 
-    @property({type: Boolean})
-    public searching: boolean = false;
+    @property({type: Object})
+    public searchCallback?: (search: string) => void
 
     /* STYLING PROPERTIES BELOW */
 
@@ -1077,14 +1065,16 @@ export class OrMwcInput extends LitElement {
                                                 <input class="mdc-text-field__input" type="text"
                                                        @keyup="${(e: KeyboardEvent) => {
                                                            if(this.searchableValue != (e.target as HTMLInputElement).value) {
-                                                               this.dispatchEvent(new OrInputSearchChangedEvent({value: (e.target as HTMLInputElement).value, previousValue: this.searchableValue }))
                                                                this.searchableValue = (e.target as HTMLInputElement).value;
+                                                               if(this.searchCallback != undefined) {
+                                                                   this.searchCallback(this.searchableValue);
+                                                               }
                                                            }
                                                        }}"
                                                 />
                                             </label>
-                                            ${this.searching || (this.searchable && this.searchableValue && (!opts || opts.length == 0)) ? html`
-                                                <span class="mdc-text-field-helper-line" style="margin: 0 8px 8px;">${this.searching ? i18next.t('loading') : i18next.t('noResults')}</span>
+                                            ${(this.searchable && this.searchableValue && (!opts || opts.length == 0)) ? html`
+                                                <span class="mdc-text-field-helper-line" style="margin: 0 8px 8px;">${i18next.t('noResults')}</span>
                                             ` : undefined}
                                         `
                                     })}
@@ -1729,7 +1719,8 @@ export class OrMwcInput extends LitElement {
             this.dispatchEvent(new OrInputChangedEvent(this.value, previousValue, enterPressed));
         }
 
-        if(this.searchable) {
+        // Reset search if value has been selected
+        if(this.searchable && this.type === InputType.SELECT) {
             const searchableElement = this.shadowRoot?.getElementById('select-searchable')?.children[1];
             if(searchableElement) {
                 this.searchableValue = undefined;

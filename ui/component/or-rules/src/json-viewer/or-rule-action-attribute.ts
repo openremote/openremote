@@ -15,7 +15,7 @@ import {
 } from "@openremote/model";
 import manager, {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
-import {InputType, OrInputChangedEvent, OrInputSearchChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
@@ -179,8 +179,8 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 return html`
                     <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}"
                                   .searchable="${this._assets!.length > 25}" .options="${idOptions}" .value="${idValue}" .readonly="${this.readonly || false}"
+                                  .searchCallback="${debounce((search: string) => this._assetSearchValue = search, 500)}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this._assetSearchValue = ''; this.refresh(); }}"
-                                  @or-mwc-inputsearch-changed="${debounce((event: OrInputSearchChangedEvent) => { this._assetSearchValue = event.detail.value; }, 500)}"
                     ></or-mwc-input>
                     ${attributes.length > 0 ? html`
                         <or-mwc-input id="attributeSelect" class="min-width" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" ?searchable="${(attributes.length >= 25)}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>

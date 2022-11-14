@@ -20,7 +20,7 @@ import {
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent, OrInputSearchChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
 import i18next from "i18next";
@@ -318,8 +318,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     return html`
                         <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
                                       .searchable="${this._assets!.length > 25}" .options="${idOptions}" .value="${idValue}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this._assetSearchValue = ''; this.refresh(); }}" 
-                                      @or-mwc-inputsearch-changed="${debounce((event: OrInputSearchChangedEvent) => { this._assetSearchValue = event.detail.value; }, 500)}"
+                                      .searchCallback="${debounce((search: string) => this._assetSearchValue = search, 500)}"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this._assetSearchValue = ''; this.refresh(); }}"
                         ></or-mwc-input>
                         ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
                             return html`
