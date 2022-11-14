@@ -11,7 +11,8 @@ import {
     RuleActionUnion,
     RuleRecurrence,
     WellknownAssets,
-    AssetModelUtil
+    AssetModelUtil,
+    RuleActionWebhook
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -20,6 +21,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
+import "./or-rule-action-webhook";
 import {translate} from "@openremote/or-translate";
 
 const NOTIFICATION_COLOR = "4B87EA";
@@ -31,6 +33,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     let addWait = true;
     let addNotification = true;
     let addPushNotification = true;
+    let addWebhook = true;
 
     if (config && config.controls && config.controls.allowedActionTypes) {
         addAssetTypes = config.controls.allowedActionTypes.indexOf(ActionType.ATTRIBUTE) >= 0;
@@ -83,6 +86,15 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             value: ActionType.WAIT,
             styleMap: {"--or-icon-fill": "#" + WAIT_COLOR}
         } as ListItem);
+    }
+
+    if (addWebhook) {
+        menu.push({
+            text: i18next.t("webhook"),
+            icon: "webhook",
+            value: ActionType.WEBHOOK,
+            styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
+        })
     }
 
     menu.sort(Util.sortByString((listItem) => listItem.value!));
@@ -282,6 +294,10 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         buttonIcon = "timer";
                         buttonColor = WAIT_COLOR;
                         break;
+                    case ActionType.WEBHOOK:
+                        buttonIcon = "webhook";
+                        buttonColor = NOTIFICATION_COLOR;
+                        break;
                     case "notification":
                         action = action as RuleActionNotification
                         if (type === "push") {
@@ -330,6 +346,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 case ActionType.EMAIL:
                     template = html`<or-rule-action-notification id="email-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.EMAIL}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
+                case ActionType.WEBHOOK:
+                    template = html`<or-rule-action-webhook .action="${action}"></or-rule-action-webhook>`;
+                    break;
                 default:
                     template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
                     break;
@@ -376,6 +395,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         switch (action.action) {
             case "wait":
+                break;
+            case "webhook":
+                return action.action;
                 break;
             case "notification":
                 const type = action.notification && action.notification.message && action.notification.message.type ? action.notification.message.type : action.action;
@@ -428,6 +450,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             case "wait":
                 action.millis = undefined;
                 break;
+            case "webhook":
+                action.url = "http://localhost";
+                break;
             case "write-attribute":
                 action.value = undefined;
                 action.attributeName = undefined;
@@ -446,6 +471,8 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         if (value === ActionType.WAIT) {
             action.action = "wait";
+        } else if (value == ActionType.WEBHOOK) {
+            action.action = "webhook";
         } else if (value === ActionType.EMAIL) {
             action = action as RuleActionNotification;
             action.action = "notification";
