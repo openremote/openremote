@@ -45,7 +45,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 
 /**
  * This allows custom handlers to be discovered by the {@link MQTTBrokerService} during system startup using the
@@ -80,7 +79,7 @@ public abstract class MQTTHandler {
     /**
      * Called when the system starts to allow for initialisation.
      */
-    public void start(Container container) throws Exception {
+    public void init(Container container) throws Exception {
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
@@ -93,7 +92,12 @@ public abstract class MQTTHandler {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
         }
+    }
 
+    /**
+     * Called when the system starts to allow for initialisation.
+     */
+    public void start(Container container) throws Exception {
         Set<String> publishListenerTopics = getPublishListenerTopics();
         if (publishListenerTopics != null) {
             publishListenerTopics.forEach(this::addPublishConsumer);
@@ -117,7 +121,7 @@ public abstract class MQTTHandler {
                 }
 
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
-                getLogger().info("Client published '" + topic + "': " + connectionToString(connection));
+                getLogger().info("Client published '" + topic + "': " + mqttBrokerService.connectionToString(connection));
             });
         } catch (ActiveMQException e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
@@ -175,11 +179,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().finest("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", " + connectionToString(connection));
+            getLogger().finest("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
         if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + connectionToString(connection));
+            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
         return canSubscribe(connection, securityContext, topic);
@@ -191,11 +195,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic + ", " + connectionToString(connection));
+            getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
         if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + connectionToString(connection));
+            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
         return canPublish(connection, securityContext, topic);

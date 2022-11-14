@@ -18,9 +18,10 @@ on changes to `rainfall` and `temperature` attributes
 
 # Usage
 
-1. Run the `device_generator.sh` script to generate auto provisioning device X.509 certificates which are output to `tmp/devices.csv` 
-2. Run the manager using the `load1` setup 
-3. Run Taurus:
+1. Run the `device_generator.sh COUNT` script to generate auto provisioning device X.509 certificates which are output to `tmp/devices.csv`
+the COUNT value is the number of devices to generate certificates for (default: 100)
+3. Run the manager using the `load1` setup 
+4. Run Taurus:
 ```
 bzt mqtt_auto_provision.yml
 ```

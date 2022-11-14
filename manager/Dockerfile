@@ -57,8 +57,7 @@ ENV OR_IDENTITY_SESSION_MAX_MINUTES ${OR_IDENTITY_SESSION_MAX_MINUTES:-1440}
 ENV OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES ${OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES:-2628000}
 ENV OR_JAVA_OPTS ${OR_JAVA_OPTS:--Xms500m -Xmx2g \
     -XX:NativeMemoryTracking=summary \
-    -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 \
-    -XX:GCLogFileSize=50M -Xloggc:/gc.log \
+    -Xlog:all=warning:stdout:uptime,level,tags \
     -XX:OnOutOfMemoryError="shutdown -r" -d64 \
     -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
 

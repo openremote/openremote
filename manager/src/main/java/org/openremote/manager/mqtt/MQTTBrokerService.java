@@ -43,6 +43,7 @@ import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal;
+import org.apache.activemq.artemis.spi.core.security.jaas.UserPrincipal;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.http.client.utils.URIBuilder;
@@ -70,6 +71,7 @@ import org.openremote.model.util.ValueUtil;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
+import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -91,9 +93,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public static final String MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS = "MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS";
     public static int MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT = 5000;
     public static final int PRIORITY = MED_PRIORITY;
-    public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
+    public static final String ANONYMOUS_USERNAME = "anonymous";
     protected final WildcardConfiguration wildcardConfiguration = new WildcardConfiguration();
     protected static final Logger LOG = SyslogCategory.getLogger(API, MQTTBrokerService.class);
 
@@ -143,6 +145,21 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
             container.getService(MessageBrokerService.class).getContext().addRoutes(this);
         }
+
+        // Load custom handlers
+        this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
+            .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
+            .collect(Collectors.toList());
+
+        // Init each custom handler
+        for (MQTTHandler handler : customHandlers) {
+            try {
+                handler.init(container);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "MQTT custom handler threw an exception whilst initialising: handler=" + handler.getName(), e);
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -173,7 +190,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
                 return new AppConfigurationEntry[] {
-                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true")),
+                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true", "org.apache.activemq.jaas.guest.user", ANONYMOUS_USERNAME, "org.apache.activemq.jaas.guest.role", ANONYMOUS_USERNAME)),
                     new AppConfigurationEntry(MultiTenantClientCredentialsGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(
                         MultiTenantClientCredentialsGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true",
                         AbstractKeycloakLoginModule.ROLE_PRINCIPAL_CLASS_OPTION, RolePrincipal.class.getName()
@@ -219,11 +236,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // Create producer
         producer = internalSession.createProducer();
-
-        // Load custom handlers
-        this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
-            .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
-            .collect(Collectors.toList());
 
         // Start each custom handler
         for (MQTTHandler handler : customHandlers) {
@@ -335,7 +347,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void afterCreateSession(ServerSession session) throws ActiveMQException {
         RemotingConnection remotingConnection = session.getRemotingConnection();
 
-        if (remotingConnection == null || remotingConnection.getClientID() == null) {
+        // Ignore internal connections or ones without a client ID
+        if (remotingConnection == null || remotingConnection.getClientID() == null || remotingConnection.getTransportConnection() instanceof InVMConnection) {
             return;
         }
 
@@ -432,10 +445,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void publishMessage(String topic, Object data, MqttQoS qoS) {
         try {
             if (internalSession != null) {
-                ClientMessage message = internalSession.createMessage(false);
-                message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
-                message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
-                producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()), message);
+                // Artemis' sessions are not threadsafe
+                synchronized (internalSession) {
+                    ClientMessage message = internalSession.createMessage(false);
+                    message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
+                    message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
+                    producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()), message);
+                }
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Couldn't send AttributeEvent to MQTT client", e);
@@ -455,11 +471,30 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return ID instanceof ChannelId ? ((ChannelId)ID).asLongText() : ID.toString();
     }
 
-    public static String connectionToString(RemotingConnection connection) {
+    public String connectionToString(RemotingConnection connection) {
         if (connection == null) {
             return "";
         }
-        return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + connection.getSubject();
+
+        String username = null;
+        Subject subject = connection.getSubject();
+
+        if (subject != null) {
+            username = getSubjectName(subject);
+        }
+
+        if (username == null || ANONYMOUS_USERNAME.equals(username)) {
+            // Check if there are transient credentials for this connection
+            Triple<String, String, String> userIDNameAndPassword = transientCredentials.get(connection.getID());
+            if (userIDNameAndPassword != null) {
+                username = userIDNameAndPassword.getMiddle();
+            }
+        }
+        return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + username;
+    }
+
+    public static String getSubjectName(Subject subject) {
+        return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal).findFirst().map(Principal::getName).orElse(KeycloakIdentityProvider.getSubjectName(subject));
     }
 
     public RemotingConnection getConnectionFromClientID(String clientID) {
