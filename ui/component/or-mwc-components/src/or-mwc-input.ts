@@ -4,6 +4,7 @@ import {Ref, ref, createRef} from "lit/directives/ref.js";
 import {classMap} from "lit/directives/class-map.js";
 import {ifDefined} from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
+import {until} from 'lit/directives/until.js';
 import {MDCTextField} from "@material/textfield";
 import {MDCComponent} from "@material/base";
 import {MDCRipple} from "@material/ripple";
@@ -685,19 +686,16 @@ export class OrMwcInput extends LitElement {
     @property({type: Array, hasChanged(oldVal, newVal) { return JSON.stringify(oldVal) !== JSON.stringify(newVal); }})
     public options?: any[] | any;
 
+    @property({type: Object})
+    public optionsProvider?: (search?: string) => Promise<[any, string][]>
+
     @property({type: Boolean})
     public autoSelect?: boolean;
 
-    /* SELECT SEARCH PROPERTIES BELOW */
-    
-    @property({type: String})
-    public searchableValue?: string;
-
+    // Enable to add 'Search' input field in SELECT menu.
     @property({type: Boolean})
     public searchable?: boolean;
 
-    @property({type: Object})
-    public searchCallback?: (search: string) => void
 
     /* STYLING PROPERTIES BELOW */
 
@@ -790,6 +788,8 @@ export class OrMwcInput extends LitElement {
     protected _tempValue: any;
     @state()
     protected isUiValid = true;
+    @state()
+    public searchableValue?: string;
     @state()
     protected errorMessage?: string;
 
@@ -900,7 +900,6 @@ export class OrMwcInput extends LitElement {
                                 }) : ``}
                             </div>
                     `;
-                    break;
                 case InputType.SWITCH:
                     const classesSwitch = {
                         "mdc-switch--disabled": this.disabled || this.readonly,
@@ -963,9 +962,14 @@ export class OrMwcInput extends LitElement {
                         "mdc-select--with-leading-icon": !!this.icon
                     };
 
-                    let opts = this.resolveOptions(this.options);
-                    if(this.searchableValue && opts) {
-                        opts = opts.filter(([optValue, optDisplay]) => optDisplay.toLowerCase().includes((this.searchableValue as string).toLowerCase()));
+                    let opts: [any, string][] | Promise<[any, string][]>;
+                    if(this.optionsProvider != undefined) {
+                        opts = this.optionsProvider(this.searchableValue);
+                    } else {
+                        opts = this.resolveOptions(this.options)!;
+                        if(this.searchable && this.searchableValue) {
+                            opts = opts.filter(([optValue, optDisplay]) => optDisplay.toLowerCase().includes((this.searchableValue as string).toLowerCase()));
+                        }
                     }
                     const itemClickHandler: (ev: MouseEvent, item: ListItem) => void = (ev, item) => {
                         const value = item.value;
@@ -995,8 +999,9 @@ export class OrMwcInput extends LitElement {
                             this._tempValue = inputValue;
                         }
 
-                        // A narrowed down list with search does not always trigger @MDCSelect:change, so using itemClickHandler instead.
-                        else if(this.searchable) {
+                        // A narrowed down list with search, or a different asynchronous approach does not always trigger @MDCSelect:change,
+                        // so using itemClickHandler instead to let it trigger anyway.
+                        else if(this.searchable || !Array.isArray(opts)) {
                             this.onValueChange(undefined, item.value);
                         }
 
@@ -1019,13 +1024,51 @@ export class OrMwcInput extends LitElement {
                         this.onValueChange(undefined, val);
                     };
 
+                    const listTemplate = (options: [any, string][]) => {
+                        return getListTemplate(
+                            this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                            opts && options.length > 0 ? html`${options.map(([optValue, optDisplay], index) => {
+                                return getItemTemplate(
+                                    {
+                                        text: optDisplay,
+                                        value: optValue
+                                    },
+                                    index,
+                                    Array.isArray(this.value) ? this.value as any[] : this.value ? [this.value as any] : [],
+                                    this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                    false,
+                                    itemClickHandler
+                                );
+                            })}` : html``,
+                            false,
+                            undefined
+                        );
+                    }
+
+                    const asyncListTemplate = async (): Promise<TemplateResult> => {
+                        let options: [any, string][] = (Array.isArray(opts) ? opts : await opts);
+                        if(this.searchable && this.searchableValue && !this.multiple) {
+                            options = options.filter(([optValue, optDisplay]) => optValue != this.value); // remove the selected value when searching
+                        }
+                        return listTemplate(options);
+                    }
+
+                    const nothingFoundTemplate = async (): Promise<TemplateResult> => {
+                        let options: [any, string][] = (Array.isArray(opts) ? opts : await opts);
+                        if(this.searchable && this.searchableValue && !this.multiple) {
+                            options = options.filter(([optValue, optDisplay]) => optValue != this.value); // remove the selected value when searching
+                        }
+                        return when(options && options.length == 0, () => html`
+                            <span class="mdc-text-field-helper-line" style="margin: 0 8px 8px;">${i18next.t('noResults')}</span>
+                        `);
+                    }
+
                     return html`
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
-                            @MDCSelect:change="${(e: MDCSelectEvent) => {
-                                if(!this.searchable) { // A narrowed down list with search does not always trigger @MDCSelect:change, so using itemClickHandler instead.
-                                    this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(opts![e.detail.index]) ? opts![e.detail.index][0] : opts![e.detail.index]);
-                                }
+                            @MDCSelect:change="${async (e: MDCSelectEvent) => {
+                                const options: [any, string][] = (Array.isArray(opts) ? opts : await opts);
+                                this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(options[e.detail.index]) ? options[e.detail.index][0] : options[e.detail.index]);
                             }}">
                                 <div class="mdc-select__anchor" role="button"
                                      aria-haspopup="listbox"
@@ -1063,39 +1106,20 @@ export class OrMwcInput extends LitElement {
                                             <label id="select-searchable" class="mdc-text-field mdc-text-field--filled">
                                                 <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">${i18next.t('search')}</span>
                                                 <input class="mdc-text-field__input" type="text"
-                                                       @keyup="${(e: KeyboardEvent) => {
-                                                           if(this.searchableValue != (e.target as HTMLInputElement).value) {
-                                                               this.searchableValue = (e.target as HTMLInputElement).value;
-                                                               if(this.searchCallback != undefined) {
-                                                                   this.searchCallback(this.searchableValue);
-                                                               }
-                                                           }
-                                                       }}"
+                                                       @keyup="${(e: KeyboardEvent) => this.searchableValue = (e.target as HTMLInputElement).value}"
                                                 />
                                             </label>
-                                            ${(this.searchable && this.searchableValue && (!opts || opts.length == 0)) ? html`
-                                                <span class="mdc-text-field-helper-line" style="margin: 0 8px 8px;">${i18next.t('noResults')}</span>
-                                            ` : undefined}
+                                            ${until(nothingFoundTemplate(), undefined)}
                                         `
                                     })}
-                                    ${getListTemplate(
-                                        this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                            opts && opts.length > 0 ? html`${opts.map(([optValue, optDisplay], index) => {
-                                            return getItemTemplate(
-                                                {
-                                                    text: optDisplay,
-                                                    value: optValue                                                
-                                                },
-                                                index,
-                                                Array.isArray(this.value) ? this.value as any[] : this.value ? [this.value as any] : [],
-                                                this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                                false,    
-                                                itemClickHandler
-                                            )
-                                        })}` : html``,
-                                        false,
-                                        undefined
-                                    )}
+                                    ${when(Array.isArray(opts), () => {
+                                        const options = opts as [any, string][];
+                                        return listTemplate(options);
+                                    }, () => {
+                                        return until(asyncListTemplate(), html`
+                                            <span class="mdc-text-field-helper-line" style="margin: 0 8px 24px;">${i18next.t('loading')}</span>
+                                        `);
+                                    })}
                                 </div>
                                 ${hasHelper || showValidationMessage ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">

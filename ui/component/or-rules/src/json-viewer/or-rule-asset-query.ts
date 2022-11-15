@@ -85,9 +85,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     @state()
     protected _assets?: Asset[];
 
-    @state()
-    protected _assetSearchValue: string = '';
-
     // Value predicates for specific value descriptors
     protected _queryOperatorsMap: {[type: string]: AssetQueryOperator[]} = {};
 
@@ -298,6 +295,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const idOptions: [string, string] [] = [
             ["*", i18next.t("anyOfThisType")]
         ];
+        let optionsProvider: (search?: string) => Promise<[any, string][]>;
 
         return html`
             <div class="attribute-group">
@@ -308,18 +306,23 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 `, () => {
                     if(this._assets!.length <= 100) {
                         idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
-                    } else if(this._assetSearchValue.length > 0) {
-                        const filtered = this._assets!.filter((asset) => (asset.name?.toLowerCase().includes(this._assetSearchValue.toLowerCase()) || asset.id == idValue));
-                        idOptions.push(...filtered.map((asset) => [asset.id!, asset.name!] as [string, string]))
                     } else {
-                        const asset = this._assets?.find((asset) => asset.id == idValue);
-                        if(asset) { idOptions.push([asset.id!, asset.name!]); }
+                        optionsProvider = async (search?: string) => {
+                            if(search) {
+                                return this._assets!.filter((asset) => (asset.name?.toLowerCase().includes(search.toLowerCase()) || asset.id == idValue)).map((asset) => [asset.id!, asset.name!] as [string, string]);
+                            } else {
+                                const asset = this._assets?.find((asset) => asset.id == idValue);
+                                if(asset && !idOptions.includes([asset.id!, asset.name!])) {
+                                    idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
+                                }
+                                return idOptions;
+                            }
+                        }
                     }
                     return html`
                         <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
-                                      .searchable="${this._assets!.length > 25}" .options="${idOptions}" .value="${idValue}"
-                                      .searchCallback="${debounce((search: string) => this._assetSearchValue = search, 500)}"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this._assetSearchValue = ''; this.refresh(); }}"
+                                      .searchable="${this._assets!.length > 25}" .options="${idOptions}" .value="${idValue}" .optionsProvider="${optionsProvider}"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this.refresh(); }}"
                         ></or-mwc-input>
                         ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
                             return html`
