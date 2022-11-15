@@ -24,11 +24,11 @@ export class OrConfRealmCard extends LitElement {
     }
     .language{
       width: 50%;
-      padding: 8px 4px;
+      padding: 12px 4px;
     }
     .appTitle{
       width: 50%;
-      padding: 8px 4px;
+      padding: 12px 4px;
     }
     .header-group{
       width: 100%;
@@ -41,7 +41,7 @@ export class OrConfRealmCard extends LitElement {
       padding: 8px;
     }
     .color-group .color-item{
-      width: 32%;
+      width: 49%;
       margin: 4px 0;
     }
     .logo-group or-file-uploader{
