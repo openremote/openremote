@@ -2,6 +2,7 @@ import { css, html, LitElement, unsafeCSS } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-file-uploader";
+import "@openremote/or-components/or-info";
 import manager, {
   DEFAULT_LANGUAGES,
   DefaultColor1,
@@ -19,44 +20,60 @@ import { FileInfo, ManagerConfRealm, ManagerHeaders } from "@openremote/model";
 export class OrConfRealmCard extends LitElement {
 
   static styles = css`
-    div{
-      width: 100%;
-    }
-    .language{
+    .language {
       width: 50%;
       padding: 12px 4px;
     }
-    .appTitle{
+
+    .appTitle {
       width: 50%;
       padding: 12px 4px;
     }
-    .header-group{
-      width: 100%;
-    }
-    .header-group .header-item{
+
+    .header-group {
       width: 50%;
     }
-    .color-group{
-      width: 50%;
-      padding: 8px;
-    }
-    .color-group .color-item{
+
+    .header-group .header-item {
       width: 49%;
-      margin: 4px 0;
     }
-    .logo-group or-file-uploader{
+
+    .color-group {
+      width: 100%;
+    }
+
+    .color-group .color-item {
+      width: 40%;
+      margin: 4px 8px;
+    }
+
+    .logo-group {
+      width: 100%;
+    }
+
+    .logo-group or-file-uploader {
       margin: 8px;
+      width: 25%;
     }
-    #remove-realm{
+
+    #remove-realm {
       margin: 8px 4px;
     }
-    .subheader{
+
+    .subheader {
       margin: 4px 8px;
       font-weight: bold;
     }
-    .d-inline-flex{
+
+    .d-inline-flex {
       display: inline-flex;
       width: 100%;
+    }
+    .collection-2 {
+      width: 50%;
+    }
+    .panel-content{
+      padding: 0 36px;
     }
   `;
 
@@ -198,43 +215,73 @@ export class OrConfRealmCard extends LitElement {
         <div slot="header" class="header-container">
           <strong>${this.name}</strong>
         </div>
-        <div slot="content">
+        <div slot="content" class="panel-content">
           <div class="d-inline-flex">
             <or-mwc-input class="appTitle" .type="${InputType.TEXT}" value="${this.realm?.appTitle}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.appTitle = e.detail.value}" label="App Title"></or-mwc-input>
-            <or-mwc-input class="language" .type="${InputType.SELECT}" value="${this.realm?.language}" .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {return [key, i18next.t(value)]})}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.language = e.detail.value}" label="Default language"></or-mwc-input>
+            <or-mwc-input class="language" .type="${InputType.SELECT}" value="${this.realm?.language}" .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {return [key, i18next.t(value)]})}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.language = e.detail.value}"
+                          label="Default language"></or-mwc-input>
           </div>
           <div class="d-inline-flex">
             <div class="header-group">
               <div class="subheader">Headers</div>
-              ${Object.entries(this.headerList).map(function([key , value]){
-                  return html`<or-mwc-input 
-                    .type="${InputType.CHECKBOX}" 
-                    class="header-item" label="${i18next.t(key)}" 
-                    .value="${!!app.realm.headers ? app.realm.headers?.includes(<ManagerHeaders>value) : true }" 
-                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(value, e.detail.value)}"
-                  ></or-mwc-input>`
-              })}
-            </div>
-            <div class="logo-group d-inline-flex">
-              <or-file-uploader title="${'Logo'}" @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], 'logo')}" .src="${this.realm?.logo}"></or-file-uploader>
-              <or-file-uploader title="${'Logo mobile'}" @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], 'logoMobile')}" .src="${this.realm?.logoMobile}"></or-file-uploader>
-              <or-file-uploader title="${'Favicon'}" @change="${async (e: CustomEvent) => this.realm.favicon = await this._setImageForUpload(e.detail.value[0], 'favicon')}" .src="${this.realm?.favicon}"></or-file-uploader>
-            </div>
-          </div>
-            <div class="subheader">Manager colors</div>
-              <div class="d-inline-flex">
-                <div class="color-group">
-                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}" label="Primary" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
-                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}" label="Borders and lines" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
-                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}" label="Invalid and error" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
-                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}" label="Surface" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
-                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}" label="Background" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
-                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}" label="Text" @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
+              <div>
+                ${Object.entries(this.headerList).map(function([key, value]) {
+                  return html`
+                    <or-mwc-input
+                      .type="${InputType.CHECKBOX}"
+                      class="header-item" label="${i18next.t(key)}"
+                      .value="${!!app.realm.headers ? app.realm.headers?.includes(<ManagerHeaders>value) : true}"
+                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(value, e.detail.value)}"
+                    ></or-mwc-input>`;
+                })}
               </div>
             </div>
-          <or-mwc-input id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t('delete')}" @click="${() => {this.onRemove()}}" ></or-mwc-input>
+            <div class="collection-2">
+              <div class="logo-group">
+                <div class="subheader">Logo's</div>
+                <div class="d-inline-flex">
+                  <or-file-uploader .title="${html`Header <or-info></or-info>`}"
+                                    @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], "logo")}"
+                                    .src="${this.realm?.logo}"></or-file-uploader>
+                  <or-file-uploader .title="${html`Header mobile <or-info></or-info>`}"
+                                    @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
+                                    .src="${this.realm?.logoMobile}"></or-file-uploader>
+                  <or-file-uploader .title="${html`Favicon <or-info></or-info>`}"
+                                    @change="${async (e: CustomEvent) => this.realm.favicon = await this._setImageForUpload(e.detail.value[0], "favicon")}"
+                                    .src="${this.realm?.favicon}"></or-file-uploader>
+                </div>
+              </div>
+              <div class="color-group">
+                <div class="subheader">Manager colors</div>
+                <div>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}"
+                                label="Primary"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}"
+                                label="Borders and lines"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
+                                label="Invalid and error"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
+                                label="Surface"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
+                                label="Background"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
+                  <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
+                                label="Text"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <or-mwc-input id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("delete")}" @click="${() => {
+            this.onRemove();
+          }}"></or-mwc-input>
         </div>
       </or-collapsible-panel>
-`;
+    `;
   }
 }
