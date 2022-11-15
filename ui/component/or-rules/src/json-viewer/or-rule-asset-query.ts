@@ -31,7 +31,6 @@ import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
-import {debounce} from "lodash";
 
 // language=CSS
 const style = css`
