@@ -58,7 +58,6 @@ ENV OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES ${OR_IDENTITY_SESSION_OFFLINE_TI
 ENV OR_JAVA_OPTS ${OR_JAVA_OPTS:--Xms500m -Xmx2g \
     -XX:NativeMemoryTracking=summary \
     -Xlog:all=warning:stdout:uptime,level,tags \
-    -XX:OnOutOfMemoryError="shutdown -r" -d64 \
     -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
 
 RUN mkdir -p /deployment/manager/extensions
