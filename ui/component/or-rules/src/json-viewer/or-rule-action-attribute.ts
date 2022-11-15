@@ -122,6 +122,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         const idOptions: [string, string] [] = [
             ["*", i18next.t("matched")]
         ];
+        let optionsProvider: (search?: string) => Promise<[any, string][]>;
 
         return html`
             
@@ -135,12 +136,18 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 // If > 100 assets: only display if in line with search input
                 if(this._assets!.length <= 100) {
                     idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
-                } else if(this._assetSearchValue.length > 0) {
-                    const filtered = this._assets!.filter((asset) => (asset.name?.toLowerCase().includes(this._assetSearchValue.toLowerCase()) || asset.id == idValue));
-                    idOptions.push(...filtered.map((asset) => [asset.id!, asset.name!] as [string, string]))
                 } else {
-                    const asset = this._assets?.find((asset) => asset.id == idValue);
-                    if(asset) { idOptions.push([asset.id!, asset.name!]); }
+                    optionsProvider = async (search?: string) => {
+                        if(search) {
+                            return this._assets!.filter((asset) => (asset.name?.toLowerCase().includes(search.toLowerCase()) || asset.id == idValue)).map((asset) => [asset.id!, asset.name!] as [string, string]);
+                        } else {
+                            const asset = this._assets?.find((asset) => asset.id == idValue);
+                            if(asset && idOptions.find(([id, value]) => id == asset.id) == undefined) {
+                                idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
+                            }
+                            return idOptions;
+                        }
+                    }
                 }
                 
                 // Get selected asset and its descriptors
@@ -178,7 +185,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 
                 return html`
                     <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}"
-                                  .searchable="${this._assets!.length > 25}" .options="${idOptions}" .value="${idValue}" .readonly="${this.readonly || false}"
+                                  .searchable="${this._assets!.length > 25}" .options="${idOptions}" .optionsProvider="${optionsProvider}" .value="${idValue}" .readonly="${this.readonly || false}"
                                   .searchCallback="${debounce((search: string) => this._assetSearchValue = search, 500)}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this._assetSearchValue = ''; this.refresh(); }}"
                     ></or-mwc-input>

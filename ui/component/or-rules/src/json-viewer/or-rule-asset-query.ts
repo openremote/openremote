@@ -304,6 +304,10 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 ${when((!this._assets), () => html`
                     <or-mwc-input id="idSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
                 `, () => {
+
+                    // Set list of displayed assets, and filtering assets out if needed.
+                    // If <= 100 assets: display everything
+                    // If > 100 assets: only display if in line with search input
                     if(this._assets!.length <= 100) {
                         idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
                     } else {
@@ -312,7 +316,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                                 return this._assets!.filter((asset) => (asset.name?.toLowerCase().includes(search.toLowerCase()) || asset.id == idValue)).map((asset) => [asset.id!, asset.name!] as [string, string]);
                             } else {
                                 const asset = this._assets?.find((asset) => asset.id == idValue);
-                                if(asset && !idOptions.includes([asset.id!, asset.name!])) {
+                                if(asset && idOptions.find(([id, value]) => id == asset.id) == undefined) {
                                     idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
                                 }
                                 return idOptions;

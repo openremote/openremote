@@ -1113,8 +1113,7 @@ export class OrMwcInput extends LitElement {
                                         `
                                     })}
                                     ${when(Array.isArray(opts), () => {
-                                        const options = opts as [any, string][];
-                                        return listTemplate(options);
+                                        return listTemplate(opts as [any, string][]);
                                     }, () => {
                                         return until(asyncListTemplate(), html`
                                             <span class="mdc-text-field-helper-line" style="margin: 0 8px 24px;">${i18next.t('loading')}</span>
