@@ -16,22 +16,31 @@ export class OrConfJson extends LitElement {
 
   protected _aceEditor: Ref<OrAceEditor> = createRef();
 
-  public beforeSave() {
+  public beforeSave():false|string|undefined {
     if (!this._aceEditor.value) {
-      return;
+      return false;
     }
     const value = this._aceEditor.value.getValue()
-    this.managerConfig = JSON.parse(value ? value : "");
+    try {
+      return JSON.parse(value ? value : '{}');
+    } catch (e) {
+      return false;
+    }
   }
 
   protected _showManagerConfigDialog(){
     const _saveConfig = ()=>{
-      this.beforeSave()
-      document.dispatchEvent(
-        new CustomEvent('saveLocalManagerConfig',
-          {detail: {value: this.managerConfig}}
+      const config = this.beforeSave()
+      if (config){
+        this.managerConfig = config as ManagerAppConfig
+        document.dispatchEvent(
+          new CustomEvent('saveLocalManagerConfig',
+            {detail: {value: this.managerConfig}}
+          )
         )
-      )
+        return true
+      }
+      return false
     }
     const dialogActions: DialogAction[] = [
       {

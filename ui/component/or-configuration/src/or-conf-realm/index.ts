@@ -2,7 +2,7 @@ import { html, LitElement, css, PropertyValues } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "./or-conf-realm-card";
 import {customElement, property} from "lit/decorators.js";
-import manager from "@openremote/core";
+import manager, { ManagerAppConfig } from "@openremote/core";
 import { ManagerConfRealm, Realm } from "@openremote/model";
 import { OrMwcDialog, showDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
@@ -14,7 +14,7 @@ export class OrConfRealm extends LitElement {
     `;
 
   @property({attribute: false})
-  public realms: { [name: string]: ManagerConfRealm } = {};
+  public config: ManagerAppConfig = {};
 
   protected _availableRealms: Realm[] = [];
   protected _allRealms: Realm[] = [];
@@ -29,16 +29,18 @@ export class OrConfRealm extends LitElement {
   }
 
   protected _removeRealm(realm:string){
-    delete this.realms[realm]
-    this._loadListOfAvailableRealms()
-    this.requestUpdate()
+    if (this.config.realms){
+      delete this.config?.realms[realm]
+      this._loadListOfAvailableRealms()
+      this.requestUpdate()
+    }
   }
 
   protected _loadListOfAvailableRealms(){
     const app = this
     this._availableRealms = this._allRealms.filter(function(realm){
-      if (realm.name){
-        if (app.realms[realm.name] === undefined){
+      if (realm.name && app.config?.realms){
+        if (!app.config?.realms[realm.name]){
           return realm
         }
       }
@@ -50,7 +52,10 @@ export class OrConfRealm extends LitElement {
     let selectedRealm = "";
     const _AddRealmToView =  () => {
       if (selectedRealm){
-        this.realms[selectedRealm] = {}
+        if (!this.config.realms){
+          this.config.realms = {}
+        }
+        this.config.realms[selectedRealm] = {}
         this._loadListOfAvailableRealms()
         this.requestUpdate()
         return true
@@ -108,7 +113,7 @@ export class OrConfRealm extends LitElement {
     const app = this;
     return html`
       <div class="panels">
-        ${Object.entries(this.realms === undefined ? {} : this.realms).map(function([key , value]){
+        ${Object.entries(this.config.realms === undefined ? {} : this.config.realms).map(function([key , value]){
           return html`<or-conf-realm-card .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
         })}
       </div>

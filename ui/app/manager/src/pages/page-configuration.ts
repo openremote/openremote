@@ -136,7 +136,6 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         })
 
         document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
-            console.log("TEST  1", e.detail.value)
             manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(()=>{
                 manager.managerAppConfig = e.detail?.value as ManagerConf
                 app.requestUpdate()
@@ -144,7 +143,6 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         })
 
         const managerConfiguration = manager.managerAppConfig
-        console.log(managerConfiguration)
 
         return html`
             <div class="conf-category-content-container">
@@ -166,7 +164,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <div class="panel-title">
                         Realms
                     </div>
-                    <or-conf-realm .realms="${managerConfiguration?.realms}"></or-conf-realm>
+                    <or-conf-realm .config="${managerConfiguration}"></or-conf-realm>
                 </div>
             </div>
         `;

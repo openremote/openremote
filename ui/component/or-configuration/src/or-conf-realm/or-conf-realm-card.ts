@@ -143,7 +143,7 @@ export class OrConfRealmCard extends LitElement {
 
   protected _setHeader(key:ManagerHeaders, value:boolean){
     if (!('headers' in this.realm)){
-      this.realm.headers = []
+      this.realm.headers = Object.values(this.headerList)
     }
     if (value){
       this.realm.headers?.push(key)
