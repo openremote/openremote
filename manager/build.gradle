@@ -35,6 +35,7 @@ dependencies {
 
     implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
         exclude group: "org.osgi"
+        exclude group: "org.jboss.logging"
     }
 
     // Needed for reference in tests
