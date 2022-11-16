@@ -140,7 +140,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public boolean onConnect(RemotingConnection connection) {
         super.onConnect(connection);
         Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(ConnectionConstants. SESSION_OPEN, true);
+        headers.put(ConnectionConstants.SESSION_OPEN, true);
 
         // Put a close connection runnable into the headers for the client event service
         Runnable closeRunnable = () -> {
