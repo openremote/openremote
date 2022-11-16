@@ -9,8 +9,7 @@ import "./forms/or-rule-form-webhook";
 // language=CSS
 const style = css`
     :host {
-        display: flex;
-        align-items: center;
+        height: 100%;
     }
 
     :host > * {
@@ -40,9 +39,11 @@ export class OrRuleActionWebhook extends LitElement {
 
     render() {
         return html`
-            <or-rule-webhook-modal .action="${this.action}">
-                <or-rule-form-webhook></or-rule-form-webhook>
-            </or-rule-webhook-modal>
+            <div style="display: flex; align-items: center; height: 100%;">
+                <or-rule-webhook-modal .action="${this.action}">
+                    <or-rule-form-webhook></or-rule-form-webhook>
+                </or-rule-webhook-modal>
+            </div>
         `
     }
 }

@@ -451,7 +451,6 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 action.millis = undefined;
                 break;
             case "webhook":
-                action.url = "http://localhost";
                 break;
             case "write-attribute":
                 action.value = undefined;
@@ -472,7 +471,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         if (value === ActionType.WAIT) {
             action.action = "wait";
         } else if (value == ActionType.WEBHOOK) {
+            action = action as RuleActionWebhook;
             action.action = "webhook";
+            action.method = "POST";
         } else if (value === ActionType.EMAIL) {
             action = action as RuleActionNotification;
             action.action = "notification";

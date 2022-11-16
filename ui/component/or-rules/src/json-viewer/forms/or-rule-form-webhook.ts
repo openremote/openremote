@@ -1,7 +1,7 @@
-import {RuleActionWebhook, RuleActionWebhookHeader} from "@openremote/model";
+import {RuleActionWebhook, RuleActionWebhookAuth, RuleActionWebhookHeader} from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
-import {html, LitElement, TemplateResult} from "lit";
+import {css, html, LitElement, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
 
@@ -17,14 +17,24 @@ interface RuleActionWebhookOptions extends RuleActionWebhook {
     }
 }
 
+//language=css
+const styling = css`
+    .divider {
+        border-bottom: 1px solid rgba(0, 0, 0, 12%);
+    }
+`
+
 @customElement("or-rule-form-webhook")
 export class OrRuleFormWebhook extends LitElement {
 
     @property({type: Object})
     protected action!: RuleActionWebhookOptions;
 
-    private methodOptions: string[] = ["None", "Http basic", "Api Key", "Oauth2"]
+    private methodOptions: string[] = ["None", RuleActionWebhookAuth.HTTP_BASIC, RuleActionWebhookAuth.API_KEY, RuleActionWebhookAuth.OAUTH2]
 
+    static get styles() {
+        return [styling];
+    }
 
     /* --------------------------- */
 
@@ -38,7 +48,7 @@ export class OrRuleFormWebhook extends LitElement {
                 this.action.method = this.methodOptions[0];
             }
             if (this.action.method != this.methodOptions[0]) {
-                if(this.action.authDetails == undefined) {
+                if (this.action.authDetails == undefined) {
                     this.action.authDetails = {
                         method: "POST"
                     }
@@ -60,21 +70,26 @@ export class OrRuleFormWebhook extends LitElement {
         return html`
             <form style="display: flex; flex-direction: column; gap: 20px; min-width: 420px;">
                 <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
-                    <or-mwc-input style="flex: 0;" type="${InputType.SELECT}" required .value="${this.action.method}"
-                                  .options="${['GET', 'POST', 'PUT', 'DELETE']}"></or-mwc-input>
+                    <or-mwc-input style="flex: 0;" type="${InputType.SELECT}" .value="${this.action.method}"
+                                  .options="${['GET', 'POST', 'PUT', 'DELETE']}"
+                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                      this.action.method = ev.detail.value;
+                                      this.requestUpdate("action");
+                                  }}"
+                    ></or-mwc-input>
                     <or-mwc-input style="flex: 1;" type="${InputType.URL}" required label="Http URL"
-                                  .value="${this.action.url}"
+                                  .value="${this.action.url}" helperPersistent
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionUrl(e.detail.value)}"></or-mwc-input>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <span>Headers</span>
                     ${this.action.headers?.map((header: RuleActionWebhookHeader, index) => html`
-                        <div>
+                        <div style="display: flex; gap: 5px;">
                             <or-mwc-input type="${InputType.TEXT}" required label="Header"
-                                          value="${header.header}"
+                                          value="${header.header}" style="flex: 1;"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => header.header = ev.detail.value}"></or-mwc-input>
                             <or-mwc-input type="${InputType.TEXT}" required label="Value"
-                                          value="${header.value}"
+                                          value="${header.value}" style="flex: 1;"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => header.value = ev.detail.value}"></or-mwc-input>
                             <or-mwc-input type="${InputType.BUTTON}" icon="delete"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
@@ -89,31 +104,35 @@ export class OrRuleFormWebhook extends LitElement {
                                       this.requestUpdate('action');
                                   }}"></or-mwc-input>
                 </div>
+                <div class="divider" style="margin-top: 24px;"></div>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <or-mwc-input type="${InputType.SWITCH}" fullwidth label="Requires Authorization"
-                                  .value="${this.action.method != this.methodOptions[0]}"
+                                  .value="${this.action.authMethod != undefined}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                      this.action.method = (ev.detail.value as boolean) ? this.methodOptions[1] : this.methodOptions[0];
+                                      this.action.authMethod = (ev.detail.value as boolean) ? RuleActionWebhookAuth.HTTP_BASIC : undefined;
                                       this.requestUpdate('action');
                                   }}"></or-mwc-input>
-                    ${when(this.action.method != this.methodOptions[0], () => {
+                    ${when(this.action.authMethod != undefined, () => {
                         return html`
                             <or-mwc-input type="${InputType.SELECT}" label="Method"
-                                          .value="${this.action.method}"
+                                          .value="${this.action.authMethod}"
                                           .options="${this.methodOptions.slice(1)}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                              this.action.method = ev.detail.value;
+                                              this.action.authMethod = ev.detail.value;
                                               this.requestUpdate('action')
                                           }}"></or-mwc-input>
-                            ${this.getAuthSettingsTemplate(this.action.method)}
+                            ${this.getAuthSettingsTemplate(this.action.authMethod)}
                             <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <span>Authorize using</span>
-                                <or-mwc-input type="${InputType.SELECT}" .value="${'Header'}"
+                                <or-mwc-input type="${InputType.SELECT}" .value="${'Header'}" style="width: 200px;"
                                               .options="${['Header', 'Query Parameter']}"
                             </div>
                         `
                     })}
                 </div>
+                ${when(this.action.authMethod != undefined, () => html`
+                    <div class="divider" style="margin-top: 24px;"></div>
+                `)}
                 ${when((this.action.method != 'GET' && this.action.method != 'DELETE'), () => html`
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <span>JSON Body</span>
@@ -124,9 +143,9 @@ export class OrRuleFormWebhook extends LitElement {
         `
     }
 
-    getAuthSettingsTemplate(authType: string | undefined): TemplateResult {
-        switch (authType) {
-            case this.methodOptions[1]:
+    getAuthSettingsTemplate(authMethod: RuleActionWebhookAuth | undefined): TemplateResult {
+        switch (authMethod) {
+            case RuleActionWebhookAuth.HTTP_BASIC:
                 return html`
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <or-mwc-input type="${InputType.TEXT}" label="Username"
@@ -135,12 +154,12 @@ export class OrRuleFormWebhook extends LitElement {
                                       .value="${this.action.authDetails?.password}"></or-mwc-input>
                     </div>
                 `
-            case this.methodOptions[2]:
+            case RuleActionWebhookAuth.API_KEY:
                 return html`
                     <or-mwc-input type="${InputType.TEXT}" label="API Key"
                                   .value="${this.action.authDetails?.apiKey}"></or-mwc-input>
                 `;
-            case this.methodOptions[3]:
+            case RuleActionWebhookAuth.OAUTH2:
                 return html`
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
