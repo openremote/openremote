@@ -23,7 +23,7 @@
     "@openremote/model": "workspace:*",
     "@openremote/rest": "workspace:*",
     "lit": "^2.0.2",
-    "moment": "^2.24.0"
+    "moment": "^2.29.4"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
