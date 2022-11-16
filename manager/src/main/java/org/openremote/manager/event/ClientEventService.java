@@ -251,6 +251,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .when(header(ConnectionConstants.SESSION_OPEN))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
+                LOG.fine("Adding session: " + sessionKey);
                 sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
                 passToInterceptors(exchange);
             })
@@ -261,6 +262,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             ))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
+                LOG.fine("Removing session: " + sessionKey);
                 sessionKeyInfoMap.remove(sessionKey);
                 eventSubscriptions.cancelAll(sessionKey);
                 passToInterceptors(exchange);
@@ -277,7 +279,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                     }
                 }
             })
-            .process(exchange -> passToInterceptors(exchange))
+            .process(this::passToInterceptors)
             .choice()
             .when(body().isInstanceOf(EventSubscription.class))
             .process(exchange -> {

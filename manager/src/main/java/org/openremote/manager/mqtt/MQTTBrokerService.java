@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.mqtt;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelId;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
@@ -76,6 +78,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -111,6 +114,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     // Temp to prevent breaking existing auto provisioning API
     protected ConcurrentMap<Object, Triple<String, String, String>> transientCredentials = new ConcurrentHashMap<>();
     protected Debouncer<String> userAssetDisconnectDebouncer;
+    // Stores disconnected connections for a short period to allow last will publishes to be processed
+    protected Cache<String, RemotingConnection> disconnectedConnectionCache;
 
     protected boolean active;
     protected String host;
@@ -136,6 +141,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         executorService = container.getExecutorService();
         timerService = container.getService(TimerService.class);
         userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::processUserAssetLinkChange, debounceMillis);
+        disconnectedConnectionCache = CacheBuilder.newBuilder()
+                .maximumSize(10000)
+                .expireAfterWrite(10000, TimeUnit.MILLISECONDS)
+                .build();
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -337,7 +346,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 }
 
                 if (connection.getClientID() != null) {
-                    clientIDConnectionMap.remove(connection.getClientID());
+                    RemotingConnection remotingConnection = clientIDConnectionMap.remove(connection.getClientID());
+                    if (remotingConnection != null) {
+                        disconnectedConnectionCache.put(connection.getClientID(), remotingConnection);
+                    }
                 }
             }
         });
@@ -504,6 +516,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // This logic is needed because the connection clientID isn't populated when afterCreateConnection is called
         RemotingConnection connection = clientIDConnectionMap.get(clientID);
+
+        if (connection == null) {
+            // Look in the recently disconnected cache
+            connection = disconnectedConnectionCache.getIfPresent(clientID);
+        }
 
         if (connection == null) {
             // Try and find the client ID from the sessions
