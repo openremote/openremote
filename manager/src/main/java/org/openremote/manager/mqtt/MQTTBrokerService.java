@@ -518,11 +518,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         RemotingConnection connection = clientIDConnectionMap.get(clientID);
 
         if (connection == null) {
-            // Look in the recently disconnected cache
-            connection = disconnectedConnectionCache.getIfPresent(clientID);
-        }
-
-        if (connection == null) {
             // Try and find the client ID from the sessions
             for (RemotingConnection remotingConnection : server.getActiveMQServer().getRemotingService().getConnections()) {
                 if (Objects.equals(clientID, remotingConnection.getClientID())) {
@@ -531,6 +526,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     break;
                 }
             }
+        }
+
+        if (connection == null) {
+            // Look in the recently disconnected cache
+            connection = disconnectedConnectionCache.getIfPresent(clientID);
         }
 
         return connection;
