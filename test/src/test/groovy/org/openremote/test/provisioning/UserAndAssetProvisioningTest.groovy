@@ -436,7 +436,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -485,7 +485,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -538,7 +538,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -617,7 +617,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
