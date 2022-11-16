@@ -262,7 +262,9 @@ export class OrConfRealmCard extends LitElement {
               </div>
             </div>
             <div class="header-group">
-              <div class="subheader">Headers</div>
+              <div class="subheader">Headers
+                <or-info></or-info>
+              </div>
               <div>
                 ${Object.entries(this.headerList).map(function([key, value]) {
                   return html`

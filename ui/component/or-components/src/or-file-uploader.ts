@@ -25,23 +25,37 @@ export class OrFileUploader extends LitElement {
                 border-radius: 2px;
                 padding: 4px;
             }
-            #imageContainer img{
-                width: 100%;
+
+            #imageContainer img {
+                max-width: 100%;
+                max-height: 100%;
                 border-radius: 2px;
+                margin: unset;
             }
-            input{
+
+            input {
                 display: none;
             }
-            .placeholder-container{
+
+            .placeholder-container {
                 text-align: center;
                 width: 100%;
             }
-            .placeholder-container or-icon{
+
+            .placeholder-container or-icon {
                 font-size: 24px;
                 margin: 16px 0;
                 max-height: 24px;
                 width: 100%;
                 text-align: center;
+            }
+
+            #imageContainer .edit-icon {
+                position: absolute;
+                right: 8px;
+                bottom: 8px;
+                font-size: 18px;
+                color: var(--or-app-color4);
             }
         `;
     }
@@ -92,14 +106,16 @@ export class OrFileUploader extends LitElement {
         <div class="container">
             <div class="title">${this.title}</div>
             <div id="imageContainer">
-                ${ !!this.src ? 
-                  html`<img .src="${this.src?.startsWith('data') ? this.src : '/manager' + this.src}" alt="OR-File-Uploader">` 
-                  : 
+                ${!!this.src ?
+                  html`<img .src="${this.src?.startsWith("data") ? this.src : "/manager" + this.src}"
+                            alt="OR-File-Uploader">
+                  <or-icon class="edit-icon" icon="pencil"></or-icon>`
+                  :
                   html`
-                  <div class="placeholder-container">
-                      <or-icon icon="upload"></or-icon>
-                      Upload your file...
-                  </div>
+                      <div class="placeholder-container">
+                          <or-icon icon="upload"></or-icon>
+                          Upload your file...
+                      </div>
                   ` 
         }
             </div>
