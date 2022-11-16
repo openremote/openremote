@@ -17,8 +17,6 @@ export class OrFileUploader extends LitElement {
         return css`
             #imageContainer{
                 position: relative;
-                min-width: 75px;
-                min-height: 75px;
                 max-width: 150px;
                 max-height: 150px;
                 background-color: whitesmoke;
@@ -33,9 +31,6 @@ export class OrFileUploader extends LitElement {
             }
             input{
                 display: none;
-            }
-            .title{
-                margin-left: 4px;
             }
             .placeholder-container{
                 text-align: center;

@@ -222,20 +222,6 @@ export class OrConfRealmCard extends LitElement {
                           label="Default language"></or-mwc-input>
           </div>
           <div class="d-inline-flex">
-            <div class="header-group">
-              <div class="subheader">Headers</div>
-              <div>
-                ${Object.entries(this.headerList).map(function([key, value]) {
-                  return html`
-                    <or-mwc-input
-                      .type="${InputType.CHECKBOX}"
-                      class="header-item" label="${i18next.t(key)}"
-                      .value="${!!app.realm.headers ? app.realm.headers?.includes(<ManagerHeaders>value) : true}"
-                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(value, e.detail.value)}"
-                    ></or-mwc-input>`;
-                })}
-              </div>
-            </div>
             <div class="collection-2">
               <div class="logo-group">
                 <div class="subheader">Logo's</div>
@@ -273,6 +259,20 @@ export class OrConfRealmCard extends LitElement {
                                 label="Text"
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
                 </div>
+              </div>
+            </div>
+            <div class="header-group">
+              <div class="subheader">Headers</div>
+              <div>
+                ${Object.entries(this.headerList).map(function([key, value]) {
+                  return html`
+                    <or-mwc-input
+                      .type="${InputType.CHECKBOX}"
+                      class="header-item" label="${i18next.t(key)}"
+                      .value="${!!app.realm.headers ? app.realm.headers?.includes(<ManagerHeaders>value) : true}"
+                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(value, e.detail.value)}"
+                    ></or-mwc-input>`;
+                })}
               </div>
             </div>
           </div>
