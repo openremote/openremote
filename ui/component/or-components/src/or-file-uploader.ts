@@ -20,7 +20,7 @@ export class OrFileUploader extends LitElement {
                 max-width: 150px;
                 max-height: 150px;
                 background-color: whitesmoke;
-                border: 1px solid var(--or-app-color5);
+                border: 1px solid var(--or-app-color5, #CCC);;
                 cursor: pointer;
                 border-radius: 2px;
                 padding: 4px;
