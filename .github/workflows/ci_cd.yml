@@ -830,8 +830,8 @@ jobs:
                 else:
                   lines = len(value.split("\n"))
                   if lines > 1:
-                      os.system(f"echo '{key}=\"' >> {envFile}")
-                      os.system(f"echo '{value}\"' >> {envFile}")
+                      os.system(f"echo '{key}=\'' >> {envFile}")
+                      os.system(f"echo '{value}\'' >> {envFile}")
                   else:
                       os.system(f"echo '{key}=\"{value}\"' >> {envFile}")
 
