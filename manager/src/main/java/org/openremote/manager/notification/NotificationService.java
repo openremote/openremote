@@ -99,7 +99,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 logger.log(Level.WARNING, error.toString(), exception);
             }
 
-            exchange.getOut().setBody(false);
+            exchange.getMessage().setBody(false);
         };
     }
 
@@ -292,7 +292,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         }
                     );
 
-                    exchange.getOut().setBody(success.get());
+                    exchange.getMessage().setBody(success.get());
                 })
                 .endDoTry()
                 .doCatch(NotificationProcessingException.class)
@@ -307,7 +307,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         Map<String, Object> headers = new HashMap<>();
         headers.put(Notification.HEADER_SOURCE, source);
         headers.put(Notification.HEADER_SOURCE_ID, sourceId);
-        return messageBrokerService.getProducerTemplate().requestBodyAndHeaders(NotificationService.NOTIFICATION_QUEUE, notification, headers, Boolean.class);
+        return messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(NotificationService.NOTIFICATION_QUEUE).request(Boolean.class);
     }
 
     public void setNotificationDelivered(long id) {

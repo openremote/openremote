@@ -41,8 +41,8 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 

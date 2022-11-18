@@ -20,6 +20,7 @@
 package org.openremote.manager.system;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.grpc.netty.shaded.io.netty.internal.tcnative.SSL;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -42,7 +43,6 @@ import static org.openremote.container.util.MapAccess.getString;
 public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider, ContainerService {
 
     public static final String NAME = "ssl";
-    public static final String VERSION = "1.0";
     protected static final Logger LOG = Logger.getLogger(SslHealthStatusProvider.class.getName());
     protected String host;
     protected int SSLPort;
@@ -57,6 +57,10 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
     public void init(Container container) throws Exception {
         
         int SSLPort = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1);
+
+        if (SSLPort < 0) {
+            SSLPort = 443;
+        }
         
         if (SSLPort > 0 && SSLPort <= 65536) {
             this.SSLPort = SSLPort;
@@ -78,11 +82,6 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
     @Override
     public String getHealthStatusName() {
         return NAME;
-    }
-
-    @Override
-    public String getHealthStatusVersion() {
-        return VERSION;
     }
 
     @Override

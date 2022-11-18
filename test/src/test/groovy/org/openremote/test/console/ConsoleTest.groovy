@@ -12,8 +12,8 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.ConsoleAsset
@@ -40,8 +40,8 @@ import javax.ws.rs.WebApplicationException
 import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
 
-import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
-import static org.openremote.test.setup.ManagerTestSetup.SMART_BUILDING_LOCATION
+import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
+import static org.openremote.setup.integration.ManagerTestSetup.SMART_BUILDING_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl

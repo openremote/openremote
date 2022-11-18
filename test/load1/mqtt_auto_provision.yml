@@ -1,0 +1,40 @@
+settings:
+  artifacts-dir: ./output/%Y-%m-%d_%H-%M-%S.%f
+
+modules:
+  jmeter:
+    properties:
+        logfile: ./output/jmeter.log
+
+execution:
+- concurrency: 20
+  ramp-up: 40s
+  iterations: 1
+  scenario: mqtt-client-auto-provision-pub
+
+scenarios:
+
+  mqtt-client-auto-provision-pub:
+    protocol: mqtt
+    requests:
+    - cmd: connect
+      addr: localhost
+      clientId: ${id}
+    - cmd: publish
+      topic: provisioning/${id}/request
+      message: "{\"type\":\"x509\",\"cert\":\"${cert}\"}"
+    - cmd: subscribe
+      topic: master/${id}/attributevalue/+/#
+      time: 10s
+      min-count: 1
+      think-time: 10s
+    - cmd: disconnect
+
+    data-sources:
+    - path: ./tmp/devices.csv
+      delimiter: ','
+      quoted: false
+      encoding: "utf-8"
+      loop: false
+      variable-names: id,cert
+      random-order: false

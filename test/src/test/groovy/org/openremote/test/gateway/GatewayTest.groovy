@@ -20,7 +20,7 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.security.User
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.BuildingAsset

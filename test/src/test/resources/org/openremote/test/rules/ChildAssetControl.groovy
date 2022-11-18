@@ -3,7 +3,7 @@
 * parent asset ID below. The parent and child attributes must have the RULE_STATE configuration items set.
 */
 
-package org.openremote.test.rules
+package org.openremote.setup.integration.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.attribute.AttributeEvent

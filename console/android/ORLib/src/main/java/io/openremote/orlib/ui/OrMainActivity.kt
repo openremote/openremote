@@ -430,6 +430,13 @@ open class OrMainActivity : Activity() {
                     return true
                 }
 
+                override fun onGeolocationPermissionsShowPrompt(
+                    origin: String?,
+                    callback: GeolocationPermissions.Callback?
+                ) {
+                    callback?.invoke(origin, true, false)
+                }
+
                 override fun onProgressChanged(view: WebView, progress: Int) {
                     progressBar!!.progress = progress
                 }
@@ -446,9 +453,9 @@ open class OrMainActivity : Activity() {
                     transport.webView = newWebView
                     resultMsg.sendToTarget()
                     newWebView.webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                             val browserIntent = Intent(Intent.ACTION_VIEW)
-                            browserIntent.data = Uri.parse(url)
+                            browserIntent.data = request.url
                             startActivity(browserIntent)
                             return true
                         }

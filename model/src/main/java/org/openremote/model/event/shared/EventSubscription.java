@@ -21,7 +21,6 @@ package org.openremote.model.event.shared;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.event.Event;
-import org.openremote.model.event.TriggeredEventSubscription;
 
 import java.util.function.Consumer;
 
