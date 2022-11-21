@@ -40,9 +40,8 @@ export class OrRuleActionWebhook extends LitElement {
     render() {
         return html`
             <div style="display: flex; align-items: center; height: 100%;">
-                <or-rule-webhook-modal .action="${this.action}">
-                    <or-rule-form-webhook></or-rule-form-webhook>
-                </or-rule-webhook-modal>
+                <or-mwc-input type="${InputType.SELECT}" .options="${['Asset 1', 'Asset 2', 'Asset 3']}" .value="${'Asset 1'}"></or-mwc-input>
+                <or-rule-webhook-modal .action="${this.action}"></or-rule-webhook-modal>
             </div>
         `
     }

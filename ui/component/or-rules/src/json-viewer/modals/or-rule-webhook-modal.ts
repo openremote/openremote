@@ -109,7 +109,7 @@ export class OrRuleWebhookModal extends LitElement {
         const webhookModalOpen = () => {
             showDialog(new OrMwcDialog()
                 .setContent(html`
-                    <or-rule-form-webhook .action="${this.action}"></or-rule-form-webhook>`)
+                    <or-rule-form-webhook .webhook="${this.action.webhook}"></or-rule-form-webhook>`)
                 .setHeading(this.title)
                 .setActions(webhookModalActions)
             );

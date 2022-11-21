@@ -12,7 +12,8 @@ import {
     RuleRecurrence,
     WellknownAssets,
     AssetModelUtil,
-    RuleActionWebhook
+    RuleActionWebhook,
+    WebhookMethod
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -473,7 +474,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         } else if (value == ActionType.WEBHOOK) {
             action = action as RuleActionWebhook;
             action.action = "webhook";
-            action.method = "POST";
+            action.webhook = {
+                method: WebhookMethod.POST
+            };
         } else if (value === ActionType.EMAIL) {
             action = action as RuleActionNotification;
             action.action = "notification";

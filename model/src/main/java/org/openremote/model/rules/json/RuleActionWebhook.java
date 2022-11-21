@@ -1,10 +1,7 @@
 package org.openremote.model.rules.json;
 
-public class RuleActionWebhook extends RuleAction {
+import org.openremote.model.webhook.Webhook;
 
-    public String url;
-    public RuleActionWebhookHeader[] headers;
-    public String method;
-    public RuleActionWebhookAuth authMethod;
-    public String payload;
+public class RuleActionWebhook extends RuleAction {
+    public Webhook webhook;
 }
