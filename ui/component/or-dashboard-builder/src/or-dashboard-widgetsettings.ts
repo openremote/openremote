@@ -63,8 +63,8 @@ const widgetSettingsStyling = css`
     .button-clear {
         background: none;
         visibility: hidden;
-        color: ${unsafeCSS(DefaultColor5)};
-        --or-icon-fill: ${unsafeCSS(DefaultColor5)};
+        color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        --or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         display: inline-block;
         border: none;
         padding: 0;
