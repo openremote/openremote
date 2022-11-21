@@ -833,7 +833,7 @@ jobs:
                       os.system(f"echo '{key}=\'' >> {envFile}")
                       os.system(f"echo '{value}\'' >> {envFile}")
                   else:
-                      os.system(f"echo '{key}=\"{value}\"' >> {envFile}")
+                      os.system(f"echo '{key}=\'{value}\'' >> {envFile}")
 
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):
