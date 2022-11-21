@@ -26,7 +26,5 @@ public interface HealthStatusProvider {
 
     String getHealthStatusName();
 
-    String getHealthStatusVersion();
-
     Object getHealthStatus();
 }

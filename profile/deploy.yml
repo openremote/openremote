@@ -295,12 +295,13 @@ services:
       # API key for the API of ForecastSolar: https://forecast.solar
       # OR_FORECAST_SOLAR_API_KEY
 
-      # Custom JVM options (increase heap size if required)
-      OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms400m -Xmx400m
-       -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
-       -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
-       -XX:MaxDirectMemorySize=25m -XX:NativeMemoryTracking=summary
-       -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof}
+      # Custom JVM options (override default manager options)
+#      OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g
+#      -XX:NativeMemoryTracking=summary
+#      -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10
+#      -XX:GCLogFileSize=50M -Xloggc:/gc.log
+#      -XX:OnOutOfMemoryError="shutdown -r" -d64
+#      -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
 
       # Custom JVM tool options (for remote debugging)
       #JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n'

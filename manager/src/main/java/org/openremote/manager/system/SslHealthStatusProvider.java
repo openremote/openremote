@@ -43,7 +43,6 @@ import static org.openremote.container.util.MapAccess.getString;
 public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider, ContainerService {
 
     public static final String NAME = "ssl";
-    public static final String VERSION = "1.0";
     protected static final Logger LOG = Logger.getLogger(SslHealthStatusProvider.class.getName());
     protected String host;
     protected int SSLPort;
@@ -83,11 +82,6 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
     @Override
     public String getHealthStatusName() {
         return NAME;
-    }
-
-    @Override
-    public String getHealthStatusVersion() {
-        return VERSION;
     }
 
     @Override

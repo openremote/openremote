@@ -22,12 +22,14 @@ package org.openremote.setup.load1;
 
 import org.apache.commons.io.IOUtils;
 import org.openremote.manager.provisioning.ProvisioningService;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.impl.WeatherAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.provisioning.X509ProvisioningData;
+import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
@@ -36,6 +38,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
+import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
 import static org.openremote.model.value.ValueType.NUMBER;
 
 public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
@@ -88,5 +91,13 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
             });
 
         provisioningConfig = provisioningService.merge(provisioningConfig);
+
+        RealmRuleset ruleset = new RealmRuleset(
+            Constants.MASTER_REALM,
+            "Weather calculations",
+            GROOVY,
+            IOUtils.toString(getClass().getResource("/org/openremote/setup/load1/WeatherAssetCalculations.groovy"), StandardCharsets.UTF_8)
+        );
+        ruleset = rulesetStorageService.merge(ruleset);
     }
 }

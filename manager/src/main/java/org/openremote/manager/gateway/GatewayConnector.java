@@ -150,11 +150,14 @@ public class GatewayConnector {
     /**
      * Start the connector and initiate synchronisation of assets
      */
-    synchronized public void connect(Consumer<Object> gatewayMessageConsumer, Runnable disconnectRunnable) {
-        if (this.gatewayMessageConsumer != null) {
-            return;
+    public void connect(Consumer<Object> gatewayMessageConsumer, Runnable disconnectRunnable) {
+        synchronized (this) {
+            if (this.gatewayMessageConsumer != null) {
+                return;
+            }
+            this.gatewayMessageConsumer = gatewayMessageConsumer;
         }
-        this.gatewayMessageConsumer = gatewayMessageConsumer;
+
         this.disconnectRunnable = disconnectRunnable;
         initialSyncInProgress = true;
 
@@ -175,14 +178,15 @@ public class GatewayConnector {
     /**
      * Stop the connector and prevent further communication with the gateway
      */
-    synchronized public void disconnect() {
-        if (this.gatewayMessageConsumer == null) {
-            return;
+    public void disconnect() {
+        synchronized (this) {
+            if (this.gatewayMessageConsumer == null) {
+                return;
+            }
+            this.gatewayMessageConsumer = null;
         }
 
         LOG.fine("Gateway connector disconnected: Gateway ID=" + gatewayId);
-
-        this.gatewayMessageConsumer = null;
         Runnable disconnectRunnable = this.disconnectRunnable;
         this.disconnectRunnable = null;
         initialSyncInProgress = false;
