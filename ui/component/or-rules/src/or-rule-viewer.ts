@@ -196,8 +196,6 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     }
 
     protected _cannotSave() {
-        const readonly = this._isReadonly();
-        console.log(readonly);
         return this._isReadonly() || !this.ruleset || !this.modified || !this.valid;
     }
 

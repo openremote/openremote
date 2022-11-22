@@ -111,11 +111,6 @@ export class OrRuleFormWebhook extends LitElement {
                                               this.requestUpdate('webhook')
                                           }}"></or-mwc-input>
                             ${this.getAuthSettingsTemplate(this.webhook.authMethod)}
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <span>Authorize using</span>
-                                <or-mwc-input type="${InputType.SELECT}" .value="${'Header'}" style="width: 200px;"
-                                              .options="${['Header', 'Query Parameter']}"
-                            </div>
                         `
                     })}
                 </div>
