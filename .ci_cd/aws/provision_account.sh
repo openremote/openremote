@@ -202,6 +202,7 @@ if [ "$VPCID" == 'None' ]; then
     aws ec2 create-route --route-table-id $ROUTE_TABLE_ID --destination-cidr-block $VPCIP4CIDR --vpc-peering-connection-id $PEER_ID
   fi
 else
+  echo "VPCID response: $VPCID"
   echo "OR VPC already exists"
 fi
 
