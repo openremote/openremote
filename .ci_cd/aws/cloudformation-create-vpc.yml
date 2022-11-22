@@ -84,19 +84,23 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Effect: Allow
-                Action: 'ec2:AcceptVpcPeeringConnection'
-                Resource:
-                  'Fn::Sub': 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${Vpc}'
               - Action: 'ec2:AcceptVpcPeeringConnection'
                 Condition:
                   StringEquals:
-                    'ec2:AccepterVpc':
-                      'Fn::Sub': 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${Vpc}'
+                    ec2:AccepterVpc:
+                      Fn::Sub: 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${Vpc}'
                 Effect: Allow
                 Resource:
-                  'Fn::Sub': >-
-                    arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-peering-connection/*
+                  - Fn::Sub: 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${Vpc}'
+                  - Fn::Sub: 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-peering-connection/*'
+        - PolicyName: AssumeRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeVPCRole
+                Resource: !Sub 'Resource: arn:aws:iam::*:role/or-vpc-peer-${AWS::Region}'
 
   ## VPC Peering Request
   VpcPeeringConnection:
