@@ -5,17 +5,6 @@ import {css, html, LitElement, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
 
-interface WebhookOptions extends Webhook {
-    authDetails?: {
-        username?: string;
-        password?: string;
-        apiKey?: string;
-        method?: 'GET' | 'POST' | 'PUT';
-        url?: string;
-        clientId?: string;
-        clientSecret?: string;
-    }
-}
 
 //language=css
 const styling = css`
@@ -28,7 +17,7 @@ const styling = css`
 export class OrRuleFormWebhook extends LitElement {
 
     @property({type: Object})
-    protected webhook!: WebhookOptions;
+    protected webhook!: Webhook;
 
     private methodOptions: WebhookAuthMethod[] = [WebhookAuthMethod.NONE, WebhookAuthMethod.HTTP_BASIC, WebhookAuthMethod.API_KEY, WebhookAuthMethod.OAUTH2]
 
@@ -40,7 +29,7 @@ export class OrRuleFormWebhook extends LitElement {
 
     shouldUpdate(changedProperties: Map<string, any>) {
         console.warn(changedProperties)
-        if (changedProperties.has('action')) {
+        if (changedProperties.has('webhook')) {
             if (this.webhook.headers == undefined) {
                 this.webhook.headers = [];
             }
@@ -56,7 +45,7 @@ export class OrRuleFormWebhook extends LitElement {
         return super.shouldUpdate(changedProperties);
     }
 
-    setActionUrl(value: any) {
+    setWebhookUrl(value: any) {
         this.webhook.url = value;
     }
 
@@ -72,12 +61,12 @@ export class OrRuleFormWebhook extends LitElement {
                                   .options="${['GET', 'POST', 'PUT', 'DELETE']}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                       this.webhook.method = ev.detail.value;
-                                      this.requestUpdate("action");
+                                      this.requestUpdate("webhook");
                                   }}"
                     ></or-mwc-input>
                     <or-mwc-input style="flex: 1;" type="${InputType.URL}" required label="Http URL"
                                   .value="${this.webhook.url}" helperPersistent
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionUrl(e.detail.value)}"></or-mwc-input>
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setWebhookUrl(e.detail.value)}"></or-mwc-input>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <span>Headers</span>
@@ -92,32 +81,32 @@ export class OrRuleFormWebhook extends LitElement {
                             <or-mwc-input type="${InputType.BUTTON}" icon="delete"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                               this.webhook.headers?.splice(index, 1);
-                                              this.requestUpdate('action');
+                                              this.requestUpdate('webhook');
                                           }}"></or-mwc-input>
                         </div>
                     `)}
                     <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="Add Request Header"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                       this.webhook.headers?.push({header: '', value: ''});
-                                      this.requestUpdate('action');
+                                      this.requestUpdate('webhook');
                                   }}"></or-mwc-input>
                 </div>
                 <div class="divider" style="margin-top: 24px;"></div>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <or-mwc-input type="${InputType.SWITCH}" fullwidth label="Requires Authorization"
-                                  .value="${this.webhook.authMethod != undefined}"
+                                  .value="${this.webhook.authMethod != WebhookAuthMethod.NONE}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                       this.webhook.authMethod = (ev.detail.value as boolean) ? WebhookAuthMethod.HTTP_BASIC : WebhookAuthMethod.NONE;
-                                      this.requestUpdate('action');
+                                      this.requestUpdate('webhook');
                                   }}"></or-mwc-input>
-                    ${when(this.webhook.authMethod != undefined, () => {
+                    ${when(this.webhook.authMethod != WebhookAuthMethod.NONE, () => {
                         return html`
                             <or-mwc-input type="${InputType.SELECT}" label="Method"
                                           .value="${this.webhook.authMethod}"
                                           .options="${this.methodOptions.slice(1)}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                               this.webhook.authMethod = ev.detail.value;
-                                              this.requestUpdate('action')
+                                              this.requestUpdate('webhook')
                                           }}"></or-mwc-input>
                             ${this.getAuthSettingsTemplate(this.webhook.authMethod)}
                             <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -160,7 +149,7 @@ export class OrRuleFormWebhook extends LitElement {
                                           .options="${['GET', 'POST', 'PUT']}"></or-mwc-input>
                             <or-mwc-input style="flex: 1;" type="${InputType.URL}" required label="Http URL"
                                           .value="${this.webhook.authDetails?.url}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionUrl(e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setWebhookUrl(e.detail.value)}"></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" label="Client ID"
                                       .value="${this.webhook.authDetails?.clientId}"></or-mwc-input>
