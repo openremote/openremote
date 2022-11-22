@@ -319,8 +319,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     @Override
     public void afterCreateConnection(RemotingConnection connection) throws ActiveMQException {
 
-        LOG.info("Client connection created: " + connectionToString(connection));
-
         // MQTT seems to only use failure callback even if closed gracefully (need to look at the exception for details)
         connection.addFailureListener(new FailureListener() {
             @Override
@@ -373,6 +371,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         clientIDConnectionMap.put(remotingConnection.getClientID(), remotingConnection);
 
         if (!connectionIDConnectionMap.containsKey(connectionID)) {
+            LOG.info("Client connection created: " + connectionToString(remotingConnection  ));
             connectionIDConnectionMap.put(connectionID, remotingConnection);
             for (MQTTHandler handler : getCustomHandlers()) {
                 handler.onConnect(remotingConnection);
