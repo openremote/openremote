@@ -55,11 +55,10 @@ ENV OR_RULE_EVENT_EXPIRES ${OR_RULE_EVENT_EXPIRES:-PT1H}
 ENV OR_IDENTITY_PROVIDER ${OR_IDENTITY_PROVIDER:-keycloak}
 ENV OR_IDENTITY_SESSION_MAX_MINUTES ${OR_IDENTITY_SESSION_MAX_MINUTES:-1440}
 ENV OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES ${OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES:-2628000}
-ENV OR_JAVA_OPTS ${OR_JAVA_OPTS:--Xms400m -Xmx400m \
-    -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m \
-    -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m \
-    -XX:MaxDirectMemorySize=25m -XX:NativeMemoryTracking=summary \
-    -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof}
+ENV OR_JAVA_OPTS ${OR_JAVA_OPTS:--Xms500m -Xmx2g \
+    -XX:NativeMemoryTracking=summary \
+    -Xlog:all=warning:stdout:uptime,level,tags \
+    -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
 
 RUN mkdir -p /deployment/manager/extensions
 

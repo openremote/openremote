@@ -20,6 +20,7 @@
 package org.openremote.manager.asset;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
@@ -167,7 +168,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             // Make the exception available if MEP is InOut
-            exchange.getOut().setBody(exception);
+            exchange.getMessage().setBody(exception);
         };
     }
 
@@ -439,7 +440,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         if (attributeEvent.getTimestamp() <= 0) {
             attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
         }
-        messageBrokerService.getProducerTemplate().sendBodyAndHeader(ASSET_QUEUE, attributeEvent, HEADER_SOURCE, source);
+        messageBrokerService.getFluentProducerTemplate()
+                .withHeader(HEADER_SOURCE, source)
+                .withBody(attributeEvent)
+                .to(ASSET_QUEUE)
+                .asyncSend();
     }
 
     /**
