@@ -6,6 +6,7 @@ import manager, { ManagerAppConfig } from "@openremote/core";
 import { ManagerConfRealm, Realm } from "@openremote/model";
 import { OrMwcDialog, showDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
+import "@openremote/or-components/or-loader";
 
 @customElement("or-conf-realm")
 export class OrConfRealm extends LitElement {
@@ -113,6 +114,7 @@ export class OrConfRealm extends LitElement {
     const app = this;
     return html`
       <div class="panels">
+<!--        <or-loader .overlay="${true}"></or-loader>-->
         ${Object.entries(this.config.realms === undefined ? {} : this.config.realms).map(function([key , value]){
           return html`<or-conf-realm-card .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
         })}
