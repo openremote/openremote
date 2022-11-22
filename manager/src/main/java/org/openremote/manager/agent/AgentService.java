@@ -566,12 +566,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 .map(agentLink -> {
                     LOG.finer("Attribute write for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + asset.getId() + ", attribute=" + attribute.getName());
 
-                    messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                        ACTUATOR_TOPIC,
-                        attributeEvent,
-                        Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL,
-                        getProtocolInstance(agentLink.getId())
-                    );
+                    messageBrokerService.getFluentProducerTemplate()
+                        .withBody(attributeEvent)
+                        .withHeader(Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL, getProtocolInstance(agentLink.getId()))
+                        .to(ACTUATOR_TOPIC)
+                        .asyncSend();
                     return true; // Processing complete, skip other processors
                 }).orElse(false) // This is a regular attribute so allow the processing to continue
         );

@@ -596,8 +596,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // Process synchronously
-            Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeader(
-                AssetProcessingService.ASSET_QUEUE, event, AttributeEvent.HEADER_SOURCE, CLIENT);
+            Object result = messageBrokerService.getFluentProducerTemplate()
+                .withBody(event)
+                .withHeader(AttributeEvent.HEADER_SOURCE, CLIENT)
+                .to(AssetProcessingService.ASSET_QUEUE)
+                .request();
 
             if (result instanceof AssetProcessingException) {
                 AssetProcessingException processingException = (AssetProcessingException) result;

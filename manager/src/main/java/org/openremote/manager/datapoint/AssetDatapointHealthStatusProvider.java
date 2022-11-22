@@ -28,7 +28,6 @@ import org.openremote.model.util.ValueUtil;
 public class AssetDatapointHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
     public static final String NAME = "datapoints";
-    public static final String VERSION = "1.0";
     protected AssetDatapointService assetDatapointService;
 
     @Override
@@ -54,11 +53,6 @@ public class AssetDatapointHealthStatusProvider implements HealthStatusProvider,
     @Override
     public String getHealthStatusName() {
         return NAME;
-    }
-
-    @Override
-    public String getHealthStatusVersion() {
-        return VERSION;
     }
 
     @Override
