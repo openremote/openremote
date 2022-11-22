@@ -141,6 +141,7 @@ fi
 source "${awsDir}set_github-da_account_arn.sh"
 
 # Check/Create VPC
+echo "aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null"
 VPCID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=or-vpc --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 if [ "$VPCID" == 'None' ]; then
