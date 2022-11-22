@@ -48,6 +48,7 @@ public class Webhook {
         this.headers = headers;
         this.method = method;
         this.authMethod = authMethod;
+        this.authDetails = authDetails;
         this.payload = payload;
     }
 

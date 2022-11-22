@@ -38,7 +38,9 @@ export class OrRuleFormWebhook extends LitElement {
             }
             if (this.webhook.authMethod != this.methodOptions[0]) {
                 if (this.webhook.authDetails == undefined) {
-                    this.webhook.authDetails = {}
+                    this.webhook.authDetails = {
+                        method: WebhookMethod.POST
+                    }
                 }
             }
         }
@@ -125,20 +127,33 @@ export class OrRuleFormWebhook extends LitElement {
     }
 
     getAuthSettingsTemplate(authMethod: WebhookAuthMethod | undefined): TemplateResult | undefined {
+        console.log(this.webhook.authDetails);
         switch (authMethod) {
             case WebhookAuthMethod.HTTP_BASIC:
                 return html`
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         <or-mwc-input type="${InputType.TEXT}" label="Username"
-                                      .value="${this.webhook.authDetails?.username}"></or-mwc-input>
+                                      .value="${this.webhook.authDetails?.username}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                          this.webhook.authDetails!.username = ev.detail.value;
+                                          this.requestUpdate('webhook')
+                                      }}"></or-mwc-input>
                         <or-mwc-input type="${InputType.TEXT}" label="Password"
-                                      .value="${this.webhook.authDetails?.password}"></or-mwc-input>
+                                      .value="${this.webhook.authDetails?.password}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                          this.webhook.authDetails!.password = ev.detail.value;
+                                          this.requestUpdate('webhook')
+                                      }}"></or-mwc-input>
                     </div>
                 `
             case WebhookAuthMethod.API_KEY:
                 return html`
                     <or-mwc-input type="${InputType.TEXT}" label="API Key"
-                                  .value="${this.webhook.authDetails?.apiKey}"></or-mwc-input>
+                                  .value="${this.webhook.authDetails?.apiKey}"
+                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                      this.webhook.authDetails!.apiKey = ev.detail.value;
+                                      this.requestUpdate('webhook')
+                                  }}"></or-mwc-input>
                 `;
             case WebhookAuthMethod.OAUTH2:
                 return html`
@@ -146,15 +161,30 @@ export class OrRuleFormWebhook extends LitElement {
                         <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
                             <or-mwc-input style="flex: 0;" type="${InputType.SELECT}" required
                                           .value="${this.webhook.authDetails?.method}"
-                                          .options="${['GET', 'POST', 'PUT']}"></or-mwc-input>
+                                          .options="${['GET', 'POST', 'PUT']}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                              this.webhook.authDetails!.method = ev.detail.value;
+                                              this.requestUpdate('webhook')
+                                          }}"></or-mwc-input>
                             <or-mwc-input style="flex: 1;" type="${InputType.URL}" required label="Http URL"
                                           .value="${this.webhook.authDetails?.url}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setWebhookUrl(e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                              this.webhook.authDetails!.url = ev.detail.value;
+                                              this.requestUpdate('webhook')
+                                          }}"></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" label="Client ID"
-                                      .value="${this.webhook.authDetails?.clientId}"></or-mwc-input>
-                        <or-mwc-input type="${InputType.TEXT}" label="Client Secret"
-                                      .value="${this.webhook.authDetails?.clientSecret}"></or-mwc-input>
+                                      .value="${this.webhook.authDetails?.clientId}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                          this.webhook.authDetails!.clientId = ev.detail.value;
+                                          this.requestUpdate('webhook')
+                                      }}"></or-mwc-input>
+                        <or-mwc-input type="${InputType.PASSWORD}" label="Client Secret"
+                                      .value="${this.webhook.authDetails?.clientSecret}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                          this.webhook.authDetails!.clientSecret = ev.detail.value;
+                                          this.requestUpdate('webhook')
+                                      }}"></or-mwc-input>
                     </div>
                 `
             case WebhookAuthMethod.NONE:

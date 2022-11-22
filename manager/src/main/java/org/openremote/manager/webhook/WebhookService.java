@@ -12,6 +12,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.webhook.Webhook;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
@@ -77,7 +78,11 @@ public class WebhookService extends RouteBuilder implements ContainerService {
             switch (webhook.getAuthMethod()) {
                 case OAUTH2 -> {
                     Webhook.AuthDetails details = webhook.getAuthDetails();
-                    builder.setOAuthAuthentication(new OAuthClientCredentialsGrant(details.url, details.clientId, details.clientSecret, null));
+                    if(details != null) {
+                        builder.setOAuthAuthentication(new OAuthClientCredentialsGrant(details.url, details.clientId, details.clientSecret, null));
+                    } else {
+                        throw new WebApplicationException(Response.Status.BAD_REQUEST);
+                    }
                 }
                 case HTTP_BASIC -> {
                     builder.setBasicAuthentication(webhook.getAuthDetails().username, webhook.getAuthDetails().password);
