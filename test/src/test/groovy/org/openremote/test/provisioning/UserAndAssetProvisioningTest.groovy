@@ -55,7 +55,7 @@ import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -72,6 +72,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        MQTT_IOClient device1Client
+        MQTT_IOClient deviceNClient
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -111,7 +113,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "a provisioning realm config is added to the system"
         def provisioningConfig = new X509ProvisioningConfig("Valid Test Config",
                 new X509ProvisioningData()
-                        .setCACertPEM(getClass().getResource("/org/openremote/test/provisioning/ca_long.pem").text)
+                        .setCACertPEM(getClass().getResource("/org/openremote/test/provisioning/ca.pem").text)
         ).setAssetTemplate(
                 ValueUtil.asJSON(
                         new WeatherAsset("Weather Asset")
@@ -148,7 +150,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         List<String> subscribeFailures = []
         List<ConnectionStatus> connectionStatuses = []
         Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
-        MQTT_IOClient device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
+        device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         device1Client.addConnectionStatusConsumer({connectionStatus ->
             connectionStatuses.add(connectionStatus)})
@@ -175,6 +177,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the client publishes a valid x509 certificate that has been signed by the CA stored in the provisioning config"
+        def existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
         device1Client.sendMessage(
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
@@ -192,9 +195,14 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
+        and: "the connection should have been maintained"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 0.5).eventually {
+            assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) == existingConnection
+        }
+
         when: "the client gets abruptly disconnected"
         device1Responses.clear()
-        def existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
+        existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
 //        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).config().setOption(ChannelOption.SO_LINGER, 0I)
         ((SocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).close()
 
@@ -261,8 +269,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "the client updates one of the provisioned asset's attributes"
         device1Client.sendMessage(
             new MQTTMessage<String>(
-                    "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_WRITE_TOPIC",
-                    ValueUtil.asJSON(new AttributeEvent(asset.id, "customAttribute", 99d)).orElse(null)
+                    "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/customAttribute/${asset.id}",
+                    "99"
             )
         )
 
@@ -384,7 +392,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         def deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
         def mqttDeviceNClientId = UniqueIdentifierGenerator.generateId("deviceN")
-        MQTT_IOClient deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
         deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
@@ -428,7 +436,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -437,6 +445,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         deviceNUniqueId = "device4"
         deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -475,7 +485,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -484,6 +494,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         deviceNUniqueId = "device3"
         deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -526,7 +538,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -565,6 +577,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "another device re-connects"
         deviceNResponses.clear()
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"
@@ -603,7 +617,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -663,6 +677,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "a device with disabled user account connects"
         deviceNResponses.clear()
+        deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null, null)
+        deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
 
         then: "mqtt connection should exist"

@@ -1,8 +1,8 @@
-package org.openremote.test.rules
+package org.openremote.setup.integration.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.notification.*
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.impl.*
 import org.openremote.model.query.*

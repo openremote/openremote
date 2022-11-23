@@ -13,15 +13,16 @@ apply plugin: "signing"
 
 dependencies {
 
+    testImplementation resolveProject(":setup").sourceSets.integration.output
     api resolveProject(":manager")
 
-    implementation "org.codehaus.groovy:groovy:$groovyVersion"
+    testFixturesImplementation "org.codehaus.groovy:groovy:$groovyVersion"
     testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")
     testFixturesApi 'org.spockframework:spock-core'
 
     // optional dependencies for using Spock
-    testRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
-    testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
+    testFixturesRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
+    testFixturesRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
     testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!

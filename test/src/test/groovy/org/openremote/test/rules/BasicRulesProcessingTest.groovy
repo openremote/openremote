@@ -6,8 +6,8 @@ import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -24,7 +24,7 @@ import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.test.setup.ManagerTestSetup.*
+import static org.openremote.setup.integration.ManagerTestSetup.*
 import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.test.rules.BasicRulesImport.assertRulesFired
 

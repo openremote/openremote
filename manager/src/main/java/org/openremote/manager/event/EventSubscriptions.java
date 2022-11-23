@@ -21,7 +21,7 @@ package org.openremote.manager.event;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultMessage;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.model.event.TriggeredEventSubscription;
@@ -46,7 +46,7 @@ public class EventSubscriptions {
     final protected ConcurrentMap<String, SessionSubscriptions> sessionSubscriptionIdMap = new ConcurrentHashMap<>();
 
     class SessionSubscriptions extends HashSet<SessionSubscription<?>> {
-        protected void createOrUpdate(boolean restrictedUser, boolean anonymousUser, EventSubscription<?> eventSubscription) {
+        protected void createOrUpdate(EventSubscription<?> eventSubscription) {
 
             if (TextUtil.isNullOrEmpty(eventSubscription.getSubscriptionId())) {
                 cancelByType(eventSubscription.getEventType());
@@ -54,7 +54,7 @@ public class EventSubscriptions {
                 cancelById(eventSubscription.getSubscriptionId());
             }
 
-            add(new SessionSubscription<>(restrictedUser, anonymousUser, timerService.getCurrentTimeMillis(), eventSubscription));
+            add(new SessionSubscription<>(timerService.getCurrentTimeMillis(), eventSubscription));
         }
 
         protected void cancelByType(String eventType) {
@@ -67,35 +67,30 @@ public class EventSubscriptions {
     }
 
     static class SessionSubscription<T extends SharedEvent> {
-        boolean restrictedUser;
-        boolean anonymousUser;
         long timestamp;
         final EventSubscription<T> subscription;
         final String subscriptionId;
 
-        public SessionSubscription(boolean restrictedUser, boolean anonymousUser, long timestamp, EventSubscription<T> subscription) {
-            this.restrictedUser = restrictedUser;
-            this.anonymousUser = anonymousUser;
+        public SessionSubscription(long timestamp, EventSubscription<T> subscription) {
             this.timestamp = timestamp;
             this.subscription = subscription;
             this.subscriptionId = subscription.getSubscriptionId();
         }
 
         public boolean matches(SharedEvent event) {
-            return (!restrictedUser || event.canAccessRestrictedRead()) && (!anonymousUser || event.canAccessPublicRead()) && subscription.getEventType().equals(event.getEventType());
+            return subscription.getEventType().equals(event.getEventType());
         }
     }
 
     public EventSubscriptions(TimerService timerService) {
-        LOG.info("Starting background task checking for expired event subscriptions from clients");
         this.timerService = timerService;
     }
 
-    protected void createOrUpdate(String sessionKey, boolean restrictedUser, boolean anonymousUser, EventSubscription<?> subscription) {
+    protected void createOrUpdate(String sessionKey, EventSubscription<?> subscription) {
         LOG.finer("For session '" + sessionKey + "', creating/updating: " + subscription);
         SessionSubscriptions sessionSubscriptions =
             this.sessionSubscriptionIdMap.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
-        sessionSubscriptions.createOrUpdate(restrictedUser, anonymousUser, subscription);
+        sessionSubscriptions.createOrUpdate(subscription);
     }
 
     protected void cancel(String sessionKey, CancelEventSubscription subscription) {
@@ -132,13 +127,7 @@ public class EventSubscriptions {
         if (event == null)
             return messageList;
 
-        Set<Map.Entry<String, SessionSubscriptions>> sessionSubscriptionsSet;
-
-        synchronized (this.sessionSubscriptionIdMap) {
-            sessionSubscriptionsSet = new HashSet<>(sessionSubscriptionIdMap.entrySet());
-        }
-
-        for (Map.Entry<String, SessionSubscriptions> entry : sessionSubscriptionsSet) {
+        for (Map.Entry<String, SessionSubscriptions> entry : sessionSubscriptionIdMap.entrySet()) {
             String sessionKey = entry.getKey();
             SessionSubscriptions subscriptions = entry.getValue();
 
@@ -148,9 +137,9 @@ public class EventSubscriptions {
                     continue;
 
                 SessionSubscription<T> sessionSub = (SessionSubscription<T>) sessionSubscription;
+                T filteredEvent = sessionSub.subscription.getFilter() == null ? event : sessionSub.subscription.getFilter().apply(event);
 
-                if (sessionSub.subscription.getFilter() == null
-                    || sessionSub.subscription.getFilter().apply(event)) {
+                if (filteredEvent != null) {
                     LOG.finer("Creating message for subscribed session '" + sessionKey + "': " + event);
                     List<T> events = Collections.singletonList(event);
                     TriggeredEventSubscription<T> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSub.subscriptionId);

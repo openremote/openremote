@@ -19,7 +19,6 @@
  */
 package org.openremote.model.event.shared;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.*;
@@ -67,13 +66,5 @@ public abstract class SharedEvent extends Event {
     }
 
     public SharedEvent() {
-    }
-
-    public boolean canAccessPublicRead() {
-        return false;
-    }
-
-    public boolean canAccessRestrictedRead() {
-        return false;
     }
 }

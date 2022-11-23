@@ -81,7 +81,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
                 throw new NotFoundException("Parent asset does not exist");
             }
             if (realm != null && !asset.getRealm().equals(realm)) {
-                throw new NotAuthorizedException("Parent asset not in the correct realm: agent ID =" + parentId);
+                throw new ForbiddenException("Parent asset not in the correct realm: agent ID =" + parentId);
             }
         }
 
@@ -119,7 +119,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         }
 
         if (realm != null && !realm.equals(agent.getRealm())) {
-            throw new NotAuthorizedException("Agent not in the correct realm: agent ID =" + agentId);
+            throw new ForbiddenException("Agent not in the correct realm: agent ID =" + agentId);
         }
 
         List<AssetTreeNode> foundAssets = new ArrayList<>();
@@ -159,7 +159,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         }
 
         if (realm != null && !realm.equals(agent.getRealm())) {
-            throw new NotAuthorizedException("Agent not in the correct realm: agent ID =" + agentId);
+            throw new ForbiddenException("Agent not in the correct realm: agent ID =" + agentId);
         }
 
         List<AssetTreeNode> foundAssets = new ArrayList<>();
@@ -196,9 +196,10 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     // TODO: Allow user to select which assets/attributes are actually added to the DB
     protected void persistAssets(AssetTreeNode[] assets, Asset<?> parentAsset, String realm) {
         try {
+            LOG.fine("Persisting assets");
 
             if (assets == null || assets.length == 0) {
-                LOG.info("No assets to import");
+                LOG.fine("No assets to import");
                 return;
             }
 
@@ -206,7 +207,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
                 Asset<?> asset = assetNode.asset;
 
                 if (asset == null) {
-                    LOG.info("Skipping node as asset not set");
+                    LOG.fine("Skipping node as asset not set");
                     continue;
                 }
 

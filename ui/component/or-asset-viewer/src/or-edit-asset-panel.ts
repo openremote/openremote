@@ -583,7 +583,7 @@ export class OrEditAssetPanel extends LitElement {
             const path = [this.asset.id!];
             let parentNode = assetTree.selectedNodes[0];
             while (parentNode !== undefined) {
-                path.push(parentNode.asset!.id!);
+                path.unshift(parentNode.asset!.id!);
                 parentNode = parentNode.parent;
             }
             this.asset.path = path;

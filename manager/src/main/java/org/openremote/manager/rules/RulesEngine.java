@@ -557,7 +557,9 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected void fireAllDeploymentsWithPredictedData() {
-        fireDeployments(deployments.values().stream().filter(RulesetDeployment::isTriggerOnPredictedData).collect(Collectors.toList()));
+        withLock(toString() + "::fireAllDeploymentsWithPredictedData", () -> {
+            fireDeployments(deployments.values().stream().filter(RulesetDeployment::isTriggerOnPredictedData).collect(Collectors.toList()));
+        });
     }
 
     protected void notifyAssetStatesChanged(AssetStateChangeEvent event) {

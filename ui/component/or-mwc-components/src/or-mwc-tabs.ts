@@ -19,16 +19,16 @@ export interface OrMwcTabItem {
 //language=css
 const tabStyling = css`
     .mdc-tab {
-        background: ${unsafeCSS(DefaultColor4)};
+        background: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
     }
     .mdc-tab .mdc-tab__text-label {
-        color: ${unsafeCSS(DefaultColor8)};
+        color: var(--or-app-color8, ${unsafeCSS(DefaultColor8)});
     }
     .mdc-tab .mdc-tab__icon {
-        color: ${unsafeCSS(DefaultColor8)};
+        color: var(--or-app-color8, ${unsafeCSS(DefaultColor8)})
     }
     .mdc-tab-indicator .mdc-tab-indicator__content--underline {
-        border-color: ${unsafeCSS(DefaultColor8)};
+        border-color: var(--or-app-color8, ${unsafeCSS(DefaultColor8)})
     }
     .mdc-tab__ripple::before, .mdc-tab__ripple::after {
         background-color: var(--ripplecolor, ${unsafeCSS(DefaultColor8)});
@@ -63,6 +63,9 @@ export class OrMwcTabs extends LitElement {
     @property({type: String})
     protected iconPosition?: "left" | "top";
 
+    @property({type: Boolean})
+    protected noScroll?: boolean;
+
     @property({type: String})
     protected bgColor?: string;
 
@@ -83,6 +86,7 @@ export class OrMwcTabs extends LitElement {
         if (this.index == null) { this.index = 0; }
         if (this.items == null) { this.items = []; }
         if (this.iconPosition == null) { this.iconPosition = "left"; }
+        if (this.noScroll == null) { this.noScroll = false; }
 
         this.updateComplete.then(() => {
             const tabBarElement = this.shadowRoot?.querySelector('.mdc-tab-bar');
@@ -141,7 +145,7 @@ export class OrMwcTabs extends LitElement {
             <div>
                 <div class="mdc-tab-bar" role="tablist" id="tab-bar">
                     <div class="mdc-tab-scroller">
-                        <div class="mdc-tab-scroller__scroll-area">
+                        <div class="mdc-tab-scroller__scroll-area" style="overflow-x: ${this.noScroll ? 'hidden' : undefined}">
                             <div class="mdc-tab-scroller__scroll-content">
                                 ${this.items?.map((menuItem => { return html`
                                     <button class="mdc-tab" role="tab" aria-selected="false" tabindex="${this.items?.indexOf(menuItem)}">

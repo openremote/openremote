@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------------------------------------------------
+# Creates an alarm for Route53 health check - must be run in the us-east-1 region
+# ---------------------------------------------------------------------------------------------------------------------
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Route 53 Healthcheck alarm'
+
+Parameters:
+  Host:
+    Description: FQDN for host
+    Type: String
+
+Resources:
+
+  HealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Properties:
+      HealthCheckConfig:
+        Port: 443
+        Type: HTTPS
+        ResourcePath: '/api/master/info'
+        FullyQualifiedDomainName: !Sub ${Host}
+        RequestInterval: 30
+        FailureThreshold: 10
+      HealthCheckTags:
+        - Key: Name
+          Value: !Sub ${Host}
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: support@openremote.io
+      Protocol: email
+      TopicArn: !Ref SnsTopic
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref Host
+
+  HealthCheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/Route53
+      MetricName: HealthCheckStatus
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 15
+      ComparisonOperator: LessThanThreshold
+      Threshold: 1
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic
+      Dimensions:
+        - Name: HealthCheckId
+          Value: !Ref HealthCheck
