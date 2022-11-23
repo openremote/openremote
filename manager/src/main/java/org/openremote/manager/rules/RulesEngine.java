@@ -539,7 +539,7 @@ public class RulesEngine<T extends Ruleset> {
                 if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
                     // Why aren't we handling the exception?
                     // Does this mean that we will just crash?
-                    LOG.log(Level.SEVERE, "Stopping rules engine because of privious error");
+                    LOG.log(Level.SEVERE, "Stopping rules engine because of previous error");
                     stop();
                     break;
                 }
