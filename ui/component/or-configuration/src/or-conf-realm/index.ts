@@ -7,7 +7,6 @@ import { ManagerConfRealm, Realm } from "@openremote/model";
 import { OrMwcDialog, showDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-loader";
-import "@openremote/or-map";
 
 @customElement("or-conf-realm")
 export class OrConfRealm extends LitElement {
@@ -114,8 +113,8 @@ export class OrConfRealm extends LitElement {
   render() {
     const app = this;
     return html`
+      <or-map id="map" class="or-map" showGeoCodingControl></or-map>
       <div class="panels">
-        <or-map showGeoCodingControl></or-map>
         ${Object.entries(this.config.realms === undefined ? {} : this.config.realms).map(function([key , value]){
           return html`<or-conf-realm-card .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
         })}
