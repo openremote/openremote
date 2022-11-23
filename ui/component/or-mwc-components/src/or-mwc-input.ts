@@ -592,6 +592,9 @@ const style = css`
     .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
         --or-icon-fill: var(--or-app-color4);
     }
+    .mdc-select__selected-text{
+        white-space: normal;
+    }
 `;
 
 @customElement("or-mwc-input")

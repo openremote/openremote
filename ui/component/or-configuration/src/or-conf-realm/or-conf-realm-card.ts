@@ -23,16 +23,19 @@ export class OrConfRealmCard extends LitElement {
     .language {
       width: 100%;
       padding-top: 12px;
+      max-width: 800px;
     }
 
     .appTitle {
       width: 100%;
+      max-width: 800px;
       padding: 12px 0px;
     }
 
     .header-group .header-item {
       width: 100%;
       padding-bottom: 12px;
+      max-width: 800px;
     }
 
     .color-group .color-item {
@@ -212,16 +215,13 @@ export class OrConfRealmCard extends LitElement {
           <div class="logo-group">
             <div class="subheader">Logo's</div>
             <div class="d-inline-flex">
-              <or-file-uploader .title="${html`Header
-              <br/> <span style="font-size: 12px">Max height of 150px</span>`}"
+              <or-file-uploader .title="${html`Header`}"
                                 @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], "logo")}"
                                 .src="${this.realm?.logo}"></or-file-uploader>
-              <or-file-uploader .title="${html`Header mobile
-              <br/> <span style="font-size: 12px">Max height of 150px</span>`}"
+              <or-file-uploader .title="${html`Header mobile`}"
                                 @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
                                 .src="${this.realm?.logoMobile}"></or-file-uploader>
-              <or-file-uploader .title="${html`Favicon
-              <br/> <span style="font-size: 12px">Max height of 150px</span>`}"
+              <or-file-uploader .title="${html`Favicon`}"
                                 @change="${async (e: CustomEvent) => this.realm.favicon = await this._setImageForUpload(e.detail.value[0], "favicon")}"
                                 .src="${this.realm?.favicon}"></or-file-uploader>
             </div>
