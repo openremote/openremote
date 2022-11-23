@@ -22,7 +22,7 @@ export class OrConfRealmCard extends LitElement {
   static styles = css`
     .language {
       width: 100%;
-      padding: 12px 0px;
+      padding-top: 12px;
     }
 
     .appTitle {
@@ -32,6 +32,7 @@ export class OrConfRealmCard extends LitElement {
 
     .header-group .header-item {
       width: 100%;
+      padding-bottom: 12px;
     }
 
     .color-group .color-item {
@@ -44,7 +45,7 @@ export class OrConfRealmCard extends LitElement {
     }
     
     .logo-group or-file-uploader{
-      padding-right: 4px;
+      padding-right: 8px;
     }
 
     #remove-realm {
@@ -52,7 +53,7 @@ export class OrConfRealmCard extends LitElement {
     }
 
     .subheader {
-      margin: 4px 0px;
+      margin: 15px 0 4px 0;
       font-weight: bold;
     }
 
@@ -82,11 +83,15 @@ export class OrConfRealmCard extends LitElement {
   public onRemove: CallableFunction = () => {
   };
 
-  protected headerList = [
+  protected headerListPrimary = [
     ManagerHeaders.map,
     ManagerHeaders.assets,
     ManagerHeaders.rules,
     ManagerHeaders.insights,
+  ];
+
+
+  protected headerListSecondary = [
     ManagerHeaders.realms,
     ManagerHeaders.language,
     ManagerHeaders.export,
@@ -251,8 +256,17 @@ export class OrConfRealmCard extends LitElement {
               <or-mwc-input
                 .type="${InputType.SELECT}" multiple
                 class="header-item"
-                .value="${!!this.realm.headers ? this.realm.headers : this.headerList}"
-                .options="${this.headerList}"
+                label="Primary menu"
+                .value="${!!this.realm.headers ? this.realm.headers : this.headerListPrimary}"
+                .options="${this.headerListPrimary}"
+                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value)}"
+              ></or-mwc-input>
+              <or-mwc-input
+                .type="${InputType.SELECT}" multiple
+                class="header-item"
+                label="Secondary menu"
+                .value="${!!this.realm.headers ? this.realm.headers : this.headerListSecondary}"
+                .options="${this.headerListSecondary}"
                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value)}"
               ></or-mwc-input>
             </div>

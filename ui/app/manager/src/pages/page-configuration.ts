@@ -73,14 +73,17 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 margin-left: 14px;
             }
             .conf-category-content-container{
+                display: flex;
+                min-width: 0px;
                 width: 100%;
+                height: 100%;
+                flex-direction: column;
             }
 
             #header {
                 width: 100%;
             }
             #header-wrapper {
-                /*padding: 14px 30px;*/
                 display: flex;
                 width: calc(100% - 40px);
                 max-width: 1360px;
