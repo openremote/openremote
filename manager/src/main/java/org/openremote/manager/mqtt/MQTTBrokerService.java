@@ -558,7 +558,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             return null;
         }
 
-        return server.getActiveMQServer().getRemotingService().getConnections().stream().filter(connection ->
+        return connectionIDConnectionMap.values().stream().filter(connection ->
                 connection.getSubject() == subject && Objects.equals(clientID, connection.getClientID())
         )
                 .findFirst()
