@@ -12,7 +12,7 @@ export class OrFileUploader extends LitElement {
     public title: string = "";
 
     @property({ attribute: false })
-    public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon";
+    public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
 
     private loading: boolean = false;
 

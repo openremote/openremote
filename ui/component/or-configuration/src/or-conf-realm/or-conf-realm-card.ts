@@ -22,7 +22,7 @@ export class OrConfRealmCard extends LitElement {
   static styles = css`
     .language {
       width: 100%;
-      padding-top: 12px;
+      padding: 12px 0px;
       max-width: 800px;
     }
 
@@ -34,21 +34,20 @@ export class OrConfRealmCard extends LitElement {
 
     .header-group .header-item {
       width: 100%;
-      padding-bottom: 12px;
+      padding: 12px 0px;
       max-width: 800px;
     }
 
     .color-group .color-item {
       width: 100%;
-      margin: 4px 0px;
     }
 
     .logo-group {
       width: 100%;
     }
-    
-    .logo-group or-file-uploader{
-      padding-right: 8px;
+
+    .logo-group or-file-uploader {
+      padding: 0 24px 12px 0;
     }
 
     #remove-realm {
@@ -56,18 +55,24 @@ export class OrConfRealmCard extends LitElement {
     }
 
     .subheader {
-      margin: 15px 0 4px 0;
+      padding: 15px 0 4px 0;
       font-weight: bold;
     }
 
     .d-inline-flex {
       display: inline-flex;
     }
-    .panel-content{
+
+    .panel-content {
       padding: 0 36px;
     }
-    .description{
+
+    .description {
       font-size: 12px;
+    }
+
+    or-collapsible-panel {
+      margin: 8px;
     }
   `;
 
@@ -95,14 +100,19 @@ export class OrConfRealmCard extends LitElement {
 
 
   protected headerListSecondary = [
-    ManagerHeaders.realms,
-    ManagerHeaders.language,
-    ManagerHeaders.export,
-    ManagerHeaders.roles,
-    ManagerHeaders.account,
-    ManagerHeaders.logs,
     ManagerHeaders.gateway,
+    ManagerHeaders.export,
+    ManagerHeaders.logs,
+
     ManagerHeaders.users,
+    ManagerHeaders.roles,
+    ManagerHeaders.realms,
+
+    ManagerHeaders.account,
+    ManagerHeaders.language,
+
+    ManagerHeaders.logout,
+
   ];
 
   protected _getColors() {
@@ -163,6 +173,9 @@ export class OrConfRealmCard extends LitElement {
       case "image/vnd.microsoft.icon":
         extension = "ico"
         break;
+      case "image/svg+xml":
+        extension = "svg"
+        break;
     }
     return "/images/" + this.name + "/" + fileName + "." +  extension
   }
@@ -208,21 +221,22 @@ export class OrConfRealmCard extends LitElement {
           <strong>${this.name}</strong>
         </div>
         <div slot="content" class="panel-content">
+          <div class="subheader">${i18next.t("configuration.main")}</div>
           <or-mwc-input class="appTitle" .type="${InputType.TEXT}" value="${this.realm?.appTitle}"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.appTitle = e.detail.value}"
-                        .label="${i18next.t('configuration.realmTitle')}"></or-mwc-input>
+                        .label="${i18next.t("configuration.realmTitle")}"></or-mwc-input>
           <or-mwc-input class="language" .type="${InputType.SELECT}" value="${this.realm?.language}"
                         .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {
                           return [key, i18next.t(value)];
                         })}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.language = e.detail.value}"
-                        .label="${i18next.t('configuration.defaultLanguage')}"></or-mwc-input>
+                        .label="${i18next.t("configuration.defaultLanguage")}"></or-mwc-input>
           <div class="logo-group">
-            <div class="subheader">${i18next.t('configuration.logos')}</div>
+            <div class="subheader">${i18next.t("configuration.images")}</div>
             <div class="d-inline-flex">
-              <or-file-uploader .title="${i18next.t('configuration.main')}"
+              <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                 @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], "logo")}"
                                 .src="${this.realm?.logo}"></or-file-uploader>
-              <or-file-uploader .title="${i18next.t('configuration.mainMobile')}"
+              <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
                                 @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
                                 .src="${this.realm?.logoMobile}"></or-file-uploader>
               <or-file-uploader .title="${html`Favicon`}"
@@ -234,22 +248,22 @@ export class OrConfRealmCard extends LitElement {
             <div class="subheader">${i18next.t('configuration.realmColors')}</div>
             <div>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}"
-                            .label="${i18next.t('configuration.primary')}"
+                            .label="${i18next.t('configuration.--or-app-color1')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}"
-                            .label="${i18next.t('configuration.bordersAndLines')}"
+                            .label="${i18next.t('configuration.--or-app-color2')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
-                            .label="${i18next.t('configuration.invalidAndErrors')}"
+                            .label="${i18next.t('configuration.--or-app-color3')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
-                            .label="${i18next.t('configuration.surface')}"
+                            .label="${i18next.t('configuration.--or-app-color4')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
-                            .label="${i18next.t('configuration.background')}"
+                            .label="${i18next.t('configuration.--or-app-color5')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
-                            .label="${i18next.t('configuration.text')}"
+                            .label="${i18next.t('configuration.--or-app-color6')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
             </div>
           </div>
@@ -276,7 +290,7 @@ export class OrConfRealmCard extends LitElement {
             </div>
           </div>
 
-          <or-mwc-input id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("delete")}" @click="${() => {
+          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("delete")}" @click="${() => {
             this.onRemove();
           }}"></or-mwc-input>
         </div>
