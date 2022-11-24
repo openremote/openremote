@@ -119,7 +119,7 @@ export class OrConfRealm extends LitElement {
         })}
       </div>
       
-      <or-mwc-input class="btn-add-realm" .type="${InputType.BUTTON}" label="Add realm customization" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
+      <or-mwc-input class="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addRealmCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
     `
   }
 }

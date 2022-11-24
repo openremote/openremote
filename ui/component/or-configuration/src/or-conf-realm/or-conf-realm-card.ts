@@ -210,19 +210,19 @@ export class OrConfRealmCard extends LitElement {
         <div slot="content" class="panel-content">
           <or-mwc-input class="appTitle" .type="${InputType.TEXT}" value="${this.realm?.appTitle}"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.appTitle = e.detail.value}"
-                        label="App Title"></or-mwc-input>
+                        .label="${i18next.t('configuration.realmTitle')}"></or-mwc-input>
           <or-mwc-input class="language" .type="${InputType.SELECT}" value="${this.realm?.language}"
                         .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {
                           return [key, i18next.t(value)];
                         })}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.language = e.detail.value}"
-                        label="Default language"></or-mwc-input>
+                        .label="${i18next.t('configuration.defaultLanguage')}"></or-mwc-input>
           <div class="logo-group">
-            <div class="subheader">Logo's</div>
+            <div class="subheader">${i18next.t('configuration.logos')}</div>
             <div class="d-inline-flex">
-              <or-file-uploader .title="${html`Header`}"
+              <or-file-uploader .title="${i18next.t('configuration.main')}"
                                 @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], "logo")}"
                                 .src="${this.realm?.logo}"></or-file-uploader>
-              <or-file-uploader .title="${html`Header mobile`}"
+              <or-file-uploader .title="${i18next.t('configuration.mainMobile')}"
                                 @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
                                 .src="${this.realm?.logoMobile}"></or-file-uploader>
               <or-file-uploader .title="${html`Favicon`}"
@@ -231,36 +231,36 @@ export class OrConfRealmCard extends LitElement {
             </div>
           </div>
           <div class="color-group">
-            <div class="subheader">Manager colors</div>
+            <div class="subheader">${i18next.t('configuration.realmColors')}</div>
             <div>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}"
-                            label="Primary"
+                            .label="${i18next.t('configuration.primary')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}"
-                            label="Borders and lines"
+                            .label="${i18next.t('configuration.bordersAndLines')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
-                            label="Invalid and error"
+                            .label="${i18next.t('configuration.invalidAndErrors')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
-                            label="Surface"
+                            .label="${i18next.t('configuration.surface')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
-                            label="Background"
+                            .label="${i18next.t('configuration.background')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
-                            label="Text"
+                            .label="${i18next.t('configuration.text')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
             </div>
           </div>
           <div class="header-group">
-            <div class="subheader">Headers</div>
-            <span>The navigation headers that will be shown to a user. </span>
+            <div class="subheader">${i18next.t('configuration.navigation')}</div>
+            <span>${i18next.t('configuration.navigationDescription')}</span>
             <div>
               <or-mwc-input
                 .type="${InputType.SELECT}" multiple
                 class="header-item"
-                label="Primary menu"
+                .label="${i18next.t('configuration.primaryNavigation')}"
                 .value="${!!this.realm.headers ? this.realm.headers : this.headerListPrimary}"
                 .options="${this.headerListPrimary}"
                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setHeader(e.detail.value, this.headerListPrimary)}"
@@ -268,7 +268,7 @@ export class OrConfRealmCard extends LitElement {
               <or-mwc-input
                 .type="${InputType.SELECT}" multiple
                 class="header-item"
-                label="Secondary menu"
+                .label="${i18next.t('configuration.secondaryNavigation')}"
                 .value="${!!this.realm.headers ? this.realm.headers : this.headerListSecondary}"
                 .options="${this.headerListSecondary}"
                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setHeader(e.detail.value, this.headerListSecondary)}"

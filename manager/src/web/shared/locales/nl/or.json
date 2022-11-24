@@ -509,6 +509,7 @@
   "layout": "Indeling",
   "display": "Weergave",
   "screen": "Scherm",
+  "uploadFile" : "Uploaden bestand",
   "thresholds": "Drempelwaardes",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
   "noDashboardFound": "Geen dashboard gevonden.",
@@ -556,5 +557,25 @@
     "deleteWidget": "Verwijder widget",
     "myDashboards": "Mijn dashboards",
     "createdByOthers": "Gemaakt door anderen"
+  },
+  "configuration": {
+    "" : "Instellingen",
+    "addRealmCustomization" : "Voeg aangepaste realm stijl toe",
+    "realmTitle": "Realm Titel",
+    "defaultLanguage": "Standaard taal",
+    "logos": "Logo's",
+    "main": "Primaire afbeelding",
+    "mainMobile": "Primaire afbeelding mobiel",
+    "realmColors": "Realm kleuren",
+    "primary": "Primair",
+    "bordersAndLines": "Rand en lijnen",
+    "invalidAndErrors": "Onjuist en fouten",
+    "surface": "Oppervlakte",
+    "background": "Achtergrond",
+    "text": "Tekst",
+    "navigation" : "Navigatie",
+    "navigationDescription": "De navigatie opties toegankelijk voor de gebruiker.",
+    "primaryNavigation" : "Primair menu",
+    "secondaryNavigation" : "Secundaire menu"
   }
 }

@@ -10,6 +10,7 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-configuration/or-conf-json";
 import "@openremote/or-configuration/or-conf-realm/index";
 import { ManagerConf } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -136,7 +137,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <div id="header-wrapper">
                         <div id="header-title">
                             <or-icon icon="cog"></or-icon>
-                            Configuration
+                            ${i18next.t('configuration.')}
                         </div>
                         <div id="header-actions">
                             <div id="header-actions-content">

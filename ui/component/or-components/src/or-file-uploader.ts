@@ -1,5 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { i18next } from "@openremote/or-translate";
 
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
@@ -58,6 +59,10 @@ export class OrFileUploader extends LitElement {
                 font-size: 18px;
                 color: var(--or-app-color4);
             }
+
+            .container {
+                position: relative;
+            }
         `;
     }
 
@@ -65,20 +70,20 @@ export class OrFileUploader extends LitElement {
         super.firstUpdated(_changedProperties);
         const fileInput = this.shadowRoot?.getElementById('fileInput')
         const imageContainer = this.shadowRoot?.getElementById('imageContainer')
-        fileInput?.addEventListener("change", (e) => {
-            this._onChange(e)
-        })
+        fileInput?.addEventListener("input", (e) => {
+            this._onChange(e);
+        });
         imageContainer?.addEventListener("click", (e) => {
-            console.log("Click container")
-            fileInput?.click()
-        })
+            console.log("Click container");
+            fileInput?.click();
+        });
     }
 
     async _onChange(e: any) {
         const files = e?.target?.files;
         this.loading = true;
         this.requestUpdate();
-        if (files) {
+        if (files.length > 0) {
             this.src = await this.convertBase64(files[0]) as string;
             this.dispatchEvent(new CustomEvent("change", {
                 detail: { value: files },
@@ -91,16 +96,18 @@ export class OrFileUploader extends LitElement {
 
     convertBase64 (file:any) {
         return new Promise((resolve, reject) => {
-            const fileReader = new FileReader();
-            fileReader.readAsDataURL(file);
+            if (file) {
+                const fileReader = new FileReader();
+                fileReader.readAsDataURL(file);
 
-            fileReader.onload = () => {
-                resolve(fileReader.result);
-            };
+                fileReader.onload = () => {
+                    resolve(fileReader.result);
+                };
 
-            fileReader.onerror = (error) => {
-                reject(error);
-            };
+                fileReader.onerror = (error) => {
+                    reject(error);
+                };
+            }
         });
     };
 
@@ -108,10 +115,11 @@ export class OrFileUploader extends LitElement {
     render() {
         return html`
             <div class="container">
+                ${this.loading ? html`
+                    <or-loader .overlay="${true}"></or-loader>` : ""}
                 <div class="title">${this.title}</div>
                 <div id="imageContainer">
-                    ${this.loading ? html`
-                        <or-loader .overlay="${true}"></or-loader>` : ""}
+
                     ${!!this.src ?
                       html`<img .src="${this.src?.startsWith("data") ? this.src : "/manager" + this.src}"
                                 alt="OR-File-Uploader">
@@ -120,7 +128,7 @@ export class OrFileUploader extends LitElement {
                       html`
                           <div class="placeholder-container">
                               <or-icon icon="upload"></or-icon>
-                              Upload your file...
+                              ${i18next.t('uploadFile')}
                           </div>
                   ` 
         }

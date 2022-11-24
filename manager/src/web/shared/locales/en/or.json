@@ -517,6 +517,7 @@
   "layout": "Layout",
   "display": "Display",
   "screen": "Screen",
+  "uploadFile" : "Upload file",
   "thresholds": "Thresholds",
   "noDashboardSelected": "Please select a dashboard on the left",
   "noDashboardFound": "No dashboard could be found.",
@@ -564,5 +565,25 @@
     "deleteWidget": "Delete widget",
     "myDashboards": "My dashboards",
     "createdByOthers": "Created by others"
+  },
+  "configuration": {
+    "" : "Configuration",
+    "addRealmCustomization" : "Add Realm Customization",
+    "realmTitle": "Realm Title",
+    "defaultLanguage": "Default language",
+    "logos": "Logo's",T
+    "main": "main logo",
+    "mainMobile": "main logo mobile",
+    "realmColors": "Realm colors",
+    "primary": "Primary",
+    "bordersAndLines": "Borders and lines",
+    "invalidAndErrors": "Invalid and errors",
+    "surface": "Surface",
+    "background": "Background",
+    "text": "Text",
+    "navigation" : "Navigation",
+    "navigationDescription": "The navigation items that will be shown to a user. ",
+    "primaryNavigation" : "Primary menu",
+    "secondaryNavigation" : "Secondary menu"
   }
 }
