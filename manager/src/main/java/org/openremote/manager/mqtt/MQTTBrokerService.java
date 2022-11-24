@@ -111,8 +111,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
     protected ConcurrentMap<String, RemotingConnection> clientIDConnectionMap = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, RemotingConnection> connectionIDConnectionMap = new ConcurrentHashMap<>();
-    // TODO: Make auto provisioning clients disconnect and reconnect with credentials
-    // Temp to prevent breaking existing auto provisioning API
     protected ConcurrentMap<Object, Triple<String, String, String>> transientCredentials = new ConcurrentHashMap<>();
     protected Debouncer<String> userAssetDisconnectDebouncer;
     // Stores disconnected connections for a short period to allow last will publishes to be processed
@@ -193,6 +191,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Register notification plugin
         config.setWildCardConfiguration(wildcardConfiguration);
         config.setPersistenceEnabled(false);
+
+        // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
+        // Temp to prevent breaking existing auto provisioning API
+        // Disable caching so we can support auto provisioning sessions without having to reconnect - we need to re-evaluate this and clients should probably send X.509 through to the broker
+        config.setAuthenticationCacheSize(0);
+        config.setAuthorizationCacheSize(0);
 
         server = new EmbeddedActiveMQ();
         server.setConfiguration(config);
