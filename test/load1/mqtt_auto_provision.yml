@@ -7,8 +7,8 @@ modules:
         logfile: ./output/jmeter.log
 
 execution:
-- concurrency: 20
-  ramp-up: 40s
+- concurrency: 250
+  ramp-up: 250s
   iterations: 1
   scenario: mqtt-client-auto-provision-pub
 
