@@ -138,8 +138,14 @@ export class OrConfRealmCard extends LitElement {
     this.realm.styles = css
   }
 
-  protected _setHeader(value:ManagerHeaders[]){
-    this.realm.headers = value
+  protected _setHeader(keys:ManagerHeaders[], list: ManagerHeaders[]){
+    if (!this.realm.headers){
+      this.realm.headers = this.headerListSecondary.concat(this.headerListPrimary)
+    }
+    this.realm.headers = this.realm.headers?.filter(function(ele){
+      return !list.includes(ele);
+    });
+    this.realm.headers = this.realm.headers?.concat(keys)
   }
 
   protected _getImagePath(file:File, fileName: string){
@@ -165,7 +171,6 @@ export class OrConfRealmCard extends LitElement {
 
   protected async _setImageForUpload(file: File, fileName: string) {
     const path = this._getImagePath(file, fileName)
-    console.log(path)
     this.files[path] = {
       // name: 'filename',
       contents: await this.convertBase64(file),
@@ -190,7 +195,6 @@ export class OrConfRealmCard extends LitElement {
   };
 
   render() {
-    const app = this
     const colors = this._getColors()
     document.addEventListener('saveManagerConfig', () => {
       Object.entries(this.files).map(async ([x, y]) => {
@@ -231,22 +235,22 @@ export class OrConfRealmCard extends LitElement {
             <div>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}"
                             label="Primary"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}"
                             label="Borders and lines"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
                             label="Invalid and error"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
                             label="Surface"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
                             label="Background"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
                             label="Text"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
             </div>
           </div>
           <div class="header-group">
@@ -259,7 +263,7 @@ export class OrConfRealmCard extends LitElement {
                 label="Primary menu"
                 .value="${!!this.realm.headers ? this.realm.headers : this.headerListPrimary}"
                 .options="${this.headerListPrimary}"
-                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value)}"
+                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setHeader(e.detail.value, this.headerListPrimary)}"
               ></or-mwc-input>
               <or-mwc-input
                 .type="${InputType.SELECT}" multiple
@@ -267,7 +271,7 @@ export class OrConfRealmCard extends LitElement {
                 label="Secondary menu"
                 .value="${!!this.realm.headers ? this.realm.headers : this.headerListSecondary}"
                 .options="${this.headerListSecondary}"
-                @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value)}"
+                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setHeader(e.detail.value, this.headerListSecondary)}"
               ></or-mwc-input>
             </div>
           </div>
