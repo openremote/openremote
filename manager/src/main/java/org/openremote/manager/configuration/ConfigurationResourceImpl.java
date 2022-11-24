@@ -15,7 +15,6 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
 import java.io.*;
-import java.util.Base64;
 
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
 
@@ -23,16 +22,20 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
         super(timerService, identityService);
     }
 
+    protected String getPublicPath(){
+        return System.getProperty("user.dir") + (System.getenv("OR_CUSTOM_APP_DOCROOT") != null ? System.getenv("OR_CUSTOM_APP_DOCROOT") : "/deployment/manager/app");
+    }
+
     @Override
     public ManagerConf update(RequestParams requestParams, ManagerConf managerConfiguration) throws IOException {
-        String path = System.getProperty("user.dir") + (System.getenv("OR_CUSTOM_APP_DOCROOT") != null ? System.getenv("OR_CUSTOM_APP_DOCROOT") : "/deployment/manager/app");
-        OutputStream out = new FileOutputStream(new File(path + "/manager_config.json"));
+        OutputStream out = new FileOutputStream(new File(getPublicPath() + "/manager_config.json"));
         ObjectMapper mapper = new ObjectMapper();
 
         mapper
                 .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                 .enable(SerializationFeature.INDENT_OUTPUT);
+
         out.write(mapper.writeValueAsString(managerConfiguration).getBytes());
         out.close();
         
@@ -41,8 +44,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
     @Override
     public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) throws IOException {
-        String serverPath = System.getProperty("user.dir") + (System.getenv("OR_CUSTOM_APP_DOCROOT") != null ? System.getenv("OR_CUSTOM_APP_DOCROOT") : "/deployment/manager/app");
-        File file = new File(serverPath + path);
+        File file = new File(getPublicPath() + path);
         file.getParentFile().mkdirs();
         OutputStream out = new FileOutputStream(file);
         out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
