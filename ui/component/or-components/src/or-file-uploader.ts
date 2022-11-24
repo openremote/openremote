@@ -4,18 +4,20 @@ import { customElement, property } from "lit/decorators.js";
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public src: string = "";
 
     @property()
     public title: string = "";
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon";
+
+    private loading: boolean = false;
 
     static get styles() {
         return css`
-            #imageContainer{
+            #imageContainer {
                 position: relative;
                 max-width: 150px;
                 background-color: whitesmoke;
@@ -73,14 +75,17 @@ export class OrFileUploader extends LitElement {
     }
 
     async _onChange(e: any) {
-        const files = e?.target?.files
+        const files = e?.target?.files;
+        this.loading = true;
+        this.requestUpdate();
         if (files) {
             this.src = await this.convertBase64(files[0]) as string;
-            this.requestUpdate()
-            this.dispatchEvent(new CustomEvent('change', {
-                detail: { value: files}
-            }))
+            this.dispatchEvent(new CustomEvent("change", {
+                detail: { value: files },
+            }));
         }
+        this.loading = false;
+        this.requestUpdate();
     }
 
 
@@ -102,19 +107,21 @@ export class OrFileUploader extends LitElement {
 
     render() {
         return html`
-        <div class="container">
-            <div class="title">${this.title}</div>
-            <div id="imageContainer">
-                ${!!this.src ?
-                  html`<img .src="${this.src?.startsWith("data") ? this.src : "/manager" + this.src}"
-                            alt="OR-File-Uploader">
-                  <or-icon class="edit-icon" icon="pencil"></or-icon>`
-                  :
-                  html`
-                      <div class="placeholder-container">
-                          <or-icon icon="upload"></or-icon>
-                          Upload your file...
-                      </div>
+            <div class="container">
+                <div class="title">${this.title}</div>
+                <div id="imageContainer">
+                    ${this.loading ? html`
+                        <or-loader .overlay="${true}"></or-loader>` : ""}
+                    ${!!this.src ?
+                      html`<img .src="${this.src?.startsWith("data") ? this.src : "/manager" + this.src}"
+                                alt="OR-File-Uploader">
+                      <or-icon class="edit-icon" icon="pencil"></or-icon>`
+                      :
+                      html`
+                          <div class="placeholder-container">
+                              <or-icon icon="upload"></or-icon>
+                              Upload your file...
+                          </div>
                   ` 
         }
             </div>
