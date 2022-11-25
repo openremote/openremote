@@ -29,8 +29,6 @@ import javax.validation.Valid;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.openremote.model.Constants.READ_ADMIN_ROLE;
-import static org.openremote.model.Constants.READ_USERS_ROLE;
 
 /**
  * Manage users in realms and get info of current user.
@@ -82,12 +80,19 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     User getCurrent(@BeanParam RequestParams requestParams);
 
+    @PUT
+    @Path("{realm}/users")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    User update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
+
     @POST
     @Path("{realm}/users")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    User createUpdate(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
+    User create(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
 
     @DELETE
     @Path("{realm}/users/{userId}")

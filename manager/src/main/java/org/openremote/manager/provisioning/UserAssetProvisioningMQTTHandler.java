@@ -430,7 +430,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             .setUsername(username);
 
         String secret = UniqueIdentifierGenerator.generateId();
-        serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret);
+        serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret, true);
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
             LOG.finer("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
