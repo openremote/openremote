@@ -185,16 +185,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     @Override
     public <T extends Asset<?>> T mergeAsset(T asset) {
         Objects.requireNonNull(asset.getId());
-        Objects.requireNonNull(asset.getParentId());
-
-        // Do basic check that parent is at least an agent...doesn't confirm its' the correct agent so
-        // that's up to the protocol to guarantee
-        // TODO: need to revisit this once agent generated assets logic finalised
-//        if (!getAgents().containsKey(asset.getParentId())) {
-//            String msg = "Cannot merge protocol-provided asset as the parent ID is not a valid agent ID: " + asset;
-//            LOG.warning(msg);
-//            throw new IllegalArgumentException(msg);
-//        }
 
         // TODO: Define access permissions for merged asset (user asset links inherit from parent agent?)
         LOG.fine("Merging asset with protocol-provided: " + asset);
