@@ -24,3 +24,19 @@ export function getInsightsRoute(editMode?: boolean, dashboardId?: string) {
     }
     return route;
 }
+
+export function getUsersRoute(userId?: string) {
+    let route = "users";
+    if(userId) {
+        route += "/" + userId;
+    }
+    return route;
+}
+export function getNewUserRoute(serviceAccount?: boolean) {
+    let route = "users";
+    if(serviceAccount != undefined) {
+        let type = (serviceAccount ? 'serviceuser' : 'regular')
+        route += "/new/" + type;
+    }
+    return route
+}

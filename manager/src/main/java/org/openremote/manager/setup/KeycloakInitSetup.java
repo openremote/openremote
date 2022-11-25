@@ -58,7 +58,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         User adminUser = keycloakProvider.getUserByUsername(MASTER_REALM, MASTER_REALM_ADMIN_USER);
         adminUser.setFirstName("System");
         adminUser.setLastName("Administrator");
-        keycloakProvider.createUpdateUser(MASTER_REALM, adminUser, null);
+        keycloakProvider.createUpdateUser(MASTER_REALM, adminUser, null, true);
 
         // Give admin all roles on application client level
         keycloakProvider.updateUserRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
@@ -69,7 +69,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
             .setEnabled(true)
             .setSystemAccount(true);
         String password = UniqueIdentifierGenerator.generateId();
-        keycloakProxyUser = keycloakProvider.createUpdateUser(MASTER_REALM, keycloakProxyUser, password);
+        keycloakProxyUser = keycloakProvider.createUpdateUser(MASTER_REALM, keycloakProxyUser, password, true);
 
         // Make this proxy user a super user by giving them admin realm role
         keycloakProvider.updateUserRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), keycloakProvider.addRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), REALM_ADMIN_ROLE));

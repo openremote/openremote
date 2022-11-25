@@ -111,7 +111,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
             .setServiceAccount(true)
             .setEnabled(true)
             .setUsername("serviceuser");
-        serviceUser = keycloakProvider.createUpdateUser(realmBuilding.getName(), serviceUser, UniqueIdentifierGenerator.generateId("serviceusertest"));
+        serviceUser = keycloakProvider.createUpdateUser(realmBuilding.getName(), serviceUser, UniqueIdentifierGenerator.generateId("serviceusertest"), true);
         keycloakProvider.updateUserRoles(
             realmBuilding.getName(),
             serviceUser.getId(),
@@ -122,7 +122,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
             .setServiceAccount(true)
             .setEnabled(true)
             .setUsername("serviceuser2");
-        serviceUser2 = keycloakProvider.createUpdateUser(realmBuilding.getName(), serviceUser2, UniqueIdentifierGenerator.generateId("serviceuser2test"));
+        serviceUser2 = keycloakProvider.createUpdateUser(realmBuilding.getName(), serviceUser2, UniqueIdentifierGenerator.generateId("serviceuser2test"), true);
         keycloakProvider.updateUserRoles(
             realmBuilding.getName(),
             serviceUser2.getId(),
