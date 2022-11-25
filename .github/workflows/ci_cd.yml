@@ -139,17 +139,11 @@ jobs:
           if secrets is not None and secrets != 'null':
             for key, value in secrets.items():
               os.system(f"echo 'Outputting secret: {key}'")
-              value=value.replace('%','%25')
-              value=value.replace('\n','%0A')
-              value=value.replace('\r','%0D')
               os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
 
           if inputs is not None and inputs != 'null':
             for key, value in inputs.items():
               os.system(f"echo 'Outputting input: {key}'")
-              value=value.replace('%','%25')
-              value=value.replace('\n','%0A')
-              value=value.replace('\r','%0D')
               os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
 
         env:
