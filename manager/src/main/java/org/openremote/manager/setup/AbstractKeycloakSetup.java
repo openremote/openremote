@@ -101,7 +101,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
         if (pushNotificationsDisabled) {
             user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, "true");
         }
-        user = keycloakProvider.createUpdateUser(realm, user, password);
+        user = keycloakProvider.createUpdateUser(realm, user, password, true);
         if (user == null) {
             return null;
         }
