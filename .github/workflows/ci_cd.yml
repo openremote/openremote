@@ -113,14 +113,12 @@ jobs:
         run: |
           import os
           import json
-          import secrets
           
           # Overlay all inputs and secrets onto this jobs outputs
           callerInputs = os.getenv("CALLER_INPUTS")
           inputs = os.getenv("INPUTS")
           secrets = os.getenv("SECRETS")
           eventName = os.getenv("EVENT_NAME")
-          delimiter = secrets.token_hex()
 
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
@@ -144,7 +142,7 @@ jobs:
               os.system(f"echo 'Outputting secret: {key}'")
               lines = len(value.split("\n"))
               if lines > 1:
-                  os.system(f"echo '{key}<<{delimiter}\n{value}\n{delimiter}' >> $GITHUB_OUTPUT")
+                  os.system(f"echo '{key}<<EEOOFF\n{value}\nEEOOFF' >> $GITHUB_OUTPUT")
               else:
                   os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> $GITHUB_OUTPUT")
 
@@ -153,7 +151,7 @@ jobs:
               os.system(f"echo 'Outputting input: {key}'")
               lines = len(value.split("\n"))
               if lines > 1:
-                  os.system(f"echo '{key}<<{delimiter}\n{value}\n{delimiter}' >> $GITHUB_OUTPUT")
+                  os.system(f"echo '{key}<<EEOOFF\n{value}\nEEOOFF' >> $GITHUB_OUTPUT")
               else:
                   os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> $GITHUB_OUTPUT")
 
