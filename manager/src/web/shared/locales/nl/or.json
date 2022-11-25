@@ -241,9 +241,12 @@
   "realm_plural": "Realms",
   "displayName":"Vriendelijke naam",
   "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
+  "serviceUser": "Service gebruiker",
   "user_plural": "Gebruikers",
   "regularUser_plural": "Gebruikers",
   "serviceUser_plural": "Service gebruikers",
+  "creating_regularUser": "Een nieuwe gebruiker aanmaken",
+  "creating_serviceUser": "Een nieuwe service gebruiker aanmaken",
   "regenerateSecret": "Regenereer secret",
   "generateSecretInfo": "Een secret wordt gegenereerd bij het maken van een gebruiker.",
   "copySecret": "Kopieer secret",
@@ -488,6 +491,13 @@
       "indexedItem": "Item {{index}}"
     }
   },
+  "rowsPerPage": "Rijen per pagina",
+  "createUserFailed": "Aanmaken gebruiker mislukt",
+  "saveUserFailed": "Opslaan gebruiker mislukt",
+  "saveUserSucceeded": "Gebruiker succesvol opgeslagen!",
+  "userAlreadyExists": "Fout opgetreden! Deze gebruiker bestaat al!",
+  "invalidUsername": "De gebruikersnaam mag 3-255 numerieke tekens bevatten",
+  "invalidEmail": "Ongeldig emailadres",
   "yes": "Ja",
   "no": "Nee",
   "filter": {
