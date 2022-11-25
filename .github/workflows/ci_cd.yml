@@ -139,12 +139,12 @@ jobs:
           if secrets is not None and secrets != 'null':
             for key, value in secrets.items():
               os.system(f"echo 'Outputting secret: {key}'")
-              os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
+              os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> $GITHUB_OUTPUT")
 
           if inputs is not None and inputs != 'null':
             for key, value in inputs.items():
               os.system(f"echo 'Outputting input: {key}'")
-              os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
+              os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> $GITHUB_OUTPUT")
 
         env:
           CALLER_INPUTS: ${{ toJSON(inputs) }}
