@@ -19,16 +19,16 @@ export interface OrMwcTabItem {
 //language=css
 const tabStyling = css`
     .mdc-tab {
-        background: ${unsafeCSS(DefaultColor4)};
+        background: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
     }
     .mdc-tab .mdc-tab__text-label {
-        color: ${unsafeCSS(DefaultColor8)};
+        color: var(--or-app-color8, ${unsafeCSS(DefaultColor8)});
     }
     .mdc-tab .mdc-tab__icon {
-        color: ${unsafeCSS(DefaultColor8)};
+        color: var(--or-app-color8, ${unsafeCSS(DefaultColor8)})
     }
     .mdc-tab-indicator .mdc-tab-indicator__content--underline {
-        border-color: ${unsafeCSS(DefaultColor8)};
+        border-color: var(--or-app-color8, ${unsafeCSS(DefaultColor8)})
     }
     .mdc-tab__ripple::before, .mdc-tab__ripple::after {
         background-color: var(--ripplecolor, ${unsafeCSS(DefaultColor8)});

@@ -15,7 +15,7 @@ export interface GaugeWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
     thresholds: [number, string][];
-    deltaFormat: "absolute" | "percentage";
+    decimals: number;
     min: number,
     max: number
 }
@@ -33,7 +33,7 @@ export class OrGaugeWidget implements OrWidgetEntity {
             displayName: widget.displayName,
             attributeRefs: [],
             thresholds: [[0, "#4caf50"],[75, "#ff9800"],[90, "#ef5350"]], // colors from https://mui.com/material-ui/customization/palette/ as reference (since material has no official colors)
-            deltaFormat: "absolute",
+            decimals: 0,
             min: 0,
             max: 100
         } as GaugeWidgetConfig;
@@ -72,7 +72,7 @@ export class OrGaugeWidgetContent extends LitElement {
             ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => { 
                 return html`
                     <or-gauge .asset="${this.assets[0]}" .assetAttribute="${this.assetAttributes[0]}" .thresholds="${this.widget?.widgetConfig.thresholds}"
-                              .min="${this.widget?.widgetConfig.min}" .max="${this.widget?.widgetConfig.max}"
+                              .decimals="${this.widget?.widgetConfig.decimals}" .min="${this.widget?.widgetConfig.min}" .max="${this.widget?.widgetConfig.max}"
                               style="height: 100%;"></or-gauge>
                 `;
             }, () => {
@@ -177,6 +177,14 @@ export class OrGaugeWidgetSettings extends LitElement {
                                                   config.max = event.detail.value;
                                                   this.updateConfig(this.widget!, config);
                                               }
+                                          }}"
+                            ></or-mwc-input>
+                        </div>
+                        <div>
+                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
+                                          @or-mwc-input-changed="${(event: CustomEvent) => {
+                                              config.decimals = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
                         </div>

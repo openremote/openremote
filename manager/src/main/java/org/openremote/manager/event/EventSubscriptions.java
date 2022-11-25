@@ -21,7 +21,7 @@ package org.openremote.manager.event;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultMessage;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.model.event.TriggeredEventSubscription;

@@ -21,7 +21,7 @@ package org.openremote.container.web.socket;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
+import org.apache.camel.support.DefaultConsumer;
 
 import java.util.function.Consumer;
 
