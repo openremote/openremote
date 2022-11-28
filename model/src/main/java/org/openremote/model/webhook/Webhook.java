@@ -2,53 +2,40 @@ package org.openremote.model.webhook;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.http.HTTPMethod;
+
+import java.util.List;
+import java.util.Map;
 
 public class Webhook {
 
-    public enum Method {
-        GET, POST, PUT, DELETE
-    }
-
-    public enum AuthMethod {
-        NONE, HTTP_BASIC, API_KEY, OAUTH2
-    }
-
-    public static class AuthDetails {
-        public String username;
-        public String password;
-        public String apiKey;
-        public Method method;
-        public String url;
-        public String clientId;
-        public String clientSecret;
-    }
-
-    public static class Header {
-        public String header;
-        public String value;
-    }
-
-    /* --------- */
-
     protected String name;
     protected String url;
-    protected Header[] headers;
-    protected Method method;
-    protected AuthMethod authMethod;
-    protected AuthDetails authDetails;
+    protected Map<String, List<String>> headers;
+    protected HTTPMethod httpMethod;
+    protected UsernamePassword usernamePassword;
+    protected OAuthGrant oAuthGrant;
     protected String payload;
 
     public Webhook() {
     }
 
     @JsonCreator
-    public Webhook(@JsonProperty("name") String name, @JsonProperty("url") String url, @JsonProperty("headers") Header[] headers, @JsonProperty("method") Method method, @JsonProperty("authMethod") AuthMethod authMethod, @JsonProperty("authDetails") AuthDetails authDetails, @JsonProperty("payload") String payload) {
+    public Webhook(@JsonProperty("name") String name,
+                   @JsonProperty("url") String url,
+                   @JsonProperty("headers") Map<String, List<String>> headers,
+                   @JsonProperty("httpMethod") HTTPMethod httpMethod,
+                   @JsonProperty("usernamePassword") UsernamePassword usernamePassword,
+                   @JsonProperty("oAuthGrant") OAuthGrant oAuthGrant,
+                   @JsonProperty("payload") String payload) {
         this.name = name;
         this.url = url;
         this.headers = headers;
-        this.method = method;
-        this.authMethod = authMethod;
-        this.authDetails = authDetails;
+        this.httpMethod = httpMethod;
+        this.usernamePassword = usernamePassword;
+        this.oAuthGrant = oAuthGrant;
         this.payload = payload;
     }
 
@@ -69,36 +56,36 @@ public class Webhook {
         this.url = url;
     }
 
-    public Header[] getHeaders() {
+    public Map<String, List<String>> getHeaders() {
         return headers;
     }
 
-    public void setHeaders(Header[] headers) {
+    public void setHeaders(Map<String, List<String>> headers) {
         this.headers = headers;
     }
 
-    public Method getMethod() {
-        return method;
+    public HTTPMethod getHttpMethod() {
+        return httpMethod;
     }
 
-    public void setMethod(Method method) {
-        this.method = method;
+    public void setHttpMethod(HTTPMethod method) {
+        this.httpMethod = method;
     }
 
-    public AuthDetails getAuthDetails() {
-        return authDetails;
+    public UsernamePassword getUsernamePassword() {
+        return usernamePassword;
     }
 
-    public void setAuthDetails(AuthDetails authDetails) {
-        this.authDetails = authDetails;
+    public void setAuthMethod(UsernamePassword usernamePassword) {
+        this.usernamePassword = usernamePassword;
     }
 
-    public AuthMethod getAuthMethod() {
-        return authMethod;
+    public OAuthGrant getOAuthGrant() {
+        return oAuthGrant;
     }
 
-    public void setAuthMethod(AuthMethod authMethod) {
-        this.authMethod = authMethod;
+    public void setoAuthGrant(OAuthGrant oAuthGrant) {
+        this.oAuthGrant = oAuthGrant;
     }
 
     public String getPayload() {

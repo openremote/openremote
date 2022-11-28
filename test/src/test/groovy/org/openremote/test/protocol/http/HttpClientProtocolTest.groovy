@@ -24,7 +24,6 @@ import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
-import org.openremote.agent.protocol.http.HTTPMethod
 import org.openremote.agent.protocol.http.HTTPProtocol
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService

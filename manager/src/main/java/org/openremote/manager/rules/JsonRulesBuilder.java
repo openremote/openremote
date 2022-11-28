@@ -867,7 +867,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         if(ruleAction instanceof RuleActionWebhook webhookAction) {
             Webhook webhook = webhookAction.webhook;
-            if(webhook.getUrl() != null && webhook.getMethod() != null) {
+            if(webhook.getUrl() != null && webhook.getHttpMethod() != null) {
                 return new RuleActionExecution(() -> webhooksFacade.send(webhook), 0);
             }
         }

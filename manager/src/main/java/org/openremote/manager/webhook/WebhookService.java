@@ -8,16 +8,10 @@ import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.webhook.Webhook;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -54,62 +48,46 @@ public class WebhookService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
-        LOG.warning("Configuring the WebhookService");
         // empty
     }
 
     @Override
     public void start(Container container) throws Exception {
-        LOG.warning("Starting the WebhookService..");
         // empty
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        LOG.warning("Stopping the WebhookService..");
         // empty
     }
 
     public void sendHttpRequest(Webhook webhook) {
-        LOG.info("Sending HTTP Request for webhook...");
         ResteasyClient client = WebClient.registerDefaults(clientBuilder).build();
         WebTargetBuilder builder = new WebTargetBuilder(client, URI.create(webhook.getUrl()));
-        if(webhook.getAuthMethod() != null) {
-            switch (webhook.getAuthMethod()) {
-                case OAUTH2 -> {
-                    Webhook.AuthDetails details = webhook.getAuthDetails();
-                    if(details != null) {
-                        builder.setOAuthAuthentication(new OAuthClientCredentialsGrant(details.url, details.clientId, details.clientSecret, null));
-                    } else {
-                        throw new WebApplicationException(Response.Status.BAD_REQUEST);
-                    }
-                }
-                case HTTP_BASIC -> {
-                    builder.setBasicAuthentication(webhook.getAuthDetails().username, webhook.getAuthDetails().password);
-                }
-            }
+
+        // Authentication
+        if(webhook.getUsernamePassword() != null) {
+            builder.setBasicAuthentication(webhook.getUsernamePassword().getUsername(), webhook.getUsernamePassword().getPassword());
+        } else if(webhook.getOAuthGrant() != null) {
+            builder.setOAuthAuthentication(webhook.getOAuthGrant());
         }
-        if(webhook.getHeaders() != null && webhook.getHeaders().length > 0) {
-            Map<String, List<String>> headers = new HashMap<>();
-            for(Webhook.Header header : webhook.getHeaders()) {
-                headers.put(header.header, Collections.singletonList(header.value));
-            }
-            builder.setInjectHeaders(headers);
+        if (webhook.getHeaders() != null && webhook.getHeaders().size() > 0) {
+            builder.setInjectHeaders(webhook.getHeaders());
         }
+
         Response response = null;
         try {
             ResteasyWebTarget target = builder.build();
-            String method = webhook.getMethod().name();
+            String method = webhook.getHttpMethod().name();
             response = target.request().method(method);
-            String entity = response.readEntity(String.class);
-            LOG.warning(entity);
+            response.readEntity(String.class);
         } catch (Exception e) {
+            LOG.warning(e.getMessage());
             throw e;
         } finally {
-            if(response != null) {
+            if (response != null) {
                 response.close();
             }
-            LOG.warning("Done with HTTP request!");
         }
     }
 }
