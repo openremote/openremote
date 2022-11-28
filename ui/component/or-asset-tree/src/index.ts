@@ -1814,6 +1814,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (selectedId && this.selectedIds && !this.selectedIds.includes(selectedId)) {
+            if (!ev.ctrlKey && !ev.shiftKey) {
+                this.selectedIds = [];
+            }
             this.selectedIds.push(selectedId);
         }
     }
