@@ -1,35 +1,32 @@
 package org.openremote.manager.configuration;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.dashboard.DashboardResourceImpl;
+import org.openremote.container.util.CodecUtil;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.dashboard.Dashboard;
-import org.openremote.model.dashboard.DashboardAccess;
+import org.openremote.model.configuration.ManagerConf;
+import org.openremote.model.file.FileInfo;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.ws.rs.WebApplicationException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
+import static org.openremote.container.util.MapAccess.getString;
 public class ConfigurationService extends RouteBuilder implements ContainerService {
 
     protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
+    protected Path pathPublicRoot;
 
     @Override
     public int getPriority() {
@@ -45,10 +42,12 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     public void init(Container container) throws Exception {
         identityService = container.getService(ManagerIdentityService.class);
         persistenceService = container.getService(PersistenceService.class);
+        pathPublicRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
+        System.out.print("Path: " + pathPublicRoot);
         container.getService(ManagerWebService.class).addApiSingleton(
                 new ConfigurationResourceImpl(
                         container.getService(TimerService.class),
-                        identityService)
+                        identityService, this)
         );
     }
 
@@ -60,7 +59,28 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     @Override
     public void stop(Container container) throws Exception {
         /* code not overridden yet */
+    }
 
+
+    public void saveMangerConfig(ManagerConf managerConfiguration) throws IOException {
+        OutputStream out = new FileOutputStream(new File(pathPublicRoot + "/manager_config.json"));
+        ObjectMapper mapper = new ObjectMapper();
+
+        mapper
+                .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                .enable(SerializationFeature.INDENT_OUTPUT);
+
+        out.write(mapper.writeValueAsString(managerConfiguration).getBytes());
+        out.close();
+    }
+
+
+    public void saveImageFile(String path, FileInfo fileInfo) throws IOException {
+        File file = new File(pathPublicRoot + path);
+        file.getParentFile().mkdirs();
+        OutputStream out = new FileOutputStream(file);
+        out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
     }
 
 
