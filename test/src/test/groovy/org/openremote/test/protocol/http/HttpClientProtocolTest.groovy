@@ -38,6 +38,7 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.OAuthGrant
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
+import org.openremote.model.http.HTTPMethod
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.SubStringValueFilter
