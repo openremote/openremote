@@ -110,12 +110,12 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
     protected _showReloadDialogDialog() {
         const dialogActions: DialogAction[] = [
             {
-                default: true,
+                action: () => {
+                    window.history.go(0)
+                },
                 actionName: "ok",
                 content: i18next.t("reload"),
-                action: () => { // @ts-ignore
-                    window.location.reload(true);
-                },
+                default: true,
             },
 
         ];
