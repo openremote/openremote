@@ -111,7 +111,10 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         const dialogActions: DialogAction[] = [
             {
                 action: () => {
-                    window.history.go(0)
+                    if ('submit' in document.getElementById("forceReloadForm")){
+                        // @ts-ignore
+                        document.getElementById("forceReloadForm").submit();
+                    }
                 },
                 actionName: "ok",
                 content: i18next.t("reload"),
@@ -122,7 +125,8 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         const dialog = showDialog(new OrMwcDialog()
           .setHeading(i18next.t('reload'))
           .setActions(dialogActions)
-          .setContent(html`${i18next.t('configuration.reloadPage')}`)
+          .setContent(html`${i18next.t('configuration.reloadPage')}
+          <form id="forceReloadForm" method="POST"></form>`)
           .setStyles(html`
               <style>
                   .mdc-dialog__surface {
