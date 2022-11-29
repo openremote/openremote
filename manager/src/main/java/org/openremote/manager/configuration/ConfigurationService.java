@@ -43,7 +43,6 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         identityService = container.getService(ManagerIdentityService.class);
         persistenceService = container.getService(PersistenceService.class);
         pathPublicRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
-        System.out.print("Path: " + pathPublicRoot);
         container.getService(ManagerWebService.class).addApiSingleton(
                 new ConfigurationResourceImpl(
                         container.getService(TimerService.class),

@@ -18,6 +18,7 @@
   "selectLanguage": "Taal kiezen",
   "logout": "Uitloggen",
   "login": "Log in",
+  "reload": "Herladen",
   "edit": "Aanpassen",
   "monday": "maandag",
   "tuesday": "dinsdag",
@@ -587,6 +588,7 @@
     "navigation" : "Navigatie",
     "navigationDescription": "De navigatie opties toegankelijk voor de gebruiker.",
     "primaryNavigation" : "Primair menu",
-    "secondaryNavigation" : "Secundaire menu"
+    "secondaryNavigation" : "Secundaire menu",
+    "reloadPage" : "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina"
   }
 }

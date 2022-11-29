@@ -18,6 +18,7 @@
   "selectLanguage": "Select language",
   "logout": "Log out",
   "login": "Log in",
+  "reload": "Reload",
   "edit": "Edit",
   "monday": "Monday",
   "tuesday": "Tuesday",
@@ -591,6 +592,7 @@
     "navigation" : "Navigation",
     "navigationDescription": "The navigation items that will be shown to a user. ",
     "primaryNavigation" : "Primary menu",
-    "secondaryNavigation" : "Secondary menu"
+    "secondaryNavigation" : "Secondary menu",
+    "reloadPage" : "To see the changes that have been made, reload the page"
   }
 }
