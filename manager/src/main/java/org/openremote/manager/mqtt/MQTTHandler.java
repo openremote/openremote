@@ -122,7 +122,6 @@ public abstract class MQTTHandler {
 
                 getLogger().info("Client published to '" + publishTopic + "': " + mqttBrokerService.connectionToString(connection));
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
-                getLogger().info("Client published '" + topic + "': " + mqttBrokerService.connectionToString(connection));
             });
         } catch (ActiveMQException e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);

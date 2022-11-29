@@ -105,6 +105,7 @@ public class RulesEngine<T extends Ruleset> {
     // Here to facilitate testing
     protected static BiConsumer<RulesEngine<?>, RulesetDeployment> PAUSE_SCHEDULER = RulesEngine::schedulePause;
     final protected TimerService timerService;
+    final protected RulesService rulesService;
     final protected ScheduledExecutorService executorService;
     final protected AssetStorageService assetStorageService;
     final protected ClientEventService clientEventService;
@@ -136,6 +137,7 @@ public class RulesEngine<T extends Ruleset> {
     protected boolean disableTemporaryFactExpiration = false;
 
     public RulesEngine(TimerService timerService,
+                       RulesService rulesService,
                        ManagerIdentityService identityService,
                        ScheduledExecutorService executorService,
                        AssetStorageService assetStorageService,
@@ -147,6 +149,7 @@ public class RulesEngine<T extends Ruleset> {
                        RulesEngineId<T> id,
                        AssetLocationPredicateProcessor assetLocationPredicatesConsumer) {
         this.timerService = timerService;
+        this.rulesService = rulesService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
@@ -459,7 +462,10 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void scheduleFire() {
+    protected void scheduleFire() {
+
+
+
         withLock(toString() + "::scheduleFire", () -> {
             // Schedule a firing within the guaranteed expiration time (so not immediately), and
             // only if the last firing is done. This effectively limits how often the rules engine
@@ -489,7 +495,7 @@ public class RulesEngine<T extends Ruleset> {
                         }
 
                     }),
-                    TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
+                    rulesService.tempFactExpirationMillis,
                     TimeUnit.MILLISECONDS
                 );
             }

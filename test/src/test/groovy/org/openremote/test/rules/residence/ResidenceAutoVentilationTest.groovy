@@ -30,8 +30,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
     def "Auto ventilation with CO2 detection"() {
 
         given: "the container environment is started"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -225,7 +223,5 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 64d
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 }

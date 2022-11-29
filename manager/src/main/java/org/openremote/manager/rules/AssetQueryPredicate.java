@@ -22,7 +22,6 @@ package org.openremote.manager.rules;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
@@ -47,11 +46,18 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
     final protected AssetQuery query;
     final protected TimerService timerService;
     final protected AssetStorageService assetStorageService;
+    final protected List<String> resolvedAssetTypes;
 
     public AssetQueryPredicate(TimerService timerService, AssetStorageService assetStorageService, AssetQuery query) {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.query = query;
+
+        if (query.types != null && query.types.length > 0) {
+            resolvedAssetTypes = Arrays.asList(AssetQuery.getResolvedAssetTypes(query.types));
+        } else {
+            resolvedAssetTypes = null;
+        }
     }
 
     @Override
@@ -79,14 +85,8 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
             }
         }
 
-        if (query.types != null && query.types.length > 0) {
-            if (Arrays.stream(query.types).noneMatch(type ->
-                        type.isAssignableFrom(
-                            ValueUtil.getAssetDescriptor(assetState.getAssetType())
-                                .orElse(ThingAsset.DESCRIPTOR).getType()))
-                    ) {
-                return false;
-            }
+        if (resolvedAssetTypes != null && !resolvedAssetTypes.contains(assetState.getAssetType())) {
+            return false;
         }
 
         if (query.paths != null && query.paths.length > 0) {

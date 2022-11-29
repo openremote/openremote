@@ -21,8 +21,6 @@ package org.openremote.manager.rules;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.Constants;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
@@ -38,8 +36,10 @@ import org.openremote.manager.rules.flow.FlowResourceImpl;
 import org.openremote.manager.rules.geofence.GeofenceAssetAdapter;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent.Source;
@@ -54,27 +54,25 @@ import org.openremote.model.security.Realm;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
-import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
 import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.logging.Level.*;
-import static java.util.stream.Collectors.toList;
+import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.SEVERE;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
 
 /**
  * Manages {@link RulesEngine}s for stored {@link Ruleset}s and processes asset attribute updates.
@@ -103,6 +101,15 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     public static final int PRIORITY = LOW_PRIORITY;
     public static final String OR_RULE_EVENT_EXPIRES = "OR_RULE_EVENT_EXPIRES";
     public static final String OR_RULE_EVENT_EXPIRES_DEFAULT = "PT1H";
+    /**
+     * This value defines the periodic firing of the rules engines, and therefore
+     * has an impact on system load. If a temporary fact has a shorter expiration
+     * time, it's not guaranteed to be removed within that time. Any time-based
+     * operation, such as matching temporary facts in a sliding time window, must
+     * be designed with this margin in mind.
+     */
+    public static final String OR_MIN_TEMP_FACT_EXPIRATION_MILLIS = "OR_MIN_TEMP_FACT_EXPIRATION_MILLIS";
+    public static final int OR_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT = 60000;
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected final Map<String, RulesEngine<RealmRuleset>> realmEngines = new HashMap<>();
     protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new HashMap<>();
@@ -130,6 +137,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected Set<AssetState<?>> assetStates = new HashSet<>();
     protected Set<AssetState<?>> preInitAssetStates = new HashSet<>();
     protected long defaultEventExpiresMillis = 1000*60*60;
+    protected long tempFactExpirationMillis;
     protected boolean initDone;
     protected boolean startDone;
 
@@ -152,6 +160,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
+
+        tempFactExpirationMillis = getInteger(container.getConfig(), "OR_MIN_TEMP_FACT_EXPIRATION_MILLIS", OR_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT);
 
         if (initDone) {
             return;
@@ -614,6 +624,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             if (globalEngine == null) {
                 globalEngine = new RulesEngine<>(
                     timerService,
+                    this,
                     identityService,
                     executorService,
                     assetStorageService,
@@ -654,6 +665,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 .computeIfAbsent(ruleset.getRealm(), (realm) ->
                     new RulesEngine<>(
                         timerService,
+                        this,
                         identityService,
                         executorService,
                         assetStorageService,
@@ -730,6 +742,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 .computeIfAbsent(ruleset.getAssetId(), (assetId) ->
                     new RulesEngine<>(
                         timerService,
+                        this,
                         identityService,
                         executorService,
                         assetStorageService,

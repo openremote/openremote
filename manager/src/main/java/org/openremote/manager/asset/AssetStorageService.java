@@ -1779,18 +1779,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return containsCalendarPredicate;
     }
 
-    /**
-     * Resolves the concrete {@link Asset} types that are covered by the supplied asset types
-     */
-    protected static String[] getResolvedAssetTypes(Class<? extends Asset<?>>[] assetClasses) {
-        return Arrays.stream(assetClasses)
-            .flatMap(assetClass ->
-                Arrays.stream(ValueUtil.getAssetClasses(null)).filter(assetClass::isAssignableFrom))
-            .map(Class::getSimpleName)
-            .distinct()
-            .toArray(String[]::new);
-    }
-
     protected static boolean addAttributePredicateGroupQuery(StringBuilder sb, List<ParameterBinder> binders, int groupIndex, Consumer<String> selectInserter, LogicGroup<AttributePredicate> attributePredicateGroup, Supplier<Long> timeProvider) {
 
         boolean containsCalendarPredicate = false;

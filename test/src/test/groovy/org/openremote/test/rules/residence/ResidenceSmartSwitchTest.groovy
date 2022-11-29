@@ -28,8 +28,6 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -150,16 +148,12 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             assert !kitchen.getAttribute("smartSwitchEnabledC").get().getValue().isPresent()
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 
     def "Set mode ON_AT and begin/end cycle time in past"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -248,16 +242,12 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             assert !kitchen.getAttribute("smartSwitchEnabledC").get().getValue().isPresent()
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 
     def "Set mode READY_AT and begin/end cycle time in future"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -370,16 +360,12 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             assert !kitchen.getAttribute("smartSwitchEnabledC").get().getValue().isPresent()
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 
     def "Set mode READY_AT and begin/end cycle time in past"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -469,16 +455,12 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             assert !kitchen.getAttribute("smartSwitchEnabledC").get().getValue().isPresent()
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 
     def "Set mode READY_AT and insufficient begin/end cycle time"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -568,8 +550,6 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             assert !kitchen.getAttribute("smartSwitchEnabledC").get().getValue().isPresent()
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 
 }

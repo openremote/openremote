@@ -41,6 +41,7 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.*;
@@ -535,13 +536,16 @@ public class ValueUtil {
         return assetTypeMap.values().toArray(new Class[0]);
     }
 
-    public static Optional<AssetTypeInfo> getAssetInfo(Class<? extends Asset<?>> assetType) {
+    public static Optional<Class<? extends Asset<?>>> getAssetClass(String assetType) {
+        return Optional.ofNullable(assetTypeMap.get(assetType));
+    }
+
+    public static <T extends Asset<?>> Optional<AssetTypeInfo> getAssetInfo(Class<T> assetType) {
         return Optional.ofNullable(assetInfoMap.get(assetType));
     }
 
     public static Optional<AssetTypeInfo> getAssetInfo(String assetType) {
-        Class<? extends Asset<?>> assetClass = assetTypeMap.get(assetType);
-        return Optional.ofNullable(assetClass != null ? assetInfoMap.get(assetClass) : null);
+        return getAssetClass(assetType).map(assetClass -> assetInfoMap.get(assetClass));
     }
 
     // TODO: Implement ability to restrict which asset types are allowed to be added to a given parent type
@@ -571,7 +575,7 @@ public class ValueUtil {
         return metaItemDescriptors.toArray(new MetaItemDescriptor<?>[0]);
     }
 
-    public static Optional<MetaItemDescriptor<?>[]> getMetaItemDescriptors(Class<? extends Asset<?>> assetType) {
+    public static <T extends Asset<?>> Optional<MetaItemDescriptor<?>[]> getMetaItemDescriptors(Class<T> assetType) {
         return getAssetInfo(assetType).map(AssetTypeInfo::getMetaItemDescriptors);
     }
 
@@ -589,7 +593,7 @@ public class ValueUtil {
         return valueDescriptors.toArray(new ValueDescriptor<?>[0]);
     }
 
-    public static Optional<ValueDescriptor<?>[]> getValueDescriptors(Class<? extends Asset<?>> assetType) {
+    public static <T extends Asset<?>> Optional<ValueDescriptor<?>[]> getValueDescriptors(Class<T> assetType) {
         return getAssetInfo(assetType).map(AssetTypeInfo::getValueDescriptors);
     }
 
@@ -765,16 +769,18 @@ public class ValueUtil {
             if (!Modifier.isAbstract(assetClass.getModifiers())) {
 
                 AssetTypeInfo assetInfo = buildAssetInfo(assetClass, copy);
-                assetInfoMap.put(assetClass, assetInfo);
-                assetTypeMap.put(assetInfo.getAssetDescriptor().getName(), assetClass);
 
-                if (assetInfo.getAssetDescriptor() instanceof AgentDescriptor) {
-                    AgentDescriptor<?,?,?> agentDescriptor = (AgentDescriptor<?,?,?>)assetInfo.getAssetDescriptor();
-                    String agentLinkName = agentDescriptor.getAgentLinkClass().getSimpleName();
-                    if (agentLinkMap.containsKey(agentLinkName) && agentLinkMap.get(agentLinkName) != agentDescriptor.getAgentLinkClass()) {
-                        throw new IllegalStateException("AgentLink simple class name must be unique, duplicate found for: " + agentDescriptor.getAgentLinkClass());
+                if (assetInfo != null) {
+                    assetInfoMap.put(assetClass, assetInfo);
+                    assetTypeMap.put(assetInfo.getAssetDescriptor().getName(), assetClass);
+
+                    if (assetInfo.getAssetDescriptor() instanceof AgentDescriptor<?, ?, ?> agentDescriptor) {
+                        String agentLinkName = agentDescriptor.getAgentLinkClass().getSimpleName();
+                        if (agentLinkMap.containsKey(agentLinkName) && agentLinkMap.get(agentLinkName) != agentDescriptor.getAgentLinkClass()) {
+                            throw new IllegalStateException("AgentLink simple class name must be unique, duplicate found for: " + agentDescriptor.getAgentLinkClass());
+                        }
+                        agentLinkMap.put(agentLinkName, agentDescriptor.getAgentLinkClass());
                     }
-                    agentLinkMap.put(agentLinkName, agentDescriptor.getAgentLinkClass());
                 }
             }
         });
@@ -988,6 +994,10 @@ public class ValueUtil {
     }
 
     protected static AssetTypeInfo buildAssetInfo(Class<? extends Asset<?>> assetClass, Map<Class<? extends Asset<?>>, List<NameHolder>> classDescriptorMap) throws IllegalStateException {
+
+        if (assetClass == UnknownAsset.class) {
+            return null;
+        }
 
         Class<?> currentClass = assetClass;
         List<Class<?>> classTree = new ArrayList<>();

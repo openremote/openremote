@@ -20,7 +20,6 @@
 package org.openremote.model.asset.agent;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.auth.OAuthGrant;
@@ -281,7 +280,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
                 Arrays.stream(info.getAttributeDescriptors())
                     .anyMatch(ad -> ad.getName().equals(attributeName)))
             .orElse(false)
-            && ValueUtil.getAssetInfo(UnknownAsset.class)
+            && ValueUtil.getAssetInfo(Asset.class)
             .map(typeInfo -> Arrays.stream(typeInfo.getAttributeDescriptors()).noneMatch(ad -> ad.getName().equals(attributeName)))
             .orElse(false);
     }

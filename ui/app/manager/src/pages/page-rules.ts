@@ -49,8 +49,7 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
                 excludeAssets: [
                     WellknownAssets.TRADFRILIGHTASSET,
                     WellknownAssets.TRADFRIPLUGASSET,
-                    WellknownAssets.ARTNETLIGHTASSET,
-                    WellknownAssets.UNKNOWNASSET
+                    WellknownAssets.ARTNETLIGHTASSET
                 ]
             }
         },

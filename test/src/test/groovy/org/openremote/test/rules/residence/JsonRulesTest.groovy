@@ -69,10 +69,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
 
-        and: "the rule firing delay time is set to a small value for testing"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
-
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
@@ -489,7 +485,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         RulesEngine.PAUSE_SCHEDULER = originalPause
         RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
@@ -498,11 +493,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
     def "Trigger actions based on the position of the sun"() {
 
-        given: "the rule firing delay time is set to a small value for testing"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
-
-        and: "the container environment is started"
+        given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
@@ -716,7 +707,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         cleanup: "static variables are reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
