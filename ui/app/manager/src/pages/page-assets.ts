@@ -55,9 +55,9 @@ const pageAssetsSlice = createSlice({
                 expandedParents.push({ realm: manager.displayRealm, ids: []});
             }
             const expandedId = expandedParents.findIndex(x => x.realm == manager.displayRealm);
-            if(!action.payload[1] && expanded.ids.includes(action.payload[0])) {
+            if(!action.payload[1] && expanded && expanded.ids && expanded.ids.includes(action.payload[0])) {
                 expandedParents[expandedId].ids = expanded.ids.filter((parent) => parent != action.payload[0]); // filter out collapsed ones
-            } else if(!expanded || (action.payload[1] && !expanded.ids.includes(action.payload[0]))) {
+            } else if(!expanded || (action.payload[1] && expanded && expanded.ids && !expanded.ids.includes(action.payload[0]))) {
                 expandedParents[expandedId].ids.push(action.payload[0]); // add new extended ones
             }
             return { ...state, expandedParents: expandedParents }

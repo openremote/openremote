@@ -96,7 +96,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         if (user == null) {
             Triple<String, String, String> transientCredentials = brokerService.transientCredentials.get(remotingConnection.getID());
             if (transientCredentials != null) {
-                LOG.finer("Using transient credentials connection: " + remotingConnection.getID() + ", user=" + transientCredentials.getMiddle());
+                LOG.finer("Using transient credentials (user=" + transientCredentials.getMiddle() + ") for connection: " + brokerService.connectionToString(remotingConnection));
                 user = transientCredentials.getMiddle();
                 password = transientCredentials.getRight();
             }
@@ -188,18 +188,16 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 } else {
                     result = handler.checkCanSubscribe(connection, securityContext, topic);
                 }
-                if (LOG.isLoggable(Level.FINE)) {
-                    if (result) {
-                        LOG.fine("Handler has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
-                    } else {
-                        LOG.fine("Handler has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
-                    }
+                if (result) {
+                    LOG.info("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+                } else {
+                    LOG.info("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
                 }
                 return result;
             }
         }
 
-        LOG.fine("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+        LOG.info("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
         return false;
     }
 
