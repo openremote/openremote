@@ -111,10 +111,10 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         const dialogActions: DialogAction[] = [
             {
                 action: () => {
-                    if ('submit' in document.getElementById("forceReloadForm")){
-                        // @ts-ignore
-                        document.getElementById("forceReloadForm").submit();
-                    }
+                    fetch("/manager_config.json", {cache:"reload"})
+                      .then(() => {
+                          location.reload()
+                      });
                 },
                 actionName: "ok",
                 content: i18next.t("reload"),
