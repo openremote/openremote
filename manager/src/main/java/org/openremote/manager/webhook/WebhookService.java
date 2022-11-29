@@ -8,8 +8,10 @@ import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.webhook.Webhook;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -78,8 +80,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         Response response = null;
         try {
             ResteasyWebTarget target = builder.build();
-            String method = webhook.getHttpMethod().name();
-            response = target.request().method(method);
+            response = this.buildResponse(target, webhook.getHttpMethod(), webhook.getPayload());
             response.readEntity(String.class);
         } catch (Exception e) {
             LOG.warning(e.getMessage());
@@ -88,6 +89,15 @@ public class WebhookService extends RouteBuilder implements ContainerService {
             if (response != null) {
                 response.close();
             }
+        }
+    }
+
+    private Response buildResponse(ResteasyWebTarget target, HTTPMethod method, String payload) {
+        Response response = target.request().method(method.name());
+        if(payload != null) {
+            return target.request().method(method.name(), Entity.entity(payload, response.getMediaType()));
+        } else {
+            return response;
         }
     }
 }

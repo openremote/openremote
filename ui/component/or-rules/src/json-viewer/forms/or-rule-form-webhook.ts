@@ -138,7 +138,7 @@ export class OrRuleFormWebhook extends LitElement {
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                               const entry = [...this.authMethodOptions.entries()].find((entry) => entry[1] == ev.detail.value);
                                               this.webhook.oAuthGrant = this.getOAuthGrant(entry![0]);
-                                              if(this.webhook.oAuthGrant && this.webhook.usernamePassword) {
+                                              if (this.webhook.oAuthGrant && this.webhook.usernamePassword) {
                                                   this.webhook.usernamePassword = undefined;
                                               }
                                               this.requestUpdate('webhook')
@@ -147,7 +147,23 @@ export class OrRuleFormWebhook extends LitElement {
                         `
                     })}
                 </div>
-                ${when(this.webhook.oAuthGrant != undefined || this.webhook.usernamePassword != undefined, () => html`
+                <div class="divider" style="margin-top: 24px;"></div>
+                ${when(this.webhook.httpMethod != HTTPMethod.GET && this.webhook.httpMethod != HTTPMethod.DELETE, () => html`
+                    <or-mwc-input type="${InputType.SWITCH}" fullwidth label="Include Payload in Request"
+                                  .value="${this.webhook.payload != undefined}"
+                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                      this.webhook.payload = (ev.detail.value) ? "{}" : undefined;
+                                      this.requestUpdate('webhook');
+                                  }}"
+                    ></or-mwc-input>
+                    ${when(this.webhook.payload != undefined, () => {
+                        return html`
+                            <or-mwc-input type="${InputType.TEXTAREA}" .value="${this.webhook.payload}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                this.webhook.payload = ev.detail.value;
+                                this.requestUpdate('webhook');
+                            }}"></or-mwc-input>
+                        `
+                    })}
                     <div class="divider" style="margin-top: 24px;"></div>
                 `)}
             </form>

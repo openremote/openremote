@@ -868,6 +868,15 @@ public class JsonRulesBuilder extends RulesBuilder {
         if(ruleAction instanceof RuleActionWebhook webhookAction) {
             Webhook webhook = webhookAction.webhook;
             if(webhook.getUrl() != null && webhook.getHttpMethod() != null) {
+
+                // Replace %TRIGGER_ASSETS% with actual assets
+                if (!TextUtil.isNullOrEmpty(webhook.getPayload())) {
+                    if (webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
+                        String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false);
+                        webhook.setPayload(webhook.getPayload().replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo));
+                    }
+                }
+
                 return new RuleActionExecution(() -> webhooksFacade.send(webhook), 0);
             }
         }
