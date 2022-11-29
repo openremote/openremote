@@ -125,8 +125,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         const dialog = showDialog(new OrMwcDialog()
           .setHeading(i18next.t('reload'))
           .setActions(dialogActions)
-          .setContent(html`${i18next.t('configuration.reloadPage')}
-          <form id="forceReloadForm" method="POST"></form>`)
+          .setContent(html`${i18next.t('configuration.reloadPage')}`)
           .setStyles(html`
               <style>
                   .mdc-dialog__surface {
