@@ -11,6 +11,7 @@ import "@openremote/or-configuration/or-conf-json";
 import "@openremote/or-configuration/or-conf-realm/index";
 import { ManagerConf } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
+import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -106,6 +107,33 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         super(store);
     }
 
+    protected _showReloadDialogDialog() {
+        const dialogActions: DialogAction[] = [
+            {
+                default: true,
+                actionName: "ok",
+                content: i18next.t("reload"),
+                action: () => { // @ts-ignore
+                    window.location.reload(true);
+                },
+            },
+
+        ];
+        const dialog = showDialog(new OrMwcDialog()
+          .setHeading(i18next.t('reload'))
+          .setActions(dialogActions)
+          .setContent(html`${i18next.t('configuration.reloadPage')}`)
+          .setStyles(html`
+              <style>
+                  .mdc-dialog__surface {
+                      padding: 4px 8px;
+                  }
+              </style>
+          `)
+          .setDismissAction(null));
+
+    }
+
     protected render(): TemplateResult | void {
 
         if (!manager.authenticated) {
@@ -124,6 +152,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
         document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
             manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(()=>{
+                app._showReloadDialogDialog()
                 manager.managerAppConfig = e.detail?.value as ManagerConf
                 app.requestUpdate()
             })

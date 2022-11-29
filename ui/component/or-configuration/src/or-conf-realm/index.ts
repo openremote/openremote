@@ -77,7 +77,7 @@ export class OrConfRealm extends LitElement {
 
     ];
     const dialog = showDialog(new OrMwcDialog()
-      .setHeading("Add Realm customization")
+      .setHeading(i18next.t('configuration.addRealmCustomization'))
       .setActions(dialogActions)
       .setContent(html `
         <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => selectedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
