@@ -208,7 +208,8 @@ export class OrConfRealmCard extends LitElement {
   };
 
   render() {
-    const colors = this._getColors()
+    const colors = this._getColors();
+    const app = this;
     document.addEventListener('saveManagerConfig', () => {
       Object.entries(this.files).map(async ([x, y]) => {
         await manager.rest.api.ConfigurationResource.fileUpload(y, { path: x })
@@ -254,45 +255,50 @@ export class OrConfRealmCard extends LitElement {
                             .label="${i18next.t('configuration.--or-app-color2')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
-                            .label="${i18next.t('configuration.--or-app-color3')}"
+                            .label="${i18next.t("configuration.--or-app-color3")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
-                            .label="${i18next.t('configuration.--or-app-color4')}"
+                            .label="${i18next.t("configuration.--or-app-color4")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
-                            .label="${i18next.t('configuration.--or-app-color5')}"
+                            .label="${i18next.t("configuration.--or-app-color5")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
-                            .label="${i18next.t('configuration.--or-app-color6')}"
+                            .label="${i18next.t("configuration.--or-app-color6")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
             </div>
           </div>
           <div class="header-group">
-            <div class="subheader">${i18next.t('configuration.navigation')}</div>
-            <span>${i18next.t('configuration.navigationDescription')}</span>
+            <div class="subheader">${i18next.t("configuration.navigation")}</div>
+            <span>${i18next.t("configuration.navigationDescription")}</span>
             <div>
               <or-mwc-input
                 .type="${InputType.SELECT}" multiple
                 class="header-item"
-                .label="${i18next.t('configuration.primaryNavigation')}"
-                .value="${!!this.realm.headers ? this.realm.headers : this.headerListPrimary}"
+                .label="${i18next.t("configuration.primaryNavigation")}"
+                .value="${!!this.realm.headers ? this.realm.headers?.filter(function(ele) {
+                  return app.headerListPrimary.includes(ele);
+                }) : this.headerListPrimary}"
                 .options="${this.headerListPrimary}"
                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setHeader(e.detail.value, this.headerListPrimary)}"
               ></or-mwc-input>
               <or-mwc-input
                 .type="${InputType.SELECT}" multiple
                 class="header-item"
-                .label="${i18next.t('configuration.secondaryNavigation')}"
-                .value="${!!this.realm.headers ? this.realm.headers : this.headerListSecondary}"
+                .label="${i18next.t("configuration.secondaryNavigation")}"
+                .value="${!!this.realm.headers ? this.realm.headers?.filter(function(ele) {
+                  return app.headerListSecondary.includes(ele);
+                }) : this.headerListSecondary}"
                 .options="${this.headerListSecondary}"
                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setHeader(e.detail.value, this.headerListSecondary)}"
               ></or-mwc-input>
             </div>
           </div>
 
-          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("delete")}" @click="${() => {
-            this.onRemove();
-          }}"></or-mwc-input>
+          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("delete")}"
+                        @click="${() => {
+                          this.onRemove();
+                        }}"></or-mwc-input>
         </div>
       </or-collapsible-panel>
     `;
