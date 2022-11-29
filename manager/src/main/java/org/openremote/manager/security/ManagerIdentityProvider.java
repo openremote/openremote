@@ -45,11 +45,11 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     User[] queryUsers(UserQuery userQuery);
 
-    User getUser(String realm, String userId);
+    User getUser(String userId);
 
     User getUserByUsername(String realm, String username);
 
-    User createUpdateUser(String realm, User user, String password);
+    User createUpdateUser(String realm, User user, String password, boolean allowUpdate);
 
     void deleteUser(String realm, String userId);
 
@@ -251,11 +251,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         });
     }
 
-    static User getUserByIdFromDb(PersistenceService persistenceService, String realm, String userId) {
+    static User getUserByIdFromDb(PersistenceService persistenceService, String userId) {
         return persistenceService.doReturningTransaction(em -> {
             List<User> result =
-                em.createQuery("select u from User u where u.realm = :realm and u.id = :userId", User.class)
-                    .setParameter("realm", realm)
+                em.createQuery("select u from User u where u.id = :userId", User.class)
                     .setParameter("userId", userId)
                     .getResultList();
             return result.size() > 0 ? result.get(0) : null;

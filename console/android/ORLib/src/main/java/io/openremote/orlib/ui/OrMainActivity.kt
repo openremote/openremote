@@ -49,6 +49,10 @@ open class OrMainActivity : Activity() {
         OrMainActivity::class.java.name
     )
 
+    private val locationResponseCode = 555
+    private var locationCallback: GeolocationPermissions.Callback? = null;
+    private  var locationOrigin: String?  = null;
+
     private lateinit var binding: ActivityOrMainBinding
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -329,6 +333,8 @@ open class OrMainActivity : Activity() {
         }
     }
 
+
+
     @SuppressLint("SetJavaScriptEnabled")
     fun initializeWebView() {
         LOG.fine("Initializing web view")
@@ -430,6 +436,25 @@ open class OrMainActivity : Activity() {
                     return true
                 }
 
+                override fun onGeolocationPermissionsShowPrompt(
+                    origin: String?,
+                    callback: GeolocationPermissions.Callback?
+                ) {
+                    if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        callback?.invoke(origin, true, false)
+                    } else {
+                        locationCallback = callback
+                        locationOrigin = origin
+                        requestPermissions(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            ),
+                            locationResponseCode
+                        )
+                    }
+                }
+
                 override fun onProgressChanged(view: WebView, progress: Int) {
                     progressBar!!.progress = progress
                 }
@@ -446,9 +471,9 @@ open class OrMainActivity : Activity() {
                     transport.webView = newWebView
                     resultMsg.sendToTarget()
                     newWebView.webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                             val browserIntent = Intent(Intent.ACTION_VIEW)
-                            browserIntent.data = Uri.parse(url)
+                            browserIntent.data = request.url
                             startActivity(browserIntent)
                             return true
                         }
@@ -559,6 +584,10 @@ open class OrMainActivity : Activity() {
             }
         } else if (requestCode == GeofenceProvider.locationResponseCode) {
             geofenceProvider?.onRequestPermissionsResult(this)
+        } else if (requestCode == locationResponseCode) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                locationCallback?.invoke(locationOrigin, true, false)
+            }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }

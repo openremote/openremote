@@ -6,7 +6,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset

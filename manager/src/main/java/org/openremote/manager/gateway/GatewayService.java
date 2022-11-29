@@ -23,7 +23,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -34,15 +33,21 @@ import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.GatewayAsset;
-import org.openremote.model.attribute.*;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.Ruleset;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
@@ -72,6 +77,7 @@ import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
  */
 public class GatewayService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
+    // Need a high priority so that event authorizer can get the events before other authorizers
     public static final int PRIORITY = HIGH_PRIORITY + 100;
     public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayService.class.getName());
@@ -164,6 +170,19 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
             container.getService(MessageBrokerService.class).getContext().addRoutes(this);
             clientEventService.addExchangeInterceptor(this::onMessageIntercept);
+
+            // Gateways can send AssetsEvents into this central manager so we need to authorize those
+            clientEventService.addEventAuthorizer((requestRealm, authContext, event) -> {
+
+                if (authContext == null) {
+                    return false;
+                }
+
+                String clientId = authContext.getClientId();
+
+                // TODO: Introduce gateway realm role
+                return isGatewayClientId(clientId);
+            });
         }
     }
 
@@ -616,11 +635,22 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         String secret = gateway.getClientSecret().orElseGet(() -> UUID.randomUUID().toString());
 
         try {
-            identityProvider.createUpdateUser(gateway.getRealm(), new User()
-                .setServiceAccount(true)
-                .setSystemAccount(true)
-                .setUsername(clientId)
-                .setEnabled(!gateway.getDisabled().orElse(false)), secret);
+            User gatewayUser = identityProvider.getUserByUsername(gateway.getRealm(), User.SERVICE_ACCOUNT_PREFIX + clientId);
+            boolean userExists = gatewayUser != null;
+
+            if (gatewayUser == null || gatewayUser.getEnabled() == gateway.getDisabled().orElse(false) || Objects.equals(gatewayUser.getSecret(), gateway.getClientSecret().orElse(null))) {
+
+                gatewayUser = identityProvider.createUpdateUser(gateway.getRealm(), new User()
+                    .setServiceAccount(true)
+                    .setSystemAccount(true)
+                    .setUsername(clientId)
+                    .setEnabled(!gateway.getDisabled().orElse(false)), secret, true);
+            }
+
+            if (!userExists && gatewayUser != null) {
+                // Configure roles for this gateway user
+                identityProvider.updateUserRoles(gateway.getRealm(), gatewayUser.getId(), Constants.KEYCLOAK_CLIENT_ID, ClientRole.WRITE.getValue());
+            }
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
                 gateway.setClientId(clientId);

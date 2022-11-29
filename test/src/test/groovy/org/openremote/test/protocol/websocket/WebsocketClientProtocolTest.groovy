@@ -49,7 +49,7 @@ import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.ValueFilter
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions

@@ -46,12 +46,12 @@ public class MemoryWebsocketSessions extends ConcurrentHashMap<String, Session> 
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
         // noop
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         clear();
     }
 }

@@ -92,7 +92,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getUser(
-                realm, userId
+                userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -110,12 +110,26 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public User createUpdate(RequestParams requestParams, String realm, User user) {
+    public User update(RequestParams requestParams, String realm, User user) {
 
         throwIfIllegalMasterAdminUserMutation(requestParams, realm, user);
 
         try {
-            return identityService.getIdentityProvider().createUpdateUser(realm, user, null);
+            return identityService.getIdentityProvider().createUpdateUser(realm, user, null, true);
+        } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (WebApplicationException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public User create(RequestParams requestParams, String realm, User user) {
+
+        try {
+            return identityService.getIdentityProvider().createUpdateUser(realm, user, null, false);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (WebApplicationException ex) {

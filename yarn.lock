@@ -1340,6 +1340,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@jridgewell/gen-mapping@npm:^0.3.0":
+  version: 0.3.2
+  resolution: "@jridgewell/gen-mapping@npm:0.3.2"
+  dependencies:
+    "@jridgewell/set-array": ^1.0.1
+    "@jridgewell/sourcemap-codec": ^1.4.10
+    "@jridgewell/trace-mapping": ^0.3.9
+  checksum: 1832707a1c476afebe4d0fbbd4b9434fdb51a4c3e009ab1e9938648e21b7a97049fa6009393bdf05cab7504108413441df26d8a3c12193996e65493a4efb6882
+  languageName: node
+  linkType: hard
+
 "@jridgewell/resolve-uri@npm:^3.0.3":
   version: 3.0.6
   resolution: "@jridgewell/resolve-uri@npm:3.0.6"
@@ -1351,6 +1362,23 @@ __metadata:
   version: 1.1.0
   resolution: "@jridgewell/set-array@npm:1.1.0"
   checksum: 86ddd72ce7d2f7756dfb69804b35d0e760a85dcef30ed72e8610bf2c5e843f8878d977a0c77c4fdfa6a0e3d5b18e5bde4a1f1dd73fd2db06b200c998e9b5a6c5
+  languageName: node
+  linkType: hard
+
+"@jridgewell/set-array@npm:^1.0.1":
+  version: 1.1.2
+  resolution: "@jridgewell/set-array@npm:1.1.2"
+  checksum: 69a84d5980385f396ff60a175f7177af0b8da4ddb81824cb7016a9ef914eee9806c72b6b65942003c63f7983d4f39a5c6c27185bbca88eb4690b62075602e28e
+  languageName: node
+  linkType: hard
+
+"@jridgewell/source-map@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "@jridgewell/source-map@npm:0.3.2"
+  dependencies:
+    "@jridgewell/gen-mapping": ^0.3.0
+    "@jridgewell/trace-mapping": ^0.3.9
+  checksum: 1b83f0eb944e77b70559a394d5d3b3f98a81fcc186946aceb3ef42d036762b52ef71493c6c0a3b7c1d2f08785f53ba2df1277fe629a06e6109588ff4cdcf7482
   languageName: node
   linkType: hard
 
@@ -2139,12 +2167,21 @@ __metadata:
     "@types/qs": ^6.9.7
     i18next: ^21.5.3
     i18next-http-backend: ^1.3.1
-    moment: ^2.24.0
+    moment: ^2.29.4
     platform: ^1.3.6
     qs: ^6.8.0
     url-search-params-polyfill: ^8.1.0
     xmldom: ^0.6.0
     xpath: ^0.0.32
+  languageName: unknown
+  linkType: soft
+
+"@openremote/dashboard@workspace:ui/app/dashboard":
+  version: 0.0.0-use.local
+  resolution: "@openremote/dashboard@workspace:ui/app/dashboard"
+  dependencies:
+    "@openremote/or-app": ^1.1.0
+    "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -2248,6 +2285,8 @@ __metadata:
     "@openremote/or-attribute-input": ^1.1.0
     "@openremote/or-attribute-picker": ^1.1.0
     "@openremote/or-chart": ^1.1.0
+    "@openremote/or-dashboard-builder": ^1.0.0
+    "@openremote/or-gauge": ^1.0.0
     "@openremote/or-map": ^1.1.0
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/or-rules": ^1.1.0
@@ -2258,7 +2297,7 @@ __metadata:
     "@reduxjs/toolkit": ^1.8.1
     "@webcomponents/webcomponentsjs": ^2.6.0
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
     navigo: ^8.11.1
     pwa-helpers: ^0.9.0
   languageName: unknown
@@ -2277,7 +2316,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2314,7 +2353,7 @@ __metadata:
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2393,7 +2432,7 @@ __metadata:
     chartjs-plugin-annotation: ^1.1.0
     jsonpath-plus: ^6.0.1
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2405,6 +2444,19 @@ __metadata:
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
     simplebar: ^5.3.6
+  languageName: unknown
+  linkType: soft
+
+"@openremote/or-dashboard-builder@^1.0.0, @openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder"
+  dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/model": "workspace:*"
+    "@openremote/rest": "workspace:*"
+    "@openremote/util": "workspace:*"
+    gridstack: ^6.0.2
+    lit: ^2.0.2
   languageName: unknown
   linkType: soft
 
@@ -2425,6 +2477,21 @@ __metadata:
     "@openremote/or-translate": ^1.1.0
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
+    lit: ^2.0.2
+  languageName: unknown
+  linkType: soft
+
+"@openremote/or-gauge@^1.0.0, @openremote/or-gauge@workspace:ui/component/or-gauge":
+  version: 0.0.0-use.local
+  resolution: "@openremote/or-gauge@workspace:ui/component/or-gauge"
+  dependencies:
+    "@openremote/core": "workspace:*"
+    "@openremote/or-components": ^1.1.0
+    "@openremote/or-icon": ^1.1.0
+    "@openremote/or-mwc-components": ^1.1.0
+    "@openremote/or-translate": ^1.1.0
+    "@openremote/util": "workspace:*"
+    gaugeJS: ^1.3.7
     lit: ^2.0.2
   languageName: unknown
   linkType: soft
@@ -2464,7 +2531,7 @@ __metadata:
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
     parse-link-header: ^2.0.0
     url: ^0.11.0
   languageName: unknown
@@ -2539,7 +2606,7 @@ __metadata:
     ace-builds: ^1.4.13
     linqts: ^1.12.6
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
     resize-observer: ^1.0.3
     rrule: ^2.6.4
     shortid: ^2.2.15
@@ -2558,7 +2625,7 @@ __metadata:
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2584,7 +2651,7 @@ __metadata:
     "@types/lodash-es": ^4.17.5
     lit: ^2.0.2
     lodash-es: ^4.17.15
-    moment: 2.29.2
+    moment: 2.29.4
   languageName: unknown
   linkType: soft
 
@@ -2603,7 +2670,7 @@ __metadata:
   dependencies:
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
-    moment: ^2.24.0
+    moment: ^2.29.4
   languageName: unknown
   linkType: soft
 
@@ -5327,6 +5394,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"gaugeJS@npm:^1.3.7":
+  version: 1.3.7
+  resolution: "gaugeJS@npm:1.3.7"
+  checksum: cf7d5a58816c9fab3fb071e36b9339eea89da01264fed32c284243c9de6813b09ec16ca76e04ccaabfb8adfd6c9e6a07abfecd140a7bc443fbc5461a5be55d2f
+  languageName: node
+  linkType: hard
+
 "gensync@npm:^1.0.0-beta.2":
   version: 1.0.0-beta.2
   resolution: "gensync@npm:1.0.0-beta.2"
@@ -5484,6 +5558,13 @@ __metadata:
   version: 1.1.0
   resolution: "grid-index@npm:1.1.0"
   checksum: 0e9d427b606ac644a723719116bb067639c01dccc881f161525e8eddb13b2de3b8a274641ef6d926d7629877ad8ed06b45290d52dd2d8af45532c50ccbbefe43
+  languageName: node
+  linkType: hard
+
+"gridstack@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "gridstack@npm:6.0.2"
+  checksum: 6ed7b323d549e7e7a4a09617994de61a8a22ec7949c1f3042eab274f4e931a0e9df49e9797bfc13cad1f7f6f06ed680137c1356c0b9e075f6bf05447b9a4eec9
   languageName: node
   linkType: hard
 
@@ -6352,13 +6433,13 @@ __metadata:
   linkType: hard
 
 "loader-utils@npm:^2.0.0":
-  version: 2.0.2
-  resolution: "loader-utils@npm:2.0.2"
+  version: 2.0.4
+  resolution: "loader-utils@npm:2.0.4"
   dependencies:
     big.js: ^5.2.2
     emojis-list: ^3.0.0
     json5: ^2.1.2
-  checksum: 9078d1ed47cadc57f4c6ddbdb2add324ee7da544cea41de3b7f1128e8108fcd41cd3443a85b7ee8d7d8ac439148aa221922774efe4cf87506d4fb054d5889303
+  checksum: a5281f5fff1eaa310ad5e1164095689443630f3411e927f95031ab4fb83b4a98f388185bb1fe949e8ab8d4247004336a625e9255c22122b815bb9a4c5d8fc3b7
   languageName: node
   linkType: hard
 
@@ -6406,13 +6487,6 @@ __metadata:
   version: 4.6.2
   resolution: "lodash.merge@npm:4.6.2"
   checksum: ad580b4bdbb7ca1f7abf7e1bce63a9a0b98e370cf40194b03380a46b4ed799c9573029599caebc1b14e3f24b111aef72b96674a56cfa105e0f5ac70546cdc005
-  languageName: node
-  linkType: hard
-
-"lodash.sortby@npm:^4.7.0":
-  version: 4.7.0
-  resolution: "lodash.sortby@npm:4.7.0"
-  checksum: db170c9396d29d11fe9a9f25668c4993e0c1331bcb941ddbd48fb76f492e732add7f2a47cfdf8e9d740fa59ac41bbfaf931d268bc72aab3ab49e9f89354d718c
   languageName: node
   linkType: hard
 
@@ -6746,14 +6820,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"moment@npm:2.29.2":
-  version: 2.29.2
-  resolution: "moment@npm:2.29.2"
-  checksum: ee850b5776485e2af0775ceb3cfebaa7d7638f0a750fe0678fcae24c310749f96c1938808384bd422a55e5703834a71fcb09c8a1d36d9cf847f6ed0205d7a3e5
+"moment@npm:2.29.4, moment@npm:^2.29.4":
+  version: 2.29.4
+  resolution: "moment@npm:2.29.4"
+  checksum: 0ec3f9c2bcba38dc2451b1daed5daded747f17610b92427bebe1d08d48d8b7bdd8d9197500b072d14e326dd0ccf3e326b9e3d07c5895d3d49e39b6803b76e80e
   languageName: node
   linkType: hard
 
-"moment@npm:^2.10.2, moment@npm:^2.24.0":
+"moment@npm:^2.10.2":
   version: 2.29.3
   resolution: "moment@npm:2.29.3"
   checksum: 2e780e36d9a1823c08a1b6313cbb08bd01ecbb2a9062095820a34f42c878991ccba53abaa6abb103fd5c01e763724f295162a8c50b7e95b4f1c992ef0772d3f0
@@ -8255,15 +8329,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"source-map@npm:~0.8.0-beta.0":
-  version: 0.8.0-beta.0
-  resolution: "source-map@npm:0.8.0-beta.0"
-  dependencies:
-    whatwg-url: ^7.0.0
-  checksum: e94169be6461ab0ac0913313ad1719a14c60d402bd22b0ad96f4a6cffd79130d91ab5df0a5336a326b04d2df131c1409f563c9dc0d21a6ca6239a44b6c8dbd92
-  languageName: node
-  linkType: hard
-
 "spdy-transport@npm:^3.0.0":
   version: 3.0.0
   resolution: "spdy-transport@npm:3.0.0"
@@ -8513,16 +8578,16 @@ __metadata:
   linkType: hard
 
 "terser@npm:^5.10.0, terser@npm:^5.7.2":
-  version: 5.13.0
-  resolution: "terser@npm:5.13.0"
+  version: 5.15.1
+  resolution: "terser@npm:5.15.1"
   dependencies:
+    "@jridgewell/source-map": ^0.3.2
     acorn: ^8.5.0
     commander: ^2.20.0
-    source-map: ~0.8.0-beta.0
     source-map-support: ~0.5.20
   bin:
     terser: bin/terser
-  checksum: fb3cfc11c16269f7563de48644b7d5adc4791bbb916eb59cda14db9497a494f287990d0451542294d836ea545d71649ca2c39ce9be35e90b456e9533a1e41259
+  checksum: 9880a1e0956983a1ce5de204ea35121c0009fa41d582a6904ae850e1953a1a2cc021168439565280c5a8eee67c85a874175627e24989b046c7a72589b81c3979
   languageName: node
   linkType: hard
 
@@ -8567,15 +8632,6 @@ __metadata:
   version: 1.0.1
   resolution: "toidentifier@npm:1.0.1"
   checksum: 952c29e2a85d7123239b5cfdd889a0dde47ab0497f0913d70588f19c53f7e0b5327c95f4651e413c74b785147f9637b17410ac8c846d5d4a20a5a33eb6dc3a45
-  languageName: node
-  linkType: hard
-
-"tr46@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "tr46@npm:1.0.1"
-  dependencies:
-    punycode: ^2.1.0
-  checksum: 96d4ed46bc161db75dbf9247a236ea0bfcaf5758baae6749e92afab0bc5a09cb59af21788ede7e55080f2bf02dce3e4a8f2a484cc45164e29f4b5e68f7cbcc1a
   languageName: node
   linkType: hard
 
@@ -8866,13 +8922,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webidl-conversions@npm:^4.0.2":
-  version: 4.0.2
-  resolution: "webidl-conversions@npm:4.0.2"
-  checksum: c93d8dfe908a0140a4ae9c0ebc87a33805b416a33ee638a605b551523eec94a9632165e54632f6d57a39c5f948c4bab10e0e066525e9a4b87a79f0d04fbca374
-  languageName: node
-  linkType: hard
-
 "webpack-cli@npm:^4.9.1":
   version: 4.9.2
   resolution: "webpack-cli@npm:4.9.2"
@@ -9044,17 +9093,6 @@ __metadata:
     tr46: ~0.0.3
     webidl-conversions: ^3.0.0
   checksum: b8daed4ad3356cc4899048a15b2c143a9aed0dfae1f611ebd55073310c7b910f522ad75d727346ad64203d7e6c79ef25eafd465f4d12775ca44b90fa82ed9e2c
-  languageName: node
-  linkType: hard
-
-"whatwg-url@npm:^7.0.0":
-  version: 7.1.0
-  resolution: "whatwg-url@npm:7.1.0"
-  dependencies:
-    lodash.sortby: ^4.7.0
-    tr46: ^1.0.1
-    webidl-conversions: ^4.0.2
-  checksum: fecb07c87290b47d2ec2fb6d6ca26daad3c9e211e0e531dd7566e7ff95b5b3525a57d4f32640ad4adf057717e0c215731db842ad761e61d947e81010e05cf5fd
   languageName: node
   linkType: hard
 

@@ -91,7 +91,7 @@ public class OAuthFilter implements ClientRequestFilter {
                 response = requestTokenUsingRefresh();
                 if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                     // Maybe the refresh token is not valid so do full auth
-                    LOG.info("OAuth token refresh failed, trying a full authentication");
+                    LOG.fine("OAuth token refresh failed, trying a full authentication");
                     authServerResponse = null;
                     updateToken();
                     return;

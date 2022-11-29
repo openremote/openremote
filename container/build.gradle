@@ -45,6 +45,7 @@ dependencies {
     api "org.apache.camel:camel-core:$camelVersion"
     api "org.apache.camel:camel-jackson:$camelVersion"
     api "org.apache.camel:camel-snmp:$camelVersion"
+    api "org.apache.camel:camel-health:$camelVersion"
 
     api("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
         exclude group: "log4j"

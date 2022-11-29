@@ -72,7 +72,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
             User adminUser = new User();
             adminUser.setUsername(MASTER_REALM_ADMIN_USER);
-            createUpdateUser(MASTER_REALM, adminUser, adminPassword);
+            createUpdateUser(MASTER_REALM, adminUser, adminPassword, true);
         }
     }
 
@@ -87,8 +87,8 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public User getUser(String realm, String userId) {
-        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, realm, userId);
+    public User getUser(String userId) {
+        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, userId);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public User createUpdateUser(String realm, User user, String password) {
+    public User createUpdateUser(String realm, User user, String password, boolean allowUpdate) {
         if (!realm.equals(MASTER_REALM)) {
             throw new UnsupportedOperationException("This provider does not support realms other than master");
         }
@@ -109,9 +109,11 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
         LOG.info("Creating user: " + user);
         user.setId(UUID.randomUUID().toString());
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
-            String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL, ENABLED) values (?, ?, ?, ?, ?, ?, ?, ?)" +
-                "ON CONFLICT (ID) DO UPDATE " +
-                "SET username = excluded.username, password = excluded.password, first_name = excluded.first_name, last_name = excluded.last_name, email = excluded.email, enabled = excluded.enabled";
+            String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL, ENABLED) values (?, ?, ?, ?, ?, ?, ?, ?)";
+            if(allowUpdate) {
+                sql += " ON CONFLICT (ID, USERNAME) DO UPDATE";
+            }
+            sql += " SET username = excluded.username, password = excluded.password, first_name = excluded.first_name, last_name = excluded.last_name, email = excluded.email, enabled = excluded.enabled";
             try (PreparedStatement st = connection.prepareStatement(sql)) {
                 st.setString(1, UUID.randomUUID().toString());
                 st.setString(2, MASTER_REALM); // For master REALM NAME and ID are the same

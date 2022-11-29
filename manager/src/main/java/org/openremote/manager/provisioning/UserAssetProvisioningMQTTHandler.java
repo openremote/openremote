@@ -218,7 +218,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         ProvisioningMessage provisioningMessage = ValueUtil.parse(payloadContent, ProvisioningMessage.class)
             .orElseGet(() -> {
-                LOG.fine("Failed to parse message from client: topic=" + topic + ", connection=" + connection);
+                LOG.info("Failed to parse message from client: topic=" + topic+ mqttBrokerService.connectionToString(connection));
                 mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
                 return null;
             });
@@ -262,8 +262,10 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     protected void processX509ProvisioningMessage(RemotingConnection connection, Topic topic, X509ProvisioningMessage provisioningMessage) {
 
+        LOG.finer("Processing provisioning message on: topic=" + topic + mqttBrokerService.connectionToString(connection));
+
         if (TextUtil.isNullOrEmpty(provisioningMessage.getCert())) {
-            LOG.fine("Certificate is missing from X509 provisioning message: topic=" + topic + ", connection=" + connection);
+            LOG.info("Certificate is missing from X509 provisioning message: topic=" + topic + mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -273,7 +275,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         try {
             clientCertificate = ProvisioningUtil.getX509Certificate(provisioningMessage.getCert());
         } catch (CertificateException e) {
-            LOG.log(Level.INFO, "Failed to parse client X.509 certificate: topic=" + topic + ", connection=" + connection, e);
+            LOG.log(Level.INFO, "Failed to parse client X.509 certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection), e);
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -281,14 +283,14 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         X509ProvisioningConfig matchingConfig = getMatchingX509ProvisioningConfig(connection, clientCertificate);
 
         if (matchingConfig == null) {
-            LOG.fine("No matching provisioning config found for client certificate: topic=" + topic + ", connection=" + connection);
+            LOG.info("No matching provisioning config found for client certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         // Check if config is disabled
         if (matchingConfig.isDisabled()) {
-            LOG.fine("Matching provisioning config is disabled for client certificate: topic=" + topic + ", connection=" + connection);
+            LOG.fine("Matching provisioning config is disabled for client certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -298,13 +300,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         String uniqueId = topicTokenIndexToString(topic, 1);
 
         if (TextUtil.isNullOrEmpty(certUniqueId)) {
-            LOG.info("Client X.509 certificate missing unique ID in subject CN: topic=" + topic + ", connection=" + connection);
+            LOG.info("Client X.509 certificate missing unique ID in subject CN: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         if (TextUtil.isNullOrEmpty(uniqueId) || !certUniqueId.equals(uniqueId)) {
-            LOG.info("Client X.509 certificate unique ID doesn't match topic unique ID: topic=" + topic + ", connection=" + connection);
+            LOG.info("Client X.509 certificate unique ID doesn't match topic unique ID: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -324,7 +326,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
             if (serviceUser != null) {
                 if (!serviceUser.getEnabled()) {
-                    LOG.info("Client service user has been disabled: topic=" + topic + ", connection=" + connection);
+                    LOG.info("Client service user has been disabled: topic=" + topic+ mqttBrokerService.connectionToString(connection));
                     mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
                     return;
                 }
@@ -332,7 +334,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                 serviceUser = createClientServiceUser(realm, serviceUsername, matchingConfig);
             }
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic + ", connection=" + connection, e);
+            LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic+ mqttBrokerService.connectionToString(connection), e);
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -341,17 +343,17 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         // Prepend realm name to unique ID to generate asset ID to further improve uniqueness
         String assetId = UniqueIdentifierGenerator.generateId(matchingConfig.getRealm() + uniqueId);
-        LOG.fine("Client unique ID '" + uniqueId + "' mapped to asset ID '" + assetId + "': topic=" + topic + ", connection=" + connection);
+        LOG.fine("Client unique ID '" + uniqueId + "' mapped to asset ID '" + assetId + "': topic=" + topic+ mqttBrokerService.connectionToString(connection));
 
         try {
             // Look for existing asset
             asset = assetStorageService.find(assetId);
 
             if (asset != null) {
-                LOG.finer("Client asset found: topic=" + topic + ", connection=" + connection + ", assetId=" + assetId);
+                LOG.finer("Client asset found: topic=" + topic+ mqttBrokerService.connectionToString(connection) + ", assetId=" + assetId);
 
                 if (!matchingConfig.getRealm().equals(asset.getRealm())) {
-                    LOG.info("Client asset realm mismatch : topic=" + topic + ", connection=" + connection + ", assetId=" + assetId);
+                    LOG.info("Client asset realm mismatch : topic=" + topic+ mqttBrokerService.connectionToString(connection) + ", assetId=" + assetId);
                     mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.ASSET_ERROR), MqttQoS.AT_MOST_ONCE);
                     return;
                 }
@@ -359,14 +361,14 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                 asset = createClientAsset(realm, assetId, uniqueId, serviceUser, matchingConfig);
             }
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to retrieve/create asset: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig, e);
+            LOG.log(Level.WARNING, "Failed to retrieve/create asset: topic=" + topic+ mqttBrokerService.connectionToString(connection) + ", config=" + matchingConfig, e);
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
-        LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig);
+        LOG.fine("Client successfully initialised: topic=" + topic+ mqttBrokerService.connectionToString(connection) + ", config=" + matchingConfig);
 
-        // Update connection with service user credentials
+        // Store transient service user credentials (this is used by the custom ActiveMQSecurityManager)
         mqttBrokerService.addTransientCredentials(connection, new ImmutableTriple<>(serviceUser.getId(), realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
@@ -428,7 +430,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             .setUsername(username);
 
         String secret = UniqueIdentifierGenerator.generateId();
-        serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret);
+        serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret, true);
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
             LOG.finer("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
@@ -486,6 +488,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             // Force disconnect of each connection and the disconnect handler will remove the connection from the map
             connections.forEach(connection -> {
                 try {
+                    LOG.finer("Force disconnecting client that is using provisioning config ID '" + provisioningConfigId + "': " + mqttBrokerService.connectionToString(connection));
                     connection.disconnect(false);
                 } catch (Exception e) {
                     getLogger().log(Level.INFO, "Failed to disconnect client: connection=" + connection, e);

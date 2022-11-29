@@ -1007,7 +1007,7 @@ export class OrMwcInput extends LitElement {
                                      aria-expanded="false"
                                      aria-disabled="${""+(this.disabled || this.readonly)}"
                                      aria-labelledby="label selected-text">
-                                    <span class="mdc-select__ripple"></span>
+                                    ${!outlined ? html`<span class="mdc-select__ripple"></span>` : undefined}
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                     <span class="mdc-select__selected-text-container">
                                       <span id="selected-text" class="mdc-select__selected-text"></span>
@@ -1196,6 +1196,16 @@ export class OrMwcInput extends LitElement {
                             <label class="mdc-checkbox-circle" for="elem">${this.label}</label>
                         </div>
                     `;
+                case InputType.COLOUR:
+                    return html`
+                        <div id="component" style="width: 100%; height: 100%;">
+                            <input type="color" id="elem" style="border: none; height: 100%; width: 100%; padding: 1px 3px; min-height: 22px; min-width: 30px;" value="${this.value}"
+                                   ?disabled="${this.disabled || this.readonly}"
+                                   ?required="${this.required}"
+                                   @change="${(e: any) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
+                            />
+                        </div>
+                    `
                 case InputType.NUMBER:
                 case InputType.RANGE:
                 case InputType.DATE:
@@ -1203,7 +1213,6 @@ export class OrMwcInput extends LitElement {
                 case InputType.TIME:
                 case InputType.MONTH:
                 case InputType.WEEK:
-                case InputType.COLOUR:
                 case InputType.EMAIL:
                 case InputType.PASSWORD:
                 case InputType.TELEPHONE:
@@ -1453,8 +1462,7 @@ export class OrMwcInput extends LitElement {
                         (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
 
                         // Set width of fixed select menu to match the component width
-                        this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
-
+                        //this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
@@ -1468,6 +1476,7 @@ export class OrMwcInput extends LitElement {
                         break;
                     case InputType.RADIO:
                     case InputType.CHECKBOX_LIST:
+                    case InputType.COLOUR:
                         break;
                     case InputType.BUTTON:
                     case InputType.BUTTON_MOMENTARY:

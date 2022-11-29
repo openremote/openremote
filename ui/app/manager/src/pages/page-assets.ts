@@ -1,5 +1,5 @@
 import {css, html, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-asset-viewer";
 import {
     OrAssetViewer,
@@ -18,11 +18,12 @@ import {
     OrAssetTreeAssetEvent,
     OrAssetTreeChangeParentEvent,
     OrAssetTreeRequestSelectionEvent,
-    OrAssetTreeSelectionEvent
+    OrAssetTreeSelectionEvent,
+    OrAssetTreeToggleExpandEvent,
 } from "@openremote/or-asset-tree";
 import manager, {DefaultBoxShadow, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {Store, createSelector} from "@reduxjs/toolkit";
+import {createSlice, Store, createSelector, PayloadAction} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
@@ -34,24 +35,37 @@ export interface PageAssetsConfig {
     viewer?: ViewerConfig;
     tree?: AssetTreeConfig;
 }
-
-export function pageAssetsProvider(store: Store<AppStateKeyed>, config?: PageAssetsConfig): PageProvider<AppStateKeyed> {
-    return {
-        name: "assets",
-        routes: [
-            "assets",
-            "assets/:editMode",
-            "assets/:editMode/:id"
-        ],
-        pageCreator: () => {
-            const page = new PageAssets(store);
-            if (config) {
-                page.config = config;
-            }
-            return page;
-        }
-    };
+export interface AssetsState {
+    expandedParents: {realm: string, ids: string[]}[]
 }
+export interface AssetsStateKeyed extends AppStateKeyed {
+    assets: AssetsState;
+}
+const INITIAL_STATE: AssetsState = {
+    expandedParents: []
+};
+const pageAssetsSlice = createSlice({
+    name: "pageAssets",
+    initialState: INITIAL_STATE,
+    reducers: {
+        updateExpandedParents(state, action: PayloadAction<[string, boolean]>) {
+            const expandedParents = JSON.parse(JSON.stringify(state.expandedParents)); // copy state to prevent issues inserting it back
+            const expanded = expandedParents.find(x => x.realm == manager.displayRealm);
+            if(!expanded) {
+                expandedParents.push({ realm: manager.displayRealm, ids: []});
+            }
+            const expandedId = expandedParents.findIndex(x => x.realm == manager.displayRealm);
+            if(!action.payload[1] && expanded && expanded.ids && expanded.ids.includes(action.payload[0])) {
+                expandedParents[expandedId].ids = expanded.ids.filter((parent) => parent != action.payload[0]); // filter out collapsed ones
+            } else if(!expanded || (action.payload[1] && expanded && expanded.ids && !expanded.ids.includes(action.payload[0]))) {
+                expandedParents[expandedId].ids.push(action.payload[0]); // add new extended ones
+            }
+            return { ...state, expandedParents: expandedParents }
+        }
+    }
+})
+const {updateExpandedParents} = pageAssetsSlice.actions;
+export const pageAssetsReducer = pageAssetsSlice.reducer;
 
 export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
     tree: {
@@ -69,9 +83,26 @@ export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
         }
     }
 };
+export function pageAssetsProvider(store: Store<AssetsStateKeyed>, config?: PageAssetsConfig): PageProvider<AssetsStateKeyed> {
+    return {
+        name: "assets",
+        routes: [
+            "assets",
+            "assets/:editMode",
+            "assets/:editMode/:id"
+        ],
+        pageCreator: () => {
+            const page = new PageAssets(store);
+            if (config) {
+                page.config = config;
+            }
+            return page;
+        }
+    };
+}
 
 @customElement("page-assets")
-export class PageAssets extends Page<AppStateKeyed>  {
+export class PageAssets extends Page<AssetsStateKeyed>  {
 
     static get styles() {
         // language=CSS
@@ -120,6 +151,9 @@ export class PageAssets extends Page<AppStateKeyed>  {
     @property()
     protected _assetIds?: string[];
 
+    @state()
+    protected _expandedIds?: string[];
+
     @query("#tree")
     protected _tree!: OrAssetTree;
 
@@ -143,7 +177,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
         }
     )
 
-    constructor(store: Store<AppStateKeyed>) {
+    constructor(store: Store<AssetsStateKeyed>) {
         super(store);
         this.addEventListener(OrAssetTreeRequestSelectionEvent.NAME, this._onAssetSelectionRequested);
         this.addEventListener(OrAssetTreeSelectionEvent.NAME, this._onAssetSelectionChanged);
@@ -154,11 +188,18 @@ export class PageAssets extends Page<AppStateKeyed>  {
         this.addEventListener(OrAssetTreeAssetEvent.NAME, this._onAssetTreeAssetEvent);
         this.addEventListener(OrAssetViewerChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
         this.addEventListener(OrAssetTreeChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
+        this.addEventListener(OrAssetTreeToggleExpandEvent.NAME, this._onAssetExpandToggle);
     }
+
+    public connectedCallback() {
+        super.connectedCallback();
+        this._expandedIds = this._store.getState().assets.expandedParents.find(x => x.realm == manager.displayRealm)?.ids;
+    }
+
 
     protected render(): TemplateResult | void {
         return html`
-            <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}" class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}" .selectedIds="${this._assetIds}"></or-asset-tree>
+            <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}" class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}" .selectedIds="${this._assetIds}" .expandedIds="${this._expandedIds}"></or-asset-tree>
             <or-asset-viewer id="viewer" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}" class="${!this._assetIds || this._assetIds.length !== 1 ? "hideMobile" : ""}" .editMode="${this._editMode}"></or-asset-viewer>
         `;
     }
@@ -288,6 +329,10 @@ export class PageAssets extends Page<AppStateKeyed>  {
                 this._updateRoute(true);
             }
         }
+    }
+
+    protected _onAssetExpandToggle(event: OrAssetTreeToggleExpandEvent) {
+        this._store.dispatch(updateExpandedParents([ event.detail.node.asset.id, event.detail.node.expanded]));
     }
 
 

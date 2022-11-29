@@ -1,25 +1,21 @@
 package org.openremote.test.assets
 
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.attribute.AttributeState
-import org.openremote.model.attribute.AttributeWriteFailure
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.RoomAsset
-import org.openremote.model.attribute.Attribute
-import org.openremote.model.attribute.MetaItem
-import org.openremote.model.attribute.MetaMap
+import org.openremote.model.attribute.*
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.ParentPredicate
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.test.ManagerContainerTrait
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.BadRequestException
+import javax.ws.rs.ForbiddenException
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
@@ -241,12 +237,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the assets of the authenticated user are retrieved"
         def assets = assetResource.getCurrentUserAssets(null)
 
-        then: "result should match (all assets in the master realm as user is not restricted)"
-        assets.length == 5
-        assets.find {it.id == managerTestSetup.smartOfficeId}.attributes.size() == 7
-        // Assets should not be completely loaded (no path or parent info)
-        assets.find {it.id == managerTestSetup.smartOfficeId}.path == null
-        assets.find {it.id == managerTestSetup.smartOfficeId}.parentId == null
+        then: "no assets should be returned as there are no assets linked to this user"
+        assets.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -287,9 +279,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                         .parents(new ParentPredicate(null))
         )
 
-        then: "a bad request exception should be thrown"
+        then: "a not authorized exception should be thrown"
         WebApplicationException ex = thrown()
-        assert ex instanceof BadRequestException
+        assert ex instanceof ForbiddenException
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -402,15 +394,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         /* ############################################## READ ####################################### */
 
-        when: "the home assets of the authenticated user are retrieved"
+        when: "the assets of the authenticated user are retrieved"
         def assets = assetResource.getCurrentUserAssets(null)
 
-        then: "result should match (all assets in the building realm as user is not restricted)"
-        assets.length == 13
-        assets.find {it.id == managerTestSetup.smartBuildingId}.attributes.size() == 7
-        // Assets should not be completely loaded (no path or parent info)
-        assets.find {it.id == managerTestSetup.smartBuildingId}.path == null
-        assets.find {it.id == managerTestSetup.smartBuildingId}.parentId == null
+        then: "no assets should be returned as there are no assets linked to this user"
+        assets.length == 0
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -419,8 +407,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                         .parents(new ParentPredicate(null))
         )
 
-        then: "a bad request exception should be thrown"
-        thrown(BadRequestException)
+        then: "a not authorized exception should be thrown"
+        thrown(ForbiddenException)
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -440,8 +428,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                         .parents(new ParentPredicate(null))
         )
 
-        then: "result should match"
-        thrown(BadRequestException)
+        then: "a forbidden exception should be thrown"
+        thrown(ForbiddenException)
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -521,7 +509,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         response.status == 403
     }
 
-    def "Access assets as testuser3 (restricted user)"() {
+    def "Access assets as restricted testuser3"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -556,7 +544,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.parentId == managerTestSetup.smartBuildingId
         apartment1.path[0] == managerTestSetup.smartBuildingId
         apartment1.path[1] == managerTestSetup.apartment1Id
-        apartment1.attributes.size() == 12
+        apartment1.attributes.size() == 7
 
         Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerTestSetup.apartment1LivingroomId
@@ -585,8 +573,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                         .parents(new ParentPredicate(null))
         )
 
-        then: "a bad request exception should be thrown"
-        thrown(BadRequestException)
+        then: "a forbidden exception should be thrown"
+        thrown(ForbiddenException)
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -604,8 +592,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                         .parents(new ParentPredicate(null))
         )
 
-        then: "a bad request exception should be thrown"
-        thrown(BadRequestException)
+        then: "a forbidden exception should be thrown"
+        thrown(ForbiddenException)
 
         when: "the child assets of linked asset are retrieved"
         assets = assetResource.queryAssets(null,
@@ -748,26 +736,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "a private asset attribute is written on a user asset"
         def response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "lightSwitch", false)
 
-        then: "the attribute should be not found"
-        response.status == 404
-
-        when: "a restricted read-only asset attribute is written on a user asset"
-        response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "currentTemperature", 22.123)
-
-        then: "the request should be forbidden"
+        then: "access should be forbidden"
         response.status == 403
 
         when: "an attribute is written on a non-existent user asset"
         response = assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", false)
 
-        then: "the attribute should be not found"
-        response.status == 404
+        then: "access should be forbidden"
+        response.status == 403
 
         when: "an non-existent attribute is written on a user asset"
         response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "doesnotexist", '"foo"')
 
-        then: "the attribute should be not found"
-        response.status == 404
+        then: "access should be forbidden"
+        response.status == 403
 
         when: "an asset attribute is written on a non-user asset"
         response = assetResource.writeAttributeValue(null, managerTestSetup.apartment3LivingroomId, "lightSwitch", false)
@@ -868,6 +850,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the request should have succeeded but only the apartment1 location event should have been successful"
         assert writeResults.size() == 2
         assert writeResults.find {it.ref.id == managerTestSetup.apartment1Id && it.ref.name == Asset.LOCATION.name}.failure == null
-        assert writeResults.find {it.ref.id == managerTestSetup.apartment2LivingroomId && it.ref.name == Asset.LOCATION.name}.failure == AttributeWriteFailure.NO_AUTH_CONTEXT
+        assert writeResults.find {it.ref.id == managerTestSetup.apartment2LivingroomId && it.ref.name == Asset.LOCATION.name}.failure == AttributeWriteFailure.INSUFFICIENT_ACCESS
     }
 }

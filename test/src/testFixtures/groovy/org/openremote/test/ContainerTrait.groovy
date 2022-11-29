@@ -200,6 +200,17 @@ trait ContainerTrait {
                         }
                     }
 
+                    // Wait for system to settle down
+                    def assetProcessingService = container.hasService(AssetProcessingService.class) ? container.getService(AssetProcessingService.class) : null
+                    if (assetProcessingService != null) {
+                        println("Waiting for the system to settle down")
+                        def j=0
+                        while (j < 100 && !noEventProcessedIn(assetProcessingService, 300)) {
+                            Thread.sleep(100)
+                            j++
+                        }
+                    }
+
                     // Reset assets
                     if (container.hasService(AgentService.class) && container.hasService(AssetStorageService.class)) {
                         def currentAssets = getAssets().collect { it.getId() }

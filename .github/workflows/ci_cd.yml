@@ -58,7 +58,7 @@ on:
   # Push on master excluding tags
   push:
     branches:
-        - 'master'
+      - 'master'
     tags-ignore:
       - '*.*'
 
@@ -101,12 +101,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    
+
       - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.10.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
-          
+
       - name: Get inputs and secrets
         id: inputs-and-secrets
         shell: python
@@ -119,7 +119,7 @@ jobs:
           inputs = os.getenv("INPUTS")
           secrets = os.getenv("SECRETS")
           eventName = os.getenv("EVENT_NAME")
-          
+
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
           if secrets is not None and secrets != '':
@@ -127,41 +127,44 @@ jobs:
           if eventName == 'workflow_call' and callerInputs is not None and callerInputs != 'null':
             os.system(f"echo 'Processing caller inputs'")
             inputs = json.loads(callerInputs)
-            
+
           if inputs is not None and 'INPUTS' in inputs:
             os.system("echo 'Processing inputs from caller'")
             inputs = json.loads(inputs['INPUTS'])
           if 'SECRETS' in secrets:
             os.system("echo 'Processing secrets from caller'")
             secrets = json.loads(secrets['SECRETS'])
-          
+
           # Iterate over secrets then inputs and assign them as outputs on this step
+          
           if secrets is not None and secrets != 'null':
             for key, value in secrets.items():
               os.system(f"echo 'Outputting secret: {key}'")
-              value=value.replace('%','%25')
-              value=value.replace('\n','%0A')
-              value=value.replace('\r','%0D')
-              os.system(f"echo '::set-output name={key}::{value}'")
-              
+              lines = len(value.split("\n"))
+              if lines > 1:
+                  os.system(f"echo '{key}<<EEOOFF\n{value}\nEEOOFF' >> $GITHUB_OUTPUT")
+              else:
+                  os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
+
           if inputs is not None and inputs != 'null':
             for key, value in inputs.items():
               os.system(f"echo 'Outputting input: {key}'")
-              value=value.replace('%','%25')
-              value=value.replace('\n','%0A')
-              value=value.replace('\r','%0D')
-              os.system(f"echo '::set-output name={key}::{value}'")
-             
+              lines = len(value.split("\n"))
+              if lines > 1:
+                  os.system(f"echo '{key}<<EEOOFF\n{value}\nEEOOFF' >> $GITHUB_OUTPUT")
+              else:
+                  os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
+
         env:
           CALLER_INPUTS: ${{ toJSON(inputs) }}
           SECRETS: ${{ toJSON(secrets) }}
           INPUTS: ${{ toJSON(github.event.inputs) }}
           EVENT_NAME: ${{ github.event_name }}
-          
+
       - name: Public IP
         id: ip-address
-        uses: haythem/public-ip@v1.2
-               
+        uses: haythem/public-ip@v1.3
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -173,7 +176,7 @@ jobs:
       - name: Backend files changed
         id: backend-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v32
+        uses: tj-actions/changed-files@v34
         with:
           files_ignore: |
             .ci_cd/**
@@ -189,7 +192,7 @@ jobs:
       - name: UI files changed
         id: ui-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v32
+        uses: tj-actions/changed-files@v34
         with:
           files: |
             ui/app/manager/**
@@ -201,12 +204,12 @@ jobs:
       - name: Set skip backend manager tests
         id: skip-backend-tests
         if: steps.backend-files-changed.outputs.any_modified != 'true'
-        run: echo "::set-output name=value::true"
+        run: echo "value=true" >> $GITHUB_OUTPUT
 
       - name: Set skip UI tests
         id: skip-ui-tests
         if: steps.ui-files-changed.outputs.any_modified != 'true'
-        run: echo "::set-output name=value::true"
+        run: echo "value=true" >> $GITHUB_OUTPUT
 
       - name: Make cache dirs and set file permissions
         run: |
@@ -218,35 +221,35 @@ jobs:
         id: is_main_repo
         run: |
           if [ $REPO_NAME == 'openremote/openremote' ]; then
-            echo "::set-output name=value::true"
+            echo "value=true" >> $GITHUB_OUTPUT
           fi
         env:
           REPO_NAME: ${{ github.repository }}
           
       - name: Check deployment build.gradle
         id: check_deployment_gradle
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "deployment/build.gradle"
           
       - name: Check deployment dockerfile
         id: check_deployment_dockerfile
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "deployment/Dockerfile"
 
       - name: Check custom project
         id: check_custom_project
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "openremote,.gitmodules"
 
       - name: Check ci_cd existence
         id: check_cicd_json
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: ".ci_cd/ci_cd.json"
-          
+
       - name: Check is custom project when scheduled trigger
         if: ${{ github.event_name == 'schedule' }}
         run: |
@@ -266,17 +269,17 @@ jobs:
         run: |
           import json
           import os
-          
+
           eventName = os.getenv('EVENT_NAME')
           refName = os.getenv('REF_NAME')
           pushTag = None
           deployTag = None
           deployEnvironment = None
-          
+
           f = open(".ci_cd/ci_cd.json")
           data = json.load(f)
           f.close()
-          
+
           if "managerDockerPush" in data:
             managerPushConfig = data["managerDockerPush"]
 
@@ -291,7 +294,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
-        
+
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
         uses: actions/cache@v3
@@ -310,7 +313,7 @@ jobs:
         run: |
           import json
           import os
-          
+
           eventName = os.getenv('EVENT_NAME')
           refName = os.getenv('REF_NAME')
           isMainRepo = os.getenv('IS_MAIN_REPO')
@@ -318,7 +321,7 @@ jobs:
           dockerPublishTags = None
           mavenPublishTag = None
           deployEnvironment = None
-          
+
           f = open(".ci_cd/ci_cd.json")
           data = json.load(f)
           f.close()
@@ -328,7 +331,7 @@ jobs:
 
           if data is not None and eventName in data:              
             eventConfig = data[eventName]
-           
+
             if eventName == "managerDockerPush":
 
               # Iterate through keys and check if that manager docker image has changed since last execution
@@ -359,7 +362,7 @@ jobs:
                     os.system(f"echo 'No deploy config in ci_cd.json for manager tag {key}'")
                 else:
                   os.system(f"echo 'Manager docker tag has not changed: {key}'")
-                
+
             elif eventName == "push" and refName in eventConfig:
 
               eventConfig = eventConfig[refName]
@@ -378,27 +381,27 @@ jobs:
                      dockerPublishTags = eventConfig['distribute']['docker']
                   if 'maven' in eventConfig['distribute']:
                      mavenPublishTag = eventConfig['distribute']['maven']
-             
+
           if dockerPublishTags is not None and isMainRepo == 'true':
             dockerPublishTags = dockerPublishTags.replace("$version", refName)
             firstDockerTag = dockerPublishTags.split(",")[0]
-            os.system(f"echo ::set-output name=firstDockerTag::{firstDockerTag}")
+            os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
             os.system(f" echo 'Manager tags to push to docker: {dockerPublishTags}'")
             dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-            os.system(f"echo ::set-output name=dockerTags::{dockerPublishTags}")
-          
+            os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
+
           if mavenPublishTag is not None and isMainRepo == 'true':
             mavenPublishTag = mavenPublishTag.replace("$version", refName)
             os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
-            os.system(f"echo ::set-output name=mavenTag::{mavenPublishTag}")
-          
+            os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
+
           deployStr = None
           if deploys is not None:
             if not isinstance(deploys, list):
               deploys = [deploys]
-            
+
             deployStr = ""
-            
+
             for deploy in deploys:
               if 'environment' in deploy:
                 deployStr += deploy['environment']
@@ -408,14 +411,14 @@ jobs:
               else:
                 os.system("echo 'Manager tag not specified so using commit SHA'")
                 deployStr += '#ref'
-              
+
               deployStr += ";"
 
             deployStr = deployStr.rstrip(";")
-            
+
           if deployStr is not None and len(deployStr) > 0:
             print(f"Deployments to deploy: {deployStr}")
-            os.system(f"echo ::set-output name=deploys::{deployStr}")
+            os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           EVENT_NAME: ${{ github.event_name }}
@@ -426,12 +429,12 @@ jobs:
         run: |
           cd ~/manager-tags-new
           cp -r . ~/manager-tags-old/
-          
+
       - name: Sanitize deployments value
         id: deployments
         run: |
           deployments=$DEPLOYMENTS
-          
+
           if [ "$EVENT_NAME" == 'workflow_dispatch' ]; then
             tag="$INPUT_MANAGER_TAG"
             if [ -z "$INPUT_MANAGER_TAG" ]; then
@@ -439,7 +442,7 @@ jobs:
             fi
             deployments="$INPUT_ENVIRONMENT:$tag"
           fi
-          echo "::set-output name=value::$deployments"
+          echo "value=$deployments" >> $GITHUB_OUTPUT
         env:
           EVENT_NAME: ${{ github.event_name }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
@@ -449,13 +452,13 @@ jobs:
       - name: Define backend test command
         id: test-backend-command
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
-        run: echo "::set-output name=value::./gradlew -p test test"
+        run: echo "value=./gradlew -p test test" >> $GITHUB_OUTPUT
 
       - name: Define UI test command
         id: test-ui-command
         if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
         run: echo ""
-      
+
       - name: Define manager docker build command
         id: manager-docker-command
         shell: bash
@@ -474,14 +477,14 @@ jobs:
             
             if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
-              echo "::set-output name=pushRequired::true"
+              echo "pushRequired=true" >> $GITHUB_OUTPUT
             else
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
             fi
-            echo "::set-output name=value::$command"
+            echo "value=$command" >> $GITHUB_OUTPUT
           fi
-          echo "::set-output name=buildPath::$buildPath"
-          echo "::set-output name=refTag::$commitShaShort"
+          echo "buildPath=$buildPath" >> $GITHUB_OUTPUT
+          echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
         env:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
@@ -495,7 +498,7 @@ jobs:
         shell: bash
         run: |
           command="./gradlew publish -PopenremoteVersion=$MAVEN_TAG -PsigningKey=$SIGNING_KEY -PsigningPassword=$SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -P$MAVEN_PASSWORD"
-          echo "::set-output name=value::$command"
+          echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
           SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_PASSWORD }}
@@ -512,16 +515,16 @@ jobs:
               echo "Deployment must have a build.gradle file to prepare the deployment files in the deployment/build dir"
               exit 1
             fi
-            
+
             buildPath="deployment/build"
             commitSha=$(git rev-parse HEAD)
             commitShaShort=$(git rev-parse --short HEAD)
-            echo "::set-output name=buildPath::$buildPath"
-            echo "::set-output name=refTag::$commitShaShort"
-            
+            echo "buildPath=$buildPath" >> $GITHUB_OUTPUT
+            echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
+
             if [ -n "$DEPLOYMENTS" ]; then
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
-              echo "::set-output name=value::$command"
+              echo "value=$command" >> $GITHUB_OUTPUT
             fi
           fi
         env:
@@ -533,10 +536,11 @@ jobs:
         id: install-command
         shell: bash
         run: |
+          REF_NAME=${REF_NAME//\//_}
           if [ -n "$MANAGER_DOCKER_CMD" ]; then
-            echo "::set-output name=value::./gradlew installDist -PopenremoteVersion=$REF_NAME"
+            echo "value=./gradlew installDist -PopenremoteVersion=$REF_NAME" >> $GITHUB_OUTPUT
           elif [ -n "$DEPLOYMENT_DOCKER_CMD" ]; then
-            echo "::set-output name=value::./gradlew -p deployment installDist"
+            echo "value=./gradlew -p deployment installDist" >> $GITHUB_OUTPUT
           fi
         env:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
@@ -549,7 +553,7 @@ jobs:
         with:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER || steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD || steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
-          
+
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         uses: docker/setup-qemu-action@v2
@@ -575,7 +579,7 @@ jobs:
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
       - name: Yarn cache
         uses: actions/cache@v3
@@ -624,11 +628,11 @@ jobs:
           else
             composeProfile='profile/dev-ui.yml'
           fi
-          
+
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
             composeProfile="openremote/$composeProfile"
           fi
-          
+
           # Pull the images
           docker-compose -f $composeProfile pull
         env:
@@ -645,20 +649,19 @@ jobs:
         id: run-backend-tests
         if: ${{ steps.test-backend-command.outputs.value != '' }}
         run: |
-          
           composeProfile='profile/dev-testing.yml'
-          
+
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
             composeProfile="openremote/$composeProfile"            
           fi
-          
+
           # Define cleanup command
-          echo "::set-output name=cleanup::docker-compose -f $composeProfile down"
-          
+          echo "cleanup=docker-compose -f $composeProfile down" >> $GITHUB_OUTPUT
+
           # Start the stack
           echo "docker-compose -f ${composeProfile} up -d --no-build"
           docker-compose -f ${composeProfile} up -d --no-build
-          
+
           # Run the tests
           ${{ steps.test-backend-command.outputs.value }}
         env:
@@ -700,13 +703,13 @@ jobs:
                 envFile = "temp.env"
               else:
                 continue
-              
+
             os.system(f"echo 'Setting environment variable {key}...'")
             os.putenv(key, value)
-                    
+
           buildCmd = os.getenv("CMD")
           result = subprocess.run(f"bash {buildCmd}", shell=True)
-            
+
           if result.returncode != 0:
             os.system("echo 'installDist failed'")
             sys.exit(result.returncode)
@@ -715,7 +718,7 @@ jobs:
           CMD: ${{ steps.install-command.outputs.value }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 20
-        
+
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
         run: |
@@ -730,14 +733,14 @@ jobs:
         if: steps.test-ui-command.outputs.value != ''
         run: |          
           composeProfile='profile/dev-ui.yml'
-          
+
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
             composeProfile="openremote/$composeProfile"            
           fi
 
           # Start the stack          
           MANAGER_VERSION=$MANAGER_TAG docker-compose -f $composeProfile up -d --no-build
-          
+
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}
         env:
@@ -755,12 +758,11 @@ jobs:
         if: steps.deployments.outputs.value != ''
         shell: python
         run: |
-          
           import json
           import os
           import sys
           import subprocess
-          
+
           deployments = os.getenv("DEPLOYMENTS")
           deployments = deployments.split(";")
           managerRef = os.getenv("MANAGER_REF")
@@ -769,15 +771,15 @@ jobs:
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
           ipv4 = os.getenv("IPV4")
           ipv6 = os.getenv("IPV6")
-          
+
           failure = False
-          
+
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
-          
+
           if not os.path.exists(deployScript) and isCustomProject == 'true':
             deployScript = "openremote/.ci_cd/deploy.sh"
-          
+
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
             sys.exit(1)
@@ -787,25 +789,25 @@ jobs:
             env = dep[0]
             managerTag = dep[1]
             managerTagFound = True
-            
+
             os.putenv("MANAGER_TAG", managerTag)
             os.putenv("ENVIRONMENT", env)
-                      
+
             # Clean stale ssh credentials and temp files
             os.system("rm temp.env 2>/dev/null")
             os.system("rm ssh.key 2>/dev/null")
             os.system("rm -r temp 2>/dev/null")
             os.system("mkdir temp")
-            
+
             # ------------------------------------------------------
             # Output env variables to temp env file for POSIX shell
             # ------------------------------------------------------
-                        
+
             # Output inputs and secrets (spacial handling for SSH_KEY and some other variables)
             # _$ENV_ prefixed keys are output last (to override any non env specific keys)
             environment = (env if env else "").upper()
             prefix = "_" + environment + "_"
-          
+
             for key, value in inputsAndSecrets.items():
               if "." in key:
                 continue
@@ -831,10 +833,10 @@ jobs:
                 else:
                   lines = len(value.split("\n"))
                   if lines > 1:
-                      os.system(f"echo '{key}=\"' >> {envFile}")
-                      os.system(f"echo '{value}\"' >> {envFile}")
+                      os.system(f"echo '{key}='\"'\"'' >> {envFile}")
+                      os.system(f"echo '{value}'\"'\"'' >> {envFile}")
                   else:
-                      os.system(f"echo '{key}=\"{value}\"' >> {envFile}")
+                      os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> {envFile}")
 
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):
@@ -857,12 +859,12 @@ jobs:
             # Uncomment this in combination with the SSH debug step afterwards to debug deployment script
             #sys.exit(0)
             result = subprocess.run(f"bash {deployScript}", shell=True)
-            
+
             if result.returncode != 0:
               os.system(f"echo 'Deployment failed: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
               failure = True
               continue
-          
+
           if failure == True:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)

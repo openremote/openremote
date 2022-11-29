@@ -32,6 +32,9 @@ import org.openremote.model.value.ValueFilter
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+import org.openremote.setup.integration.protocol.MockAgent
+import org.openremote.setup.integration.protocol.MockAgentLink
+import org.openremote.setup.integration.protocol.MockProtocol
 
 import java.util.regex.Pattern
 

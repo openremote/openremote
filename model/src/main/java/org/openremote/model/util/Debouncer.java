@@ -19,8 +19,11 @@
  */
 package org.openremote.model.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -50,11 +53,18 @@ public class Debouncer<T> {
         } while (prev != null && !prev.extend()); // Exit only if new task was added to map, or existing task was extended successfully
     }
 
+    public void cancelAll(boolean mayInterruptIfRunning) {
+        List<TimerTask> tasks = new ArrayList<>(delayedMap.values());
+        delayedMap.clear();
+        tasks.forEach(task -> task.cancel(mayInterruptIfRunning));
+    }
+
     // The task that wakes up when the wait time elapses
     protected class TimerTask implements Runnable {
         private final T key;
         private long dueTime;
         private final Object lock = new Object();
+        private ScheduledFuture<?> scheduledFuture;
 
         public TimerTask(T key) {
             this.key = key;
@@ -83,6 +93,12 @@ public class Debouncer<T> {
                         delayedMap.remove(key);
                     }
                 }
+            }
+        }
+
+        public void cancel(boolean mayInterruptIfRunning) {
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel(mayInterruptIfRunning);
             }
         }
     }

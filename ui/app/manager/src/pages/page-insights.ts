@@ -1,13 +1,17 @@
 import {css, html, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-data-viewer";
 import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
-import {Page, PageProvider} from "@openremote/or-app";
+import {Page, PageProvider, router} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
 import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
+import "@openremote/or-dashboard-builder";
+import {ClientRole, Dashboard} from "@openremote/model";
+import {getInsightsRoute} from "../routes";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
@@ -18,7 +22,8 @@ export function pageInsightsProvider(store: Store<AppStateKeyed>, config?: PageI
         name: "insights",
         routes: [
             "insights",
-            "insights/:id"
+            "insights/:editMode",
+            "insights/:editMode/:id"
         ],
         pageCreator: () => {
             const page = new PageInsights(store);
@@ -33,51 +38,15 @@ export class PageInsights extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS
-        return css`            
-            .hideMobile {
-                display: none;
-            }
+        return css`
 
-            #wrapper {
-                height: 100%;
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                overflow: auto;
-            }
-                
-            #title {
-                margin: 20px auto 0;
-                padding: 0;
-                font-size: 18px;
-                font-weight: bold;
-                width: 100%;
-                max-width: 1360px;
-                align-items: center;
-                display: flex;
-            }
-
-            or-data-viewer {
-                width: 100%;
-                max-width: 1400px;
-                margin: 0 auto;
-            }
-        
-            #title > or-icon {
-                margin-right: 10px;
-                margin-left: 14px;
-                --or-icon-width: 20px;
-                --or-icon-height: 20px;
+            :host {
+                overflow: hidden; 
             }
             
-            @media only screen and (min-width: 768px){
-                .hideMobile {
-                    display: flex;
-                }
-
-                #title {
-                    padding: 0 20px;
-                }
+            #builder {
+                z-index: 0;
+                background: transparent;
             }
         `;
     }
@@ -85,11 +54,29 @@ export class PageInsights extends Page<AppStateKeyed>  {
     @property()
     public config?: PageInsightsConfig;
 
-    @property()
-    protected _assetId;
-
     @query("#data-viewer")
     protected _dataviewer!: OrDataViewer;
+
+    @property()
+    protected _editMode: boolean = true;
+
+    @property()
+    protected _fullscreen: boolean = true;
+
+    @property()
+    private _dashboardId: string;
+
+    @state()
+    private _userId?: string;
+
+
+    /* ------------------ */
+
+    updated(changedProperties: Map<string, any>) {
+        if(changedProperties.has("_dashboardId")) {
+            this._updateRoute();
+        }
+    }
 
     protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
@@ -101,11 +88,19 @@ export class PageInsights extends Page<AppStateKeyed>  {
         [this._realmSelector],
         async () => {
             if (this._dataviewer) this._dataviewer.refresh();
+            this._updateRoute(true);
+            this.requestUpdate();
         }
     )
 
     constructor(store: Store<AppStateKeyed>) {
         super(store);
+        manager.rest.api.UserResource.getCurrent().then((response: any) => {
+            this._userId = response.data.id;
+        }).catch((ex) => {
+            console.error(ex);
+            showSnackbar(undefined, i18next.t('errorOccurred'));
+        })
     }
 
     public connectedCallback() {
@@ -114,11 +109,13 @@ export class PageInsights extends Page<AppStateKeyed>  {
 
     protected render(): TemplateResult | void {
         return html`
-            <div id="wrapper">
-                <div id="title">
-                    <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
-                </div>
-                <or-data-viewer id="data-viewer" .config="${this.config?.dataViewer}"></or-data-viewer>
+            <div style="width: 100%;">
+                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .fullscreen="${this._fullscreen}" .selectedId="${this._dashboardId}"
+                                      .realm="${manager.displayRealm}" .userId="${this._userId}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
+                                      @selected="${(event: CustomEvent) => { this._dashboardId = (event.detail as Dashboard)?.id }}"
+                                      @editToggle="${(event: CustomEvent) => { this._editMode = event.detail; this._fullscreen = true; this._updateRoute(true); }}"
+                                      @fullscreenToggle="${(event: CustomEvent) => { this._fullscreen = event.detail; }}"
+                ></or-dashboard-builder>
             </div>
         `;
     }
@@ -126,5 +123,14 @@ export class PageInsights extends Page<AppStateKeyed>  {
     stateChanged(state: AppStateKeyed) {
         // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
+        this._editMode = (state.app.params && state.app.params.editMode) ? (state.app.params.editMode == "true") : false;
+        this._dashboardId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
+    }
+
+    protected _updateRoute(silent: boolean = true) {
+        router.navigate(getInsightsRoute(this._editMode, this._dashboardId), {
+            callHooks: !silent,
+            callHandler: !silent
+        });
     }
 }

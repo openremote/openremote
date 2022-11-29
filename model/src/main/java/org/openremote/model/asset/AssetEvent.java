@@ -78,7 +78,7 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
 
     @Override
     public String[] getAttributeNames() {
-        return updatedProperties;
+        return updatedProperties != null && Arrays.asList(updatedProperties).contains("attributes") && asset != null && asset.attributes != null ? asset.attributes.keySet().toArray(new String[0]) : new String[0];
     }
 
     public Cause getCause() {
@@ -93,14 +93,8 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
         return updatedProperties;
     }
 
-    @Override
-    public boolean canAccessPublicRead() {
+    public boolean isAccessPublicRead() {
         return asset.isAccessPublicRead();
-    }
-
-    @Override
-    public boolean canAccessRestrictedRead() {
-        return true;
     }
 
     @Override

@@ -41,7 +41,8 @@ public abstract class AbstractKeycloakSetup implements Setup {
 
     public static final ClientRole[] PUBLIC_USER_ROLES = new ClientRole[] {
         ClientRole.READ_ASSETS,
-        ClientRole.READ_MAP
+        ClientRole.READ_MAP,
+        ClientRole.READ_INSIGHTS
     };
     public static final ClientRole[] REGULAR_USER_ROLES = new ClientRole[] {
         ClientRole.WRITE_USER,
@@ -49,9 +50,11 @@ public abstract class AbstractKeycloakSetup implements Setup {
         ClientRole.READ_ASSETS,
         ClientRole.READ_USERS,
         ClientRole.READ_RULES,
+        ClientRole.READ_INSIGHTS,
         ClientRole.WRITE_ASSETS,
         ClientRole.WRITE_ATTRIBUTES,
-        ClientRole.WRITE_RULES
+        ClientRole.WRITE_RULES,
+        ClientRole.WRITE_INSIGHTS
     };
 
     final protected Container container;
@@ -98,7 +101,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
         if (pushNotificationsDisabled) {
             user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, "true");
         }
-        user = keycloakProvider.createUpdateUser(realm, user, password);
+        user = keycloakProvider.createUpdateUser(realm, user, password, true);
         if (user == null) {
             return null;
         }

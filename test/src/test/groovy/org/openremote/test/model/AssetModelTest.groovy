@@ -25,7 +25,7 @@ import org.openremote.model.value.ValueType
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.impl.ColourRGB
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.protocol.http.HTTPServerTestAgent
+import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
 import spock.lang.Shared
 import spock.lang.Specification
 

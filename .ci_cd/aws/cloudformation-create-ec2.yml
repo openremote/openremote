@@ -704,7 +704,7 @@ Resources:
   DiskUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      Namespace: Cloudwatch
+      Namespace: CWAgent
       MetricName: disk_used_percent
       Statistic: Average
       Period: 600
@@ -718,39 +718,33 @@ Resources:
       Dimensions:
         - Name: InstanceId
           Value: !Ref EC2Instance
+        - Name: ImageId
+          Value: !Ref ImageId
+        - Name: InstanceType
+          Value: !Ref InstanceType
+        - Name: path
+          Value: /
+        - Name: fstype
+          Value: xfs
 
-  HealthCheckAlarm:
+  MemoryUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: CreateHealthChecks
     Properties:
-      Namespace: AWS/Route53
-      MetricName: HealthCheckStatus
-      Statistic: Sum
-      Period: 60
-      EvaluationPeriods: 15
-      ComparisonOperator: LessThanThreshold
-      Threshold: 1
+      Namespace: CWAgent
+      MetricName: mem_used_percent
+      Statistic: Average
+      Period: 600
+      EvaluationPeriods: 3
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 90
       AlarmActions:
         - !Ref SnsTopic
       OKActions:
         - !Ref SnsTopic
       Dimensions:
-        - Name: HealthCheckId
-          Value: !Ref HealthCheck
-
-  HealthCheck:
-    Type: AWS::Route53::HealthCheck
-    Condition: CreateHealthChecks
-    DependsOn: EC2Instance
-    Properties:
-      HealthCheckConfig:
-        Port: 443
-        Type: HTTPS
-        ResourcePath: '/api/master/info'
-        FullyQualifiedDomainName: !Sub ${Host}
-        RequestInterval: 30
-        FailureThreshold: 10
-      HealthCheckTags:
-        - Key: Name
-          Value: !Sub ${Host}
-
+        - Name: InstanceId
+          Value: !Ref EC2Instance
+        - Name: ImageId
+          Value: !Ref ImageId
+        - Name: InstanceType
+          Value: !Ref InstanceType
