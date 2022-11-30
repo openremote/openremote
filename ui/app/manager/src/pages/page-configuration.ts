@@ -152,9 +152,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
         document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
             manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(()=>{
-                fetch("/manager_config.json", {cache:"reload"}).then(() => {
-                    // app._showReloadDialogDialog()
-                })
+                fetch("/manager_config.json", {cache:"reload"})
                 manager.managerAppConfig = e.detail?.value as ManagerConf
                 app.requestUpdate()
             })
