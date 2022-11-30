@@ -5,15 +5,15 @@ import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {
+    AssetModelUtil,
     AssetTypeInfo,
+    HTTPMethod,
     JsonRule,
     RuleActionNotification,
     RuleActionUnion,
-    RuleRecurrence,
-    WellknownAssets,
-    AssetModelUtil,
     RuleActionWebhook,
-    HTTPMethod
+    RuleRecurrence,
+    WellknownAssets
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -41,6 +41,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
         addWait = config.controls.allowedActionTypes.indexOf(ActionType.WAIT) >= 0;
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.EMAIL) >= 0;
         addPushNotification = config.controls.allowedActionTypes.indexOf(ActionType.PUSH_NOTIFICATION) >= 0;
+        addWebhook = config.controls.allowedActionTypes.indexOf(ActionType.WEBHOOK) >= 0;
     }
 
 
@@ -348,7 +349,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     template = html`<or-rule-action-notification id="email-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.EMAIL}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 case ActionType.WEBHOOK:
-                    template = html`<or-rule-action-webhook .action="${action}"></or-rule-action-webhook>`;
+                    template = html`<or-rule-action-webhook .rule="${this.rule}" .action="${action}" .actionType="${ActionType.WEBHOOK}"></or-rule-action-webhook>`;
                     break;
                 default:
                     template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-attribute>`;

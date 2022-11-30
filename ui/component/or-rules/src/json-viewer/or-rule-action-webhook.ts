@@ -1,6 +1,4 @@
-import { JsonRule, RuleActionNotification } from "@openremote/model";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import { i18next } from "@openremote/or-translate";
+import { JsonRule, RuleActionWebhook } from "@openremote/model";
 import {css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import "./modals/or-rule-webhook-modal";
@@ -32,7 +30,7 @@ export class OrRuleActionWebhook extends LitElement {
     public rule!: JsonRule;
 
     @property({type: Object, attribute: false})
-    public action!: RuleActionNotification;
+    public action!: RuleActionWebhook;
 
 
     /* ---------------------- */
@@ -40,8 +38,9 @@ export class OrRuleActionWebhook extends LitElement {
     render() {
         return html`
             <div style="display: flex; align-items: center; height: 100%;">
-                <or-mwc-input type="${InputType.SELECT}" .options="${['Asset 1', 'Asset 2', 'Asset 3']}" .value="${'Asset 1'}"></or-mwc-input>
-                <or-rule-webhook-modal .action="${this.action}"></or-rule-webhook-modal>
+                <or-rule-webhook-modal .action="${this.action}">
+                    <or-rule-form-webhook .webhook="${this.action.webhook}"></or-rule-form-webhook>
+                </or-rule-webhook-modal>
             </div>
         `
     }

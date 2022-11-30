@@ -13,10 +13,10 @@ const checkValidity = (form: HTMLFormElement | null, dialog: OrMwcDialog) => {
         const valid = elements.every((element: OrMwcInput) => {
             const mdcComponent = (element as any)._mdcComponent;
             if (element.shadowRoot) {
-                if(element.type == InputType.SELECT) {
+                if (element.type == InputType.SELECT) {
                     return element.checkValidity();
                 }
-                if(element.type == InputType.BUTTON) {
+                if (element.type == InputType.BUTTON) {
                     return true;
                 }
                 const input = element.shadowRoot.querySelector('input, textarea, select') as any
@@ -61,11 +61,9 @@ export class OrRuleWebhookModal extends LitElement {
 
     renderDialogHTML(action: RuleActionWebhook) {
         const dialog: OrMwcDialog = this.shadowRoot!.getElementById("webhook-modal") as OrMwcDialog;
-        if (!this.shadowRoot) {
-            return;
-        }
+        if (!this.shadowRoot) return
 
-        const slot: HTMLSlotElement | null = this.shadowRoot.querySelector('.notification-form-slot');
+        const slot: HTMLSlotElement | null = this.shadowRoot.querySelector('.webhook-form-slot');
         if (dialog && slot) {
             let container = document.createElement("div");
             slot.assignedNodes({flatten: true}).forEach((child) => {
@@ -80,12 +78,9 @@ export class OrRuleWebhookModal extends LitElement {
     }
 
     checkForm(event: OrInputChangedEvent) {
-        console.log(event);
         const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
         const component: HTMLElement | null = this.shadowRoot!.querySelector('or-rule-form-webhook');
-        console.error(component);
         const form: HTMLFormElement = component?.shadowRoot!.firstElementChild as HTMLFormElement;
-        console.error(form);
         checkValidity(form, dialog);
         this.requestUpdate();
     }
@@ -96,27 +91,22 @@ export class OrRuleWebhookModal extends LitElement {
         }
         const webhookModalActions: DialogAction[] = [
             {
-                actionName: "cancel",
-                content: html`
-                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`
-            },
-            {
                 actionName: "", content: html`
                     <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"
                                   @or-mwc-input-changed="${this.checkForm}"></or-mwc-input>`
             }
         ];
         const webhookModalOpen = () => {
-            showDialog(new OrMwcDialog()
-                .setContent(html`
-                    <or-rule-form-webhook .webhook="${this.action.webhook}"></or-rule-form-webhook>`)
-                .setHeading(this.title)
-                .setActions(webhookModalActions)
-            );
+            const dialog: OrMwcDialog = this.shadowRoot!.getElementById("webhook-modal") as OrMwcDialog;
+            if (dialog) {
+                dialog.open();
+            }
         };
         return html`
             <or-mwc-input type="${InputType.BUTTON}" label="${i18next.t('message')}"
                           @or-mwc-input-changed="${webhookModalOpen}"></or-mwc-input>
+            <or-mwc-dialog id="webhook-modal" heading="${this.title}" .actions="${webhookModalActions}"></or-mwc-dialog>
+            <slot class="webhook-form-slot"></slot>
         `
     }
 

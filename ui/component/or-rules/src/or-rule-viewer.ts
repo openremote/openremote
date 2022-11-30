@@ -174,7 +174,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                             <or-mwc-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
                         </span>
            
-                        <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${false}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
                     </div>                        
                 </div>
 
