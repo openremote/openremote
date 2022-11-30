@@ -30,8 +30,8 @@ echo "Generating CSV file '$CSV_NAME' for $COUNT devices..."
     i=1
     while [ $i -le $COUNT ]; do
         echo "Generating $DEVICE_PREFIX$i..."
-        openssl req -nodes --newkey rsa:4096 -keyout $TEMP_CERT_DIR/$DEVICE_PREFIX$i.key -subj "/C=NL/ST=North Brabant/O=OpenRemote/CN=$DEVICE_PREFIX$i" -out $TEMP_CERT_DIR/$DEVICE_PREFIX$i.csr
-        openssl x509 -req -in $TEMP_CERT_DIR/$DEVICE_PREFIX$i.csr -CA $CA_PEM_PATH -CAkey $CA_KEY_PATH -CAcreateserial -out $TEMP_CERT_DIR/$DEVICE_PREFIX$i.pem -days 500 -sha256
+        MSYS_NO_PATHCONV=1 openssl req -nodes --newkey rsa:4096 -keyout $TEMP_CERT_DIR/$DEVICE_PREFIX$i.key -subj '/C=NL/ST=North Brabant/O=OpenRemote/CN='$DEVICE_PREFIX$i -out $TEMP_CERT_DIR/$DEVICE_PREFIX$i.csr
+        MSYS_NO_PATHCONV=1 openssl x509 -req -in $TEMP_CERT_DIR/$DEVICE_PREFIX$i.csr -CA $CA_PEM_PATH -CAkey $CA_KEY_PATH -CAcreateserial -out $TEMP_CERT_DIR/$DEVICE_PREFIX$i.pem -days 500 -sha256
 
         if [ $? -ne 0 ]; then
           echo "Failed to sign device certificate"

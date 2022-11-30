@@ -592,6 +592,9 @@ const style = css`
     .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
         --or-icon-fill: var(--or-app-color4);
     }
+    .mdc-select__selected-text{
+        white-space: normal;
+    }
 `;
 
 @customElement("or-mwc-input")
@@ -1198,7 +1201,7 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.COLOUR:
                     return html`
-                        <div id="component" style="width: 100%; height: 100%; display: inline-flex; align-items: center">
+                        <div id="component" style="width: 100%; height: 100%; display: inline-flex; align-items: center; padding: 8px 0">
                             <input type="color" id="elem" style="border: none; height: 31px; width: 31px; padding: 1px 3px; min-height: 22px; min-width: 30px;" value="${this.value}"
                                    ?disabled="${this.disabled || this.readonly}"
                                    ?required="${this.required}"
@@ -1463,8 +1466,7 @@ export class OrMwcInput extends LitElement {
                         (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
 
                         // Set width of fixed select menu to match the component width
-                        this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
-
+                        //this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {

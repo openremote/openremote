@@ -644,7 +644,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     .setServiceAccount(true)
                     .setSystemAccount(true)
                     .setUsername(clientId)
-                    .setEnabled(!gateway.getDisabled().orElse(false)), secret);
+                    .setEnabled(!gateway.getDisabled().orElse(false)), secret, true);
             }
 
             if (!userExists && gatewayUser != null) {

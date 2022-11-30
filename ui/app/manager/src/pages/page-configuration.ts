@@ -1,18 +1,17 @@
-import {css, html, TemplateResult} from "lit";
-import {customElement} from "lit/decorators.js";
-import manager, { ManagerAppConfig, ManagerConfig } from "@openremote/core";
+import { css, html, TemplateResult } from "lit";
+import { customElement } from "lit/decorators.js";
+import manager from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {Store} from "@reduxjs/toolkit";
-import {Page, PageProvider} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
+import { Store } from "@reduxjs/toolkit";
+import { AppStateKeyed, Page, PageProvider } from "@openremote/or-app";
 import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
-import '@openremote/or-configuration/or-conf-realm/index'
-import '@openremote/or-configuration/or-conf-rules/index'
-import '@openremote/or-configuration/or-conf-assets/index'
-import '@openremote/or-configuration/or-conf-json'
+import "@openremote/or-configuration/or-conf-json";
+import "@openremote/or-configuration/or-conf-realm/index";
 import { ManagerConf } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
+import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -32,66 +31,55 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
     static get styles() {
         // language=CSS
         return css`
+            @media screen and (max-width: 768px) {
+                or-panel {
+                    border-left: 0px;
+                    border-right: 0px;
+                    width: 100%!important;
+                    border-radius: 0px;
+                }
+                #header-wrapper{
+                    width: calc(100% - 30px)!important;
+                }
+            }
+
             :host {
                 --or-collapisble-panel-background-color: #fff;
+                --or-panel-background-color: #fff;
             }
 
-            .panel {
+            or-panel {
                 width: calc(100% - 90px);
                 max-width: 1310px;
-                background-color: white;
-                border: 1px solid #e5e5e5;
-                border-radius: 5px;
-                position: relative;
-                margin: 5px auto;
-                padding: 24px;
             }
 
-            .panel-title {
-                text-transform: uppercase;
-                font-weight: bolder;
-                line-height: 1em;
-                margin-bottom: 20px;
-                margin-top: 0;
-                flex: 0 0 auto;
-                letter-spacing: 0.025em;
-            }
-
-            #title {
-                padding: 0 20px;
-                font-size: 18px;
-                font-weight: bold;
-                width: calc(100% - 40px);
-                max-width: 1360px;
-                margin: 20px auto;
-                align-items: center;
+            .conf-category-content-container {
                 display: flex;
-            }
-
-            #title or-icon {
-                margin-right: 10px;
-                margin-left: 14px;
-            }
-            .conf-category-content-container{
+                min-width: 0px;
                 width: 100%;
+                height: 100%;
+                flex-direction: column;
+                align-items: center;
             }
 
             #header {
                 width: 100%;
             }
+
             #header-wrapper {
-                /*padding: 14px 30px;*/
                 display: flex;
-                width: calc(100% - 40px);
-                max-width: 1360px;
+                width: calc(100% - 90px);
+                max-width: 1310px;
                 flex-direction: row;
                 align-items: center;
                 margin: 20px auto;
             }
+
             #header-title {
                 font-size: 18px;
                 font-weight: bold;
             }
+
             #header-title > or-icon {
                 margin-right: 10px;
             }
@@ -119,6 +107,33 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         super(store);
     }
 
+    protected _showReloadDialogDialog() {
+        const dialogActions: DialogAction[] = [
+            {
+                action: () => {
+                    location.reload()
+                },
+                actionName: "ok",
+                content: i18next.t("reload"),
+                default: true,
+            },
+
+        ];
+        const dialog = showDialog(new OrMwcDialog()
+          .setHeading(i18next.t('reload'))
+          .setActions(dialogActions)
+          .setContent(html`${i18next.t('configuration.reloadPage')}`)
+          .setStyles(html`
+              <style>
+                  .mdc-dialog__surface {
+                      padding: 4px 8px;
+                  }
+              </style>
+          `)
+          .setDismissAction(null));
+
+    }
+
     protected render(): TemplateResult | void {
 
         if (!manager.authenticated) {
@@ -137,6 +152,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
         document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
             manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(()=>{
+                fetch("/manager_config.json", {cache:"reload"})
                 manager.managerAppConfig = e.detail?.value as ManagerConf
                 app.requestUpdate()
             })
@@ -150,22 +166,21 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <div id="header-wrapper">
                         <div id="header-title">
                             <or-icon icon="cog"></or-icon>
-                            Configuration
+                            ${i18next.t('configuration.')}
                         </div>
                         <div id="header-actions">
                             <div id="header-actions-content">
                                 <or-conf-json .managerConfig="${managerConfiguration}"></or-conf-json>
-                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan" @click="${()=>{document.dispatchEvent(new CustomEvent('saveManagerConfig', {detail: {value: managerConfiguration}}))}}"></or-mwc-input>
+                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan" @click="${() => {
+                                    document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: managerConfiguration } }));
+                                }}"></or-mwc-input>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="panel">
-                    <div class="panel-title">
-                        Realms
-                    </div>
+                <or-panel .heading="${"Realms"}">
                     <or-conf-realm .config="${managerConfiguration}"></or-conf-realm>
-                </div>
+                </or-panel>
             </div>
         `;
 

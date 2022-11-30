@@ -49,7 +49,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     User getUserByUsername(String realm, String username);
 
-    User createUpdateUser(String realm, User user, String password);
+    User createUpdateUser(String realm, User user, String password, boolean allowUpdate);
 
     void deleteUser(String realm, String userId);
 
