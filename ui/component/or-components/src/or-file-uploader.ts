@@ -121,7 +121,7 @@ export class OrFileUploader extends LitElement {
                 <div id="imageContainer">
 
                     ${!!this.src ?
-                      html`<img .src="${this.src?.startsWith("data") ? this.src : "/manager" + this.src}"
+                      html`<img .src="${this.src}"
                                 alt="OR-File-Uploader">
                       <or-icon class="edit-icon" icon="pencil"></or-icon>`
                       :

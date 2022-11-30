@@ -111,10 +111,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         const dialogActions: DialogAction[] = [
             {
                 action: () => {
-                    fetch("/manager_config.json", {cache:"reload"})
-                      .then(() => {
-                          location.reload()
-                      });
+                    location.reload()
                 },
                 actionName: "ok",
                 content: i18next.t("reload"),
@@ -155,7 +152,9 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
         document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
             manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(()=>{
-                app._showReloadDialogDialog()
+                fetch("/manager_config.json", {cache:"reload"}).then(() => {
+                    // app._showReloadDialogDialog()
+                })
                 manager.managerAppConfig = e.detail?.value as ManagerConf
                 app.requestUpdate()
             })
