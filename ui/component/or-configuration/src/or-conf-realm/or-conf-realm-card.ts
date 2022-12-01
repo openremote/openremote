@@ -51,7 +51,7 @@ export class OrConfRealmCard extends LitElement {
     }
 
     #remove-realm {
-      margin: 8px 4px;
+      margin: 12px 0;
     }
 
     .subheader {
