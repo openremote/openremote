@@ -106,7 +106,6 @@ export class OrConfRealmCard extends LitElement {
 
     ManagerHeaders.users,
     ManagerHeaders.roles,
-    ManagerHeaders.realms,
 
     ManagerHeaders.account,
     ManagerHeaders.language,
