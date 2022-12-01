@@ -35,7 +35,6 @@ public class SyslogConfig {
     protected SyslogCategory[] storedCategories;
 
     @NotNull
-    @Range(max = 10080) // TODO 1 week max or we run out of space?
     protected int storedMaxAgeMinutes;
 
     public SyslogConfig() {

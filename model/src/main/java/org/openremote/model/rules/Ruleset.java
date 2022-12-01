@@ -250,6 +250,7 @@ public abstract class Ruleset {
         return this;
     }
 
+    // TODO: Unify triggers for rulesets
     public boolean isTriggerOnPredictedData() {
         return Optional.ofNullable(getMeta().get(TRIGGER_ON_PREDICTED_DATA)).map(node -> node.asBoolean(false)).orElse(false);
     }

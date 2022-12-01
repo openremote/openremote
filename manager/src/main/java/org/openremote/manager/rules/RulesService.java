@@ -108,8 +108,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
      * operation, such as matching temporary facts in a sliding time window, must
      * be designed with this margin in mind.
      */
-    public static final String OR_MIN_TEMP_FACT_EXPIRATION_MILLIS = "OR_MIN_TEMP_FACT_EXPIRATION_MILLIS";
-    public static final int OR_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT = 60000;
+    public static final String OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS = "OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS";
+    public static final int OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT = 60000;
+    public static final String OR_RULES_QUICK_FIRE_MILLIS = "OR_RULES_QUICK_FIRE_MILLIS";
+    public static final int OR_RULES_QUICK_FIRE_MILLIS_DEFAULT = 3000;
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected final Map<String, RulesEngine<RealmRuleset>> realmEngines = new HashMap<>();
     protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new HashMap<>();
@@ -138,6 +140,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected Set<AssetState<?>> preInitAssetStates = new HashSet<>();
     protected long defaultEventExpiresMillis = 1000*60*60;
     protected long tempFactExpirationMillis;
+    protected long quickFireMillis;
     protected boolean initDone;
     protected boolean startDone;
 
@@ -161,7 +164,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
 
-        tempFactExpirationMillis = getInteger(container.getConfig(), "OR_MIN_TEMP_FACT_EXPIRATION_MILLIS", OR_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT);
+        tempFactExpirationMillis = getInteger(container.getConfig(), OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS, OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS_DEFAULT);
+        quickFireMillis = getInteger(container.getConfig(), OR_RULES_QUICK_FIRE_MILLIS, OR_RULES_QUICK_FIRE_MILLIS_DEFAULT);
 
         if (initDone) {
             return;
@@ -528,18 +532,23 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         .stream()
                         .filter(RulesService::attributeIsRuleState).toList();
 
+                    // Retract states for deleted or changed attributes (uses attribute equality which will check timestamps)
                     oldStateAttributes.forEach(attribute -> {
-                        AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
-                        LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
-                        retractAssetState(assetState);
+                        if (!newStateAttributes.contains(attribute)) {
+                            AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
+                            LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), retracting obsolete fact: " + assetState);
+                            retractAssetState(assetState);
+                        }
                     });
 
-                    // Insert new states
+                    // Insert new states for new or changed attributes
                     newStateAttributes.forEach(attribute -> {
+                        if (!oldStateAttributes.contains(attribute)) {
                             AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
                             LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
                             updateAssetState(assetState);
-                        });
+                        }
+                    });
                     break;
                 }
                 case DELETE:
@@ -1045,7 +1054,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             String realm = assetStates.get(0).getRealm();
             String[] assetPaths = assetStates.stream().flatMap(assetState -> Arrays.stream(assetState.getPath())).toArray(String[]::new);
             for (RulesEngine<?> rulesEngine : getEnginesInScope(realm, assetPaths)) {
-                rulesEngine.fireAllDeploymentsWithPredictedData();
+                rulesEngine.scheduleFire(false);
             }
         }
     }

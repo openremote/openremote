@@ -49,7 +49,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.rules.RulesetStatus.*;
@@ -358,7 +357,7 @@ public class RulesEngine<T extends Ruleset> {
 
         updateDeploymentInfo();
         publishRulesEngineStatus();
-        scheduleFire();
+        scheduleFire(true);
 
         // Start a background stats printer if INFO level logging is enabled
         if (STATS_LOG.isLoggable(Level.INFO) || STATS_LOG.isLoggable(Level.FINEST)) {
@@ -462,47 +461,60 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    protected void scheduleFire() {
+    // TODO: Add ability to subscribe to specific events from a ruleset so the ruleset triggers only when appropriate
+    /**
+     * Queues actual firing of rules; if facts have changed then firing occurs in a shorter time frame than if we just
+     * need to re-evaluate {@link TemporaryFact}s. This effectively limits how often the rules engine will fire, only
+     * once within the guaranteed minimum expiration time.
+     */
+    protected synchronized void scheduleFire(boolean quickFire) {
+        boolean timerRunning = fireTimer != null && !fireTimer.isDone();
 
-
-
-        withLock(toString() + "::scheduleFire", () -> {
-            // Schedule a firing within the guaranteed expiration time (so not immediately), and
-            // only if the last firing is done. This effectively limits how often the rules engine
-            // will fire, only once within the guaranteed minimum expiration time.
-            if (fireTimer == null || fireTimer.isDone()) {
-                LOG.fine("Scheduling rules firing on: " + this);
-                fireTimer = executorService.schedule(
-                    () -> withLock(RulesEngine.this.toString() + "::fire", () -> {
-
-                        fireTimer = null;
-
-                        // Are temporary facts present before rules are fired?
-                        boolean hadTemporaryFactsBefore = facts.hasTemporaryFacts();
-
-                        // Process rules for all deployments
-                        fireAllDeployments();
-
-                        // If there are temporary facts, or if there were some before and
-                        // now they are gone, schedule a new firing to guarantee processing
-                        // of expired and removed temporary facts
-                        if ((facts.hasTemporaryFacts() || (hadTemporaryFactsBefore && !facts.hasTemporaryFacts()))
-                            && !disableTemporaryFactExpiration) {
-                            LOG.fine("Temporary facts require firing rules on: " + this);
-                            executorService.submit(this::scheduleFire);
-                        } else if (!disableTemporaryFactExpiration) {
-                            LOG.fine("No temporary facts present/changed when firing rules on: " + this);
-                        }
-
-                    }),
-                    rulesService.tempFactExpirationMillis,
-                    TimeUnit.MILLISECONDS
-                );
+        if (timerRunning) {
+            if (!quickFire) {
+                // Firing is already scheduled
+                return;
+            } else {
+                if (fireTimer.getDelay(TimeUnit.MILLISECONDS) <= rulesService.quickFireMillis) {
+                    // Firing is already going to occur within time frame
+                    return;
+                } else {
+                    // Cancel the existing timer
+                    fireTimer.cancel(false);
+                }
             }
-        });
+        }
+
+        long fireTimeMillis = quickFire ? rulesService.quickFireMillis : rulesService.tempFactExpirationMillis;
+
+        LOG.fine("Scheduling rules firing in " + fireTimeMillis + "ms on: " + this);
+        fireTimer = executorService.schedule(
+            () -> {
+                synchronized (RulesEngine.this) {
+                    // Are temporary facts present before rules are fired?
+                    boolean hadTemporaryFactsBefore = facts.hasTemporaryFacts();
+
+                    // Process rules for all deployments
+                    fireAllDeployments();
+
+                    // If there are temporary facts, or if there were some before and
+                    // now they are gone, schedule a new firing to guarantee processing
+                    // of expired and removed temporary facts
+                    if ((facts.hasTemporaryFacts() || (hadTemporaryFactsBefore && !facts.hasTemporaryFacts()))
+                        && !disableTemporaryFactExpiration) {
+                        // Schedule call to schedule fire so the fireTimer shows as done
+                        executorService.schedule(() -> scheduleFire(false), 10, TimeUnit.MILLISECONDS);
+                    } else if (!disableTemporaryFactExpiration) {
+                        LOG.fine("No temporary facts present/changed when firing rules on: " + this);
+                    }
+                }
+            },
+            fireTimeMillis,
+            TimeUnit.MILLISECONDS
+        );
     }
 
-    private void fireDeployments(Collection<RulesetDeployment> deploymentList) {
+    private void doFire(Collection<RulesetDeployment> deploymentList) {
         if (!running) {
             return;
         }
@@ -513,6 +525,7 @@ public class RulesEngine<T extends Ruleset> {
 
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
+        long executionTotalMillis = 0L;
 
         for (RulesetDeployment deployment : deploymentList) {
             try {
@@ -531,9 +544,10 @@ public class RulesEngine<T extends Ruleset> {
                     long startTimestamp = timerService.getCurrentTimeMillis();
                     lastFireTimestamp = startTimestamp;
                     engine.fire(deployment.getRules(), facts);
-                    RULES_FIRED_LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + (timerService.getCurrentTimeMillis() - startTimestamp) + "ms");
+                    long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
+                    executionTotalMillis += executionMillis;
+                    RULES_FIRED_LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
                 }
-
             } catch (Exception ex) {
                 LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
 
@@ -553,16 +567,14 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         trackLocationPredicates(false);
+
+        if (executionTotalMillis > 100) {
+            LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
+        }
     }
 
     protected void fireAllDeployments() {
-        fireDeployments(deployments.values());
-    }
-
-    protected void fireAllDeploymentsWithPredictedData() {
-        withLock(toString() + "::fireAllDeploymentsWithPredictedData", () -> {
-            fireDeployments(deployments.values().stream().filter(RulesetDeployment::isTriggerOnPredictedData).collect(Collectors.toList()));
-        });
+        doFire(deployments.values());
     }
 
     protected void notifyAssetStatesChanged(AssetStateChangeEvent event) {
@@ -579,7 +591,7 @@ public class RulesEngine<T extends Ruleset> {
         trackLocationPredicates(trackLocationPredicates || (insert && assetState.getName().equals(Asset.LOCATION.getName())));
         notifyAssetStatesChanged(new AssetStateChangeEvent(insert ? PersistenceEvent.Cause.CREATE : PersistenceEvent.Cause.UPDATE, assetState));
         if (running) {
-            scheduleFire();
+            scheduleFire(true);
         }
     }
 
@@ -589,14 +601,14 @@ public class RulesEngine<T extends Ruleset> {
         trackLocationPredicates(trackLocationPredicates || assetState.getName().equals(Asset.LOCATION.getName()));
         notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, assetState));
         if (running) {
-            scheduleFire();
+            scheduleFire(true);
         }
     }
 
     public void insertAssetEvent(long expiresMillis, AssetState<?> assetState) {
         facts.insertAssetEvent(expiresMillis, assetState);
         if (running) {
-            scheduleFire();
+            scheduleFire(true);
         }
     }
 

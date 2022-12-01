@@ -41,7 +41,7 @@ import static org.openremote.container.util.MapAccess.*;
  */
 public abstract class IdentityService implements ContainerService {
 
-    public static final int PRIORITY = PersistenceService.PRIORITY - 10;
+    public static final int PRIORITY = PersistenceService.PRIORITY + 10;
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
     public static final String OR_IDENTITY_PROVIDER = "OR_IDENTITY_PROVIDER";
     public static final String OR_IDENTITY_PROVIDER_DEFAULT = "keycloak";

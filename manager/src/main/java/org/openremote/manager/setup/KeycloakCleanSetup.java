@@ -41,9 +41,6 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
     @Override
     public void onStart() throws Exception {
         super.onStart();
-
-        // Switch keycloak proxy back to admin cli
-        keycloakProvider.setActiveCredentials(keycloakProvider.getDefaultKeycloakGrant(container));
         doClean();
     }
 
