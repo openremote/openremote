@@ -111,8 +111,6 @@ export class OrConfRealmCard extends LitElement {
     ManagerHeaders.account,
     ManagerHeaders.language,
 
-    ManagerHeaders.logout,
-
   ];
 
   protected _getColors() {
