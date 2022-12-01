@@ -4,7 +4,8 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
     NavigationControl,
     GeolocateControl,
     Control,
-    IControl} from "maplibre-gl";
+    IControl,
+    LngLatBoundsLike} from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
 import {debounce} from "lodash";
@@ -175,10 +176,13 @@ export class MapWidget {
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
 
         if (this._viewSettings) {
+            this._viewSettings.bounds = [5.62, 50.75, 6.1, 51.11]
             if (this._mapGl) {
                 this._mapGl.setMinZoom(this._viewSettings.minZoom);
                 this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
-                this._mapGl.setMaxBounds(this._viewSettings.bounds);
+                if (this._viewSettings.bounds){
+                    this._mapGl.setMaxBounds(this._viewSettings.bounds);
+                }
             }
             if (!this._center) {
                 this.setCenter(this._viewSettings.center);
@@ -271,7 +275,9 @@ export class MapWidget {
             if (this._viewSettings) {
                 options.minZoom = this._viewSettings.minZoom;
                 options.maxZoom = this._viewSettings.maxZoom;
-                options.maxBounds = this._viewSettings.bounds;
+                if (this._viewSettings.bounds){
+                    options.maxBounds = this._viewSettings.bounds;
+                }
                 options.boxZoom = this._viewSettings.boxZoom;
                 options.zoom = this._viewSettings.zoom;
                 options.center = this._viewSettings.center;

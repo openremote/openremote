@@ -9,6 +9,7 @@ import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-configuration/or-conf-json";
 import "@openremote/or-configuration/or-conf-realm/index";
+import "@openremote/or-configuration/or-conf-map/index";
 import { ManagerConf } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -178,8 +179,12 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                         </div>
                     </div>
                 </div>
-                <or-panel .heading="${"Realms"}">
+                <or-panel .heading="${i18next.t("realms")}">
                     <or-conf-realm .config="${managerConfiguration}"></or-conf-realm>
+                </or-panel>
+
+                <or-panel .heading="${i18next.t("map")}">
+                    <or-conf-map></or-conf-map>
                 </or-panel>
             </div>
         `;

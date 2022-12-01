@@ -28,7 +28,7 @@ export * from "./or-map-asset-card";
 
 export interface ViewSettings {
     center: LngLatLike;
-    bounds: LngLatBoundsLike;
+    bounds?: LngLatBoundsLike | null;
     zoom: number;
     maxZoom: number;
     minZoom: number;
