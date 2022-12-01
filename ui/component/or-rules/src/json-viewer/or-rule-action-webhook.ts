@@ -8,6 +8,7 @@ import "./forms/or-rule-form-webhook";
 const style = css`
     :host {
         height: 100%;
+        margin: 2px 3px auto 0;
     }
 
     :host > * {
