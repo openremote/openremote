@@ -28,7 +28,7 @@ import {translate} from "@openremote/or-translate";
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): ListItem[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): (ListItem | null)[] {
 
     let addAssetTypes = true;
     let addWait = true;
@@ -45,7 +45,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     }
 
 
-    const menu: ListItem[] = [];
+    const menu: (ListItem | null)[] = [];
 
     if (addAssetTypes && assetInfos) {
         menu.push(...assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
@@ -62,6 +62,9 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             } as ListItem;
         }));
     }
+
+    menu.sort(Util.sortByString((listItem) => listItem?.value!));
+    menu.push(null); // divider
 
     if (addNotification) {
         menu.push({
@@ -98,8 +101,6 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
         })
     }
-
-    menu.sort(Util.sortByString((listItem) => listItem.value!));
 
     return menu;
 }
