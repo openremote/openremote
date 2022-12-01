@@ -154,6 +154,11 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(()=>{
                 fetch("/manager_config.json", {cache:"reload"})
                 manager.managerAppConfig = e.detail?.value as ManagerConf
+                Object.entries(manager.managerAppConfig.realms).map(([name, settings]) => {
+                    fetch(settings?.favicon, {cache:"reload"})
+                    fetch(settings?.logo, {cache:"reload"})
+                    fetch(settings?.logoMobile, {cache:"reload"})
+                })
                 app.requestUpdate()
             })
         })

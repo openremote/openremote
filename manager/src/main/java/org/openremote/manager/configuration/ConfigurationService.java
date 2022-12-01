@@ -78,7 +78,9 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     public void saveImageFile(String path, FileInfo fileInfo) throws IOException {
         File file = new File(pathPublicRoot + path);
         file.getParentFile().mkdirs();
-        file.delete();
+        if (file.exists()){
+            file.delete();
+        }
         OutputStream out = new FileOutputStream(file);
         out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
     }
