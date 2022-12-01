@@ -171,7 +171,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                         <div id="header-actions">
                             <div id="header-actions-content">
                                 <or-conf-json .managerConfig="${managerConfiguration}"></or-conf-json>
-                                <or-mwc-input id="save-btn" raised="" type="button" label="Opslaan" @click="${() => {
+                                <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t('save')}" @click="${() => {
                                     document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: managerConfiguration } }));
                                 }}"></or-mwc-input>
                             </div>
