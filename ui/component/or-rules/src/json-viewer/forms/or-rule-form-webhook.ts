@@ -80,8 +80,11 @@ export class OrRuleFormWebhook extends LitElement {
         this.updateComplete.then(() => this.loading = false);
         this.notifyWebhookUpdate(false)
     }
+
     notifyWebhookUpdate(requestUpdate: boolean = true) {
-        if(requestUpdate) { this.requestUpdate("webhook"); }
+        if (requestUpdate) {
+            this.requestUpdate("webhook");
+        }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
     }
 
@@ -90,10 +93,9 @@ export class OrRuleFormWebhook extends LitElement {
     // Template rendering
 
     render() {
-        if (!this.webhook) {
-            return html`${i18next.t('errorOccurred')}`
-        }
-        return html`
+        return when(!this.webhook, () => html`
+            ${i18next.t('errorOccurred')}
+        `, () => html`
             <form style="display: flex; flex-direction: column; gap: 20px; min-width: 420px;">
                 <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
                     <or-mwc-input style="flex: 0;" type="${InputType.SELECT}" .value="${this.webhook.httpMethod}"
@@ -119,8 +121,11 @@ export class OrRuleFormWebhook extends LitElement {
                     `)}
                     <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="Add Request Header"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                      const values = this.webhook.headers ? this.webhook.headers[''] : undefined;
-                                      values ? this.webhook.headers![''].push('') : this.webhook.headers![''] = [''];
+                                      if((this.webhook.headers ? this.webhook.headers[''] : undefined) != undefined) {
+                                          this.webhook.headers![''].push('');
+                                      } else {
+                                          this.webhook.headers![''] = [''];
+                                      }
                                       this.reloadHeaders();
                                   }}"></or-mwc-input>
                 </div>
@@ -129,7 +134,7 @@ export class OrRuleFormWebhook extends LitElement {
                     <or-mwc-input type="${InputType.SWITCH}" fullwidth label="Requires Authorization"
                                   .value="${this.webhook.oAuthGrant != undefined || this.webhook.usernamePassword != undefined}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                      this.webhook.usernamePassword = (ev.detail.value) ? {
+                                      this.webhook.usernamePassword = ev.detail.value ? {
                                           username: 'admin',
                                           password: 'secret'
                                       } : undefined;
@@ -158,22 +163,23 @@ export class OrRuleFormWebhook extends LitElement {
                     <or-mwc-input type="${InputType.SWITCH}" fullwidth label="Include Payload in Request"
                                   .value="${this.webhook.payload != undefined}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                      this.webhook.payload = (ev.detail.value) ? "{}" : undefined;
+                                      this.webhook.payload = ev.detail.value ? "{}" : undefined;
                                       this.notifyWebhookUpdate();
                                   }}"
                     ></or-mwc-input>
                     ${when(this.webhook.payload != undefined, () => {
                         return html`
-                            <or-mwc-input type="${InputType.TEXTAREA}" .value="${this.webhook.payload}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                this.webhook.payload = ev.detail.value;
-                                this.notifyWebhookUpdate();
-                            }}"></or-mwc-input>
+                            <or-mwc-input type="${InputType.TEXTAREA}" .value="${this.webhook.payload}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                              this.webhook.payload = ev.detail.value;
+                                              this.notifyWebhookUpdate();
+                                          }}"></or-mwc-input>
                         `
                     })}
                     <div class="divider" style="margin-top: 24px;"></div>
                 `)}
             </form>
-        `
+        `)
     }
 
     getHeadersTemplate(headers: { [p: string]: string[] }, loading: boolean) {
@@ -188,7 +194,11 @@ export class OrRuleFormWebhook extends LitElement {
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                           values.length > 0 ? values.splice(valueIndex, 1) : delete this.webhook.headers![key];
                                           const newValues = this.webhook.headers![ev.detail.value];
-                                          (newValues && newValues.length > 0) ? newValues.push(value) : this.webhook.headers![ev.detail.value] = [value]
+                                          if(newValues && newValues.length > 0) {
+                                              newValues.push(value);
+                                          } else {
+                                              this.webhook.headers![ev.detail.value] = [value]
+                                          }
                                           this.reloadHeaders();
                                       }}"
                         ></or-mwc-input>

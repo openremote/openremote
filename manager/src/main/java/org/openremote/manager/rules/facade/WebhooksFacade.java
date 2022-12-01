@@ -6,6 +6,8 @@ import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Webhooks;
 import org.openremote.model.webhook.Webhook;
 
+import javax.ws.rs.client.WebTarget;
+
 public class WebhooksFacade<T extends Ruleset> extends Webhooks {
 
     protected final RulesEngineId<T> rulesEngineId;
@@ -17,7 +19,12 @@ public class WebhooksFacade<T extends Ruleset> extends Webhooks {
     }
 
     @Override
-    public void send(Webhook webhook) {
-        webhookService.sendHttpRequest(webhook);
+    public void send(Webhook webhook, WebTarget target) {
+        webhookService.sendHttpRequest(webhook, target);
+    }
+
+    @Override
+    public WebTarget buildTarget(Webhook webhook) {
+        return webhookService.buildWebTarget(webhook);
     }
 }

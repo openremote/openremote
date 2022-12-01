@@ -12,6 +12,7 @@ import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.webhook.Webhook;
 
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +24,6 @@ public class WebhookService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(WebhookService.class.getName());
     protected ResteasyClientBuilder clientBuilder;
-    protected WebTargetBuilder targetBuilder;
 
     public static final String WEBHOOK_CONNECT_TIMEOUT = "WEBHOOK_CONNECT_TIMEOUT";
     public static final int WEBHOOK_CONNECT_TIMEOUT_DEFAULT = 2000;
@@ -63,24 +63,11 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         // empty
     }
 
-    public void sendHttpRequest(Webhook webhook) {
-        ResteasyClient client = WebClient.registerDefaults(clientBuilder).build();
-        WebTargetBuilder builder = new WebTargetBuilder(client, URI.create(webhook.getUrl()));
-
-        // Authentication
-        if(webhook.getUsernamePassword() != null) {
-            builder.setBasicAuthentication(webhook.getUsernamePassword().getUsername(), webhook.getUsernamePassword().getPassword());
-        } else if(webhook.getOAuthGrant() != null) {
-            builder.setOAuthAuthentication(webhook.getOAuthGrant());
-        }
-        if (webhook.getHeaders() != null && webhook.getHeaders().size() > 0) {
-            builder.setInjectHeaders(webhook.getHeaders());
-        }
-
+    public void sendHttpRequest(Webhook webhook, WebTarget target) {
         Response response = null;
         try {
-            ResteasyWebTarget target = builder.build();
-            response = this.buildResponse(target, webhook.getHttpMethod(), webhook.getPayload());
+            ResteasyWebTarget webTarget = (ResteasyWebTarget) target;
+            response = this.buildResponse(webTarget, webhook.getHttpMethod(), webhook.getPayload());
             response.readEntity(String.class);
         } catch (Exception e) {
             LOG.warning(e.getMessage());
@@ -92,9 +79,25 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         }
     }
 
+    public WebTarget buildWebTarget(Webhook webhook) {
+        ResteasyClient client = WebClient.registerDefaults(clientBuilder).build();
+        WebTargetBuilder builder = new WebTargetBuilder(client, URI.create(webhook.getUrl()));
+
+        // Authentication
+        if (webhook.getUsernamePassword() != null) {
+            builder.setBasicAuthentication(webhook.getUsernamePassword().getUsername(), webhook.getUsernamePassword().getPassword());
+        } else if (webhook.getOAuthGrant() != null) {
+            builder.setOAuthAuthentication(webhook.getOAuthGrant());
+        }
+        if (webhook.getHeaders() != null && webhook.getHeaders().size() > 0) {
+            builder.setInjectHeaders(webhook.getHeaders());
+        }
+        return builder.build();
+    }
+
     private Response buildResponse(ResteasyWebTarget target, HTTPMethod method, String payload) {
         Response response = target.request().method(method.name());
-        if(payload != null) {
+        if (payload != null) {
             return target.request().method(method.name(), Entity.entity(payload, response.getMediaType()));
         } else {
             return response;
