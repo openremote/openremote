@@ -195,6 +195,7 @@
   "header": "Header",
   "addRequestHeader": "Voeg Request Header toe",
   "requiresAuthorization": "Vereist Authorizatie",
+  "tokenUrl": "Token URL",
   "method": "Methode",
   "includeBodyInRequest": "Verstuur body met request",
   "linkedUsers": "Gekoppelde gebruikers",

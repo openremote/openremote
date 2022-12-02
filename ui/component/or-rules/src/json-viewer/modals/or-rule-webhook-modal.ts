@@ -1,42 +1,9 @@
 import {RuleActionWebhook} from "@openremote/model";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {i18next} from "@openremote/or-translate";
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
-
-const checkValidity = (form: HTMLFormElement | null, dialog: OrMwcDialog) => {
-    if (form) {
-        const inputs = form.querySelectorAll('or-mwc-input');
-        const elements = Array.prototype.slice.call(inputs);
-
-        const valid = elements.every((element: OrMwcInput) => {
-            const mdcComponent = (element as any)._mdcComponent;
-            if (element.shadowRoot) {
-                if (element.type == InputType.SELECT) {
-                    return element.checkValidity();
-                }
-                if (element.type == InputType.BUTTON) {
-                    return true;
-                }
-                const input = element.shadowRoot.querySelector('input, textarea, select') as any
-
-                if (input && input.checkValidity()) {
-                    return true
-                } else {
-                    mdcComponent.valid = false;
-                    mdcComponent.helperTextContent = 'required';
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        })
-        if (valid) {
-            dialog.close();
-        }
-    }
-}
 
 @customElement("or-rule-webhook-modal")
 export class OrRuleWebhookModal extends LitElement {
@@ -77,12 +44,9 @@ export class OrRuleWebhookModal extends LitElement {
         }
     }
 
-    checkForm(event: OrInputChangedEvent) {
+    closeForm(event: OrInputChangedEvent) {
         const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
-        const component: HTMLElement | null = this.shadowRoot!.querySelector('or-rule-form-webhook');
-        const form: HTMLFormElement = component?.shadowRoot!.firstElementChild as HTMLFormElement;
-        checkValidity(form, dialog);
-        this.requestUpdate();
+        dialog.close();
     }
 
     render() {
@@ -93,7 +57,7 @@ export class OrRuleWebhookModal extends LitElement {
             {
                 actionName: "", content: html`
                     <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"
-                                  @or-mwc-input-changed="${this.checkForm}"></or-mwc-input>`
+                                  @or-mwc-input-changed="${this.closeForm}"></or-mwc-input>`
             }
         ];
         const webhookModalOpen = () => {

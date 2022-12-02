@@ -477,7 +477,11 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             action = action as RuleActionWebhook;
             action.action = "webhook";
             action.webhook = {
-                httpMethod: HTTPMethod.POST
+                httpMethod: HTTPMethod.POST,
+                payload: JSON.stringify({
+                    rule: "%TRIGGER_RULE%",
+                    assets: "%TRIGGER_ASSETS%"
+                }, null, 4)
             };
         } else if (value === ActionType.EMAIL) {
             action = action as RuleActionNotification;

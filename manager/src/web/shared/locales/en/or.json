@@ -197,6 +197,7 @@
   "header": "Header",
   "addRequestHeader": "Add Request Header",
   "requiresAuthorization": "Requires Authorization",
+  "tokenUrl": "Token URL",
   "method": "Method",
   "includeBodyInRequest": "Include body in Request",
   "linkedUsers": "Linked users",

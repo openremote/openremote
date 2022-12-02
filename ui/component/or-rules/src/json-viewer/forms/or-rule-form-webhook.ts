@@ -3,8 +3,7 @@ import {
     OAuthGrant,
     OAuthClientCredentialsGrant,
     Webhook,
-    OAuthPasswordGrant,
-    OAuthRefreshTokenGrant
+    OAuthPasswordGrant
 } from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
@@ -34,8 +33,7 @@ export class OrRuleFormWebhook extends LitElement {
     private authMethodOptions: Map<string, string> = new Map<string, string>([
         ["username_password", (i18next.t('username') + " & " + i18next.t('password'))],
         ["client_credentials", "oauth Client Credentials Grant"],
-        ["password", "oauth Password Grant"],
-        ["refresh_token", "oauth Refresh Token Grant"]
+        ["password", "oauth Password Grant"]
     ]);
 
     static get styles() {
@@ -68,7 +66,7 @@ export class OrRuleFormWebhook extends LitElement {
     }
 
     getOAuthGrant(authMethodKey: string): OAuthGrant | undefined {
-        if (authMethodKey == 'client_credentials' || authMethodKey == 'password' || authMethodKey == 'refresh_token') {
+        if (authMethodKey == 'client_credentials' || authMethodKey == 'password') {
             return {grant_type: authMethodKey} as OAuthGrant;
         } else {
             return undefined;
@@ -96,8 +94,9 @@ export class OrRuleFormWebhook extends LitElement {
         return when(!this.webhook, () => html`
             ${i18next.t('errorOccurred')}
         `, () => html`
-            <form style="display: flex; flex-direction: column; gap: 20px; min-width: 420px;">
-                <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
+            <form style="display: flex; flex-direction: column; min-width: 520px;">
+                <!-- HTTP Method & URL -->
+                <div style="display: flex; flex-direction: row; align-items: center; gap: 5px; margin-bottom: 28px;">
                     <or-mwc-input style="flex: 0;" type="${InputType.SELECT}" .value="${this.webhook.httpMethod}"
                                   .options="${this.httpMethodOptions}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
@@ -112,7 +111,8 @@ export class OrRuleFormWebhook extends LitElement {
                                       this.notifyWebhookUpdate();
                                   }}"></or-mwc-input>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 5px;">
+                <!-- Headers -->
+                <div style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 28px;">
                     <span>Headers</span>
                     ${when(this.loading, () => html`
                         ${this.getHeadersTemplate(this.webhook.headers!, true)}
@@ -121,7 +121,7 @@ export class OrRuleFormWebhook extends LitElement {
                     `)}
                     <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="${i18next.t('addRequestHeader')}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                      if((this.webhook.headers ? this.webhook.headers[''] : undefined) != undefined) {
+                                      if ((this.webhook.headers ? this.webhook.headers[''] : undefined) != undefined) {
                                           this.webhook.headers![''].push('');
                                       } else {
                                           this.webhook.headers![''] = [''];
@@ -129,10 +129,10 @@ export class OrRuleFormWebhook extends LitElement {
                                       this.reloadHeaders();
                                   }}"></or-mwc-input>
                 </div>
-                <div class="divider" style="margin-top: 24px;"></div>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Authorization -->
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: ${this.webhook.oAuthGrant || this.webhook.usernamePassword ? '28px' : '0'};">
                     <or-mwc-input type="${InputType.SWITCH}" fullwidth label="${i18next.t('requiresAuthorization')}"
-                                  .value="${this.webhook.oAuthGrant != undefined || this.webhook.usernamePassword != undefined}"
+                                  .value="${this.webhook.oAuthGrant || this.webhook.usernamePassword}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                       this.webhook.usernamePassword = ev.detail.value ? {
                                           username: 'admin',
@@ -140,7 +140,7 @@ export class OrRuleFormWebhook extends LitElement {
                                       } : undefined;
                                       this.notifyWebhookUpdate();
                                   }}"></or-mwc-input>
-                    ${when(this.webhook.oAuthGrant != undefined || this.webhook.usernamePassword != undefined, () => {
+                    ${when(this.webhook.oAuthGrant || this.webhook.usernamePassword, () => {
                         const values: string[] = Array.from(this.authMethodOptions.values());
                         return html`
                             <or-mwc-input type="${InputType.SELECT}" label="${i18next.t('method')}"
@@ -155,26 +155,30 @@ export class OrRuleFormWebhook extends LitElement {
                         `
                     })}
                 </div>
-                <div class="divider" style="margin-top: 24px;"></div>
-                ${when(this.webhook.httpMethod != HTTPMethod.GET && this.webhook.httpMethod != HTTPMethod.DELETE, () => html`
-                    <or-mwc-input type="${InputType.SWITCH}" fullwidth label="${i18next.t('includeBodyInRequest')}"
-                                  .value="${this.webhook.payload != undefined}"
-                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                      this.webhook.payload = ev.detail.value ? "{}" : undefined;
-                                      this.notifyWebhookUpdate();
-                                  }}"
-                    ></or-mwc-input>
-                    ${when(this.webhook.payload != undefined, () => {
-                        return html`
-                            <or-mwc-input type="${InputType.TEXTAREA}" .value="${this.webhook.payload}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                              this.webhook.payload = ev.detail.value;
-                                              this.notifyWebhookUpdate();
-                                          }}"></or-mwc-input>
-                        `
-                    })}
-                    <div class="divider" style="margin-top: 24px;"></div>
-                `)}
+                <!-- Payload -->
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    ${when(this.webhook.httpMethod != HTTPMethod.GET && this.webhook.httpMethod != HTTPMethod.DELETE, () => html`
+                        <or-mwc-input type="${InputType.SWITCH}" fullwidth label="${i18next.t('includeBodyInRequest')}"
+                                      .value="${this.webhook.payload != undefined}"
+                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                          this.webhook.payload = ev.detail.value ? JSON.stringify({
+                                              rule: "%TRIGGER_RULE%",
+                                              assets: "%TRIGGER_ASSETS%"
+                                          }, null, 4) : undefined;
+                                          this.notifyWebhookUpdate();
+                                      }}"
+                        ></or-mwc-input>
+                        ${when(this.webhook.payload != undefined, () => {
+                            return html`
+                                <or-mwc-input type="${InputType.TEXTAREA}" .value="${this.webhook.payload}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                                  this.webhook.payload = ev.detail.value;
+                                                  this.notifyWebhookUpdate();
+                                              }}"></or-mwc-input>
+                            `
+                        })}
+                    `)}
+                </div>
             </form>
         `)
     }
@@ -186,12 +190,12 @@ export class OrRuleFormWebhook extends LitElement {
                 const values: string[] = this.webhook.headers![key];
                 return values.map((value, valueIndex) => html`
                     <div style="display: flex; gap: 5px;">
-                        <or-mwc-input type="${InputType.TEXT}" label="${i18next.t('header')}" value="${key}" style="flex: 1;"
-                                      .disabled="${loading}"
+                        <or-mwc-input type="${InputType.TEXT}" label="${i18next.t('header')}" value="${key}"
+                                      style="flex: 1;" .disabled="${loading}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                           values.length > 0 ? values.splice(valueIndex, 1) : delete this.webhook.headers![key];
                                           const newValues = this.webhook.headers![ev.detail.value];
-                                          if(newValues && newValues.length > 0) {
+                                          if (newValues && newValues.length > 0) {
                                               newValues.push(value);
                                           } else {
                                               this.webhook.headers![ev.detail.value] = [value]
@@ -199,8 +203,8 @@ export class OrRuleFormWebhook extends LitElement {
                                           this.reloadHeaders();
                                       }}"
                         ></or-mwc-input>
-                        <or-mwc-input type="${InputType.TEXT}" label="${i18next.t('value')}" value="${value}" style="flex: 1;"
-                                      .disabled="${loading}"
+                        <or-mwc-input type="${InputType.TEXT}" label="${i18next.t('value')}" value="${value}"
+                                      style="flex: 1;" .disabled="${loading}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                           this.webhook.headers![key][valueIndex] = ev.detail.value;
                                           this.notifyWebhookUpdate();
@@ -245,8 +249,8 @@ export class OrRuleFormWebhook extends LitElement {
             return html`
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
-                        <or-mwc-input style="flex: 1;" type="${InputType.URL}" required label="${i18next.t('webUrl')}"
-                                      .value="${authGrant.tokenEndpointUri}"
+                        <or-mwc-input style="flex: 1;" type="${InputType.URL}" required
+                                      label="${i18next.t('tokenUrl')}" .value="${authGrant.tokenEndpointUri}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                           authGrant.tokenEndpointUri = ev.detail.value;
                                           this.notifyWebhookUpdate();
@@ -284,29 +288,6 @@ export class OrRuleFormWebhook extends LitElement {
                                                   .value="${grant.password}"
                                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                                       grant.password = ev.detail.value;
-                                                      this.notifyWebhookUpdate();
-                                                  }}"></or-mwc-input>
-                                `
-                            }
-                            case "refresh_token": {
-                                const grant = authGrant as OAuthRefreshTokenGrant;
-                                return html`
-                                    <or-mwc-input type="${InputType.TEXT}" label="${i18next.t('clientId')}"
-                                                  .value="${grant.client_id}"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                                      grant.client_id = ev.detail.value;
-                                                      this.notifyWebhookUpdate();
-                                                  }}"></or-mwc-input>
-                                    <or-mwc-input type="${InputType.PASSWORD}" label="${i18next.t('clientSecret')}"
-                                                  .value="${grant.client_secret}"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                                      grant.client_secret = ev.detail.value;
-                                                      this.notifyWebhookUpdate();
-                                                  }}"></or-mwc-input>
-                                    <or-mwc-input type="${InputType.TEXT}" label="${i18next.t('refreshToken')}"
-                                                  .value="${grant.refresh_token}"
-                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                                      grant.refresh_token = ev.detail.value;
                                                       this.notifyWebhookUpdate();
                                                   }}"></or-mwc-input>
                                 `
