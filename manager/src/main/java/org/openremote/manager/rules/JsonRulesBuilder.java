@@ -62,6 +62,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
+import static org.openremote.model.util.ValueUtil.LOG;
 import static org.openremote.model.util.ValueUtil.distinctByKey;
 
 public class JsonRulesBuilder extends RulesBuilder {
@@ -814,7 +815,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                             // Need to clone the notification
                             notification = ValueUtil.clone(notification);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml);
+                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml, false);
                             body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
 
                             if (isEmail) {
@@ -872,8 +873,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                 // Replace %TRIGGER_ASSETS% with actual assets
                 if (!TextUtil.isNullOrEmpty(webhook.getPayload())) {
                     if (webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-                        String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false);
-                        webhook.setPayload(webhook.getPayload().replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo));
+                        String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
+                        webhook.setPayload(webhook.getPayload().replace(('"' + PLACEHOLDER_TRIGGER_ASSETS + '"'), triggeredAssetInfo));
                     }
                 }
                 if(webhookAction.target == null) {
@@ -1040,7 +1041,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return null;
     }
 
-    private static String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml) {
+    private static String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml, boolean isJson) {
 
         Set<String> assetIds = useUnmatched ? ruleEvaluationResult.otherwiseMatchedAssetIds : ruleEvaluationResult.thenMatchedAssetIds;
 
@@ -1076,6 +1077,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                 sb.append("</td></tr>");
             }));
             sb.append("</table>");
+        } else if (isJson) {
+            try {
+                String jsonString = ValueUtil.JSON.writeValueAsString(assetStates);
+                return jsonString;
+            } catch (Exception e) {
+                LOG.severe(e.getMessage());
+            }
         } else {
             sb.append("Asset ID\t\tAsset Name\t\tAttribute\t\tValue");
             assetStates.forEach((key, value) -> value.forEach(assetState -> {
