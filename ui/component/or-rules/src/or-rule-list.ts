@@ -298,7 +298,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
         let statusIcon: string = "help";
         let statusClass: string = "iconfill-gray";
-        let statusTitle: string = "statusUnknown";
+        let nodeIcon: string = "mdi-state-machine";
+        let nodeTitle: string = "Unknown language";
         switch (node.ruleset.status){
             case "DEPLOYED":
                 statusIcon = "";
@@ -335,10 +336,32 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 statusClass = "iconfill-gray";
         }
 
+        switch (node.ruleset.lang) {
+            case (RulesetLang.JSON):
+                nodeIcon = "ray-start-arrow";
+                nodeTitle = "When-Then";
+                break;
+            case (RulesetLang.FLOW):
+                nodeIcon = "transit-connection-variant";
+                nodeTitle = "Flow";
+                break;
+            case (RulesetLang.GROOVY):
+                nodeIcon = "alpha-g-box-outline";
+                nodeTitle = "Groovy";
+                break;
+            case (RulesetLang.JAVASCRIPT):
+                nodeIcon = "language-javascript";
+                nodeTitle = "JavaScript";
+                break;
+            default:
+                nodeIcon = "mdi-state-machine";
+                nodeTitle = "Unknown language";
+        }
+
         return html`
             <li ?data-selected="${node.selected}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, node)}">
                 <div class="node-container">
-                    <or-icon style="--or-icon-fill: --or-color-3; --or-icon-width: 18px; margin-right: 8px;" icon="${node.ruleset.lang !== RulesetLang.JSON ? ( node.ruleset.lang == RulesetLang.FLOW ? "transit-connection-variant" : "alpha-g-box") : "ray-start-arrow"}"></or-icon>
+                    <or-icon style="--or-icon-width: 18px; margin-right: 8px;" icon="${nodeIcon}" title="${i18next.t(nodeTitle)}"></or-icon>
                     <span class="node-name">${node.ruleset.name}</span>
                     <or-icon class="node-status ${statusClass}" title="${i18next.t("rulesetStatus." + (node.ruleset.status ? node.ruleset.status : "NOSTATUS"))}" icon="${statusIcon}"></or-icon>
                 </div>

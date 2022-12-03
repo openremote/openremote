@@ -523,7 +523,8 @@
     "EXECUTION_ERROR": "Execution error",
     "EXPIRED": "Validity period over",
     "PAUSED": "Paused until in validity period",
-    "REMOVED": "Removed"
+    "REMOVED": "Removed",
+    "READY": "Ready; waiting error resolution"
   },
   "public": "Public",
   "shared": "Shared",
