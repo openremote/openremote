@@ -271,6 +271,7 @@
   "GROOVY": "Groovy",
   "JAVASCRIPT": "JavaScript",
   "gatewayConnection": "Manager interconnect",
+  "gateway": "Manager interconnect",
   "connectionDetails": "CONNECTIE DETAILS",
   "secured": "Beveiligd",
   "clientSecret": "Client wachtwoord",
@@ -569,11 +570,12 @@
     "myDashboards": "Mijn dashboards",
     "createdByOthers": "Gemaakt door anderen"
   },
+  "appearance": "Weergaven",
   "configuration": {
     "" : "Instellingen",
     "main": "Algemeen",
     "addRealmCustomization" : "Voeg aangepaste realm stijl toe",
-    "realmTitle": "Realm Titel",
+    "realmTitle": "Manager Titel",
     "defaultLanguage": "Standaard taal",
     "images": "Afbeeldingen",
     "logo": "Logo",

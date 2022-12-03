@@ -33,5 +33,6 @@ enum ManagerHeaders {
     logout,
     language,
     export,
-    map
+    map,
+    appearance
 }

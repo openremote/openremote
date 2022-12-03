@@ -142,7 +142,7 @@ export function headerItemConfiguration<S extends AppStateKeyed, A extends AnyAc
         icon: "cog",
         value: "configuration",
         href: "configuration",
-        text: "configuration.",
+        text: "appearance",
         roles: () => manager.isSuperUser()
     };
 }

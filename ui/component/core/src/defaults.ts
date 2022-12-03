@@ -1,8 +1,8 @@
 export const DefaultColor4: string = "#4d9d2a"; // Primary
 export const DefaultColor7: string = "#FFF"; // Secondary
-export const DefaultColor1: string = "#FFF"; // Surface
+export const DefaultColor1: string = "#FFFFFF"; // Surface
 export const DefaultColor2: string = "#F9F9F9"; // Background
-export const DefaultColor5: string = "#CCC"; // Borders and lines
+export const DefaultColor5: string = "#CCCCCC"; // Borders and lines
 export const DefaultColor6: string = "#be0000"; // Invalid/Error
 export const DefaultColor8: string = "#FFF"; // On Primary
 export const DefaultColor3: string = "#4c4c4c"; // Text / On Secondary

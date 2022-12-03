@@ -31,6 +31,9 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
     static get styles() {
         // language=CSS
         return css`
+            .main-content{
+                display: unset!important;
+            }
             @media screen and (max-width: 768px) {
                 or-panel {
                     border-left: 0px;
@@ -46,11 +49,13 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             :host {
                 --or-collapisble-panel-background-color: #fff;
                 --or-panel-background-color: #fff;
+                --or-panel-padding: 0 24px
             }
 
             or-panel {
                 width: calc(100% - 90px);
                 max-width: 1310px;
+                margin-bottom: 16px;
             }
 
             .conf-category-content-container {
@@ -60,6 +65,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 height: 100%;
                 flex-direction: column;
                 align-items: center;
+                overflow: auto;
             }
 
             #header {
@@ -94,7 +100,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 float: right;
             }
             #header-actions-content or-mwc-input{
-                margin-left: 6px;
+                margin-left: 12px;
             }
         `;
     }
@@ -105,33 +111,6 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
     constructor(store: Store<AppStateKeyed>) {
         super(store);
-    }
-
-    protected _showReloadDialogDialog() {
-        const dialogActions: DialogAction[] = [
-            {
-                action: () => {
-                    location.reload()
-                },
-                actionName: "ok",
-                content: i18next.t("reload"),
-                default: true,
-            },
-
-        ];
-        const dialog = showDialog(new OrMwcDialog()
-          .setHeading(i18next.t('reload'))
-          .setActions(dialogActions)
-          .setContent(html`${i18next.t('configuration.reloadPage')}`)
-          .setStyles(html`
-              <style>
-                  .mdc-dialog__surface {
-                      padding: 4px 8px;
-                  }
-              </style>
-          `)
-          .setDismissAction(null));
-
     }
 
     protected render(): TemplateResult | void {
@@ -171,7 +150,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <div id="header-wrapper">
                         <div id="header-title">
                             <or-icon icon="cog"></or-icon>
-                            ${i18next.t('configuration.')}
+                            ${i18next.t('appearance')}
                         </div>
                         <div id="header-actions">
                             <div id="header-actions-content">

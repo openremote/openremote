@@ -51,12 +51,11 @@ export class OrConfRealmCard extends LitElement {
     }
 
     #remove-realm {
-      margin: 12px 0;
+      margin: 12px 0 0 0;
     }
 
     .subheader {
       padding: 15px 0 4px 0;
-      font-weight: bold;
     }
 
     .d-inline-flex {
@@ -73,6 +72,9 @@ export class OrConfRealmCard extends LitElement {
 
     or-collapsible-panel {
       margin: 8px;
+    }
+    or-mwc-inputs{
+      padding: 10px 0;
     }
   `;
 
@@ -103,16 +105,20 @@ export class OrConfRealmCard extends LitElement {
     ManagerHeaders.gateway,
     ManagerHeaders.export,
     ManagerHeaders.logs,
+    ManagerHeaders.realms,
 
     ManagerHeaders.users,
     ManagerHeaders.roles,
 
     ManagerHeaders.account,
     ManagerHeaders.language,
+    ManagerHeaders.appearance,
+    ManagerHeaders.logout
 
   ];
 
   protected _getColors() {
+    console.log(DefaultColor5, )
     //TODO settings default colors
     const colors: { [name: string]: string } = {
       "--or-app-color1": unsafeCSS(DefaultColor1).toString(),
@@ -246,22 +252,22 @@ export class OrConfRealmCard extends LitElement {
             <div class="subheader">${i18next.t('configuration.realmColors')}</div>
             <div>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}"
-                            .label="${i18next.t('configuration.--or-app-color1')}"
+                            .label="${i18next.t('configuration.--or-app-color4')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}"
-                            .label="${i18next.t('configuration.--or-app-color2')}"
+                            .label="${i18next.t('configuration.--or-app-color5')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
-                            .label="${i18next.t("configuration.--or-app-color3")}"
+                            .label="${i18next.t("configuration.--or-app-color6")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
-                            .label="${i18next.t("configuration.--or-app-color4")}"
+                            .label="${i18next.t("configuration.--or-app-color1")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
-                            .label="${i18next.t("configuration.--or-app-color5")}"
+                            .label="${i18next.t("configuration.--or-app-color2")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
-                            .label="${i18next.t("configuration.--or-app-color6")}"
+                            .label="${i18next.t("configuration.--or-app-color3")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
             </div>
           </div>
