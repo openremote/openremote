@@ -111,8 +111,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
     protected ConcurrentMap<String, RemotingConnection> clientIDConnectionMap = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, RemotingConnection> connectionIDConnectionMap = new ConcurrentHashMap<>();
-    // TODO: Make auto provisioning clients disconnect and reconnect with credentials
-    // Temp to prevent breaking existing auto provisioning API
     protected ConcurrentMap<Object, Triple<String, String, String>> transientCredentials = new ConcurrentHashMap<>();
     protected Debouncer<String> userAssetDisconnectDebouncer;
     // Stores disconnected connections for a short period to allow last will publishes to be processed
@@ -193,6 +191,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Register notification plugin
         config.setWildCardConfiguration(wildcardConfiguration);
         config.setPersistenceEnabled(false);
+
+        // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
+        // Temp to prevent breaking existing auto provisioning API
+        // Disable caching so we can support auto provisioning sessions without having to reconnect - we need to re-evaluate this and clients should probably send X.509 through to the broker
+        config.setAuthenticationCacheSize(0);
+        config.setAuthorizationCacheSize(0);
 
         server = new EmbeddedActiveMQ();
         server.setConfiguration(config);
@@ -319,8 +323,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     @Override
     public void afterCreateConnection(RemotingConnection connection) throws ActiveMQException {
 
-        LOG.info("Client connection created: " + connectionToString(connection));
-
         // MQTT seems to only use failure callback even if closed gracefully (need to look at the exception for details)
         connection.addFailureListener(new FailureListener() {
             @Override
@@ -373,6 +375,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         clientIDConnectionMap.put(remotingConnection.getClientID(), remotingConnection);
 
         if (!connectionIDConnectionMap.containsKey(connectionID)) {
+            LOG.info("Client connection created: " + connectionToString(remotingConnection  ));
             connectionIDConnectionMap.put(connectionID, remotingConnection);
             for (MQTTHandler handler : getCustomHandlers()) {
                 handler.onConnect(remotingConnection);
@@ -555,7 +558,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             return null;
         }
 
-        return server.getActiveMQServer().getRemotingService().getConnections().stream().filter(connection ->
+        return connectionIDConnectionMap.values().stream().filter(connection ->
                 connection.getSubject() == subject && Objects.equals(clientID, connection.getClientID())
         )
                 .findFirst()

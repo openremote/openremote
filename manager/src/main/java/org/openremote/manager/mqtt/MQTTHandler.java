@@ -120,6 +120,7 @@ public abstract class MQTTHandler {
                     return;
                 }
 
+                getLogger().info("Client published to '" + publishTopic + "': " + mqttBrokerService.connectionToString(connection));
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
                 getLogger().info("Client published '" + topic + "': " + mqttBrokerService.connectionToString(connection));
             });

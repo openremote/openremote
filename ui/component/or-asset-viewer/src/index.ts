@@ -653,7 +653,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             selectedAttributes.push(...newSelection);
             const attributeTable: OrMwcTable = hostElement.shadowRoot!.getElementById(id + "-attribute-table") as OrMwcTable;
             const headersAndRows = getHeadersAndRows();
-            attributeTable!.headers = headersAndRows[0];
+            attributeTable!.columns = headersAndRows[0];
             attributeTable!.rows = headersAndRows[1];
             config.views[asset.id!] = [...selectedAttributes];
             manager.console.storeData("OrAssetConfig", config);
@@ -756,7 +756,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                     }
                 </style>
                 <or-mwc-input .type="${InputType.BUTTON}" class="asset-group-add-remove-button" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-mwc-input>
-                <or-mwc-table .headers="${headersAndRows[0]}" .rows="${headersAndRows[1]}" .id="${id}-attribute-table" .options="{stickyFirstColumn:true}"></or-mwc-table>
+                <or-mwc-table .columns="${headersAndRows[0]}" .rows="${headersAndRows[1]}" .id="${id}-attribute-table" .config="${{stickyFirstColumn: true}}"></or-mwc-table>
             `;
     }
 
@@ -781,7 +781,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             ];
         });
 
-        return html`<or-mwc-table .rows="${rows}" .options="${{stickyFirstColumn:false}}" .headers="${["Username", "Roles", "Restricted user"]}"></or-mwc-table>`;
+        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${["Username", "Roles", "Restricted user"]}"></or-mwc-table>`;
     }
 }
 
@@ -1229,7 +1229,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             ev.stopPropagation();
         };
 
-        const dialogContent = html`<or-asset-tree id="parent-asset-tree" disableSubscribe readonly .selectedIds="${[]}" @or-asset-tree-request-select="${blockEvent}" @or-asset-tree-selection-changed="${blockEvent}"></or-asset-tree>`;
+        const dialogContent = html`
+            <or-asset-tree id="parent-asset-tree" disableSubscribe readonly .selectedIds="${[]}"
+                           @or-asset-tree-request-select="${blockEvent}"
+                           @or-asset-tree-selection-changed="${blockEvent}"></or-asset-tree>`;
 
         const setParent = () => {
             const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
@@ -1264,29 +1267,32 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             .setContent(dialogContent)
             .setActions(dialogActions)
             .setStyles(html`
-                        <style>
-                            .mdc-dialog__surface {
-                                width: 400px;
-                                height: 800px;
-                                display: flex;
-                                overflow: visible;
-                                overflow-x: visible !important;
-                                overflow-y: visible !important;
-                            }
-                            #dialog-content {
-                                flex: 1;    
-                                overflow: visible;
-                                min-height: 0;
-                                padding: 0;
-                            }
-                            footer.mdc-dialog__actions {
-                                border-top: 1px solid ${unsafeCSS(DefaultColor5)};
-                            }
-                            or-asset-tree {
-                                height: 100%;
-                            }
-                        </style>
-                    `)
+                <style>
+                    .mdc-dialog__surface {
+                        width: 400px;
+                        height: 800px;
+                        display: flex;
+                        overflow: visible;
+                        overflow-x: visible !important;
+                        overflow-y: visible !important;
+                    }
+
+                    #dialog-content {
+                        flex: 1;
+                        overflow: visible;
+                        min-height: 0;
+                        padding: 0;
+                    }
+
+                    footer.mdc-dialog__actions {
+                        border-top: 1px solid ${unsafeCSS(DefaultColor5)};
+                    }
+
+                    or-asset-tree {
+                        height: 100%;
+                    }
+                </style>
+            `)
             .setHeading(i18next.t("setParent"))
             .setDismissAction(null));
     }
