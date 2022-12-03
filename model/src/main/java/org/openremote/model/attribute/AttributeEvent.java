@@ -182,13 +182,11 @@ public class AttributeEvent extends SharedEvent implements AssetInfo {
         return this;
     }
 
-    @Override
-    public boolean canAccessPublicRead() {
+    public boolean isPublicRead() {
         return publicRead;
     }
 
-    @Override
-    public boolean canAccessRestrictedRead() {
+    public boolean isRestrictedRead() {
         return restrictedRead;
     }
 

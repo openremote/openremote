@@ -20,8 +20,8 @@
 package org.openremote.container.web.socket;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.DefaultComponent;
-import org.apache.camel.util.ServiceHelper;
+import org.apache.camel.support.DefaultComponent;
+import org.apache.camel.support.service.ServiceHelper;
 
 import java.util.HashMap;
 import java.util.Map;

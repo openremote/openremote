@@ -155,7 +155,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     @Override
     public void start(Container container) throws Exception {
         if (openWeatherAppId == null) {
-            LOG.info("No value found for OR_OPEN_WEATHER_API_APP_ID, ForecastWindService won't start");
+            LOG.fine("No value found for OR_OPEN_WEATHER_API_APP_ID, ForecastWindService won't start");
             return;
         }
 
@@ -217,7 +217,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                 return;
             }
 
-            LOG.info("Processing producer wind asset attribute event: " + attributeEvent);
+            LOG.fine("Processing producer wind asset attribute event: " + attributeEvent);
             stopCalculation(attributeEvent.getAssetId());
 
             // Get latest asset from storage
@@ -240,7 +240,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     }
 
     protected void processAssetChange(PersistenceEvent<ElectricityProducerWindAsset> persistenceEvent) {
-        LOG.info("Processing producer wind asset change: " + persistenceEvent);
+        LOG.fine("Processing producer wind asset change: " + persistenceEvent);
         stopCalculation(persistenceEvent.getEntity().getId());
 
         if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {

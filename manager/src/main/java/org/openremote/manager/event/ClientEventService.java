@@ -26,6 +26,7 @@ import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.gateway.GatewayService;
+import org.openremote.manager.mqtt.DefaultMQTTHandler;
 import org.openremote.manager.mqtt.MQTTBrokerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -35,14 +36,17 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static org.apache.camel.builder.Builder.header;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.web.ConnectionConstants.SESSION_TERMINATOR;
 
@@ -88,7 +92,7 @@ import static org.openremote.container.web.ConnectionConstants.SESSION_TERMINATO
  * </p></dd>
  * </dl>
  */
-public class ClientEventService implements ContainerService {
+public class ClientEventService extends RouteBuilder implements ContainerService {
 
     protected static class SessionInfo {
         String connectionType;
@@ -112,12 +116,16 @@ public class ClientEventService implements ContainerService {
     // TODO: Some of these options should be configurable depending on expected load etc.
     public static final String CLIENT_EVENT_TOPIC = "seda://ClientEventTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
 
-    public static final String CLIENT_EVENT_QUEUE = "seda://ClientEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
+//    public static final String CLIENT_EVENT_QUEUE = "seda://ClientEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
+    // A direct endpoint with threading which then makes it async
+    public static final String CLIENT_EVENT_QUEUE = "direct://ClientEventQueue";
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
+    final protected Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
     final protected Collection<Consumer<Exchange>> exchangeInterceptors = new CopyOnWriteArraySet<>();
     protected ConcurrentMap<String, SessionInfo> sessionKeyInfoMap = new ConcurrentHashMap<>();
     protected TimerService timerService;
+    protected ExecutorService executorService;
     protected MessageBrokerService messageBrokerService;
     protected ManagerIdentityService identityService;
     protected EventSubscriptions eventSubscriptions;
@@ -129,11 +137,11 @@ public class ClientEventService implements ContainerService {
      * Method to stop further processing of the exchange
      */
     public static void stopMessage(Exchange exchange) {
-        exchange.setProperty(Exchange.ROUTE_STOP, Boolean.TRUE);
+        exchange.setRouteStop(true);
     }
 
     public static boolean isInbound(Exchange exchange) {
-        return header(HEADER_CONNECTION_TYPE).isNotNull().matches(exchange);
+        return org.apache.camel.builder.Builder.header(HEADER_CONNECTION_TYPE).isNotNull().matches(exchange);
     }
 
     public static String getSessionKey(Exchange exchange) {
@@ -159,6 +167,7 @@ public class ClientEventService implements ContainerService {
         messageBrokerService = container.getService(MessageBrokerService.class);
         identityService = container.getService(ManagerIdentityService.class);
         gatewayService = container.getService(GatewayService.class);
+        executorService = container.getExecutorService();
 
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class)
@@ -168,130 +177,141 @@ public class ClientEventService implements ContainerService {
             new EventTypeConverters()
         );
 
-        // TODO: Remove prefix and just use event type then use a subscription wrapper to pass subscription ID around
-        messageBrokerService.getContext().addRoutes(new RouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-
-                from("websocket://" + WEBSOCKET_EVENTS)
-                    .routeId("FromClientWebsocketEvents")
-                    .process(exchange -> exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, HEADER_CONNECTION_TYPE_WEBSOCKET))
-                    .to(ClientEventService.CLIENT_EVENT_QUEUE)
-                    .end();
-
-                from(ClientEventService.CLIENT_EVENT_QUEUE)
-                    .routeId("ClientEvents")
-                    .choice()
-                    .when(header(ConnectionConstants.SESSION_OPEN))
-                        .process(exchange -> {
-                            String sessionKey = getSessionKey(exchange);
-                            sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
-                            passToInterceptors(exchange);
-                        })
-                        .stop()
-                    .when(or(
-                        header(ConnectionConstants.SESSION_CLOSE),
-                        header(ConnectionConstants.SESSION_CLOSE_ERROR)
-                    ))
-                        .process(exchange -> {
-                            String sessionKey = getSessionKey(exchange);
-                            sessionKeyInfoMap.remove(sessionKey);
-                            eventSubscriptions.cancelAll(sessionKey);
-                            passToInterceptors(exchange);
-                        })
-                        .stop()
-                    .end()
-                    .process(exchange -> {
-
-                        // Do basic formatting of exchange
-                        EventRequestResponseWrapper<?> requestResponse = null;
-                        if (exchange.getIn().getBody() instanceof EventRequestResponseWrapper) {
-                            requestResponse = exchange.getIn().getBody(EventRequestResponseWrapper.class);
-                        } else if (exchange.getIn().getBody() instanceof String && exchange.getIn().getBody(String.class).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)) {
-                            requestResponse = exchange.getIn().getBody(EventRequestResponseWrapper.class);
-                        }
-                        if (requestResponse != null) {
-                            SharedEvent event = requestResponse.getEvent();
-                            exchange.getIn().setHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, requestResponse.getMessageId());
-                            exchange.getIn().setBody(event);
-                        }
-
-                        if (exchange.getIn().getBody() instanceof String) {
-                            String bodyStr = exchange.getIn().getBody(String.class);
-                            if (bodyStr.startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX)) {
-                                exchange.getIn().setBody(exchange.getIn().getBody(EventSubscription.class));
-                            } else if (bodyStr.startsWith(CancelEventSubscription.MESSAGE_PREFIX)) {
-                                exchange.getIn().setBody(exchange.getIn().getBody(CancelEventSubscription.class));
-                            } else if (bodyStr.startsWith(SharedEvent.MESSAGE_PREFIX)) {
-                                exchange.getIn().setBody(exchange.getIn().getBody(SharedEvent.class));
-                            }
-                        }
-
-                        if (exchange.getIn().getBody() instanceof SharedEvent) {
-                            SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
-                            // If there is no timestamp in event, set to system time
-                            if (event.getTimestamp() <= 0) {
-                                event.setTimestamp(timerService.getCurrentTimeMillis());
-                            }
-                        }
-                    })
-                    .process(exchange -> passToInterceptors(exchange))
-                    .choice()
-                    .when(body().isInstanceOf(EventSubscription.class))
-                        .process(exchange -> {
-                            String sessionKey = getSessionKey(exchange);
-                            EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
-                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                            boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
-                            boolean anonymousUser = authContext == null;
-                            String username = authContext == null ? "anonymous" : authContext.getUsername();
-                            String realm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
-
-                            if (authorizeEventSubscription(realm, authContext, subscription)) {
-                                eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, anonymousUser, subscription);
-                                subscription.setSubscribed(true);
-                                sendToSession(sessionKey, subscription);
-                            } else {
-                                LOG.warning("Unauthorized subscription from '"
-                                        + username + "' in realm '" + realm
-                                        + "': " + subscription
-                                );
-                                sendToSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
-                            }
-                        })
-                        .stop()
-                    .when(body().isInstanceOf(CancelEventSubscription.class))
-                        .process(exchange -> {
-                            String sessionKey = getSessionKey(exchange);
-                            eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
-                        })
-                        .stop()
-                    .when(body().isInstanceOf(SharedEvent.class))
-                        .choice()
-                            .when(header(HEADER_CONNECTION_TYPE).isNotNull()) // Inbound messages from clients
-                                .to(ClientEventService.CLIENT_EVENT_TOPIC)
-                                .stop()
-                            .when(header(HEADER_CONNECTION_TYPE).isNull()) // Outbound message to clients
-                                .split(method(eventSubscriptions, "splitForSubscribers"))
-                                .process(exchange -> {
-                                    String sessionKey = getSessionKey(exchange);
-                                    sendToSession(sessionKey, exchange.getIn().getBody());
-                                })
-                                .stop()
-                        .endChoice()
-                    .otherwise()
-                        .process(exchange -> LOG.info("Unsupported message body: " + exchange.getIn().getBody()))
-                    .end();
-            }
-        });
+        messageBrokerService.getContext().addRoutes(this);
 
         // Add pending internal subscriptions
         if (!pendingInternalSubscriptions.isEmpty()) {
             pendingInternalSubscriptions.forEach(subscription ->
-                eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, false, subscription));
+                eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, subscription));
         }
 
         pendingInternalSubscriptions = null;
+    }
+
+    // TODO: Remove prefix and just use event type then use a subscription wrapper to pass subscription ID around
+    @Override
+    public void configure() throws Exception {
+        from("websocket://" + WEBSOCKET_EVENTS)
+            .routeId("FromClientWebsocketEvents")
+            .process(exchange -> {
+                exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, HEADER_CONNECTION_TYPE_WEBSOCKET);
+
+                // Do basic formatting of exchange
+                EventRequestResponseWrapper<?> requestResponse = null;
+                if (exchange.getIn().getBody() instanceof EventRequestResponseWrapper) {
+                    requestResponse = exchange.getIn().getBody(EventRequestResponseWrapper.class);
+                } else if (exchange.getIn().getBody() instanceof String && exchange.getIn().getBody(String.class).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)) {
+                    requestResponse = exchange.getIn().getBody(EventRequestResponseWrapper.class);
+                }
+                if (requestResponse != null) {
+                    SharedEvent event = requestResponse.getEvent();
+                    exchange.getIn().setHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, requestResponse.getMessageId());
+                    exchange.getIn().setBody(event);
+                }
+
+                if (exchange.getIn().getBody() instanceof String) {
+                    String bodyStr = exchange.getIn().getBody(String.class);
+                    if (bodyStr.startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX)) {
+                        exchange.getIn().setBody(exchange.getIn().getBody(EventSubscription.class));
+                    } else if (bodyStr.startsWith(CancelEventSubscription.MESSAGE_PREFIX)) {
+                        exchange.getIn().setBody(exchange.getIn().getBody(CancelEventSubscription.class));
+                    } else if (bodyStr.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+                        exchange.getIn().setBody(exchange.getIn().getBody(SharedEvent.class));
+                    }
+                }
+
+                // Perform authorisation
+                if (exchange.getIn().getBody() instanceof SharedEvent) {
+                    SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                    AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                    String realm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
+
+                    if (!authorizeEventWrite(realm, authContext, event)) {
+                        stopMessage(exchange);
+                    }
+                } else if (exchange.getIn().getBody() instanceof EventSubscription<?>) {
+                    EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
+                    AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                    String realm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
+                    String sessionKey = getSessionKey(exchange);
+
+                    if (!authorizeEventSubscription(realm, authContext, subscription)) {
+                        sendToSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
+                        stopMessage(exchange);
+                    }
+                }
+            })
+            .to(ClientEventService.CLIENT_EVENT_QUEUE)
+            .end();
+
+        from(ClientEventService.CLIENT_EVENT_QUEUE)
+            .routeId("ClientEvents")
+            .threads().executorService(executorService)
+            .choice()
+            .when(header(ConnectionConstants.SESSION_OPEN))
+            .process(exchange -> {
+                String sessionKey = getSessionKey(exchange);
+                LOG.fine("Adding session: " + sessionKey);
+                sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
+                passToInterceptors(exchange);
+            })
+            .stop()
+            .when(or(
+                header(ConnectionConstants.SESSION_CLOSE),
+                header(ConnectionConstants.SESSION_CLOSE_ERROR)
+            ))
+            .process(exchange -> {
+                String sessionKey = getSessionKey(exchange);
+                LOG.fine("Removing session: " + sessionKey);
+                sessionKeyInfoMap.remove(sessionKey);
+                eventSubscriptions.cancelAll(sessionKey);
+                passToInterceptors(exchange);
+            })
+            .stop()
+            .end()
+            .process(exchange -> {
+                // Set timestamp if not set
+                if (exchange.getIn().getBody() instanceof SharedEvent) {
+                    SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                    // If there is no timestamp in event, set to system time
+                    if (event.getTimestamp() <= 0) {
+                        event.setTimestamp(timerService.getCurrentTimeMillis());
+                    }
+                }
+            })
+            .process(this::passToInterceptors)
+            .choice()
+            .when(body().isInstanceOf(EventSubscription.class))
+            .process(exchange -> {
+                String sessionKey = getSessionKey(exchange);
+                EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
+                eventSubscriptions.createOrUpdate(sessionKey, subscription);
+                subscription.setSubscribed(true);
+                sendToSession(sessionKey, subscription);
+            })
+            .stop()
+            .when(body().isInstanceOf(CancelEventSubscription.class))
+            .process(exchange -> {
+                String sessionKey = getSessionKey(exchange);
+                eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
+            })
+            .stop()
+            .when(body().isInstanceOf(SharedEvent.class))
+            .choice()
+            .when(header(HEADER_CONNECTION_TYPE).isNotNull()) // Inbound messages from client
+            .to(ClientEventService.CLIENT_EVENT_TOPIC)
+            .stop()
+            .when(header(HEADER_CONNECTION_TYPE).isNull()) // Outbound message to clients
+            .split(method(eventSubscriptions, "splitForSubscribers"))
+            .process(exchange -> {
+                String sessionKey = getSessionKey(exchange);
+                sendToSession(sessionKey, exchange.getIn().getBody());
+            })
+            .stop()
+            .endChoice()
+            .otherwise()
+            .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
+            .end();
     }
 
     /**
@@ -310,7 +330,7 @@ public class ClientEventService implements ContainerService {
             }
             pendingInternalSubscriptions.add(subscription);
         } else {
-            eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, false, subscription);
+            eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, subscription);
         }
         return subscriptionId;
     }
@@ -345,9 +365,44 @@ public class ClientEventService implements ContainerService {
         this.eventSubscriptionAuthorizers.add(authorizer);
     }
 
+    public void addEventAuthorizer(EventAuthorizer authorizer) {
+        this.eventAuthorizers.add(authorizer);
+    }
+
+    /**
+     * This handles basic authorisation checks for clients that want to subscribe to events in the system
+     */
     public boolean authorizeEventSubscription(String realm, AuthContext authContext, EventSubscription<?> subscription) {
-        return eventSubscriptionAuthorizers.stream()
+        boolean authorized = eventSubscriptionAuthorizers.stream()
                 .anyMatch(authorizer -> authorizer.authorise(realm, authContext, subscription));
+
+        if (!authorized) {
+            if (authContext != null) {
+                LOG.info("Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", username=" + authContext.getAuthenticatedRealmName() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+            } else {
+                LOG.info("Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", user=null");
+            }
+        }
+
+        return authorized;
+    }
+
+    /**
+     * This handles basic authorisation checks for clients that want to write an event to the system
+     */
+    public <T extends SharedEvent> boolean authorizeEventWrite(String realm, AuthContext authContext, T event) {
+        boolean authorized = eventAuthorizers.stream()
+            .anyMatch(authorizer -> authorizer.authorise(realm, authContext, event));
+
+        if (!authorized) {
+            if (authContext != null) {
+                LOG.info("Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", username=" + authContext.getAuthenticatedRealmName() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+            } else {
+                LOG.info("Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=null");
+            }
+        }
+
+        return authorized;
     }
 
     public <T extends SharedEvent> void publishEvent(T event) {
@@ -356,36 +411,38 @@ public class ClientEventService implements ContainerService {
             return;
         }
 
-        if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
+        if (messageBrokerService != null && messageBrokerService.getFluentProducerTemplate() != null) {
             // Don't log that we are publishing a syslog event,
             if (!(event instanceof SyslogEvent)) {
                 LOG.finer("Publishing: " + event);
             }
-            messageBrokerService.getProducerTemplate()
-                .sendBody(CLIENT_EVENT_QUEUE, event);
+            messageBrokerService.getFluentProducerTemplate()
+                .withBody(event)
+                .to(CLIENT_EVENT_QUEUE)
+                .asyncSend();
         }
     }
 
     public void sendToSession(String sessionKey, Object data) {
-        if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
+        if (messageBrokerService != null && messageBrokerService.getFluentProducerTemplate() != null) {
             LOG.finer("Sending to session '" + sessionKey + "': " + data);
             SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
             if (sessionInfo == null) {
-                LOG.info("Cannot send to requested session it doesn't exist or is disconnected");
+                LOG.fine("Cannot send to requested session it doesn't exist or is disconnected");
                 return;
             }
             if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
-                messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                        "websocket://" + WEBSOCKET_EVENTS,
-                        data,
-                        ConnectionConstants.SESSION_KEY, sessionKey
-                );
+                messageBrokerService.getFluentProducerTemplate()
+                    .withBody(data)
+                    .withHeader(ConnectionConstants.SESSION_KEY, sessionKey)
+                    .to("websocket://" + WEBSOCKET_EVENTS)
+                    .asyncSend();
             } else if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_MQTT)) {
-                messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                        MQTTBrokerService.MQTT_CLIENT_QUEUE,
-                        data,
-                        ConnectionConstants.SESSION_KEY, sessionKey
-                );
+                messageBrokerService.getFluentProducerTemplate()
+                    .withBody(data)
+                    .withHeader(ConnectionConstants.SESSION_KEY, sessionKey)
+                    .to(DefaultMQTTHandler.CLIENT_QUEUE)
+                    .asyncSend();
             }
         }
     }
@@ -405,7 +462,7 @@ public class ClientEventService implements ContainerService {
         // Pass to each interceptor and stop if any interceptor marks the exchange as stop routing
         if (exchangeInterceptors.stream().anyMatch(interceptor -> {
             interceptor.accept(exchange);
-            boolean stop = exchange.getProperty(Exchange.ROUTE_STOP, false, Boolean.class);
+            boolean stop = exchange.isRouteStop();
             if (stop) {
                 LOG.finer("Client event interceptor marked exchange as `stop routing`");
             }

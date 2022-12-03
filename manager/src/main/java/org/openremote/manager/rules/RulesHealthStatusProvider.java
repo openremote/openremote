@@ -30,8 +30,6 @@ import org.openremote.model.util.ValueUtil;
 public class RulesHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
     public static final String NAME = "rules";
-    public static final String VERSION = "1.0";
-
     protected RulesService rulesService;
 
     @Override
@@ -57,11 +55,6 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
     @Override
     public String getHealthStatusName() {
         return NAME;
-    }
-
-    @Override
-    public String getHealthStatusVersion() {
-        return VERSION;
     }
 
     @Override

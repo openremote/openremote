@@ -22,8 +22,8 @@ import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.util.TextUtil
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.simplejavamail.email.Email
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -33,8 +33,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.container.timer.TimerService.Clock.REAL
-import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT

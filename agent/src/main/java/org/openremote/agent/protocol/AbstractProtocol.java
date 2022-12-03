@@ -21,8 +21,8 @@ package org.openremote.agent.protocol;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.impl.DefaultCamelContext;
 import org.openremote.container.concurrent.GlobalLock;
-import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.model.Container;
@@ -76,7 +76,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractProtocol.class);
     protected final Map<AttributeRef, Attribute<?>> linkedAttributes = new HashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = new HashSet<>();
-    protected MessageBrokerContext messageBrokerContext;
+    protected DefaultCamelContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
     protected ScheduledExecutorService executorService;

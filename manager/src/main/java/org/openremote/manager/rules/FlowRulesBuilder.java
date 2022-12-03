@@ -52,7 +52,7 @@ public class FlowRulesBuilder {
             for (Node node : collection.getNodes()) {
                 if (node.getType() != NodeType.OUTPUT) continue;
                 try {
-                    RulesEngine.RULES_LOG.info("Flow rule created");
+                    RulesEngine.RULES_LOG.fine("Flow rule created");
                     rules.add(createRule(collection.getName() + " - " + count, collection, node));
                     count++;
                 } catch (Exception e) {

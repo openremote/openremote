@@ -125,13 +125,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
      * Call this to simulate a sensor update using the specified timestamp
      */
     public void updateSensor(AttributeRef attributeRef, Object value, long timestamp) {
-        Attribute<?> attribute = getLinkedAttributes().get(attributeRef);
         AttributeState state = new AttributeState(attributeRef, value);
-
-        if (attribute == null) {
-            LOG.info("Attempt to update unlinked attribute: " + state);
-            return;
-        }
 
         updateLinkedAttribute(state, timestamp);
     }

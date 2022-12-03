@@ -259,7 +259,7 @@ public class RulesEngine<T extends Ruleset> {
         RulesetDeployment deployment = deployments.get(ruleset.getId());
         boolean wasRunning = this.running;
 
-        stop();
+        stop(); // Why?
 
         if (deployment != null) {
             removeRuleset(deployment.ruleset);
@@ -537,6 +537,7 @@ public class RulesEngine<T extends Ruleset> {
 
                 // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
                 if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
+                    LOG.log(Level.SEVERE, "Stopping rules engine because of previous error");
                     stop();
                     break;
                 }
@@ -554,7 +555,9 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected void fireAllDeploymentsWithPredictedData() {
-        fireDeployments(deployments.values().stream().filter(RulesetDeployment::isTriggerOnPredictedData).collect(Collectors.toList()));
+        withLock(toString() + "::fireAllDeploymentsWithPredictedData", () -> {
+            fireDeployments(deployments.values().stream().filter(RulesetDeployment::isTriggerOnPredictedData).collect(Collectors.toList()));
+        });
     }
 
     protected void notifyAssetStatesChanged(AssetStateChangeEvent event) {

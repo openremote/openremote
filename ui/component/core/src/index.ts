@@ -132,15 +132,8 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
         normalisedConfig.realm = "master";
     }
 
-    if (normalisedConfig.auth === Auth.KEYCLOAK) {
-        // Determine URL of keycloak server
-        if (!normalisedConfig.keycloakUrl || normalisedConfig.keycloakUrl === "") {
-            // Assume keycloak is running on same host as the manager
-            normalisedConfig.keycloakUrl = normalisedConfig.managerUrl + "/auth";
-        }
-
-        // Normalise by stripping any trailing slashes
-        normalisedConfig.keycloakUrl = normalisedConfig.keycloakUrl.replace(/\/+$/, "");
+    if (!normalisedConfig.auth) {
+        normalisedConfig.auth = Auth.KEYCLOAK;
     }
 
     if (normalisedConfig.consoleAutoEnable === undefined) {
@@ -356,11 +349,46 @@ export class Manager implements EventProviderFactory {
             // BASIC auth will likely require UI so lets init translation at least
             success = await this.doTranslateInit() && success;
             success = await this.doAuthInit();
-        } else {
+        } else if (this._config.auth === Auth.KEYCLOAK) {
 
-            if (this._authServerUrl) {
-                this.config.keycloakUrl = this._authServerUrl;
+            // The info endpoint of the manager might return a relative URL (relative to the manager)
+            if (!this._config.keycloakUrl && this._authServerUrl) {
+                const managerURL = new URL(this._config.managerUrl!);
+                let authServerURL: URL;
+
+                if (this._authServerUrl.startsWith("//")) {
+                    this._authServerUrl = managerURL.protocol + this._authServerUrl;
+                }
+
+                try {
+                    authServerURL = new URL(this._authServerUrl);
+                } catch (e) {
+                    // Could be a relative URL
+                    authServerURL = new URL(managerURL);
+                    authServerURL.pathname = this._authServerUrl;
+                }
+
+                // Use manager URL info
+                if (!authServerURL.protocol) {
+                    authServerURL.protocol = managerURL.protocol;
+                }
+                if (!authServerURL.hostname) {
+                    authServerURL.hostname = managerURL.hostname;
+                }
+                if (!authServerURL.port) {
+                    authServerURL.port = managerURL.port;
+                }
+
+                this._config.keycloakUrl = authServerURL.toString();
             }
+
+            // If we still don't know auth server URL then use manager URL
+            if (!this._config.keycloakUrl) {
+                this._config.keycloakUrl = this._config.managerUrl + "/auth";
+            }
+
+            // Normalise by stripping any trailing slashes
+            this._config.keycloakUrl = this._config.keycloakUrl.replace(/\/+$/, "");
 
             success = await this.doAuthInit();
 
