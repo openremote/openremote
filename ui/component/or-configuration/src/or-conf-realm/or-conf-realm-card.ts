@@ -14,6 +14,7 @@ import manager, {
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerConfRealm, ManagerHeaders } from "@openremote/model";
+import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 
 @customElement("or-conf-realm-card")
@@ -121,8 +122,6 @@ export class OrConfRealmCard extends LitElement {
   ];
 
   protected _getColors() {
-    console.log(DefaultColor5, )
-    //TODO settings default colors
     const colors: { [name: string]: string } = {
       "--or-app-color1": unsafeCSS(DefaultColor1).toString(),
       "--or-app-color2": unsafeCSS(DefaultColor2).toString(),
@@ -212,6 +211,42 @@ export class OrConfRealmCard extends LitElement {
       };
     });
   };
+
+
+  protected _showRemoveRealmDialog(){
+
+    const dialogActions: DialogAction[] = [
+      {
+        actionName: "cancel",
+        content: i18next.t("cancel")
+      },
+      {
+        default: true,
+        actionName: "ok",
+        content: i18next.t("yes"),
+        action: () => {this.onRemove()}},
+
+    ];
+    const dialog = showDialog(new OrMwcDialog()
+      .setHeading(i18next.t('delete'))
+      .setActions(dialogActions)
+      .setContent(html `
+        ${i18next.t('configuration.deleteRealmCustomizationConfirm')}
+      `)
+      .setStyles(html`
+                        <style>
+                            .mdc-dialog__surface {
+                              padding: 4px 8px;
+                            }
+                            #dialog-content {
+                              padding: 24px;
+                            }
+                        </style>
+                    `)
+      .setDismissAction(null));
+
+  }
+
 
   render() {
     const colors = this._getColors();
@@ -304,7 +339,7 @@ export class OrConfRealmCard extends LitElement {
 
           <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("delete")}"
                         @click="${() => {
-                          this.onRemove();
+                          this._showRemoveRealmDialog();
                         }}"></or-mwc-input>
         </div>
       </or-collapsible-panel>
