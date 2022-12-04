@@ -595,6 +595,7 @@
     "navigationDescription": "The navigation items that will be shown to a user. ",
     "primaryNavigation" : "Primary menu",
     "secondaryNavigation" : "Secondary menu",
-    "reloadPage" : "To see the changes that have been made, reload the page"
+    "reloadPage" : "To see the changes that have been made, reload the page",
+    "deleteRealmCustomizationConfirm":"Are you sure you want to delete this Realm customization?"
   }
 }
