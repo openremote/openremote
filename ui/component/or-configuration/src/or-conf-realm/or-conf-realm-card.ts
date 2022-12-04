@@ -89,6 +89,9 @@ export class OrConfRealmCard extends LitElement {
   @property({ attribute: true })
   public name: string = "";
 
+  @property({type: Boolean})
+  expanded: boolean = false;
+
   @property({ attribute: true })
   public onRemove: CallableFunction = () => {
   };
@@ -220,7 +223,8 @@ export class OrConfRealmCard extends LitElement {
     });
 
     return html`
-      <or-collapsible-panel>
+      <or-collapsible-panel
+        .expanded="${this.expanded}">
         <div slot="header" class="header-container">
           <strong>${this.name}</strong>
         </div>
