@@ -866,17 +866,19 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
         }
 
-        if(ruleAction instanceof RuleActionWebhook webhookAction) {
+        if (ruleAction instanceof RuleActionWebhook webhookAction) {
             Webhook webhook = webhookAction.webhook;
-            if(webhook.getUrl() != null && webhook.getHttpMethod() != null) {
+            if (webhook.getUrl() != null && webhook.getHttpMethod() != null) {
 
-                // Replace %TRIGGER_ASSETS% with actual assets
-                if (!TextUtil.isNullOrEmpty(webhook.getPayload())) {
-                    if (webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-                        String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
-                        webhook.setPayload(webhook.getPayload().replace(('"' + PLACEHOLDER_TRIGGER_ASSETS + '"'), triggeredAssetInfo));
-                    }
+                // Replace %TRIGGER_ASSETS% with the triggered assets in JSON format.
+                if (!TextUtil.isNullOrEmpty(webhook.getPayload()) && webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
+                    String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
+                    webhook.setPayload(webhook.getPayload()
+                            .replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo)
+                            .replace(('"' + PLACEHOLDER_TRIGGER_ASSETS + '"'), triggeredAssetInfo)
+                    );
                 }
+
                 if(webhookAction.target == null) {
                     webhookAction.target = webhooksFacade.buildTarget(webhook);
                 }
@@ -1079,10 +1081,9 @@ public class JsonRulesBuilder extends RulesBuilder {
             sb.append("</table>");
         } else if (isJson) {
             try {
-                String jsonString = ValueUtil.JSON.writeValueAsString(assetStates);
-                return jsonString;
+                return ValueUtil.JSON.writeValueAsString(assetStates);
             } catch (Exception e) {
-                LOG.severe(e.getMessage());
+                LOG.warning(e.getMessage());
             }
         } else {
             sb.append("Asset ID\t\tAsset Name\t\tAttribute\t\tValue");
@@ -1173,7 +1174,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     protected static SunTimes.Parameters getSunCalculator(SunPositionTrigger sunPositionTrigger, TimerService timerService) throws IllegalStateException {
-        SunPositionTrigger.Position  position = sunPositionTrigger.getPosition();
+        SunPositionTrigger.Position position = sunPositionTrigger.getPosition();
         GeoJSONPoint location = sunPositionTrigger.getLocation();
 
         if (position == null) {

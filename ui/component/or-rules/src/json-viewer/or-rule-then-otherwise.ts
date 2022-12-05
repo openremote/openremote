@@ -479,7 +479,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             action.webhook = {
                 httpMethod: HTTPMethod.POST,
                 payload: JSON.stringify({
-                    rule: "%TRIGGER_RULE%",
+                    rule: "%RULESET_NAME%",
                     assets: "%TRIGGER_ASSETS%"
                 }, null, 4)
             };

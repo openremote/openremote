@@ -162,7 +162,7 @@ export class OrRuleFormWebhook extends LitElement {
                                       .value="${this.webhook.payload != undefined}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                           this.webhook.payload = ev.detail.value ? JSON.stringify({
-                                              rule: "%TRIGGER_RULE%",
+                                              rule: "%RULESET_NAME%",
                                               assets: "%TRIGGER_ASSETS%"
                                           }, null, 4) : undefined;
                                           this.notifyWebhookUpdate();

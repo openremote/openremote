@@ -25,11 +25,13 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.webhook.Webhook;
 
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
@@ -86,11 +88,12 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         Response response = null;
         try {
             ResteasyWebTarget webTarget = (ResteasyWebTarget) target;
-            response = this.buildResponse(webTarget, webhook.getHttpMethod(), webhook.getPayload());
-            response.readEntity(String.class);
+            response = this.buildRequest(webTarget, webhook.getHttpMethod(), webhook.getPayload());
+            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                RulesEngine.LOG.warning("Webhook request responded with error " + response.getStatus());
+            }
         } catch (Exception e) {
             LOG.warning(e.getMessage());
-            throw e;
         } finally {
             if (response != null) {
                 response.close();
@@ -114,7 +117,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         return builder.build();
     }
 
-    private Response buildResponse(ResteasyWebTarget target, HTTPMethod method, String payload) {
+    private Response buildRequest(ResteasyWebTarget target, HTTPMethod method, String payload) throws ProcessingException {
         Response response = target.request().method(method.name());
         if (payload != null) {
             return target.request().method(method.name(), Entity.entity(payload, response.getMediaType()));
