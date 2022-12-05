@@ -1462,8 +1462,7 @@ export class OrMwcInput extends LitElement {
                         (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
 
                         // Set width of fixed select menu to match the component width
-                        this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
-
+                        //this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {

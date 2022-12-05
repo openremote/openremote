@@ -95,7 +95,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     public void start(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         executorService = container.getExecutorService();
-        assetService = container.getService(ProtocolAssetService.class);
+        assetService = proxyAssetService(container.getService(ProtocolAssetService.class));
         predictedDatapointService = container.getService(ProtocolPredictedDatapointService.class);
         datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
@@ -340,4 +340,106 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
      * processedValue but may also choose to use the original value for some purpose if required.
      */
     abstract protected void doLinkedAttributeWrite(Attribute<?> attribute, U agentLink, AttributeEvent event, Object processedValue);
+
+    private ProtocolAssetService proxyAssetService(ProtocolAssetService protocolAssetService) {
+        return new ProtocolAssetService() {
+
+            @Override
+            public <T extends Asset<?>> T mergeAsset(T asset) {
+                if (TextUtil.isNullOrEmpty(asset.getRealm())) {
+                    asset.setRealm(getAgent().getRealm());
+                } else if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
+                    Protocol.LOG.warning("Protocol attempting to merge asset into another realm: " + agent);
+                    throw new IllegalArgumentException("Protocol attempting to merge asset into another realm");
+                }
+                return protocolAssetService.mergeAsset(asset);
+            }
+
+            @Override
+            public boolean deleteAssets(String... assetIds) {
+                for (String assetId: assetIds) {
+                    Asset<?> asset = protocolAssetService.findAsset(assetId);
+                    if (asset != null) {
+                        if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
+                            Protocol.LOG.warning("Protocol attempting to delete asset from another realm: " + agent);
+                            throw new IllegalArgumentException("Protocol attempting to delete asset from another realm");
+                        }
+                    }
+                }
+                return protocolAssetService.deleteAssets(assetIds);
+            }
+
+            @Override
+            public <T extends Asset<?>> T findAsset(String assetId, Class<T> assetType) {
+                T asset = protocolAssetService.findAsset(assetId, assetType);
+                if (asset != null) {
+                    if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
+                        Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
+                        throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
+                    }
+                }
+                return asset;
+            }
+
+            @Override
+            public <T extends Asset<?>> T findAsset(String assetId) {
+                T asset = protocolAssetService.findAsset(assetId);
+                if (asset != null) {
+                    if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
+                        Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
+                        throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
+                    }
+                }
+                return asset;
+            }
+
+            @Override
+            public List<Asset<?>> findAssets(String assetId, AssetQuery assetQuery) {
+                List<Asset<?>> assets = protocolAssetService.findAssets(assetId, assetQuery);
+                for (Asset<?> asset : assets) {
+                    if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
+                        Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
+                        throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
+                    }
+                }
+                return assets;
+            }
+
+            @Override
+            public void sendAttributeEvent(AttributeEvent attributeEvent) {
+                if (TextUtil.isNullOrEmpty(attributeEvent.getRealm())) {
+                    attributeEvent.setRealm(getAgent().getRealm());
+                } else if (!Objects.equals(attributeEvent.getRealm(), getAgent().getRealm())) {
+                    Protocol.LOG.warning("Protocol attempting to send attribute event to another realm: " + agent);
+                    throw new IllegalArgumentException("Protocol attempting to send attribute event to another realm");
+                }
+                protocolAssetService.sendAttributeEvent(attributeEvent);
+            }
+
+            @Override
+            public void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
+                protocolAssetService.subscribeChildAssetChange(agentId, assetChangeConsumer);
+            }
+
+            @Override
+            public void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
+                protocolAssetService.unsubscribeChildAssetChange(agentId, assetChangeConsumer);
+            }
+
+            @Override
+            public void init(Container container) throws Exception {
+                protocolAssetService.init(container);
+            }
+
+            @Override
+            public void start(Container container) throws Exception {
+                protocolAssetService.start(container);
+            }
+
+            @Override
+            public void stop(Container container) throws Exception {
+                protocolAssetService.stop(container);
+            }
+        };
+    }
 }
