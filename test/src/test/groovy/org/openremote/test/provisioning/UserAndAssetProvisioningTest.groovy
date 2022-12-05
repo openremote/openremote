@@ -436,7 +436,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -485,7 +485,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -538,7 +538,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -617,7 +617,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the connection should be removed from the broker"
         conditions.eventually {
-            assert mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId) == null
+            assert mqttBrokerService.clientIDConnectionMap.get(mqttDeviceNClientId) == null
             assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
@@ -650,8 +650,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def deviceNUser = identityService.getIdentityProvider().getUserByUsername(managerTestSetup.realmBuildingName, User.SERVICE_ACCOUNT_PREFIX + PROVISIONING_USER_PREFIX + deviceNUniqueId)
         device1User.setEnabled(false)
         deviceNUser.setEnabled(false)
-        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null)
-        deviceNUser = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, deviceNUser, null)
+        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null, true)
+        deviceNUser = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, deviceNUser, null, true)
 
         then: "already connected client that was authenticated should be disconnected, then reconnect"
         conditions.eventually {
@@ -715,7 +715,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         existingConnection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
         def existingNConnection = mqttBrokerService.getConnectionFromClientID(mqttDeviceNClientId)
         device1User.setEnabled(true)
-        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null)
+        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingName, device1User, null, true)
 
         and: "the re-enabled client device publishes its' valid client certificate"
         device1Responses.clear()

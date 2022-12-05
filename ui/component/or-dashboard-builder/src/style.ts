@@ -53,7 +53,7 @@ export const style = css`
         align-items: center;
         width: 100%;
         height: var(--internal-or-asset-tree-header-height);
-        border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
+        border-bottom: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         z-index: 3;
         line-height: var(--internal-or-asset-tree-header-height);
         color: var(--internal-or-asset-tree-header-text-color);
@@ -80,7 +80,7 @@ export const style = css`
         align-items: center;
         padding: 12px;
         background: none;
-        border-top: 1px solid ${unsafeCSS(DefaultColor5)};
+        border-top: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         border-right: none;
         border-bottom: none;
         border-left: none;

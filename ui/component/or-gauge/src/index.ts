@@ -97,6 +97,9 @@ export class OrGauge extends LitElement {
     public value?: number;
 
     @property()
+    public decimals: number = 0;
+
+    @property()
     public unit?: string;
 
     @property()
@@ -226,6 +229,7 @@ export class OrGauge extends LitElement {
     }
 
     render() {
+        const formattedVal = (this.value ? +this.value.toFixed(this.decimals) : NaN); // + operator prevents str return
         return html`
             <div style="position: relative; height: 100%; width: 100%;">
                 <div class="chart-wrapper" style="display: ${this.loading ? 'none' : 'flex'}; flex-direction: column; justify-content: center; height: 100%;">
@@ -235,7 +239,7 @@ export class OrGauge extends LitElement {
                     <div>
                         <div class="mainvalue-wrapper">
                             <span class="main-number-icon">${this.asset ? getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset.type)) : ""}</span>
-                            <span class="main-number ${this.mainValueSize}">${this.value ? this.value : NaN}</span>
+                            <span class="main-number ${this.mainValueSize}">${formattedVal}</span>
                             <span class="main-number-unit ${this.mainValueSize}">${this.unit ? this.unit : ""}</span>
                         </div>
                     </div>

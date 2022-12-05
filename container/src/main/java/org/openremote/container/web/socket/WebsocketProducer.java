@@ -22,7 +22,7 @@ package org.openremote.container.web.socket;
 import org.apache.camel.CamelExchangeException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.support.DefaultProducer;
 import org.openremote.container.web.ConnectionConstants;
 
 import javax.websocket.Session;

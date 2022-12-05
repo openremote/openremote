@@ -113,8 +113,11 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             headers.put(Constants.AUTH_CONTEXT, getAuthContext());
         }
 
-        boolean success = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
-            NotificationService.NOTIFICATION_QUEUE, notification, headers, Boolean.class);
+        boolean success = messageBrokerService.getFluentProducerTemplate()
+            .withBody(notification)
+            .withHeaders(headers)
+            .to(NotificationService.NOTIFICATION_QUEUE)
+            .request(Boolean.class);
 
         if (!success) {
             throw new WebApplicationException(BAD_REQUEST);
