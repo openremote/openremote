@@ -193,7 +193,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         config.setPersistenceEnabled(false);
 
         // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
-        // Temp to prevent breaking existing auto provisioning API
+        // Disable auth cache so we can inject RemotingConnection into the subject as a principal otherwise we don't have access to the connection during authorisation so we cannot check topic contains the clientID
         // Disable caching so we can support auto provisioning sessions without having to reconnect - we need to re-evaluate this and clients should probably send X.509 through to the broker
         config.setAuthenticationCacheSize(0);
         config.setAuthorizationCacheSize(0);
@@ -375,7 +375,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         clientIDConnectionMap.put(remotingConnection.getClientID(), remotingConnection);
 
         if (!connectionIDConnectionMap.containsKey(connectionID)) {
-            LOG.info("Client connection created: " + connectionToString(remotingConnection  ));
+            LOG.info("Client connection created: " + connectionToString(remotingConnection));
             connectionIDConnectionMap.put(connectionID, remotingConnection);
             for (MQTTHandler handler : getCustomHandlers()) {
                 handler.onConnect(remotingConnection);
@@ -543,26 +543,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         return connection;
-    }
-
-    // TODO: Remove this if/when ActiveMQ implements https://issues.apache.org/jira/browse/ARTEMIS-4059
-
-    /**
-     * Tries to find the correct {@link RemotingConnection} for the specified subject with the assumption that the
-     * client ID is contained in the address (this is important for multiple connections from the same subject)
-     */
-    protected RemotingConnection getConnectionFromSubjectAndTopic(Subject subject, Topic topic) {
-        String clientID = MQTTHandler.topicClientID(topic);
-
-        if (clientID == null) {
-            return null;
-        }
-
-        return connectionIDConnectionMap.values().stream().filter(connection ->
-                connection.getSubject() == subject && Objects.equals(clientID, connection.getClientID())
-        )
-                .findFirst()
-                .orElse(null);
     }
 
     // TODO: Remove this
