@@ -120,6 +120,7 @@
   "noAssetTypeSelected": "Kies een asset type uit de lijst aan de linkerkant",
   "loading": "Aan het laden...",
   "noAssetsFound": "Geen assets gevonden",
+  "filterInvite": "Filter met minsters 3 karakters",
   "location": "Locatie",
   "longPressSetLoc": "Druk lang op de kaart om locatie in te stellen",
   "hour": "Uur",
@@ -164,6 +165,7 @@
   "noRuleStateAttributes": "Geen attributen met 'rule state' of 'agent link' configuratie item gevonden",
   "noDatapointsAttributes": "Geen attributen met 'store data points' of 'agent link' configuratie item gevonden",
   "noAttributesToShow": "Geen attributen gevonden",
+  "noAttributesConnected": "Geen attributen verbonden",
   "noDatapointsOrRuleStateAttributes": "Geen attributen met 'rule state', 'store data points', of 'agent link' configuratie item gevonden",
   "copy": "Kopiëren",
   "paste": "Plakken",
@@ -442,8 +444,7 @@
   "dismiss": "sluiten",
   "createAssetFailed": "Asset aanmaken is niet gelukt",
   "moveAssetFailed": "Failed to move asset",
-  "logCategory": {
-  },
+  "logCategory": {},
   "readPermissions": "Leesrechten",
   "writePermissions": "Schrijfrechten",
   "valueType": "Waarde type",
@@ -500,6 +501,7 @@
   "invalidEmail": "Ongeldig emailadres",
   "yes": "Ja",
   "no": "Nee",
+  "linked": "Gelinkt",
   "filter": {
     "filter": "Filter",
     "clear": "LEEGMAKEN",
@@ -510,6 +512,19 @@
     "attributeLabel": "Attribuut",
     "attributeValueLabel": "Attribuutwaarde",
     "assetTypeDoesNotExist": "Filter: Asset type bestaat niet"
+  },
+  "realmDeleteConfirm": "Let op! Hiermee verwijder je alles in deze realm, typ de realm naam '{{realmName}}' om te bevestigen.",
+  "realmDeleteFailed": "Realm verwijderen mislukt",
+  "rulesetStatus": {
+    "DEPLOYED": "Succesvol aangemaakt",
+    "NOSTATUS": "Uitgeschakeld",
+    "LOOP_ERROR": "Loop fout",
+    "COMPILATION_ERROR": "Compilatiefout",
+    "EXECUTION_ERROR": "Uitvoeringsfout",
+    "EXPIRED": "Geldigheidsperiode in het verleden",
+    "PAUSED": "Geldigheidsperiode in de toekomst",
+    "REMOVED": "Verwijderd",
+    "READY": "In afwachting van fout oplossing"
   },
   "public": "Openbaar",
   "shared": "Gedeeld",
