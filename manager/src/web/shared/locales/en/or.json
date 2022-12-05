@@ -578,6 +578,7 @@
   "configuration": {
     "" : "Configuration",
     "main": "Main",
+    "realmStyling": "REALM STYLING",
     "addRealmCustomization" : "Add Realm Customization",
     "realmTitle": "Manager Title",
     "defaultLanguage": "Default language",

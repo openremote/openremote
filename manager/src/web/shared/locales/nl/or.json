@@ -570,11 +570,12 @@
     "myDashboards": "Mijn dashboards",
     "createdByOthers": "Gemaakt door anderen"
   },
-  "appearance": "Weergaven",
+  "appearance": "Weergave",
   "configuration": {
     "" : "Instellingen",
     "main": "Algemeen",
-    "addRealmCustomization" : "Voeg aangepaste realm stijl toe",
+    "realmStyling": "REALM STIJL",
+    "addRealmCustomization" : "Voeg realm stijl toe",
     "realmTitle": "Manager Titel",
     "defaultLanguage": "Standaard taal",
     "images": "Afbeeldingen",
@@ -592,6 +593,6 @@
     "primaryNavigation" : "Primair menu",
     "secondaryNavigation" : "Secundaire menu",
     "reloadPage" : "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
-    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze Realm style wilt verwijderen?"
+    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?"
   }
 }

@@ -16,6 +16,7 @@ const style = css`
         --internal-or-panel-border: var(--or-panel-border, 1px solid #e5e5e5);
         --internal-or-panel-border-radius: var(--or-panel-border-radius, 5px);
         --internal-or-panel-heading-font-size: var(--or-panel-heading-font-size, larger);
+        --internal-or-panel-heading-font-weight: var(--or-panel-heading-font-weight, bolder);
         
         display: block;
     }
@@ -36,9 +37,10 @@ const style = css`
         border-radius: var(--internal-or-panel-border-radius);
     }
     
-    strong {
+    #heading {
         margin: var(--internal-or-panel-heading-margin);
         font-size: var(--internal-or-panel-heading-font-size);
+        font-weight: var(--internal-or-panel-heading-font-weight);
     }
 `;
 
@@ -79,7 +81,7 @@ export class OrPanel extends LitElement {
         return html`
             <div id="wrapper">
                 <div id="panel">
-                    ${this.heading ? html`<strong>${this.heading}</strong>` : ``}
+                    ${this.heading ? html`<div id="heading">${this.heading}</div>` : ``}
                     <slot></slot>
                 </div>
             </div>

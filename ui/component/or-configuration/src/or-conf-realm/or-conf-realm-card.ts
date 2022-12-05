@@ -23,19 +23,19 @@ export class OrConfRealmCard extends LitElement {
   static styles = css`
     .language {
       width: 100%;
-      padding: 12px 0px;
+      padding: 10px 0px;
       max-width: 800px;
     }
 
     .appTitle {
       width: 100%;
       max-width: 800px;
-      padding: 12px 0px;
+      padding: 10px 0px;
     }
 
     .header-group .header-item {
       width: 100%;
-      padding: 12px 0px;
+      padding: 10px 0px;
       max-width: 800px;
     }
 
@@ -56,7 +56,8 @@ export class OrConfRealmCard extends LitElement {
     }
 
     .subheader {
-      padding: 15px 0 4px 0;
+      padding: 10px 0 4px;
+      font-weight: bolder;
     }
 
     .d-inline-flex {
@@ -64,7 +65,7 @@ export class OrConfRealmCard extends LitElement {
     }
 
     .panel-content {
-      padding: 0 36px;
+      padding: 0 24px 24px;
     }
 
     .description {
@@ -72,10 +73,7 @@ export class OrConfRealmCard extends LitElement {
     }
 
     or-collapsible-panel {
-      margin: 8px;
-    }
-    or-mwc-inputs{
-      padding: 10px 0;
+      margin-bottom: 10px;
     }
   `;
 
@@ -261,7 +259,7 @@ export class OrConfRealmCard extends LitElement {
       <or-collapsible-panel
         .expanded="${this.expanded}">
         <div slot="header" class="header-container">
-          <strong>${this.name}</strong>
+          ${this.name}
         </div>
         <div slot="content" class="panel-content">
           <div class="subheader">${i18next.t("configuration.main")}</div>

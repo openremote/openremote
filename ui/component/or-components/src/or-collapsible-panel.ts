@@ -31,7 +31,7 @@ const style = css`
         font-size: 15px;
         font-weight: 400;
         align-items: center;
-        padding: 0 24px 0 18px;
+        padding: 0 24px 0 16px;
         border-radius: inherit;
     }
     
@@ -55,7 +55,6 @@ const style = css`
     }
 
     #header-title, #header-description {
-        margin-right: 16px;
         display: inline-flex;
         align-items: center;
     }
@@ -78,6 +77,14 @@ const style = css`
     #content.expanded {
         height: unset;
         visibility: visible;
+    }
+
+    or-icon {
+        vertical-align: middle;
+        --or-icon-width: 20px;
+        --or-icon-height: 20px;
+        margin-right: 2px;
+        margin-left: -5px;
     }
 `;
 

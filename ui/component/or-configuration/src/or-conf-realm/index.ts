@@ -12,6 +12,9 @@ import "@openremote/or-components/or-loader";
 export class OrConfRealm extends LitElement {
 
   static styles = css`
+    #btn-add-realm {
+      margin-top: 4px;
+    }
     `;
 
   @property({attribute: false})
@@ -122,7 +125,7 @@ export class OrConfRealm extends LitElement {
         })}
       </div>
       
-      <or-mwc-input class="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addRealmCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
+      <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addRealmCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
     `
   }
 }

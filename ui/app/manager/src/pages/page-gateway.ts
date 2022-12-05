@@ -34,7 +34,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 display: flex;
                 justify-content: center;
                 
-                --or-panel-heading-margin: 0 0 5px 10px;
+                --or-panel-heading-margin: 4px 0 0 10px;
                 --or-panel-background-color: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
                 --or-panel-heading-font-size: 14px; 
                 --or-panel-padding: 14px;
