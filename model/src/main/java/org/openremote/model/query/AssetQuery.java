@@ -192,15 +192,36 @@ public class AssetQuery implements Serializable {
     /**
      * Resolves the concrete {@link Asset} types that are covered by the supplied asset types
      */
+    @SuppressWarnings("unchecked")
     public static String[] getResolvedAssetTypes(String[] assetTypes) {
 
         List<Class<? extends Asset<?>>> assetClasses = Arrays.asList(ValueUtil.getAssetClasses(null));
         Set<String> assetSubTypes = new HashSet<>(Arrays.asList(assetTypes));
 
         Arrays.stream(assetTypes)
-            .map(ValueUtil::getAssetClass)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
+            .map(assetType ->
+                ValueUtil.getAssetClass(assetType).orElseGet(() -> {
+                    // Try and resolve this type to a concrete asset super type class - should be in the type hierarchy
+                    // of one of the registered asset types if it is a valid type
+                    Class<? extends Asset<?>> matchedClass = null;
+
+                    for (Class<?> c : assetClasses) {
+                        Class<?> currentClass = c;
+                        while (Asset.class.isAssignableFrom(currentClass)) {
+                            if (currentClass.getSimpleName().equals(assetType)) {
+                                matchedClass = (Class)currentClass;
+                                break;
+                            }
+                            currentClass = currentClass.getSuperclass();
+                        }
+                        if (matchedClass != null) {
+                            break;
+                        }
+                    }
+
+                    return matchedClass;
+                }))
+            .filter(Objects::nonNull)
             .flatMap(assetClass -> assetClasses.stream().filter(assetClass::isAssignableFrom).map(Class::getSimpleName))
             .forEach(assetSubTypes::add);
 
