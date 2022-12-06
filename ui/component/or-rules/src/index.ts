@@ -55,7 +55,8 @@ export const enum ActionType {
     WAIT = "wait",
     EMAIL = "email",
     PUSH_NOTIFICATION = "push",
-    ATTRIBUTE = "attribute"
+    ATTRIBUTE = "attribute",
+    WEBHOOK = "webhook"
 }
 export enum TimeTriggerType {
     TIME_OF_DAY = "TIME_OF_DAY"

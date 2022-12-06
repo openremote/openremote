@@ -351,6 +351,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 case "notification":
                     // TODO: validate notification rule action
                     break;
+                case "webhook":
+                    if(!action.webhook?.url || !action.webhook.httpMethod) {
+                        return false;
+                    }
+                    break;
                 case "update-attribute":
                     if (!action.attributeName) {
                         return false;

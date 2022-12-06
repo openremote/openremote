@@ -39,6 +39,7 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
                 actions: {
                     wait: [],
                     attribute: [],
+                    webhook: [],
                     email: [NotificationTargetType.USER, NotificationTargetType.CUSTOM],
                     push: [NotificationTargetType.USER, NotificationTargetType.ASSET],
                 }
