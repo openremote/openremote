@@ -61,7 +61,7 @@ export class OrConfRealm extends LitElement {
           this.config.realms = {}
         }
         this.config.realms[this._addedRealm] = {
-          styles: ":host > * {--or-app-color1:#FFF;--or-app-color2:#F9F9F9;--or-app-color3:#4c4c4c;--or-app-color4:#4d9d2a;--or-app-color5:#CCC;--or-app-color6:#be0000;"
+          styles: ":host > * {--or-app-color1:#FFFFFF;--or-app-color2:#F9F9F9;--or-app-color3:#4c4c4c;--or-app-color4:#4d9d2a;--or-app-color5:#CCCCCC;--or-app-color6:#be0000;"
       }
         this._loadListOfAvailableRealms()
         this.requestUpdate()
