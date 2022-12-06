@@ -514,13 +514,13 @@ const style = css`
     #select-searchable {
         background-color: transparent; 
         border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-        margin: 8px; 
+        margin: 8px 8px 0; 
         width: calc(100% - 16px); 
         border-radius: 4px;
         padding: 4px 16px;
         flex: 0 0 auto;
         align-items: center;
-        height: 48px;
+        height: auto;
     }
 
     .mdc-text-field__input::-webkit-calendar-picker-indicator {
@@ -682,20 +682,14 @@ export class OrMwcInput extends LitElement {
     @property({type: String})
     public placeHolder?: string;
 
-    // includes JSON check to prevent updates when the content of the array did not change.
-    @property({type: Array, hasChanged(oldVal, newVal) { return JSON.stringify(oldVal) !== JSON.stringify(newVal); }})
+    @property({type: Array})
     public options?: any[] | any;
-
-    @property({type: Object})
-    public optionsProvider?: (search?: string) => Promise<[any, string][]>
 
     @property({type: Boolean})
     public autoSelect?: boolean;
 
-    // Enable to add 'Search' input field in SELECT menu.
-    @property({type: Boolean})
-    public searchable?: boolean;
-
+    @property({type: Object})
+    public searchProvider?: (search?: string) => Promise<[any, string][]>
 
     /* STYLING PROPERTIES BELOW */
 
@@ -963,13 +957,10 @@ export class OrMwcInput extends LitElement {
                     };
 
                     let opts: [any, string][] | Promise<[any, string][]>;
-                    if(this.optionsProvider != undefined) {
-                        opts = this.optionsProvider(this.searchableValue);
+                    if(this.searchProvider != undefined) {
+                        opts = this.searchProvider(this.searchableValue);
                     } else {
                         opts = this.resolveOptions(this.options)!;
-                        if(this.searchable && this.searchableValue) {
-                            opts = opts.filter(([optValue, optDisplay]) => optDisplay.toLowerCase().includes((this.searchableValue as string).toLowerCase()));
-                        }
                     }
                     const itemClickHandler: (ev: MouseEvent, item: ListItem) => void = (ev, item) => {
                         const value = item.value;
@@ -1001,7 +992,7 @@ export class OrMwcInput extends LitElement {
 
                         // A narrowed down list with search, or a different asynchronous approach does not always trigger @MDCSelect:change,
                         // so using itemClickHandler instead to let it trigger anyway.
-                        else if(this.searchable || !Array.isArray(opts)) {
+                        else if(this.searchProvider != undefined || !Array.isArray(opts)) {
                             this.onValueChange(undefined, item.value);
                         }
 
@@ -1025,42 +1016,28 @@ export class OrMwcInput extends LitElement {
                     };
 
                     const listTemplate = (options: [any, string][]) => {
-                        return getListTemplate(
-                            this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                            opts && options.length > 0 ? html`${options.map(([optValue, optDisplay], index) => {
-                                return getItemTemplate(
-                                    {
-                                        text: optDisplay,
-                                        value: optValue
-                                    },
-                                    index,
-                                    Array.isArray(this.value) ? this.value as any[] : this.value ? [this.value as any] : [],
-                                    this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                    false,
-                                    itemClickHandler
-                                );
-                            })}` : html``,
-                            false,
-                            undefined
-                        );
-                    }
-
-                    const asyncListTemplate = async (): Promise<TemplateResult> => {
-                        let options: [any, string][] = (Array.isArray(opts) ? opts : await opts);
-                        if(this.searchable && this.searchableValue && !this.multiple) {
-                            options = options.filter(([optValue, optDisplay]) => optValue != this.value); // remove the selected value when searching
+                        if(this.searchProvider != undefined && (!options || options.length == 0)) {
+                            return html`<span class="mdc-text-field-helper-line" style="margin: 8px 8px 8px 0;">${i18next.t('noResults')}</span>`
+                        } else {
+                            return getListTemplate(
+                                this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                html`${options?.map(([optValue, optDisplay], index) => {
+                                    return getItemTemplate(
+                                        {
+                                            text: optDisplay,
+                                            value: optValue
+                                        },
+                                        index,
+                                        Array.isArray(this.value) ? this.value as any[] : this.value ? [this.value as any] : [],
+                                        this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                        false,
+                                        itemClickHandler
+                                    );
+                                })}`,
+                                false,
+                                undefined
+                            );
                         }
-                        return listTemplate(options);
-                    }
-
-                    const nothingFoundTemplate = async (): Promise<TemplateResult> => {
-                        let options: [any, string][] = (Array.isArray(opts) ? opts : await opts);
-                        if(this.searchable && this.searchableValue && !this.multiple) {
-                            options = options.filter(([optValue, optDisplay]) => optValue != this.value); // remove the selected value when searching
-                        }
-                        return when(options && options.length == 0, () => html`
-                            <span class="mdc-text-field-helper-line" style="margin: 0 8px 8px;">${i18next.t('noResults')}</span>
-                        `);
                     }
 
                     return html`
@@ -1100,24 +1077,21 @@ export class OrMwcInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed ${this.searchable ? 'mdc-menu__searchable' : undefined}" @MDCMenuSurface:closed="${menuCloseHandler}" style="width: inherit !important;">
-                                    ${when(this.searchable, () => {
-                                        return html`
-                                            <label id="select-searchable" class="mdc-text-field mdc-text-field--filled">
-                                                <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">${i18next.t('search')}</span>
-                                                <input class="mdc-text-field__input" type="text"
-                                                       @keyup="${(e: KeyboardEvent) => this.searchableValue = (e.target as HTMLInputElement).value}"
-                                                />
-                                            </label>
-                                            ${until(nothingFoundTemplate(), undefined)}
-                                        `
-                                    })}
+                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed ${this.searchProvider != undefined ? 'mdc-menu__searchable' : undefined}" @MDCMenuSurface:closed="${menuCloseHandler}" style="width: inherit !important;">
+                                    ${when(this.searchProvider != undefined, () => html`
+                                        <label id="select-searchable" class="mdc-text-field mdc-text-field--filled">
+                                            <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">${i18next.t('search')}</span>
+                                            <input class="mdc-text-field__input" type="text"
+                                                   @keyup="${(e: KeyboardEvent) => this.searchableValue = (e.target as HTMLInputElement).value}"
+                                            />
+                                        </label>
+                                    `)}
                                     ${when(Array.isArray(opts), () => {
                                         return listTemplate(opts as [any, string][]);
                                     }, () => {
-                                        return until(asyncListTemplate(), html`
-                                            <span class="mdc-text-field-helper-line" style="margin: 0 8px 24px;">${i18next.t('loading')}</span>
-                                        `);
+                                        return until(new Promise(async (resolve) => {
+                                            resolve(listTemplate(await opts));
+                                        }), html`<span class="mdc-text-field-helper-line" style="margin: 8px 8px 8px 0;">${i18next.t('loading')}</span>`)
                                     })}
                                 </div>
                                 ${hasHelper || showValidationMessage ? html`
@@ -1743,7 +1717,7 @@ export class OrMwcInput extends LitElement {
         }
 
         // Reset search if value has been selected
-        if(this.searchable && this.type === InputType.SELECT) {
+        if(this.searchProvider != undefined && this.type === InputType.SELECT) {
             const searchableElement = this.shadowRoot?.getElementById('select-searchable')?.children[1];
             if(searchableElement) {
                 this.searchableValue = undefined;

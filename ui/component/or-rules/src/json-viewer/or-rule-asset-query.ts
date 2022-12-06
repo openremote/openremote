@@ -187,7 +187,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const operators = attributeName ? this.getOperators(assetDescriptor, descriptors ? descriptors[0] : undefined, descriptors ? descriptors[1] : undefined, attribute, attributeName) : [];
 
         return html`
-            <or-mwc-input type="${InputType.SELECT}" class="min-width" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" ?searchable="${(attributes.length >= 25)}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-mwc-input>
+            <or-mwc-input type="${InputType.SELECT}" class="min-width" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-mwc-input>
             ${attributeName ? html`<or-mwc-input type="${InputType.SELECT}" class="min-width" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-mwc-input>` : ``}
             ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, asset, attributePredicate) : ``}
         `;
@@ -294,7 +294,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const idOptions: [string, string] [] = [
             ["*", i18next.t("anyOfThisType")]
         ];
-        let optionsProvider: (search?: string) => Promise<[any, string][]>;
+        let searchProvider: (search?: string) => Promise<[any, string][]>;
 
         return html`
             <div class="attribute-group">
@@ -305,17 +305,21 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 `, () => {
 
                     // Set list of displayed assets, and filtering assets out if needed.
-                    // If <= 100 assets: display everything
+                    // If <= 25 assets: display everything
+                    // If between 25 and 100 assets: display everything with search functionality 
                     // If > 100 assets: only display if in line with search input
-                    if(this._assets!.length <= 100) {
+                    if(this._assets!.length <= 25) {
                         idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
                     } else {
-                        optionsProvider = async (search?: string) => {
+                        searchProvider = async (search?: string) => {
                             if(search) {
-                                return this._assets!.filter((asset) => (asset.name?.toLowerCase().includes(search.toLowerCase()) || asset.id == idValue)).map((asset) => [asset.id!, asset.name!] as [string, string]);
+                                return this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
+                            } else if (this._assets!.length <= 100) {
+                                idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                                return idOptions;
                             } else {
                                 const asset = this._assets?.find((asset) => asset.id == idValue);
-                                if(asset && idOptions.find(([id, value]) => id == asset.id) == undefined) {
+                                if(asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
                                     idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
                                 }
                                 return idOptions;
@@ -324,7 +328,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     }
                     return html`
                         <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
-                                      .searchable="${this._assets!.length > 25}" .options="${idOptions}" .value="${idValue}" .optionsProvider="${optionsProvider}"
+                                      .options="${idOptions}" .value="${idValue}" .searchProvider="${searchProvider}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this.refresh(); }}"
                         ></or-mwc-input>
                         ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {

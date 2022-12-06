@@ -3,17 +3,13 @@ import {customElement, property, state} from "lit/decorators.js";
 import {getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {
     Asset,
-    AssetQueryOrderBy$Property,
     AssetTypeInfo,
     RuleActionUpdateAttribute,
     RuleActionWriteAttribute,
-    WellknownMetaItems,
     WellknownValueTypes,
-    AssetModelUtil,
-    AssetQuery,
-    AssetQueryMatch
+    AssetModelUtil
 } from "@openremote/model";
-import manager, {Util} from "@openremote/core";
+import {Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
@@ -122,7 +118,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         const idOptions: [string, string] [] = [
             ["*", i18next.t("matched")]
         ];
-        let optionsProvider: (search?: string) => Promise<[any, string][]>;
+        let searchProvider: (search?: string) => Promise<[any, string][]>;
 
         return html`
             
@@ -130,19 +126,24 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             ${when((!this._assets), () => html`
                 <or-mwc-input id="matchSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
             `, () => {
-                
+
                 // Set list of displayed assets, and filtering assets out if needed.
-                // If <= 100 assets: display everything
+                // If <= 25 assets: display everything
+                // If between 25 and 100 assets: display everything with search functionality 
                 // If > 100 assets: only display if in line with search input
-                if(this._assets!.length <= 100) {
+                if (this._assets!.length <= 100) {
                     idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
                 } else {
-                    optionsProvider = async (search?: string) => {
-                        if(search) {
-                            return this._assets!.filter((asset) => (asset.name?.toLowerCase().includes(search.toLowerCase()) || asset.id == idValue)).map((asset) => [asset.id!, asset.name!] as [string, string]);
+                    searchProvider = async (search?: string) => {
+                        if (search) {
+                            idOptions.push(...this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]));
+                            return idOptions;
+                        } else if (this._assets!.length <= 100) {
+                            idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                            return idOptions;
                         } else {
                             const asset = this._assets?.find((asset) => asset.id == idValue);
-                            if(asset && idOptions.find(([id, value]) => id == asset.id) == undefined) {
+                            if (asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
                                 idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
                             }
                             return idOptions;
@@ -185,7 +186,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 
                 return html`
                     <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}"
-                                  .searchable="${this._assets!.length > 25}" .options="${idOptions}" .optionsProvider="${optionsProvider}" .value="${idValue}" .readonly="${this.readonly || false}"
+                                  .options="${idOptions}" .searchProvider="${searchProvider}" .value="${idValue}" .readonly="${this.readonly || false}"
                                   .searchCallback="${debounce((search: string) => this._assetSearchValue = search, 500)}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this._assetSearchValue = ''; this.refresh(); }}"
                     ></or-mwc-input>
