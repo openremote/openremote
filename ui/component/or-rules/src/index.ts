@@ -684,9 +684,12 @@ export const style = css`
         --internal-or-rules-list-text-size: var(--or-rules-list-text-size, 15px);
         --internal-or-rules-list-header-height: var(--or-rules-list-header-height, 48px);
 
+        --internal-or-rules-list-icon-color-error: var(--or-rules-list-icon-color-error, var(--or-app-color6, ${unsafeCSS(DefaultColor6)}));
+        --internal-or-rules-list-icon-color-ok: var(--or-rules-list-icon-color-ok, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+
         --internal-or-rules-list-button-size: var(--or-rules-list-button-size, 24px);
         
-        --internal-or-rules-header-background-color: var(--or-rules-header-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rules-header-background-color: var(--or-rules-header-background-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-rules-header-height: var(--or-rules-header-height, unset);
         
         --or-panel-background-color: var(--internal-or-rules-panel-color);

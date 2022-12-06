@@ -524,6 +524,17 @@
   },
   "realmDeleteConfirm": "Warning! this will delete everything in this realm, type the realm name '{{realmName}}' to confirm.",
   "realmDeleteFailed": "Failed to delete realm",
+  "rulesetStatus": {
+    "DEPLOYED": "Successfully deployed",
+    "NOSTATUS": "Disabled",
+    "LOOP_ERROR": "Loop error",
+    "COMPILATION_ERROR": "Compilation error",
+    "EXECUTION_ERROR": "Execution error",
+    "EXPIRED": "Validity period over",
+    "PAUSED": "Paused until in validity period",
+    "REMOVED": "Removed",
+    "READY": "Ready; waiting error resolution"
+  },
   "public": "Public",
   "shared": "Shared",
   "private": "Private",
