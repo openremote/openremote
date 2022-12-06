@@ -33,7 +33,6 @@ import java.lang.management.ThreadMXBean;
 public class JvmHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
     public static final String NAME = "jvm";
-    public static final String VERSION = "1.0";
 
     @Override
     public int getPriority() {
@@ -58,11 +57,6 @@ public class JvmHealthStatusProvider implements HealthStatusProvider, ContainerS
     @Override
     public String getHealthStatusName() {
         return NAME;
-    }
-
-    @Override
-    public String getHealthStatusVersion() {
-        return VERSION;
     }
 
     @Override

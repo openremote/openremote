@@ -1504,7 +1504,6 @@ export class OrMwcInput extends LitElement {
                         })
                         observer.observe(this.shadowRoot!.getElementById("component")!);
 
-
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
                             const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
