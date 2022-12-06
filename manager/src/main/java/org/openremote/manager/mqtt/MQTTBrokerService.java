@@ -243,7 +243,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0");
         ClientSessionFactory factory = serverLocator.createSessionFactory();
         String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
-        internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, serverLocator.isPreAcknowledge(), serverLocator.getAckBatchSize(), internalClientID);
+        internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
         ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
         serverSession.disableSecurity();
         internalSession.start();
