@@ -57,7 +57,6 @@ public enum Actions {
     public static let geofenceRefresh = "GEOFENCE_REFRESH"
     public static let store = "STORE"
     public static let retrieve = "RETRIEVE"
-    public static let getLocation = "GET_LOCATION"
     public static let scanQr = "SCAN_QR"
 }
 

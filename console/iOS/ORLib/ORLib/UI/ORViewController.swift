@@ -230,28 +230,6 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                     }
                                 case Actions.geofenceRefresh:
                                     geofenceProvider?.refreshGeofences()
-                                case Actions.getLocation:
-                                    geofenceProvider?.getLocation(callback: { locationData in
-                                        if (locationData["data"] as? [String:Any]) == nil {
-                                            let alertController = UIAlertController(title: "Location permission denied",
-                                                                                    message: "In order to get the location it's necessary to give permissions to the app. Do you want to open the settings?",
-                                                                                    preferredStyle: .alert)
-                                            if let settingsUrl = URL(string: UIApplication.openSettingsURLString), UIApplication.shared.canOpenURL(settingsUrl) {
-                                                alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { alertAction in
-                                                    if UIApplication.shared.canOpenURL(settingsUrl) {
-                                                        UIApplication.shared.open(settingsUrl, completionHandler: { (success) in
-                                                            print("Settings opened: \(success)") // Prints true
-                                                        })
-                                                    }
-                                                }))
-                                                alertController.addAction(UIAlertAction(title: "Not now", style: .cancel, handler: nil))
-                                            } else {
-                                                alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                                            }
-                                            self.present(alertController, animated: true, completion: nil)
-                                        }
-                                        self.sendData(data: locationData)
-                                    })
                                 default:
                                     print("Wrong action \(action) for \(provider)")
                                 }
