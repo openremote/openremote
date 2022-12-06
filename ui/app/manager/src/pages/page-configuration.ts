@@ -1,6 +1,6 @@
 import { css, html, TemplateResult, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
-import manager, { DefaultColor1 } from "@openremote/core";
+import manager, { DefaultColor1, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import { Store } from "@reduxjs/toolkit";
@@ -51,7 +51,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             }
 
             or-panel {
-                width: calc(100% - 90px);
+                width: calc(100% - 40px);
                 max-width: 1360px;
                 margin-bottom: 16px;
             }
@@ -82,6 +82,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 font-weight: bold;
                 align-items: center;
                 display: flex;
+                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
             }
 
             #header-title > or-icon {
@@ -106,7 +107,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     border-left: 0px;
                     border-right: 0px;
                     width: 100%;
-                    border-radius: 0px;
+                    --or-panel-border-radius: 0;
                 }
                 #header-wrapper{
                     width: calc(100% - 30px);

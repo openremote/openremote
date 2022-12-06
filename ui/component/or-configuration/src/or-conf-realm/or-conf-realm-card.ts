@@ -11,6 +11,7 @@ import manager, {
   DefaultColor4,
   DefaultColor5,
   DefaultColor6,
+  DefaultColor8
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerConfRealm, ManagerHeaders } from "@openremote/model";
@@ -127,6 +128,7 @@ export class OrConfRealmCard extends LitElement {
       '--or-app-color4': unsafeCSS(DefaultColor4).toString(),
       '--or-app-color5': unsafeCSS(DefaultColor5).toString(),
       '--or-app-color6': unsafeCSS(DefaultColor6).toString(),
+      '--or-app-color8': unsafeCSS(DefaultColor8).toString()
     }
     if (this.realm?.styles){
       //TODO use regex for filtering and getting color codes CSS
@@ -306,6 +308,9 @@ export class OrConfRealmCard extends LitElement {
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
                             .label="${i18next.t("configuration.--or-app-color3")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
+              <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color8"]}"
+                            .label="${i18next.t("configuration.--or-app-color8")}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color8", e.detail.value)}"></or-mwc-input>
             </div>
           </div>
           <div class="header-group">
@@ -335,7 +340,7 @@ export class OrConfRealmCard extends LitElement {
             </div>
           </div>
 
-          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("delete")}"
+          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("configuration.deleteRealmCustomization")}"
                         @click="${() => {
                           this._showRemoveRealmDialog();
                         }}"></or-mwc-input>

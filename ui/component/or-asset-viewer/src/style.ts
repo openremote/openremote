@@ -192,6 +192,7 @@ export const style = css`
         display: flex;
         flex-direction: row;
         align-items: center;
+        color: var(--internal-or-asset-viewer-title-text-color);
     }
 
     #title > or-icon {
