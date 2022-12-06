@@ -34,5 +34,6 @@ enum ManagerHeaders {
     language,
     export,
     map,
-    appearance
+    appearance,
+    provisioning
 }
