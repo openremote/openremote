@@ -81,7 +81,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     // an access token from authentication directly, which gives us full access to import/delete
     // demo data as needed.
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
-    public static final String MANAGER_CLIENT_ID = "manager-keycloak";
     public static final List<String> DEFAULT_CLIENTS = Arrays.asList(
         "account",
         ADMIN_CLI_CLIENT_ID,

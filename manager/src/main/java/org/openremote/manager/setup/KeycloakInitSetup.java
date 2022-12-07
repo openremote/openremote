@@ -19,16 +19,13 @@
  */
 package org.openremote.manager.setup;
 
-import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.Container;
-import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 
 import java.util.logging.Logger;
 
-import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.MANAGER_CLIENT_ID;
 import static org.openremote.model.Constants.*;
 
 public class KeycloakInitSetup extends AbstractKeycloakSetup {

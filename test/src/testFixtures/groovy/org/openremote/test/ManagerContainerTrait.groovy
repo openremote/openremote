@@ -18,7 +18,8 @@ import static org.openremote.container.timer.TimerService.Clock.REAL
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
 import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
-import static org.openremote.manager.rules.RulesService.OR_MIN_TEMP_FACT_EXPIRATION_MILLIS
+import static org.openremote.manager.rules.RulesService.OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS
+import static org.openremote.manager.rules.RulesService.OR_RULES_QUICK_FIRE_MILLIS
 
 trait ManagerContainerTrait extends ContainerTrait {
 
@@ -30,7 +31,8 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (OR_WEBSERVER_LISTEN_PORT): Integer.toString(serverPort),
                 (MQTT_SERVER_LISTEN_HOST) : "127.0.0.1", // Works best for cross platform test running,
                 (MQTTBrokerService.MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS): "10",
-                (OR_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
+                (OR_RULES_QUICK_FIRE_MILLIS): "500",
+                (OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
                 (TIMER_CLOCK_TYPE)        : PSEUDO.name()
         ]
     }

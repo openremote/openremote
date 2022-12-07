@@ -231,7 +231,7 @@ public abstract class Ruleset {
     }
 
     public boolean isContinueOnError() {
-        return Optional.ofNullable(getMeta().get(CONTINUE_ON_ERROR)).map(node -> node.asBoolean(false)).orElse(false);
+        return Optional.ofNullable(getMeta().get(CONTINUE_ON_ERROR)).map(node -> node.asBoolean(true)).orElse(true);
     }
 
     public Ruleset setContinueOnError(boolean continueOnError) {

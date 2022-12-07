@@ -573,11 +573,24 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet()).getSeconds()+1, TimeUnit.SECONDS, container)
 
         then: "the rule engine should have fired again and the rule should have triggered"
+        def lastUpdateTime = 0
         conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             thingAsset = assetStorageService.find(thingId) as ThingAsset
             assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+            lastUpdateTime = thingAsset.getAttribute("sunset").get().getTimestamp().orElse(0)
+        }
+
+        when: "time advances slightly"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should not have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp >= lastFireTimestamp + 1000
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getTimestamp().orElse(-1) == lastUpdateTime
         }
 
         when: "time advances past the sunset"
