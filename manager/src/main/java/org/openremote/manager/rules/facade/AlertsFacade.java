@@ -26,8 +26,6 @@ import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Alerts;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
-
-//import static org.openremote.model.notification.Notification.Source.*;
 public class AlertsFacade<T extends Ruleset> extends Alert {
 
     protected final RulesEngineId<T> rulesEngineId;
@@ -39,20 +37,7 @@ public class AlertsFacade<T extends Ruleset> extends Alert {
     }
 
     public void send(Alert alert) {
-        //Notification.Source source;
-        Alert.Trigger trigger;
-        String sourceId = null;
-
-        if (rulesEngineId.getScope() == GlobalRuleset.class) {
-            trigger = GLOBAL_RULESET;
-        } else if (rulesEngineId.getScope() == RealmRuleset.class) {
-            trigger = REALM_RULESET;
-            sourceId = rulesEngineId.getRealm().orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
-        } else {
-            trigger = ASSET_RULESET;
-            sourceId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ruleset must have an asset ID"));
-        }
-
-        alertService.sendAlert(alert, trigger, sourceId);
+        String trigger = alert.getTrigger();
+        alertService.sendAlert(alert, trigger);
     }
 }

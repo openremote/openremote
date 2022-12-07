@@ -74,4 +74,7 @@ public class AlertService extends RouteBuilder implements ContainerService {
                 .doCatch(Exception.class)
                 .process(handleAlertProcessingException(LOG));
     }
+    public void sendAlert(Alert alert, String sourceId) {
+
+    }
 }
