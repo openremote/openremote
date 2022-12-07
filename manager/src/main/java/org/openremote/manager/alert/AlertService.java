@@ -2,14 +2,13 @@ package org.openremote.manager.alert;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.openremote.manager.notification.NotificationProcessingException;
+
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.asset.agent.Protocol;
-import org.openremote.model.notification.Notification;
+import org.openremote.model.alert.Alert;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,7 +26,8 @@ public class AlertService extends RouteBuilder implements ContainerService {
     protected MessageBrokerService messageBrokerService;
 
     protected static Processor handleAlertProcessingException(Logger logger) {
-        return exchange -> { };
+        return exchange -> {
+        };
     }
 
     @Override
@@ -61,6 +61,13 @@ public class AlertService extends RouteBuilder implements ContainerService {
                 .routeId("AlertQueueProcessor")
                 .doTry()
                 .process( exchange -> {
+                    Alert alert = exchange.getIn().getBody(Alert.class);
+
+                    if (alert == null) {
+                        //TODO: throw and exception
+                    }
+
+                    LOG.finest("Processing: " + alert.getTitle());
 
                 })
                 .endDoTry()
