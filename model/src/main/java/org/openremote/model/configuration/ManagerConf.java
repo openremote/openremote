@@ -21,19 +21,5 @@ class ManagerConfRealm {
 }
 
 enum ManagerHeaders {
-    rules,
-    insights,
-    gateway,
-    logs,
-    account,
-    users,
-    assets,
-    roles,
-    realms,
-    logout,
-    language,
-    export,
-    map,
-    appearance,
-    provisioning
+    rules, insights, gateway, logs, account, users, assets, roles, realms, logout, language, export, map, appearance, provisioning
 }

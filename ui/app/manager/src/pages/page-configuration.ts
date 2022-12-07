@@ -111,6 +111,9 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 #header-wrapper{
                     width: calc(100% - 30px);
                 }
+                .hide-mobile {
+                    display: none;
+                }
             }
         `;
     }
@@ -162,7 +165,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                         ${i18next.t('appearance')}
                     </div>
                     <div id="header-actions">
-                        <or-conf-json .managerConfig="${managerConfiguration}"></or-conf-json>
+                        <or-conf-json .managerConfig="${managerConfiguration}" class="hide-mobile"></or-conf-json>
                         <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t('save')}" @click="${() => {
                             document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: managerConfiguration } }));
                         }}"></or-mwc-input>
