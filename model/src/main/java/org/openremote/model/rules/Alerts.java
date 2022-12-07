@@ -19,15 +19,14 @@
  */
 package org.openremote.model.rules;
 
-//import org.openremote.model.notification.Notification;
-import org.openremote.model.alerts.Alert;
+import org.openremote.model.alert.Alert;
 import org.openremote.model.util.TsIgnore;
 
 /**
- * Facade for sending {@link Alerts}s from rules RHS.
+ * Facade for sending {@link Alerts}s from rules.
  */
 @TsIgnore
 public abstract class Alerts {
-    //public abstract void send(Notification notification);
+
     public abstract void send(Alert alert);
 }

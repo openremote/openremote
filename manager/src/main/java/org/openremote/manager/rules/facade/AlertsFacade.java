@@ -19,20 +19,16 @@
  */
 package org.openremote.manager.rules.facade;
 
-//import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.alerts.AlertService;
+import org.openremote.manager.alert.AlertService;
 import org.openremote.manager.rules.RulesEngineId;
-//import org.openremote.model.notification.Notification;
-import org.openremote.model.alerts.Alert;
+import org.openremote.model.alert.Alert;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Alerts;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 
 //import static org.openremote.model.notification.Notification.Source.*;
-import static org.openremote.model.alert.Alert.Source.*;
-
-public class AlertsFacade<T extends Ruleset> extends Alerts {
+public class AlertsFacade<T extends Ruleset> extends Alert {
 
     protected final RulesEngineId<T> rulesEngineId;
     protected final AlertService alertService;
@@ -43,19 +39,20 @@ public class AlertsFacade<T extends Ruleset> extends Alerts {
     }
 
     public void send(Alert alert) {
-        Alert.Source source;
+        //Notification.Source source;
+        Alert.Trigger trigger;
         String sourceId = null;
 
         if (rulesEngineId.getScope() == GlobalRuleset.class) {
-            source = GLOBAL_RULESET;
+            trigger = GLOBAL_RULESET;
         } else if (rulesEngineId.getScope() == RealmRuleset.class) {
-            source = REALM_RULESET;
+            trigger = REALM_RULESET;
             sourceId = rulesEngineId.getRealm().orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
         } else {
-            source = ASSET_RULESET;
+            trigger = ASSET_RULESET;
             sourceId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ruleset must have an asset ID"));
         }
 
-        alertService.sendAlert(alert, source, sourceId);
+        alertService.sendAlert(alert, trigger, sourceId);
     }
 }

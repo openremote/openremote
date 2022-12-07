@@ -12,5 +12,4 @@ public class Alert {
         OPEN,
         CLOSED
     }
-
 }
