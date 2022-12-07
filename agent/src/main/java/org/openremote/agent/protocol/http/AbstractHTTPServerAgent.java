@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.http;
 
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
