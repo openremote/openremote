@@ -20,10 +20,10 @@
 package org.openremote.manager.rules.facade;
 
 //import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.alerts.AlertService;
+import org.openremote.manager.alert.AlertService;
 import org.openremote.manager.rules.RulesEngineId;
 //import org.openremote.model.notification.Notification;
-import org.openremote.model.alerts.Alert;
+import org.openremote.model.alert.Alert;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Alerts;
 import org.openremote.model.rules.RealmRuleset;
