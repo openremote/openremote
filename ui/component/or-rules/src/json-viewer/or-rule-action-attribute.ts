@@ -1,5 +1,5 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
+import {customElement, property} from "lit/decorators.js";
 import {getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {
     Asset,
@@ -18,7 +18,6 @@ import {translate} from "@openremote/or-translate";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { when } from "lit/directives/when.js";
-import {debounce} from "lodash";
 
 // language=CSS
 const style = css`
@@ -64,9 +63,6 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
 
     @property({type: Array, attribute: false})
     protected _assets?: Asset[];
-
-    @state()
-    protected _assetSearchValue: string = '';
 
 
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
@@ -131,13 +127,12 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 // If <= 25 assets: display everything
                 // If between 25 and 100 assets: display everything with search functionality 
                 // If > 100 assets: only display if in line with search input
-                if (this._assets!.length <= 100) {
+                if (this._assets!.length <= 25) {
                     idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
                 } else {
                     searchProvider = async (search?: string) => {
                         if (search) {
-                            idOptions.push(...this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]));
-                            return idOptions;
+                            return this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
                         } else if (this._assets!.length <= 100) {
                             idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
                             return idOptions;
@@ -187,8 +182,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 return html`
                     <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}"
                                   .options="${idOptions}" .searchProvider="${searchProvider}" .value="${idValue}" .readonly="${this.readonly || false}"
-                                  .searchCallback="${debounce((search: string) => this._assetSearchValue = search, 500)}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this._assetSearchValue = ''; this.refresh(); }}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this.refresh(); }}"
                     ></or-mwc-input>
                     ${attributes.length > 0 ? html`
                         <or-mwc-input id="attributeSelect" class="min-width" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" ?searchable="${(attributes.length >= 25)}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>
