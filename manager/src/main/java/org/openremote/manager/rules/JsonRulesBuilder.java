@@ -43,6 +43,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
+import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
@@ -61,6 +62,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
+import static org.openremote.model.util.ValueUtil.LOG;
 import static org.openremote.model.util.ValueUtil.distinctByKey;
 
 public class JsonRulesBuilder extends RulesBuilder {
@@ -547,6 +549,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Assets assetsFacade;
     final protected Users usersFacade;
     final protected Notifications notificationsFacade;
+    final protected Webhooks webhooksFacade;
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
     final protected ScheduledExecutorService executorService;
@@ -557,7 +560,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     public JsonRulesBuilder(Ruleset ruleset, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
-                            Assets assetsFacade, Users usersFacade, Notifications notificationsFacade,
+                            Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                             HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
                             BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
         this.timerService = timerService;
@@ -566,6 +569,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
         this.notificationsFacade = notificationsFacade;
+        this.webhooksFacade = webhooksFacade;
         this.historicDatapointsFacade= historicDatapoints;
         this.predictedDatapointsFacade = predictedDatapoints;
         this.scheduledActionConsumer = scheduledActionConsumer;
@@ -590,7 +594,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     public void stop(RulesFacts facts) {
         Arrays.stream(jsonRules).forEach(jsonRule ->
-            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
+            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
 
         // Remove temporal fact for timer rule evaluation
         String tempFactName = TIMER_TEMPORAL_FACT_NAME_PREFIX + jsonRuleset.getId();
@@ -602,7 +606,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         Arrays.stream(jsonRules).forEach(jsonRule -> {
             hasTimeTrigger.set(hasTimeTrigger.get() || LogicGroup.getItemsRecursive(jsonRule.when).stream().anyMatch(RuleCondition::hasTimeTrigger));
-            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
+            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
         });
 
         // Initialise asset states
@@ -687,12 +691,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             try {
                 if (ruleState.thenMatched()) {
                     log(Level.FINER, "Triggered rule so executing 'then' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
 
                 if (rule.otherwise != null && ruleState.otherwiseMatched()) {
                     log(Level.FINER, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
@@ -734,7 +738,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    public static void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public static void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
 
         if (ruleActions != null && ruleActions.length > 0) {
 
@@ -754,6 +758,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     assetsFacade,
                     usersFacade,
                     notificationsFacade,
+                    webhooksFacade,
                     predictedDatapointsFacade
                 );
 
@@ -781,7 +786,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             .collect(Collectors.toList());
     }
 
-    protected static RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapointsFacade) {
+    protected static RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade) {
 
         if (ruleAction instanceof RuleActionNotification notificationAction) {
 
@@ -810,7 +815,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                             // Need to clone the notification
                             notification = ValueUtil.clone(notification);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml);
+                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml, false);
                             body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
 
                             if (isEmail) {
@@ -858,6 +863,27 @@ public class JsonRulesBuilder extends RulesBuilder {
                 log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
                 Notification finalNotification = notification;
                 return new RuleActionExecution(() -> notificationsFacade.send(finalNotification), 0);
+            }
+        }
+
+        if (ruleAction instanceof RuleActionWebhook webhookAction) {
+            Webhook webhook = webhookAction.webhook;
+            if (webhook.getUrl() != null && webhook.getHttpMethod() != null) {
+
+                // Replace %TRIGGER_ASSETS% with the triggered assets in JSON format.
+                if (!TextUtil.isNullOrEmpty(webhook.getPayload()) && webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
+                    String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
+                    webhook.setPayload(webhook.getPayload()
+                            .replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo)
+                            .replace(('"' + PLACEHOLDER_TRIGGER_ASSETS + '"'), triggeredAssetInfo)
+                    );
+                }
+
+                if(webhookAction.target == null) {
+                    webhookAction.target = webhooksFacade.buildTarget(webhook);
+                }
+
+                return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.target), 0);
             }
         }
 
@@ -1017,7 +1043,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return null;
     }
 
-    private static String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml) {
+    private static String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml, boolean isJson) {
 
         Set<String> assetIds = useUnmatched ? ruleEvaluationResult.otherwiseMatchedAssetIds : ruleEvaluationResult.thenMatchedAssetIds;
 
@@ -1053,6 +1079,12 @@ public class JsonRulesBuilder extends RulesBuilder {
                 sb.append("</td></tr>");
             }));
             sb.append("</table>");
+        } else if (isJson) {
+            try {
+                return ValueUtil.JSON.writeValueAsString(assetStates);
+            } catch (Exception e) {
+                LOG.warning(e.getMessage());
+            }
         } else {
             sb.append("Asset ID\t\tAsset Name\t\tAttribute\t\tValue");
             assetStates.forEach((key, value) -> value.forEach(assetState -> {
@@ -1142,7 +1174,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     protected static SunTimes.Parameters getSunCalculator(SunPositionTrigger sunPositionTrigger, TimerService timerService) throws IllegalStateException {
-        SunPositionTrigger.Position  position = sunPositionTrigger.getPosition();
+        SunPositionTrigger.Position position = sunPositionTrigger.getPosition();
         GeoJSONPoint location = sunPositionTrigger.getLocation();
 
         if (position == null) {

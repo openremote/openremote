@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, OpenRemote Inc.
+ * Copyright 2022, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,13 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.http;
+package org.openremote.model.rules;
 
-public enum HTTPMethod {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-    OPTIONS,
-    PATCH
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.webhook.Webhook;
+
+import javax.ws.rs.client.WebTarget;
+
+@TsIgnore
+public abstract class Webhooks {
+
+    public abstract void send(Webhook webhook, WebTarget target);
+    public abstract WebTarget buildTarget(Webhook webhook);
 }
