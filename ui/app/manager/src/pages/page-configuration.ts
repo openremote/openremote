@@ -110,7 +110,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     --or-panel-border-radius: 0;
                 }
                 #header-wrapper{
-                    width: calc(100% - 30px);
+                    /*width: 100%*/
                 }
                 .hide-mobile {
                     display: none;

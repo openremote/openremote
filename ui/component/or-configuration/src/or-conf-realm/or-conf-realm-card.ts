@@ -49,6 +49,20 @@ export class OrConfRealmCard extends LitElement {
       width: 100%;
     }
 
+    @media screen and (max-width: 768px) {
+      .logo-group or-file-uploader {
+        min-width: calc(50% - 6px);
+        padding: 0 12px 12px 0!important;
+      }
+      .logo-group or-file-uploader:nth-child(2n + 2){
+        padding: 0 0 12px 0!important;
+      }
+      .logo-group .d-inline-flex{
+        display: flex;
+        flex-wrap: wrap;
+      }
+    }
+
     .logo-group or-file-uploader {
       padding: 0 24px 12px 0;
     }
