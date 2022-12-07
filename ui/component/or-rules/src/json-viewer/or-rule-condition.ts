@@ -142,6 +142,9 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetInfos?: AssetTypeInfo[];
 
+    @property({type: Object})
+    public assetProvider?: (type: string) => Promise<any[] | undefined>
+
     @query("#asset-query")
     protected _assetQuery?: OrRuleAssetQuery;
 
@@ -205,7 +208,9 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                     template = html`<or-rule-trigger-query id="asset-query" .condition="${this.ruleCondition}"></or-rule-trigger-query>`;
                     break;
                 default:
-                    template = html`<or-rule-asset-query id="asset-query" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}" .condition="${this.ruleCondition}"></or-rule-asset-query>`;
+                    template = html`<or-rule-asset-query id="asset-query" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"
+                                                         .condition="${this.ruleCondition}" .assetProvider="${this.assetProvider}"
+                    ></or-rule-asset-query>`;
                     break;
             }
         }

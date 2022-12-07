@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo} from "@openremote/model";
+import {AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo, Asset} from "@openremote/model";
 import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {buttonStyle} from "../style";
 import "./or-rule-condition";
@@ -115,6 +115,9 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
     @property({type: Boolean})
     public readonly?: boolean;
 
+    @property({type: Object})
+    public assetProvider?: (type: string) => Promise<Asset[]>
+
     public config?: RulesConfig;
 
     @property({type: Object, attribute: false})
@@ -182,7 +185,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                     const content = html`
                         <div class="rule-group-item">
                             <div class="rule-condition">
-                                <or-rule-condition .config="${this.config}" .assetInfos="${this.assetInfos}" .ruleCondition="${condition}" .readonly="${this.readonly}" ></or-rule-condition>
+                                <or-rule-condition .config="${this.config}" .assetInfos="${this.assetInfos}" .ruleCondition="${condition}" .readonly="${this.readonly}" .assetProvider="${this.assetProvider}"></or-rule-condition>
                                 ${showRemoveGroup ? html`
                                     <button class="button-clear ${showRemoveCondition ? "" : "hidden"}" @click="${() => this.removeItem(condition, group, false)}"><or-icon icon="close-circle"></or-icon></input>
                                 ` : ``}
