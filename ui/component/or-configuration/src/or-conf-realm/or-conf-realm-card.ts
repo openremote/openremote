@@ -11,9 +11,12 @@ import manager, {
   DefaultColor4,
   DefaultColor5,
   DefaultColor6,
+  DefaultColor8
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerConfRealm, ManagerHeaders } from "@openremote/model";
+import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { Util } from "@openremote/core";
 
 
 @customElement("or-conf-realm-card")
@@ -22,19 +25,19 @@ export class OrConfRealmCard extends LitElement {
   static styles = css`
     .language {
       width: 100%;
-      padding: 12px 0px;
+      padding: 10px 0px;
       max-width: 800px;
     }
 
     .appTitle {
       width: 100%;
       max-width: 800px;
-      padding: 12px 0px;
+      padding: 10px 0px;
     }
 
     .header-group .header-item {
       width: 100%;
-      padding: 12px 0px;
+      padding: 10px 0px;
       max-width: 800px;
     }
 
@@ -46,17 +49,31 @@ export class OrConfRealmCard extends LitElement {
       width: 100%;
     }
 
+    @media screen and (max-width: 768px) {
+      .logo-group or-file-uploader {
+        min-width: calc(50% - 6px);
+        padding: 0 12px 12px 0!important;
+      }
+      .logo-group or-file-uploader:nth-child(2n + 2){
+        padding: 0 0 12px 0!important;
+      }
+      .logo-group .d-inline-flex{
+        display: flex;
+        flex-wrap: wrap;
+      }
+    }
+
     .logo-group or-file-uploader {
       padding: 0 24px 12px 0;
     }
 
     #remove-realm {
-      margin: 8px 4px;
+      margin: 12px 0 0 0;
     }
 
     .subheader {
-      padding: 15px 0 4px 0;
-      font-weight: bold;
+      padding: 10px 0 4px;
+      font-weight: bolder;
     }
 
     .d-inline-flex {
@@ -64,7 +81,7 @@ export class OrConfRealmCard extends LitElement {
     }
 
     .panel-content {
-      padding: 0 36px;
+      padding: 0 24px 24px;
     }
 
     .description {
@@ -72,7 +89,7 @@ export class OrConfRealmCard extends LitElement {
     }
 
     or-collapsible-panel {
-      margin: 8px;
+      margin-bottom: 10px;
     }
   `;
 
@@ -86,6 +103,9 @@ export class OrConfRealmCard extends LitElement {
 
   @property({ attribute: true })
   public name: string = "";
+
+  @property({type: Boolean})
+  expanded: boolean = false;
 
   @property({ attribute: true })
   public onRemove: CallableFunction = () => {
@@ -103,20 +123,19 @@ export class OrConfRealmCard extends LitElement {
     ManagerHeaders.gateway,
     ManagerHeaders.export,
     ManagerHeaders.logs,
+    ManagerHeaders.realms,
 
     ManagerHeaders.users,
     ManagerHeaders.roles,
-    ManagerHeaders.realms,
 
     ManagerHeaders.account,
     ManagerHeaders.language,
-
-    ManagerHeaders.logout,
+    ManagerHeaders.appearance,
+    ManagerHeaders.logout
 
   ];
 
   protected _getColors() {
-    //TODO settings default colors
     const colors: { [name: string]: string } = {
       "--or-app-color1": unsafeCSS(DefaultColor1).toString(),
       "--or-app-color2": unsafeCSS(DefaultColor2).toString(),
@@ -124,6 +143,7 @@ export class OrConfRealmCard extends LitElement {
       '--or-app-color4': unsafeCSS(DefaultColor4).toString(),
       '--or-app-color5': unsafeCSS(DefaultColor5).toString(),
       '--or-app-color6': unsafeCSS(DefaultColor6).toString(),
+      '--or-app-color8': unsafeCSS(DefaultColor8).toString()
     }
     if (this.realm?.styles){
       //TODO use regex for filtering and getting color codes CSS
@@ -186,40 +206,63 @@ export class OrConfRealmCard extends LitElement {
     const path = this._getImagePath(file, fileName)
     this.files[path] = {
       // name: 'filename',
-      contents: await this.convertBase64(file),
+      contents: await Util.convertBase64(file),
       // binary: true
     } as FileInfo;
     return path;
   }
 
-  convertBase64 (file:any) {
-    return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsDataURL(file);
+  protected _showRemoveRealmDialog(){
 
-      fileReader.onload = () => {
-        resolve(fileReader.result);
-      };
+    const dialogActions: DialogAction[] = [
+      {
+        actionName: "cancel",
+        content: i18next.t("cancel")
+      },
+      {
+        default: true,
+        actionName: "ok",
+        content: i18next.t("yes"),
+        action: () => {this.onRemove()}},
 
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
-    });
-  };
+    ];
+    const dialog = showDialog(new OrMwcDialog()
+      .setHeading(i18next.t('delete'))
+      .setActions(dialogActions)
+      .setContent(html `
+        ${i18next.t('configuration.deleteRealmCustomizationConfirm')}
+      `)
+      .setStyles(html`
+                        <style>
+                            .mdc-dialog__surface {
+                              padding: 4px 8px;
+                            }
+                            #dialog-content {
+                              padding: 24px;
+                            }
+                        </style>
+                    `)
+      .setDismissAction(null));
 
-  render() {
-    const colors = this._getColors();
-    const app = this;
+  }
+
+  protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
     document.addEventListener('saveManagerConfig', () => {
       Object.entries(this.files).map(async ([x, y]) => {
         await manager.rest.api.ConfigurationResource.fileUpload(y, { path: x })
       })
     });
+  }
 
+
+  render() {
+    const colors = this._getColors();
+    const app = this;
     return html`
-      <or-collapsible-panel>
+      <or-collapsible-panel
+        .expanded="${this.expanded}">
         <div slot="header" class="header-container">
-          <strong>${this.name}</strong>
+          ${this.name}
         </div>
         <div slot="content" class="panel-content">
           <div class="subheader">${i18next.t("configuration.main")}</div>
@@ -249,23 +292,26 @@ export class OrConfRealmCard extends LitElement {
             <div class="subheader">${i18next.t('configuration.realmColors')}</div>
             <div>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}"
-                            .label="${i18next.t('configuration.--or-app-color1')}"
+                            .label="${i18next.t('configuration.--or-app-color4')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}"
-                            .label="${i18next.t('configuration.--or-app-color2')}"
+                            .label="${i18next.t('configuration.--or-app-color5')}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
-                            .label="${i18next.t("configuration.--or-app-color3")}"
+                            .label="${i18next.t("configuration.--or-app-color6")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
-                            .label="${i18next.t("configuration.--or-app-color4")}"
+                            .label="${i18next.t("configuration.--or-app-color1")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
-                            .label="${i18next.t("configuration.--or-app-color5")}"
+                            .label="${i18next.t("configuration.--or-app-color2")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
               <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
-                            .label="${i18next.t("configuration.--or-app-color6")}"
+                            .label="${i18next.t("configuration.--or-app-color3")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
+              <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color8"]}"
+                            .label="${i18next.t("configuration.--or-app-color8")}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color8", e.detail.value)}"></or-mwc-input>
             </div>
           </div>
           <div class="header-group">
@@ -295,9 +341,9 @@ export class OrConfRealmCard extends LitElement {
             </div>
           </div>
 
-          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("delete")}"
+          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("configuration.deleteRealmCustomization")}"
                         @click="${() => {
-                          this.onRemove();
+                          this._showRemoveRealmDialog();
                         }}"></or-mwc-input>
         </div>
       </or-collapsible-panel>

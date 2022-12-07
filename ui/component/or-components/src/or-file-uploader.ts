@@ -1,6 +1,7 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
+import { Util } from "@openremote/core";
 
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
@@ -52,12 +53,21 @@ export class OrFileUploader extends LitElement {
                 text-align: center;
             }
 
-            #imageContainer .edit-icon {
+            #imageContainer:hover .pencil-container{
+                display: flex;
+            }
+
+            #imageContainer .pencil-container {
                 position: absolute;
-                right: 8px;
-                bottom: 8px;
-                font-size: 18px;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(0,0,0,.4);
                 color: var(--or-app-color4);
+                display: none;
+                justify-content: center;
+                align-items: center;
             }
 
             .container {
@@ -84,7 +94,7 @@ export class OrFileUploader extends LitElement {
         this.loading = true;
         this.requestUpdate();
         if (files.length > 0) {
-            this.src = await this.convertBase64(files[0]) as string;
+            this.src = await Util.convertBase64(files[0]) as string;
             this.dispatchEvent(new CustomEvent("change", {
                 detail: { value: files },
             }));
@@ -92,25 +102,6 @@ export class OrFileUploader extends LitElement {
         this.loading = false;
         this.requestUpdate();
     }
-
-
-    convertBase64 (file:any) {
-        return new Promise((resolve, reject) => {
-            if (file) {
-                const fileReader = new FileReader();
-                fileReader.readAsDataURL(file);
-
-                fileReader.onload = () => {
-                    resolve(fileReader.result);
-                };
-
-                fileReader.onerror = (error) => {
-                    reject(error);
-                };
-            }
-        });
-    };
-
 
     render() {
         return html`
@@ -121,9 +112,11 @@ export class OrFileUploader extends LitElement {
                 <div id="imageContainer">
 
                     ${!!this.src ?
-                      html`<img .src="${this.src}"
-                                alt="OR-File-Uploader">
-                      <or-icon class="edit-icon" icon="pencil"></or-icon>`
+                      html`<img .src="${this.src}" alt="OR-File-Uploader">
+                      <div class="pencil-container">
+                          <or-icon icon="pencil-circle"></or-icon>
+                      </div>
+                      `
                       :
                       html`
                           <div class="placeholder-container">

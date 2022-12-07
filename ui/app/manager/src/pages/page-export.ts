@@ -67,6 +67,7 @@ export class PageExport extends Page<AppStateKeyed> {
                     margin: 20px auto;
                     align-items: center;
                     display: flex;
+                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
                 }
 
                 #title or-icon {
@@ -94,6 +95,7 @@ export class PageExport extends Page<AppStateKeyed> {
                     margin-top: 0;
                     flex: 0 0 auto;
                     letter-spacing: 0.025em;
+                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
                 }
 
                 th {

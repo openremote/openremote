@@ -139,10 +139,10 @@ export function headerItemProvisioning<S extends AppStateKeyed, A extends AnyAct
 
 export function headerItemConfiguration<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
-        icon: "cog",
+        icon: "palette-outline",
         value: "configuration",
         href: "configuration",
-        text: "configuration.",
+        text: "appearance",
         roles: () => manager.isSuperUser()
     };
 }

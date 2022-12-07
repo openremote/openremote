@@ -12,6 +12,9 @@ import "@openremote/or-components/or-loader";
 export class OrConfRealm extends LitElement {
 
   static styles = css`
+    #btn-add-realm {
+      margin-top: 4px;
+    }
     `;
 
   @property({attribute: false})
@@ -19,6 +22,7 @@ export class OrConfRealm extends LitElement {
 
   protected _availableRealms: Realm[] = [];
   protected _allRealms: Realm[] = [];
+  protected _addedRealm: null|string = null
 
   protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
     const app = this
@@ -50,13 +54,15 @@ export class OrConfRealm extends LitElement {
   }
 
   protected _showAddingRealmDialog(){
-    let selectedRealm = "";
+    this._addedRealm = null;
     const _AddRealmToView =  () => {
-      if (selectedRealm){
+      if (this._addedRealm){
         if (!this.config.realms){
           this.config.realms = {}
         }
-        this.config.realms[selectedRealm] = {}
+        this.config.realms[this._addedRealm] = {
+          styles: ":host > * {--or-app-color1:#FFFFFF;--or-app-color2:#F9F9F9;--or-app-color3:#4c4c4c;--or-app-color4:#4d9d2a;--or-app-color5:#CCCCCC;--or-app-color6:#be0000;"
+      }
         this._loadListOfAvailableRealms()
         this.requestUpdate()
         return true
@@ -80,7 +86,7 @@ export class OrConfRealm extends LitElement {
       .setHeading(i18next.t('configuration.addRealmCustomization'))
       .setActions(dialogActions)
       .setContent(html `
-        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => selectedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
+        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
       `)
       .setStyles(html`
                         <style>
@@ -115,11 +121,11 @@ export class OrConfRealm extends LitElement {
     return html`
       <div class="panels">
         ${Object.entries(this.config.realms === undefined ? {} : this.config.realms).map(function([key , value]){
-          return html`<or-conf-realm-card .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
+          return html`<or-conf-realm-card .expanded="${app._addedRealm === key}" .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
         })}
       </div>
       
-      <or-mwc-input class="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addRealmCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
+      <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addRealmCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
     `
   }
 }
