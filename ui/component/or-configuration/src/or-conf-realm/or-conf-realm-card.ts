@@ -16,6 +16,7 @@ import manager, {
 import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerConfRealm, ManagerHeaders } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { convertBase64 } from "@openremote/core/lib/util";
 
 
 @customElement("or-conf-realm-card")
@@ -191,27 +192,11 @@ export class OrConfRealmCard extends LitElement {
     const path = this._getImagePath(file, fileName)
     this.files[path] = {
       // name: 'filename',
-      contents: await this.convertBase64(file),
+      contents: await convertBase64(file),
       // binary: true
     } as FileInfo;
     return path;
   }
-
-  convertBase64 (file:any) {
-    return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsDataURL(file);
-
-      fileReader.onload = () => {
-        resolve(fileReader.result);
-      };
-
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
-    });
-  };
-
 
   protected _showRemoveRealmDialog(){
 
