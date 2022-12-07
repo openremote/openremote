@@ -13,7 +13,9 @@ import {
     RuleActionUnion,
     RuleActionWebhook,
     RuleRecurrence,
-    WellknownAssets
+    WellknownAssets,
+    AssetModelUtil,
+    Asset
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -227,6 +229,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     @property({type: Object, attribute: false})
     public assetInfos?: AssetTypeInfo[];
 
+    @property({type: Object})
+    public assetProvider?: (type: string) => Promise<Asset[] | undefined>
+
     protected get thenAllowAdd() {
         return !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
     }
@@ -353,7 +358,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     template = html`<or-rule-action-webhook .rule="${this.rule}" .action="${action}" .actionType="${ActionType.WEBHOOK}"></or-rule-action-webhook>`;
                     break;
                 default:
-                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
+                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .assetProvider="${this.assetProvider}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
                     break;
             }
         }
