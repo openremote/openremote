@@ -1,7 +1,7 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
-import { convertBase64 } from "@openremote/core/lib/util";
+import { Util } from "@openremote/core";
 
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
@@ -94,7 +94,7 @@ export class OrFileUploader extends LitElement {
         this.loading = true;
         this.requestUpdate();
         if (files.length > 0) {
-            this.src = await convertBase64(files[0]) as string;
+            this.src = await Util.convertBase64(files[0]) as string;
             this.dispatchEvent(new CustomEvent("change", {
                 detail: { value: files },
             }));
