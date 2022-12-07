@@ -247,16 +247,18 @@ export class OrConfRealmCard extends LitElement {
 
   }
 
-
-  render() {
-    const colors = this._getColors();
-    const app = this;
+  protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
     document.addEventListener('saveManagerConfig', () => {
       Object.entries(this.files).map(async ([x, y]) => {
         await manager.rest.api.ConfigurationResource.fileUpload(y, { path: x })
       })
     });
+  }
 
+
+  render() {
+    const colors = this._getColors();
+    const app = this;
     return html`
       <or-collapsible-panel
         .expanded="${this.expanded}">

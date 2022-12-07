@@ -127,16 +127,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         super(store);
     }
 
-    protected render(): TemplateResult | void {
-
-        if (!manager.authenticated) {
-            return html`
-                <or-translate value="notAuthenticated"></or-translate>
-            `;
-        }
-
-
-
+    protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         const app = this
         document.addEventListener('saveLocalManagerConfig', (e:CustomEvent) => {
             manager.managerAppConfig = e.detail?.value as ManagerConf
@@ -155,6 +146,15 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 app.requestUpdate()
             })
         })
+    }
+
+    protected render(): TemplateResult | void {
+
+        if (!manager.authenticated) {
+            return html`
+                <or-translate value="notAuthenticated"></or-translate>
+            `;
+        }
 
         const managerConfiguration = manager.managerAppConfig
 
