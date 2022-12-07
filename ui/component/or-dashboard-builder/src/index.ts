@@ -20,7 +20,7 @@ import {
     DashboardTemplate,
     DashboardWidget
 } from "@openremote/model";
-import manager, {DefaultColor3, DefaultColor5} from "@openremote/core";
+import manager, {DefaultColor1, DefaultColor3, DefaultColor5} from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs";
@@ -53,7 +53,7 @@ const styling = css`
     #header {
         display: table-row;
         height: 1px;
-        background: white;
+        background: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
     }
     #header-wrapper {
         padding: 14px 30px;
@@ -99,6 +99,7 @@ const styling = css`
     #fullscreen-header-title {
         font-size: 18px;
         font-weight: bold;
+        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
     }
     #fullscreen-header-title > or-mwc-input {
         margin-right: 4px;

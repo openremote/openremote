@@ -55,6 +55,7 @@ export class PageRoles extends Page<AppStateKeyed> {
           margin: 20px auto;
           align-items: center;
           display: flex;
+          color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
         }
 
         #title or-icon {
@@ -77,7 +78,7 @@ export class PageRoles extends Page<AppStateKeyed> {
           text-transform: uppercase;
           font-weight: bolder;
           line-height: 1em;
-          color: var(--internal-or-asset-viewer-title-text-color);
+          color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
           margin-bottom: 20px;
           margin-top: 0;
           flex: 0 0 auto;

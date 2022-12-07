@@ -3,7 +3,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import i18next from "i18next";
 import "@openremote/or-components/or-panel";
 import {ClientRole, ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
-import manager, {DefaultColor1, OREvent} from "@openremote/core";
+import manager, {DefaultColor1, DefaultColor3, OREvent} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
@@ -54,6 +54,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 font-weight: bold;
                 max-width: 1000px;
                 min-width: 600px;
+                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
             }
 
             #title > or-icon {
