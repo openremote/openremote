@@ -102,6 +102,10 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
             consoleAsset.setRealm(getRequestRealmName());
             consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealmName()));
             consoleAsset.setId(consoleRegistration.getId());
+            if (!isAuthenticated()) {
+                // Anonymous registration
+                consoleAsset.setAccessPublicRead(true);
+            }
         }
 
         if (mergeConsole || !Objects.equals(consoleAsset.getConsoleName().orElse(null), consoleRegistration.getName())) {
@@ -109,7 +113,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
             consoleAsset.setConsoleName(consoleRegistration.getName());
         }
 
-        boolean providersChanged = mergeConsole || consoleAsset.getConsoleProviders().map(providers ->
+        boolean providersChanged = mergeConsole || !consoleAsset.getConsoleProviders().map(providers ->
             providers.equals(consoleRegistration.getProviders())).orElseGet(() -> consoleRegistration.getProviders() != null);
         if (providersChanged) {
             mergeConsole = true;

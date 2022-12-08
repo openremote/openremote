@@ -51,7 +51,6 @@ import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.rules.RulesetStatus.*;
 
 public class RulesEngine<T extends Ruleset> {
@@ -205,14 +204,14 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * @return a shallow copy of the asset state facts.
      */
-    public Set<AssetState<?>> getAssetStates() {
+    public synchronized Set<AssetState<?>> getAssetStates() {
         return new HashSet<>(facts.getAssetStates());
     }
 
     /**
      * @return a shallow copy of the asset event facts.
      */
-    public List<TemporaryFact<AssetState<?>>> getAssetEvents() {
+    public synchronized List<TemporaryFact<AssetState<?>>> getAssetEvents() {
         return new ArrayList<>(facts.getAssetEvents());
     }
 
@@ -374,7 +373,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    protected void trackLocationPredicates(boolean track) {
+    protected synchronized void trackLocationPredicates(boolean track) {
         if (trackLocationPredicates == track) {
             return;
         }
@@ -422,7 +421,7 @@ public class RulesEngine<T extends Ruleset> {
         publishRulesEngineStatus();
     }
 
-    protected void startRuleset(RulesetDeployment deployment) {
+    protected synchronized void startRuleset(RulesetDeployment deployment) {
         if (!running) {
             return;
         }
@@ -453,7 +452,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    protected void stopRuleset(RulesetDeployment deployment) {
+    protected synchronized void stopRuleset(RulesetDeployment deployment) {
         if (!running) {
             return;
         }
@@ -511,6 +510,8 @@ public class RulesEngine<T extends Ruleset> {
                     } else if (!disableTemporaryFactExpiration) {
                         LOG.fine("No temporary facts present/changed when firing rules on: " + this);
                     }
+
+                    fireTimer = null;
                 }
             },
             fireTimeMillis,
@@ -581,7 +582,7 @@ public class RulesEngine<T extends Ruleset> {
         doFire(deployments.values());
     }
 
-    protected void notifyAssetStatesChanged(AssetStateChangeEvent event) {
+    protected synchronized void notifyAssetStatesChanged(AssetStateChangeEvent event) {
         for (RulesetDeployment deployment : deployments.values()) {
             if (!deployment.isError()) {
                 deployment.onAssetStatesChanged(facts, event);
@@ -589,7 +590,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void updateOrInsertAssetState(AssetState<?> assetState, boolean insert) {
+    public synchronized void updateOrInsertAssetState(AssetState<?> assetState, boolean insert) {
         facts.putAssetState(assetState);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
         trackLocationPredicates(trackLocationPredicates || (insert && assetState.getName().equals(Asset.LOCATION.getName())));
@@ -599,7 +600,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void removeAssetState(AssetState<?> assetState) {
+    public synchronized void removeAssetState(AssetState<?> assetState) {
         facts.removeAssetState(assetState);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
         trackLocationPredicates(trackLocationPredicates || assetState.getName().equals(Asset.LOCATION.getName()));
@@ -609,7 +610,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void insertAssetEvent(long expiresMillis, AssetState<?> assetState) {
+    public synchronized void insertAssetEvent(long expiresMillis, AssetState<?> assetState) {
         facts.insertAssetEvent(expiresMillis, assetState);
         if (running) {
             scheduleFire(true);
@@ -624,24 +625,22 @@ public class RulesEngine<T extends Ruleset> {
         );
     }
 
-    protected void printSessionStats() {
-        withLock(toString() + "::printSessionStats", () -> {
-            Collection<AssetState<?>> assetStateFacts = facts.getAssetStates();
-            Collection<TemporaryFact<AssetState<?>>> assetEventFacts = facts.getAssetEvents();
-            Map<String, Object> namedFacts = facts.getNamedFacts();
-            Collection<Object> anonFacts = facts.getAnonymousFacts();
-            long temporaryFactsCount = facts.getTemporaryFacts().count();
-            long total = assetStateFacts.size() + assetEventFacts.size() + namedFacts.size() + anonFacts.size();
-            STATS_LOG.fine("Engine stats for '" + this + "', in memory facts are Total: " + total
-                + ", AssetState: " + assetStateFacts.size()
-                + ", AssetEvent: " + assetEventFacts.size()
-                + ", Named: " + namedFacts.size()
-                + ", Anonymous: " + anonFacts.size()
-                + ", Temporary: " + temporaryFactsCount);
+    protected synchronized void printSessionStats() {
+        Collection<AssetState<?>> assetStateFacts = facts.getAssetStates();
+        Collection<TemporaryFact<AssetState<?>>> assetEventFacts = facts.getAssetEvents();
+        Map<String, Object> namedFacts = facts.getNamedFacts();
+        Collection<Object> anonFacts = facts.getAnonymousFacts();
+        long temporaryFactsCount = facts.getTemporaryFacts().count();
+        long total = assetStateFacts.size() + assetEventFacts.size() + namedFacts.size() + anonFacts.size();
+        STATS_LOG.fine("Engine stats for '" + this + "', in memory facts are Total: " + total
+            + ", AssetState: " + assetStateFacts.size()
+            + ", AssetEvent: " + assetEventFacts.size()
+            + ", Named: " + namedFacts.size()
+            + ", Anonymous: " + anonFacts.size()
+            + ", Temporary: " + temporaryFactsCount);
 
-            // Additional details if FINEST is enabled
-            facts.logFacts(STATS_LOG, Level.FINEST);
-        });
+        // Additional details if FINEST is enabled
+        facts.logFacts(STATS_LOG, Level.FINEST);
     }
 
     /**
@@ -662,49 +661,43 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected void publishRulesEngineStatus() {
-        withLock(getClass().getSimpleName() + "::publishRulesEngineStatus", () -> {
+        String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
+        int compilationErrors = getCompilationErrorDeploymentCount();
+        int executionErrors = getExecutionErrorDeploymentCount();
+        RulesEngineInfo engineInfo = new RulesEngineInfo(
+            getStatus(),
+            compilationErrors,
+            executionErrors);
 
-            String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
-            int compilationErrors = getCompilationErrorDeploymentCount();
-            int executionErrors = getExecutionErrorDeploymentCount();
-            RulesEngineInfo engineInfo = new RulesEngineInfo(
-                getStatus(),
-                compilationErrors,
-                executionErrors);
+        RulesEngineStatusEvent event = new RulesEngineStatusEvent(
+            timerService.getCurrentTimeMillis(),
+            engineId,
+            engineInfo
+        );
 
-            RulesEngineStatusEvent event = new RulesEngineStatusEvent(
-                timerService.getCurrentTimeMillis(),
-                engineId,
-                engineInfo
-            );
+        LOG.finer("Publishing rules engine status event: " + event);
 
-            LOG.finer("Publishing rules engine status event: " + event);
-
-            // Notify clients
-            clientEventService.publishEvent(event);
-        });
+        // Notify clients
+        clientEventService.publishEvent(event);
     }
 
     protected void publishRulesetStatus(RulesetDeployment deployment) {
-        withLock(getClass().getSimpleName() + "::publishRulesetStatus", () -> {
+        Ruleset ruleset = deployment.ruleset;
+        String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
 
-            Ruleset ruleset = deployment.ruleset;
-            String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
+        ruleset.setStatus(deployment.getStatus());
+        ruleset.setError(deployment.getErrorMessage());
 
-            ruleset.setStatus(deployment.getStatus());
-            ruleset.setError(deployment.getErrorMessage());
+        RulesetChangedEvent event = new RulesetChangedEvent(
+            timerService.getCurrentTimeMillis(),
+            engineId,
+            ruleset
+        );
 
-            RulesetChangedEvent event = new RulesetChangedEvent(
-                timerService.getCurrentTimeMillis(),
-                engineId,
-                ruleset
-            );
+        LOG.finer("Publishing ruleset status event: " + event);
 
-            LOG.finer("Publishing ruleset status event: " + event);
-
-            // Notify clients
-            clientEventService.publishEvent(event);
-        });
+        // Notify clients
+        clientEventService.publishEvent(event);
     }
 
     protected void schedulePause(RulesetDeployment deployment) {
@@ -720,21 +713,18 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        withLock(getClass().getSimpleName() + ":pauseRuleset", () -> {
-            LOG.info("Pausing ruleset: " + deployment.getRuleset().getName());
-            stopRuleset(deployment);
-            deployment.updateValidity();
+        LOG.info("Pausing ruleset: " + deployment.getRuleset().getName());
+        stopRuleset(deployment);
+        deployment.updateValidity();
 
-            if (deployment.hasExpired()) {
-                deployment.setStatus(EXPIRED);
-                publishRulesetStatus(deployment);
-            } else {
-                deployment.setStatus(PAUSED);
-                publishRulesetStatus(deployment);
-                UNPAUSE_SCHEDULER.accept(this, deployment);
-            }
-        });
-
+        if (deployment.hasExpired()) {
+            deployment.setStatus(EXPIRED);
+            publishRulesetStatus(deployment);
+        } else {
+            deployment.setStatus(PAUSED);
+            publishRulesetStatus(deployment);
+            UNPAUSE_SCHEDULER.accept(this, deployment);
+        }
     }
 
     protected void scheduleUnpause(RulesetDeployment deployment) {
@@ -750,10 +740,8 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        withLock(getClass().getSimpleName() + "::unpauseRuleset", () -> {
-            LOG.info("Un-pausing ruleset: " + deployment.getRuleset().getName());
-            startRuleset(deployment);
-        });
+        LOG.info("Un-pausing ruleset: " + deployment.getRuleset().getName());
+        startRuleset(deployment);
     }
 
     @Override

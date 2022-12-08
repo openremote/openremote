@@ -6,26 +6,26 @@ import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
-import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.RealmRuleset
+import org.openremote.model.rules.Ruleset
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.setup.integration.ManagerTestSetup.*
 import static org.openremote.model.rules.RulesetStatus.*
+import static org.openremote.setup.integration.ManagerTestSetup.*
 import static org.openremote.test.rules.BasicRulesImport.assertRulesFired
 
 class BasicRulesProcessingTest extends Specification implements ManagerContainerTrait {
@@ -327,6 +327,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
             }
 
+    // TODO: Decide if continue on error should be supported
+    @Ignore
     def "Stop processing when engine in error state"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -393,5 +395,5 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
         }
 
-            }
+    }
 }
