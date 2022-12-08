@@ -50,6 +50,11 @@ export class OrConfRealm extends LitElement {
         }
       }
       return null
+    }).sort(function(a, b){
+      if (a.name && b.name){
+        return (a.name > b.name) ? 1 : -1
+      }
+      return -1
     })
   }
 
