@@ -14,9 +14,11 @@ import {
     OrMapMarker
 } from "./markers/or-map-marker";
 import {getLatLngBounds, getLngLat} from "./util";
+import MapboxDraw from "@mapbox/mapbox-gl-draw";
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
+const drawingPlugin = require("@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css");
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
@@ -197,12 +199,16 @@ export class MapWidget {
             return;
         }
 
+        var Draw = new MapboxDraw({
+        }) as unknown as IControl;
+
+
         if (this._type === MapType.RASTER) {
 
             // Add style to shadow root
             const style = document.createElement("style");
             style.id = "mapboxJsStyle";
-            style.textContent = mapboxJsStyles;
+            style.textContent = mapboxJsStyles + " " + drawingPlugin;
             this._styleParent.appendChild(style);
             const settings = await this.loadViewSettings();
 
@@ -234,6 +240,8 @@ export class MapWidget {
             }
 
             this._mapJs = L.mapbox.map(this._mapContainer, settings, options);
+            // @ts-ignore
+            this._mapJs.addControl(Draw)
 
             this._mapJs.on("click", (e: any)=> {
                 this._onMapClick(e.latlng);
@@ -249,7 +257,7 @@ export class MapWidget {
             // Add style to shadow root
             let style = document.createElement("style");
             style.id = "maplibreGlStyle";
-            style.textContent = maplibreGlStyles;
+            style.textContent = maplibreGlStyles + " " + drawingPlugin;
             this._styleParent.appendChild(style);
 
             style = document.createElement("style");
@@ -291,6 +299,7 @@ export class MapWidget {
             }
 
             this._mapGl = new map.Map(options);
+            this._mapGl.addControl(Draw)
 
             await this.styleLoaded();
 
