@@ -87,13 +87,9 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         // empty
     }
 
-    public void sendHttpRequest(Webhook webhook, WebTarget target) {
+    public void sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
         Response response = null;
         try {
-            Map<String, List<String>> headersLowercase = new HashMap<>(); // temp variable for making headers case-insensitive, to read content-type shortly after
-            webhook.getHeaders().forEach((key, val) -> { headersLowercase.put(key.toLowerCase(), val); });
-            MediaType mediaType = MediaType.valueOf(headersLowercase.get("content-type") != null ? headersLowercase.get("content-type").get(0) : MediaType.APPLICATION_JSON);
-
             response = this.buildRequest(target, webhook.getHttpMethod(), mediaType, webhook.getPayload());
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 RulesEngine.LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());

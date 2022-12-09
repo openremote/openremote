@@ -47,6 +47,7 @@ import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
+import javax.ws.rs.core.MediaType;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -879,11 +880,17 @@ public class JsonRulesBuilder extends RulesBuilder {
                     );
                 }
 
+                if(webhookAction.mediaType == null) {
+                    Map<String, List<String>> headersLowercase = new HashMap<>(); // temp variable for making headers case-insensitive, to read content-type shortly after
+                    webhook.getHeaders().forEach((key, val) -> { headersLowercase.put(key.toLowerCase(), val); });
+                    webhookAction.mediaType = MediaType.valueOf(headersLowercase.get("content-type") != null ? headersLowercase.get("content-type").get(0) : MediaType.APPLICATION_JSON);
+                }
+
                 if(webhookAction.target == null) {
                     webhookAction.target = webhooksFacade.buildTarget(webhook);
                 }
 
-                return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.target), 0);
+                return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.mediaType, webhookAction.target), 0);
             }
         }
 
