@@ -22,7 +22,6 @@ package org.openremote.manager.webhook;
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.manager.rules.RulesEngine;
@@ -34,8 +33,12 @@ import org.openremote.model.webhook.Webhook;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -87,10 +90,15 @@ public class WebhookService extends RouteBuilder implements ContainerService {
     public void sendHttpRequest(Webhook webhook, WebTarget target) {
         Response response = null;
         try {
-            ResteasyWebTarget webTarget = (ResteasyWebTarget) target;
-            response = this.buildRequest(webTarget, webhook.getHttpMethod(), webhook.getPayload());
+            Map<String, List<String>> headersLowercase = new HashMap<>(); // temp variable for making headers case-insensitive, to read content-type shortly after
+            webhook.getHeaders().forEach((key, val) -> { headersLowercase.put(key.toLowerCase(), val); });
+            MediaType mediaType = MediaType.valueOf(headersLowercase.get("content-type") != null ? headersLowercase.get("content-type").get(0) : MediaType.APPLICATION_JSON);
+
+            response = this.buildRequest(target, webhook.getHttpMethod(), mediaType, webhook.getPayload());
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                RulesEngine.LOG.warning("Webhook request responded with error " + response.getStatus());
+                RulesEngine.LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
+            } else {
+                RulesEngine.LOG.info("Webhook request executed successfully with response status " + response.getStatus());
             }
         } catch (Exception e) {
             LOG.warning(e.getMessage());
@@ -117,12 +125,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         return builder.build();
     }
 
-    private Response buildRequest(ResteasyWebTarget target, HTTPMethod method, String payload) throws ProcessingException {
-        Response response = target.request().method(method.name());
-        if (payload != null) {
-            return target.request().method(method.name(), Entity.entity(payload, response.getMediaType()));
-        } else {
-            return response;
-        }
+    private Response buildRequest(WebTarget target, HTTPMethod method, MediaType mediaType, String payload) throws ProcessingException {
+        return target.request().method(method.name(), (payload != null ? Entity.entity(payload, mediaType) : null));
     }
 }

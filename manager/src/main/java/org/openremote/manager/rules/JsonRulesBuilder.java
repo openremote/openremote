@@ -874,8 +874,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                 if (!TextUtil.isNullOrEmpty(webhook.getPayload()) && webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                     String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
                     webhook.setPayload(webhook.getPayload()
-                            .replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo)
                             .replace(('"' + PLACEHOLDER_TRIGGER_ASSETS + '"'), triggeredAssetInfo)
+                            .replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo)
                     );
                 }
 

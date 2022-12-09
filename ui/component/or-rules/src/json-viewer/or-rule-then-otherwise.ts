@@ -5,7 +5,6 @@ import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {
-    AssetModelUtil,
     AssetTypeInfo,
     HTTPMethod,
     JsonRule,
