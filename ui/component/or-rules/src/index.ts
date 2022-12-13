@@ -798,6 +798,7 @@ export class OrRules extends translate(i18next)(LitElement) {
     }
 
     public updateRealm(realm: string) {
+        this._viewer.ruleset = undefined;
         this._rulesList.onRealmChange(realm);
     }
 
