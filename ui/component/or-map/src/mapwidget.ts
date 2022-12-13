@@ -6,6 +6,7 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
     Control,
     IControl,
     LngLatBoundsLike} from "maplibre-gl";
+import {setupDraw} from "./draw-modes/draw-boundary-box";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
 import {debounce} from "lodash";
@@ -14,11 +15,9 @@ import {
     OrMapMarker
 } from "./markers/or-map-marker";
 import {getLatLngBounds, getLngLat} from "./util";
-import MapboxDraw from "@mapbox/mapbox-gl-draw";
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
-const drawingPlugin = require("@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css");
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
@@ -199,16 +198,13 @@ export class MapWidget {
             return;
         }
 
-        var Draw = new MapboxDraw({
-        }) as unknown as IControl;
-
 
         if (this._type === MapType.RASTER) {
 
             // Add style to shadow root
             const style = document.createElement("style");
             style.id = "mapboxJsStyle";
-            style.textContent = mapboxJsStyles + " " + drawingPlugin;
+            style.textContent = mapboxJsStyles;
             this._styleParent.appendChild(style);
             const settings = await this.loadViewSettings();
 
@@ -240,12 +236,36 @@ export class MapWidget {
             }
 
             this._mapJs = L.mapbox.map(this._mapContainer, settings, options);
-            // @ts-ignore
-            this._mapJs.addControl(Draw)
-
+            console.log('Starting MapBox')
+            var draw = setupDraw(this._mapJs);
+            draw.start()
             this._mapJs.on("click", (e: any)=> {
                 this._onMapClick(e.latlng);
             });
+            var currentSelected = { button: HTMLButtonElement, mode: "" }
+            this._mapJs.addControl({
+                onAdd: () => {
+                    var container = document.createElement('div');
+                    ["select", "point", "linestring", "polygon", "freehand", "circle"].forEach(
+                      (mode) => {
+                        console.log('Click btn')
+                          var button = document.createElement('button');
+                          button.textContent = mode;
+                          (button as HTMLButtonElement).addEventListener(
+                            "click",
+                            () => {
+                                currentSelected.mode = mode;
+                                draw.changeMode(currentSelected.mode);
+                            }
+                          );
+                          container.append(button)
+                      })
+                    return container
+                },
+                onRemove: () => {
+
+                }
+            })
 
             if (options && options.maxBounds) {
                 const minZoom = this._mapJs.getBoundsZoom(options.maxBounds, true);
@@ -257,7 +277,7 @@ export class MapWidget {
             // Add style to shadow root
             let style = document.createElement("style");
             style.id = "maplibreGlStyle";
-            style.textContent = maplibreGlStyles + " " + drawingPlugin;
+            style.textContent = maplibreGlStyles;
             this._styleParent.appendChild(style);
 
             style = document.createElement("style");
@@ -299,17 +319,48 @@ export class MapWidget {
             }
 
             this._mapGl = new map.Map(options);
-            this._mapGl.addControl(Draw)
 
             await this.styleLoaded();
 
-            this._mapGl.on("click", (e: MapMouseEvent) => {
-                this._onMapClick(e.lngLat);
-            });
+            // this._mapGl.on("click", (e: MapMouseEvent) => {
+            //     this._onMapClick(e.lngLat);
+            // });
+            //
+            // this._mapGl.on("dblclick", (e: MapMouseEvent) => {
+            //     this._onMapClick(e.lngLat, true);
+            // });
 
-            this._mapGl.on("dblclick", (e: MapMouseEvent) => {
-                this._onMapClick(e.lngLat, true);
-            });
+
+            console.log('Starting MapBox')
+            // @ts-ignore
+            var draw = setupDraw(this._mapGl);
+            draw.start()
+            var currentSelected = { button: HTMLButtonElement, mode: "" }
+
+            this._mapGl.addControl({
+                onAdd: () => {
+                    var container = document.createElement('div');
+                    ["select", "point", "linestring", "polygon", "freehand", "circle"].forEach(
+                      (mode) => {
+                          var button = document.createElement('button');
+                          button.textContent = mode;
+                          (button as HTMLButtonElement).addEventListener(
+                            "click",
+                            () => {
+                                console.log('Click btn')
+                                console.log(mode)
+                                currentSelected.mode = mode;
+                                draw.changeMode(currentSelected.mode);
+                            }
+                          );
+                          container.append(button)
+                      })
+                    return container
+                },
+                onRemove: () => {
+
+                }
+            })
 
             if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geocodeUrl) {
                 this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { marker: false, showResultsWhileTyping: true });
