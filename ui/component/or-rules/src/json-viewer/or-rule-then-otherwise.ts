@@ -14,7 +14,6 @@ import {
     RuleActionWebhook,
     RuleRecurrence,
     WellknownAssets,
-    AssetModelUtil,
     Asset
 } from "@openremote/model";
 import i18next from "i18next";

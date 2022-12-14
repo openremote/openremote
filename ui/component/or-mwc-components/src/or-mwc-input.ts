@@ -1499,6 +1499,10 @@ export class OrMwcInput extends LitElement {
                         // Set width of fixed select menu to match the component width
                         // Using an observer to prevent forced reflow / DOM measurements; prevents blocking the thread
                         const observer = new IntersectionObserver((entries, observer) => {
+                            console.log("Changing [" + entries[0].target.id + "] to " + entries[0].boundingClientRect.width);
+                            console.log(entries[0].boundingClientRect);
+                            console.log(entries[0].intersectionRect);
+                            console.log(entries[0].rootBounds);
                             (entries[0].target as HTMLElement).style.width = entries[0].boundingClientRect.width + "px";
                             observer.unobserve(entries[0].target);
                         })
