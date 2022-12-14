@@ -15,8 +15,6 @@ import java.util.logging.Logger;
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
 
     protected ConfigurationService configurationService;
-    private static final Logger LOG = Logger.getLogger(WebService.class.getName());
-
     public ConfigurationResourceImpl(TimerService timerService, ManagerIdentityService identityService, ConfigurationService configurationService) {
         super(timerService, identityService);
         this.configurationService = configurationService;
@@ -25,26 +23,14 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
 
     @Override
-    public ManagerConf update(RequestParams requestParams, ManagerConf managerConfiguration) {
-        LOG.info("Uploading new manger_config.json");
-        try{
-            this.configurationService.saveMangerConfig(managerConfiguration);
-        } catch (IOException exception){
-            LOG.warning(exception.getMessage());
-        }
-        LOG.info("manger_config.json saved");
+    public ManagerConf update(RequestParams requestParams, ManagerConf managerConfiguration) throws IOException {
+        this.configurationService.saveMangerConfig(managerConfiguration);
         return managerConfiguration;
     }
 
     @Override
-    public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo){
-        LOG.info("Uploading image to: " + path);
-        try{
-            this.configurationService.saveImageFile(path, fileInfo);
-        } catch (IOException exception){
-            LOG.warning(exception.getMessage());
-        }
-        LOG.info("Image saved");
+    public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) throws IOException {
+        this.configurationService.saveImageFile(path, fileInfo);
         return path;
     }
 }

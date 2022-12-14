@@ -9,6 +9,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.CodecUtil;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
@@ -19,6 +20,9 @@ import org.openremote.model.file.FileInfo;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 import static org.openremote.container.util.MapAccess.getString;
@@ -27,6 +31,8 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
     protected Path pathPublicRoot;
+
+    private static final Logger LOG = Logger.getLogger(WebService.class.getName());
 
     @Override
     public int getPriority() {
@@ -62,26 +68,40 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
 
     public void saveMangerConfig(ManagerConf managerConfiguration) throws IOException {
-        OutputStream out = new FileOutputStream(new File(pathPublicRoot + "/manager_config.json"));
-        ObjectMapper mapper = new ObjectMapper();
+        LOG.log(Level.INFO, "Saving manager_config.json");
+        try{
+            OutputStream out = new FileOutputStream(new File(pathPublicRoot + "/manager_config.json"));
+            ObjectMapper mapper = new ObjectMapper();
 
-        mapper
-                .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .enable(SerializationFeature.INDENT_OUTPUT);
+            mapper
+                    .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                    .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                    .enable(SerializationFeature.INDENT_OUTPUT);
 
-        out.write(mapper.writeValueAsString(managerConfiguration).getBytes());
-        out.close();
+            out.write(mapper.writeValueAsString(managerConfiguration).getBytes());
+            out.close();
+        } catch (IOException exception){
+            LOG.log(Level.WARNING, "Saving manager_config.json error", exception);
+            throw exception;
+        }
+
     }
 
 
     public void saveImageFile(String path, FileInfo fileInfo) throws IOException {
-        File file = new File(pathPublicRoot + path);
-        file.getParentFile().mkdirs();
-        if (file.exists()){
-            file.delete();
+        LOG.log(Level.INFO, "Saving image for manger_config.json");
+        try{
+            File file = new File(pathPublicRoot + path);
+            file.getParentFile().mkdirs();
+            if (file.exists()){
+                file.delete();
+            }
+            OutputStream out = new FileOutputStream(file);
+            out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
+        } catch (IOException exception){
+            LOG.log(Level.WARNING, "saving error for image manger_config.json", exception);
+            throw exception;
         }
-        OutputStream out = new FileOutputStream(file);
-        out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
+
     }
 }
