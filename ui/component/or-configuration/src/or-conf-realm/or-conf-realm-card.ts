@@ -2,7 +2,6 @@ import { css, html, LitElement, unsafeCSS } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-file-uploader";
-import "@openremote/or-components/or-info";
 import manager, {
   DEFAULT_LANGUAGES,
   DefaultColor1,
