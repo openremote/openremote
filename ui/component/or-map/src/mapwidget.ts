@@ -592,7 +592,7 @@ export class MapWidget {
                 this._mapGl.removeSource('bounds');
             }
 
-            if (!boundsArray.length){
+            if (boundsArray.length !== 4){
                 boundsArray = this._viewSettings?.bounds.toString().split(",")
             }
             var req = [

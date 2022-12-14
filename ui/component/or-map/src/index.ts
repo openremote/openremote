@@ -432,6 +432,9 @@ export class OrMap extends LitElement {
     @property({type: Boolean})
     public showBoundaryBoxControl: boolean = false;
 
+    @property({type: Array})
+    public boundary: string[] = [];
+
     public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
@@ -490,6 +493,10 @@ export class OrMap extends LitElement {
 
         if (changedProperties.has("center") || changedProperties.has("zoom")) {
             this.flyTo(this.center, this.zoom);
+        }
+        if (changedProperties.has("boundary") && this.showBoundaryBoxControl){
+            console.log('Boundary has been updated', this.boundary)
+            this._map?.createBoundaryBox(this.boundary)
         }
     }
 
