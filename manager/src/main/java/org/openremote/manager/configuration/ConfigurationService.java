@@ -1,3 +1,22 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.configuration;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -26,6 +45,7 @@ import java.util.logging.Logger;
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 import static org.openremote.container.util.MapAccess.getString;
+
 public class ConfigurationService extends RouteBuilder implements ContainerService {
 
     protected ManagerIdentityService identityService;
@@ -69,7 +89,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     public void saveMangerConfig(ManagerConf managerConfiguration) throws IOException {
         LOG.log(Level.INFO, "Saving manager_config.json");
-        try{
+        try {
             OutputStream out = new FileOutputStream(new File(pathPublicRoot + "/manager_config.json"));
             ObjectMapper mapper = new ObjectMapper();
 
@@ -80,7 +100,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
             out.write(mapper.writeValueAsString(managerConfiguration).getBytes());
             out.close();
-        } catch (IOException exception){
+        } catch (IOException exception) {
             LOG.log(Level.WARNING, "Saving manager_config.json error", exception);
             throw exception;
         }
@@ -90,15 +110,15 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     public void saveImageFile(String path, FileInfo fileInfo) throws IOException {
         LOG.log(Level.INFO, "Saving image for manger_config.json");
-        try{
+        try {
             File file = new File(pathPublicRoot + path);
             file.getParentFile().mkdirs();
-            if (file.exists()){
+            if (file.exists()) {
                 file.delete();
             }
             OutputStream out = new FileOutputStream(file);
             out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
-        } catch (IOException exception){
+        } catch (IOException exception) {
             LOG.log(Level.WARNING, "saving error for image manger_config.json", exception);
             throw exception;
         }

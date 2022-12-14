@@ -1,3 +1,22 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import { css, html, TemplateResult, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import manager, { DefaultColor1, DefaultColor3 } from "@openremote/core";
@@ -11,7 +30,6 @@ import "@openremote/or-configuration/or-conf-json";
 import "@openremote/or-configuration/or-conf-realm/index";
 import { ManagerConf } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
-import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -38,7 +56,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
             :host {
                 flex: 1;
                 width: 100%;
-                
+
                 display: flex;
                 justify-content: center;
 
@@ -47,7 +65,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                 --or-panel-padding: 18px 24px 24px;
                 --or-panel-heading-margin: 0 0 14px 0;
                 --or-panel-background-color: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
-                --or-panel-heading-font-size: 14px; 
+                --or-panel-heading-font-size: 14px;
             }
 
             or-panel {
@@ -109,9 +127,11 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     width: 100%;
                     --or-panel-border-radius: 0;
                 }
+
                 #header-wrapper{
                     /*width: 100%*/
                 }
+
                 .hide-mobile {
                     display: none;
                 }

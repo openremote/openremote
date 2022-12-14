@@ -1,3 +1,22 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import { css, html, LitElement, unsafeCSS } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
@@ -10,12 +29,12 @@ import manager, {
   DefaultColor4,
   DefaultColor5,
   DefaultColor6,
-  DefaultColor8
+  DefaultColor8,
+  Util,
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerConfRealm, ManagerHeaders } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { Util } from "@openremote/core";
 
 
 @customElement("or-conf-realm-card")
@@ -53,9 +72,11 @@ export class OrConfRealmCard extends LitElement {
         min-width: calc(50% - 6px);
         padding: 0 12px 12px 0!important;
       }
+
       .logo-group or-file-uploader:nth-child(2n + 2){
         padding: 0 0 12px 0!important;
       }
+
       .logo-group .d-inline-flex{
         display: flex;
         flex-wrap: wrap;
@@ -232,15 +253,16 @@ export class OrConfRealmCard extends LitElement {
         ${i18next.t('configuration.deleteRealmCustomizationConfirm')}
       `)
       .setStyles(html`
-                        <style>
-                            .mdc-dialog__surface {
-                              padding: 4px 8px;
-                            }
-                            #dialog-content {
-                              padding: 24px;
-                            }
-                        </style>
-                    `)
+        <style>
+          .mdc-dialog__surface {
+            padding: 4px 8px;
+          }
+
+          #dialog-content {
+            padding: 24px;
+          }
+        </style>
+      `)
       .setDismissAction(null));
 
   }
