@@ -429,6 +429,9 @@ export class OrMap extends LitElement {
     @property({type: Boolean})
     public showGeoCodingControl: boolean = false;
 
+    @property({type: Boolean})
+    public showBoundaryBoxControl: boolean = false;
+
     public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
@@ -507,7 +510,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer)
+            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer, this.showBoundaryBoxControl)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls);

@@ -2572,7 +2572,6 @@ __metadata:
     lit: ^2.0.2
     mapbox.js: ^3.2.0
     maplibre-gl: ^1.15.2
-    terra-draw: v0.0.1-alpha.12
   languageName: unknown
   linkType: soft
 
@@ -8570,13 +8569,6 @@ __metadata:
     mkdirp: ^1.0.3
     yallist: ^4.0.0
   checksum: a04c07bb9e2d8f46776517d4618f2406fb977a74d914ad98b264fc3db0fe8224da5bec11e5f8902c5b9bcb8ace22d95fbe3c7b36b8593b7dfc8391a25898f32f
-  languageName: node
-  linkType: hard
-
-"terra-draw@npm:v0.0.1-alpha.12":
-  version: 0.0.1-alpha.12
-  resolution: "terra-draw@npm:0.0.1-alpha.12"
-  checksum: d32007dcc6c061fec3d4fdcb1fca009f75130051674db51260356403f60d4588215843d3f112c3178508100e6f5b4304f8c6ffa7c73c9343ba62f7ec0cdcb8d1
   languageName: node
   linkType: hard
 

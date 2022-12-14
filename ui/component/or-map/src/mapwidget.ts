@@ -41,11 +41,12 @@ export class MapWidget {
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
 
-    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement) {
+    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement, showBoundaryBox = false) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
         this._showGeoCodingControl = showGeoCodingControl;
+        this._showBoundaryBox = showBoundaryBox;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -177,7 +178,6 @@ export class MapWidget {
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
 
         if (this._viewSettings) {
-            this._viewSettings.bounds = [5.62, 50.75, 6.1, 51.11]
             if (this._mapGl) {
                 this._mapGl.setMinZoom(this._viewSettings.minZoom);
                 this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
@@ -197,7 +197,6 @@ export class MapWidget {
         if (this._loaded) {
             return;
         }
-
 
         if (this._type === MapType.RASTER) {
 
@@ -277,7 +276,7 @@ export class MapWidget {
             if (this._viewSettings) {
                 options.minZoom = this._viewSettings.minZoom;
                 options.maxZoom = this._viewSettings.maxZoom;
-                if (this._viewSettings.bounds){
+                if (this._viewSettings.bounds && !this._showBoundaryBox){
                     options.maxBounds = this._viewSettings.bounds;
                 }
                 options.boxZoom = this._viewSettings.boxZoom;
@@ -394,7 +393,7 @@ export class MapWidget {
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;
-        this._createBoundaryBox()
+        this.createBoundaryBox()
     }
 
     protected styleLoaded(): Promise<void> {
@@ -585,45 +584,53 @@ export class MapWidget {
         }
     }
 
-    protected _createBoundaryBox(){
-        if(this._mapGl && this._loaded && this._showBoundaryBox){
+    public createBoundaryBox(boundsArray: string[] = []){
+        if(this._mapGl && this._loaded && this._showBoundaryBox && this._viewSettings?.bounds){
 
-            // this._removeMarkerRadius(marker);
-            console.log(this._mapGl.getBounds())
+            if (this._mapGl.getSource('bounds')) {
+                this._mapGl.removeLayer('bounds');
+                this._mapGl.removeSource('bounds');
+            }
 
-            // this._mapGl.addSource('circleData', {
-            //     type: 'geojson',
-            //     data: {
-            //         type: 'FeatureCollection',
-            //         features: [{
-            //             type: "Feature",
-            //             geometry: {
-            //                 "type": "Point",
-            //                 "coordinates": [marker.lng, marker.lat]
-            //             },
-            //             properties: {
-            //                 "title": "You Found Me",
-            //             }
-            //         }]
-            //     }
-            // });
-            //
-            // this._mapGl.addLayer({
-            //     "id": "marker-radius-circle",
-            //     "type": "circle",
-            //     "source": "circleData",
-            //     "paint": {
-            //         "circle-radius": {
-            //             stops: [
-            //                 [0, 0],
-            //                 [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
-            //             ],
-            //             base: 2
-            //         },
-            //         "circle-color": "red",
-            //         "circle-opacity": 0.3
-            //     }
-            // });
+            if (!boundsArray.length){
+                boundsArray = this._viewSettings?.bounds.toString().split(",")
+            }
+            var req = [
+                [
+                    [boundsArray[0], boundsArray[3]],
+                    [boundsArray[2], boundsArray[3]],
+                    [boundsArray[2], boundsArray[1]],
+                    [boundsArray[0], boundsArray[1]],
+                ]
+            ]
+            this._mapGl.fitBounds([
+                parseFloat(boundsArray[0]) + .01,
+                parseFloat(boundsArray[1]) - .01,
+                parseFloat(boundsArray[2]) - .01,
+                parseFloat(boundsArray[3]) + .01,
+            ])
+            this._mapGl.addSource('bounds', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': {
+                        'type': 'Polygon',
+                        // @ts-ignore
+                        'coordinates': req
+                    }
+                }
+            });
+
+            this._mapGl.addLayer({
+                'id': 'bounds',
+                'type': 'fill',
+                'source': 'bounds',
+                'paint': {
+                    'fill-color': '#FF0000',
+                    'fill-opacity': .4
+                }
+            });
         }
     }
 
