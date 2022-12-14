@@ -91,14 +91,13 @@ export class OrRuleFormWebhook extends LitElement {
     // Template rendering
 
     render() {
-        console.log(this.webhook);
         return when(!this.webhook, () => html`
             ${i18next.t('errorOccurred')}
         `, () => html`
             <form style="display: flex; flex-direction: column; min-width: 520px;">
                 <!-- HTTP Method & URL -->
                 <div style="display: flex; flex-direction: row; align-items: center; gap: 5px; margin-bottom: 28px;">
-                    <or-mwc-input style="flex: 0; min-width: 120px;" type="${InputType.SELECT}" .value="${'GET'}"
+                    <or-mwc-input style="flex: 0;" type="${InputType.SELECT}" .value="${this.webhook.httpMethod}"
                                   .options="${this.httpMethodOptions}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                       this.webhook.httpMethod = ev.detail.value;
