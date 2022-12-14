@@ -6,7 +6,6 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
     Control,
     IControl,
     LngLatBoundsLike} from "maplibre-gl";
-import {setupDraw} from "./draw-modes/draw-boundary-box";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
 import {debounce} from "lodash";
