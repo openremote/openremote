@@ -1,8 +1,8 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-@customElement("or-loader")
-export class OrLoader extends LitElement {
+@customElement("or-loading-indicator")
+export class OrLoadingIndicator extends LitElement {
 
   @property({ attribute: true })
   public overlay: boolean = false;

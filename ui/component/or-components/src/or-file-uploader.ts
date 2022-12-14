@@ -107,7 +107,7 @@ export class OrFileUploader extends LitElement {
         return html`
             <div class="container">
                 ${this.loading ? html`
-                    <or-loader .overlay="${true}"></or-loader>` : ""}
+                    <or-loading-indicator .overlay="${true}"></or-loading-indicator>` : ""}
                 <div class="title">${this.title}</div>
                 <div id="imageContainer">
 

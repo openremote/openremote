@@ -6,7 +6,7 @@ import manager, { ManagerAppConfig } from "@openremote/core";
 import { ManagerConfRealm, Realm } from "@openremote/model";
 import { OrMwcDialog, showDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
-import "@openremote/or-components/or-loader";
+import "@openremote/or-components/or-loading-indicator";
 
 @customElement("or-conf-realm")
 export class OrConfRealm extends LitElement {
