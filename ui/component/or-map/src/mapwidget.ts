@@ -37,6 +37,7 @@ export class MapWidget {
     protected _center?: LngLatLike;
     protected _zoom?: number;
     protected _showGeoCodingControl: boolean = false;
+    protected _showBoundaryBox: boolean = true;
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
@@ -236,36 +237,10 @@ export class MapWidget {
             }
 
             this._mapJs = L.mapbox.map(this._mapContainer, settings, options);
-            console.log('Starting MapBox')
-            var draw = setupDraw(this._mapJs);
-            draw.start()
+
             this._mapJs.on("click", (e: any)=> {
                 this._onMapClick(e.latlng);
             });
-            var currentSelected = { button: HTMLButtonElement, mode: "" }
-            this._mapJs.addControl({
-                onAdd: () => {
-                    var container = document.createElement('div');
-                    ["select", "point", "linestring", "polygon", "freehand", "circle"].forEach(
-                      (mode) => {
-                        console.log('Click btn')
-                          var button = document.createElement('button');
-                          button.textContent = mode;
-                          (button as HTMLButtonElement).addEventListener(
-                            "click",
-                            () => {
-                                currentSelected.mode = mode;
-                                draw.changeMode(currentSelected.mode);
-                            }
-                          );
-                          container.append(button)
-                      })
-                    return container
-                },
-                onRemove: () => {
-
-                }
-            })
 
             if (options && options.maxBounds) {
                 const minZoom = this._mapJs.getBoundsZoom(options.maxBounds, true);
@@ -322,45 +297,13 @@ export class MapWidget {
 
             await this.styleLoaded();
 
-            // this._mapGl.on("click", (e: MapMouseEvent) => {
-            //     this._onMapClick(e.lngLat);
-            // });
-            //
-            // this._mapGl.on("dblclick", (e: MapMouseEvent) => {
-            //     this._onMapClick(e.lngLat, true);
-            // });
+            this._mapGl.on("click", (e: MapMouseEvent) => {
+                this._onMapClick(e.lngLat);
+            });
 
-
-            console.log('Starting MapBox')
-            // @ts-ignore
-            var draw = setupDraw(this._mapGl);
-            draw.start()
-            var currentSelected = { button: HTMLButtonElement, mode: "" }
-
-            this._mapGl.addControl({
-                onAdd: () => {
-                    var container = document.createElement('div');
-                    ["select", "point", "linestring", "polygon", "freehand", "circle"].forEach(
-                      (mode) => {
-                          var button = document.createElement('button');
-                          button.textContent = mode;
-                          (button as HTMLButtonElement).addEventListener(
-                            "click",
-                            () => {
-                                console.log('Click btn')
-                                console.log(mode)
-                                currentSelected.mode = mode;
-                                draw.changeMode(currentSelected.mode);
-                            }
-                          );
-                          container.append(button)
-                      })
-                    return container
-                },
-                onRemove: () => {
-
-                }
-            })
+            this._mapGl.on("dblclick", (e: MapMouseEvent) => {
+                this._onMapClick(e.lngLat, true);
+            });
 
             if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geocodeUrl) {
                 this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { marker: false, showResultsWhileTyping: true });
@@ -452,6 +395,7 @@ export class MapWidget {
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;
+        this._createBoundaryBox()
     }
 
     protected styleLoaded(): Promise<void> {
@@ -604,42 +548,84 @@ export class MapWidget {
     protected _createMarkerRadius(marker:OrMapMarker){
         if(this._mapGl && this._loaded && marker.radius && marker.lat && marker.lng){
 
-              this._removeMarkerRadius(marker);
+            this._removeMarkerRadius(marker);
 
-                this._mapGl.addSource('circleData', {
-                    type: 'geojson',
-                    data: {
-                        type: 'FeatureCollection',
-                        features: [{
-                            type: "Feature",
-                            geometry: {
-                                "type": "Point",
-                                "coordinates": [marker.lng, marker.lat]
-                            },
-                            properties: {
-                                "title": "You Found Me",
-                            }
-                        }]
-                    }
-                });
-
-                this._mapGl.addLayer({
-                    "id": "marker-radius-circle",
-                    "type": "circle",
-                    "source": "circleData",
-                    "paint": {
-                        "circle-radius": {
-                            stops: [
-                                [0, 0],
-                                [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
-                            ],
-                            base: 2
+            this._mapGl.addSource('circleData', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: [{
+                        type: "Feature",
+                        geometry: {
+                            "type": "Point",
+                            "coordinates": [marker.lng, marker.lat]
                         },
-                        "circle-color": "red",
-                        "circle-opacity": 0.3
-                    }
-                });
-            }
+                        properties: {
+                            "title": "You Found Me",
+                        }
+                    }]
+                }
+            });
+
+            this._mapGl.addLayer({
+                "id": "marker-radius-circle",
+                "type": "circle",
+                "source": "circleData",
+                "paint": {
+                    "circle-radius": {
+                        stops: [
+                            [0, 0],
+                            [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
+                        ],
+                        base: 2
+                    },
+                    "circle-color": "red",
+                    "circle-opacity": 0.3
+                }
+            });
+        }
+    }
+
+    protected _createBoundaryBox(){
+        if(this._mapGl && this._loaded && this._showBoundaryBox){
+
+            // this._removeMarkerRadius(marker);
+            console.log(this._mapGl.getBounds())
+
+            // this._mapGl.addSource('circleData', {
+            //     type: 'geojson',
+            //     data: {
+            //         type: 'FeatureCollection',
+            //         features: [{
+            //             type: "Feature",
+            //             geometry: {
+            //                 "type": "Point",
+            //                 "coordinates": [marker.lng, marker.lat]
+            //             },
+            //             properties: {
+            //                 "title": "You Found Me",
+            //             }
+            //         }]
+            //     }
+            // });
+            //
+            // this._mapGl.addLayer({
+            //     "id": "marker-radius-circle",
+            //     "type": "circle",
+            //     "source": "circleData",
+            //     "paint": {
+            //         "circle-radius": {
+            //             stops: [
+            //                 [0, 0],
+            //                 [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
+            //             ],
+            //             base: 2
+            //         },
+            //         "circle-color": "red",
+            //         "circle-opacity": 0.3
+            //     }
+            // });
+        }
     }
 
     protected _addMarkerClickHandler(marker: OrMapMarker, elem: HTMLElement) {
