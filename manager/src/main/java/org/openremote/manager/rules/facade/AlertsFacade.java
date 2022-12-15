@@ -26,7 +26,7 @@ import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Alerts;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
-public class AlertsFacade<T extends Ruleset> extends Alert {
+public class AlertsFacade<T extends Ruleset> extends Alerts {
 
     protected final RulesEngineId<T> rulesEngineId;
     protected final AlertService alertService;
