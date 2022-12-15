@@ -94,7 +94,7 @@ create table NOTIFICATION (
   NAME            varchar(255),
   TYPE            varchar(50)              not null,
   TARGET          varchar(50)              not null,
-  TARGET_ID       varchar(255)              not null,
+  TARGET_ID       varchar(255)             not null,
   SOURCE          varchar(50)              not null,
   SOURCE_ID       varchar(43),
   MESSAGE         jsonb,

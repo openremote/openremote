@@ -20,7 +20,7 @@
 package org.openremote.model.rules;
 
 //import org.openremote.model.notification.Notification;
-import org.openremote.model.alerts.Alert;
+import org.openremote.model.alert.Alert;
 import org.openremote.model.util.TsIgnore;
 
 /**

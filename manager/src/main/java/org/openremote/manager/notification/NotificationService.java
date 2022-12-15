@@ -130,12 +130,10 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     @Override
     public void start(Container container) throws Exception {
-
     }
 
     @Override
     public void stop(Container container) throws Exception {
-
     }
 
     @Override
@@ -259,7 +257,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                                 sentNotification = em.merge(sentNotification);
                                 long id = sentNotification.getId();
-
                                 try {
                                     NotificationSendResult result = handler.sendMessage(
                                         id,
