@@ -152,7 +152,6 @@ public class AlertService extends RouteBuilder implements ContainerService {
                 .process(handleAlertProcessingException(LOG));
     }
 
-
     public boolean createdAlert(Alert alert) { return createAlert(alert, INTERNAL, ""); }
 
     public boolean createAlert(Alert alert, Alert.Trigger trigger, String triggerId) {
@@ -160,6 +159,10 @@ public class AlertService extends RouteBuilder implements ContainerService {
         headers.put(Alert.HEADER_TRIGGER, trigger);
         headers.put(Alert.HEADER_TRIGGER_ID, triggerId);
         return messageBrokerService.getFluentProducerTemplate().withBody(alert).withHeaders(headers).to(AlertService.ALERT_QUEUE).request(Boolean.class);
+    }
+
+    public void sendAlert(Alert alert, String sourceId) {
+
     }
 
 }

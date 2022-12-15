@@ -26,6 +26,7 @@ import org.jeasy.rules.api.RulesEngineParameters;
 import org.jeasy.rules.core.AbstractRulesEngine;
 import org.jeasy.rules.core.DefaultRulesEngine;
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.alert.AlertService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
@@ -111,6 +112,7 @@ public class RulesEngine<T extends Ruleset> {
 
     final protected RulesEngineId<T> id;
     final protected Assets assetsFacade;
+    final protected Alerts alertsFacade;
     final protected Users usersFacade;
     final protected Notifications notificationFacade;
     final protected PredictedDatapoints predictedFacade;
@@ -141,6 +143,7 @@ public class RulesEngine<T extends Ruleset> {
                        AssetStorageService assetStorageService,
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
+                       AlertService alertService,
                        ClientEventService clientEventService,
                        AssetDatapointService assetDatapointService,
                        AssetPredictedDatapointService assetPredictedDatapointService,
@@ -154,6 +157,7 @@ public class RulesEngine<T extends Ruleset> {
         AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
         this.assetsFacade = assetsFacade;
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
+        this.alertsFacade = new AlertsFacade<>(id, alertService);
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
         this.historicFacade = new HistoricFacade<>(id, assetDatapointService);
         this.predictedFacade = new PredictedFacade<>(id, assetPredictedDatapointService);
@@ -265,7 +269,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, alertsFacade,notificationFacade, historicFacade, predictedFacade);
         boolean compiled;
 
         if (TextUtil.isNullOrEmpty(ruleset.getRules())) {
