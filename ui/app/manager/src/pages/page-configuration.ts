@@ -26,8 +26,8 @@ import { Store } from "@reduxjs/toolkit";
 import { AppStateKeyed, Page, PageProvider } from "@openremote/or-app";
 import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-configuration/or-conf-json";
-import "@openremote/or-configuration/or-conf-realm/index";
+import "../components/configuration/or-conf-json"
+import "../components/configuration/or-conf-realm/index"
 import { ManagerAppConfig } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 
