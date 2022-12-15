@@ -34,6 +34,7 @@ import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.*;
+import org.openremote.model.alert.SentAlert;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -298,6 +299,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(UserAssetLink.class.getName());
         entityClasses.add(AssetDatapoint.class.getName());
         entityClasses.add(SentNotification.class.getName());
+        entityClasses.add(SentAlert.class.getName());
         entityClasses.add(AssetPredictedDatapoint.class.getName());
         entityClasses.add(Realm.class.getName());
         entityClasses.add(User.class.getName());
