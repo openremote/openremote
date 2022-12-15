@@ -130,11 +130,7 @@ public class AlertService extends RouteBuilder implements ContainerService {
                     String msg = "Generating alert " + alert.getTitle()  + "': '" + trigger + ":" + triggerId + "'," + " severity: '" + alert.getSeverity() + "'";
                     LOG.fine(msg);
 
-                    LOG.log(Level.FINE, AlertService.class.getName(), AlertService.class.getMethod("configure").getName(), msg);
-
-                    LOG.
-
-
+                    LOG.logp(Level.FINE, AlertService.class.getName(), AlertService.class.getMethod("configure").getName(), msg);
 
                     persistenceService.doTransaction(em -> {
                         SentAlert sentAlert = new SentAlert()
