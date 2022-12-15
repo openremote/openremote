@@ -558,7 +558,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     public JsonRulesBuilder(Ruleset ruleset, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
-                            Assets assetsFacade, Users usersFacade, Alerts alertsFacade,Notifications notificationsFacade,
+                            Assets assetsFacade, Users usersFacade, Alerts alertsFacade, Notifications notificationsFacade,
                             HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
                             BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
         this.timerService = timerService;
