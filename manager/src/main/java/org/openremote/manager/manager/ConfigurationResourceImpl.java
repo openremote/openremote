@@ -43,7 +43,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
 
     @Override
-    public ManagerAppConfig update(RequestParams requestParams, ManagerAppConfig managerConfiguration) throws IOException {
+    public Object update(RequestParams requestParams, Object managerConfiguration) throws IOException {
         this.configurationService.saveMangerConfig(managerConfiguration);
         return managerConfiguration;
     }
