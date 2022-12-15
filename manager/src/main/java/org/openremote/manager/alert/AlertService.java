@@ -4,7 +4,9 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.notification.NotificationResourceImpl;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -85,6 +87,12 @@ public class AlertService extends RouteBuilder implements ContainerService {
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
+        container.getService(ManagerWebService.class).addApiSingleton(
+                new AlertResourceImpl(this,
+                        container.getService(MessageBrokerService.class),
+                        container.getService(AssetStorageService.class),
+                        container.getService(ManagerIdentityService.class))
+        );
 
 //        LOG.info("[Custom Log Message] INITIALIZING ALERT_SERVICE");
 //        LOG.severe("Crash Now!!!");
@@ -160,9 +168,5 @@ public class AlertService extends RouteBuilder implements ContainerService {
         headers.put(Alert.HEADER_TRIGGER_ID, triggerId);
         return messageBrokerService.getFluentProducerTemplate().withBody(alert).withHeaders(headers).to(AlertService.ALERT_QUEUE).request(Boolean.class);
     }
-
-    public void sendAlert(Alert alert, String sourceId) {
-
-    }
-
+    
 }
