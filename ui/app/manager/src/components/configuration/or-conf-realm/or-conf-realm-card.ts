@@ -114,12 +114,7 @@ export class OrConfRealmCard extends LitElement {
   `;
 
   @property({ attribute: false })
-  public realm: ManagerAppRealmConfig = {
-    appTitle: "OpenRemote Demo",
-    language: "en",
-    styles: "",
-    headers: [],
-  };
+  public realm: ManagerAppRealmConfig = {};
 
   @property({ attribute: true })
   public name: string = "";
@@ -306,13 +301,13 @@ export class OrConfRealmCard extends LitElement {
             <div class="d-inline-flex">
               <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                 @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "logo")}"
-                                .src="${this.logo}"></or-file-uploader>
+                                .src="${this.logo ? this.logo : this.realm.logo}"></or-file-uploader>
               <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
                                 @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                .src="${this.logoMobile}"></or-file-uploader>
+                                .src="${this.logoMobile ? this.logoMobile : this.realm.logoMobile}"></or-file-uploader>
               <or-file-uploader .title="${html`Favicon`}"
                                 @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "favicon")}"
-                                .src="${this.favicon}"></or-file-uploader>
+                                .src="${this.favicon ? this.favicon : this.realm.favicon}"></or-file-uploader>
             </div>
           </div>
           <div class="color-group">
