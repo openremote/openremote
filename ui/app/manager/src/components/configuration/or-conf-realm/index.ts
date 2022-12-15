@@ -39,15 +39,15 @@ export class OrConfRealm extends LitElement {
   @property({attribute: false})
   public config: ManagerAppConfig = {};
 
-  protected _availableRealms: ManagerAppRealmConfig[] = [];
-  protected _allRealms: ManagerAppRealmConfig[] = [];
+  protected _availableRealms: {name:string, displayName:string}[] = [];
+  protected _allRealms: {name:string, displayName:string}[] = [];
   protected _addedRealm: null|string = null
 
   protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
     const app = this
     manager.rest.api.RealmResource.getAccessible().then((response)=>{
-      app._allRealms = response.data as ManagerAppRealmConfig[];
-      app._allRealms.push({appTitle: 'Default'})
+      app._allRealms = response.data as {name:string, displayName:string}[];
+      app._allRealms.push({name: 'default', displayName: 'Default'})
       app._loadListOfAvailableRealms()
     });
   }
@@ -63,16 +63,15 @@ export class OrConfRealm extends LitElement {
   protected _loadListOfAvailableRealms(){
     const app = this
     this._availableRealms = this._allRealms.filter(function(realm){
-      if (realm.appTitle && app.config?.realms){
-        //@TODO this change here will not function correctly
-        if (!app.config?.realms[realm.appTitle]){
+      if (realm.name && app.config?.realms){
+        if (!app.config?.realms[realm.name]){
           return realm
         }
       }
       return null
     }).sort(function(a, b){
-      if (a.appTitle && b.appTitle){
-        return (a.appTitle > b.appTitle) ? 1 : -1
+      if (a.displayName && b.displayName){
+        return (a.displayName > b.displayName) ? 1 : -1
       }
       return -1
     })
@@ -111,7 +110,7 @@ export class OrConfRealm extends LitElement {
       .setHeading(i18next.t('configuration.addRealmCustomization'))
       .setActions(dialogActions)
       .setContent(html `
-        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [key, value.appTitle]})}"></or-mwc-input>
+        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [key, value.displayName]})}"></or-mwc-input>
       `)
       .setStyles(html`
                         <style>
