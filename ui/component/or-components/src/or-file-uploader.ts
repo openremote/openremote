@@ -113,7 +113,7 @@ export class OrFileUploader extends LitElement {
         this.loading = true;
         this.requestUpdate();
         if (files.length > 0) {
-            this.src = await Util.convertBase64(files[0]) as string;
+            this.src = await Util.blobToBase64(files[0]) as string;
             this.dispatchEvent(new CustomEvent("change", {
                 detail: { value: files },
             }));

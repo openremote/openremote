@@ -15,7 +15,7 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, normaliseConfig, Manager, ManagerAppConfig} from "@openremote/core";
+import manager, {DefaultColor2, DefaultColor3, DefaultColor4, Util, BasicLoginResult, normaliseConfig, Manager} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -23,7 +23,7 @@ import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
-import { Realm } from "@openremote/model";
+import { Auth, ManagerAppConfig, ManagerConfig, Realm } from "@openremote/model";
 
 const DefaultLogo = require("../images/logo.svg");
 const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -185,7 +185,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             managerConfig.realm = getRealmQueryParameter();
         }
         managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
-        managerConfig.basicLoginProvider = (u, p) => this.doBasicLogin(u, p);
+        managerConfig.basicLoginProvider = (u:any, p:any) => this.doBasicLogin(u, p);
 
         console.info("Initialising the manager");
 

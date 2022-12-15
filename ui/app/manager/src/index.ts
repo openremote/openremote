@@ -41,9 +41,8 @@ import {pageRolesProvider} from "./pages/page-roles";
 import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
-import { ManagerAppConfig } from "@openremote/core";
 import { pageConfigurationProvider } from "./pages/page-configuration";
-import { ManagerConf } from "@openremote/model";
+import { ManagerAppConfig } from "@openremote/model";
 
 declare var CONFIG_URL_PREFIX: string;
 
@@ -151,7 +150,7 @@ fetch(configURL).then(async (result) => {
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {
-        manager.managerAppConfig = appConfig as unknown as ManagerConf
+        manager.managerAppConfig = appConfig as ManagerAppConfig
 
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];

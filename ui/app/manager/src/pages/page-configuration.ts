@@ -28,7 +28,7 @@ import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-configuration/or-conf-json";
 import "@openremote/or-configuration/or-conf-realm/index";
-import { ManagerConf } from "@openremote/model";
+import { ManagerAppConfig } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -149,15 +149,15 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         const app = this
-        document.addEventListener('saveLocalManagerConfig', (e:CustomEvent) => {
-            manager.managerAppConfig = e.detail?.value as ManagerConf
-            app.requestUpdate()
-        })
+        document.addEventListener("saveLocalManagerConfig", (e: CustomEvent) => {
+            manager.managerAppConfig = e.detail?.value as ManagerAppConfig;
+            app.requestUpdate();
+        });
 
         document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
-            manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(()=>{
+            manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerAppConfig).then(()=>{
                 fetch("/manager_config.json", {cache:"reload"})
-                manager.managerAppConfig = e.detail?.value as ManagerConf
+                manager.managerAppConfig = e.detail?.value as ManagerAppConfig;
                 Object.entries(manager.managerAppConfig.realms).map(([name, settings]) => {
                     fetch(settings?.favicon, {cache:"reload"})
                     fetch(settings?.logo, {cache:"reload"})

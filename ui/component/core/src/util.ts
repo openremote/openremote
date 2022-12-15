@@ -1057,10 +1057,10 @@ export function enableScroll() {
     window.removeEventListener('keydown', preventDefaultForScrollKeys, false);
 }
 
-export function convertBase64 (file:any) {
+export function blobToBase64(blob:Blob) {
     return new Promise((resolve, reject) => {
         const fileReader = new FileReader();
-        fileReader.readAsDataURL(file);
+        fileReader.readAsDataURL(blob);
 
         fileReader.onload = () => {
             resolve(fileReader.result);

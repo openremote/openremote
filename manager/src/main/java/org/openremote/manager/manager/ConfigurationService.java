@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.configuration;
+package org.openremote.manager.manager;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -33,7 +33,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.configuration.ManagerConf;
+import org.openremote.model.manager.ManagerAppConfig;
 import org.openremote.model.file.FileInfo;
 
 import java.io.*;
@@ -87,7 +87,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     }
 
 
-    public void saveMangerConfig(ManagerConf managerConfiguration) throws IOException {
+    public void saveMangerConfig(ManagerAppConfig managerConfiguration) throws IOException {
         LOG.log(Level.INFO, "Saving manager_config.json");
         try {
             OutputStream out = new FileOutputStream(new File(pathPublicRoot + "/manager_config.json"));

@@ -20,10 +20,10 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "./or-conf-realm-card";
-import { customElement, property } from "lit/decorators.js";
-import manager, { ManagerAppConfig } from "@openremote/core";
-import { Realm } from "@openremote/model";
-import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {customElement, property} from "lit/decorators.js";
+import manager from "@openremote/core";
+import { ManagerAppConfig, ManagerAppRealmConfig } from "@openremote/model";
+import { OrMwcDialog, showDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 
@@ -39,15 +39,15 @@ export class OrConfRealm extends LitElement {
   @property({attribute: false})
   public config: ManagerAppConfig = {};
 
-  protected _availableRealms: Realm[] = [];
-  protected _allRealms: Realm[] = [];
+  protected _availableRealms: ManagerAppRealmConfig[] = [];
+  protected _allRealms: ManagerAppRealmConfig[] = [];
   protected _addedRealm: null|string = null
 
   protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
     const app = this
     manager.rest.api.RealmResource.getAccessible().then((response)=>{
-      app._allRealms = response.data as Realm[];
-      app._allRealms.push({displayName: 'Default', name:'default'})
+      app._allRealms = response.data as ManagerAppRealmConfig[];
+      app._allRealms.push({appTitle: 'Default'})
       app._loadListOfAvailableRealms()
     });
   }
@@ -63,15 +63,16 @@ export class OrConfRealm extends LitElement {
   protected _loadListOfAvailableRealms(){
     const app = this
     this._availableRealms = this._allRealms.filter(function(realm){
-      if (realm.name && app.config?.realms){
-        if (!app.config?.realms[realm.name]){
+      if (realm.appTitle && app.config?.realms){
+        //@TODO this change here will not function correctly
+        if (!app.config?.realms[realm.appTitle]){
           return realm
         }
       }
       return null
     }).sort(function(a, b){
-      if (a.name && b.name){
-        return (a.name > b.name) ? 1 : -1
+      if (a.appTitle && b.appTitle){
+        return (a.appTitle > b.appTitle) ? 1 : -1
       }
       return -1
     })
@@ -110,7 +111,7 @@ export class OrConfRealm extends LitElement {
       .setHeading(i18next.t('configuration.addRealmCustomization'))
       .setActions(dialogActions)
       .setContent(html `
-        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
+        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [key, value.appTitle]})}"></or-mwc-input>
       `)
       .setStyles(html`
                         <style>

@@ -21,10 +21,11 @@ import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
 import { i18next } from "@openremote/or-translate";
-import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { ManagerAppConfig } from "@openremote/core";
+import { DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { createRef, Ref, ref } from "lit/directives/ref.js";
 import { OrAceEditor } from "@openremote/or-components/or-ace-editor";
+import { ManagerAppConfig } from "@openremote/model";
 
 @customElement("or-conf-json")
 export class OrConfJson extends LitElement {

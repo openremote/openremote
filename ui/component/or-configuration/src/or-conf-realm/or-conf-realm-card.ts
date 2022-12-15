@@ -33,7 +33,7 @@ import manager, {
   Util,
 } from "@openremote/core";
 import { i18next } from "@openremote/or-translate";
-import { FileInfo, ManagerConfRealm, ManagerHeaders } from "@openremote/model";
+import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 
@@ -113,8 +113,8 @@ export class OrConfRealmCard extends LitElement {
     }
   `;
 
-  @property({attribute: false})
-  public realm: ManagerConfRealm = {
+  @property({ attribute: false })
+  public realm: ManagerAppRealmConfig = {
     appTitle: "OpenRemote Demo",
     language: "en",
     styles: "",
@@ -131,27 +131,27 @@ export class OrConfRealmCard extends LitElement {
   public onRemove: CallableFunction = () => {
   };
 
-  protected headerListPrimary = [
-    ManagerHeaders.map,
-    ManagerHeaders.assets,
-    ManagerHeaders.rules,
-    ManagerHeaders.insights,
+  protected headerListPrimary: string[] = [
+    // ManagerHeaders.map,
+    // ManagerHeaders.assets,
+    // ManagerHeaders.rules,
+    // ManagerHeaders.insights,
   ];
 
 
-  protected headerListSecondary = [
-    ManagerHeaders.gateway,
-    ManagerHeaders.export,
-    ManagerHeaders.logs,
-    ManagerHeaders.realms,
-
-    ManagerHeaders.users,
-    ManagerHeaders.roles,
-
-    ManagerHeaders.account,
-    ManagerHeaders.language,
-    ManagerHeaders.appearance,
-    ManagerHeaders.logout
+  protected headerListSecondary: string[] = [
+    // ManagerHeaders.gateway,
+    // ManagerHeaders.export,
+    // ManagerHeaders.logs,
+    // ManagerHeaders.realms,
+    //
+    // ManagerHeaders.users,
+    // ManagerHeaders.roles,
+    //
+    // ManagerHeaders.account,
+    // ManagerHeaders.language,
+    // ManagerHeaders.appearance,
+    // ManagerHeaders.logout
 
   ];
 
@@ -188,14 +188,14 @@ export class OrConfRealmCard extends LitElement {
     this.realm.styles = css
   }
 
-  protected _setHeader(keys:ManagerHeaders[], list: ManagerHeaders[]){
-    if (!this.realm.headers){
-      this.realm.headers = this.headerListSecondary.concat(this.headerListPrimary)
+  protected _setHeader(keys: string[], list: string[]) {
+    if (!this.realm.headers) {
+      this.realm.headers = this.headerListSecondary.concat(this.headerListPrimary);
     }
-    this.realm.headers = this.realm.headers?.filter(function(ele){
+    this.realm.headers = this.realm.headers?.filter(function(ele) {
       return !list.includes(ele);
     });
-    this.realm.headers = this.realm.headers?.concat(keys)
+    this.realm.headers = this.realm.headers?.concat(keys);
   }
 
   protected _getImagePath(file:File, fileName: string){
@@ -226,7 +226,7 @@ export class OrConfRealmCard extends LitElement {
     const path = this._getImagePath(file, fileName)
     this.files[path] = {
       // name: 'filename',
-      contents: await Util.convertBase64(file),
+      contents: await Util.blobToBase64(file),
       // binary: true
     } as FileInfo;
     return path;
@@ -343,7 +343,7 @@ export class OrConfRealmCard extends LitElement {
                 .type="${InputType.SELECT}" multiple
                 class="header-item"
                 .label="${i18next.t("configuration.primaryNavigation")}"
-                .value="${!!this.realm.headers ? this.realm.headers?.filter(function(ele) {
+                .value="${!!this.realm.headers ? this.realm.headers?.filter(function(ele: string) {
                   return app.headerListPrimary.includes(ele);
                 }) : this.headerListPrimary}"
                 .options="${this.headerListPrimary}"
@@ -353,7 +353,7 @@ export class OrConfRealmCard extends LitElement {
                 .type="${InputType.SELECT}" multiple
                 class="header-item"
                 .label="${i18next.t("configuration.secondaryNavigation")}"
-                .value="${!!this.realm.headers ? this.realm.headers?.filter(function(ele) {
+                .value="${!!this.realm.headers ? this.realm.headers?.filter(function(ele: string) {
                   return app.headerListSecondary.includes(ele);
                 }) : this.headerListSecondary}"
                 .options="${this.headerListSecondary}"
@@ -362,7 +362,8 @@ export class OrConfRealmCard extends LitElement {
             </div>
           </div>
 
-          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}" .label="${i18next.t("configuration.deleteRealmCustomization")}"
+          <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
+                        .label="${i18next.t("configuration.deleteRealmCustomization")}"
                         @click="${() => {
                           this._showRemoveRealmDialog();
                         }}"></or-mwc-input>

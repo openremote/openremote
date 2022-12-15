@@ -17,21 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.configuration;
+package org.openremote.manager.manager;
 
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.configuration.ConfigurationResource;
-import org.openremote.model.configuration.ManagerConf;
+import org.openremote.model.manager.ConfigurationResource;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.manager.ManagerAppConfig;
 
 import java.io.*;
+import java.util.logging.Logger;
 
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
 
     protected ConfigurationService configurationService;
+    private static final Logger LOG = Logger.getLogger(WebService.class.getName());
 
     public ConfigurationResourceImpl(TimerService timerService, ManagerIdentityService identityService, ConfigurationService configurationService) {
         super(timerService, identityService);
@@ -40,7 +43,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
 
     @Override
-    public ManagerConf update(RequestParams requestParams, ManagerConf managerConfiguration) throws IOException {
+    public ManagerAppConfig update(RequestParams requestParams, ManagerAppConfig managerConfiguration) throws IOException {
         this.configurationService.saveMangerConfig(managerConfiguration);
         return managerConfiguration;
     }
