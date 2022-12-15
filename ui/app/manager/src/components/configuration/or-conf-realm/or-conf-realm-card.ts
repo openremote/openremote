@@ -131,6 +131,10 @@ export class OrConfRealmCard extends LitElement {
   public onRemove: CallableFunction = () => {
   };
 
+  protected logo:string = this.realm.logo;
+  protected logoMobile:string = this.realm.logoMobile;
+  protected favicon:string = this.realm.favicon;
+
   protected headerListPrimary: string[] = [
     // ManagerHeaders.map,
     // ManagerHeaders.assets,
@@ -225,11 +229,13 @@ export class OrConfRealmCard extends LitElement {
   protected async _setImageForUpload(file: File, fileName: string) {
     const path = this._getImagePath(file, fileName)
     this.files[path] = {
-      // name: 'filename',
+      path: path,
       contents: await Util.blobToBase64(file),
-      // binary: true
     } as FileInfo;
-    return path;
+    this.realm[fileName] = path
+    this[fileName] = this.files[path].contents
+    this.requestUpdate()
+    return this.files[path].contents;
   }
 
   protected _showRemoveRealmDialog(){
@@ -299,14 +305,14 @@ export class OrConfRealmCard extends LitElement {
             <div class="subheader">${i18next.t("configuration.images")}</div>
             <div class="d-inline-flex">
               <or-file-uploader .title="${i18next.t('configuration.logo')}"
-                                @change="${async (e: CustomEvent) => this.realm.logo = await this._setImageForUpload(e.detail.value[0], "logo")}"
-                                .src="${this.realm?.logo}"></or-file-uploader>
+                                @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "logo")}"
+                                .src="${this.logo}"></or-file-uploader>
               <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
-                                @change="${async (e: CustomEvent) => this.realm.logoMobile = await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                .src="${this.realm?.logoMobile}"></or-file-uploader>
+                                @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
+                                .src="${this.logoMobile}"></or-file-uploader>
               <or-file-uploader .title="${html`Favicon`}"
-                                @change="${async (e: CustomEvent) => this.realm.favicon = await this._setImageForUpload(e.detail.value[0], "favicon")}"
-                                .src="${this.realm?.favicon}"></or-file-uploader>
+                                @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "favicon")}"
+                                .src="${this.favicon}"></or-file-uploader>
             </div>
           </div>
           <div class="color-group">

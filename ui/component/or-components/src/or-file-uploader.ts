@@ -20,11 +20,12 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
-import { Util } from "@openremote/core";
+import { FileInfo } from "@openremote/model";
 
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
 
+    //Contains the content that will be shown towards the user.
     @property({ attribute: false })
     public src: string = "";
 
@@ -35,7 +36,11 @@ export class OrFileUploader extends LitElement {
     public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
 
     private loading: boolean = false;
+    private files: FileInfo[] = []
 
+    get Files(): FileInfo[] {
+        return this.files
+    }
     static get styles() {
         return css`
             #imageContainer {
@@ -103,21 +108,17 @@ export class OrFileUploader extends LitElement {
             this._onChange(e);
         });
         imageContainer?.addEventListener("click", (e) => {
-            console.log("Click container");
             fileInput?.click();
         });
     }
 
     async _onChange(e: any) {
-        const files = e?.target?.files;
+        this.files = e?.target?.files;
         this.loading = true;
         this.requestUpdate();
-        if (files.length > 0) {
-            this.src = await Util.blobToBase64(files[0]) as string;
-            this.dispatchEvent(new CustomEvent("change", {
-                detail: { value: files },
-            }));
-        }
+        this.dispatchEvent(new CustomEvent("change", {
+            detail: { value: this.files },
+        }));
         this.loading = false;
         this.requestUpdate();
     }
@@ -131,7 +132,7 @@ export class OrFileUploader extends LitElement {
                 <div id="imageContainer">
 
                     ${!!this.src ?
-                      html`<img .src="${this.src}" alt="OR-File-Uploader">
+                      html`<img src="${this.src}" alt="OR-File-Uploader">
                       <div class="pencil-container">
                           <or-icon icon="pencil-circle"></or-icon>
                       </div>
