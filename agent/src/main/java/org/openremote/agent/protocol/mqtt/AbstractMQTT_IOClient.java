@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.mqtt;
 
 import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.exceptions.ConnectionClosedException;
 import com.hivemq.client.mqtt.exceptions.ConnectionFailedException;
 import com.hivemq.client.mqtt.lifecycle.MqttDisconnectSource;
@@ -70,7 +71,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected final Set<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArraySet<>();
     protected final Map<String, Set<Consumer<MQTTMessage<S>>>> topicConsumerMap = new HashMap<>();
     protected ScheduledExecutorService executorService;
-    protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
     protected boolean disconnected = true; // Need to use this flag to cancel client reconnect task
     protected Consumer<String> topicSubscribeFailureConsumer;
 
@@ -91,10 +91,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()
             .identifier(clientId)
-            .addConnectedListener(context -> {
-                LOG.info("Client is connected to the broker '" + getClientUri() + "'");
-                onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-            })
+            .addConnectedListener(context -> onConnectionStatusChanged())
             .addDisconnectedListener(context -> {
                 boolean userClosed = context.getSource() == MqttDisconnectSource.USER;
                 if (disconnected) {
@@ -118,7 +115,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                 } else if (context.getCause() instanceof ConnectionFailedException) {
                     LOG.log(Level.INFO, "Connection failed '" + getClientUri() + "': initiator=" + context.getSource(), context.getCause());
                 }
-                onConnectionStatusChanged(userClosed ? ConnectionStatus.DISCONNECTED : ConnectionStatus.WAITING);
+                onConnectionStatusChanged();
             })
             .automaticReconnect()
             .initialDelay(RECONNECT_DELAY_INITIAL_MILLIS, TimeUnit.MILLISECONDS)
@@ -156,17 +153,22 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Invalid MQTT client config for client '" + getClientUri() + "'", e);
             client = null;
-            connectionStatus = ConnectionStatus.ERROR;
         }
     }
 
     @Override
     public void sendMessage(MQTTMessage<S> message) {
         if (client == null) {
-            LOG.info("Cannot send message as client is invalid  '" + getClientUri() + "'");
+            LOG.info("Cannot send message as client is invalid: " + getClientUri());
             return;
         }
 
+        if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
+            LOG.info("Cannot send message as client is not connected: " + getClientUri());
+            return;
+        }
+
+        // TODO: Might need to put some timeout logic here as this call can block if client becomes disconnected see (https://github.com/hivemq/hivemq-mqtt-client/issues/554)
         client.publishWith()
             .topic(message.topic)
             .payload(messageToBytes(message.payload))
@@ -235,7 +237,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             });
         };
 
-        if (this.connectionStatus != ConnectionStatus.CONNECTED) {
+        if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
             // Just return true and let connection logic sort out actual subscription
             return true;
         }
@@ -319,19 +321,25 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     @Override
     public ConnectionStatus getConnectionStatus() {
-        return connectionStatus;
+        if (client == null) {
+            return ConnectionStatus.ERROR;
+        }
+        MqttClientState state = client.getState();
+        if (state == MqttClientState.CONNECTED) {
+            return ConnectionStatus.CONNECTED;
+        }
+        if (state == MqttClientState.DISCONNECTED) {
+            return ConnectionStatus.DISCONNECTED;
+        }
+
+        // We cannot differentiate between connecting and waiting with the callbacks provided so just use waiting state
+        return ConnectionStatus.WAITING;
     }
 
     @Override
     public void connect() {
-        synchronized (this) {
-            if (getConnectionStatus() != ConnectionStatus.DISCONNECTED) {
-                LOG.finer("Must be disconnected and not in error before calling connect: " + getClientUri());
-                return;
-            }
-
-            LOG.fine("Connecting MQTT Client: " + getClientUri());
-            onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+        if (client == null) {
+            return;
         }
 
         this.disconnected = false;
@@ -372,18 +380,15 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         });
     }
 
-    protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
-        if (this.connectionStatus == connectionStatus) {
-            return;
-        }
-
-        this.connectionStatus = connectionStatus;
+    protected void onConnectionStatusChanged() {
+        ConnectionStatus status = getConnectionStatus();
+        LOG.info("Client '" + getClientUri() + "' connection status changed: " + status);
 
         executorService.submit(() ->
             connectionStatusConsumers.forEach(
                 consumer -> {
                     try {
-                        consumer.accept(connectionStatus);
+                        consumer.accept(status);
                     } catch (Exception e) {
                         LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
                     }
@@ -396,20 +401,13 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             return;
         }
 
-        synchronized (this) {
-            if (connectionStatus == ConnectionStatus.DISCONNECTED) {
-                LOG.finest("Already disconnected: " + getClientUri());
-                return;
-            }
-
-            LOG.finest("Disconnecting IO client: " + getClientUri());
-            onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
-        }
+        LOG.finest("Disconnecting IO client: " + getClientUri());
+        client.disconnect();
 
         this.disconnected = true;
 
         client.disconnect().whenComplete((unused, throwable) -> {
-            onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+            onConnectionStatusChanged();
             if (this.cleanSession) {
                 removeAllMessageConsumers();
             }
