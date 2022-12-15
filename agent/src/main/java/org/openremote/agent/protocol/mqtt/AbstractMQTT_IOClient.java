@@ -23,6 +23,7 @@ import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.exceptions.ConnectionClosedException;
 import com.hivemq.client.mqtt.exceptions.ConnectionFailedException;
+import com.hivemq.client.mqtt.exceptions.MqttClientStateException;
 import com.hivemq.client.mqtt.lifecycle.MqttDisconnectSource;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
@@ -381,10 +382,10 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     protected void onConnectionStatusChanged() {
-        ConnectionStatus status = getConnectionStatus();
-        LOG.info("Client '" + getClientUri() + "' connection status changed: " + status);
+        executorService.submit(() -> {
+            ConnectionStatus status = getConnectionStatus();
+            LOG.info("Client '" + getClientUri() + "' connection status changed: " + status);
 
-        executorService.submit(() ->
             connectionStatusConsumers.forEach(
                 consumer -> {
                     try {
@@ -392,7 +393,8 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                     } catch (Exception e) {
                         LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
                     }
-                }));
+                });
+        });
     }
 
     @Override
@@ -407,13 +409,19 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         this.disconnected = true;
 
         client.disconnect().whenComplete((unused, throwable) -> {
-            onConnectionStatusChanged();
+            if (throwable instanceof MqttClientStateException) {
+                // Likely already disconnected
+                return;
+            }
+            if (throwable != null) {
+                LOG.log(Level.WARNING, "Failed to disconnect: " + getClientUri(), throwable);
+                return;
+            }
             if (this.cleanSession) {
                 removeAllMessageConsumers();
             }
-            if (throwable != null) {
-                LOG.info("Failed to disconnect");
-            }
+
+            onConnectionStatusChanged();
         });
     }
 
