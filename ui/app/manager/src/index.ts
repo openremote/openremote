@@ -232,7 +232,13 @@ fetch(configURL).then(async (result) => {
         manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
             manager.language = (value ? value : orAppConfig.realms[manager.displayRealm].language);
         }).catch(() => {
-            manager.language = orAppConfig.realms[manager.displayRealm].language;
+            if (orAppConfig.realms[manager.displayRealm]){
+                manager.language = orAppConfig.realms[manager.displayRealm].language
+            } else if (orAppConfig.realms['default']){
+                manager.language = orAppConfig.realms['default'].language
+            } else {
+                manager.language = 'en'
+            }
         })
 
         // Add config prefix if defined (used in dev)
