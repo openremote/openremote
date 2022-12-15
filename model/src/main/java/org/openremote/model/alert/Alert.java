@@ -37,6 +37,10 @@ public class Alert {
         this.status = status;
     }
 
+    public Alert() {
+
+    }
+
     public String getTitle() { return title; }
 
     public Alert setTitle(String title) {
