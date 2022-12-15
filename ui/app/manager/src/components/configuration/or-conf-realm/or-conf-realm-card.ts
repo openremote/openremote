@@ -136,26 +136,26 @@ export class OrConfRealmCard extends LitElement {
   protected favicon:string = this.realm.favicon;
 
   protected headerListPrimary: string[] = [
-    // ManagerHeaders.map,
-    // ManagerHeaders.assets,
-    // ManagerHeaders.rules,
-    // ManagerHeaders.insights,
+    "map",
+    "assets",
+    "rules",
+    "insights",
   ];
 
 
   protected headerListSecondary: string[] = [
-    // ManagerHeaders.gateway,
-    // ManagerHeaders.export,
-    // ManagerHeaders.logs,
-    // ManagerHeaders.realms,
-    //
-    // ManagerHeaders.users,
-    // ManagerHeaders.roles,
-    //
-    // ManagerHeaders.account,
-    // ManagerHeaders.language,
-    // ManagerHeaders.appearance,
-    // ManagerHeaders.logout
+    "gateway",
+    "export",
+    "logs",
+    "realms",
+
+    "users",
+    "roles",
+
+    "account",
+    "language",
+    "appearance",
+    "logout"
 
   ];
 
