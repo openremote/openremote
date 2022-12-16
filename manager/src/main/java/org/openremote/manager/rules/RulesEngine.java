@@ -95,9 +95,6 @@ public class RulesEngine<T extends Ruleset> {
     // Separate logger for execution of rules
     public static final Logger RULES_LOG = Logger.getLogger("org.openremote.rules.Rules");
 
-    // Separate logger for fired rules
-    public static final Logger RULES_FIRED_LOG = SyslogCategory.getLogger(SyslogCategory.RULES, "org.openremote.rules.RulesFired");
-
     // Separate logger for periodic stats printer
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
     protected static BiConsumer<RulesEngine<?>, RulesetDeployment> UNPAUSE_SCHEDULER = RulesEngine::scheduleUnpause;
@@ -284,7 +281,7 @@ public class RulesEngine<T extends Ruleset> {
         } else {
             deployment.updateValidity();
             if (deployment.hasExpired()) {
-                LOG.fine("Ruleset validity period has expired: " + ruleset.getName());
+                LOG.finer("Ruleset validity period has expired: " + ruleset.getName());
                 deployment.setStatus(EXPIRED);
                 publishRulesetStatus(deployment);
                 compiled = true;
@@ -343,12 +340,12 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         if (deployments.size() == 0) {
-            LOG.finest("No rulesets so nothing to start");
+            LOG.finer("No rulesets so nothing to start");
             return;
         }
 
         if (!canStart()) {
-            LOG.fine("Cannot start rules engine one or more rulesets in an error state");
+            LOG.info("Cannot start rules engine one or more rulesets in an error state");
             return;
         }
 
@@ -363,11 +360,11 @@ public class RulesEngine<T extends Ruleset> {
         scheduleFire(true);
 
         // Start a background stats printer if INFO level logging is enabled
-        if (STATS_LOG.isLoggable(Level.INFO) || STATS_LOG.isLoggable(Level.FINEST)) {
+        if (STATS_LOG.isLoggable(Level.FINE) || STATS_LOG.isLoggable(Level.FINEST)) {
             if (STATS_LOG.isLoggable(Level.FINEST)) {
-                LOG.info("On " + this + ", enabling periodic statistics output at INFO level every 30 seconds on category: " + STATS_LOG.getName());
+                LOG.info("On " + this + ", enabling periodic statistics output at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
             } else {
-                LOG.info("On " + this + ", enabling periodic full memory dump at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
+                LOG.info("On " + this + ", enabling periodic full memory dump at FINE level every 30 seconds on category: " + STATS_LOG.getName());
             }
             statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
         }
@@ -490,7 +487,7 @@ public class RulesEngine<T extends Ruleset> {
 
         long fireTimeMillis = quickFire ? rulesService.quickFireMillis : rulesService.tempFactExpirationMillis;
 
-        LOG.fine("Scheduling rules firing in " + fireTimeMillis + "ms on: " + this);
+        LOG.finer("Scheduling rules firing in " + fireTimeMillis + "ms on: " + this);
         fireTimer = executorService.schedule(
             () -> {
                 synchronized (RulesEngine.this) {
@@ -508,7 +505,7 @@ public class RulesEngine<T extends Ruleset> {
                         // Schedule call to schedule fire so the fireTimer shows as done
                         executorService.schedule(() -> scheduleFire(false), 10, TimeUnit.MILLISECONDS);
                     } else if (!disableTemporaryFactExpiration) {
-                        LOG.fine("No temporary facts present/changed when firing rules on: " + this);
+                        LOG.finest("No temporary facts present/changed when firing rules on: " + this);
                     }
 
                     fireTimer = null;
@@ -537,7 +534,7 @@ public class RulesEngine<T extends Ruleset> {
 
                 if (deployment.getStatus() == DEPLOYED) {
 
-                    RULES_LOG.fine("Executing rules of: " + deployment);
+                    LOG.finer("Executing rules of: " + deployment);
 
                     // If full detail logging is enabled
                     // Log asset states and events before firing
@@ -551,7 +548,9 @@ public class RulesEngine<T extends Ruleset> {
                     engine.fire(deployment.getRules(), facts);
                     long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
                     executionTotalMillis += executionMillis;
-                    RULES_FIRED_LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
+                    LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
+                } else {
+                    LOG.finer("Rules deployment '" + deployment.getName() + "' skipped as status is: " + deployment.getStatus());
                 }
             } catch (Exception ex) {
                 LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
@@ -575,6 +574,8 @@ public class RulesEngine<T extends Ruleset> {
 
         if (executionTotalMillis > 100) {
             LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
+        } else {
+            LOG.fine("Rules firing took " + executionTotalMillis + "ms on: " + this);
         }
     }
 

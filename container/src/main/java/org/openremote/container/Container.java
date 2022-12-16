@@ -160,11 +160,11 @@ public class Container implements org.openremote.model.Container {
         LOG.info(">>> Starting runtime container...");
         try {
             for (ContainerService service : getServices()) {
-                LOG.fine("Initializing service: " + service);
+                LOG.info("Initializing service: " + service);
                 service.init(Container.this);
             }
             for (ContainerService service : getServices()) {
-                LOG.fine("Starting service: " + service);
+                LOG.info("Starting service: " + service);
                 service.start(Container.this);
             }
         } catch (Exception ex) {
