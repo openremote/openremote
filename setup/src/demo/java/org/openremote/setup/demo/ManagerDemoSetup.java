@@ -24,10 +24,12 @@ import org.openremote.agent.protocol.http.HTTPAgentLink;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
 import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeLink;
@@ -38,10 +40,19 @@ import org.openremote.model.security.Realm;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.value.*;
 
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.MetaItemType.*;
+import static org.openremote.model.value.ValueType.*;
+
+import demo.assettypes.manufacturer.*;
+import demo.assettypes.manufacturer.HarvestRobotAsset.*;
+
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.Random;
+import java.util.Arrays;
+import java.util.List;
 
 import static java.time.temporal.ChronoField.SECOND_OF_DAY;
 import static org.openremote.model.value.ValueType.MultivaluedStringMap;
@@ -51,8 +62,10 @@ public class ManagerDemoSetup extends ManagerSetup {
     public static GeoJSONPoint STATIONSPLEIN_LOCATION = new GeoJSONPoint(4.470175, 51.923464);
     public String realmMasterName;
     public String realmCityName;
+    public String realmManufacturerName;
     public String area1Id;
     public String smartcitySimulatorAgentId;
+    public String manufacturerSimulatorAgentId;
     public String energyManagementId;
     public String weatherHttpApiAgentId;
 
@@ -70,6 +83,52 @@ public class ManagerDemoSetup extends ManagerSetup {
         return r.nextInt((max - min) + 1) + min;
     }
 
+    // ################################ Realm manufacturer methods ###################################
+
+    protected HarvestRobotAsset createDemoHarvestRobotAsset(String name, Asset<?> parent, GeoJSONPoint location,
+            OperationMode operationMode, VegetableType vegetableType) {
+        HarvestRobotAsset harvestRobotAsset = new HarvestRobotAsset(name);
+        harvestRobotAsset.setParent(parent);
+        harvestRobotAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
+        harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.OPERATION_MODE)
+                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY))
+                .setValue(operationMode);
+        harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.VEGETABLE_TYPE)
+                .addMeta(new MetaItem<>(RULE_STATE))
+                .setValue(vegetableType);
+        harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.DIRECTION)
+                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+        harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.SPEED)
+                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+        harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.HARVESTED_SESSION)
+                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+        harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.HARVESTED_TOTAL)
+                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+
+        return harvestRobotAsset;
+    }
+
+    protected IrrigationAsset createDemoIrrigationAsset(String name, Asset<?> parent, GeoJSONPoint location,
+            int soilTensionMin, int soilTensionMax) {
+        IrrigationAsset irrigationAsset = new IrrigationAsset(name);
+        irrigationAsset.setParent(parent);
+        irrigationAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
+        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.SOIL_TENSION_MEASURED)
+                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(READ_ONLY));
+        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.SOIL_TENSION_MIN)
+                .addMeta(new MetaItem<>(RULE_STATE))
+                .setValue(soilTensionMin);
+        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.SOIL_TENSION_MAX)
+                .addMeta(new MetaItem<>(RULE_STATE))
+                .setValue(soilTensionMax);
+        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.FLOW_WATER)
+                .addMeta(new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(RULE_STATE));
+        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.FLOW_NUTRIENTS)
+                .addMeta(new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(RULE_STATE));
+
+        return irrigationAsset;
+    }
+
     @Override
     public void onStart() throws Exception {
         super.onStart();
@@ -77,17 +136,10 @@ public class ManagerDemoSetup extends ManagerSetup {
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Realm realmMaster = keycloakDemoSetup.realmMaster;
         Realm realmCity = keycloakDemoSetup.realmCity;
+        Realm realmManufacturer = keycloakDemoSetup.realmManufacturer;
         realmMasterName = realmMaster.getName();
         this.realmCityName = realmCity.getName();
-
-        // ################################ Demo assets for 'master' realm ###################################
-
-
-        // ################################ Link demo users and assets ###################################
-
-
-        // ################################ Make users restricted ###################################
-
+        this.realmManufacturerName = realmManufacturer.getName();
 
         // ################################ Realm smartcity ###################################
 
@@ -1610,6 +1662,64 @@ public class ManagerDemoSetup extends ManagerSetup {
         });
         ship1Asset.setId(UniqueIdentifierGenerator.generateId(ship1Asset.getName()));
         ship1Asset = assetStorageService.merge(ship1Asset);
+
+        // ################################ Realm smartcity ###################################
+
+        SimulatorAgent manufacturerSimulatorAgent = new SimulatorAgent("Simulator agent");
+        manufacturerSimulatorAgent.setRealm(this.realmManufacturerName);
+
+        manufacturerSimulatorAgent = assetStorageService.merge(manufacturerSimulatorAgent);
+        manufacturerSimulatorAgentId = manufacturerSimulatorAgent.getId();
+        
+        // ################################ Manufacturer realm assets ###################################
+        
+        Asset<?> greenhouseSpecialist = new ThingAsset("GreenHouse Specialist");
+        greenhouseSpecialist.setRealm(this.realmManufacturerName);
+        greenhouseSpecialist.setId(UniqueIdentifierGenerator.generateId(greenhouseSpecialist.getName()));
+        greenhouseSpecialist = assetStorageService.merge(greenhouseSpecialist);
+
+        // ### Parking ###
+
+        GroupAsset parkingGroupAsset = new GroupAsset("Parking group", ParkingAsset.class);
+        parkingGroupAsset.setParent(mobilityAndSafety);
+        parkingGroupAsset.getAttributes().addOrReplace(
+                new Attribute<>("totalOccupancy", ValueType.POSITIVE_INTEGER)
+                        .addMeta(
+                                new MetaItem<>(MetaItemType.UNITS, Constants.units(Constants.UNITS_PERCENTAGE)),
+                                new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))),
+                                new MetaItem<>(MetaItemType.READ_ONLY),
+                                new MetaItem<>(MetaItemType.RULE_STATE),
+                                new MetaItem<>(MetaItemType.STORE_DATA_POINTS)
+                                ));
+        parkingGroupAsset.setId(UniqueIdentifierGenerator.generateId(parkingGroupAsset.getName()));
+        parkingGroupAsset = assetStorageService.merge(parkingGroupAsset);
+
+        ParkingAsset parking1Asset = createDemoParkingAsset("Markthal", parkingGroupAsset, new GeoJSONPoint(4.48527, 51.91984))
+            .setManufacturer("SKIDATA")
+            .setModel("Barrier.Gate");
+
+            
+
+
+        HarvestRobotAsset HarvestRobot1 = createDemoHarvestRobotAsset("harvest1", ship1Asset, STATIONSPLEIN_LOCATION, null, null);
+
+        IrrigationAsset Irrigation1 = createDemoIrrigationAsset(realmCityName, HarvestRobot1, STATIONSPLEIN_LOCATION, 0, 0)
+
+        // ################################ Link users and assets ###################################
+
+        assetStorageService.storeUserAssetLinks(Arrays.asList(
+                new UserAssetLink(KeycloakDemoSetup.realmManufacturer.getName(),
+                        KeycloakDemoSetup.customerUserId,
+                        ship1Asset),
+                new UserAssetLink(KeycloakDemoSetup.realmManufacturer.getName(),
+                        KeycloakDemoSetup.customerUserId,
+                        apartment1HallwayId)));
+
+        // ################################ Make user restricted ###################################
+        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
+        identityProvider.updateUserRealmRoles(realmManufacturer.getName(), KeycloakDemoSetup.customerUserId, identityProvider
+                .addRealmRoles(realmManufacturer.getName(), 
+                        KeycloakDemoSetup.customerUserId, RESTRICTED_USER_REALM_ROLE));
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
