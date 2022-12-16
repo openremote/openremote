@@ -110,7 +110,7 @@ export class OrConfRealm extends LitElement {
       .setHeading(i18next.t('configuration.addRealmCustomization'))
       .setActions(dialogActions)
       .setContent(html `
-        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [key, value.displayName]})}"></or-mwc-input>
+        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
       `)
       .setStyles(html`
                         <style>
