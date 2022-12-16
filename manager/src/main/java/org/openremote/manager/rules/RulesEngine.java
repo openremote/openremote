@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.rules;
 
+import io.opencensus.common.Duration;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
@@ -703,7 +705,7 @@ public class RulesEngine<T extends Ruleset> {
 
     protected void schedulePause(RulesetDeployment deployment) {
         long delay = deployment.getValidTo() - timerService.getCurrentTimeMillis();
-        LOG.info("Scheduling pause of ruleset at '" + new Date(deployment.getValidTo()).toString() + "' (" + delay + "ms): " + deployment.ruleset.getName());
+        LOG.info("Scheduling pause of ruleset at '" + new Date(deployment.getValidTo()) + " for " + DurationFormatUtils.formatDurationHMS(delay) +": " + deployment.ruleset.getName());
         pauseTimers.put(deployment.getId(), executorService.schedule(() -> pauseRuleset(deployment), delay, TimeUnit.MILLISECONDS));
     }
 
