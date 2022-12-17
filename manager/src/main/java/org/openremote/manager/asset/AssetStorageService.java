@@ -1306,10 +1306,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         org.hibernate.query.Query<Object[]> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class);
 
-        if (LOG.isLoggable(Level.FINE)) {
-            LOG.fine("Time taken to build asset query (ms)=" + (System.currentTimeMillis() - startMillis));
-        }
-
         querySql.apply(em, jpql);
         List<Asset<?>> assets = (List<Asset<?>>)(Object)jpql.getResultList();
 
@@ -1317,8 +1313,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return assets.stream().filter(asset -> calendarEventPredicateMatches(timerService::getCurrentTimeMillis, query, asset)).toList();
         }
 
-        if (LOG.isLoggable(Level.FINEST)) {
-            LOG.fine("Asset query built and executed in " + (System.currentTimeMillis() - startMillis) + "ms: return count=" + assets.size());
+        if (LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Asset query took " + (System.currentTimeMillis() - startMillis) + "ms: return count=" + assets.size());
         }
 
         return assets;
