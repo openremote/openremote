@@ -32,6 +32,7 @@ import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.alert.AlertService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.flow.FlowResourceImpl;
@@ -114,6 +115,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected ManagerIdentityService identityService;
     protected AssetStorageService assetStorageService;
     protected NotificationService notificationService;
+    protected AlertService alertService;
     protected AssetProcessingService assetProcessingService;
     protected AssetDatapointService assetDatapointService;
     protected AssetPredictedDatapointService assetPredictedDatapointService;
@@ -620,6 +622,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     assetStorageService,
                     assetProcessingService,
                     notificationService,
+                    alertService,
                     clientEventService,
                     assetDatapointService,
                     assetPredictedDatapointService,
@@ -661,6 +664,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetStorageService,
                         assetProcessingService,
                         notificationService,
+                        alertService,
                         clientEventService,
                         assetDatapointService,
                         assetPredictedDatapointService,
@@ -737,6 +741,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetStorageService,
                         assetProcessingService,
                         notificationService,
+                        alertService,
                         clientEventService,
                         assetDatapointService,
                         assetPredictedDatapointService,
