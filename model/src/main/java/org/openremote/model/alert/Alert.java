@@ -17,24 +17,30 @@ public class Alert {
         CLOSED
     }
 
+    public enum Trigger {
+        INTERNAL,
+        CLIENT,
+        GLOBAL_RULESET,
+        REALM_RULESET,
+        ASSET_RULESET
+    }
+
+    public static final String HEADER_TRIGGER = Alert.class.getName() + ".TRIGGER";
+    public static final String HEADER_TRIGGER_ID = Alert.class.getName() + ".TRIGGERID";
+
     protected String title;
     protected String content;
-    //TODO: Add trigger type Enum/Class and field
-    protected String trigger;
     protected Severity severity;
     protected Status status;
 
     @JsonCreator
     public Alert(@JsonProperty("title") String title,
                  @JsonProperty("content") String content,
-                 @JsonProperty("trigger") String trigger,
-                 @JsonProperty("severity") Severity severity,
-                 @JsonProperty("status") Status status) {
+                 @JsonProperty("severity") Severity severity) {
         this.title = title;
         this.content = content;
-        this.trigger = trigger;
         this.severity = severity;
-        this.status = status;
+        this.status = Status.OPEN;
     }
 
     public Alert() {
@@ -52,13 +58,6 @@ public class Alert {
 
     public Alert setContent(String content) {
         this.content = content;
-        return this;
-    }
-
-    public String getTrigger() { return trigger; }
-
-    public Alert setTrigger(String trigger) {
-        this.trigger = trigger;
         return this;
     }
 
@@ -81,7 +80,6 @@ public class Alert {
         return getClass().getSimpleName()+ "{" +
                 "title=" + title + '\'' +
                 ", context=" + content +
-                ", trigger=" + trigger +
                 ", severity=" + severity +
                 ", status=" + status +
                 '}';

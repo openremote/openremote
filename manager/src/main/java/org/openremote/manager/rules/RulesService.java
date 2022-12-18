@@ -21,6 +21,7 @@ package org.openremote.manager.rules;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.manager.alert.AlertService;
 import org.openremote.model.Constants;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
@@ -114,6 +115,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected RulesetStorageService rulesetStorageService;
     protected ManagerIdentityService identityService;
     protected AssetStorageService assetStorageService;
+
     protected NotificationService notificationService;
     protected AlertService alertService;
     protected AssetProcessingService assetProcessingService;
@@ -148,6 +150,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         rulesetStorageService = container.getService(RulesetStorageService.class);
         identityService = container.getService(ManagerIdentityService.class);
         notificationService = container.getService(NotificationService.class);
+        alertService = container.getService(AlertService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
