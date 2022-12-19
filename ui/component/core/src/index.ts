@@ -6,10 +6,18 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import { AssetModelUtil, ConsoleAppConfig, ManagerAppConfig, MapType, Role, User } from "@openremote/model";
+import {
+    AssetModelUtil,
+    ConsoleAppConfig,
+    ManagerAppConfig,
+    MapType,
+    Role,
+    User,
+    UsernamePassword,
+} from "@openremote/model";
 import * as Util from "./util";
 import {IconSets, createSvgIconSet, createMdiIconSet, OrIconSet} from "@openremote/or-icon";
-import { Auth, Credentials, EventProviderType, ManagerConfig } from "@openremote/model/lib";
+import { Auth, EventProviderType, ManagerConfig } from "@openremote/model/lib";
 
 // Re-exports
 export {Util};
@@ -65,7 +73,7 @@ export enum OREvent {
 
 export interface LoginOptions {
     redirectUrl?: string;
-    credentials?: Credentials;
+    credentials?: UsernamePassword;
 }
 
 export interface BasicLoginResult {
