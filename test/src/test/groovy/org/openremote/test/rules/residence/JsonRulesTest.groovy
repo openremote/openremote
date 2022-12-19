@@ -3,6 +3,8 @@ package org.openremote.test.rules.residence
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.firebase.messaging.Message
 import net.fortuna.ical4j.model.Recur
+import org.jboss.resteasy.client.jaxrs.ResteasyClient
+import org.openremote.agent.protocol.http.HTTPProtocol
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
@@ -42,9 +44,14 @@ import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import org.simplejavamail.email.Email
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.ws.rs.client.ClientRequestContext
+import javax.ws.rs.client.ClientRequestFilter
+import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -52,11 +59,47 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
+import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.util.ValueUtil.parse
+import static org.openremote.test.rules.BasicRulesImport.assertRulesFired
 
 class JsonRulesTest extends Specification implements ManagerContainerTrait {
+
+    @Shared
+    def mockServer = new ClientRequestFilter() {
+
+        private int successCount = 0
+        private int failureCount = 0
+
+        @Override
+        void filter(ClientRequestContext requestContext) throws IOException {
+            def requestUri = requestContext.uri
+            def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
+
+            switch (requestPath) {
+                case "https://basicserver/webhookplain":
+                    if(requestContext.hasEntity() && requestContext.mediaType == MediaType.TEXT_PLAIN_TYPE) {
+                        successCount++;
+                        requestContext.abortWith(Response.ok().build()); return
+                    }
+                    break
+                case "https://basicserver/webhookjson":
+                    if (requestContext.hasEntity() && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') === 'test-value') {
+                        successCount++;
+                        requestContext.abortWith(Response.ok().build()); return
+                    }
+                    break;
+            }
+            failureCount++;
+            requestContext.abortWith(Response.serverError().build());
+        }
+    }
+
+    @Shared
+    ResteasyClient client
+
 
     def "Turn all lights off when console exits the residence geofence"() {
 
@@ -720,6 +763,83 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
+        }
+    }
+
+    def "Trigger webhook when thing asset has changed"() {
+
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        RulesEngine realmBuildingEngine
+
+        and: "the web target builder is configured to use the mock server"
+        if (!HTTPProtocol.client.configuration.isRegistered(mockServer)) {
+            HTTPProtocol.client.register(mockServer, Integer.MAX_VALUE)
+        }
+
+        and: "a thing asset is added to the building realm"
+        def thingId = UniqueIdentifierGenerator.generateId("TestThing")
+        def thingAsset = new ThingAsset("TestThing")
+                .setId(thingId)
+                .setRealm(keycloakTestSetup.realmBuilding.name)
+                .setLocation(new GeoJSONPoint(0, 0))
+        thingAsset = assetStorageService.merge(thingAsset)
+
+        and: "a ruleset with 'has value' condition is added whose action triggers the webhook"
+        Ruleset ruleset = new RealmRuleset(
+                keycloakTestSetup.realmBuilding.name,
+                "Webhook Rule",
+                Ruleset.Lang.JSON,
+                getClass().getResource("/org/openremote/test/rules/JsonRuleWebhook.json").text)
+        ruleset = rulesetStorageService.merge(ruleset)
+        assert ruleset != null
+
+        expect: "the notes attribute being unset"
+        conditions.eventually {
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset != null
+            assert thingAsset.getAttribute(Asset.NOTES).get() != null
+            assert !thingAsset.getAttribute(Asset.NOTES).get().getValue().isPresent()
+        }
+
+        and: "the rule engines to become available and be running with asset states and deployments inserted"
+        conditions.eventually {
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.deployments.size() == 1
+            assert realmBuildingEngine.deployments.values().iterator().next().name == "Webhook Rule"
+            assert realmBuildingEngine.deployments.values().iterator().next().status == DEPLOYED
+            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.lastFireTimestamp > 0
+        }
+
+        when: "the notes attribute is changing"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(thingId, Asset.NOTES, "test_message"))
+
+        then: "the notes should have been updated"
+        conditions.eventually {
+            def thingAsset2 = assetStorageService.find(thingId, true)
+            assert thingAsset2 != null
+            assert thingAsset2.getAttribute(Asset.NOTES).get().value.get() == "test_message"
+        }
+
+        expect: "the webhook rule has triggered"
+        conditions.eventually {
+            assert assertRulesFired(realmBuildingEngine, 1)
+        }
+
+        and: "The mock server has received a successful response"
+        conditions.eventually {
+            assert mockServer.successCount == 1
+            assert mockServer.failureCount == 0
         }
     }
 }
