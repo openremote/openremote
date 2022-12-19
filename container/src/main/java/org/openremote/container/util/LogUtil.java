@@ -55,16 +55,16 @@ public class LogUtil {
             Path loggingConfigFile = !TextUtil.isNullOrEmpty(System.getenv(OR_LOGGING_CONFIG_FILE)) ? Paths.get(System.getenv(OR_LOGGING_CONFIG_FILE)) : null;
 
             // Load the logging configuration file specified with an environment variable
-            if (loggingConfigFile != null && loggingConfigFile.isAbsolute()) {
-                if (!Files.isReadable(loggingConfigFile)) {
-                    throw new ExceptionInInitializerError("OR_LOGGING_CONFIG_FILE is not readable: " + loggingConfigFile.toAbsolutePath());
-                }
-                try (InputStream is = Files.newInputStream(loggingConfigFile)) {
+            if (loggingConfigFile != null) {
+                if (Files.isReadable(loggingConfigFile)) {
                     System.out.println("Using logging configuration: " + loggingConfigFile.toAbsolutePath());
-                    LogManager.getLogManager().readConfiguration(is);
-                    logConfigFound = true;
-                } catch (Exception ex) {
-                    throw new ExceptionInInitializerError(ex);
+
+                    try (InputStream is = Files.newInputStream(loggingConfigFile)) {
+                        LogManager.getLogManager().readConfiguration(is);
+                        logConfigFound = true;
+                    } catch (Exception ex) {
+                        throw new ExceptionInInitializerError(ex);
+                    }
                 }
             }
 
@@ -77,11 +77,16 @@ public class LogUtil {
                 try (InputStream is = Container.class.getClassLoader().getResourceAsStream(loggingFile)) {
                     if (is != null) {
                         System.out.println("Using logging configuration on classpath: " + loggingFile);
+                        logConfigFound = true;
                         LogManager.getLogManager().readConfiguration(is);
                     }
                 } catch (Exception ex) {
                     throw new ExceptionInInitializerError(ex);
                 }
+            }
+
+            if (!logConfigFound) {
+                throw new ExceptionInInitializerError("OR_LOGGING_CONFIG_FILE is not readable: " + loggingConfigFile);
             }
         }
     }

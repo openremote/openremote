@@ -325,16 +325,15 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     @Override
     public void connect() {
         synchronized (this) {
-            if (getConnectionStatus() != ConnectionStatus.DISCONNECTED) {
-                LOG.finer("Must be disconnected and not in error before calling connect: " + getClientUri());
+            if (!disconnected) {
+                LOG.finer("Must be disconnected before calling connect: " + getClientUri());
                 return;
             }
 
             LOG.fine("Connecting MQTT Client: " + getClientUri());
+            this.disconnected = false;
             onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
-
-        this.disconnected = false;
 
         LOG.info("Establishing connection: " + getClientUri());
 
@@ -397,16 +396,15 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         }
 
         synchronized (this) {
-            if (connectionStatus == ConnectionStatus.DISCONNECTED) {
+            if (disconnected) {
                 LOG.finest("Already disconnected: " + getClientUri());
                 return;
             }
 
             LOG.finest("Disconnecting IO client: " + getClientUri());
+            this.disconnected = true;
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
-
-        this.disconnected = true;
 
         client.disconnect().whenComplete((unused, throwable) -> {
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
@@ -414,7 +412,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                 removeAllMessageConsumers();
             }
             if (throwable != null) {
-                LOG.info("Failed to disconnect");
+                LOG.log(Level.WARNING, "Failed to disconnect", throwable);
             }
         });
     }
