@@ -2263,6 +2263,7 @@ __metadata:
   resolution: "@openremote/manager@workspace:ui/app/manager"
   dependencies:
     "@openremote/or-app": ^1.1.0
+    "@openremote/or-components": ^1.1.0
     "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
