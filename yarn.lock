@@ -2436,7 +2436,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-components@^1.1.0, @openremote/or-components@workspace:*, @openremote/or-components@workspace:ui/component/or-components":
+"@openremote/or-components@^1.1.0, @openremote/or-components@workspace:ui/component/or-components":
   version: 0.0.0-use.local
   resolution: "@openremote/or-components@workspace:ui/component/or-components"
   dependencies:
@@ -2515,7 +2515,7 @@ __metadata:
   resolution: "@openremote/or-json-forms@workspace:ui/component/or-json-forms"
   dependencies:
     "@jsonforms/core": ^3.0.0-beta.1
-    "@openremote/or-components": "workspace:*"
+    "@openremote/or-components": ^1.1.0
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/util": "workspace:*"
     "@polymer/polymer": ^3.3.1
