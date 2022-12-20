@@ -21,7 +21,7 @@ import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
 import { FileInfo } from "@openremote/model";
-import "/or-loading-indicator";
+import "./or-loading-indicator";
 
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
