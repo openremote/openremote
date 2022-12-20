@@ -150,7 +150,6 @@ fetch(configURL).then(async (result) => {
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {
-        manager.managerAppConfig = appConfig as ManagerAppConfig
 
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];

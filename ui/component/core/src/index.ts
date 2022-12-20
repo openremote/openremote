@@ -9,7 +9,6 @@ import moment from "moment";
 import {
     AssetModelUtil,
     ConsoleAppConfig,
-    ManagerAppConfig,
     MapType,
     Role,
     User,
@@ -181,14 +180,6 @@ export class Manager implements EventProviderFactory {
         return this._config;
     }
 
-    get managerAppConfig(){
-        return this._managerAppConfig;
-    }
-
-    set managerAppConfig(config: ManagerAppConfig){
-        this._managerAppConfig = config;
-    }
-
     get roles(): Map<string, string[]> {
         const roleMap = new Map<string, string[]>();
 
@@ -279,7 +270,6 @@ export class Manager implements EventProviderFactory {
 
     private _error?: ORError;
     private _config!: ManagerConfig;
-    private _managerAppConfig : ManagerAppConfig = {}
     private _authenticated: boolean = false;
     private _ready: boolean = false;
     private _readyCallback?: () => PromiseLike<any>;

@@ -169,15 +169,15 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         const app = this;
         document.addEventListener("saveLocalManagerConfig", (e: CustomEvent) => {
-            manager.managerAppConfig = e.detail?.value as ManagerAppConfig;
+            this.managerConfiguration = e.detail?.value as ManagerAppConfig;
             app.requestUpdate();
         });
 
         document.addEventListener("saveManagerConfig", (e: CustomEvent) => {
             manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerAppConfig).then(() => {
                 fetch("/manager_config.json", { cache: "reload" });
-                manager.managerAppConfig = e.detail?.value as ManagerAppConfig;
-                Object.entries(manager.managerAppConfig.realms).map(([name, settings]) => {
+                this.managerConfiguration = e.detail?.value as ManagerAppConfig;
+                Object.entries(this.managerConfiguration.realms).map(([name, settings]) => {
                     fetch(settings?.favicon, { cache: "reload" });
                     fetch(settings?.logo, { cache: "reload" });
                     fetch(settings?.logoMobile, { cache: "reload" });

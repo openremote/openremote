@@ -23,7 +23,7 @@ import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
-import { Auth, ManagerAppConfig, ManagerConfig, Realm } from "@openremote/model";
+import { Auth, ManagerConfig, Realm } from "@openremote/model";
 
 const DefaultLogo = require("../images/logo.svg");
 const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -77,9 +77,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     @property({type: Object})
     public managerConfig?: ManagerConfig;
-
-    @property({type: Object})
-    public managerAppConfig?: ManagerAppConfig;
 
     @query("main")
     protected _mainElem!: HTMLElement;
