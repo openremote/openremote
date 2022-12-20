@@ -460,6 +460,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     protected void doForceDisconnect(RemotingConnection connection) {
         LOG.info("Force disconnecting client connection: " + connectionToString(connection));
+        removeTransientCredentials(connection);
         connection.disconnect(false);
     }
 
@@ -549,14 +550,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void addTransientCredentials(RemotingConnection connection, Triple<String, String, String> userIDNameAndPassword) {
         LOG.fine("Adding transient user credentials: connection ID=" + connection.getID() + " ,username=" + userIDNameAndPassword.getMiddle());
         transientCredentials.put(connection.getID(), userIDNameAndPassword);
-        ((SecurityStoreImpl) server.getActiveMQServer().getSecurityStore()).invalidateAuthenticationCache();
     }
 
     // TODO: Remove this
     public void removeTransientCredentials(RemotingConnection connection) {
         LOG.fine("Removing transient user credentials: connection ID=" + connection.getID());
         transientCredentials.remove(connection.getID());
-        ((SecurityStoreImpl) server.getActiveMQServer().getSecurityStore()).invalidateAuthenticationCache();
-        ((SecurityStoreImpl) server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
 }
