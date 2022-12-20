@@ -218,7 +218,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         ProvisioningMessage provisioningMessage = ValueUtil.parse(payloadContent, ProvisioningMessage.class)
             .orElseGet(() -> {
-                LOG.fine("Failed to parse message from client: topic=" + topic+ mqttBrokerService.connectionToString(connection));
+                LOG.info("Failed to parse message from client: topic=" + topic+ mqttBrokerService.connectionToString(connection));
                 mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
                 return null;
             });
@@ -283,7 +283,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         X509ProvisioningConfig matchingConfig = getMatchingX509ProvisioningConfig(connection, clientCertificate);
 
         if (matchingConfig == null) {
-            LOG.fine("No matching provisioning config found for client certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection));
+            LOG.info("No matching provisioning config found for client certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -368,7 +368,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         LOG.fine("Client successfully initialised: topic=" + topic+ mqttBrokerService.connectionToString(connection) + ", config=" + matchingConfig);
 
-        // Update connection with service user credentials
+        // Store transient service user credentials (this is used by the custom ActiveMQSecurityManager)
         mqttBrokerService.addTransientCredentials(connection, new ImmutableTriple<>(serviceUser.getId(), realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
@@ -430,7 +430,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             .setUsername(username);
 
         String secret = UniqueIdentifierGenerator.generateId();
-        serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret);
+        serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret, true);
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
             LOG.finer("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));

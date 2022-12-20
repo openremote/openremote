@@ -56,10 +56,7 @@ import org.openremote.model.util.ValueUtil;
 
 import javax.persistence.Query;
 import javax.validation.constraints.NotNull;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotAllowedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.InputStream;
@@ -221,7 +218,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public User createUpdateUser(String realm, final User user, String passwordSecret) throws WebApplicationException {
+    public User createUpdateUser(String realm, final User user, String passwordSecret, boolean allowUpdate) throws WebApplicationException {
         return getRealms(realmsResource -> {
 
             if (user.getUsername() == null) {
@@ -235,6 +232,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             User existingUser = user.getId() != null ? getUser(user.getId()) : getUserByUsername(realm, user.getUsername());
             ClientRepresentation clientRepresentation;
             UserRepresentation userRepresentation;
+
+            if(existingUser != null && !allowUpdate) {
+                String msg = "Attempt to create user but it already exists: User=" + user;
+                LOG.fine(msg);
+                throw new ForbiddenException(msg);
+            }
 
             if (existingUser == null && user.isServiceAccount()) {
                 // Could be a service user

@@ -113,7 +113,7 @@ jobs:
         run: |
           import os
           import json
-
+          
           # Overlay all inputs and secrets onto this jobs outputs
           callerInputs = os.getenv("CALLER_INPUTS")
           inputs = os.getenv("INPUTS")
@@ -136,21 +136,24 @@ jobs:
             secrets = json.loads(secrets['SECRETS'])
 
           # Iterate over secrets then inputs and assign them as outputs on this step
+          
           if secrets is not None and secrets != 'null':
             for key, value in secrets.items():
               os.system(f"echo 'Outputting secret: {key}'")
-              value=value.replace('%','%25')
-              value=value.replace('\n','%0A')
-              value=value.replace('\r','%0D')
-              os.system(f"echo '::set-output name={key}::{value}'")
+              lines = len(value.split("\n"))
+              if lines > 1:
+                  os.system(f"echo '{key}<<EEOOFF\n{value}\nEEOOFF' >> $GITHUB_OUTPUT")
+              else:
+                  os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
 
           if inputs is not None and inputs != 'null':
             for key, value in inputs.items():
               os.system(f"echo 'Outputting input: {key}'")
-              value=value.replace('%','%25')
-              value=value.replace('\n','%0A')
-              value=value.replace('\r','%0D')
-              os.system(f"echo '::set-output name={key}::{value}'")
+              lines = len(value.split("\n"))
+              if lines > 1:
+                  os.system(f"echo '{key}<<EEOOFF\n{value}\nEEOOFF' >> $GITHUB_OUTPUT")
+              else:
+                  os.system(f"echo '{key}={value}' >> $GITHUB_OUTPUT")
 
         env:
           CALLER_INPUTS: ${{ toJSON(inputs) }}
@@ -201,12 +204,12 @@ jobs:
       - name: Set skip backend manager tests
         id: skip-backend-tests
         if: steps.backend-files-changed.outputs.any_modified != 'true'
-        run: echo "::set-output name=value::true"
+        run: echo "value=true" >> $GITHUB_OUTPUT
 
       - name: Set skip UI tests
         id: skip-ui-tests
         if: steps.ui-files-changed.outputs.any_modified != 'true'
-        run: echo "::set-output name=value::true"
+        run: echo "value=true" >> $GITHUB_OUTPUT
 
       - name: Make cache dirs and set file permissions
         run: |
@@ -218,7 +221,7 @@ jobs:
         id: is_main_repo
         run: |
           if [ $REPO_NAME == 'openremote/openremote' ]; then
-            echo "::set-output name=value::true"
+            echo "value=true" >> $GITHUB_OUTPUT
           fi
         env:
           REPO_NAME: ${{ github.repository }}
@@ -382,15 +385,15 @@ jobs:
           if dockerPublishTags is not None and isMainRepo == 'true':
             dockerPublishTags = dockerPublishTags.replace("$version", refName)
             firstDockerTag = dockerPublishTags.split(",")[0]
-            os.system(f"echo ::set-output name=firstDockerTag::{firstDockerTag}")
+            os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
             os.system(f" echo 'Manager tags to push to docker: {dockerPublishTags}'")
             dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-            os.system(f"echo ::set-output name=dockerTags::{dockerPublishTags}")
+            os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
           if mavenPublishTag is not None and isMainRepo == 'true':
             mavenPublishTag = mavenPublishTag.replace("$version", refName)
             os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
-            os.system(f"echo ::set-output name=mavenTag::{mavenPublishTag}")
+            os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
 
           deployStr = None
           if deploys is not None:
@@ -415,7 +418,7 @@ jobs:
 
           if deployStr is not None and len(deployStr) > 0:
             print(f"Deployments to deploy: {deployStr}")
-            os.system(f"echo ::set-output name=deploys::{deployStr}")
+            os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           EVENT_NAME: ${{ github.event_name }}
@@ -439,7 +442,7 @@ jobs:
             fi
             deployments="$INPUT_ENVIRONMENT:$tag"
           fi
-          echo "::set-output name=value::$deployments"
+          echo "value=$deployments" >> $GITHUB_OUTPUT
         env:
           EVENT_NAME: ${{ github.event_name }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
@@ -449,7 +452,7 @@ jobs:
       - name: Define backend test command
         id: test-backend-command
         if: ${{ steps.skip-backend-tests.outputs.value != 'true' }}
-        run: echo "::set-output name=value::./gradlew -p test test"
+        run: echo "value=./gradlew -p test test" >> $GITHUB_OUTPUT
 
       - name: Define UI test command
         id: test-ui-command
@@ -474,14 +477,14 @@ jobs:
             
             if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
-              echo "::set-output name=pushRequired::true"
+              echo "pushRequired=true" >> $GITHUB_OUTPUT
             else
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
             fi
-            echo "::set-output name=value::$command"
+            echo "value=$command" >> $GITHUB_OUTPUT
           fi
-          echo "::set-output name=buildPath::$buildPath"
-          echo "::set-output name=refTag::$commitShaShort"
+          echo "buildPath=$buildPath" >> $GITHUB_OUTPUT
+          echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
         env:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
@@ -495,7 +498,7 @@ jobs:
         shell: bash
         run: |
           command="./gradlew publish -PopenremoteVersion=$MAVEN_TAG -PsigningKey=$SIGNING_KEY -PsigningPassword=$SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -P$MAVEN_PASSWORD"
-          echo "::set-output name=value::$command"
+          echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
           SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_PASSWORD }}
@@ -516,12 +519,12 @@ jobs:
             buildPath="deployment/build"
             commitSha=$(git rev-parse HEAD)
             commitShaShort=$(git rev-parse --short HEAD)
-            echo "::set-output name=buildPath::$buildPath"
-            echo "::set-output name=refTag::$commitShaShort"
+            echo "buildPath=$buildPath" >> $GITHUB_OUTPUT
+            echo "refTag=$commitShaShort" >> $GITHUB_OUTPUT
 
             if [ -n "$DEPLOYMENTS" ]; then
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
-              echo "::set-output name=value::$command"
+              echo "value=$command" >> $GITHUB_OUTPUT
             fi
           fi
         env:
@@ -535,9 +538,9 @@ jobs:
         run: |
           REF_NAME=${REF_NAME//\//_}
           if [ -n "$MANAGER_DOCKER_CMD" ]; then
-            echo "::set-output name=value::./gradlew installDist -PopenremoteVersion=$REF_NAME"
+            echo "value=./gradlew installDist -PopenremoteVersion=$REF_NAME" >> $GITHUB_OUTPUT
           elif [ -n "$DEPLOYMENT_DOCKER_CMD" ]; then
-            echo "::set-output name=value::./gradlew -p deployment installDist"
+            echo "value=./gradlew -p deployment installDist" >> $GITHUB_OUTPUT
           fi
         env:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
@@ -576,7 +579,7 @@ jobs:
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
       - name: Yarn cache
         uses: actions/cache@v3
@@ -653,7 +656,7 @@ jobs:
           fi
 
           # Define cleanup command
-          echo "::set-output name=cleanup::docker-compose -f $composeProfile down"
+          echo "cleanup=docker-compose -f $composeProfile down" >> $GITHUB_OUTPUT
 
           # Start the stack
           echo "docker-compose -f ${composeProfile} up -d --no-build"

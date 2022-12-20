@@ -7,8 +7,8 @@ modules:
         logfile: ./output/jmeter.log
 
 execution:
-- concurrency: 20
-  ramp-up: 40s
+- concurrency: 50
+  ramp-up: 5s
   iterations: 1
   scenario: mqtt-client-auto-provision-pub
 
@@ -25,9 +25,9 @@ scenarios:
       message: "{\"type\":\"x509\",\"cert\":\"${cert}\"}"
     - cmd: subscribe
       topic: master/${id}/attributevalue/+/#
-      time: 10s
-      min-count: 1
-      think-time: 10s
+      time: 30s
+      min-count: 4
+      think-time: 2s
     - cmd: disconnect
 
     data-sources:

@@ -168,7 +168,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
                     <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
                     <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
                     <div id="rule-header-controls">
-                        
+                        <span id="rule-status" title="${this.ruleset.error}">${this.ruleset.status == ("LOOP_ERROR" || "COMPILATION_ERROR" || "EXECUTION_ERROR") ? this.ruleset.status : ""}</span>
                         <span id="active-wrapper">
                             <or-translate value="enabled"></or-translate>
                             <or-mwc-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>

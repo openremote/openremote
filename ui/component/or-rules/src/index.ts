@@ -26,7 +26,10 @@ import {
     RuleCondition,
     RulesetLang,
     RulesetUnion,
-    WellknownAssets
+    WellknownAssets,
+    Asset,
+    AssetQueryOrderBy$Property,
+    AssetQueryMatch
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
@@ -52,7 +55,8 @@ export const enum ActionType {
     WAIT = "wait",
     EMAIL = "email",
     PUSH_NOTIFICATION = "push",
-    ATTRIBUTE = "attribute"
+    ATTRIBUTE = "attribute",
+    WEBHOOK = "webhook"
 }
 export enum TimeTriggerType {
     TIME_OF_DAY = "TIME_OF_DAY"
@@ -491,6 +495,30 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
     });
 }
 
+// Function for getting assets by type
+// loadedAssets is an object given as parameter that will be updated if new assets are fetched.
+export async function getAssetsByType(type: string, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
+    if(loadedAssets?.has(type)) {
+        return {
+            assets: loadedAssets?.get(type),
+            loadedAssets: loadedAssets
+        }
+    } else {
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            types: [ type ],
+            orderBy: {
+                property: AssetQueryOrderBy$Property.NAME
+            }
+        });
+        loadedAssets?.set(type, response.data);
+        return {
+            assets: response.data,
+            loadedAssets: loadedAssets
+        };
+    }
+
+}
+
 export class OrRulesRuleChangedEvent extends CustomEvent<boolean> {
 
     public static readonly NAME = "or-rules-rule-changed";
@@ -683,9 +711,12 @@ export const style = css`
         --internal-or-rules-list-text-size: var(--or-rules-list-text-size, 15px);
         --internal-or-rules-list-header-height: var(--or-rules-list-header-height, 48px);
 
+        --internal-or-rules-list-icon-color-error: var(--or-rules-list-icon-color-error, var(--or-app-color6, ${unsafeCSS(DefaultColor6)}));
+        --internal-or-rules-list-icon-color-ok: var(--or-rules-list-icon-color-ok, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
+
         --internal-or-rules-list-button-size: var(--or-rules-list-button-size, 24px);
         
-        --internal-or-rules-header-background-color: var(--or-rules-header-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-rules-header-background-color: var(--or-rules-header-background-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-rules-header-height: var(--or-rules-header-height, unset);
         
         --or-panel-background-color: var(--internal-or-rules-panel-color);
