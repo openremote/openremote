@@ -26,10 +26,11 @@ import { Store } from "@reduxjs/toolkit";
 import { AppStateKeyed, Page, PageProvider } from "@openremote/or-app";
 import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
-import "../components/configuration/or-conf-json"
-import "../components/configuration/or-conf-realm/index"
+import "../components/configuration/or-conf-json";
+import "../components/configuration/or-conf-realm/index";
 import { ManagerAppConfig } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
+import "@openremote/or-components/or-loading-indicator";
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -147,53 +148,72 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         super(store);
     }
 
+    private getManagerConfig(): Promise<boolean> {
+        return fetch("/manager/manager_config.json", { cache: "reload" })
+          .then(async (response) => {
+              return response.json().then((json) => {
+                  this.managerConfiguration = json;
+                  this.loading = false;
+                  this.requestUpdate();
+                  return true;
+              });
+
+          }).catch(() => {
+              return false;
+          });
+    }
+
+    private loading: boolean = true;
+    private managerConfiguration: ManagerAppConfig = {};
+
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
-        const app = this
+        const app = this;
         document.addEventListener("saveLocalManagerConfig", (e: CustomEvent) => {
             manager.managerAppConfig = e.detail?.value as ManagerAppConfig;
             app.requestUpdate();
         });
 
-        document.addEventListener('saveManagerConfig', (e:CustomEvent) => {
-            manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerAppConfig).then(()=>{
-                fetch("/manager_config.json", {cache:"reload"})
+        document.addEventListener("saveManagerConfig", (e: CustomEvent) => {
+            manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerAppConfig).then(() => {
+                fetch("/manager_config.json", { cache: "reload" });
                 manager.managerAppConfig = e.detail?.value as ManagerAppConfig;
                 Object.entries(manager.managerAppConfig.realms).map(([name, settings]) => {
-                    fetch(settings?.favicon, {cache:"reload"})
-                    fetch(settings?.logo, {cache:"reload"})
-                    fetch(settings?.logoMobile, {cache:"reload"})
-                })
-                app.requestUpdate()
+                    fetch(settings?.favicon, { cache: "reload" });
+                    fetch(settings?.logo, { cache: "reload" });
+                    fetch(settings?.logoMobile, { cache: "reload" });
+                });
+                app.requestUpdate();
             })
         })
+
+        this.getManagerConfig();
     }
 
     protected render(): TemplateResult | void {
-
         if (!manager.authenticated) {
             return html`
                 <or-translate value="notAuthenticated"></or-translate>
             `;
         }
-
-        const managerConfiguration = manager.managerAppConfig
-
         return html`
+            ${this.loading ? html`
+                <or-loading-indicator .overlay="${true}"></or-loading-indicator>` : ""}
             <div id="wrapper">
                 <div id="header-wrapper">
                     <div id="header-title">
                         <or-icon icon="palette-outline"></or-icon>
-                        ${i18next.t('appearance')}
+                        ${i18next.t("appearance")}
                     </div>
                     <div id="header-actions">
-                        <or-conf-json .managerConfig="${managerConfiguration}" class="hide-mobile"></or-conf-json>
-                        <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t('save')}" @click="${() => {
-                            document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: managerConfiguration } }));
-                        }}"></or-mwc-input>
+                        <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"></or-conf-json>
+                        <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t("save")}"
+                                      @click="${() => {
+                                          document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: this.managerConfiguration } }));
+                                      }}"></or-mwc-input>
                     </div>
                 </div>
-                <or-panel .heading="${i18next.t('configuration.realmStyling')}">
-                    <or-conf-realm .config="${managerConfiguration}"></or-conf-realm>
+                <or-panel .heading="${i18next.t("configuration.realmStyling")}">
+                    <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
                 </or-panel>
             </div>
         `;
