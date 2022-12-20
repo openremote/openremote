@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.rules;
 
-import io.opencensus.common.Duration;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
@@ -42,7 +41,6 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;

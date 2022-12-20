@@ -350,7 +350,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
             LOG.fine("Connecting MQTT Client: " + getClientUri());
             this.disconnected = false;
-            onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
 
         LOG.info("Establishing connection: " + getClientUri());
@@ -419,7 +418,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
             LOG.finest("Disconnecting IO client: " + getClientUri());
             this.disconnected = true;
-            onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
 
         client.disconnect().whenComplete((unused, throwable) -> {
