@@ -149,7 +149,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
     }
 
     private getManagerConfig(): Promise<boolean> {
-        return fetch("/manager/manager_config.json", { cache: "reload" })
+        return fetch("/manager_config.json", { cache: "reload" })
           .then(async (response) => {
               return response.json().then((json) => {
                   this.managerConfiguration = json;
