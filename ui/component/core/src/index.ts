@@ -6,9 +6,17 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import { AssetModelUtil, ConsoleAppConfig, ManagerConf, Role, User } from "@openremote/model";
+import {
+    AssetModelUtil,
+    ConsoleAppConfig,
+    MapType,
+    Role,
+    User,
+    UsernamePassword,
+} from "@openremote/model";
 import * as Util from "./util";
 import {IconSets, createSvgIconSet, createMdiIconSet, OrIconSet} from "@openremote/or-icon";
+import { Auth, EventProviderType, ManagerConfig } from "@openremote/model/lib";
 
 // Re-exports
 export {Util};
@@ -49,12 +57,6 @@ export enum ORError {
     TRANSLATION_ERROR = "TRANSLATION_ERROR"
 }
 
-export enum Auth {
-    KEYCLOAK = "KEYCLOAK",
-    BASIC = "BASIC",
-    NONE = "NONE"
-}
-
 export enum OREvent {
     ERROR = "ERROR",
     READY = "READY",
@@ -68,89 +70,15 @@ export enum OREvent {
     DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
 }
 
-export enum EventProviderType {
-    WEBSOCKET = "WEBSOCKET",
-    POLLING = "POLLING"
-}
-
-export interface Credentials {
-    username: string;
-    password: string;
-}
-
 export interface LoginOptions {
     redirectUrl?: string;
-    credentials?: Credentials;
+    credentials?: UsernamePassword;
 }
 
 export interface BasicLoginResult {
     username: string;
     password: string;
     cancel: boolean;
-}
-
-export enum MapType {
-    VECTOR = "VECTOR",
-    RASTER = "RASTER"
-}
-
-export interface ManagerConfig {
-    managerUrl?: string;
-    keycloakUrl?: string;
-    appVersion?: string;
-    auth?: Auth;
-    realm?: string;
-    clientId?: string;
-    autoLogin?: boolean;
-    credentials?: Credentials;
-    consoleAutoEnable?: boolean;
-    eventProviderType?: EventProviderType;
-    pollingIntervalMillis?: number;
-    loadIcons?: boolean;
-    loadDescriptors?: boolean;
-    mapType?: MapType;
-    loadTranslations?: string[];
-    translationsLoadPath?: string;
-    configureTranslationsOptions?: (i18next: InitOptions) => void;
-    skipFallbackToBasicAuth?: boolean;
-    basicLoginProvider?: (username: string | undefined, password: string | undefined) => PromiseLike<BasicLoginResult>;
-}
-
-export enum HeaderNames {
-    rules = "rules",
-    insights = "insights" ,
-    gateway = "gateway" ,
-    logs = "logs" ,
-    account = "account" ,
-    users = "users" ,
-    assets = "assets",
-    roles = "roles" ,
-    realms = "realms" ,
-    logout = "logout" ,
-    language = "language" ,
-    export = "export",
-    map = "map",
-}
-
-export interface ManagerRealmConfig {
-    appTitle?: string;
-    logo?: HTMLTemplateElement | string;
-    logoMobile?: HTMLTemplateElement | string;
-    favicon?: HTMLTemplateElement | string;
-    headers?: HeaderNames[];
-    language?: string;
-    styles?: string;
-}
-
-export interface ManagerAppConfig {
-    pages?: {
-        [name in HeaderNames]: any;
-    },
-    realms?: {
-        [realm: string]: ManagerRealmConfig;
-    };
-    loadLocales?: boolean;
-    manager?: ManagerConfig;
 }
 
 export interface Languages {
@@ -252,14 +180,6 @@ export class Manager implements EventProviderFactory {
         return this._config;
     }
 
-    get managerAppConfig(){
-        return this._managerAppConfig;
-    }
-
-    set managerAppConfig(config: ManagerConf){
-        this._managerAppConfig = config;
-    }
-
     get roles(): Map<string, string[]> {
         const roleMap = new Map<string, string[]>();
 
@@ -350,7 +270,6 @@ export class Manager implements EventProviderFactory {
 
     private _error?: ORError;
     private _config!: ManagerConfig;
-    private _managerAppConfig : ManagerConf = {}
     private _authenticated: boolean = false;
     private _ready: boolean = false;
     private _readyCallback?: () => PromiseLike<any>;
@@ -785,8 +704,8 @@ export class Manager implements EventProviderFactory {
         }
 
         let result: BasicLoginResult = {
-            username: this._config.credentials ? this._config.credentials.username : "",
-            password: this._config.credentials ? this._config.credentials.password : "",
+            username: this._config.credentials?.username ? this._config.credentials?.username : "",
+            password: this._config.credentials?.password ? this._config.credentials?.password : "",
             cancel: false
         };
         let authenticated = false;

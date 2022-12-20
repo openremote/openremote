@@ -1,11 +1,32 @@
+/*
+ * Copyright 2022, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { i18next } from "@openremote/or-translate";
-import { Util } from "@openremote/core";
+import { FileInfo } from "@openremote/model";
+import "@openremote/or-components/or-loading-indicator";
 
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
 
+    //Contains the content that will be shown towards the user.
     @property({ attribute: false })
     public src: string = "";
 
@@ -16,7 +37,11 @@ export class OrFileUploader extends LitElement {
     public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
 
     private loading: boolean = false;
+    private files: FileInfo[] = []
 
+    get Files(): FileInfo[] {
+        return this.files
+    }
     static get styles() {
         return css`
             #imageContainer {
@@ -84,21 +109,17 @@ export class OrFileUploader extends LitElement {
             this._onChange(e);
         });
         imageContainer?.addEventListener("click", (e) => {
-            console.log("Click container");
             fileInput?.click();
         });
     }
 
     async _onChange(e: any) {
-        const files = e?.target?.files;
+        this.files = e?.target?.files;
         this.loading = true;
         this.requestUpdate();
-        if (files.length > 0) {
-            this.src = await Util.convertBase64(files[0]) as string;
-            this.dispatchEvent(new CustomEvent("change", {
-                detail: { value: files },
-            }));
-        }
+        this.dispatchEvent(new CustomEvent("change", {
+            detail: { value: this.files },
+        }));
         this.loading = false;
         this.requestUpdate();
     }
@@ -107,12 +128,12 @@ export class OrFileUploader extends LitElement {
         return html`
             <div class="container">
                 ${this.loading ? html`
-                    <or-loader .overlay="${true}"></or-loader>` : ""}
+                    <or-loading-indicator .overlay="${true}"></or-loading-indicator>` : ""}
                 <div class="title">${this.title}</div>
                 <div id="imageContainer">
 
                     ${!!this.src ?
-                      html`<img .src="${this.src}" alt="OR-File-Uploader">
+                      html`<img src="${this.src}" alt="OR-File-Uploader">
                       <div class="pencil-container">
                           <or-icon icon="pencil-circle"></or-icon>
                       </div>
@@ -123,11 +144,11 @@ export class OrFileUploader extends LitElement {
                               <or-icon icon="upload"></or-icon>
                               ${i18next.t('uploadFile')}
                           </div>
-                  ` 
-        }
+                      `
+                    }
+                </div>
+                <input type="file" id="fileInput" accept="${this.accept}">
             </div>
-            <input type="file" id="fileInput" accept="${this.accept}">
-        </div>
-   `;
+        `;
     }
 }

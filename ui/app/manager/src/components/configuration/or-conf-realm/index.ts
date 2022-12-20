@@ -1,12 +1,31 @@
-import { html, LitElement, css, PropertyValues } from "lit";
+/*
+ * Copyright 2022, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+import { css, html, LitElement, PropertyValues } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "./or-conf-realm-card";
 import {customElement, property} from "lit/decorators.js";
-import manager, { ManagerAppConfig } from "@openremote/core";
-import { ManagerConfRealm, Realm } from "@openremote/model";
+import manager from "@openremote/core";
+import { ManagerAppConfig, ManagerAppRealmConfig } from "@openremote/model";
 import { OrMwcDialog, showDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
-import "@openremote/or-components/or-loader";
+import "@openremote/or-components/or-loading-indicator";
 
 @customElement("or-conf-realm")
 export class OrConfRealm extends LitElement {
@@ -20,15 +39,15 @@ export class OrConfRealm extends LitElement {
   @property({attribute: false})
   public config: ManagerAppConfig = {};
 
-  protected _availableRealms: Realm[] = [];
-  protected _allRealms: Realm[] = [];
+  protected _availableRealms: {name:string, displayName:string}[] = [];
+  protected _allRealms: {name:string, displayName:string}[] = [];
   protected _addedRealm: null|string = null
 
   protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
     const app = this
     manager.rest.api.RealmResource.getAccessible().then((response)=>{
-      app._allRealms = response.data as Realm[];
-      app._allRealms.push({displayName: 'Default', name:'default'})
+      app._allRealms = response.data as {name:string, displayName:string}[];
+      app._allRealms.push({name: 'default', displayName: 'Default'})
       app._loadListOfAvailableRealms()
     });
   }
@@ -51,8 +70,8 @@ export class OrConfRealm extends LitElement {
       }
       return null
     }).sort(function(a, b){
-      if (a.name && b.name){
-        return (a.name > b.name) ? 1 : -1
+      if (a.displayName && b.displayName){
+        return (a.displayName > b.displayName) ? 1 : -1
       }
       return -1
     })

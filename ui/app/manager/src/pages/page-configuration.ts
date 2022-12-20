@@ -1,3 +1,22 @@
+/*
+ * Copyright 2022, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 import { css, html, TemplateResult, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import manager, { DefaultColor1, DefaultColor3 } from "@openremote/core";
@@ -7,12 +26,11 @@ import { Store } from "@reduxjs/toolkit";
 import { AppStateKeyed, Page, PageProvider } from "@openremote/or-app";
 import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-configuration/or-conf-json";
-import "@openremote/or-configuration/or-conf-realm/index";
-import "@openremote/or-configuration/or-conf-map/index";
-import { ManagerConf } from "@openremote/model";
+import "../components/configuration/or-conf-json";
+import "../components/configuration/or-conf-realm/index";
+import { ManagerAppConfig } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
-import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import "@openremote/or-components/or-loading-indicator";
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -130,65 +148,56 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         super(store);
     }
 
-    protected _showReloadDialogDialog() {
-        const dialogActions: DialogAction[] = [
-            {
-                action: () => {
-                    location.reload()
-                },
-                actionName: "ok",
-                content: i18next.t("reload"),
-                default: true,
-            },
+    private getManagerConfig(): Promise<boolean> {
+        return fetch("/manager/manager_config.json", { cache: "reload" })
+          .then(async (response) => {
+              return response.json().then((json) => {
+                  this.managerConfiguration = json;
+                  this.loading = false;
+                  this.requestUpdate();
+                  return true;
+              });
 
-        ];
-        const dialog = showDialog(new OrMwcDialog()
-          .setHeading(i18next.t('reload'))
-          .setActions(dialogActions)
-          .setContent(html`${i18next.t('configuration.reloadPage')}`)
-          .setStyles(html`
-              <style>
-                  .mdc-dialog__surface {
-                      padding: 4px 8px;
-                  }
-              </style>
-          `)
-          .setDismissAction(null));
-
+          }).catch(() => {
+              return false;
+          });
     }
+
+    private loading: boolean = true;
+    private managerConfiguration: ManagerAppConfig = {};
 
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         const app = this;
         document.addEventListener("saveLocalManagerConfig", (e: CustomEvent) => {
-            manager.managerAppConfig = e.detail?.value as ManagerConf;
+            this.managerConfiguration = e.detail?.value as ManagerAppConfig;
             app.requestUpdate();
         });
 
         document.addEventListener("saveManagerConfig", (e: CustomEvent) => {
-            manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerConf).then(() => {
+            manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerAppConfig).then(() => {
                 fetch("/manager_config.json", { cache: "reload" });
-                manager.managerAppConfig = e.detail?.value as ManagerConf;
-                Object.entries(manager.managerAppConfig.realms).map(([name, settings]) => {
+                this.managerConfiguration = e.detail?.value as ManagerAppConfig;
+                Object.entries(this.managerConfiguration.realms).map(([name, settings]) => {
                     fetch(settings?.favicon, { cache: "reload" });
                     fetch(settings?.logo, { cache: "reload" });
                     fetch(settings?.logoMobile, { cache: "reload" });
                 });
                 app.requestUpdate();
-            });
-        });
+            })
+        })
+
+        this.getManagerConfig();
     }
 
     protected render(): TemplateResult | void {
-
         if (!manager.authenticated) {
             return html`
                 <or-translate value="notAuthenticated"></or-translate>
             `;
         }
-
-        const managerConfiguration = manager.managerAppConfig;
-
         return html`
+            ${this.loading ? html`
+                <or-loading-indicator .overlay="${true}"></or-loading-indicator>` : ""}
             <div id="wrapper">
                 <div id="header-wrapper">
                     <div id="header-title">
@@ -196,6 +205,11 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                         ${i18next.t("appearance")}
                     </div>
                     <div id="header-actions">
+                        <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"></or-conf-json>
+                        <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t("save")}"
+                                      @click="${() => {
+                                          document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: this.managerConfiguration } }));
+                                      }}"></or-mwc-input>
                         <or-conf-json .managerConfig="${managerConfiguration}" class="hide-mobile"></or-conf-json>
                         <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t("save")}"
                                       @click="${() => {
@@ -203,6 +217,8 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                                       }}"></or-mwc-input>
                     </div>
                 </div>
+                <or-panel .heading="${i18next.t("configuration.realmStyling")}">
+                    <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
                 <or-panel .heading="${i18next.t("configuration.realmStyling")}">
                     <or-conf-realm .config="${managerConfiguration}"></or-conf-realm>
                 </or-panel>

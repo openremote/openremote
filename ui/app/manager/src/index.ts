@@ -41,9 +41,8 @@ import {pageRolesProvider} from "./pages/page-roles";
 import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
-import { ManagerAppConfig } from "@openremote/core";
 import { pageConfigurationProvider } from "./pages/page-configuration";
-import { ManagerConf } from "@openremote/model";
+import { ManagerAppConfig } from "@openremote/model";
 
 declare var CONFIG_URL_PREFIX: string;
 
@@ -151,7 +150,6 @@ fetch(configURL).then(async (result) => {
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {
-        manager.managerAppConfig = appConfig as unknown as ManagerConf
 
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];
@@ -233,7 +231,13 @@ fetch(configURL).then(async (result) => {
         manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
             manager.language = (value ? value : orAppConfig.realms[manager.displayRealm].language);
         }).catch(() => {
-            manager.language = orAppConfig.realms[manager.displayRealm].language;
+            if (orAppConfig.realms[manager.displayRealm]){
+                manager.language = orAppConfig.realms[manager.displayRealm].language
+            } else if (orAppConfig.realms['default']){
+                manager.language = orAppConfig.realms['default'].language
+            } else {
+                manager.language = 'en'
+            }
         })
 
         // Add config prefix if defined (used in dev)

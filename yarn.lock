@@ -2285,7 +2285,6 @@ __metadata:
     "@openremote/or-attribute-input": ^1.1.0
     "@openremote/or-attribute-picker": ^1.1.0
     "@openremote/or-chart": ^1.1.0
-    "@openremote/or-configuration": ^1.1.0
     "@openremote/or-dashboard-builder": ^1.0.0
     "@openremote/or-gauge": ^1.0.0
     "@openremote/or-map": ^1.1.0
@@ -2446,21 +2445,6 @@ __metadata:
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
     simplebar: ^5.3.6
-  languageName: unknown
-  linkType: soft
-
-"@openremote/or-configuration@^1.1.0, @openremote/or-configuration@workspace:ui/component/or-configuration":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-configuration@workspace:ui/component/or-configuration"
-  dependencies:
-    "@openremote/core": "workspace:*"
-    "@openremote/model": "workspace:*"
-    "@openremote/or-components": ^1.1.0
-    "@openremote/or-icon": ^1.1.0
-    "@openremote/or-mwc-components": ^1.1.0
-    "@openremote/or-translate": ^1.1.0
-    "@openremote/util": "workspace:*"
-    "@types/shortid": ^0.0.29
   languageName: unknown
   linkType: soft
 

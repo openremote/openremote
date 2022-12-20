@@ -25,7 +25,6 @@
     "@openremote/or-attribute-input": "^1.1.0",
     "@openremote/or-attribute-picker": "^1.1.0",
     "@openremote/or-chart": "^1.1.0",
-    "@openremote/or-configuration": "^1.1.0",
     "@openremote/or-dashboard-builder": "^1.0.0",
     "@openremote/or-gauge": "^1.0.0",
     "@openremote/or-map": "^1.1.0",

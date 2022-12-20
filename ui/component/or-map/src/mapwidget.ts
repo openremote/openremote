@@ -1,4 +1,4 @@
-import manager, {MapType} from "@openremote/core";
+import manager from "@openremote/core";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent,
     NavigationControl,
@@ -14,6 +14,7 @@ import {
     OrMapMarker
 } from "./markers/or-map-marker";
 import {getLatLngBounds, getLngLat} from "./util";
+import { MapType } from "@openremote/model";
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");

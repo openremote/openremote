@@ -1,4 +1,4 @@
-import manager, {EventCallback, MapType} from "@openremote/core";
+import manager, {EventCallback} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
@@ -18,6 +18,7 @@ import {
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
+import { MapType } from "@openremote/model";
 
 // Re-exports
 export {Util, LngLatLike};
