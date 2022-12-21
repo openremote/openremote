@@ -197,6 +197,7 @@ export class OrGaugeWidgetSettings extends LitElement {
                 ${this.generateExpandableHeader(i18next.t('thresholds'))}
             </div>
             <div>
+                ${this.expandedPanels.includes(i18next.t('thresholds')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.THRESHOLDS}" .widgetConfig="${this.widget?.widgetConfig}"
                                                 @updated="${(event: CustomEvent) => { this.updateConfig(this.widget!, event.detail.changes.get('config')); }}">
                     </or-dashboard-settingspanel>
