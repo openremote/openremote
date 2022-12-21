@@ -880,10 +880,10 @@ public class JsonRulesBuilder extends RulesBuilder {
                     );
                 }
 
-                if(webhookAction.mediaType == null) {
-                    Map<String, List<String>> headersLowercase = new HashMap<>(); // temp variable for making headers case-insensitive, to read content-type shortly after
-                    webhook.getHeaders().forEach((key, val) -> { headersLowercase.put(key.toLowerCase(), val); });
-                    webhookAction.mediaType = MediaType.valueOf(headersLowercase.get("content-type") != null ? headersLowercase.get("content-type").get(0) : MediaType.APPLICATION_JSON);
+                if (webhookAction.mediaType == null) {
+                    Optional<Map.Entry<String, List<String>>> contentTypeHeader = webhook.getHeaders().entrySet().stream().filter((entry) -> entry.getKey().equalsIgnoreCase("content-type")).findFirst();
+                    String contentType = contentTypeHeader.isPresent() ? contentTypeHeader.get().getValue().get(0) : MediaType.APPLICATION_JSON;
+                    webhookAction.mediaType = MediaType.valueOf(contentType);
                 }
 
                 if(webhookAction.target == null) {

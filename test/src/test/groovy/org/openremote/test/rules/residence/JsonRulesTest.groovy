@@ -22,6 +22,8 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.MetaItem
+import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -59,7 +61,10 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
+import static org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
+import static org.openremote.model.value.ValueType.NUMBER
+import static org.openremote.model.value.ValueType.TEXT
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.util.ValueUtil.parse
@@ -790,6 +795,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 .setId(thingId)
                 .setRealm(keycloakTestSetup.realmBuilding.name)
                 .setLocation(new GeoJSONPoint(0, 0))
+                .addAttributes(
+                        new Attribute<>("webhookAttribute", TEXT).addMeta(
+                                new MetaItem<>(MetaItemType.RULE_STATE)
+                        )
+                )
         thingAsset = assetStorageService.merge(thingAsset)
 
         and: "a ruleset with 'has value' condition is added whose action triggers the webhook"
@@ -801,12 +811,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         ruleset = rulesetStorageService.merge(ruleset)
         assert ruleset != null
 
-        expect: "the notes attribute being unset"
+        expect: "the webhook attribute being unset"
         conditions.eventually {
             thingAsset = assetStorageService.find(thingId) as ThingAsset
             assert thingAsset != null
-            assert thingAsset.getAttribute(Asset.NOTES).get() != null
-            assert !thingAsset.getAttribute(Asset.NOTES).get().getValue().isPresent()
+            assert thingAsset.getAttribute("webhookAttribute").get() != null
+            assert !thingAsset.getAttribute("webhookAttribute").get().getValue().isPresent()
         }
 
         and: "the rule engines to become available and be running with asset states and deployments inserted"
@@ -821,14 +831,14 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.lastFireTimestamp > 0
         }
 
-        when: "the notes attribute is changing"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(thingId, Asset.NOTES, "test_message"))
+        when: "the webhook attribute is changing"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(thingId, "webhookAttribute", "test_message"))
 
-        then: "the notes should have been updated"
+        then: "the webhook attribute should have been updated"
         conditions.eventually {
             def thingAsset2 = assetStorageService.find(thingId, true)
             assert thingAsset2 != null
-            assert thingAsset2.getAttribute(Asset.NOTES).get().value.get() == "test_message"
+            assert thingAsset2.getAttribute("webhookAttribute").get().value.get() == "test_message"
         }
 
         expect: "the webhook rule has triggered"

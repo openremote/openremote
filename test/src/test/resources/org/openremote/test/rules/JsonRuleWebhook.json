@@ -19,7 +19,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "notes"
+                          "value": "webhookAttribute"
                         },
                         "value": {
                           "match": "EXACT",
