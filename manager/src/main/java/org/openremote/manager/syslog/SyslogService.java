@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.syslog;
 
+import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.MapAccess;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -32,6 +34,7 @@ import org.openremote.model.syslog.SyslogLevel;
 import org.openremote.model.util.Pair;
 
 import javax.persistence.TypedQuery;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -44,18 +47,23 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+
 /**
  * Act as a JUL handler, publishes (some) log messages on the client event bus, stores
  * (some, depending on {@link SyslogConfig}) log messages in the database.
  */
 public class SyslogService extends Handler implements ContainerService {
 
+    public static final String OR_SYSLOG_LOG_LEVEL = "OR_SYSLOG_LOG_LEVEL";
+    public static final SyslogLevel OR_SYSLOG_LOG_LEVEL_DEFAULT = SyslogLevel.INFO;
+    public static final String OR_SYSLOG_MAX_AGE_DAYS = "OR_SYSLOG_MAX_AGE_DAYS";
+    public static final int OR_SYSLOG_MAX_AGE_DAYS_DEFAULT = 5;
     private static final Logger LOG = Logger.getLogger(SyslogService.class.getName());
 
     protected ScheduledExecutorService executorService;
     protected PersistenceService persistenceService;
     protected ClientEventService clientEventService;
-
     protected SyslogConfig config;
 
     final protected List<SyslogEvent> batch = new ArrayList<>();
@@ -90,34 +98,44 @@ public class SyslogService extends Handler implements ContainerService {
             );
         }
 
-        // Default config: Store all INFO messages for five days
-        config = new SyslogConfig(
-            SyslogLevel.INFO, SyslogCategory.values(), 60 * 24 * 5
-        );
+        int maxAgeDays = MapAccess.getInteger(container.getConfig(), OR_SYSLOG_MAX_AGE_DAYS, OR_SYSLOG_MAX_AGE_DAYS_DEFAULT);
+        SyslogLevel syslogLevel = Optional.ofNullable(MapAccess.getString(container.getConfig(), OR_SYSLOG_LOG_LEVEL, null)).map(SyslogLevel::valueOf).orElse(OR_SYSLOG_LOG_LEVEL_DEFAULT);
+        config = new SyslogConfig(syslogLevel, SyslogCategory.values(), maxAgeDays * 24 * 60);
     }
 
     @Override
     public void start(Container container) throws Exception {
         if (persistenceService != null) {
+
+            TimerService timerService = container.getService(TimerService.class);
+
             // Flush batch every 3 seconds (wait 10 seconds for database (schema) to be ready in dev mode)
             flushBatchFuture = executorService.scheduleAtFixedRate(this::flushBatch, 10, 3, TimeUnit.SECONDS);
 
-            // Clear outdated events every minute
-            deleteOldFuture = executorService.scheduleAtFixedRate(() -> {
-                // Not ready on startup
-                if (persistenceService.getEntityManagerFactory() == null)
-                    return;
-                final int maxAgeMinutes;
-                synchronized (batch) {
-                    maxAgeMinutes = config.getStoredMaxAgeMinutes();
-                }
-                persistenceService.doTransaction(em -> {
-                    em.createQuery(
-                        "delete from SyslogEvent e " +
-                            "where e.timestamp < now() - make_interval(0, 0, 0, 0, 0, :minutes, 0)"
-                    ).setParameter("minutes", maxAgeMinutes).executeUpdate();
-                });
-            }, 60, 60, TimeUnit.SECONDS);
+            // Clear outdated events once a day
+            if (config.getStoredMaxAgeMinutes() > 0) {
+                // Schedule purge at approximately 3AM daily
+                long initialDelay = ChronoUnit.MILLIS.between(
+                    timerService.getNow(),
+                    timerService.getNow().truncatedTo(DAYS).plus(27, ChronoUnit.HOURS));
+
+                deleteOldFuture = executorService.scheduleAtFixedRate(
+                    this::purgeSyslog,
+                    initialDelay,
+                    Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
+                );
+            }
+        }
+    }
+
+    protected void purgeSyslog() {
+        try {
+            persistenceService.doTransaction(em -> em.createQuery(
+                "delete from SyslogEvent e " +
+                    "where e.timestamp < now() - make_interval(0, 0, 0, 0, 0, :minutes, 0)"
+            ).setParameter("minutes", config.getStoredMaxAgeMinutes()).executeUpdate());
+        } catch (Throwable e) {
+            LOG.log(Level.WARNING, "Failed to purge syslog events", e);
         }
     }
 

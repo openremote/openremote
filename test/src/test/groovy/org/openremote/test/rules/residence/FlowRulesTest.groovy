@@ -26,8 +26,6 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -76,7 +74,5 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
             assert bedroomTargetTemp.intValue() == (startTemperature.intValue() + 10) : ("it was actually " +  bedroomTargetTemp.intValue())//convert to int considering floating point inaccuracy
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }

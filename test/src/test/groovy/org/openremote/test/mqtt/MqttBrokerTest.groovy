@@ -49,7 +49,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         List<Object> receivedValues = []
         MQTT_IOClient client = null
         MQTT_IOClient newClient = null
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)

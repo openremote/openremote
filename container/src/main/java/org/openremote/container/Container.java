@@ -160,11 +160,11 @@ public class Container implements org.openremote.model.Container {
         LOG.info(">>> Starting runtime container...");
         try {
             for (ContainerService service : getServices()) {
-                LOG.fine("Initializing service: " + service);
+                LOG.info("Initializing service: " + service.getClass().getName());
                 service.init(Container.this);
             }
             for (ContainerService service : getServices()) {
-                LOG.fine("Starting service: " + service);
+                LOG.info("Starting service: " + service.getClass().getName());
                 service.start(Container.this);
             }
         } catch (Exception ex) {
@@ -183,7 +183,7 @@ public class Container implements org.openremote.model.Container {
         Collections.reverse(servicesToStop);
         try {
             for (ContainerService service : servicesToStop) {
-                LOG.fine("Stopping service: " + service);
+                LOG.fine("Stopping service: " + service.getClass().getName());
                 service.stop(this);
             }
         } catch (Exception ex) {

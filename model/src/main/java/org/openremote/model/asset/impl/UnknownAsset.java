@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, OpenRemote Inc.
+ * Copyright 2022, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,23 +20,23 @@
 package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetDescriptor;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 
 /**
- * Fall back for unknown assets
+ * This is only needed so JPA can deserialise an Asset whose type doesn't match an entity otherwise it is un-used
  */
-@DiscriminatorValue("non null")
 @Entity
-public class UnknownAsset extends Asset<UnknownAsset> {
-
-    public static final AssetDescriptor<UnknownAsset> DESCRIPTOR = new AssetDescriptor<>("help-circle", null, UnknownAsset.class);
-
+@DiscriminatorValue("not null")
+public class UnknownAsset extends Asset<ThingAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
     protected UnknownAsset() {
+    }
+
+    public UnknownAsset(String name) {
+        super(name);
     }
 }

@@ -19,18 +19,13 @@
  */
 package org.openremote.model.query;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -185,39 +180,52 @@ public class AssetQuery implements Serializable {
     public PathPredicate[] paths;
     public RealmPredicate realm;
     public String[] userIds;
-    @JsonSerialize(contentConverter = AssetClassToStringConverter.class)
-    @JsonDeserialize(contentConverter = StringToAssetClassConverter.class)
-    public Class<? extends Asset<?>>[] types;
+    public String[] types;
     public LogicGroup<AttributePredicate> attributes;
     // Ordering
     public OrderBy orderBy;
     public int limit;
 
-    public static class AssetClassToStringConverter extends StdConverter<Class<? extends Asset<?>>, String> {
-
-        @Override
-        public String convert(Class<? extends Asset<?>> value) {
-            return value.getSimpleName();
-        }
-    }
-
-    public static class StringToAssetClassConverter extends StdConverter<String, Class<? extends Asset<?>>> {
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public Class<? extends Asset<?>> convert(String value) {
-            if (Agent.class.getSimpleName().equals(value)) {
-                return (Class<? extends Asset<?>>)(Class<?>) Agent.class;
-            }
-            if (Asset.class.getSimpleName().equals(value)) {
-                return (Class<? extends Asset<?>>)(Class<?>) Asset.class;
-            }
-
-            return ValueUtil.getAssetDescriptor(value).map(AssetDescriptor::getType).orElse(null);
-        }
-    }
-
     public AssetQuery() {
+    }
+
+    /**
+     * Resolves the concrete {@link Asset} types that are covered by the supplied asset types
+     */
+    @SuppressWarnings("unchecked")
+    public static String[] getResolvedAssetTypes(String[] assetTypes) {
+
+        List<Class<? extends Asset<?>>> assetClasses = Arrays.asList(ValueUtil.getAssetClasses(null));
+        Set<String> assetSubTypes = new HashSet<>(Arrays.asList(assetTypes));
+
+        Arrays.stream(assetTypes)
+            .map(assetType ->
+                ValueUtil.getAssetClass(assetType).orElseGet(() -> {
+                    // Try and resolve this type to a concrete asset super type class - should be in the type hierarchy
+                    // of one of the registered asset types if it is a valid type
+                    Class<? extends Asset<?>> matchedClass = null;
+
+                    for (Class<?> c : assetClasses) {
+                        Class<?> currentClass = c;
+                        while (Asset.class.isAssignableFrom(currentClass)) {
+                            if (currentClass.getSimpleName().equals(assetType)) {
+                                matchedClass = (Class)currentClass;
+                                break;
+                            }
+                            currentClass = currentClass.getSuperclass();
+                        }
+                        if (matchedClass != null) {
+                            break;
+                        }
+                    }
+
+                    return matchedClass;
+                }))
+            .filter(Objects::nonNull)
+            .flatMap(assetClass -> assetClasses.stream().filter(assetClass::isAssignableFrom).map(Class::getSimpleName))
+            .forEach(assetSubTypes::add);
+
+        return assetSubTypes.toArray(String[]::new);
     }
 
     public AssetQuery recursive(boolean recursive) {
@@ -289,32 +297,30 @@ public class AssetQuery implements Serializable {
 
     @SuppressWarnings("unchecked")
     @SafeVarargs
-    public final AssetQuery types(AssetDescriptor<? extends Asset<?>>... types) {
+    public final <T extends Asset<?>> AssetQuery types(AssetDescriptor<T>...types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;
         }
 
-        this.types = Arrays.stream(types).map(AssetDescriptor::getType)
-            .toArray(size -> (Class<? extends Asset<?>>[])new Class<?>[size]);
-
+        this.types = Arrays.stream(types).map(AssetDescriptor::getType).map(Class::getSimpleName)
+            .toArray(String[]::new);
         return this;
     }
 
-    @SuppressWarnings("unchecked")
     public final <T extends Asset<?>> AssetQuery types(Class<T> type) {
-        this.types = new Class[] {type};
+        this.types = new String[] {type.getSimpleName()};
         return this;
     }
 
     @SafeVarargs
-    public final AssetQuery types(Class<? extends Asset<?>>... types) {
+    public final AssetQuery types(Class<? extends Asset<?>>...types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;
         }
 
-        this.types = types;
+        this.types = Arrays.stream(types).map(Class::getSimpleName).toArray(String[]::new);
         return this;
     }
 
