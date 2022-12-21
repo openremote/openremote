@@ -56,8 +56,15 @@ const style = css`
         display: table-cell;
     }
     
-    .key-container, .value-container {
-        padding: 10px;
+    .value-container {
+        padding: 0 0 20px 10px;
+    }
+
+    .key-container {
+        padding: 0 10px 20px 0;
+    }
+
+    .value-container, .key-container {
         vertical-align: top;
     }
 

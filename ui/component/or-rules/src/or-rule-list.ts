@@ -56,7 +56,7 @@ const style = css`
         align-items: center;
         height: var(--internal-or-asset-tree-header-height);
         line-height: var(--internal-or-asset-tree-header-height);
-        color: var(--internal-or-asset-tree-header-text-color);
+        color: var(--internal-or-rules-panel-color);
         background-color: var(--internal-or-rules-header-background-color);
     }
     
@@ -241,7 +241,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         return html`
             <div id="wrapper" ?data-disabled="${this.disabled}">
                 ${manager.isSuperUser() ? html`
-                    <div class="header-ruleset-type bg-grey">
+                    <div class="header-ruleset-type">
                         <p>${i18next.t("realmRules")}</p>
                         
                         <div style="flex: 1 1 0; display: flex;">

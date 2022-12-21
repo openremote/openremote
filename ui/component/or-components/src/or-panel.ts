@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {DefaultColor2} from "@openremote/core";
+import {DefaultColor2, DefaultColor3} from "@openremote/core";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const simpleBarStyle = require("simplebar/dist/simplebar.css");
@@ -13,9 +13,11 @@ const style = css`
         --internal-or-panel-background-color: var(--or-panel-background-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
         --internal-or-panel-padding: var(--or-panel-padding, 10px);
         --internal-or-panel-heading-margin: var(--or-panel-heading-margin, 0 0 5px 7px);
+        --internal-or-panel-heading-color: var(--or-panel-heading-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
         --internal-or-panel-border: var(--or-panel-border, 1px solid #e5e5e5);
         --internal-or-panel-border-radius: var(--or-panel-border-radius, 5px);
         --internal-or-panel-heading-font-size: var(--or-panel-heading-font-size, larger);
+        --internal-or-panel-heading-font-weight: var(--or-panel-heading-font-weight, bolder);
         
         display: block;
     }
@@ -36,9 +38,11 @@ const style = css`
         border-radius: var(--internal-or-panel-border-radius);
     }
     
-    strong {
+    #heading {
         margin: var(--internal-or-panel-heading-margin);
         font-size: var(--internal-or-panel-heading-font-size);
+        font-weight: var(--internal-or-panel-heading-font-weight);
+        color: var(--internal-or-panel-heading-color);
     }
 `;
 
@@ -79,7 +83,7 @@ export class OrPanel extends LitElement {
         return html`
             <div id="wrapper">
                 <div id="panel">
-                    ${this.heading ? html`<strong>${this.heading}</strong>` : ``}
+                    ${this.heading ? html`<div id="heading">${this.heading}</div>` : ``}
                     <slot></slot>
                 </div>
             </div>
