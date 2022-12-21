@@ -59,8 +59,6 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         def messages = []
 
         given: "the container environment is started with the mock handler"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -339,6 +337,5 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         cleanup: "the mock is removed"
         notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
 }

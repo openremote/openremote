@@ -110,8 +110,6 @@ public final class MetaItemType {
      * <p>
      * The default expiration for asset events can be configured with environment variable
      * <code>RULE_EVENT_EXPIRES</code>.
-     * <p>
-     * Also see {@link TemporaryFact#GUARANTEED_MIN_EXPIRATION_MILLIS}.
      */
     @Pattern(regexp = Constants.ISO8601_DURATION_REGEXP)
     public static final MetaItemDescriptor<String> RULE_EVENT_EXPIRES = new MetaItemDescriptor<>("ruleEventExpires", ValueType.TEXT);

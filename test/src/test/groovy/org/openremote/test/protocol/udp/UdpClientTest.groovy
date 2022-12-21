@@ -27,6 +27,7 @@ import io.netty.util.internal.SocketUtils
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.udp.UDPIOClient
 import org.openremote.agent.protocol.udp.UDPStringServer
+import org.openremote.container.timer.TimerService
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -46,7 +47,7 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
 
         and: "the container is started"
         def clientPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(), [])
+        def container = startContainer(defaultConfig(), [new TimerService()])
 
         and: "a simple UDP echo server"
         def echoServerPort = findEphemeralPort()

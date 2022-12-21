@@ -26,6 +26,7 @@ import io.netty.util.CharsetUtil
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.tcp.TCPIOClient
 import org.openremote.agent.protocol.tcp.TCPStringServer
+import org.openremote.container.timer.TimerService
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
@@ -44,7 +45,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         and: "the container is started"
-        def container = startContainer(defaultConfig(), [])
+        def container = startContainer(defaultConfig(), [new TimerService()])
 
         and: "a simple TCP echo server"
         def echoServerPort = findEphemeralPort()

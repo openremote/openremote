@@ -42,15 +42,12 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
@@ -78,9 +75,9 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     protected GatewayService gatewayService;
     protected ManagerIdentityService identityService;
     protected ScheduledExecutorService executorService;
-    protected Map<String, String> consoleIdRealmMap;
+    protected ConcurrentMap<String, String> consoleIdRealmMap = new ConcurrentHashMap<>();
     protected ScheduledFuture<?> notifyAssetsScheduledFuture;
-    protected Set<String> notifyAssets;
+    protected final Set<String> notifyAssets = new HashSet<>();
 
     @Override
     public int getPriority() {
@@ -99,9 +96,6 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     @Override
     public void start(Container container) throws Exception {
-
-        // Find all console assets that use this adapter
-        consoleIdRealmMap = new HashMap<>();
 
         assetStorageService.findAll(
             new AssetQuery()
@@ -141,15 +135,9 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     @Override
     public void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates) {
+        AtomicBoolean notifierDebounce = new AtomicBoolean(false);
 
-        withLock(getClass().getSimpleName() + "::processLocationPredicates", () -> {
-
-            AtomicBoolean notifierDebounce = new AtomicBoolean(false);
-
-            if (notifyAssets == null) {
-                notifyAssets = new HashSet<>(modifiedAssetLocationPredicates.size());
-            }
-
+        synchronized (notifyAssets) {
             // Remove all entries that relate to consoles that are compatible with this adapter
             modifiedAssetLocationPredicates.removeIf(assetStateLocationPredicates -> {
                 boolean remove = consoleIdRealmMap.containsKey(assetStateLocationPredicates.getAssetId());
@@ -197,17 +185,17 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
             if (notifierDebounce.get()) {
                 if (notifyAssetsScheduledFuture == null || notifyAssetsScheduledFuture.cancel(false)) {
-                    notifyAssetsScheduledFuture = executorService.schedule(() ->
-                            withLock(getClass().getSimpleName() + "::notifyAssets",
-                                () -> {
-                                    notifyAssetGeofencesChanged(notifyAssets);
-                                    notifyAssets = null;
-                                    notifyAssetsScheduledFuture = null;
-                                }),
+                    notifyAssetsScheduledFuture = executorService.schedule(() -> {
+                            synchronized (notifyAssets) {
+                                notifyAssetGeofencesChanged(notifyAssets);
+                                notifyAssets.clear();
+                                notifyAssetsScheduledFuture = null;
+                            }
+                        },
                         NOTIFY_ASSETS_DEBOUNCE_MILLIS, TimeUnit.MILLISECONDS);
                 }
             }
-        });
+        }
     }
 
     @Override
@@ -283,24 +271,22 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     protected void processConsoleAssetChange(PersistenceEvent<ConsoleAsset> persistenceEvent) {
         ConsoleAsset asset = persistenceEvent.getEntity();
 
-        withLock(getClass().getSimpleName() + "::processAssetChange", () -> {
-            switch (persistenceEvent.getCause()) {
+        switch (persistenceEvent.getCause()) {
 
-                case CREATE:
-                case UPDATE:
+            case CREATE:
+            case UPDATE:
 
-                    if (isLinkedToORConsoleGeofenceAdapter(asset)) {
-                        consoleIdRealmMap.put(asset.getId(), asset.getRealm());
-                    } else {
-                        consoleIdRealmMap.remove(asset.getId());
-                    }
-                    break;
-                case DELETE:
-
+                if (isLinkedToORConsoleGeofenceAdapter(asset)) {
+                    consoleIdRealmMap.put(asset.getId(), asset.getRealm());
+                } else {
                     consoleIdRealmMap.remove(asset.getId());
-                    break;
-            }
-        });
+                }
+                break;
+            case DELETE:
+
+                consoleIdRealmMap.remove(asset.getId());
+                break;
+        }
     }
 
     protected static boolean isLinkedToORConsoleGeofenceAdapter(ConsoleAsset asset) {

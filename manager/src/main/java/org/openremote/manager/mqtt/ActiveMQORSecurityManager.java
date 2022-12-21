@@ -31,6 +31,7 @@ import org.keycloak.adapters.KeycloakDeployment;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
+import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.syslog.SyslogCategory;
 
 import javax.security.auth.Subject;
@@ -131,6 +132,8 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             if (subject != null) {
                 // Ensure subject is available when afterCreateConnection is fired
                 remotingConnection.setSubject(subject);
+
+                subject.getPrincipals().add(new RemotingConnectionPrincipal(remotingConnection));
             }
 
             return subject;
@@ -171,7 +174,19 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         }
 
         KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
-        RemotingConnection connection = brokerService.getConnectionFromSubjectAndTopic(subject, topic);
+        String topicClientID = MQTTHandler.topicClientID(topic);
+
+        if (topicClientID == null) {
+            LOG.warning("Client ID not found but it must be included as the second token in the topic: topic=" + topic);
+            return false;
+        }
+
+        RemotingConnection connection = RemotingConnectionPrincipal.getRemotingConnectionFromSubject(subject);
+
+        if (connection == null) {
+            LOG.warning("Failed to find connection for the specified client ID: clientID=" + topicClientID);
+            return false;
+        }
 
         if (isWrite && topic.hasWildcard()) {
             return false;

@@ -157,14 +157,14 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
-        then: "the global rules engine should not run and the rule engine status should indicate the issue"
+        then: "the global rules engine should still run and the rule engine status should indicate the issue"
         conditions.eventually {
             assert rulesService.globalEngine.deployments.size() == 3
-            assert !rulesService.globalEngine.running
-            assert rulesService.globalEngine.isError()
+            assert rulesService.globalEngine.running
+            assert !rulesService.globalEngine.isError()
             assert rulesService.globalEngine.error instanceof RuntimeException
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == READY})
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == READY})
+            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED})
+            assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some broken global rules" && it.status == COMPILATION_ERROR})
         }
 
@@ -176,6 +176,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert rulesService.globalEngine.deployments.size() == 2
             assert rulesService.globalEngine.running
             assert !rulesService.globalEngine.isError()
+            assert rulesService.globalEngine.error == null
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED })
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED })
         }

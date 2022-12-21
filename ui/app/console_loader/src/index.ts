@@ -1,4 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+import { Auth, ManagerConfig } from "@openremote/model";
+
 declare function require(name: string): any;
 
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
@@ -9,7 +11,6 @@ import {
     appReducer,
     getRealmQueryParameter} from "@openremote/or-app";
 
-import {Auth, ManagerConfig} from "@openremote/core";
 import "./pages/page-mobile-onboarding";
 import {pageMobileOnboardingProvider, OnboardingConfig} from "./pages/page-mobile-onboarding";
 import "./pages/page-mobile-splash";

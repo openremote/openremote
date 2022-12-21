@@ -20,6 +20,7 @@
 package org.openremote.manager.setup;
 
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.security.IdentityService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -49,7 +50,7 @@ public class SetupService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return PersistenceService.PRIORITY + 10; // Start just after persistence service
+        return IdentityService.PRIORITY + 10;
     }
 
     @Override
