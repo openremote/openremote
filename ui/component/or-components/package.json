@@ -23,6 +23,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/elevation": "^9.0.0",
+    "@openremote/core": "workspace:*",
     "lit": "^2.0.2",
     "simplebar": "^5.3.6"
   },

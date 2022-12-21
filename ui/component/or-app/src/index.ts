@@ -15,7 +15,7 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, normaliseConfig, Manager} from "@openremote/core";
+import manager, {DefaultColor2, DefaultColor3, DefaultColor4, Util, BasicLoginResult, normaliseConfig, Manager} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -23,7 +23,7 @@ import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
-import { Realm } from "@openremote/model";
+import { Auth, ManagerConfig, Realm } from "@openremote/model";
 
 const DefaultLogo = require("../images/logo.svg");
 const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -38,7 +38,7 @@ export * from "./types";
 declare var MANAGER_URL: string | undefined;
 declare var KEYCLOAK_URL: string | undefined;
 
-export {HeaderConfig};
+export {HeaderConfig, DEFAULT_LANGUAGES};
 
 export function getRealmQueryParameter(): string | undefined {
     if(location.search && location.search !== "") {
@@ -182,7 +182,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             managerConfig.realm = getRealmQueryParameter();
         }
         managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
-        managerConfig.basicLoginProvider = (u, p) => this.doBasicLogin(u, p);
+        managerConfig.basicLoginProvider = (u:any, p:any) => this.doBasicLogin(u, p);
 
         console.info("Initialising the manager");
 
@@ -225,6 +225,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 // Load available realm info
                 const response = await manager.rest.api.RealmResource.getAccessible();
                 this._realms = response.data;
+
                 let realm: string | null | undefined = undefined;
 
                 // Set current display realm if super user

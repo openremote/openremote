@@ -2,6 +2,7 @@ import { manager } from "@openremote/core";
 import { AppStateKeyed, HeaderItem, OrApp } from "@openremote/or-app";
 import {AnyAction} from "@reduxjs/toolkit";
 import { getMapRoute } from "./routes";
+import { i18next } from "@openremote/or-translate";
 
 export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
@@ -132,6 +133,16 @@ export function headerItemProvisioning<S extends AppStateKeyed, A extends AnyAct
         value: "provisioning",
         href: "provisioning",
         text: "autoProvisioning",
+        roles: () => manager.isSuperUser()
+    };
+}
+
+export function headerItemConfiguration<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "palette-outline",
+        value: "configuration",
+        href: "configuration",
+        text: "appearance",
         roles: () => manager.isSuperUser()
     };
 }

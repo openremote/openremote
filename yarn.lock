@@ -2441,6 +2441,7 @@ __metadata:
   resolution: "@openremote/or-components@workspace:ui/component/or-components"
   dependencies:
     "@material/elevation": ^9.0.0
+    "@openremote/core": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: ^2.0.2
     simplebar: ^5.3.6
@@ -2514,6 +2515,7 @@ __metadata:
   resolution: "@openremote/or-json-forms@workspace:ui/component/or-json-forms"
   dependencies:
     "@jsonforms/core": ^3.0.0-beta.1
+    "@openremote/or-components": ^1.1.0
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/util": "workspace:*"
     "@polymer/polymer": ^3.3.1

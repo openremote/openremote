@@ -1,18 +1,38 @@
-import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {DefaultColor2, DefaultColor5} from "@openremote/core";
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+import { css, html, LitElement, unsafeCSS } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { DefaultColor5 } from "@openremote/core";
 
 // language=CSS
 const style = css`
-    
+
     :host {
         display: block;
         box-sizing: content-box;
         margin: 0;
         overflow: hidden;
-        transition: margin 225ms cubic-bezier(0.4, 0, 0.2, 1),box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+        transition: margin 225ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+        background-color: var(--or-collapisble-panel-background-color);
         border-radius: 4px;
         border-width: 1px;
         border-style: solid;
@@ -30,7 +50,7 @@ const style = css`
         font-size: 15px;
         font-weight: 400;
         align-items: center;
-        padding: 0 24px;
+        padding: 0 24px 0 16px;
         border-radius: inherit;
     }
     
@@ -44,7 +64,6 @@ const style = css`
     }
 
     #header.expanded > #indicator {
-        transform: rotate(180deg);
     }
     
     #header-content {
@@ -55,13 +74,8 @@ const style = css`
     }
 
     #header-title, #header-description {
-        margin-right: 16px;
         display: inline-flex;
         align-items: center;
-    }
-
-    #header-title {
-        flex: 0;
     }
     
     #header-description {
@@ -70,20 +84,11 @@ const style = css`
     
     #indicator {
         align-self: center;
-    }
-    
-    #indicator::after {
-        border-style: solid;
-        border-width: 0 2px 2px 0;
-        content: "";
-        display: inline-block;
-        padding: 3px;
-        transform: rotate(45deg);
-        vertical-align: middle;
+        margin-right: 6px;
+        margin-left: -5px;
     }
     
     #content {
-        display: flex;
         height: 0;
         visibility: hidden;
     }
@@ -91,6 +96,14 @@ const style = css`
     #content.expanded {
         height: unset;
         visibility: visible;
+    }
+
+    or-icon {
+        vertical-align: middle;
+        --or-icon-width: 20px;
+        --or-icon-height: 20px;
+        margin-right: 2px;
+        margin-left: -5px;
     }
 `;
 
@@ -122,11 +135,11 @@ export class OrCollapsiblePanel extends LitElement {
 
         return html`
             <div id="header" class="${this.expandable ? "expandable" : ""} ${this.expandable && this.expanded ? "expanded" : ""}" @click="${(ev:MouseEvent) => this._onHeaderClicked(ev)}">
+                ${this.expandable ? html`<or-icon icon="chevron-${this.expanded ? "down" : "right"}"></or-icon>` : ""}
                 <span id="header-content">
                     <span id="header-title"><slot name="header"></slot></span>
                     <span id="header-description"><slot name="header-description"></slot></span>
                 </span>
-                ${this.expandable ? html`<span id="indicator"></span>` : ""}
             </div>
             <div id="content" class="${this.expandable && this.expanded ? "expanded" : ""}">
                 <slot name="content"></slot>

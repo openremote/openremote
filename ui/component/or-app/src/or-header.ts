@@ -8,7 +8,9 @@ import manager, {
     DefaultColor4,
     DefaultColor5,
     DefaultHeaderHeight,
-    Util
+    Util,
+  DEFAULT_LANGUAGES,
+  Languages
 } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
@@ -17,6 +19,8 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Realm} from "@openremote/model";
 import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
+
+export {DEFAULT_LANGUAGES, Languages}
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -33,21 +37,6 @@ export interface HeaderItem {
    hideMobile?: boolean;
    roles?: string[] | {[client: string]: string[]} | (() => boolean);
 }
-
-export interface Languages {
-    [langKey: string]: string;
-}
-
-export const DEFAULT_LANGUAGES: Languages = {
-    en: "english",
-    cn: "chinese",
-    nl: "dutch",
-    fr: "french",
-    de: "german",
-    it: "italian",
-    pt: "portuguese",
-    es: "spanish"
-};
 
 function getHeaderMenuItems(items: HeaderItem[]): ListItem[] {
     return items.filter(hasRequiredRole).map((option) => {
