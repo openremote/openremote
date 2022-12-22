@@ -31,6 +31,7 @@ import "../components/configuration/or-conf-realm/index";
 import { ManagerAppConfig } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
+
 declare var CONFIG_URL_PREFIX: string;
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
