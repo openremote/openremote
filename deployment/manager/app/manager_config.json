@@ -1,8 +1,9 @@
 {
-  "realms": {
-    "default": {
-      "appTitle": "OpenRemote Manager Demo",
-      "language": "en"
+  "realms" : {
+    "default" : {
+      "appTitle" : "OpenRemote Manager Demo",
+      "language" : "en",
+      "logo" : "/images/default/logo.jpg"
     }
   }
 }
