@@ -522,7 +522,7 @@ export class OrMap extends LitElement {
                 this._resizeObserver?.disconnect();
                 this._resizeObserver = new ResizeObserver(debounce(() => {
                     this.resize();
-                }, 20));
+                }, 200));
                 var container = this._mapContainer?.parentElement;
                 if (container) {
                     this._resizeObserver.observe(container);

@@ -49,12 +49,12 @@ export interface MapWidgetConfig extends OrWidgetConfig {
     textColors: [string, string][],
     // Threshold related values
     thresholds: [number, string][],
-    min: number,
-    max: number,
+    min?: number,
+    max?: number,
     // Asset type related values
-    assetType: string,
-    valueType: string,
-    attribute: string,
+    assetType?: string,
+    valueType?: string,
+    attributeName?: string,
     assetTypes: AssetDescriptor[],
     assets: Asset[],
     attributes: string[],
@@ -74,18 +74,11 @@ export class OrMapWidget implements OrWidgetEntity {
         return {
             displayName: widget?.displayName,
             attributeRefs: [],
-            zoom: undefined,
-            center: undefined,
             showLabels: false,
             showUnits: false,
             boolColors: { type: 'boolean', 'false': '#ef5350', 'true': '#4caf50' },
             textColors: [['example', '4caf50'], ['example2', 'ef5350']],
             thresholds: [[0, "#4caf50"],[75, "#ff9800"],[90, "#ef5350"]],
-            min: 0,
-            max: 100,
-            assetType: "",
-            valueType: "",
-            attribute: "",
             assetTypes: [],
             assets: [],
             attributes: [],
@@ -122,7 +115,7 @@ export class OrMapWidgetContent extends LitElement {
     @query("#miniMap")
     protected _map?: OrMap;
 
-    public markers: MapMarkerAssetConfig = {};
+    private markers: MapMarkerAssetConfig = {};
 
 
     /* ---------- */
@@ -260,7 +253,6 @@ class OrMapWidgetSettings extends LitElement {
                                                                           Number.parseFloat(lngLatArr[0])
                                                                       );
                                                                       config.center = value as LngLatLike;
-                                                                      console.log(config.center);
                                                                       this.updateConfig(this.widget!, config);
                                                                   }
                                                               }
@@ -292,8 +284,6 @@ class OrMapWidgetSettings extends LitElement {
                     ${this.expandedPanels.includes(i18next.t('thresholds')) ? html`
                         <or-dashboard-settingspanel .type="${SettingsPanelType.THRESHOLDS}"
                                                     .widgetConfig="${this.widget?.widgetConfig}"
-                                                    .min="${this.widget?.widgetConfig.min}"
-                                                    .max="${this.widget?.widgetConfig.max}"
                                                     @updated="${(event: CustomEvent) => {
                                                         this.updateConfig(this.widget!, event.detail.changes.get('config'));
                                                     }}"

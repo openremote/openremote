@@ -16,11 +16,6 @@ import {customElement, property, state} from "lit/decorators.js";
 import { until } from "lit/directives/until.js";
 import {OrWidgetConfig} from "./widgets/or-base-widget";
 import {style} from "./style";
-import {
-    MapAssetCardConfig,
-    OrMapMarkerAsset,
-    MapMarkerAssetConfig,
-} from "@openremote/or-map";
 
 //language=css
 export const widgetSettingsStyling = css`
@@ -123,9 +118,6 @@ export class OrDashboardSettingsPanel extends LitElement {
     static get styles() {
         return [style, widgetSettingsStyling];
     }
-
-    @state()
-    protected _selectedType!: string;
 
     @state()
     protected _assetTypes: AssetDescriptor[] = [];
@@ -530,7 +522,7 @@ export class OrDashboardSettingsPanel extends LitElement {
 
     protected handleTypeSelect(value: string) {
         if(this._config.assetType !== value) {
-            this._config.attribute = "";
+            this._config.attributeName = undefined;
             this._config.assets = [];
             this._config.showLabels = false;
             this._config.showUnits = false;
@@ -544,7 +536,7 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     protected async handleAttributeSelect(value: string) {
-        this._config.attribute = value;
+        this._config.attributeName = value;
         await manager.rest.api.AssetResource.queryAssets({
             realm: {
                             name: manager.displayRealm
@@ -565,13 +557,13 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     async getAssettypesHTML(config: OrWidgetConfig | any) {
-        if(config.assetTypes !== null){
+        if(config.assetTypes){
             if(this._assetTypes.length == 0){
                 this._assetTypes = await this.getAssetTypes(config) as AssetDescriptor[]
             }
             return html`
                 <div style="padding: 12px 24px 24px 24px; display: flex; flex-direction: column; gap: 16px;">
-                    ${(config.assetType != null) ? html`
+                    ${(config.assetType) ? html`
                         ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
                             this.assetTypeSelect(),
                             this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }) as ListItem[],
@@ -588,7 +580,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                             <div>
                                 <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;"
                                               .options="${this._config.attributes}"
-                                              .value="${config.attribute}" label="${i18next.t('Attribute')}"
+                                              .value="${config.attributeName}" label="${i18next.t('Attribute')}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   this.handleAttributeSelect(event.detail.value);
                                               }}"
