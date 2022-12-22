@@ -198,25 +198,25 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         }
         return html`
             ${this.loading ? html`
-                <or-loading-indicator .overlay="${true}"></or-loading-indicator>` : ""}
-            <div id="wrapper">
+                <or-loading-indicator .overlay="${true}"></or-loading-indicator>` : html`
+              <div id="wrapper">
                 <div id="header-wrapper">
-                    <div id="header-title">
-                        <or-icon icon="palette-outline"></or-icon>
-                        ${i18next.t("appearance")}
-                    </div>
-                    <div id="header-actions">
-                        <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"></or-conf-json>
-                        <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t("save")}"
-                                      @click="${() => {
-                                          document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: this.managerConfiguration } }));
-                                      }}"></or-mwc-input>
-                    </div>
+                  <div id="header-title">
+                    <or-icon icon="palette-outline"></or-icon>
+                    ${i18next.t("appearance")}
+                  </div>
+                  <div id="header-actions">
+                    <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"></or-conf-json>
+                    <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t("save")}"
+                                  @click="${() => {
+                                    document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: this.managerConfiguration } }));
+                                  }}"></or-mwc-input>
+                  </div>
                 </div>
                 <or-panel .heading="${i18next.t("configuration.realmStyling")}">
-                    <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
+                  <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
                 </or-panel>
-            </div>
+              </div>`}
         `;
 
 
