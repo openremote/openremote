@@ -20,10 +20,10 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "./or-conf-realm-card";
-import {customElement, property} from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import manager from "@openremote/core";
-import { ManagerAppConfig, ManagerAppRealmConfig } from "@openremote/model";
-import { OrMwcDialog, showDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { ManagerAppConfig } from "@openremote/model";
+import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 
