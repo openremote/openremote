@@ -10,21 +10,15 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
-import org.openremote.manager.rules.JsonRulesBuilder
-import org.openremote.manager.rules.RulesEngine
-import org.openremote.manager.rules.RulesService
-import org.openremote.manager.rules.RulesetDeployment
-import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.rules.*
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
-import org.openremote.model.value.ValueType
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
-import org.openremote.model.asset.Asset
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
@@ -34,12 +28,15 @@ import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
+import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
-import org.openremote.model.rules.TemporaryFact
-import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.MetaItemType
+import org.openremote.model.value.ValueType
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import org.simplejavamail.email.Email
 import spock.lang.Specification
@@ -52,9 +49,9 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
-import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.util.ValueUtil.parse
+import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 
 class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
@@ -66,12 +63,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         List<Notification.Target> emailTargets = []
 
         given: "the geofence notifier debounce is set to a small value for testing"
-        def originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
+        Integer originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
-
-        and: "the rule firing delay time is set to a small value for testing"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
 
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
@@ -189,9 +182,13 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
-        then: "the console should have been registered and a geofence refresh notification should have been sent"
+        and: "the console location is marked as RULE_STATE"
+        def asset = assetStorageService.find(consoleRegistration.id)
+        asset.getAttribute(Asset.LOCATION).ifPresent { it.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}
+        asset = assetStorageService.merge(asset)
+
+        then: "a geofence refresh notification should have been sent to the console"
         conditions.eventually {
-            assert consoleRegistration.id != null
             assert pushMessages.size() == 1
         }
 
@@ -486,10 +483,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         cleanup: "static variables are reset and the mock is removed"
-        RulesEngine.PAUSE_SCHEDULER = originalPause
-        RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
-        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
+        if (originalPause != null) {
+            RulesEngine.PAUSE_SCHEDULER = originalPause
+        }
+        if (originalUnpause != null) {
+            RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
+        }
+        if (originalDebounceMillis != null) {
+            ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
+        }
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
@@ -498,11 +500,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
     def "Trigger actions based on the position of the sun"() {
 
-        given: "the rule firing delay time is set to a small value for testing"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
-
-        and: "the container environment is started"
+        given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
@@ -582,11 +580,24 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet()).getSeconds()+1, TimeUnit.SECONDS, container)
 
         then: "the rule engine should have fired again and the rule should have triggered"
+        def lastUpdateTime = 0
         conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             thingAsset = assetStorageService.find(thingId) as ThingAsset
             assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+            lastUpdateTime = thingAsset.getAttribute("sunset").get().getTimestamp().orElse(0)
+        }
+
+        when: "time advances slightly"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should not have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp >= lastFireTimestamp + 1000
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getTimestamp().orElse(-1) == lastUpdateTime
         }
 
         when: "time advances past the sunset"
@@ -716,7 +727,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         cleanup: "static variables are reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)

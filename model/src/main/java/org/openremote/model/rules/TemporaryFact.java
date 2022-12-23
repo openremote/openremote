@@ -33,16 +33,6 @@ import java.time.temporal.ChronoUnit;
 @TsIgnore
 public class TemporaryFact<T> extends Event {
 
-    /**
-     * This value defines the periodic firing of the rules engines, and therefore
-     * has an impact on system load. If a temporary fact has a shorter expiration
-     * time, it's not guaranteed to be removed within that time. Any time-based
-     * operation, such as matching temporary facts in a sliding time window, must
-     * be designed with this margin in mind.
-     */
-    // TODO This is not true, need to add GlobalLockTimeout
-    public static int GUARANTEED_MIN_EXPIRATION_MILLIS = 3000;
-
     final protected long expirationMilliseconds;
     final protected T fact;
     // These are only useful for debugging, easier to read than timestamps

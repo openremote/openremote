@@ -27,8 +27,7 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 
 import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.DEFAULT_CLIENTS;
-import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.model.Constants.*;
 
 public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
@@ -41,9 +40,6 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
     @Override
     public void onStart() throws Exception {
         super.onStart();
-
-        // Switch keycloak proxy back to admin cli
-        keycloakProvider.setActiveCredentials(keycloakProvider.getDefaultKeycloakGrant(container));
         doClean();
     }
 
@@ -58,7 +54,7 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
         LOG.info("Deleting all non-master admin users");
         Arrays.stream(keycloakProvider.queryUsers(new UserQuery().realm(new RealmPredicate(MASTER_REALM)))).forEach(user -> {
-            if (!user.getUsername().equals(MASTER_REALM_ADMIN_USER)) {
+            if (!user.getUsername().equals(MASTER_REALM_ADMIN_USER) && !user.getUsername().equals(MANAGER_CLIENT_ID)) {
                 LOG.info("Deleting user: " + user);
                 keycloakProvider.deleteUser(MASTER_REALM, user.getId());
             }

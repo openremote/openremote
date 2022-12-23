@@ -70,6 +70,8 @@ import java.util.stream.IntStream
 
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
+import static org.openremote.model.Constants.MASTER_REALM
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
 trait ContainerTrait {
 
@@ -123,7 +125,12 @@ trait ContainerTrait {
                         }
 
                         println("Purging ${newUsers.size()} new user(s)")
-                        newUsers.forEach {user -> identityProvider.deleteUser(user.realm, user.id)}
+                        newUsers.forEach {user ->
+                            // Never delete the master admin user
+                            if (user.getUsername() != MASTER_REALM_ADMIN_USER && user.getRealm() != MASTER_REALM) {
+                                identityProvider.deleteUser(user.realm, user.id)
+                            }
+                        }
                     }
 
                     // Reset gateway connections
@@ -197,6 +204,17 @@ trait ContainerTrait {
                                 throw new IllegalStateException("Rule engines have failed to stop")
                             }
                             Thread.sleep(100)
+                        }
+                    }
+
+                    // Wait for system to settle down
+                    def assetProcessingService = container.hasService(AssetProcessingService.class) ? container.getService(AssetProcessingService.class) : null
+                    if (assetProcessingService != null) {
+                        println("Waiting for the system to settle down")
+                        def j=0
+                        while (j < 100 && !noEventProcessedIn(assetProcessingService, 300)) {
+                            Thread.sleep(100)
+                            j++
                         }
                     }
 

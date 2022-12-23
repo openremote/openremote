@@ -44,7 +44,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
+import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
 /**
  * This allows custom handlers to be discovered by the {@link MQTTBrokerService} during system startup using the
@@ -79,7 +79,7 @@ public abstract class MQTTHandler {
     /**
      * Called when the system starts to allow for initialisation.
      */
-    public void start(Container container) throws Exception {
+    public void init(Container container) throws Exception {
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
@@ -92,7 +92,12 @@ public abstract class MQTTHandler {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
         }
+    }
 
+    /**
+     * Called when the system starts to allow for initialisation.
+     */
+    public void start(Container container) throws Exception {
         Set<String> publishListenerTopics = getPublishListenerTopics();
         if (publishListenerTopics != null) {
             publishListenerTopics.forEach(this::addPublishConsumer);
@@ -103,12 +108,19 @@ public abstract class MQTTHandler {
         try {
             getLogger().fine("Adding publish consumer for topic '" + topic + "': handler=" + getName());
             String coreTopic = MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, mqttBrokerService.wildcardConfiguration);
-            mqttBrokerService.internalSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.ANYCAST).setAutoCreateAddress(true).setAutoCreated(true));
+            mqttBrokerService.internalSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.ANYCAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
             ClientConsumer consumer = mqttBrokerService.internalSession.createConsumer(coreTopic);
             consumer.setMessageHandler(message -> {
                 Topic publishTopic = Topic.parse(MQTTUtil.convertCoreAddressToMqttTopicFilter(message.getAddress(), mqttBrokerService.wildcardConfiguration));
                 String clientID = message.getStringProperty(MessageUtil.CONNECTION_ID_PROPERTY_NAME);
                 RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
+
+                if (connection == null) {
+                    LOG.warning("Failed to find connection for connected client so dropping publish to topic '" + topic + "': clientID=" +  clientID);
+                    return;
+                }
+
+                getLogger().info("Client published to '" + publishTopic + "': " + mqttBrokerService.connectionToString(connection));
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
             });
         } catch (ActiveMQException e) {
@@ -167,11 +179,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().finest("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", " + connectionToString(connection));
+            getLogger().finest("Anonymous connection subscriptions not supported by this handler, topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
         if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + connectionToString(connection));
+            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
         return canSubscribe(connection, securityContext, topic);
@@ -183,11 +195,11 @@ public abstract class MQTTHandler {
      */
     public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (securityContext == null) {
-            getLogger().fine("Anonymous connection publishes not supported by this handler, topic=" + topic + ", " + connectionToString(connection));
+            getLogger().fine("Anonymous connection publishes not supported by this handler topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
         if (!topicRealmAllowed(securityContext, topic) || !topicClientIdMatches(connection, topic)) {
-            getLogger().fine("Topic realm and client ID tokens must match the connection, topic=" + topic + ", " + connectionToString(connection));
+            getLogger().fine("Topic realm and client ID tokens must match the connection topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
         return canPublish(connection, securityContext, topic);

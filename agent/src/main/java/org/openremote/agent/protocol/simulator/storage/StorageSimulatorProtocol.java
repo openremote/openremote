@@ -93,13 +93,6 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
         }
 
         updateLinkedAttribute(new AttributeState(event.getAttributeRef(), processedValue));
-
-        // Push write value into the asset and update
-        String assetId = event.getAssetId();
-        ((Attribute<Object>) attribute).setValue(processedValue);
-        ElectricityStorageAsset asset = assetService.findAsset(assetId, ElectricityStorageAsset.class);
-        asset.addOrReplaceAttributes(attribute);
-        updateStorageAsset(asset);
     }
 
     protected void updateStorageAsset(ElectricityStorageAsset storageAsset) {

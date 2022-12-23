@@ -40,7 +40,7 @@ jobs:
     steps:
 
       - name: Check CI/CD team membership
-        uses: tspascoal/get-user-teams-membership@v1
+        uses: tspascoal/get-user-teams-membership@v2
         id: checkUserMember
         with:
           username: ${{ github.actor }}

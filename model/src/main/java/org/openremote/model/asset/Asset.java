@@ -25,7 +25,6 @@ import org.hibernate.annotations.*;
 import org.openremote.model.Constants;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.asset.impl.ThingAsset;
-import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaMap;
@@ -208,7 +207,7 @@ import static org.openremote.model.Constants.*;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "TYPE", discriminatorType = STRING)
 @Check(constraints = "ID != PARENT_ID")
-@JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = UnknownAsset.class)
+@JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = ThingAsset.class)
 @JsonTypeIdResolver(AssetTypeIdResolver.class)
 @AssetValid(groups = Asset.AssetSave.class)
 @DynamicUpdate

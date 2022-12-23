@@ -51,41 +51,42 @@ public class LogUtil {
     public static void configureLogging() throws ExceptionInInitializerError {
         // If no JUL configuration is provided
         if (System.getProperty("java.util.logging.config.file") == null) {
+            boolean logConfigFound = false;
+            Path loggingConfigFile = !TextUtil.isNullOrEmpty(System.getenv(OR_LOGGING_CONFIG_FILE)) ? Paths.get(System.getenv(OR_LOGGING_CONFIG_FILE)) : null;
+
             // Load the logging configuration file specified with an environment variable
-            if (!TextUtil.isNullOrEmpty(System.getenv(OR_LOGGING_CONFIG_FILE))) {
-                Path loggingConfigFile = Paths.get(System.getenv(OR_LOGGING_CONFIG_FILE));
-                if (!Files.isReadable(loggingConfigFile)) {
-                    throw new ExceptionInInitializerError("OR_LOGGING_CONFIG_FILE is not readable: " + loggingConfigFile.toAbsolutePath());
-                }
-                try (InputStream is = Files.newInputStream(loggingConfigFile)) {
+            if (loggingConfigFile != null) {
+                if (Files.isReadable(loggingConfigFile)) {
                     System.out.println("Using logging configuration: " + loggingConfigFile.toAbsolutePath());
-                    LogManager.getLogManager().readConfiguration(is);
+
+                    try (InputStream is = Files.newInputStream(loggingConfigFile)) {
+                        LogManager.getLogManager().readConfiguration(is);
+                        logConfigFound = true;
+                    } catch (Exception ex) {
+                        throw new ExceptionInInitializerError(ex);
+                    }
+                }
+            }
+
+            if (!logConfigFound) {
+                // Look for logging config on the classpath (load a default configuration if none specified)
+                String devModeStr = System.getenv(OR_DEV_MODE);
+                boolean isDevMode = devModeStr == null || "TRUE".equals(devModeStr.toUpperCase(Locale.ROOT));
+                String loggingFile = loggingConfigFile != null ? loggingConfigFile.toString()  : isDevMode ? "logging-dev.properties" : "logging.properties";
+
+                try (InputStream is = Container.class.getClassLoader().getResourceAsStream(loggingFile)) {
+                    if (is != null) {
+                        System.out.println("Using logging configuration on classpath: " + loggingFile);
+                        logConfigFound = true;
+                        LogManager.getLogManager().readConfiguration(is);
+                    }
                 } catch (Exception ex) {
                     throw new ExceptionInInitializerError(ex);
                 }
-            } else {
-                // Try to find /deployment/manager/logging.properties
-                if (Files.isReadable(Paths.get("/deployment/manager/logging.properties"))) {
-                    try (InputStream is = Files.newInputStream(Paths.get("/deployment/manager/logging.properties"))) {
-                        System.out.println("Using logging configuration: /deployment/manager/logging.properties");
-                        LogManager.getLogManager().readConfiguration(is);
-                    } catch (Exception ex) {
-                        throw new ExceptionInInitializerError(ex);
-                    }
-                } else {
-                    // Or load a default configuration from the classpath
-                    String devModeStr = System.getenv(OR_DEV_MODE);
-                    boolean isDevMode = devModeStr == null || "TRUE".equals(devModeStr.toUpperCase(Locale.ROOT));
-                    String loggingFile = isDevMode ? "logging-dev.properties" : "logging.properties";
-                    try (InputStream is = Container.class.getClassLoader().getResourceAsStream(loggingFile)) {
-                        if (is != null) {
-                            System.out.println("Using logging configuration on classpath: " + loggingFile);
-                            LogManager.getLogManager().readConfiguration(is);
-                        }
-                    } catch (Exception ex) {
-                        throw new ExceptionInInitializerError(ex);
-                    }
-                }
+            }
+
+            if (!logConfigFound) {
+                throw new ExceptionInInitializerError("OR_LOGGING_CONFIG_FILE is not readable: " + loggingConfigFile);
             }
         }
     }

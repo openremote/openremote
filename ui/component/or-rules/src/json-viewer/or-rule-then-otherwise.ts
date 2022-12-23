@@ -5,13 +5,16 @@ import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {
+    AssetModelUtil,
     AssetTypeInfo,
+    HTTPMethod,
     JsonRule,
     RuleActionNotification,
     RuleActionUnion,
+    RuleActionWebhook,
     RuleRecurrence,
     WellknownAssets,
-    AssetModelUtil
+    Asset
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -20,27 +23,30 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
+import "./or-rule-action-webhook";
 import {translate} from "@openremote/or-translate";
 
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): ListItem[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): (ListItem | null)[] {
 
     let addAssetTypes = true;
     let addWait = true;
     let addNotification = true;
     let addPushNotification = true;
+    let addWebhook = true;
 
     if (config && config.controls && config.controls.allowedActionTypes) {
         addAssetTypes = config.controls.allowedActionTypes.indexOf(ActionType.ATTRIBUTE) >= 0;
         addWait = config.controls.allowedActionTypes.indexOf(ActionType.WAIT) >= 0;
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.EMAIL) >= 0;
         addPushNotification = config.controls.allowedActionTypes.indexOf(ActionType.PUSH_NOTIFICATION) >= 0;
+        addWebhook = config.controls.allowedActionTypes.indexOf(ActionType.WEBHOOK) >= 0;
     }
 
 
-    const menu: ListItem[] = [];
+    const menu: (ListItem | null)[] = [];
 
     if (addAssetTypes && assetInfos) {
         menu.push(...assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
@@ -57,6 +63,9 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             } as ListItem;
         }));
     }
+
+    menu.sort(Util.sortByString((listItem) => listItem?.value!));
+    menu.push(null); // divider
 
     if (addNotification) {
         menu.push({
@@ -85,7 +94,14 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
         } as ListItem);
     }
 
-    menu.sort(Util.sortByString((listItem) => listItem.value!));
+    if (addWebhook) {
+        menu.push({
+            text: i18next.t("webhook"),
+            icon: "webhook",
+            value: ActionType.WEBHOOK,
+            styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
+        })
+    }
 
     return menu;
 }
@@ -212,6 +228,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     @property({type: Object, attribute: false})
     public assetInfos?: AssetTypeInfo[];
 
+    @property({type: Object})
+    public assetProvider?: (type: string) => Promise<Asset[] | undefined>
+
     protected get thenAllowAdd() {
         return !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
     }
@@ -282,6 +301,10 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         buttonIcon = "timer";
                         buttonColor = WAIT_COLOR;
                         break;
+                    case ActionType.WEBHOOK:
+                        buttonIcon = "webhook";
+                        buttonColor = NOTIFICATION_COLOR;
+                        break;
                     case "notification":
                         action = action as RuleActionNotification
                         if (type === "push") {
@@ -330,8 +353,11 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 case ActionType.EMAIL:
                     template = html`<or-rule-action-notification id="email-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.EMAIL}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
+                case ActionType.WEBHOOK:
+                    template = html`<or-rule-action-webhook .rule="${this.rule}" .action="${action}" .actionType="${ActionType.WEBHOOK}"></or-rule-action-webhook>`;
+                    break;
                 default:
-                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
+                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .assetProvider="${this.assetProvider}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
                     break;
             }
         }
@@ -376,6 +402,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         switch (action.action) {
             case "wait":
+                break;
+            case "webhook":
+                return action.action;
                 break;
             case "notification":
                 const type = action.notification && action.notification.message && action.notification.message.type ? action.notification.message.type : action.action;
@@ -428,6 +457,8 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             case "wait":
                 action.millis = undefined;
                 break;
+            case "webhook":
+                break;
             case "write-attribute":
                 action.value = undefined;
                 action.attributeName = undefined;
@@ -446,6 +477,16 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         if (value === ActionType.WAIT) {
             action.action = "wait";
+        } else if (value == ActionType.WEBHOOK) {
+            action = action as RuleActionWebhook;
+            action.action = "webhook";
+            action.webhook = {
+                httpMethod: HTTPMethod.POST,
+                payload: JSON.stringify({
+                    rule: "%RULESET_NAME%",
+                    assets: "%TRIGGER_ASSETS%"
+                }, null, 4)
+            };
         } else if (value === ActionType.EMAIL) {
             action = action as RuleActionNotification;
             action.action = "notification";

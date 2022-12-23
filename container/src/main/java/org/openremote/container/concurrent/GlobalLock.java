@@ -19,18 +19,20 @@
  */
 package org.openremote.container.concurrent;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.INFO;
 
 /**
  * A global reentrant exclusive lock, use convenience methods {@link #withLock} and {@link #withLockReturning}.
  */
 public class GlobalLock {
 
+    protected static final int LOCK_WARNING_MILLIS = 10000;
     private static final Logger LOG = Logger.getLogger(GlobalLock.class.getName());
 
     /**
@@ -50,6 +52,10 @@ public class GlobalLock {
                 return lockOwner.getName() + " executing " + info;
             }
             return "Unknown executing " + info;
+        }
+
+        String getOwnerThreadName() {
+            return Optional.ofNullable(super.getOwner()).map(Thread::getName).orElse(null);
         }
 
         public boolean tryLock(String info, long timeout, TimeUnit unit) throws InterruptedException {
@@ -101,8 +107,10 @@ public class GlobalLock {
      */
     static public <R> R withLockReturning(String info, Supplier<R> supplier) {
         try {
+            long startTime = System.currentTimeMillis();
             if (lock.tryLock(info, getLockTimeoutMillis(), TimeUnit.MILLISECONDS)) {
                 LOG.finest("+ Acquired lock (count: " + lock.getHoldCount() + "): " + info);
+                String threadName = lock.getOwnerThreadName();
                 try {
                     return supplier.get();
                 } finally {
@@ -112,6 +120,12 @@ public class GlobalLock {
                     } else {
                         lock.unlock();
                     }
+                    long duration = System.currentTimeMillis() - startTime;
+                    if (duration > LOCK_WARNING_MILLIS) {
+                        LOG.warning("Lock duration was above warning threshold for thread (" + threadName + "): " + duration + "ms");
+                    } else {
+                        LOG.fine("Lock duration for thread (" + threadName + "): " + duration + "ms");
+                    }
                 }
             } else {
                 throw new IllegalStateException(
@@ -119,7 +133,7 @@ public class GlobalLock {
                 );
             }
         } catch (InterruptedException ex) {
-            LOG.log(FINEST, "Interrupted while waiting for lock: " + info);
+            LOG.log(INFO, "Interrupted while waiting for lock: " + info);
             return null;
         }
     }

@@ -1,7 +1,7 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {
-    getAssetInfos,
+    getAssetInfos, getAssetsByType,
     getAssetTypeFromQuery,
     OrRulesRuleChangedEvent,
     OrRulesRuleUnsupportedEvent,
@@ -9,6 +9,7 @@ import {
     RuleView
 } from "../index";
 import {
+    Asset,
     AssetQuery,
     AssetQueryOperator as AQO,
     AssetTypeInfo,
@@ -119,8 +120,12 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     @property({attribute: false})
     protected _ruleset!: RulesetUnion;
 
+    @state()
+    protected _loadedAssets: Map<string, Asset[]> = new Map<string, []>();
+
     protected _rule!: JsonRule;
     protected _unsupported = false;
+    protected _activeAssetPromises: Map<string, Promise<any>> = new Map<string, Promise<any>>();
     protected _assetTypeInfo?: AssetTypeInfo[];
     _whenAssetInfos?: AssetTypeInfo[];
     _actionAssetInfos?: AssetTypeInfo[];
@@ -197,13 +202,34 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         const targetTypeMap = getTargetTypeMap(this._rule);
         return html`
             <div class="section-container">                                    
-                <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetInfos="${this._whenAssetInfos}" ?readonly="${this.readonly}"></or-rule-when>
+                <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetInfos="${this._whenAssetInfos}" ?readonly="${this.readonly}" 
+                              .assetProvider="${async (type: string) => this.loadAssets(type)}"
+                ></or-rule-when>
             </div>
         
             <div class="section-container">              
-                <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetInfos="${this._actionAssetInfos}" ?readonly="${this.readonly}"></or-rule-then-otherwise>
+                <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetInfos="${this._actionAssetInfos}" ?readonly="${this.readonly}" 
+                                        .assetProvider="${async (type: string) => this.loadAssets(type)}"
+                ></or-rule-then-otherwise>
             </div>
         `;
+    }
+
+    // loadAssets function that also tracks what promises/fetches are active.
+    // If so, await for those to finish to prevent multiple API requests.
+    // Also using caching with the _loadedAssets object.
+    protected async loadAssets(type: string): Promise<Asset[] | undefined> {
+        if(this._activeAssetPromises.has(type)) {
+            const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch
+            return data.assets;
+        } else {
+            const promise = getAssetsByType(type, this._loadedAssets);
+            this._activeAssetPromises.set(type, promise);
+            const data = await promise;
+            this._activeAssetPromises.delete(type);
+            this._loadedAssets = data.loadedAssets!;
+            return data.assets;
+        }
     }
 
     protected loadAssetDescriptors(useActionConfig: boolean) {
@@ -324,6 +350,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                     break;
                 case "notification":
                     // TODO: validate notification rule action
+                    break;
+                case "webhook":
+                    if(!action.webhook?.url || !action.webhook.httpMethod) {
+                        return false;
+                    }
                     break;
                 case "update-attribute":
                     if (!action.attributeName) {

@@ -87,10 +87,10 @@ const style = css`
     .actions-cell {
         text-align: right;
         width: 40px;
-        padding-right: 5px;
+        padding-right: 4px;
     }
     .meta-item-container {
-        padding: 0 16px 0 36px;
+        padding: 0 4px 0 24px;
         overflow: hidden;
         max-height: 0;
         transition: max-height 0.25s ease-out;
@@ -124,7 +124,7 @@ const style = css`
         visibility: hidden;
         display: inline-block;
         border: none;
-        padding: 0 0 0 5px;
+        padding: 0 0 0 4px;
         cursor: pointer;
     }                
     .button-clear:hover {

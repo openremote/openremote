@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2022, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,23 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.message;
+package org.openremote.model.rules;
 
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.PropertyPlaceholderDelegateRegistry;
-import org.apache.camel.impl.SimpleRegistry;
-import org.apache.camel.spi.Registry;
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.webhook.Webhook;
 
-@SuppressWarnings("unchecked")
-public class MessageBrokerContext extends DefaultCamelContext {
+import javax.ws.rs.client.WebTarget;
 
-    @Override
-    protected Registry createRegistry() {
-        return new SimpleRegistry();
-    }
+@TsIgnore
+public abstract class Webhooks {
 
-    @Override
-    public SimpleRegistry getRegistry() {
-        return (SimpleRegistry) ((PropertyPlaceholderDelegateRegistry) super.getRegistry()).getRegistry();
-    }
+    public abstract void send(Webhook webhook, WebTarget target);
+    public abstract WebTarget buildTarget(Webhook webhook);
 }

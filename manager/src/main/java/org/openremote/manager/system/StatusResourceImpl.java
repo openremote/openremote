@@ -69,7 +69,6 @@ public class StatusResourceImpl implements StatusResource {
 
         healthStatusProviderList.forEach(healthStatusProvider -> {
                 ObjectNode providerValue = ValueUtil.JSON.createObjectNode();
-                providerValue.put("version", healthStatusProvider.getHealthStatusVersion());
                 providerValue.putPOJO("data", healthStatusProvider.getHealthStatus());
                 objectValue.set(healthStatusProvider.getHealthStatusName(), providerValue);
             }

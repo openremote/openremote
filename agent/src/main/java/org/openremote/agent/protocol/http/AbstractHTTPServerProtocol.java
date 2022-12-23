@@ -38,6 +38,7 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 

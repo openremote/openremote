@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class ConsoleProvider implements Serializable {
     protected String version;
@@ -77,5 +78,18 @@ public class ConsoleProvider implements Serializable {
 
     public ObjectNode getData() {
         return data;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConsoleProvider that = (ConsoleProvider) o;
+        return requiresPermission == that.requiresPermission && hasPermission == that.hasPermission && success == that.success && enabled == that.enabled && disabled == that.disabled && Objects.equals(version, that.version) && Objects.equals(data, that.data);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(version, requiresPermission, hasPermission, success, enabled, disabled, data);
     }
 }

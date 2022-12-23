@@ -40,7 +40,6 @@ public class PersistenceHealthStatusProvider implements HealthStatusProvider, Co
 
     private static final Logger LOG = Logger.getLogger(PersistenceHealthStatusProvider.class.getName());
     public static final String NAME = "db";
-    public static final String VERSION = "1.0";
     protected PersistenceService persistenceService;
 
     @Override
@@ -66,11 +65,6 @@ public class PersistenceHealthStatusProvider implements HealthStatusProvider, Co
     @Override
     public String getHealthStatusName() {
         return NAME;
-    }
-
-    @Override
-    public String getHealthStatusVersion() {
-        return VERSION;
     }
 
     @Override

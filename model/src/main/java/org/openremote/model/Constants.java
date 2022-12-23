@@ -25,6 +25,7 @@ import org.openremote.model.util.TsIgnore;
 public interface Constants {
 
     String KEYCLOAK_CLIENT_ID = "openremote";
+    String MANAGER_CLIENT_ID = "manager-keycloak";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
     String REALM_ADMIN_ROLE = "admin";

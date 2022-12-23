@@ -31,6 +31,7 @@ import org.keycloak.adapters.KeycloakDeployment;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
+import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.syslog.SyslogCategory;
 
 import javax.security.auth.Subject;
@@ -42,7 +43,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -97,7 +97,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         if (user == null) {
             Triple<String, String, String> transientCredentials = brokerService.transientCredentials.get(remotingConnection.getID());
             if (transientCredentials != null) {
-                LOG.finer("Using transient credentials connection: " + remotingConnection.getID() + ", user=" + transientCredentials.getMiddle());
+                LOG.finer("Using transient credentials (user=" + transientCredentials.getMiddle() + ") for connection: " + brokerService.connectionToString(remotingConnection));
                 user = transientCredentials.getMiddle();
                 password = transientCredentials.getRight();
             }
@@ -132,6 +132,8 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             if (subject != null) {
                 // Ensure subject is available when afterCreateConnection is fired
                 remotingConnection.setSubject(subject);
+
+                subject.getPrincipals().add(new RemotingConnectionPrincipal(remotingConnection));
             }
 
             return subject;
@@ -172,7 +174,19 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         }
 
         KeycloakSecurityContext securityContext = KeycloakIdentityProvider.getSecurityContext(subject);
-        RemotingConnection connection = brokerService.getConnectionFromSubjectAndTopic(subject, topic);
+        String topicClientID = MQTTHandler.topicClientID(topic);
+
+        if (topicClientID == null) {
+            LOG.warning("Client ID not found but it must be included as the second token in the topic: topic=" + topic);
+            return false;
+        }
+
+        RemotingConnection connection = RemotingConnectionPrincipal.getRemotingConnectionFromSubject(subject);
+
+        if (connection == null) {
+            LOG.warning("Failed to find connection for the specified client ID: clientID=" + topicClientID);
+            return false;
+        }
 
         if (isWrite && topic.hasWildcard()) {
             return false;
@@ -181,7 +195,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         // See if a custom handler wants to handle authorisation for this topic pub/sub
         for (MQTTHandler handler : brokerService.getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.fine("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
+                LOG.fine("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + brokerService.connectionToString(connection));
                 boolean result;
 
                 if (isWrite) {
@@ -189,18 +203,16 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 } else {
                     result = handler.checkCanSubscribe(connection, securityContext, topic);
                 }
-                if (LOG.isLoggable(Level.FINE)) {
-                    if (result) {
-                        LOG.fine("Handler has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
-                    } else {
-                        LOG.fine("Handler has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
-                    }
+                if (result) {
+                    LOG.info("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+                } else {
+                    LOG.info("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
                 }
                 return result;
             }
         }
 
-        LOG.fine("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
+        LOG.info("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
         return false;
     }
 

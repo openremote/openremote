@@ -77,12 +77,12 @@ const editorStyling = css`
     .grid-stack-item-content {
         background: white;
         box-sizing: border-box;
-        border: 1px solid ${unsafeCSS(DefaultColor5)};
+        border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         border-radius: 4px;
         overflow: hidden !important;
     }
     .grid-stack-item-content__active {
-        border: 2px solid ${unsafeCSS(DefaultColor4)};
+        border: 2px solid var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
         margin: -1px !important; /* to compromise with the extra pixel of border. */
     }
     

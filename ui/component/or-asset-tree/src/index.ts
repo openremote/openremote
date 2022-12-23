@@ -20,8 +20,7 @@ import {
     LogicGroup,
     LogicGroupOperator,
     SharedEvent,
-    StringPredicate,
-    WellknownAssets
+    StringPredicate
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -252,10 +251,6 @@ export const getAssetTypes = async () => {
     if(response && response.data) {
         return response.data.map(asset => asset.type!);
     }
-}
-
-export function getDefaultAllowedAddAssetTypes(): AssetDescriptor[] {
-    return AssetModelUtil.getAssetDescriptors().filter(ad => ad.name !== WellknownAssets.UNKNOWNASSET);
 }
 
 @customElement("or-asset-tree")
@@ -627,23 +622,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return result;
     }
 
-    protected updated(_changedProperties: PropertyValues) {
-
-        // After nodes have been rendered, expand entries if necessary
-        // (for example reopening parents after switching back to the asset page)
-        if (_changedProperties.has("_nodes")) {
-            if(!this.expandAllNodes && this.expandedIds && this.expandedIds.length > 0) {
-                this.expandedIds.forEach((id) => {
-                    const node = this._findNodeFromAssetId(id);
-                    let elem = this.shadowRoot?.querySelector('[node-asset-id="' + id + '"]');
-                    if(elem && node && !node.expanded) {
-                        this._toggleExpander(elem.firstElementChild!.firstElementChild! as HTMLElement, node);
-                    }
-                });
-            }
-        }
-    }
-
     protected _updateSelectedNodes() {
         const actuallySelectedIds: string[] = [];
         const selectedNodes: UiAssetTreeNode[] = [];
@@ -715,6 +693,30 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             const elem = expander.parentElement!.parentElement!.parentElement!;
             elem.toggleAttribute("data-expanded");
             this.dispatchEvent(new OrAssetTreeToggleExpandEvent({ node: node }));
+            this.requestUpdate();
+        }
+    }
+
+    /**
+     * This method is used to avoid to re-render and erase all the this.selectedIds attribute
+     *
+     * @param expander
+     * @param node
+     * @protected
+     */
+    protected _toggleExpanderWithoutEventDispatch(expander: HTMLElement, node: UiAssetTreeNode | null) {
+        if (node && node.expandable) {
+            node.expanded = !node.expanded;
+
+            if (node.expanded) {
+                this._expandedNodes.push(node);
+            } else {
+                this._expandedNodes = this._expandedNodes.filter(n => n !== node);
+            }
+
+            const elem = expander.parentElement!.parentElement!.parentElement!;
+            elem.toggleAttribute("data-expanded");
+            this.requestUpdate();
         }
     }
 
@@ -1558,7 +1560,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
         }
 
-        return getDefaultAllowedAddAssetTypes()
+        return AssetModelUtil.getAssetDescriptors()
             .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.name!)))
                 && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.name!))));
     }
@@ -1807,6 +1809,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if (selectedId && this.selectedIds && !this.selectedIds.includes(selectedId)) {
+            if (!ev.ctrlKey && !ev.shiftKey) {
+                this.selectedIds = [];
+            }
             this.selectedIds.push(selectedId);
         }
     }
@@ -1860,16 +1865,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (assetId && this.isExpandable(assetId) && !this._expandTimer) {
             this._expandTimer = window.setTimeout(() => {
-                this.expandeNode(assetId);
+                this.expandNode(assetId);
             }, 1000);
         }
     }
 
-    protected expandeNode(assetId: string | null): void {
+    protected expandNode(assetId: string | null): void {
         if (this.shadowRoot && assetId && assetId === this._dragDropParentId) {
-            let elem: HTMLElement | null = this.shadowRoot.querySelector('[node-asset-id="' + assetId + '"]');
+            const node = this._findNodeFromAssetId(assetId);
+            let elem: HTMLElement | null = this.shadowRoot?.querySelector('[node-asset-id="' + assetId + '"]');
+            if(elem && node && !node.expanded) {
 
-            elem?.parentElement?.setAttribute('data-expanded','');
+                this._toggleExpanderWithoutEventDispatch(elem.firstElementChild!.firstElementChild! as HTMLElement, node);
+            }
         }
     }
 
@@ -1893,7 +1901,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string | undefined {
-
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
 
         let parentCheckboxIcon;
@@ -1919,6 +1926,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             treeNode.expanded = false;
         }
 
+        if (this.expandedIds && this.expandedIds.findIndex((expandId: string) => { return expandId === treeNode.asset!.id!; }) !== -1) {
+            treeNode.expanded = true;
+        }
+
         return html`
             <li class="asset-list-element" ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
                 <div class="in-between-element" node-asset-id="${treeNode.parent ? (treeNode.parent.asset ? treeNode.parent.asset.id : '' ) : undefined}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
@@ -1942,7 +1953,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     </div>
                 </div>
                 <ol>
-                    ${!treeNode.children ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
+                    ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
                 </ol>
             </li>
         `;

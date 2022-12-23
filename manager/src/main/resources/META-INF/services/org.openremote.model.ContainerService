@@ -16,6 +16,7 @@ org.openremote.manager.agent.AgentService
 org.openremote.manager.simulator.SimulatorService
 org.openremote.manager.map.MapService
 org.openremote.manager.notification.NotificationService
+org.openremote.manager.webhook.WebhookService
 org.openremote.manager.apps.ConsoleAppService
 org.openremote.manager.web.ManagerWebService
 org.openremote.manager.notification.PushNotificationHandler
@@ -31,3 +32,4 @@ org.openremote.manager.energy.ForecastSolarService
 org.openremote.manager.provisioning.ProvisioningService
 org.openremote.manager.dashboard.DashboardStorageService
 org.openremote.manager.security.AuthorisationService
+org.openremote.manager.app.ConfigurationService

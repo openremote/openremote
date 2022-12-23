@@ -211,7 +211,7 @@ const style = css`
     :host {
         white-space: nowrap;
         --internal-or-mwc-input-color: var(--or-mwc-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
-        --internal-or-mwc-input-text-color: var(--or-mwc-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));
+        --internal-or-mwc-input-text-color: var(--or-mwc-input-text-color, var(--or-app-color8, ${unsafeCSS(DefaultColor8)}));
         
         --mdc-theme-primary: var(--internal-or-mwc-input-color);
         --mdc-theme-on-primary: var(--internal-or-mwc-input-text-color);
