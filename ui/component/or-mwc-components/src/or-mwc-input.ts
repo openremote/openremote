@@ -604,13 +604,13 @@ const style = css`
 
     .mdc-menu__searchable {
         overflow: hidden;
-        flex-direction: column-reverse;
-        display: flex;
     }
-
+    .mdc-menu__searchable.mdc-menu-surface--open {
+        display: flex;
+        flex-direction: column-reverse;
+    }
     .mdc-menu__searchable.mdc-menu-surface--is-open-below {
         flex-direction: column;
-        display: flex;
     }
 `;
 
