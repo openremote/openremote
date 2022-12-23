@@ -32,6 +32,7 @@ import { ManagerAppConfig } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 
+declare var CONFIG_URL_PREFIX: string;
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "configuration",
@@ -148,8 +149,9 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         super(store);
     }
 
+    private urlPrefix:string = (CONFIG_URL_PREFIX || "")
     private getManagerConfig(): Promise<boolean> {
-        return fetch("/manager_config.json", { cache: "reload" })
+        return fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" })
           .then(async (response) => {
               return response.json().then((json) => {
                   this.managerConfiguration = json;
@@ -175,12 +177,12 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
 
         document.addEventListener("saveManagerConfig", (e: CustomEvent) => {
             manager.rest.api.ConfigurationResource.update(e.detail?.value as ManagerAppConfig).then(() => {
-                fetch("/manager_config.json", { cache: "reload" });
+                fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" });
                 this.managerConfiguration = e.detail?.value as ManagerAppConfig;
                 Object.entries(this.managerConfiguration.realms).map(([name, settings]) => {
-                    fetch(settings?.favicon, { cache: "reload" });
-                    fetch(settings?.logo, { cache: "reload" });
-                    fetch(settings?.logoMobile, { cache: "reload" });
+                    fetch(this.urlPrefix + settings?.favicon, { cache: "reload" });
+                    fetch(this.urlPrefix + settings?.logo, { cache: "reload" });
+                    fetch(this.urlPrefix + settings?.logoMobile, { cache: "reload" });
                 });
                 app.requestUpdate();
             })
@@ -197,25 +199,25 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         }
         return html`
             ${this.loading ? html`
-                <or-loading-indicator .overlay="${true}"></or-loading-indicator>` : ""}
-            <div id="wrapper">
+                <or-loading-indicator .overlay="${true}"></or-loading-indicator>` : html`
+              <div id="wrapper">
                 <div id="header-wrapper">
-                    <div id="header-title">
-                        <or-icon icon="palette-outline"></or-icon>
-                        ${i18next.t("appearance")}
-                    </div>
-                    <div id="header-actions">
-                        <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"></or-conf-json>
-                        <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t("save")}"
-                                      @click="${() => {
-                                          document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: this.managerConfiguration } }));
-                                      }}"></or-mwc-input>
-                    </div>
+                  <div id="header-title">
+                    <or-icon icon="palette-outline"></or-icon>
+                    ${i18next.t("appearance")}
+                  </div>
+                  <div id="header-actions">
+                    <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"></or-conf-json>
+                    <or-mwc-input id="save-btn" raised="" type="button" .label="${i18next.t("save")}"
+                                  @click="${() => {
+                                    document.dispatchEvent(new CustomEvent("saveManagerConfig", { detail: { value: this.managerConfiguration } }));
+                                  }}"></or-mwc-input>
+                  </div>
                 </div>
                 <or-panel .heading="${i18next.t("configuration.realmStyling")}">
-                    <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
+                  <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
                 </or-panel>
-            </div>
+              </div>`}
         `;
 
 
