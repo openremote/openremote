@@ -36,7 +36,6 @@ import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
-
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
 
@@ -198,39 +197,27 @@ export class OrConfRealmCard extends LitElement {
   }
 
   protected _getImagePath(file:File, fileName: string){
-    let extension = "";
-    switch (file.type){
-      case "image/png":
-        extension = "png"
-        break;
-      case "image/jpg":
-        extension = "jpg"
-        break;
-      case "image/jpeg":
-        extension = "jpeg"
-        break;
-      case "image/vnd.microsoft.icon":
-        extension = "ico"
-        break;
-      case "image/svg+xml":
-        extension = "svg"
-        break;
+    if (file.type.startsWith("image/")){
+      let extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
+      return "/images/" + this.name + "/" + fileName + extension
     }
-    return "/images/" + this.name + "/" + fileName + "." +  extension
+    return null
   }
 
   protected files: {[name:string] : FileInfo} = {}
 
   protected async _setImageForUpload(file: File, fileName: string) {
     const path = this._getImagePath(file, fileName)
-    this.files[path] = {
-      path: path,
-      contents: await Util.blobToBase64(file),
-    } as FileInfo;
-    this.realm[fileName] = path
-    this[fileName] = this.files[path].contents
-    this.requestUpdate()
-    return this.files[path].contents;
+    if (path){
+      this.files[path] = {
+        path: path,
+        contents: await Util.blobToBase64(file),
+      } as FileInfo;
+      this.realm[fileName] = path
+      this[fileName] = this.files[path].contents
+      this.requestUpdate()
+      return this.files[path].contents;
+    }
   }
 
   protected _showRemoveRealmDialog(){
