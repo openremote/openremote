@@ -12,12 +12,18 @@ import ORLib
 class SplashViewController: UIViewController {
 
     var host: String?
-    
     var project: ProjectConfig?
+    
+    var displaySettings = false
    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
+        if (displaySettings) {
+            self.performSegue(withIdentifier: Segues.goToSettingsView, sender: self)
+            displaySettings = false
+            return
+        }
         if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
            let projectsData = userDefaults.data(forKey: DefaultsKey.projectsConfigurationKey),
            let selectedProjectId = userDefaults.string(forKey: DefaultsKey.projectKey) {
@@ -49,6 +55,8 @@ class SplashViewController: UIViewController {
 
 //                orViewController.baseUrl = host
             }
+        } else if segue.identifier == Segues.goToSettingsView {
+            let settingsViewController = segue.destination as! SettingsViewController
         }
     }
 

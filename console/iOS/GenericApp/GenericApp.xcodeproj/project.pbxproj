@@ -23,6 +23,7 @@
 		878D2D2B249A498900011484 /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 878D2D24249A498900011484 /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */; };
 		910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */; };
+		91543FDE293FA2F20009016E /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91543FDD293FA2F20009016E /* SettingsViewController.swift */; };
 		91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F942889C15D000FF05C /* WizardRealmViewController.swift */; };
 /* End PBXBuildFile section */
 
@@ -75,6 +76,7 @@
 		878D2D30249A4D3700011484 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardAppViewController.swift; sourceTree = "<group>"; };
 		910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardDomainViewController.swift; sourceTree = "<group>"; };
+		91543FDD293FA2F20009016E /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		91658F8F28897BC0000FF05C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		91658F942889C15D000FF05C /* WizardRealmViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardRealmViewController.swift; sourceTree = "<group>"; };
 		A994B3D3E3853BA4D16AA5A8 /* Pods-GenericApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GenericApp.debug.xcconfig"; path = "Target Support Files/Pods-GenericApp/Pods-GenericApp.debug.xcconfig"; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 				9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */,
 				910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */,
 				91658F942889C15D000FF05C /* WizardRealmViewController.swift */,
+				91543FDD293FA2F20009016E /* SettingsViewController.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -373,6 +376,7 @@
 			files = (
 				91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */,
 				4CF3439127A13F2200EB5A0E /* String+Utils.swift in Sources */,
+				91543FDE293FA2F20009016E /* SettingsViewController.swift in Sources */,
 				878D2D0D249A490300011484 /* AppDelegate.swift in Sources */,
 				910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */,
 				910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */,

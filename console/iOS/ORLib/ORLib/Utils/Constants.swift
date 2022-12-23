@@ -22,6 +22,7 @@ import Foundation
 import UIKit
 
 public enum Segues {
+    public static var goToSettingsView = "goToSettingsView"
     public static var goToWizardDomainView = "goToWizardDomainView"
     public static var goToWizardAppView = "goToWizardAppView"
     public static var goToWizardRealmView = "goToWizardRealmView"
