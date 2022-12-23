@@ -34,7 +34,7 @@ dependencies {
 
     api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
-    api ("com.github.weliem.blessed-bluez:blessed:$bluetoothVersion") {
+    api ("com.github.weliem:blessed-bluez:$bluetoothVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
 
@@ -66,7 +66,7 @@ publishing {
             from components.java
             pom {
                 name = 'OpenRemote Agent'
-                description = 'Provides agent SPI and built in agents; add maven {url "https://jitpack.io"} and maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+                description = 'Provides agent SPI and built in agents; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {
