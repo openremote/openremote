@@ -36,6 +36,11 @@ public enum SyslogCategory {
         false,
         "AgentService"
     ),
+    ALERT(
+        "ALERT",
+        false,
+        "AlertService"
+    ),
     NOTIFICATION(
         "Notification",
         false,

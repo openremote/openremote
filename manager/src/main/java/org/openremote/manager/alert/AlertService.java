@@ -2,30 +2,30 @@ package org.openremote.manager.alert;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.notification.NotificationResourceImpl;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
+import org.apache.camel.builder.RouteBuilder;
+import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
+
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+
+import org.openremote.model.asset.Asset;
 import org.openremote.model.alert.Alert;
 import org.openremote.model.alert.SentAlert;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.util.TextUtil;
 
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 import static org.openremote.manager.alert.AlertProcessingException.Reason.*;
 import static org.openremote.model.alert.Alert.HEADER_TRIGGER;
@@ -93,9 +93,6 @@ public class AlertService extends RouteBuilder implements ContainerService {
                         container.getService(AssetStorageService.class),
                         container.getService(ManagerIdentityService.class))
         );
-
-//        LOG.info("[Custom Log Message] INITIALIZING ALERT_SERVICE");
-//        LOG.severe("Crash Now!!!");
     }
 
     @Override
@@ -135,10 +132,8 @@ public class AlertService extends RouteBuilder implements ContainerService {
                     AtomicReference<String> triggerId = new AtomicReference<>("");
                     triggerId.set(exchange.getIn().getHeader(Alert.HEADER_TRIGGER_ID, String.class));
 
-                    String msg = "Generating alert " + alert.getTitle()  + "': '" + trigger + ":" + triggerId + "'," + " severity: '" + alert.getSeverity() + "'";
-                    LOG.fine(msg);
-
-                    LOG.logp(Level.FINE, AlertService.class.getName(), AlertService.class.getMethod("configure").getName(), msg);
+                    String msg = "Generating alert " + alert.getTitle()  + " '" + trigger + ":" + triggerId + "'," + " severity: '" + alert.getSeverity() + "'";
+                    LOG.info(msg);
 
                     persistenceService.doTransaction(em -> {
                         SentAlert sentAlert = new SentAlert()
@@ -168,5 +163,147 @@ public class AlertService extends RouteBuilder implements ContainerService {
         headers.put(Alert.HEADER_TRIGGER_ID, triggerId);
         return messageBrokerService.getFluentProducerTemplate().withBody(alert).withHeaders(headers).to(AlertService.ALERT_QUEUE).request(Boolean.class);
     }
-    
+
+    public void setAlertStatus(long id, String status, String userId) {
+        LOG.info("Alert Status set by " + userId + " to " + status + " | " + "AlertId: " + id );
+        persistenceService.doTransaction(entityManager -> {
+            Query query = entityManager.createQuery("UPDATE SentAlert SET status=:status WHERE id=:id");
+            query.setParameter("id", id);
+            query.setParameter("status", status);
+            query.executeUpdate();
+        });
+    }
+
+
+    public  SentAlert getSentAlert(Long alertId) {
+        return persistenceService.doReturningTransaction(em -> em.find(SentAlert.class, alertId));
+    }
+
+    public List<SentAlert> getAlerts(List<Long> ids, String severity, String status) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("select n from SentAlert n where 1=1");
+        List<Object> parameters = new ArrayList<>();
+        processCriteria(builder, parameters, ids, severity, status, false);
+        builder.append(" order by n.id asc");
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<SentAlert> query = entityManager.createQuery(builder.toString(), SentAlert.class);
+            IntStream.range(0, parameters.size())
+                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            return query.getResultList();
+        });
+    }
+
+    public void removeAlert(Long id) {
+        persistenceService.doTransaction(entityManager -> entityManager
+                .createQuery("delete SentAlert where id = :id")
+                .setParameter("id", id)
+                .executeUpdate()
+        );
+    }
+
+    public void removeAlerts(List<Long> ids, String severity, String status) throws IllegalArgumentException {
+        StringBuilder builder = new StringBuilder();
+        builder.append("delete from SentNotification n where 1=1");
+        List<Object> parameters = new ArrayList<>();
+        processCriteria(builder, parameters, ids, severity, status, true);
+
+        persistenceService.doTransaction(entityManager -> {
+            Query query = entityManager.createQuery(builder.toString());
+            IntStream.range(0, parameters.size())
+                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            query.executeUpdate();
+        });
+    }
+
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, String severity, String status, boolean isRemove) {
+        boolean hasIds = ids != null && !ids.isEmpty();
+//        boolean hasSeverities = severities != null && !severities.isEmpty();
+//        boolean hasRealms = realmIds != null && !realmIds.isEmpty();
+//        boolean hasUsers = userIds != null && !userIds.isEmpty();
+//        boolean hasAssets = assetIds != null && !assetIds.isEmpty();
+        int counter = 0;
+
+        if (hasIds) {
+            counter++;
+        }
+//        if (hasSeverities) {
+//            counter++;
+//        }
+//        if (hasRealms) {
+//            counter++;
+//        }
+//        if (hasUsers) {
+//            counter++;
+//        }
+//        if (hasAssets) {
+//            counter++;
+//        }
+
+//        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
+//            LOG.fine("No filters set for remove notifications request so not allowed");
+//            throw new IllegalArgumentException("No criteria specified");
+//        }
+
+        if (hasIds) {
+            builder.append(" AND n.id IN ?")
+                    .append(parameters.size() + 1);
+            parameters.add(ids);
+            return;
+        }
+
+        if (severity != null) {
+            builder.append(" AND n.severity = ?")
+                    .append(parameters.size() + 1);
+            parameters.add(severity);
+        }
+
+        if (status != null) {
+            builder.append(" AND n.status = ?")
+                    .append(parameters.size() + 1);
+            parameters.add(status);
+        }
+
+//        if (fromTimestamp != null) {
+//            builder.append(" AND n.sentOn >= ?")
+//                    .append(parameters.size() + 1);
+//
+//            parameters.add(new Date(fromTimestamp));
+//        }
+//
+//        if (toTimestamp != null) {
+//            builder.append(" AND n.sentOn <= ?")
+//                    .append(parameters.size() + 1);
+//
+//            parameters.add(new Date(toTimestamp));
+//        }
+
+//        if (hasAssets) {
+//            builder.append(" AND n.target = ?")
+//                    .append(parameters.size() + 1)
+//                    .append(" AND n.targetId IN ?")
+//                    .append(parameters.size() + 2);
+//
+//            parameters.add(Notification.TargetType.ASSET);
+//            parameters.add(assetIds);
+
+//        } else if (hasUsers) {
+//            builder.append(" AND n.target = ?")
+//                    .append(parameters.size() + 1)
+//                    .append(" AND n.targetId IN ?")
+//                    .append(parameters.size() + 2);
+//
+//            parameters.add(Notification.TargetType.USER);
+//            parameters.add(userIds);
+//
+//        } else if (hasRealms) {
+//            builder.append(" AND n.target = ?")
+//                    .append(parameters.size() + 1)
+//                    .append(" AND n.targetId IN ?")
+//                    .append(parameters.size() + 2);
+//
+//            parameters.add(Notification.TargetType.REALM);
+//            parameters.add(realmIds);
+//        }
+    }
+
 }
