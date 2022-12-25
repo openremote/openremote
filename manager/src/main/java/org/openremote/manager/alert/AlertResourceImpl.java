@@ -11,6 +11,9 @@ import org.openremote.model.alert.SentAlert;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.Constants;
 import javax.ws.rs.WebApplicationException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
@@ -37,18 +40,26 @@ public class AlertResourceImpl extends WebResource implements AlertResource {
     }
 
     @Override
-    public SentAlert[] getAlerts(RequestParams requestParams, Long id, String severity) {
+    public SentAlert[] getAlerts(RequestParams requestParams, Long id, String severity, String status) {
         try{
-            return null;
+            return alertService.getAlerts(
+                    id != null ? Collections.singletonList(id) : null,
+                    severity,
+                    status
+            ).toArray(new SentAlert[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 
     @Override
-    public void removeAlerts(RequestParams requestParams, Long id, String severity) {
+    public void removeAlerts(RequestParams requestParams, Long id, String severity, String status) {
         try{
-
+            alertService.removeAlerts(
+                    id != null ? Collections.singletonList(id) : null,
+                    severity,
+                    status
+            );
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
@@ -60,12 +71,51 @@ public class AlertResourceImpl extends WebResource implements AlertResource {
             throw new WebApplicationException("Missing alert ID", BAD_REQUEST);
         }
 
+        alertService.removeAlert(alertId);
     }
 
     @Override
     public void createAlert(RequestParams requestParams, Alert alert) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Alert.HEADER_TRIGGER, CLIENT);
 
+        if (isAuthenticated()){
+            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+        }
+
+        boolean success = messageBrokerService.getFluentProducerTemplate()
+                .withBody(alert)
+                .withHeaders(headers)
+                .to(AlertService.ALERT_QUEUE)
+                .request(Boolean.class);
+
+        if (!success) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
     }
 
-    protected void verifyAccess(SentAlert sentAlert, String targetId){}
+    protected void verifyAccess(SentAlert sentAlert, String targetId) {
+        if (sentAlert == null) {
+            LOG.fine("DENIED: Alert not found");
+            throw new WebApplicationException(NOT_FOUND);
+        }
+
+        if (isSuperUser()) {
+            LOG.finest("ALLOWED: Request from super user so allowing");
+            return;
+        }
+
+        if (!isAuthenticated()) {
+            LOG.fine("DENIED: Anonymous request are forbidden");
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+//        if (!isAuthenticated()) {
+//            if (sentAlert)
+//        } else {
+//
+//            boolean isResrictedUser = managerIdentityService.getIdentityProvider().isRestrictedUser(getAuthContext());
+//            switch (sentAlert)
+//        }
+    }
 }
