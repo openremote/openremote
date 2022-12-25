@@ -514,7 +514,7 @@ const style = css`
     #select-searchable {
         background-color: transparent; 
         border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-        margin: 8px 8px 0; 
+        margin: 8px;
         width: calc(100% - 16px); 
         border-radius: 4px;
         padding: 4px 16px;
@@ -601,14 +601,16 @@ const style = css`
     .mdc-select__selected-text {
         white-space: normal;
     }
-    
+
     .mdc-menu__searchable {
         overflow: hidden;
-        flex-direction: column;
     }
-    
-    .mdc-menu__searchable.mdc-menu-surface--is-open-below {
+    .mdc-menu__searchable.mdc-menu-surface--open {
         display: flex;
+        flex-direction: column-reverse;
+    }
+    .mdc-menu__searchable.mdc-menu-surface--is-open-below {
+        flex-direction: column;
     }
 `;
 
