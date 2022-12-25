@@ -24,7 +24,8 @@ public interface AlertResource {
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
     SentAlert[] getAlerts(@BeanParam RequestParams requestParams,
                           @QueryParam("id") Long id,
-                          @QueryParam("severity") String severity);
+                          @QueryParam("severity") String severity,
+                          @QueryParam("status") String status);
 
     /**
      *
@@ -36,7 +37,8 @@ public interface AlertResource {
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     void removeAlerts(@BeanParam RequestParams requestParams,
                       @QueryParam("id") Long id,
-                      @QueryParam("severity") String severity);
+                      @QueryParam("severity") String severity,
+                      @QueryParam("status") String status);
 
     /**
      *
