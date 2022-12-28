@@ -1,34 +1,48 @@
+/*
+ * Copyright 2022, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.test.rules.residence
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.firebase.messaging.Message
 import net.fortuna.ical4j.model.Recur
+import org.apache.http.client.utils.URIBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.openremote.agent.protocol.http.HTTPProtocol
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
-import org.openremote.manager.rules.JsonRulesBuilder
-import org.openremote.manager.rules.RulesEngine
-import org.openremote.manager.rules.RulesService
-import org.openremote.manager.rules.RulesetDeployment
-import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.rules.*
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
-import org.openremote.model.attribute.MetaItem
-import org.openremote.model.value.MetaItemType
-import org.openremote.model.value.ValueType
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
-import org.openremote.model.asset.Asset
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
@@ -38,20 +52,26 @@ import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
+import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.TemporaryFact
-import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.MetaItemType
+import org.openremote.model.value.ValueType
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import org.simplejavamail.email.Email
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.ws.rs.HttpMethod
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
+import javax.ws.rs.client.Entity
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 import java.time.Duration
@@ -61,14 +81,11 @@ import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
-import static org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
-import static org.openremote.model.value.ValueType.NUMBER
+import static org.openremote.model.util.ValueUtil.parse
 import static org.openremote.model.value.ValueType.TEXT
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.util.ValueUtil.parse
-import static org.openremote.test.rules.BasicRulesImport.assertRulesFired
 
 class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
@@ -95,18 +112,19 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                         successCount++;
                         requestContext.abortWith(Response.ok().build()); return
                     }
-                    break;
+                    break
             }
             failureCount++;
             requestContext.abortWith(Response.serverError().build());
         }
     }
 
-    @Shared
-    ResteasyClient client
+    def cleanup() {
+        mockServer.successCount = 0
+        mockServer.failureCount = 0
+    }
 
-
-    def "Turn all lights off when console exits the residence geofence"() {
+    /*def "Turn all lights off when console exits the residence geofence"() {
 
         List<PushNotificationMessage> pushMessages = []
         List<Email> emailMessages = []
@@ -769,14 +787,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
         }
-    }
+    }*/
 
     def "Trigger webhook when thing asset has changed"() {
 
-        given: "the container environment is started"
+        given: "the HTTP client protocol min times are adjusted for testing"
+        HTTPProtocol.MIN_POLLING_MILLIS = 10
+
+        and: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
@@ -787,6 +807,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "the web target builder is configured to use the mock server"
         if (!HTTPProtocol.client.configuration.isRegistered(mockServer)) {
             HTTPProtocol.client.register(mockServer, Integer.MAX_VALUE)
+            /*ResteasyWebTarget wt = new WebTargetBuilder(HTTPProtocol.client, new URIBuilder("https://basicserver/webhookplain").build()).build();
+            Response r = wt.request().method(HttpMethod.POST, Entity.entity("a_random_test_message", MediaType.TEXT_PLAIN));
+            System.out.println(HTTPProtocol.client);*/
         }
 
         and: "a thing asset is added to the building realm"
@@ -827,7 +850,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.deployments.size() == 1
             assert realmBuildingEngine.deployments.values().iterator().next().name == "Webhook Rule"
             assert realmBuildingEngine.deployments.values().iterator().next().status == DEPLOYED
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.assetStates.size() == (DEMO_RULE_STATES_SMART_BUILDING + 1)
             assert realmBuildingEngine.lastFireTimestamp > 0
         }
 
@@ -841,14 +864,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert thingAsset2.getAttribute("webhookAttribute").get().value.get() == "test_message"
         }
 
-        expect: "the webhook rule has triggered"
+        expect: "The mock server has received a successful response"
         conditions.eventually {
-            assert assertRulesFired(realmBuildingEngine, 1)
-        }
-
-        and: "The mock server has received a successful response"
-        conditions.eventually {
-            assert mockServer.successCount == 1
+            assert mockServer.successCount == 2
             assert mockServer.failureCount == 0
         }
     }
