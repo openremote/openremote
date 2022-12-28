@@ -6,9 +6,17 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {AssetModelUtil, ConsoleAppConfig, Role, User} from "@openremote/model";
+import {
+    AssetModelUtil,
+    ConsoleAppConfig,
+    MapType,
+    Role,
+    User,
+    UsernamePassword,
+} from "@openremote/model";
 import * as Util from "./util";
 import {IconSets, createSvgIconSet, createMdiIconSet, OrIconSet} from "@openremote/or-icon";
+import { Auth, EventProviderType, ManagerConfig } from "@openremote/model/lib";
 
 // Re-exports
 export {Util};
@@ -49,12 +57,6 @@ export enum ORError {
     TRANSLATION_ERROR = "TRANSLATION_ERROR"
 }
 
-export enum Auth {
-    KEYCLOAK = "KEYCLOAK",
-    BASIC = "BASIC",
-    NONE = "NONE"
-}
-
 export enum OREvent {
     ERROR = "ERROR",
     READY = "READY",
@@ -68,19 +70,9 @@ export enum OREvent {
     DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
 }
 
-export enum EventProviderType {
-    WEBSOCKET = "WEBSOCKET",
-    POLLING = "POLLING"
-}
-
-export interface Credentials {
-    username: string;
-    password: string;
-}
-
 export interface LoginOptions {
     redirectUrl?: string;
-    credentials?: Credentials;
+    credentials?: UsernamePassword;
 }
 
 export interface BasicLoginResult {
@@ -89,32 +81,20 @@ export interface BasicLoginResult {
     cancel: boolean;
 }
 
-export enum MapType {
-    VECTOR = "VECTOR",
-    RASTER = "RASTER"
+export interface Languages {
+    [langKey: string]: string;
 }
 
-export interface ManagerConfig {
-    managerUrl?: string;
-    keycloakUrl?: string;
-    appVersion?: string;
-    auth?: Auth;
-    realm?: string;
-    clientId?: string;
-    autoLogin?: boolean;
-    credentials?: Credentials;
-    consoleAutoEnable?: boolean;
-    eventProviderType?: EventProviderType;
-    pollingIntervalMillis?: number;
-    loadIcons?: boolean;
-    loadDescriptors?: boolean;
-    mapType?: MapType;
-    loadTranslations?: string[];
-    translationsLoadPath?: string;
-    configureTranslationsOptions?: (i18next: InitOptions) => void;
-    skipFallbackToBasicAuth?: boolean;
-    basicLoginProvider?: (username: string | undefined, password: string | undefined) => PromiseLike<BasicLoginResult>;
-}
+export const DEFAULT_LANGUAGES: Languages = {
+    en: "english",
+    cn: "chinese",
+    nl: "dutch",
+    fr: "french",
+    de: "german",
+    it: "italian",
+    pt: "portuguese",
+    es: "spanish"
+};
 
 export function normaliseConfig(config: ManagerConfig): ManagerConfig {
     const normalisedConfig: ManagerConfig = config ? Object.assign({}, config) : {};
@@ -724,8 +704,8 @@ export class Manager implements EventProviderFactory {
         }
 
         let result: BasicLoginResult = {
-            username: this._config.credentials ? this._config.credentials.username : "",
-            password: this._config.credentials ? this._config.credentials.password : "",
+            username: this._config.credentials?.username ? this._config.credentials?.username : "",
+            password: this._config.credentials?.password ? this._config.credentials?.password : "",
             cancel: false
         };
         let authenticated = false;

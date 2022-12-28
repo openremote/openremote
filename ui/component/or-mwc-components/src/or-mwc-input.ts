@@ -425,7 +425,7 @@ const style = css`
     :host {
         display: inline-block;
         --internal-or-mwc-input-color: var(--or-mwc-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
-        --internal-or-mwc-input-text-color: var(--or-mwc-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));    
+        --internal-or-mwc-input-text-color: var(--or-mwc-input-text-color, var(--or-app-color8, ${unsafeCSS(DefaultColor8)}));    
         
         --mdc-theme-primary: var(--internal-or-mwc-input-color);
         --mdc-theme-on-primary: var(--internal-or-mwc-input-text-color);
@@ -514,7 +514,7 @@ const style = css`
     #select-searchable {
         background-color: transparent; 
         border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-        margin: 8px 8px 0; 
+        margin: 8px;
         width: calc(100% - 16px); 
         border-radius: 4px;
         padding: 4px 16px;
@@ -597,12 +597,20 @@ const style = css`
     .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
         --or-icon-fill: var(--or-app-color4);
     }
+
+    .mdc-select__selected-text {
+        white-space: normal;
+    }
+
     .mdc-menu__searchable {
         overflow: hidden;
-        flex-direction: column;
+    }
+    .mdc-menu__searchable.mdc-menu-surface--open {
+        display: flex;
+        flex-direction: column-reverse;
     }
     .mdc-menu__searchable.mdc-menu-surface--is-open-below {
-        display: flex;
+        flex-direction: column;
     }
 `;
 
@@ -1233,12 +1241,13 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.COLOUR:
                     return html`
-                        <div id="component" style="width: 100%; height: 100%;">
-                            <input type="color" id="elem" style="border: none; height: 100%; width: 100%; padding: 1px 3px; min-height: 22px; min-width: 30px;" value="${this.value}"
+                        <div id="component" style="width: 100%; height: 100%; display: inline-flex; align-items: center; padding: 8px 0;">
+                            <input type="color" id="elem" style="border: none; height: 31px; width: 31px; padding: 1px 3px; min-height: 22px; min-width: 30px;cursor: pointer" value="${this.value}"
                                    ?disabled="${this.disabled || this.readonly}"
                                    ?required="${this.required}"
                                    @change="${(e: any) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
                             />
+                            <label style="margin-left: 10px; cursor: pointer" for="elem">${this.label}</label>
                         </div>
                     `
                 case InputType.NUMBER:

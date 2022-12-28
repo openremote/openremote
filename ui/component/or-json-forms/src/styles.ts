@@ -88,7 +88,7 @@ export const panelStyle = css`
 
     #content-wrapper {
         flex: 1;
-        padding: 0 10px 10px 10px;
+        padding: 0 4px 14px 24px;
     }
 
     #content {

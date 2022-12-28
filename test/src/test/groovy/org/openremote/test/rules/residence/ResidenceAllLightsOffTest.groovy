@@ -25,8 +25,6 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
     def "Turn all lights off"() {
 
         given: "the container environment is started"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -96,7 +94,5 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
             assert livingroomAsset.getAttribute("lightSwitch").get().value.get()
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 }

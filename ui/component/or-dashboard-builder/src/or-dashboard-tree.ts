@@ -183,11 +183,9 @@ export class OrDashboardTree extends LitElement {
                             ` : undefined}
                         ` : undefined}
                         ${!this.readonly ? html`
-                            <span style="--or-icon-fill: black">
-                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus" style="--or-icon-fill: white;"
-                                              @or-mwc-input-changed="${() => { this.createDashboard(DashboardSizeOption.DESKTOP); }}"
-                                ></or-mwc-input>
-                            </span>
+                            <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus"
+                                            @or-mwc-input-changed="${() => { this.createDashboard(DashboardSizeOption.DESKTOP); }}"
+                            ></or-mwc-input>
                         ` : undefined}
                     </div>
                 ` : undefined}

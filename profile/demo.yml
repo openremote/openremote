@@ -88,6 +88,7 @@ services:
       # Set this variable `demo` to auto provision demo assets etc.
       OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
       OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
+      OR_LOGGING_CONFIG_FILE: ${OR_LOGGING_CONFIG_FILE:-}
       OR_SETUP_RUN_ON_RESTART:
       OR_EMAIL_HOST:
       OR_EMAIL_USER:

@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit";
-import {DefaultColor1, DefaultColor2, DefaultColor4, DefaultColor5} from "@openremote/core";
+import { DefaultColor1, DefaultColor2, DefaultColor4, DefaultColor5, DefaultColor8 } from "@openremote/core";
 import {mdiChevronRight} from "@mdi/js";
 import {mdiChevronDown} from "@mdi/js";
 
@@ -8,7 +8,7 @@ export const style = css`
 
     :host {       
         --internal-or-asset-tree-header-color: var(--or-asset-tree-header-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));     
-        --internal-or-asset-tree-header-text-color: var(--or-asset-tree-header-text-color, var(--or-app-color7, ${unsafeCSS(DefaultColor1)}));
+        --internal-or-asset-tree-header-text-color: var(--or-asset-tree-header-text-color, var(--or-app-color8, ${unsafeCSS(DefaultColor8)}));
         --internal-or-asset-tree-header-menu-background-color: var(--or-asset-tree-header-menu-background-color, var(--internal-or-asset-tree-header-text-color));
         --internal-or-asset-tree-header-menu-text-color: var(--or-asset-tree-header-menu-text-color, inherit);
         --internal-or-asset-tree-header-height: var(--or-asset-tree-header-height, 48px);

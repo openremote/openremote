@@ -69,7 +69,8 @@ import java.util.logging.Logger;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
 import static org.openremote.model.Constants.*;
@@ -80,7 +81,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     // an access token from authentication directly, which gives us full access to import/delete
     // demo data as needed.
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
-    public static final String MANAGER_CLIENT_ID = "manager-keycloak";
     public static final List<String> DEFAULT_CLIENTS = Arrays.asList(
         "account",
         ADMIN_CLI_CLIENT_ID,
@@ -187,8 +187,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 );
         httpClient = WebClient.registerDefaults(clientBuilder).build();
 
-        setActiveCredentials(getDefaultKeycloakGrant(container));
-
         keycloakDeploymentCache = createKeycloakDeploymentCache();
 
         keycloakConfigResolver = request -> {
@@ -222,6 +220,42 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     @Override
     public void start(Container container) {
+
+        OAuthGrant credentials = getStoredCredentials(container);
+
+        if (credentials != null) {
+            LOG.info("Found stored credentials so attempting to use them");
+            if (!setActiveCredentials(credentials)) {
+                LOG.warning("Stored keycloak credentials are not valid, falling back to admin user using " + OR_ADMIN_PASSWORD);
+                credentials = getDefaultKeycloakGrant(container);
+            } else {
+                credentials = null;
+            }
+        } else {
+            LOG.info("No stored credentials so using " + OR_ADMIN_PASSWORD);
+            credentials = getDefaultKeycloakGrant(container);
+        }
+
+        if (credentials != null) {
+            if (!setActiveCredentials(credentials)) {
+                String msg = "Credentials don't work so cannot continue";
+                LOG.warning(msg);
+                throw new RuntimeException(msg);
+            } else {
+                LOG.info(OR_ADMIN_PASSWORD + " credentials are valid so creating/recreating stored credentials");
+                credentials = generateStoredCredentials(container);
+                if (credentials != null) {
+                    LOG.info("Stored credentials successfully generated so using them");
+                    if (!setActiveCredentials(credentials)) {
+                        String msg = "Something went wrong trying to use the new stored credentials, cannot proceed";
+                        LOG.warning(msg);
+                        throw new RuntimeException(msg);
+                    }
+                } else {
+                    LOG.info("Failed to generate stored credentials will continue using " + OR_ADMIN_PASSWORD);
+                }
+            }
+        }
     }
 
     @Override
@@ -341,13 +375,13 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     }
 
     /**
-     * Update the active credentials used to interact with keycloak; the token endpoint will be overwritten with this
+     * Update the active credentials used to perform keycloak API actions; the token endpoint will be overwritten with this
      * instances keycloak server URI and for the master realm.
      */
-    public synchronized void setActiveCredentials(OAuthGrant grant) {
+    public synchronized boolean setActiveCredentials(OAuthGrant grant) {
 
         if (Objects.equals(this.oAuthGrant, grant)) {
-            return;
+            return true;
         }
 
         this.oAuthGrant = grant;
@@ -363,7 +397,32 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         keycloakTarget = targetBuilder.build();
         realmsResourcePool.clear();
         LOG.info("Keycloak proxy URI set to: " + proxyURI);
+        LOG.info("Validating keycloak credentials");
+        try {
+            getRealms(realmsResource -> {
+                realmsResource.realm(MASTER_REALM).toRepresentation();
+                LOG.info("Credentials are valid");
+                return null;
+            });
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Credentials are invalid", e);
+            return false;
+        }
+
+        return true;
     }
+
+    /**
+     * Get any stored credentials for connecting to the Keycloak admin API
+     * @return credentials or null if none defined.
+     */
+    protected abstract OAuthGrant getStoredCredentials(Container container);
+
+    /**
+     * Generate and store credentials for connecting to the Keycloak admin API
+     * @return credentials or null if generation/storage failed.
+     */
+    protected abstract OAuthGrant generateStoredCredentials(Container container);
 
     protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> createKeycloakDeploymentCache() {
         CacheLoader<KeycloakRealmClient, KeycloakDeployment> loader =

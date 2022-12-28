@@ -41,11 +41,13 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.Realm;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.BadRequestException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.value.MetaItemType.*;
@@ -92,19 +94,45 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
             consoleAsset = (ConsoleAsset) existingAsset;
         }
 
+        boolean mergeConsole = false;
+
         if (consoleAsset == null) {
-            consoleAsset = initConsoleAsset(consoleRegistration, true, true);
+            mergeConsole = true;
+            consoleAsset = initConsoleAsset(consoleRegistration);
             consoleAsset.setRealm(getRequestRealmName());
             consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealmName()));
             consoleAsset.setId(consoleRegistration.getId());
+            if (!isAuthenticated()) {
+                // Anonymous registration
+                consoleAsset.setAccessPublicRead(true);
+            }
         }
 
-        consoleAsset.setConsoleName(consoleRegistration.getName())
-            .setConsoleVersion(consoleRegistration.getVersion())
-            .setConsoleProviders(new ConsoleProviders(consoleRegistration.getProviders()))
-            .setConsolePlatform(consoleRegistration.getPlatform());
+        if (mergeConsole || !Objects.equals(consoleAsset.getConsoleName().orElse(null), consoleRegistration.getName())) {
+            mergeConsole = true;
+            consoleAsset.setConsoleName(consoleRegistration.getName());
+        }
 
-        consoleAsset = assetStorageService.merge(consoleAsset);
+        boolean providersChanged = mergeConsole || !consoleAsset.getConsoleProviders().map(providers ->
+            providers.equals(consoleRegistration.getProviders())).orElseGet(() -> consoleRegistration.getProviders() != null);
+        if (providersChanged) {
+            mergeConsole = true;
+            consoleAsset.setConsoleProviders(new ConsoleProviders(consoleRegistration.getProviders()));
+        }
+
+        if (mergeConsole || !Objects.equals(consoleAsset.getConsoleVersion().orElse(null), consoleRegistration.getVersion())) {
+            mergeConsole = true;
+            consoleAsset.setConsoleVersion(consoleRegistration.getVersion());
+        }
+
+        if (mergeConsole || !Objects.equals(consoleAsset.getConsolePlatform().orElse(null), consoleRegistration.getPlatform())) {
+            mergeConsole = true;
+            consoleAsset.setConsolePlatform(consoleRegistration.getPlatform());
+        }
+
+        if (mergeConsole) {
+            consoleAsset = assetStorageService.merge(consoleAsset);
+        }
         consoleRegistration.setId(consoleAsset.getId());
 
         // If authenticated link the console to this user
@@ -115,21 +143,8 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         return consoleRegistration;
     }
 
-    public static ConsoleAsset initConsoleAsset(ConsoleRegistration consoleRegistration, boolean allowPublicLocationWrite, boolean allowRestrictedLocationWrite) {
-        ConsoleAsset consoleAsset = new ConsoleAsset(consoleRegistration.getName());
-
-        consoleAsset.getAttributes().getOrCreate(Asset.LOCATION).addOrReplaceMeta(new MetaItem<>(RULE_STATE));
-
-        if (allowPublicLocationWrite) {
-            consoleAsset.getAttributes().getOrCreate(Asset.LOCATION).addOrReplaceMeta(new MetaItem<>(ACCESS_PUBLIC_WRITE, true));
-        }
-        if (allowRestrictedLocationWrite) {
-            consoleAsset.getAttributes().getOrCreate(Asset.LOCATION).addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true));
-        }
-
-        consoleAsset.setAccessPublicRead(true);
-
-        return consoleAsset;
+    public static ConsoleAsset initConsoleAsset(ConsoleRegistration consoleRegistration) {
+        return new ConsoleAsset(consoleRegistration.getName());
     }
 
     public String getConsoleParentAssetId(String realm) {

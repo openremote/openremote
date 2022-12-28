@@ -132,12 +132,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         List<Notification.Target> emailTargets = []
 
         given: "the geofence notifier debounce is set to a small value for testing"
-        def originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
+        Integer originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
-
-        and: "the rule firing delay time is set to a small value for testing"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
 
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
@@ -255,9 +251,13 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
-        then: "the console should have been registered and a geofence refresh notification should have been sent"
+        and: "the console location is marked as RULE_STATE"
+        def asset = assetStorageService.find(consoleRegistration.id)
+        asset.getAttribute(Asset.LOCATION).ifPresent { it.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}
+        asset = assetStorageService.merge(asset)
+
+        then: "a geofence refresh notification should have been sent to the console"
         conditions.eventually {
-            assert consoleRegistration.id != null
             assert pushMessages.size() == 1
         }
 
@@ -552,10 +552,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         cleanup: "static variables are reset and the mock is removed"
-        RulesEngine.PAUSE_SCHEDULER = originalPause
-        RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
-        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
+        if (originalPause != null) {
+            RulesEngine.PAUSE_SCHEDULER = originalPause
+        }
+        if (originalUnpause != null) {
+            RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
+        }
+        if (originalDebounceMillis != null) {
+            ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
+        }
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
@@ -564,11 +569,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
     def "Trigger actions based on the position of the sun"() {
 
-        given: "the rule firing delay time is set to a small value for testing"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
-
-        and: "the container environment is started"
+        given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
@@ -648,11 +649,24 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet()).getSeconds()+1, TimeUnit.SECONDS, container)
 
         then: "the rule engine should have fired again and the rule should have triggered"
+        def lastUpdateTime = 0
         conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             thingAsset = assetStorageService.find(thingId) as ThingAsset
             assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+            lastUpdateTime = thingAsset.getAttribute("sunset").get().getTimestamp().orElse(0)
+        }
+
+        when: "time advances slightly"
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired again and the rule should not have triggered"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp >= lastFireTimestamp + 1000
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getTimestamp().orElse(-1) == lastUpdateTime
         }
 
         when: "time advances past the sunset"
@@ -782,7 +796,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         cleanup: "static variables are reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)

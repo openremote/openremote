@@ -71,7 +71,7 @@ export class AssetModelUtil {
             return;
         }
 
-        const assetTypeInfo = this.getAssetTypeInfo(assetTypeOrDescriptor || WellknownAssets.UNKNOWNASSET);
+        const assetTypeInfo = this.getAssetTypeInfo(assetTypeOrDescriptor || WellknownAssets.THINGASSET);
 
         if (!assetTypeInfo || !assetTypeInfo.attributeDescriptors) {
             return;
@@ -178,7 +178,7 @@ export class AssetModelUtil {
         if (attributeNameOrDescriptor && typeof attributeNameOrDescriptor !== "string") {
             attributeDescriptor = attributeNameOrDescriptor as AttributeDescriptor;
         } else {
-            const assetTypeInfo = this.getAssetTypeInfo(assetType || WellknownAssets.UNKNOWNASSET);
+            const assetTypeInfo = this.getAssetTypeInfo(assetType || WellknownAssets.THINGASSET);
 
             if (!assetTypeInfo) {
                 return [undefined, undefined];
