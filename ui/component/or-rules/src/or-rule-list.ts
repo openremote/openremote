@@ -638,37 +638,37 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     protected async _loadRulesets() {
         const sortFunction = this._getSortFunction();
+        let data;
 
         // Global rulesets
         if (this._globalRulesets) {
             if (this._rulesetPromises.size == 0 && !this._rulesetPromises.has("global")) {
-                this._rulesetPromises.set("global", new Promise<GlobalRuleset[]>(async (resolve, reject) => {
+                this._rulesetPromises.set("global", new Promise<GlobalRuleset[]>(async (resolve) => {
                     const response = await manager.rest.api.RulesResource.getGlobalRulesets({fullyPopulate: true});
                     resolve(response.data);
                 }));
             }
-            const data = await this._rulesetPromises.get("global");
+            data = await this._rulesetPromises.get("global");
             this._rulesetPromises.delete("global");
-            if (data) {
-                this._buildTreeNodes(data, sortFunction);
-            }
         }
 
         // Realm rulesets
         else {
             const ruleRealm: string = this._getRealm() || manager.displayRealm;
             if (this._rulesetPromises.size == 0 && !this._rulesetPromises.has(ruleRealm)) {
-                this._rulesetPromises.set(ruleRealm, new Promise<RealmRuleset[]>(async (resolve, reject) => {
+                this._rulesetPromises.set(ruleRealm, new Promise<RealmRuleset[]>(async (resolve) => {
                     const params = {fullyPopulate: true, language: this._allowedLanguages}
                     const response = await manager.rest.api.RulesResource.getRealmRulesets(ruleRealm, params);
                     resolve(response.data);
                 }));
             }
-            const data = await this._rulesetPromises.get(ruleRealm);
+            data = await this._rulesetPromises.get(ruleRealm);
             this._rulesetPromises.delete(ruleRealm);
-            if (data) {
-                this._buildTreeNodes(data, sortFunction);
-            }
+        }
+
+        // ... building the nodes
+        if (data) {
+            this._buildTreeNodes(data, sortFunction);
         }
     }
 
