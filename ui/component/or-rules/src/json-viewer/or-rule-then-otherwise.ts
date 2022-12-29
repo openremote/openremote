@@ -5,6 +5,8 @@ import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {
+    Asset,
+    AssetModelUtil,
     AssetTypeInfo,
     HTTPMethod,
     JsonRule,
@@ -12,9 +14,7 @@ import {
     RuleActionUnion,
     RuleActionWebhook,
     RuleRecurrence,
-    WellknownAssets,
-    Asset,
-    AssetModelUtil
+    WellknownAssets
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
