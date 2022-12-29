@@ -135,12 +135,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     public async refresh() {
         this._nodes = undefined;
-        await this._loadRulesets();
-    }
-
-    public async onRealmChange(realm: string) {
-        this._nodes = undefined;
-        await this._loadRulesets(realm);
+        // reloading rulesets is automatically done in shouldUpdate()
     }
 
     protected get _allowedLanguages(): RulesetLang[] | undefined {
@@ -641,7 +636,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         return manager.getRealm();
     }
 
-    protected async _loadRulesets(realm?: string) {
+    protected async _loadRulesets() {
         const sortFunction = this._getSortFunction();
 
         // Global rulesets
@@ -661,7 +656,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
         // Realm rulesets
         else {
-            const ruleRealm: string = realm || this._getRealm() || manager.displayRealm;
+            const ruleRealm: string = this._getRealm() || manager.displayRealm;
             if (this._rulesetPromises.size == 0 && !this._rulesetPromises.has(ruleRealm)) {
                 this._rulesetPromises.set(ruleRealm, new Promise<RealmRuleset[]>(async (resolve, reject) => {
                     const params = {fullyPopulate: true, language: this._allowedLanguages}

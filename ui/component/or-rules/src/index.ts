@@ -797,9 +797,9 @@ export class OrRules extends translate(i18next)(LitElement) {
         `;
     }
 
-    public updateRealm(realm: string) {
+    public refresh() {
         this._viewer.ruleset = undefined;
-        this._rulesList.onRealmChange(realm);
+        this._rulesList.refresh();
     }
 
     protected isReadonly(): boolean {

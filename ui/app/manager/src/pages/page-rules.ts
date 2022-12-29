@@ -87,7 +87,7 @@ export class PageRules extends Page<AppStateKeyed>  {
         [this._realmSelector],
         async (realm) => {
             if (this._orRules) {
-                this._orRules.updateRealm(realm);
+                this._orRules.refresh();
             }
         }
     )

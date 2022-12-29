@@ -13,7 +13,8 @@ import {
     RuleActionWebhook,
     RuleRecurrence,
     WellknownAssets,
-    Asset
+    Asset,
+    AssetModelUtil
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";

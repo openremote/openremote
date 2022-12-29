@@ -121,7 +121,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     protected _ruleset!: RulesetUnion;
 
     @state() // to be exact: Map<Realm name, Map<AssetType name, Asset[]>>
-    protected _loadedAssets: Map<string, Map<string, Asset[]>> = new Map<string, Map<string, any[]>>();
+    protected _loadedAssets: Map<string, Map<string, Asset[]>> = new Map<string, Map<string, Asset[]>>();
 
     protected _rule!: JsonRule;
     protected _unsupported = false;
