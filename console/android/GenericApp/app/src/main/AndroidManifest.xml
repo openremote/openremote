@@ -19,7 +19,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/OpenRemoteTheme">
-
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification" />
@@ -45,16 +44,19 @@
                 android:resource="@xml/shortcuts" />
         </activity>
         <activity
-            android:name=".ui.ProjectActivity"
-            android:exported="true"
-            android:label="@string/title_activity_project"
-            android:screenOrientation="portrait" />
-        <activity
             android:name="io.openremote.orlib.ui.OrMainActivity"
             android:screenOrientation="portrait" />
         <activity
             android:name="io.openremote.orlib.ui.OrPrivacyPolicyActivity"
             android:screenOrientation="portrait" />
+        <activity
+            android:name=".ui.ProjectWizardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".ui.ProjectListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"/>
 
         <service
             android:name="io.openremote.orlib.service.ORFirebaseMessagingService"

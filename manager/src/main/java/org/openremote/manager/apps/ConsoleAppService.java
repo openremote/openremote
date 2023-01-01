@@ -21,36 +21,27 @@ package org.openremote.manager.apps;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
-import org.openremote.container.web.WebService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.apps.ConsoleAppConfig;
-import org.openremote.model.util.ValueUtil;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 
 public class ConsoleAppService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(ConsoleAppService.class.getName());
-
-    public static final String CONSOLE_APP_CONFIG_PATH = "/consoleappconfig";
-    public static final String OR_CONSOLE_APP_CONFIG_DOCROOT = "OR_CONSOLE_APP_CONFIG_DOCROOT";
-    public static final String OR_CONSOLE_APP_CONFIG_DOCROOT_DEFAULT = "manager/src/consoleappconfig";
 
     protected TimerService timerService;
     protected ManagerWebService managerWebService;
@@ -67,19 +58,19 @@ public class ConsoleAppService implements ContainerService {
         this.persistenceService = container.getService(PersistenceService.class);
 
         container.getService(ManagerWebService.class).addApiSingleton(
-            new ConsoleAppResourceImpl(this)
+            new AppResourceImpl(this)
         );
 
-        consoleAppDocRoot = Paths.get(getString(container.getConfig(), OR_CONSOLE_APP_CONFIG_DOCROOT, OR_CONSOLE_APP_CONFIG_DOCROOT_DEFAULT));
+        consoleAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
 
         // Serve console app config files
         if (Files.isDirectory(consoleAppDocRoot)) {
             HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, consoleAppDocRoot, null);
 
-            HttpHandler pathHandler = new PathHandler().addPrefixPath(CONSOLE_APP_CONFIG_PATH, customBaseFileHandler);
+            HttpHandler pathHandler = new PathHandler().addPrefixPath("info", customBaseFileHandler);
             managerWebService.getRequestHandlers().add(0, pathStartsWithHandler(
-                "Console app config files",
-                CONSOLE_APP_CONFIG_PATH,
+                "Console app info files",
+                "info",
                 pathHandler));
         }
     }
@@ -97,7 +88,9 @@ public class ConsoleAppService implements ContainerService {
                 Files.list(managerWebService.getBuiltInAppDocRoot()),
                 Files.list(managerWebService.getCustomAppDocRoot()))
             .filter(Files::isDirectory)
+            .filter(path -> !path.endsWith("shared") && !path.endsWith("swagger"))
             .map(dir -> dir.getFileName().toString())
+            .distinct()
             .toArray(String[]::new);
     }
 

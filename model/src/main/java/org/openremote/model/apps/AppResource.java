@@ -22,10 +22,8 @@ package org.openremote.model.apps;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -34,10 +32,25 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface AppResource {
 
     /**
-     * Retrieve installed console applications. Only the superuser can perform this operation,
-     * a 403 status is returned if a regular user tries to access the console applications.
+     * Retrieve a list of available apps
      */
     @GET
     @Produces(APPLICATION_JSON)
     String[] getApps(@BeanParam RequestParams requestParams);
+
+    /**
+     * Retrieve info json of all apps.
+     */
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Path("info")
+    Response getAppInfos(@BeanParam RequestParams requestParams);
+
+    /**
+     * Retrieve console app config.
+     */
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Path("consoleConfig")
+    Response getConsoleConfig(@BeanParam RequestParams requestParams);
 }

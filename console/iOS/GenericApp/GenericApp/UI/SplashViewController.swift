@@ -11,40 +11,53 @@ import ORLib
 
 class SplashViewController: UIViewController {
 
-    var appconfig: ORAppConfig?
     var host: String?
-
+    var project: ProjectConfig?
+    
+    var displaySettings = false
+   
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-
-        if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
-           let savedHost = userDefaults.string(forKey: DefaultsKey.hostKey),
-           let realm = userDefaults.string(forKey: DefaultsKey.realmKey) {
-            host = savedHost
-            let url = host!.appending("/api/\(realm)")
-
-            let apiManager = ApiManager(baseUrl: url)
-            apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in
-                DispatchQueue.main.async {
-                    if statusCode == 200 && error == nil {
-                        self.appconfig = orAppConfig
-
-                        self.performSegue(withIdentifier: "goToWebView", sender: self)
-                    } else {
-                        self.performSegue(withIdentifier: "goToProjectView", sender: self)
-                    }
-                }
-            })
-        } else {
-            self.performSegue(withIdentifier: "goToProjectView", sender: self)
+        
+        if (displaySettings) {
+            self.performSegue(withIdentifier: Segues.goToSettingsView, sender: self)
+            displaySettings = false
+            return
         }
+        if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
+           let projectsData = userDefaults.data(forKey: DefaultsKey.projectsConfigurationKey),
+           let selectedProjectId = userDefaults.string(forKey: DefaultsKey.projectKey) {
+            
+            let projects = try? JSONDecoder().decode([ProjectConfig].self, from: projectsData)
+            
+            if let projects = projects {
+                print("Known projects \(projects)")
+                print("Selected project \(selectedProjectId)")
+                
+                if let selectedProject = projects.first(where: { $0.id == selectedProjectId } ) {
+                    project = selectedProject
+                    self.performSegue(withIdentifier: Segues.goToWebView, sender: self)
+                    return
+                }
+            }
+        }
+        self.performSegue(withIdentifier: Segues.goToWizardDomainView, sender: self)
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "goToWebView" {
+        if segue.identifier == Segues.goToWebView {
             let orViewController = segue.destination as! ORViewcontroller
-            orViewController.appConfig = self.appconfig
-            orViewController.baseUrl = host
+            
+            if let project = project {
+  
+                // TODO: replace with proper URL creation
+                orViewController.targetUrl = project.targetUrl
+
+//                orViewController.baseUrl = host
+            }
+        } else if segue.identifier == Segues.goToSettingsView {
+            let settingsViewController = segue.destination as! SettingsViewController
         }
     }
+
 }
