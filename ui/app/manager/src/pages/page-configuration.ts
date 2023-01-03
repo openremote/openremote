@@ -143,7 +143,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
     }
 
     get name(): string {
-        return "configuration";
+        return "appearance";
     }
 
     constructor(store: Store<AppStateKeyed>) {
