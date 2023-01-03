@@ -1,17 +1,21 @@
 package io.openremote.app.ui
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.openremote.app.databinding.ActivitySplashBinding
+import io.openremote.app.model.ProjectItem
+import io.openremote.app.util.Constants
 import io.openremote.orlib.ORConstants
-import io.openremote.orlib.network.ApiManager
 import io.openremote.orlib.ui.OrMainActivity
 import io.openremote.orlib.ui.OrPrivacyPolicyActivity
 
+@SuppressLint("CustomSplashScreen")
 class SplashActivity : Activity() {
 
     object SplashActivityConstants {
@@ -20,6 +24,7 @@ class SplashActivity : Activity() {
 
     private lateinit var binding: ActivitySplashBinding
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var projectItems: MutableList<ProjectItem>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +33,19 @@ class SplashActivity : Activity() {
         setContentView(view)
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        projectItems = sharedPreferences.getString(Constants.PROJECT_LIST, null)?.let {
+            jacksonObjectMapper().readValue<List<ProjectItem>>(it).toMutableList()
+        } ?: mutableListOf()
+
+        intent.extras?.apply {
+            this.getString(ORConstants.CLEAR_URL)?.apply {
+                projectItems.removeIf { it.url == this }
+                sharedPreferences
+                    .edit()
+                    .putString(Constants.PROJECT_LIST, jacksonObjectMapper().writeValueAsString(projectItems))
+                    .apply()
+            }
+        }
 
         val privacyPolicyAccepted = sharedPreferences.getBoolean("privacyPolicyAccepted", false)
 
@@ -40,34 +58,30 @@ class SplashActivity : Activity() {
     }
 
     private fun startNextActivity() {
-        val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
-        val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
-
-        if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
-            val url = host.plus("/api/${realm}")
-            val apiManager = ApiManager(url)
-            apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
-                if (statusCode in 200..299) {
-                    val intent = Intent(this@SplashActivity, OrMainActivity::class.java)
-                    intent.putExtra(ORConstants.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
-                    intent.putExtra(ORConstants.BASE_URL_KEY, host)
-                    startActivity(intent)
-                    finish()
-                } else {
-                    startActivity(Intent(this@SplashActivity, ProjectActivity::class.java))
-                    finish()
-                }
+        when {
+            projectItems.size == 1 -> {
+                val intent = Intent(this, OrMainActivity::class.java)
+                intent.putExtra(ORConstants.BASE_URL_KEY, projectItems[0].url)
+                startActivity(intent)
+                finish()
             }
-        } else {
-            startActivity(Intent(this@SplashActivity, ProjectActivity::class.java))
-            finish()
+            projectItems.size > 1 -> {
+                startActivity(Intent(this@SplashActivity, ProjectListActivity::class.java))
+                finish()
+            }
+            else -> {
+                startActivity(Intent(this@SplashActivity, ProjectWizardActivity::class.java))
+                finish()
+            }
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if(requestCode == SplashActivityConstants.SHOW_CONDITIONS_REQUEST) {
+        if (requestCode == SplashActivityConstants.SHOW_CONDITIONS_REQUEST) {
             if (resultCode == RESULT_OK) {
-                sharedPreferences.edit().putBoolean("privacyPolicyAccepted", true).apply()
+                sharedPreferences.edit()
+                    .putBoolean("privacyPolicyAccepted", true)
+                    .apply()
                 startNextActivity()
             }
         }

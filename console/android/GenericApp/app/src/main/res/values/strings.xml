@@ -22,4 +22,23 @@
     <string name="background_location_decline">No</string>
     <string name="background_location_accept">Yes</string>
     <string name="button_accept">Accept</string>
+    <string name="domain">Domain</string>
+    <string name="next">Next</string>
+    <string name="back">Back</string>
+    <string name="connect_to_app">Connect to your app</string>
+    <string name="enter_app_domain">ENTER THE APP DOMAIN</string>
+    <string name="could_not_connect_to_domain">Could not connect to domain.\nPlease verify address.</string>
+    <string name="select_an_app">SELECT AN APP</string>
+    <string name="app">App</string>
+    <string name="select_the_realm">SELECT THE REALM</string>
+    <string name="realm">Realm</string>
+    <string name="finish">Finish</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="select_app_first">Select app first</string>
+    <string name="error_getting_app_info">Error getting app info</string>
+    <string name="select_realm_first">Select realm first</string>
+    <string name="app_incompatible">Console app isn\'t compatible with the Generic OR app</string>
+    <string name="no_apps_found">No apps found on this domain</string>
+    <string name="add">ADD</string>
 </resources>
