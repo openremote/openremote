@@ -12,6 +12,6 @@ Ramon Peek
 Ferris Kwaijtaal
 Rens van der Linden
 Stijn Groenen
-Denis Weber <Denis.Weber@smart-psa.com>
+Denis Weber
 Martin Peeters
 Neal Geilen
