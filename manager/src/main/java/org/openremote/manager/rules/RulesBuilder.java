@@ -25,8 +25,6 @@ import org.jeasy.rules.core.RuleBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.openremote.manager.rules.RulesEngine.RULES_FIRED_LOG;
-
 /**
  * Call {@link #add()} to add rules.
  */

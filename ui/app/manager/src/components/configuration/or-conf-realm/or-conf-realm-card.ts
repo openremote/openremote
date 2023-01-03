@@ -36,7 +36,6 @@ import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
-declare var CONFIG_URL_PREFIX: string;
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
 
@@ -126,7 +125,6 @@ export class OrConfRealmCard extends LitElement {
   public onRemove: CallableFunction = () => {
   };
 
-  private urlPrefix:string = (CONFIG_URL_PREFIX || "")
   protected logo:string = this.realm.logo;
   protected logoMobile:string = this.realm.logoMobile;
   protected favicon:string = this.realm.favicon;
@@ -199,39 +197,27 @@ export class OrConfRealmCard extends LitElement {
   }
 
   protected _getImagePath(file:File, fileName: string){
-    let extension = "";
-    switch (file.type){
-      case "image/png":
-        extension = "png"
-        break;
-      case "image/jpg":
-        extension = "jpg"
-        break;
-      case "image/jpeg":
-        extension = "jpeg"
-        break;
-      case "image/vnd.microsoft.icon":
-        extension = "ico"
-        break;
-      case "image/svg+xml":
-        extension = "svg"
-        break;
+    if (file.type.startsWith("image/")){
+      let extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
+      return "/images/" + this.name + "/" + fileName + extension
     }
-    return this.urlPrefix + "/images/" + this.name + "/" + fileName + "." +  extension
+    return null
   }
 
   protected files: {[name:string] : FileInfo} = {}
 
   protected async _setImageForUpload(file: File, fileName: string) {
     const path = this._getImagePath(file, fileName)
-    this.files[path] = {
-      path: path,
-      contents: await Util.blobToBase64(file),
-    } as FileInfo;
-    this.realm[fileName] = path
-    this[fileName] = this.files[path].contents
-    this.requestUpdate()
-    return this.files[path].contents;
+    if (path){
+      this.files[path] = {
+        path: path,
+        contents: await Util.blobToBase64(file),
+      } as FileInfo;
+      this.realm[fileName] = path
+      this[fileName] = this.files[path].contents
+      this.requestUpdate()
+      return this.files[path].contents;
+    }
   }
 
   protected _showRemoveRealmDialog(){
@@ -302,13 +288,13 @@ export class OrConfRealmCard extends LitElement {
             <div class="d-inline-flex">
               <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                 @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "logo")}"
-                                .src="${this.logo ? this.logo : this.urlPrefix + this.realm.logo}"></or-file-uploader>
+                                .src="${this.logo ? this.logo : this.realm.logo}"></or-file-uploader>
               <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
                                 @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                .src="${this.logoMobile ? this.logoMobile : this.urlPrefix + this.realm.logoMobile}"></or-file-uploader>
+                                .src="${this.logoMobile ? this.logoMobile : this.realm.logoMobile}"></or-file-uploader>
               <or-file-uploader .title="${html`Favicon`}"
                                 @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "favicon")}"
-                                .src="${this.favicon ? this.favicon : this.urlPrefix + this.realm.favicon}"></or-file-uploader>
+                                .src="${this.favicon ? this.favicon : this.realm.favicon}"></or-file-uploader>
             </div>
           </div>
           <div class="color-group">

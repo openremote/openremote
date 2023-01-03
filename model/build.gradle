@@ -32,8 +32,8 @@ dependencies {
 
     api "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
 
-    // Custom build until PR is merged from https://github.com/richturner/mbknor-jackson-jsonSchema - resolved by jitpack
-    api "com.github.richturner:mbknor-jackson-jsonSchema:v1.0.40-SNAPSHOT"
+    // Custom build until PR is merged from https://github.com/richturner/mbknor-jackson-jsonSchema
+    api "com.github.richturner:mbknor-jackson-jsonschema:1.0.40-SNAPSHOT"
     //api "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
     api "org.scala-lang:scala-library:2.12.10"
     api "io.github.classgraph:classgraph:$classgraphVersion"
@@ -61,7 +61,7 @@ publishing {
             from components.java
             pom {
                 name = 'OpenRemote Model'
-                description = 'Provides core model classes used within OpenRemote; add maven {url "https://jitpack.io"} and maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+                description = 'Provides core model classes used within OpenRemote; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {

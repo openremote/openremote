@@ -29,8 +29,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
     def "Presence detection with motion sensor"() {
 
         given: "the container environment is started"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 30, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -180,15 +178,11 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             assert hallway.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 
     def "Presence detection with motion sensor and confirmation with CO2 level"() {
 
         given: "the container environment is started"
-        def expirationMillis = TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = 500
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -329,9 +323,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             assert roomAsset.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
-        cleanup: "the static rules time variable is reset"
-        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
-    }
+            }
 
         /* TODO Migrate to JS, didn't compile even with Drools
         def "Presence prediction rules compilation"() {

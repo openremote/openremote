@@ -124,7 +124,7 @@ export function getAssetDescriptorIconTemplate(descriptor: AssetDescriptor | und
     const color = overrideColor ? overrideColor : AssetModelUtil.getAssetDescriptorColour(descriptor, fallbackColor);
     let icon = overrideIcon ? overrideIcon : AssetModelUtil.getAssetDescriptorIcon(descriptor, fallbackIcon);
     if (!icon) {
-        icon = AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.UNKNOWNASSET);
+        icon = AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET);
     }
     return html`<or-icon style="--or-icon-fill: ${color ? "#" + color : "unset"}" icon="${icon}"></or-icon>`;
 }

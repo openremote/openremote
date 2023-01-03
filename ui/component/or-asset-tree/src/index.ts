@@ -20,8 +20,7 @@ import {
     LogicGroup,
     LogicGroupOperator,
     SharedEvent,
-    StringPredicate,
-    WellknownAssets
+    StringPredicate
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -252,10 +251,6 @@ export const getAssetTypes = async () => {
     if(response && response.data) {
         return response.data.map(asset => asset.type!);
     }
-}
-
-export function getDefaultAllowedAddAssetTypes(): AssetDescriptor[] {
-    return AssetModelUtil.getAssetDescriptors().filter(ad => ad.name !== WellknownAssets.UNKNOWNASSET);
 }
 
 @customElement("or-asset-tree")
@@ -1565,7 +1560,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
         }
 
-        return getDefaultAllowedAddAssetTypes()
+        return AssetModelUtil.getAssetDescriptors()
             .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.name!)))
                 && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.name!))));
     }

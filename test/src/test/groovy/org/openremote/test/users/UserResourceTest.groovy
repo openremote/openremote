@@ -19,8 +19,9 @@
  */
 package org.openremote.test.users
 
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider
+
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.Constants
 import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -81,7 +82,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         then: "all users should be returned including system users"
         users.size() == 3
-        users.count {it.isSystemAccount() && it.username == KeycloakIdentityProvider.MANAGER_CLIENT_ID} == 1
+        users.count {it.isSystemAccount() && it.username == Constants.MANAGER_CLIENT_ID} == 1
         users.count {!it.isServiceAccount()} == 3
 
         when: "a request is made for all users by a regular user"
@@ -89,7 +90,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
         then: "only non system users of the users realm should be returned"
         users.size() == 5
-        users.count {it.isSystemAccount() && it.username == KeycloakIdentityProvider.MANAGER_CLIENT_ID} == 0
+        users.count {it.isSystemAccount() && it.username == Constants.MANAGER_CLIENT_ID} == 0
         users.find {it.id == keycloakTestSetup.testuser2Id} != null
         users.find {it.id == keycloakTestSetup.testuser3Id} != null
         users.find {it.id == keycloakTestSetup.buildingUserId} != null

@@ -51,7 +51,7 @@ services:
 
       # Customize proxy log, defaults to 'notice', requests are logged at 'info'.
       # Available levels are: emerg, alert, crit, err, warning, notice, info, debug
-      PROXY_LOGLEVEL: ${PROXY_LOGLEVEL:-notice}
+      PROXY_LOGLEVEL: ${PROXY_LOGLEVEL:-info}
 
       # IANA TLD subdomain for which an SSL certificate should be requested (leave blank for private/externally
       # generated certificates).
@@ -229,9 +229,6 @@ services:
 
       # Location for the provisioning files
       OR_PROVISIONING_DOCROOT: ${OR_PROVISIONING_DOCROOT:-/deployment/manager/provisioning}
-
-      # Location of the console app config files.
-      OR_CONSOLE_APP_CONFIG_DOCROOT: ${OR_CONSOLE_APP_CONFIG_DOCROOT:-/deployment/manager/consoleappconfig}
 
       # Redirect path when root URI is requested
       OR_ROOT_REDIRECT_PATH: ${OR_ROOT_REDIRECT_PATH:-/manager}

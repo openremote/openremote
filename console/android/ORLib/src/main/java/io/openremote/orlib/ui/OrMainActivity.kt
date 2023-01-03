@@ -7,35 +7,28 @@ import android.app.DownloadManager
 import android.content.*
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.Uri
+import android.net.http.SslError
 import android.os.*
 import android.view.KeyEvent
 import android.view.View
-import android.view.ViewGroup
-import android.view.WindowManager
 import android.webkit.*
 import android.webkit.ConsoleMessage.MessageLevel
 import android.webkit.WebView.WebViewTransport
 import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import android.widget.Toast
-import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.messaging.FirebaseMessaging
 import io.openremote.orlib.ORConstants
+import io.openremote.orlib.ORConstants.CLEAR_URL
 import io.openremote.orlib.ORConstants.BASE_URL_KEY
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
-import io.openremote.orlib.models.ORAppConfig
-import io.openremote.orlib.network.ApiManager
 import io.openremote.orlib.service.GeofenceProvider
 import io.openremote.orlib.service.QrScannerProvider
 import org.json.JSONException
@@ -68,9 +61,10 @@ open class OrMainActivity : Activity() {
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
     private var consoleId: String? = null
-    private var appConfig: ORAppConfig? = null
+    private var connectFailCount: Int = 0
+    private var connectFailResetHandler: Handler? = null
+    private var connectFailResetRunnable: Runnable? = null
     private var baseUrl: String? = null
-
     private var onDownloadCompleteReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctxt: Context, intent: Intent) {
             val action = intent.action
@@ -80,34 +74,6 @@ open class OrMainActivity : Activity() {
             }
         }
     }
-
-    private val clientUrl: String?
-        get() {
-            var returnValue: String? = null
-
-            if (appConfig != null) {
-                if (URLUtil.isValidUrl(appConfig!!.initialUrl)) {
-                    return appConfig!!.initialUrl
-                } else {
-                    sharedPreferences.let { pref ->
-                        pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
-                            return host.plus(appConfig!!.initialUrl)
-                        }
-                    }
-                }
-            }
-
-
-            sharedPreferences.let { pref ->
-                pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
-                    pref.getString(ORConstants.REALM_KEY, null)?.let { realm ->
-                        returnValue = host.plus("/api/${realm}")
-                    }
-                }
-            }
-
-            return returnValue
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,138 +106,39 @@ open class OrMainActivity : Activity() {
         progressBar?.max = 100
         progressBar?.progress = 1
 
-        if (intent.hasExtra(ORConstants.APP_CONFIG_KEY)) {
-            appConfig = mapper.readValue(
-                intent.getStringExtra(ORConstants.APP_CONFIG_KEY),
-                ORAppConfig::class.java
-            )
+
+        if (intent.hasExtra(ORConstants.BASE_URL_KEY)) {
+            baseUrl = intent.getStringExtra(ORConstants.BASE_URL_KEY)
         }
-        
+
         if (intent.hasExtra(BASE_URL_KEY)) {
             baseUrl = intent.getStringExtra(BASE_URL_KEY)
         }
 
-        if (appConfig == null) {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
             val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
             val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
 
-            if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
-                val url = host.plus("/api/${realm}")
-                val apiManager = ApiManager(url)
-                apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
-                    if (statusCode in 200..299) {
-                        this.appConfig = appConfig
-                        processAppConfig()
-                    }
+
                     openIntentUrl(intent)
-                }
-            }
-        } else {
-            processAppConfig()
-            openIntentUrl(intent)
-        }
+
+
     }
 
     override fun onNewIntent(intent: Intent) {
         openIntentUrl(intent)
     }
 
-    protected fun processAppConfig() {
-        if (appConfig != null) {
-
-            if (!appConfig!!.primaryColor.isNullOrBlank()) {
-                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-                window.statusBarColor = Color.parseColor(appConfig!!.primaryColor!!)
-
-                progressBar?.progressTintList =
-                    ColorStateList.valueOf(Color.parseColor(appConfig!!.primaryColor!!))
-            }
-
-            if (appConfig!!.menuEnabled && !appConfig!!.links.isNullOrEmpty()) {
-                val floatingActionButton = FloatingActionButton(this)
-
-                val layoutParams = RelativeLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-
-                val margin = 36
-                when (appConfig!!.menuPosition) {
-                    "BOTTOM_RIGHT" -> {
-                        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END)
-                        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
-                        layoutParams.marginEnd = margin
-                        layoutParams.bottomMargin = margin
-                    }
-                    "TOP_RIGHT" -> {
-                        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END)
-                        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP)
-                        layoutParams.marginEnd = margin
-                        layoutParams.topMargin = margin
-                    }
-                    "TOP_LEFT" -> {
-                        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START)
-                        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP)
-                        layoutParams.marginStart = margin
-                        layoutParams.topMargin = margin
-                    }
-                    else -> {
-                        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START)
-                        layoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
-                        layoutParams.marginStart = margin
-                        layoutParams.bottomMargin = margin
-                    }
-                }
-                floatingActionButton.layoutParams = layoutParams
-                floatingActionButton.setImageResource(R.drawable.ic_menu)
-                if (!appConfig!!.primaryColor.isNullOrBlank()) {
-                    try {
-                        floatingActionButton.backgroundTintList =
-                            ColorStateList.valueOf(Color.parseColor(appConfig!!.primaryColor!!))
-                    } catch (ex: java.lang.Exception) {
-                        ex.printStackTrace()
-                    }
-                }
-                if (!appConfig!!.secondaryColor.isNullOrBlank()) {
-                    try {
-                        floatingActionButton.imageTintList =
-                            ColorStateList.valueOf(Color.parseColor(appConfig!!.secondaryColor!!))
-                    } catch (ex: Exception) {
-                        floatingActionButton.imageTintList = ColorStateList.valueOf(Color.DKGRAY)
-                        ex.printStackTrace()
-                    }
-                } else {
-                    floatingActionButton.imageTintList = ColorStateList.valueOf(Color.DKGRAY)
-                }
-                floatingActionButton.setOnClickListener {
-                    // We are showing only toast message. However, you can do anything you need.
-                    val popupMenu = PopupMenu(this@OrMainActivity, it)
-                    for ((index, link) in appConfig!!.links!!.withIndex()) {
-                        popupMenu.menu.add(index, index, index, link.displayText)
-                    }
-                    popupMenu.setOnMenuItemClickListener { item ->
-                        loadUrl(appConfig!!.links!![item.itemId].pageLink)
-                        true
-                    }
-                    popupMenu.show()
-                }
-
-                binding.activityWeb.addView(floatingActionButton)
-            }
-        }
-    }
-
     private fun openIntentUrl(intent: Intent) {
         when {
             intent.hasExtra("appUrl") -> {
-                val url = intent.getStringExtra("appUrl")
+                val url = intent.getStringExtra("appUrl")!!
                 LOG.fine("Loading web view: $url")
                 loadUrl(url)
             }
             else -> {
-                var url = clientUrl
+                var url = baseUrl
                 val intentUrl = intent.getStringExtra("appUrl")
                 if (intentUrl != null) {
                     url = if (intentUrl.startsWith("http") || intentUrl.startsWith("https")) {
@@ -281,7 +148,7 @@ open class OrMainActivity : Activity() {
                     }
                 }
                 LOG.fine("Loading web view: $url")
-                loadUrl(url)
+                loadUrl(url!!)
             }
         }
     }
@@ -327,9 +194,9 @@ open class OrMainActivity : Activity() {
     private fun reloadWebView() {
         var url = binding.webView.url
         if ("about:blank" == url) {
-            url = clientUrl
+            url = baseUrl
             LOG.fine("Reloading web view: $url")
-            loadUrl(url)
+            loadUrl(url!!)
         }
     }
 
@@ -532,14 +399,6 @@ open class OrMainActivity : Activity() {
         failingUrl: String?
     ) {
         LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
-        //TODO should we always ignore image errors?
-        if (failingUrl != null && (failingUrl.endsWith("png")
-                    || failingUrl.endsWith("jpg")
-                    || failingUrl.endsWith("ico"))
-        ) {
-            LOG.info("Ignoring error loading image resource")
-            return
-        }
         //TODO should we always ignore image errors and locale json files?
         if (failingUrl != null && (failingUrl.endsWith("png")
                     || failingUrl.endsWith("jpg")
@@ -551,25 +410,34 @@ open class OrMainActivity : Activity() {
         }
         // This will be the URL loaded into the webview itself (false for images etc. of the main page)
         // Check page load error URL
-        if (clientUrl != null) {
-            loadUrl(clientUrl)
-            Toast.makeText(this, description, Toast.LENGTH_LONG).show()
-        } else {
-            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-            if (launchIntent != null) {
-                startActivity(launchIntent)
-                finish()
-                Toast.makeText(applicationContext, description, Toast.LENGTH_LONG).show()
+        if (errorCode >= 500) {
+            if (baseUrl != null && baseUrl != failingUrl && connectFailCount < 10) {
+                loadUrl(baseUrl!!)
+                Toast.makeText(this, description, Toast.LENGTH_SHORT).show()
+                connectFailCount++
+                connectFailResetRunnable?.let { connectFailResetHandler!!.removeCallbacks(it) }
+                connectFailResetRunnable = Runnable {
+                    connectFailCount = 0
+                }
+                connectFailResetHandler = Looper.myLooper()?.let { Handler(it) }
+                connectFailResetHandler!!.postDelayed(connectFailResetRunnable!!, 5000)
             } else {
-                Toast.makeText(this, description, Toast.LENGTH_LONG).show()
+                val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                if (launchIntent != null) {
+                    launchIntent.putExtra(CLEAR_URL, baseUrl)
+                    launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(launchIntent)
+                    finish()
+                }
+                Toast.makeText(applicationContext, "The main page couldn't be opened", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    public fun loadUrl(url: String?) {
+    fun loadUrl(url: String) {
         webViewLoaded = false
-        val temp = url!!.replace(" ", "%20")
-        binding.webView.loadUrl(temp)
+        val encodedUrl = url.replace(" ", "%20")
+        binding.webView.loadUrl(encodedUrl)
     }
 
     override fun onRequestPermissionsResult(
@@ -620,7 +488,6 @@ open class OrMainActivity : Activity() {
             when (messageType) {
                 "error" -> {
                     LOG.fine("Received WebApp message, error: " + data?.getString("error"))
-                    val mainHandler = Handler(mainLooper)
                     Toast.makeText(
                         this@OrMainActivity,
                         "Error occurred ${data?.getString("error")}",
@@ -666,7 +533,7 @@ open class OrMainActivity : Activity() {
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
                     val consoleId = data.getString("consoleId")
                     (activity as OrMainActivity).consoleId = consoleId
-                    geofenceProvider?.enable(this@OrMainActivity, clientUrl ?: "",
+                    geofenceProvider?.enable(this@OrMainActivity, baseUrl ?: "",
                         consoleId, object : GeofenceProvider.GeofenceCallback {
                             override fun accept(responseData: Map<String, Any>) {
                                 notifyClient(responseData)

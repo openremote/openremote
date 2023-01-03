@@ -319,7 +319,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .process(exchange -> withLock(getClass().getSimpleName() + "::processFromAssetQueue", () -> {
 
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-                LOG.finest("Processing: " + event);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("Processing: " + event);
+                }
                 if (event.getAssetId() == null || event.getAssetId().isEmpty())
                     return;
                 if (event.getAttributeName() == null || event.getAttributeName().isEmpty())
@@ -460,11 +462,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         String attributeStr = "Asset ID=" + asset.getId() + ", Asset name=" + asset.getName() + ", " + attribute;
 
-        LOG.fine(">>> Processing start: " + attributeStr);
+        LOG.finest(">>> Processing start: " + attributeStr);
 
         // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp
         // is not updated so tests can't then detect the problem.
         lastProcessedEventTimestamp = System.currentTimeMillis();
+        String consumerProcessor = null;
 
         boolean complete = false;
         for (AssetUpdateProcessor processor : processors) {
@@ -481,15 +484,20 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 );
             }
             if (complete) {
-                LOG.fine("<== Processor " + processor + " completely consumed: " + attributeStr);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    consumerProcessor = processor.toString();
+                    LOG.finest("<== Processor " + consumerProcessor + " completely consumed (time since processing started=" + (System.currentTimeMillis() - lastProcessedEventTimestamp) + "ms): " + attributeStr);
+                }
                 break;
             } else {
-                LOG.finest("<== Processor " + processor + " done with: " + attributeStr);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("<== Processor " + processor + " done (time since processing started=" + (System.currentTimeMillis() - lastProcessedEventTimestamp) + "ms): " + attributeStr);
+                }
             }
         }
 
         if (!complete) {
-            LOG.fine("No processor consumed the update completely, storing: " + attributeStr);
+            LOG.finest("No processor consumed the update completely, storing (time since processing started=" + (System.currentTimeMillis() - lastProcessedEventTimestamp) + "ms): " + attributeStr);
             if (!assetStorageService.updateAttributeValue(em, asset, attribute)) {
                 throw new AssetProcessingException(
                     STATE_STORAGE_FAILED, "database update failed, no rows updated"
@@ -497,7 +505,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
         }
 
-        LOG.fine("<<< Processing complete: " + attributeStr);
+        if (consumerProcessor != null) {
+            LOG.fine("<<< Processing complete in " + (System.currentTimeMillis() - lastProcessedEventTimestamp) + "ms consumed by '" + consumerProcessor +"': " + attributeStr);
+        } else {
+            LOG.fine("<<< Processing complete in " + (System.currentTimeMillis() - lastProcessedEventTimestamp) + "ms: " + attributeStr);
+        }
         return complete;
     }
 

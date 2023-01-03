@@ -33,6 +33,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -42,6 +43,7 @@ import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.provisioning.ProvisioningConfig;
@@ -111,12 +113,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public void init(Container container) {
         super.init(container);
         this.container = container;
-        OAuthGrant grant = loadCredentials();
-
-        // Update the keycloak proxy credentials to use stored credentials
-        if (grant != null) {
-            setActiveCredentials(grant);
-        }
 
         String hostname = getString(container.getConfig(), Constants.OR_HOSTNAME, null);
         int port = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1); // Should just be called port
@@ -156,6 +152,66 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         if (container.isDevMode()) {
             enableAuthProxy(container.getService(WebService.class));
         }
+    }
+
+    @Override
+    protected OAuthGrant getStoredCredentials(Container container) {
+        // Try and load keycloak proxy credentials from the file system
+        String grantFile = getString(container.getConfig(), OR_KEYCLOAK_GRANT_FILE, OR_KEYCLOAK_GRANT_FILE_DEFAULT);
+        Path grantPath = TextUtil.isNullOrEmpty(grantFile) ? null : Paths.get(grantFile);
+        OAuthGrant grant = null;
+
+        if (grantPath != null && Files.isReadable(grantPath)) {
+            LOG.info("Loading OR_KEYCLOAK_GRANT_FILE: " + grantFile);
+
+            try (InputStream is = Files.newInputStream(grantPath)) {
+                String grantJson = IOUtils.toString(is, StandardCharsets.UTF_8);
+                grant = ValueUtil.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
+                    LOG.warning("Failed to load OR_KEYCLOAK_GRANT_FILE: " + grantFile);
+                    return null;
+                });
+            } catch (Exception ex) {
+                throw new ExceptionInInitializerError(ex);
+            }
+        }
+        return grant;
+    }
+
+    @Override
+    protected OAuthGrant generateStoredCredentials(Container container) {
+        String grantFile = getString(container.getConfig(), OR_KEYCLOAK_GRANT_FILE, OR_KEYCLOAK_GRANT_FILE_DEFAULT);
+
+        if (TextUtil.isNullOrEmpty(grantFile)) {
+            return null;
+        }
+
+        // Create a new super user for the keycloak proxy so admin user can be modified if desired
+        User keycloakProxyUser = new User()
+            .setUsername(MANAGER_CLIENT_ID)
+            .setEnabled(true)
+            .setSystemAccount(true);
+        String password = UniqueIdentifierGenerator.generateId();
+        keycloakProxyUser = createUpdateUser(MASTER_REALM, keycloakProxyUser, password, true);
+
+        // Make this proxy user a super user by giving them admin realm role
+        updateUserRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), addRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), REALM_ADMIN_ROLE));
+
+        // Use same details as default keycloak grant but change the username and password to our new user
+        OAuthPasswordGrant grant = getDefaultKeycloakGrant(container);
+        grant.setUsername(keycloakProxyUser.getUsername()).setPassword(password);
+        Path grantPath = Paths.get(grantFile);
+
+        try {
+            Files.write(grantPath, ValueUtil.asJSON(grant).orElse("null").getBytes(),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (Exception e) {
+            LOG.info("Failed to write " + OR_KEYCLOAK_GRANT_FILE + ": " + grantFile);
+            return null;
+        }
+
+        return grant;
     }
 
     @Override
@@ -375,6 +431,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         if (user == null) {
             return;
+        }
+
+        if (user.getUsername().equals(MASTER_REALM_ADMIN_USER) && user.getRealm().equals(MASTER_REALM)) {
+            throw new IllegalStateException("Cannot delete master realm admin user");
         }
 
         getRealms(realmsResource -> {
@@ -953,52 +1013,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             });
             persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, realm, Realm.class, null, null);
         });
-    }
-
-    /**
-     * Load keycloak proxy credentials from file system
-     */
-    public OAuthGrant loadCredentials() {
-        // Try and load keycloak proxy credentials from file
-        String grantFile = getString(container.getConfig(), OR_KEYCLOAK_GRANT_FILE, OR_KEYCLOAK_GRANT_FILE_DEFAULT);
-        Path grantPath = TextUtil.isNullOrEmpty(grantFile) ? null : Paths.get(grantFile);
-        OAuthGrant grant = null;
-
-        if (grantPath != null && Files.isReadable(grantPath)) {
-            LOG.info("Loading OR_KEYCLOAK_GRANT_FILE: " + grantFile);
-
-            try (InputStream is = Files.newInputStream(grantPath)) {
-                String grantJson = IOUtils.toString(is, StandardCharsets.UTF_8);
-                grant = ValueUtil.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
-                    LOG.warning("Failed to load OR_KEYCLOAK_GRANT_FILE: " + grantFile);
-                    return null;
-                });
-            } catch (Exception ex) {
-                throw new ExceptionInInitializerError(ex);
-            }
-        }
-        return grant;
-    }
-
-    /**
-     * Save Keycloak proxy credentials to the file system
-     */
-    public void saveCredentials(OAuthGrant grant) {
-        String grantFile = getString(container.getConfig(), OR_KEYCLOAK_GRANT_FILE, OR_KEYCLOAK_GRANT_FILE_DEFAULT);
-
-        if (TextUtil.isNullOrEmpty(grantFile)) {
-            return;
-        }
-        Path grantPath = Paths.get(grantFile);
-
-        try {
-            Files.write(grantPath, ValueUtil.asJSON(grant).orElse("null").getBytes(),
-                StandardOpenOption.CREATE,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (Exception e) {
-            LOG.info("Failed to write OR_KEYCLOAK_GRANT_FILE: " + grantFile);
-        }
     }
 
     public ClientRepresentation generateOpenRemoteClientRepresentation() {
