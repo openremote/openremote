@@ -7,8 +7,9 @@ object ORConstants {
     const val ACTION_BROADCAST = "ACTION_BROADCAST"
     const val PUSH_PROVIDER_DISABLED_KEY = "PushProviderDisabled"
     const val CONSOLE_ID_KEY = "consoleId"
-    const val APP_CONFIG_KEY = "APP_CONFIG_KEY"
     const val BASE_URL_KEY = "BASE_URL_KEY"
     const val HOST_KEY = "host"
     const val REALM_KEY = "realm"
+    const val CLEAR_URL = "CLEAR_URL"
+    const val APP_CONFIG_KEY = "APP_CONFIG_KEY"
 }

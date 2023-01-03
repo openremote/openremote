@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C81AA632546B251006ED5DD /* ProjectViewController.swift */; };
 		4C8BA085271460B1001084A4 /* libORLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8BA084271460B1001084A4 /* libORLib.a */; };
 		4C8BA087271461C7001084A4 /* libORLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C8BA086271461C7001084A4 /* libORLib.a */; };
 		4CEDA25D25405B1E00C47E3B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */; };
@@ -22,6 +21,10 @@
 		878D2D19249A490400011484 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 878D2D17249A490400011484 /* LaunchScreen.storyboard */; };
 		878D2D27249A498900011484 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878D2D26249A498900011484 /* NotificationService.swift */; };
 		878D2D2B249A498900011484 /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 878D2D24249A498900011484 /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */; };
+		910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */; };
+		91543FDE293FA2F20009016E /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91543FDD293FA2F20009016E /* SettingsViewController.swift */; };
+		91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F942889C15D000FF05C /* WizardRealmViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,7 +56,6 @@
 		46FD90D41833A0E2C4C7DDA6 /* Pods-NotificationService.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.release.xcconfig"; path = "Target Support Files/Pods-NotificationService/Pods-NotificationService.release.xcconfig"; sourceTree = "<group>"; };
 		4C38E9C02548089A00E381C6 /* OpenRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenRemote.entitlements; sourceTree = "<group>"; };
 		4C38E9C12548090200E381C6 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
-		4C81AA632546B251006ED5DD /* ProjectViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectViewController.swift; sourceTree = "<group>"; };
 		4C8BA084271460B1001084A4 /* libORLib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libORLib.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C8BA086271461C7001084A4 /* libORLib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libORLib.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -72,6 +74,11 @@
 		878D2D26249A498900011484 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		878D2D28249A498900011484 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		878D2D30249A4D3700011484 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardAppViewController.swift; sourceTree = "<group>"; };
+		910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardDomainViewController.swift; sourceTree = "<group>"; };
+		91543FDD293FA2F20009016E /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
+		91658F8F28897BC0000FF05C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		91658F942889C15D000FF05C /* WizardRealmViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardRealmViewController.swift; sourceTree = "<group>"; };
 		A994B3D3E3853BA4D16AA5A8 /* Pods-GenericApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GenericApp.debug.xcconfig"; path = "Target Support Files/Pods-GenericApp/Pods-GenericApp.debug.xcconfig"; sourceTree = "<group>"; };
 		D61E1E0434CC1446EAF20BA0 /* Pods-GenericApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GenericApp.release.xcconfig"; path = "Target Support Files/Pods-GenericApp/Pods-GenericApp.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -120,6 +127,7 @@
 		878D2D00249A490300011484 = {
 			isa = PBXGroup;
 			children = (
+				91658F8F28897BC0000FF05C /* README.md */,
 				878D2D0B249A490300011484 /* GenericApp */,
 				878D2D25249A498900011484 /* NotificationService */,
 				878D2D0A249A490300011484 /* Products */,
@@ -176,7 +184,10 @@
 			isa = PBXGroup;
 			children = (
 				4CEDA2CD254075D400C47E3B /* SplashViewController.swift */,
-				4C81AA632546B251006ED5DD /* ProjectViewController.swift */,
+				9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */,
+				910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */,
+				91658F942889C15D000FF05C /* WizardRealmViewController.swift */,
+				91543FDD293FA2F20009016E /* SettingsViewController.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -363,9 +374,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */,
 				4CF3439127A13F2200EB5A0E /* String+Utils.swift in Sources */,
-				4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */,
+				91543FDE293FA2F20009016E /* SettingsViewController.swift in Sources */,
 				878D2D0D249A490300011484 /* AppDelegate.swift in Sources */,
+				910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */,
+				910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */,
 				4CEDA2CE254075D400C47E3B /* SplashViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -524,17 +538,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = GenericApp/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.6;
+				MARKETING_VERSION = 1.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.app;
 				PRODUCT_NAME = OpenRemote;
 				SWIFT_VERSION = 5.0;
@@ -550,17 +564,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = GenericApp/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.6;
+				MARKETING_VERSION = 1.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.app;
 				PRODUCT_NAME = OpenRemote;
 				SWIFT_VERSION = 5.0;
@@ -575,7 +589,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -597,13 +611,13 @@
 					"\"${PODS_CONFIGURATION_BUILD_DIR}/MaterialComponents\"",
 				);
 				INFOPLIST_FILE = NotificationService/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -619,7 +633,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -641,13 +655,13 @@
 					"\"${PODS_CONFIGURATION_BUILD_DIR}/MaterialComponents\"",
 				);
 				INFOPLIST_FILE = NotificationService/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.app.NotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

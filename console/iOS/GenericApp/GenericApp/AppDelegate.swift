@@ -78,7 +78,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
             userDefaults?.removeObject(forKey: DefaultsKey.projectKey)
             userDefaults?.removeObject(forKey: DefaultsKey.realmKey)
 
-            self.window?.rootViewController?.dismiss(animated: true, completion: nil)
+            
+            // TODO: try displaying a simple image
+            
+            (self.window?.rootViewController as? SplashViewController)?.displaySettings = true
+            self.window?.rootViewController?.dismiss(animated: false)
         }
     }
 

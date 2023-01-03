@@ -1,0 +1,10 @@
+{
+    "consoleConfig": {
+        "showAppTextInput" : true,
+        "showRealmTextInput" : false,
+        "app" : "Console 1",
+        "allowedApps" : [],
+        "apps" : {}
+    },
+    "appsReturnCode": 404
+}
