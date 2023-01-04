@@ -67,7 +67,7 @@ export class OrConfMap extends LitElement {
         if (!this.config.options){
           this.config.options = {}
         }
-        this.config.options[this._addedRealm] = {}
+        this.config.options[this._addedRealm] = {bounds: ["4.42", "51.88", "4.55", "51.94"]}
         this._loadListOfAvailableRealms()
         this.requestUpdate()
         return true
@@ -126,7 +126,7 @@ export class OrConfMap extends LitElement {
     return html`
       <div class="panels">
         ${Object.entries(this.config.options === undefined ? {} : this.config.options).map(function([key , value]){
-      return html`<or-conf-map-card .expanded="${app._addedRealm === key}" .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-map-card>`
+      return html`<or-conf-map-card .expanded="${app._addedRealm === key}" .name="${key}" .map="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-map-card>`
     })}
       </div>
       

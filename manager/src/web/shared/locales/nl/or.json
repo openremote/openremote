@@ -620,6 +620,11 @@
     "secondaryNavigation" : "Secundair menu",
     "reloadPage" : "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
     "deleteRealmCustomization": "Verwijder stijl",
-    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?"
+    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?",
+    "mapBounds": "Randen",
+    "mapZoom": "Zoom",
+    "deleteMapCustomization": "Verwijder kaart",
+    "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
+    "addMapCustomization" : "Voeg een kaart toe"
   }
 }

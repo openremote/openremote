@@ -21,7 +21,7 @@ import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-file-uploader";
 import { i18next } from "@openremote/or-translate";
-import { ManagerAppRealmConfig } from "@openremote/model";
+import { ManagerAppRealmConfig, MapRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
@@ -53,10 +53,23 @@ export class OrConfMapCard extends LitElement {
     or-collapsible-panel {
       margin-bottom: 10px;
     }
+    .boundary-container{
+      display: inline;
+    }
+    .boundary-item{
+      width: calc(50% - 2px);
+      max-width: 800px;
+      padding: 10px 0;
+    }
+    .input{
+      width: 100%;
+      max-width: 800px;
+      padding: 10px 0px;
+    }
   `;
 
   @property({ attribute: false })
-  public realm: ManagerAppRealmConfig = {};
+  public map: MapRealmConfig = {};
 
   @property({ attribute: true })
   public name: string = "";
@@ -109,11 +122,9 @@ export class OrConfMapCard extends LitElement {
   protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
   }
 
-  protected boundary = ["4.42", "51.88", "4.55", "51.94"];
-
   protected setBoundary(key: number, value: string) {
-    this.boundary[key] = value;
-    this.boundary = JSON.parse(JSON.stringify(this.boundary));
+    this.map.bounds[key] = value;
+    this.map.bounds = JSON.parse(JSON.stringify(this.map.bounds));
     this.requestUpdate();
   }
 
@@ -127,24 +138,49 @@ export class OrConfMapCard extends LitElement {
           ${this.name}
         </div>
         <div slot="content" class="panel-content">
-          <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .boundary="${this.boundary}"
+          <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .boundary="${this.map.bounds}"
                   style="height: 500px; width: 100%;">
             <or-map-marker id="demo-marker" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
           </or-map>
 
+          <div class="subheader">${i18next.t("configuration.mapBounds")}</div>
+          <div class="boundary-container">
+            <or-mwc-input .value="${this.map?.bounds[3]}" .type="${InputType.NUMBER}" label="North"
+                          class="boundary-item"
+                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(3, e.detail.value.toString())}"
+                          .step="${.01}"></or-mwc-input>
+            <or-mwc-input .value="${this.map?.bounds[2]}" .type="${InputType.NUMBER}" label="East"
+                          class="boundary-item"
+                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(2, e.detail.value.toString())}"
+                          .step="${.01}"></or-mwc-input>
+            <or-mwc-input .value="${this.map?.bounds[0]}" .type="${InputType.NUMBER}" label="West"
+                          class="boundary-item"
+                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(0, e.detail.value.toString())}"
+                          .step="${.01}"></or-mwc-input>
+            <or-mwc-input .value="${this.map?.bounds[1]}" .type="${InputType.NUMBER}" label="South"
+                          class="boundary-item"
+                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value.toString())}"
+                          .step="${.01}"></or-mwc-input>
+          </div>
 
-          <or-mwc-input class="color-item" .value="${this.boundary[0]}" .type="${InputType.NUMBER}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(0, e.detail.value.toString())}"
-                        .step="${.01}"></or-mwc-input>
-          <or-mwc-input class="color-item" .value="${this.boundary[1]}" .type="${InputType.NUMBER}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value.toString())}"
-                        .step="${.01}"></or-mwc-input>
-          <or-mwc-input class="color-item" .value="${this.boundary[2]}" .type="${InputType.NUMBER}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(2, e.detail.value.toString())}"
-                        .step="${.01}"></or-mwc-input>
-          <or-mwc-input class="color-item" .value="${this.boundary[3]}" .type="${InputType.NUMBER}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(3, e.detail.value.toString())}"
-                        .step="${.01}"></or-mwc-input>
+
+          <div class="subheader">${i18next.t("configuration.mapZoom")}</div>
+          <or-mwc-input .value="${this.map.zoom}" .type="${InputType.NUMBER}" label="Zoom"
+                        class="input"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.zoom = e.detail.value}"
+                        .step="${1}"></or-mwc-input>
+          <or-mwc-input .value="${this.map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
+                        class="input"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.boxZoom = e.detail.value}"
+                        .step="${1}"></or-mwc-input>
+          <or-mwc-input .value="${this.map.minZoom}" .type="${InputType.NUMBER}" label="Min Zoom"
+                        class="input"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.minZoom = e.detail.value}"
+                        .step="${1}"></or-mwc-input>
+          <or-mwc-input .value="${this.map.maxZoom}" .type="${InputType.NUMBER}" label="Max Zoom"
+                        class="input"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.maxZoom = e.detail.value}"
+                        .step="${1}"></or-mwc-input>
           <or-mwc-input outlined .type="${InputType.BUTTON}" id="remove-map"
                         .label="${i18next.t("configuration.deleteMapCustomization")}"
                         @click="${() => {
