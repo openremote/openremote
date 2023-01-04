@@ -37,17 +37,19 @@ export class MapWidget {
     protected _center?: LngLatLike;
     protected _zoom?: number;
     protected _showGeoCodingControl: boolean = false;
-    protected _showBoundaryBox: boolean = true;
+    protected _showBoundaryBox: boolean = false;
+    protected _useZoomControls: boolean = true;
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
 
-    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement, showBoundaryBox = false) {
+    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement, showBoundaryBox = false, useZoomControls = true) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
         this._showGeoCodingControl = showGeoCodingControl;
         this._showBoundaryBox = showBoundaryBox;
+        this._useZoomControls= useZoomControls;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -214,8 +216,11 @@ export class MapWidget {
 
                 // JS zoom is out compared to GL
                 options.zoom = this._viewSettings.zoom ? this._viewSettings.zoom + 1 : undefined;
-                options.maxZoom = this._viewSettings.maxZoom ? this._viewSettings.maxZoom - 1 : undefined;
-                options.minZoom = this._viewSettings.minZoom ? this._viewSettings.minZoom + 1 : undefined;
+
+                if (this._useZoomControls){
+                    options.maxZoom = this._viewSettings.maxZoom ? this._viewSettings.maxZoom - 1 : undefined;
+                    options.minZoom = this._viewSettings.minZoom ? this._viewSettings.minZoom + 1 : undefined;
+                }
                 options.boxZoom = this._viewSettings.boxZoom;
 
                 // JS uses lat then lng unlike GL
@@ -275,11 +280,14 @@ export class MapWidget {
             };
 
             if (this._viewSettings) {
-                options.minZoom = this._viewSettings.minZoom;
-                options.maxZoom = this._viewSettings.maxZoom;
+                if (this._useZoomControls){
+                    options.maxZoom = this._viewSettings.maxZoom
+                    options.minZoom = this._viewSettings.minZoom
+                }
                 if (this._viewSettings.bounds && !this._showBoundaryBox){
                     options.maxBounds = this._viewSettings.bounds;
                 }
+
                 options.boxZoom = this._viewSettings.boxZoom;
                 options.zoom = this._viewSettings.zoom;
                 options.center = this._viewSettings.center;

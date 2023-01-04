@@ -25,10 +25,18 @@ import org.openremote.model.http.RequestParams;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 
 @Tag(name = "Map")
 @Path("map")
 public interface MapResource {
+
+    /**
+     * Saves the settings for maps
+     */
+    @PUT
+    @Produces(MediaType.APPLICATION_JSON)
+    Object saveSettings(@BeanParam RequestParams requestParams, Object mapConfig) throws IOException;
 
     /**
      * Returns style used to initialise Mapbox GL

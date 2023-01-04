@@ -24,6 +24,7 @@ import { i18next } from "@openremote/or-translate";
 import { ManagerAppRealmConfig, MapRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import manager from "@openremote/core";
 
 @customElement("or-conf-map-card")
 export class OrConfMapCard extends LitElement {
@@ -142,8 +143,8 @@ export class OrConfMapCard extends LitElement {
         </div>
         <div slot="content" class="panel-content">
           <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .boundary="${this.map.bounds}"
+                  .useZoomControl="${false}"
                   style="height: 500px; width: 100%;">
-            <or-map-marker id="demo-marker" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
           </or-map>
 
           <div class="subheader">${i18next.t("configuration.mapBounds")}</div>

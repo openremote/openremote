@@ -19,7 +19,12 @@
  */
 package org.openremote.manager.map;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
@@ -34,6 +39,10 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.core.UriBuilder;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -77,6 +86,27 @@ public class MapService implements ContainerService {
     protected ObjectNode mapSource;
     protected Map<String, ObjectNode> mapSettings = new HashMap<>();
     protected Map<String, ObjectNode> mapSettingsJs = new HashMap<>();
+
+    public ObjectNode saveMapConfig(Object mapConfiguration) throws IOException {
+        LOG.log(Level.INFO, "Saving mapsettings.json");
+        try {
+            OutputStream out = new FileOutputStream(new File(OR_MAP_SETTINGS_PATH_DEFAULT));
+            ObjectMapper mapper = new ObjectMapper();
+
+            mapper
+                    .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                    .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                    .enable(SerializationFeature.INDENT_OUTPUT);
+
+            out.write(mapper.writeValueAsString(mapConfiguration).getBytes());
+            out.close();
+        } catch (IOException exception) {
+            LOG.log(Level.WARNING, "Saving mapsettings.json error", exception);
+            throw exception;
+        }
+
+        return null;
+    }
 
     protected static Metadata getMetadata(Connection connection) {
 

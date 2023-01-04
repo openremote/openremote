@@ -151,8 +151,9 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
     }
 
     private urlPrefix:string = (CONFIG_URL_PREFIX || "")
-    private getManagerConfig(): Promise<boolean> {
-        return fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" })
+    private mapConfig = {};
+    private getManagerConfig(): void {
+        fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" })
           .then(async (response) => {
               return response.json().then((json) => {
                   this.managerConfiguration = json;
@@ -164,6 +165,12 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
           }).catch(() => {
               return false;
           });
+
+        manager.rest.api.MapResource.getSettings().then((response) => {
+            this.mapConfig = response.data
+            this.loading = false;
+            this.requestUpdate();
+        })
     }
 
     private loading: boolean = true;
@@ -185,6 +192,9 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     fetch(this.urlPrefix + settings?.logo, { cache: "reload" });
                     fetch(this.urlPrefix + settings?.logoMobile, { cache: "reload" });
                 });
+                app.requestUpdate();
+            })
+            manager.rest.api.MapResource.saveSettings(this.mapConfig).then(() => {
                 app.requestUpdate();
             })
         })
@@ -219,8 +229,8 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <or-panel .heading="${i18next.t("configuration.realmStyling")}">
                         <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
                     </or-panel>
-                    <or-panel .heading="${i18next.t("map")}">
-                        <or-conf-map></or-conf-map>
+                    <or-panel .heading="${i18next.t("map").toUpperCase()}">
+                        <or-conf-map .config="${this.mapConfig}"></or-conf-map>
                     </or-panel>
                 </div>`}
         `;
