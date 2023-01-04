@@ -66,6 +66,9 @@ export class OrConfMapCard extends LitElement {
       max-width: 800px;
       padding: 10px 0px;
     }
+    .zoom-group{
+      width: 100%;
+    }
   `;
 
   @property({ attribute: false })
@@ -162,25 +165,26 @@ export class OrConfMapCard extends LitElement {
                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value.toString())}"
                           .step="${.01}"></or-mwc-input>
           </div>
+          <div class="zoom-group">
+            <div class="subheader">${i18next.t("configuration.mapZoom")}</div>
+            <or-mwc-input .value="${this.map.zoom}" .type="${InputType.NUMBER}" label="Zoom"
+                          class="input"
+                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.zoom = e.detail.value}"
+                          .step="${1}"></or-mwc-input>
+            <or-mwc-input .value="${this.map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
+                          class="input"
+                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.boxZoom = e.detail.value}"
+                          .step="${1}"></or-mwc-input>
+            <or-mwc-input .value="${this.map.minZoom}" .type="${InputType.NUMBER}" label="Min Zoom"
+                          class="input"
+                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.minZoom = e.detail.value}"
+                          .step="${1}"></or-mwc-input>
+            <or-mwc-input .value="${this.map.maxZoom}" .type="${InputType.NUMBER}" label="Max Zoom"
+                          class="input"
+                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.maxZoom = e.detail.value}"
+                          .step="${1}"></or-mwc-input>
+          </div>
 
-
-          <div class="subheader">${i18next.t("configuration.mapZoom")}</div>
-          <or-mwc-input .value="${this.map.zoom}" .type="${InputType.NUMBER}" label="Zoom"
-                        class="input"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.zoom = e.detail.value}"
-                        .step="${1}"></or-mwc-input>
-          <or-mwc-input .value="${this.map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
-                        class="input"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.boxZoom = e.detail.value}"
-                        .step="${1}"></or-mwc-input>
-          <or-mwc-input .value="${this.map.minZoom}" .type="${InputType.NUMBER}" label="Min Zoom"
-                        class="input"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.minZoom = e.detail.value}"
-                        .step="${1}"></or-mwc-input>
-          <or-mwc-input .value="${this.map.maxZoom}" .type="${InputType.NUMBER}" label="Max Zoom"
-                        class="input"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.maxZoom = e.detail.value}"
-                        .step="${1}"></or-mwc-input>
           <or-mwc-input outlined .type="${InputType.BUTTON}" id="remove-map"
                         .label="${i18next.t("configuration.deleteMapCustomization")}"
                         @click="${() => {
