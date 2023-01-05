@@ -89,16 +89,17 @@ public class MapService implements ContainerService {
 
     public ObjectNode saveMapConfig(Object mapConfiguration) throws IOException {
         LOG.log(Level.INFO, "Saving mapsettings.json");
+        ObjectNode mapSettings = loadMapSettingsJson(Path.of(OR_MAP_SETTINGS_PATH_DEFAULT));
         try {
             OutputStream out = new FileOutputStream(new File(OR_MAP_SETTINGS_PATH_DEFAULT));
             ObjectMapper mapper = new ObjectMapper();
-
+            mapSettings.putPOJO("options", mapConfiguration);
             mapper
                     .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
                     .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                     .enable(SerializationFeature.INDENT_OUTPUT);
 
-            out.write(mapper.writeValueAsString(mapConfiguration).getBytes());
+            out.write(mapper.writeValueAsString(mapSettings).getBytes());
             out.close();
         } catch (IOException exception) {
             LOG.log(Level.WARNING, "Saving mapsettings.json error", exception);

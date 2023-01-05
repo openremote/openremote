@@ -167,7 +167,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
           });
 
         manager.rest.api.MapResource.getSettings().then((response) => {
-            this.mapConfig = response.data
+            this.mapConfig = response.data.options
             this.loading = false;
             this.requestUpdate();
         })

@@ -20,7 +20,7 @@ export class OrConfMap extends LitElement {
     `;
 
   @property({attribute: false})
-  public config: MapConfig = {options: {}};
+  public config: MapConfig = {};
 
   protected _availableRealms: {name:string, displayName:string}[] = [];
   protected _allRealms: {name:string, displayName:string}[] = [];
@@ -36,8 +36,8 @@ export class OrConfMap extends LitElement {
   }
 
   protected _removeRealm(realm:string){
-    if (this.config.options){
-      delete this.config?.options[realm]
+    if (this.config){
+      delete this.config[realm]
       this._loadListOfAvailableRealms()
       this.requestUpdate()
     }
@@ -46,8 +46,8 @@ export class OrConfMap extends LitElement {
   protected _loadListOfAvailableRealms(){
     const app = this
     this._availableRealms = this._allRealms.filter(function(realm){
-      if (realm.name && app.config?.options){
-        if (!app.config?.options[realm.name]){
+      if (realm.name && app.config){
+        if (!app.config[realm.name]){
           return realm
         }
       }
@@ -64,10 +64,10 @@ export class OrConfMap extends LitElement {
     this._addedRealm = null;
     const _AddRealmToView =  () => {
       if (this._addedRealm){
-        if (!this.config.options){
-          this.config.options = {}
+        if (!this.config){
+          this.config = {}
         }
-        this.config.options[this._addedRealm] = {bounds: ["4.42", "51.88", "4.55", "51.94"]}
+        this.config[this._addedRealm] = {bounds: ["4.42", "51.88", "4.55", "51.94"]}
         this._loadListOfAvailableRealms()
         this.requestUpdate()
         return true
@@ -125,7 +125,7 @@ export class OrConfMap extends LitElement {
     const app = this;
     return html`
       <div class="panels">
-        ${Object.entries(this.config.options === undefined ? {} : this.config.options).map(function([key , value]){
+        ${Object.entries(this.config === undefined ? {} : this.config).map(function([key , value]){
       return html`<or-conf-map-card .expanded="${app._addedRealm === key}" .name="${key}" .map="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-map-card>`
     })}
       </div>
