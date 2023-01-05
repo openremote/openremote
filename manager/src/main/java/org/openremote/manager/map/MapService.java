@@ -87,11 +87,13 @@ public class MapService implements ContainerService {
     protected Map<String, ObjectNode> mapSettings = new HashMap<>();
     protected Map<String, ObjectNode> mapSettingsJs = new HashMap<>();
 
-    public ObjectNode saveMapConfig(Object mapConfiguration) throws IOException {
+    public ObjectNode saveMapConfig(Object mapConfiguration) throws Exception {
         LOG.log(Level.INFO, "Saving mapsettings.json");
-        ObjectNode mapSettings = loadMapSettingsJson(Path.of(OR_MAP_SETTINGS_PATH_DEFAULT));
+        this.mapConfig.putNull("options");
+        this.mapSettings.clear();
+        ObjectNode mapSettings = loadMapSettingsJson(mapSettingsPath);
         try {
-            OutputStream out = new FileOutputStream(new File(OR_MAP_SETTINGS_PATH_DEFAULT));
+            OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()));
             ObjectMapper mapper = new ObjectMapper();
             mapSettings.putPOJO("options", mapConfiguration);
             mapper
@@ -101,6 +103,7 @@ public class MapService implements ContainerService {
 
             out.write(mapper.writeValueAsString(mapSettings).getBytes());
             out.close();
+            this.setData();
         } catch (IOException exception) {
             LOG.log(Level.WARNING, "Saving mapsettings.json error", exception);
             throw exception;
@@ -254,7 +257,10 @@ public class MapService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        this.setData();
+    }
 
+    public void setData() throws Exception{
         if (mapTilesPath == null || mapSettingsPath == null) {
             return;
         }

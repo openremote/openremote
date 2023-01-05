@@ -36,7 +36,7 @@ public interface MapResource {
      */
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
-    Object saveSettings(@BeanParam RequestParams requestParams, Object mapConfig) throws IOException;
+    Object saveSettings(@BeanParam RequestParams requestParams, Object mapConfig) throws Exception;
 
     /**
      * Returns style used to initialise Mapbox GL

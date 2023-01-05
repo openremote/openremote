@@ -40,7 +40,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Object saveSettings(RequestParams requestParams, Object mapConfig) throws IOException {
+    public Object saveSettings(RequestParams requestParams, Object mapConfig) throws Exception {
         return mapService.saveMapConfig(mapConfig);
     }
 
