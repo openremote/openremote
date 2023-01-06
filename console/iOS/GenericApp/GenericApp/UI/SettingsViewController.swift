@@ -7,19 +7,33 @@
 //
 
 import UIKit
+import ORLib
 
 class SettingsViewController: UITableViewController {
   
+    private var projects = [ProjectConfig]()
+    private var selectedProjectId: String?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement) {
+            selectedProjectId = userDefaults.string(forKey: DefaultsKey.projectKey)
+            if let projectsData = userDefaults.data(forKey: DefaultsKey.projectsConfigurationKey) {
+                projects = (try? JSONDecoder().decode([ProjectConfig].self, from: projectsData)) ?? []
+            }
+        }
+
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1;
+        return projects.count;
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        return tableView.dequeueReusableCell(withIdentifier: "ProjectCell", for: indexPath)
+        let cell: ProjectTableViewCell = tableView.dequeueReusableCell(withIdentifier: "ProjectCell", for: indexPath) as! ProjectTableViewCell
+        cell.setProject(projects[indexPath.row])
+        return cell
     }
     
 }
