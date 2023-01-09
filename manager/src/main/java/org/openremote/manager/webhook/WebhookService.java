@@ -22,7 +22,6 @@ package org.openremote.manager.webhook;
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.Container;
@@ -103,7 +102,8 @@ public class WebhookService extends RouteBuilder implements ContainerService {
     }
 
     public WebTarget buildWebTarget(Webhook webhook) {
-        ResteasyClient client = WebClient.registerDefaults(clientBuilder).build();
+
+        ResteasyClient client = this.clientBuilder.build();
         WebTargetBuilder builder = new WebTargetBuilder(client, URI.create(webhook.getUrl()));
 
         // Authentication

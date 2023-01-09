@@ -3,13 +3,8 @@ package org.openremote.test.rules.residence
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.firebase.messaging.Message
 import net.fortuna.ical4j.model.Recur
-import org.apache.http.client.utils.URIBuilder
-import org.jboss.resteasy.client.jaxrs.ResteasyClient
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
-import org.openremote.agent.protocol.http.HTTPProtocol
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.UniqueIdentifierGenerator
-import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler
@@ -18,6 +13,7 @@ import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.*
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
+import org.openremote.manager.webhook.WebhookService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
@@ -36,7 +32,6 @@ import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
-import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -49,10 +44,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.HttpMethod
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.client.Entity
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 import java.time.Duration
@@ -84,19 +77,19 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             switch (requestPath) {
                 case "https://basicserver/webhookplain":
                     if(requestContext.hasEntity() && requestContext.mediaType == MediaType.TEXT_PLAIN_TYPE) {
-                        successCount++;
+                        successCount++
                         requestContext.abortWith(Response.ok().build()); return
                     }
                     break
                 case "https://basicserver/webhookjson":
                     if (requestContext.hasEntity() && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') === 'test-value') {
-                        successCount++;
+                        successCount++
                         requestContext.abortWith(Response.ok().build()); return
                     }
                     break
             }
-            failureCount++;
-            requestContext.abortWith(Response.serverError().build());
+            failureCount++
+            requestContext.abortWith(Response.serverError().build())
         }
     }
 
@@ -105,7 +98,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         mockServer.failureCount = 0
     }
 
-    /*def "Turn all lights off when console exits the residence geofence"() {
+    def "Turn all lights off when console exits the residence geofence"() {
 
         List<PushNotificationMessage> pushMessages = []
         List<Email> emailMessages = []
@@ -781,14 +774,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
         }
-    }*/
+    }
 
     def "Trigger webhook when thing asset has changed"() {
 
-        given: "the HTTP client protocol min times are adjusted for testing"
-        HTTPProtocol.MIN_POLLING_MILLIS = 10
-
-        and: "the container environment is started"
+        given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
@@ -796,15 +786,14 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
+        def webhookService = container.getService(WebhookService.class)
         RulesEngine realmBuildingEngine
 
         and: "the web target builder is configured to use the mock server"
-        if (!HTTPProtocol.client.configuration.isRegistered(mockServer)) {
-            HTTPProtocol.client.register(mockServer, Integer.MAX_VALUE)
-            /*ResteasyWebTarget wt = new WebTargetBuilder(HTTPProtocol.client, new URIBuilder("https://basicserver/webhookplain").build()).build();
-            Response r = wt.request().method(HttpMethod.POST, Entity.entity("a_random_test_message", MediaType.TEXT_PLAIN));
-            System.out.println(HTTPProtocol.client);*/
+        if (!webhookService.clientBuilder.configuration.isRegistered(mockServer)) {
+            webhookService.clientBuilder.register(mockServer, Integer.MAX_VALUE)
         }
+        assert webhookService.clientBuilder.configuration.isRegistered(mockServer)
 
         and: "a thing asset is added to the building realm"
         def thingId = UniqueIdentifierGenerator.generateId("TestThing")
