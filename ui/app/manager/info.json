@@ -1,0 +1,6 @@
+{
+  "consoleAppIncompatible": false,
+  "realms": ["master", "smartcity"],
+  "providers": ["geofence", "push", "storage"],
+  "description": "The default app of OpenRemote"
+}

@@ -1,0 +1,7 @@
+{
+  "showAppTextInput": false,
+  "showRealmTextInput": false,
+  "app": null,
+  "allowedApps": ["manager"],
+  "apps": null
+}

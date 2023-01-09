@@ -12,6 +12,9 @@
     <item name="medium_green" type="color">#ff49a942</item>
     <item name="light_green" type="color">#ffc1d72f</item>
 
+    <item name="error_red_background" type="color">#FFE4E4</item>
+    <item name="error_red_text" type="color">#A07171</item>
+
     <item name="red" type="color">#ffe64a19</item>
     <item name="yellow" type="color">#fffbc02d</item>
     <item name="blue" type="color">#ff1976d2</item>
