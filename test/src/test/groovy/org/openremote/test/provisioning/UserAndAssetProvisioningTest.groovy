@@ -37,7 +37,7 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.provisioning.ProvisioningService
-import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler
+import org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
@@ -62,7 +62,7 @@ import spock.util.concurrent.PollingConditions
 import java.util.function.Consumer
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
-import static org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler.*
+import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.*
 import static org.openremote.model.value.ValueType.NUMBER
 
 class UserAndAssetProvisioningTest extends Specification implements ManagerContainerTrait {

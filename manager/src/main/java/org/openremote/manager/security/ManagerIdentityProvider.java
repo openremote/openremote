@@ -261,6 +261,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         });
     }
 
+    static List<String> getUserIds(String realm, List<String> usernames) {
+
+    }
+
     static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
             List<Realm> realms = entityManager.createQuery(

@@ -20,7 +20,9 @@
 package org.openremote.manager.security;
 
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.mqtt.MQTTBrokerService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
@@ -37,8 +39,11 @@ import static org.openremote.model.Constants.MASTER_REALM;
 
 public class UserResourceImpl extends ManagerWebResource implements UserResource {
 
-    public UserResourceImpl(TimerService timerService, ManagerIdentityService identityService) {
+    protected MQTTBrokerService mqttBrokerService;
+
+    public UserResourceImpl(TimerService timerService, ManagerIdentityService identityService, MQTTBrokerService mqttBrokerService) {
         super(timerService, identityService);
+        this.mqttBrokerService = mqttBrokerService;
     }
 
     @Override
@@ -320,6 +325,20 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         } catch (Exception ex) {
             throw new NotFoundException(ex);
         }
+    }
+
+    @Override
+    public UserSession[] getUserSessions(RequestParams requestParams, String realm, String userId) {
+        boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+
+        if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Can only retrieve own user sessions unless you have role '" + ClientRole.READ_ADMIN + "'");
+        }
+
+        return mqttBrokerService.getUserConnections(userId).stream().map(connection -> new UserSession(
+            connection.getSubject() != null ? KeycloakIdentityProvider.getSubjectName(connection.getSubject()) : userId,
+            connection.getCreationTime(),
+            connection.getRemoteAddress())).toArray(UserSession[]::new);
     }
 
     protected void throwIfIllegalMasterAdminUserDeletion(RequestParams requestParams, String realm, String userId) throws WebApplicationException {

@@ -1,2 +1,2 @@
 org.openremote.manager.mqtt.DefaultMQTTHandler
-org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler
+org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler

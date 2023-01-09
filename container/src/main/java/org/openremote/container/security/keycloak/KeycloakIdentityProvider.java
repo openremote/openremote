@@ -492,6 +492,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             .map(Principal::getName).orElse(null);
     }
 
+    public static String getSubjectNameAndRealm(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
+            .map(keycloakPrincipal -> {
+                String realm = ((KeycloakPrincipal<?>)keycloakPrincipal).getKeycloakSecurityContext().getRealm();
+                return keycloakPrincipal.getName() + "(" + realm + ")";
+            }).orElse(null);
+    }
+
     public static String getSubjectId(Subject subject) {
         if (subject == null || subject.getPrincipals() == null) {
             return null;

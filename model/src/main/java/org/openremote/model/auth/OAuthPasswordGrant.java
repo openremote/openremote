@@ -37,7 +37,7 @@ public class OAuthPasswordGrant extends OAuthClientCredentialsGrant {
     protected String password;
 
     @JsonCreator
-    public OAuthPasswordGrant(@JsonProperty("tokenEndpointUri") String tokenEndpointUri,
+    public OAuthPasswordGrant(@JsonProperty(VALUE_KEY_TOKEN_ENDPOINT_URI) String tokenEndpointUri,
                               @JsonProperty(VALUE_KEY_CLIENT_ID) String clientId,
                               @JsonProperty(VALUE_KEY_CLIENT_SECRET) String clientSecret,
                               @JsonProperty(VALUE_KEY_SCOPE) String scope,
