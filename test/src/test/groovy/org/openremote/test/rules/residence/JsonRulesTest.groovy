@@ -85,7 +85,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 case "https://basicserver/webhookjson":
                     if (requestContext.method == "POST" && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') == "test-value" && requestContext.hasEntity()) {
                         Optional<JsonNode> jsonBody = parse(requestContext.entity.toString())
-                        if (jsonBody.isPresent() && jsonBody.get().size() == 1 && jsonBody.get().iterator().next().get(0).get("assetName").asText() == "TestThing") {
+                        if (jsonBody.isPresent() && jsonBody.get().size() == 1
+                                && jsonBody.get().iterator().next().get(0).get("assetName").asText() == "TestThing"
+                                && jsonBody.get().iterator().next().get(0).get("value").asText() == "test_message") {
                             successCount++
                             requestContext.abortWith(Response.ok().build()); return
                         }
@@ -821,7 +823,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         ruleset = rulesetStorageService.merge(ruleset)
         assert ruleset != null
 
-        expect: "the webhook attribute being unset"
+        expect: "the attribute we will change being unset"
         conditions.eventually {
             thingAsset = assetStorageService.find(thingId) as ThingAsset
             assert thingAsset != null
