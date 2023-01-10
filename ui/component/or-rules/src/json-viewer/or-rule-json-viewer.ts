@@ -120,8 +120,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     @property({attribute: false})
     protected _ruleset!: RulesetUnion;
 
-    @state() // to be exact: Map<Realm name, Map<AssetType name, Asset[]>>
-    protected _loadedAssets: Map<string, Map<string, Asset[]>> = new Map<string, Map<string, Asset[]>>();
+    @state() // to be exact: Map<AssetType name, Asset[]>
+    protected _loadedAssets: Map<string, Asset[]> = new Map<string, Asset[]>();
 
     protected _rule!: JsonRule;
     protected _unsupported = false;
@@ -223,11 +223,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch
             return data.assets;
         } else {
-            const promise = getAssetsByType(type, (this._ruleset.type == "realm" ? this._ruleset.realm : undefined), this._loadedAssets.get(this._ruleset.type == "realm" ? this._ruleset.realm! : "global"));
+            const promise = getAssetsByType(type, (this._ruleset.type == "realm" ? this._ruleset.realm : undefined), this._loadedAssets);
             this._activeAssetPromises.set(type, promise);
             const data = await promise;
             this._activeAssetPromises.delete(type);
-            this._loadedAssets.set((this._ruleset.type == "realm" ? this._ruleset.realm! : "global"), data.loadedAssets!);
+            this._loadedAssets = data.loadedAssets!;
             return data.assets;
         }
     }
