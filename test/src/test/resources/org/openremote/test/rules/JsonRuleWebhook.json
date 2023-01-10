@@ -41,7 +41,7 @@
           "action": "webhook",
           "webhook": {
             "httpMethod": "POST",
-            "payload": "{\n    \"rule\": \"%RULESET_NAME%\",\n    \"assets\": \"%TRIGGER_ASSETS%\"\n}",
+            "payload": "test-value",
             "headers": {
               "": [],
               "content-type": [
@@ -49,6 +49,23 @@
               ]
             },
             "url": "https://basicserver/webhookplain"
+          }
+        },
+        {
+          "action": "webhook",
+          "webhook": {
+            "httpMethod": "POST",
+            "payload": "%TRIGGER_ASSETS%",
+            "headers": {
+              "": [],
+              "test-header": [
+                "test-value"
+              ],
+              "content-type": [
+                "application/json"
+              ]
+            },
+            "url": "https://basicserver/webhookjson"
           }
         }
       ],

@@ -1,5 +1,6 @@
 package org.openremote.test.rules.residence
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.firebase.messaging.Message
 import net.fortuna.ical4j.model.Recur
@@ -76,15 +77,18 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
             switch (requestPath) {
                 case "https://basicserver/webhookplain":
-                    if(requestContext.hasEntity() && requestContext.mediaType == MediaType.TEXT_PLAIN_TYPE) {
+                    if (requestContext.method == "POST" && requestContext.mediaType == MediaType.TEXT_PLAIN_TYPE && requestContext.hasEntity() && requestContext.entity == "test-value") {
                         successCount++
                         requestContext.abortWith(Response.ok().build()); return
                     }
                     break
                 case "https://basicserver/webhookjson":
-                    if (requestContext.hasEntity() && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') === 'test-value') {
-                        successCount++
-                        requestContext.abortWith(Response.ok().build()); return
+                    if (requestContext.method == "POST" && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') == "test-value" && requestContext.hasEntity()) {
+                        Optional<JsonNode> jsonBody = parse(requestContext.entity.toString())
+                        if (jsonBody.isPresent() && jsonBody.get().size() == 1 && jsonBody.get().iterator().next().get(0).get("assetName").asText() == "TestThing") {
+                            successCount++
+                            requestContext.abortWith(Response.ok().build()); return
+                        }
                     }
                     break
             }
@@ -849,7 +853,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         expect: "The mock server has received a successful response"
         conditions.eventually {
-            assert mockServer.successCount == 1
+            assert mockServer.successCount == 2
             assert mockServer.failureCount == 0
         }
     }
