@@ -25,6 +25,8 @@ import { ManagerAppRealmConfig, MapRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import manager from "@openremote/core";
+import { OrMapLongPressEvent } from "@openremote/or-map";
+import {LngLat} from "maplibre-gl";
 
 @customElement("or-conf-map-card")
 export class OrConfMapCard extends LitElement {
@@ -132,6 +134,12 @@ export class OrConfMapCard extends LitElement {
     this.requestUpdate();
   }
 
+  protected setCenter(cor: LngLat){
+    console.log(cor, this.map.center)
+    this.map.center = [cor.lng, cor.lat]
+    this.requestUpdate()
+  }
+
 
   render() {
     const app = this;
@@ -142,11 +150,13 @@ export class OrConfMapCard extends LitElement {
           ${this.name}
         </div>
         <div slot="content" class="panel-content">
-          <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .boundary="${this.map.bounds}"
+          <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .boundary="${this.map.bounds}" @or-map-long-press="${(ev: OrMapLongPressEvent) => {this.setCenter(ev.detail.lngLat)}}" .showGeoCodingControl="${true}" 
                   .useZoomControl="${false}"
                   style="height: 500px; width: 100%;">
+            <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}" .lat="${this.map.center[1]}" active></or-map-marker>
           </or-map>
-
+          ${this.map.center}
+                    
           <div class="subheader">${i18next.t("configuration.mapBounds")}</div>
           <div class="boundary-container">
             <or-mwc-input .value="${this.map?.bounds[3]}" .type="${InputType.NUMBER}" label="North"
