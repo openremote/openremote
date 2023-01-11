@@ -1,5 +1,5 @@
 import manager from "@openremote/core";
-import {
+import maplibregl,{
     Control,
     GeolocateControl,
     IControl,
@@ -325,7 +325,7 @@ export class MapWidget {
             });
 
             if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geocodeUrl) {
-                this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { marker: false, showResultsWhileTyping: true });
+                this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { maplibregl: maplibregl, showResultsWhileTyping: true });
                 // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
                 this._geocoder._onKeyDown = debounce((e: KeyboardEvent) => {
                     var ESC_KEY_CODE = 27,

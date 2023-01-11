@@ -12,3 +12,6 @@ Ramon Peek
 Ferris Kwaijtaal
 Rens van der Linden
 Stijn Groenen
+Denis Weber
+Martin Peeters
+Neal Geilen
