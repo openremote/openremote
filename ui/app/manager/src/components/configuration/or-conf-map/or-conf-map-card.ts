@@ -161,8 +161,8 @@ export class OrConfMapCard extends LitElement {
   protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
   }
 
-  protected setBoundary(key: number, value: string) {
-    this.map.bounds[key] = value;
+  protected setBoundary(key: number, value: any) {
+    this.map.bounds[key] = parseFloat(value).toFixed(2);
     this.map.bounds = JSON.parse(JSON.stringify(this.map.bounds));
     this.requestUpdate();
   }
@@ -172,10 +172,10 @@ export class OrConfMapCard extends LitElement {
     const BetweenWestEast = this.map.bounds[0] < cor.lng && this.map.bounds[2] > cor.lng;
     if (!(BetweenNorthSouth && BetweenWestEast)) {
       this.map.bounds = [
-        cor.lng + .1,
-        cor.lat - .1,
-        cor.lng - .1,
-        cor.lat + .1,
+        (cor.lng - .2).toFixed(3),
+        (cor.lat - .1).toFixed(3),
+        (cor.lng + .2).toFixed(3),
+        (cor.lat + .1).toFixed(3),
       ];
     }
     this.map.center = [cor.lng, cor.lat];
@@ -222,19 +222,19 @@ export class OrConfMapCard extends LitElement {
               <div class="subheader">${i18next.t("configuration.mapBounds")}</div>
               <or-mwc-input .value="${this.map?.bounds[3]}" .type="${InputType.NUMBER}" label="North"
                             class="boundary-item"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(3, e.detail.value.toString())}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(3, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
               <or-mwc-input .value="${this.map?.bounds[2]}" .type="${InputType.NUMBER}" label="East"
                             class="boundary-item"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(2, e.detail.value.toString())}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(2, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
               <or-mwc-input .value="${this.map?.bounds[0]}" .type="${InputType.NUMBER}" label="West"
                             class="boundary-item"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(0, e.detail.value.toString())}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(0, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
               <or-mwc-input .value="${this.map?.bounds[1]}" .type="${InputType.NUMBER}" label="South"
                             class="boundary-item"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value.toString())}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
             </div>
           </div>
