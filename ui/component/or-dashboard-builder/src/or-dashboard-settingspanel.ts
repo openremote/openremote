@@ -281,8 +281,8 @@ export class OrDashboardSettingsPanel extends LitElement {
                     ${(config.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {
                         return html`
                             <div class="threshold-list-item" style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
-                                <div style="height: 100%; padding: 8px 14px 8px 0;">
-                                    <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}" style="width: 32px; height: 32px;"
+                                <div style="height: 100%; padding: 0 8px 0;">
+                                    <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
                                                   @or-mwc-input-changed="${(event: CustomEvent) => {
                                                       this._config.thresholds[index][1] = event.detail.value;
                                                       this.updateParent(new Map<string, any>([["config", this._config]]));
