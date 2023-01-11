@@ -63,6 +63,7 @@ import java.util.function.Consumer
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
 import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.*
+import static org.openremote.model.value.ValueType.BOOLEAN
 import static org.openremote.model.value.ValueType.NUMBER
 
 class UserAndAssetProvisioningTest extends Specification implements ManagerContainerTrait {
@@ -122,7 +123,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
                                         new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ),
                                         new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE)
                                 ),
-                                new Attribute<>("serialNumber", ValueType.TEXT, UNIQUE_ID_PLACEHOLDER)
+                                new Attribute<>("serialNumber", ValueType.TEXT, UNIQUE_ID_PLACEHOLDER),
+                                new Attribute<>("connected", BOOLEAN).addMeta(
+                                        new MetaItem<>(MetaItemType.USER_CONNECTED, PROVISIONING_USER_PREFIX + "device1")
+                                )
                             )
                 ).orElse("")
         ).setRealm("building")
@@ -237,6 +241,13 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
+        and: "the connected attribute of the provisioned asset should show as connected"
+        conditions.eventually {
+            def weatherAssetID = ((SuccessResponseMessage)device1Responses.get(0)).asset.id
+            def weatherAsset = assetStorageService.find(weatherAssetID)
+            assert weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(false)
+        }
+
         when: "the client then subscribes to attribute events for the generated asset and asset events for all assets"
         def asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
         def assetSubscriptionTopic = "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ASSET_TOPIC/#".toString()
@@ -322,6 +333,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
             assert device1Client.getConnectionStatus() == ConnectionStatus.DISCONNECTED
+        }
+
+        and: "the connected attribute of the provisioned asset should show as not connected"
+        conditions.eventually {
+            def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert !weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(true)
         }
 
         when: "the client reconnects"

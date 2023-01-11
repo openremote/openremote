@@ -87,9 +87,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
                     if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
                         // Force disconnect if the certain properties have changed
-                        forceDisconnect = Arrays.stream(persistenceEvent.getPropertyNames()).anyMatch((propertyName) ->
-                            propertyName.equals(ProvisioningConfig.DISABLED_PROPERTY_NAME)
-                                || propertyName.equals(ProvisioningConfig.DATA_PROPERTY_NAME));
+                        forceDisconnect = persistenceEvent.hasPropertyChanged(ProvisioningConfig.DISABLED_PROPERTY_NAME)
+                                || persistenceEvent.hasPropertyChanged(ProvisioningConfig.DATA_PROPERTY_NAME);
                     }
 
                     if (forceDisconnect) {
@@ -365,6 +364,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         LOG.fine("Client successfully initialised: topic=" + topic+ mqttBrokerService.connectionToString(connection) + ", config=" + matchingConfig);
 
         // Authenticate the connection using this service user's credentials - this will also update the connection's subject
+        connection.setSubject(null); // Clear existing anonymous subject
         mqttBrokerService.securityManager.authenticate(realm + ":" + serviceUser.getUsername(), serviceUser.getSecret(), connection, null);
         mqttBrokerService.notifyConnectionAuthenticated(connection);
 

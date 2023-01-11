@@ -500,7 +500,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
             .map(keycloakPrincipal -> {
                 String realm = ((KeycloakPrincipal<?>)keycloakPrincipal).getKeycloakSecurityContext().getRealm();
-                return keycloakPrincipal.getName() + "(" + realm + ")";
+                return realm + ":" + keycloakPrincipal.getName();
             }).orElse(null);
     }
 

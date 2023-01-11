@@ -287,10 +287,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
                         if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
                             // Force disconnect if certain properties have changed
-                            forceDisconnect = Arrays.stream(persistenceEvent.getPropertyNames()).anyMatch((propertyName) ->
-                                    (propertyName.equals("enabled") && !user.getEnabled())
-                                            || propertyName.equals("username")
-                                            || propertyName.equals("secret"));
+                            forceDisconnect = persistenceEvent.hasPropertyChanged("enabled")
+                                || persistenceEvent.hasPropertyChanged("username")
+                                || persistenceEvent.hasPropertyChanged("secret");
                         }
 
                         if (forceDisconnect) {

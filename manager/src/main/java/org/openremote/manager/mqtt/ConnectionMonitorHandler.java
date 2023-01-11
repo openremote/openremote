@@ -24,40 +24,40 @@ import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.TriggeredEventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
+import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ValueType;
 
-import javax.security.auth.Subject;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.manager.mqtt.DefaultMQTTHandler.CLIENT_QUEUE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 import static org.openremote.model.value.MetaItemType.USER_CONNECTED;
 
@@ -73,6 +73,8 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     protected ExecutorService executorService;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
+    protected GatewayService gatewayService;
+    protected PersistenceService persistenceService;
     protected ConcurrentMap<String, Set<AttributeRef>> userIDAttributeRefs = new ConcurrentHashMap<>();
 
     @Override
@@ -82,48 +84,46 @@ public class ConnectionMonitorHandler extends MQTTHandler {
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
+        gatewayService = container.getService(GatewayService.class);
+        persistenceService = container.getService(PersistenceService.class);
         MessageBrokerService messageBrokerService = container.getService(MessageBrokerService.class);
         messageBrokerService.getContext().addRoutes(
             new RouteBuilder() {
+                @SuppressWarnings("unchecked")
                 @Override
                 public void configure() throws Exception {
-                    from(CLIENT_QUEUE)
+                    from(PERSISTENCE_TOPIC)
                         .routeId("MQTTConnectionMonitorHandlerQueue")
                         .filter(isPersistenceEventForEntityType(Asset.class))
                         .filter(isNotForGateway(gatewayService))
                         .process(exchange -> {
                             PersistenceEvent<Asset<?>> persistenceEvent = (PersistenceEvent<Asset<?>>)exchange.getIn().getBody(PersistenceEvent.class);
 
-                            if (isPersistenceEventForEntityType(Agent.class).matches(exchange)) {
-                                PersistenceEvent<Agent<?, ?, ?>> agentEvent = (PersistenceEvent<Agent<?,?,?>>)(PersistenceEvent<?>)persistenceEvent;
-                                processAgentChange(agentEvent);
-                            } else {
-                                processAssetChange(persistenceEvent);
-                            }
-                        })
-                        .choice()
-                        .when(body().isInstanceOf(PersistenceEvent.class))
-                        .process(exchange -> {
-                            // Get the subscriber consumer
-                            String connectionID = exchange.getIn().getHeader(ConnectionConstants.SESSION_KEY, String.class);
-                            if (connectionID == null) {
-                                LOG.warning("No connection ID for triggered subscription so cannot deliver");
-                            } else {
-                                DefaultMQTTHandler.SubscriberInfo subscriberInfo = connectionSubscriberInfoMap.get(connectionID);
-                                if (subscriberInfo != null) {
-                                    TriggeredEventSubscription<?> triggeredEventSubscription = exchange.getIn().getBody(TriggeredEventSubscription.class);
-                                    String topic = triggeredEventSubscription.getSubscriptionId();
-                                    // Should only be a single event in here
-                                    SharedEvent event = triggeredEventSubscription.getEvents().get(0);
-                                    Consumer<SharedEvent> eventConsumer = subscriberInfo.topicSubscriptionMap.get(topic);
-                                    if (eventConsumer != null) {
-                                        eventConsumer.accept(event);
-                                    }
+                            if (persistenceEvent.hasPropertyChanged("attributes")) {
+                                Asset<?> asset = persistenceEvent.getEntity();
+                                AttributeMap oldAttributes = persistenceEvent.getPreviousState("attributes");
+                                AttributeMap newAttributes = persistenceEvent.getCurrentState("attributes");
+
+                                if (oldAttributes != null) {
+                                    oldAttributes.stream().filter(ConnectionMonitorHandler::attributeMatches)
+                                        .forEach(attr -> {
+                                            String userID = attr.getMetaValueOrDefault(USER_CONNECTED);
+                                            if (userID != null) {
+                                                removeSessionAttribute(userID, new AttributeRef(asset.getId(), attr.getName()));
+                                            }
+                                        });
+                                }
+
+                                if (newAttributes != null) {
+                                    List<Pair<String, Attribute<?>>> connectedAttributes = newAttributes.stream()
+                                        .filter(ConnectionMonitorHandler::attributeMatches)
+                                        .map(attr -> new Pair<String, Attribute<?>>(asset.getId(), attr))
+                                        .toList();
+
+                                    addSessionAttributes(asset.getRealm(), connectedAttributes);
                                 }
                             }
                         })
-                        .otherwise()
-                        .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                         .end();
                 }
             }
@@ -147,13 +147,21 @@ public class ConnectionMonitorHandler extends MQTTHandler {
                     )
             );
 
-            Map<String, List<Pair<String, Attribute<?>>>> realmAttributeMap = assets.stream().collect(
-                Collectors.toMap(
-                    Asset::getRealm,
-                    asset -> asset.getAttributes().stream().filter(attr -> attr.getType() == ValueType.BOOLEAN && attr.hasMeta(USER_CONNECTED))
-                        .map(attr -> new Pair<String, Attribute<?>>(asset.getId(), attr)).toList()));
+            Map<String, List<Asset<?>>> realmAttributeMap = assets.stream().collect(
+                Collectors.groupingBy(Asset::getRealm)
+            );
 
-            realmAttributeMap.forEach(this::addSessionAttributes);
+            realmAttributeMap.forEach(
+                (realm, realmAssets) -> {
+                    List<Pair<String, Attribute<?>>> assetIdsAttrs = realmAssets.stream()
+                        .flatMap(asset ->
+                            asset.getAttributes().stream()
+                                .filter(ConnectionMonitorHandler::attributeMatches)
+                                .map(attr -> new Pair<String, Attribute<?>>(asset.getId(), attr)))
+                        .toList();
+
+                    addSessionAttributes(realm, assetIdsAttrs);
+                });
         });
     }
 
@@ -176,7 +184,10 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     public void onDisconnect(RemotingConnection connection) {
         super.onDisconnect(connection);
 
-
+        Pair<String, Set<AttributeRef>> userIDAndAttributeRefs = getUserIDAndAttributeRefs(connection);
+        if (userIDAndAttributeRefs != null) {
+            updateUserConnectedStatus(userIDAndAttributeRefs.key, userIDAndAttributeRefs.value, false);
+        }
     }
 
     @Override
@@ -242,15 +253,21 @@ public class ConnectionMonitorHandler extends MQTTHandler {
         List<String> usernames = assetIdsAttrs.stream().map(assetIdAttr -> assetIdAttr.getValue().getMetaValue(USER_CONNECTED).orElse(null))
             .filter(Objects::nonNull)
             .distinct()
+            .map(username -> User.SERVICE_ACCOUNT_PREFIX + username)
             .toList();
 
         // Convert usernames to userIds
-        List<String> userIds = ManagerIdentityProvider.getUserIds(realm, usernames);
+        List<String> userIds = ManagerIdentityProvider.getUserIds(persistenceService, realm, usernames);
 
         assetIdsAttrs.forEach(assetIdAttr ->
             assetIdAttr.getValue().getMetaValue(USER_CONNECTED).ifPresent(username -> {
-                String userId = userIds.get(usernames.indexOf(username));
-                addSessionAttribute(userId, new AttributeRef(assetIdAttr.key, assetIdAttr.getValue().getName()));
+                String userID = userIds.get(usernames.indexOf(User.SERVICE_ACCOUNT_PREFIX + username));
+
+                if (userID == null) {
+                    LOG.warning("Invalid username so skipping: " + username);
+                } else {
+                    addSessionAttribute(userID, new AttributeRef(assetIdAttr.key, assetIdAttr.getValue().getName()));
+                }
             }));
     }
 
@@ -296,7 +313,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
 
         if (userID == null) {
             if (LOG.isLoggable(Level.FINEST)) {
-                LOG.finest("Anonymous connection disconnected so skipping connected attribute updates: " + mqttBrokerService.connectionToString(connection));
+                LOG.finest("Anonymous connection so cannot determine userID: " + mqttBrokerService.connectionToString(connection));
             }
             return null;
         }
@@ -307,5 +324,9 @@ public class ConnectionMonitorHandler extends MQTTHandler {
         }
 
         return new Pair<>(userID, attributeRefs);
+    }
+
+    protected static boolean attributeMatches(Attribute<?> attr) {
+        return Objects.equals(attr.getType(), ValueType.BOOLEAN) && attr.hasMeta(USER_CONNECTED);
     }
 }

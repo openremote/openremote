@@ -523,7 +523,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 }
                 case UPDATE: {
 
-                    boolean attributesChanged = Arrays.asList(persistenceEvent.getPropertyNames()).contains("attributes");
+                    boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
                     AttributeMap oldAttributes = attributesChanged ? ((AttributeMap) persistenceEvent.getPreviousState("attributes")) : asset.getAttributes();
                     AttributeMap currentAttributes = asset.getAttributes();
 
