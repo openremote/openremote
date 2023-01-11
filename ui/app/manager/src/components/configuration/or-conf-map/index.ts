@@ -67,7 +67,7 @@ export class OrConfMap extends LitElement {
         if (!this.config){
           this.config = {}
         }
-        this.config[this._addedRealm] = {bounds: ["4.42", "51.88", "4.55", "51.94"]}
+        this.config[this._addedRealm] = {bounds: ["4.42", "51.88", "4.55", "51.94"], zoom: 0, minZoom: 0, maxZoom: 0}
         this._loadListOfAvailableRealms()
         this.requestUpdate()
         return true
