@@ -21,12 +21,11 @@ import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-file-uploader";
 import { i18next } from "@openremote/or-translate";
-import { ManagerAppRealmConfig, MapRealmConfig } from "@openremote/model";
+import { MapRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import manager from "@openremote/core";
 import { OrMapLongPressEvent } from "@openremote/or-map";
-import {LngLat} from "maplibre-gl";
+import { LngLat } from "maplibre-gl";
 
 @customElement("or-conf-map-card")
 export class OrConfMapCard extends LitElement {
@@ -168,10 +167,19 @@ export class OrConfMapCard extends LitElement {
     this.requestUpdate();
   }
 
-  protected setCenter(cor: LngLat){
-    console.log(cor, this.map.center)
-    this.map.center = [cor.lng, cor.lat]
-    this.requestUpdate()
+  protected setCenter(cor: LngLat) {
+    const BetweenNorthSouth = this.map.bounds[3] > cor.lat && this.map.bounds[1] < cor.lat;
+    const BetweenWestEast = this.map.bounds[0] < cor.lng && this.map.bounds[2] > cor.lng;
+    if (!(BetweenNorthSouth && BetweenWestEast)) {
+      this.map.bounds = [
+        cor.lng + .1,
+        cor.lat - .1,
+        cor.lng - .1,
+        cor.lat + .1,
+      ];
+    }
+    this.map.center = [cor.lng, cor.lat];
+    this.requestUpdate();
   }
 
   protected setZoom(nr:number){
@@ -192,20 +200,20 @@ export class OrConfMapCard extends LitElement {
         </div>
         <div slot="content" class="panel-content">
           <div class="main-section">
-            
+
             <div class="map-container">
               <div class="subheader">${i18next.t("map")}</div>
-                          <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .zoom="${this.zoom}" .boundary="${this.map.bounds}"
-                    @or-map-long-press="${(ev: OrMapLongPressEvent) => {
-      this.setCenter(ev.detail.lngLat)
-    }}" .showGeoCodingControl="${true}"
-                    .useZoomControl="${false}"
-                    style="height: 500px; width: 100%;">
-              <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}" .lat="${this.map.center[1]}"
-                             active></or-map-marker>
-            </or-map>
+              <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .zoom="${this.zoom}"
+                      .boundary="${this.map.bounds}"
+                      @or-map-long-press="${(ev: OrMapLongPressEvent) => {
+                        this.setCenter(ev.detail.lngLat);
+                      }}" .showGeoCodingControl="${true}"
+                      .useZoomControl="${false}"
+                      style="height: 500px; width: 100%;">
+                <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}" .lat="${this.map.center[1]}"
+                               active></or-map-marker>
+              </or-map>
             </div>
-
 
 
             <div class="boundary-container">

@@ -499,7 +499,6 @@ export class OrMap extends LitElement {
             this.flyTo(this.center, this.zoom);
         }
         if (changedProperties.has("boundary") && this.showBoundaryBoxControl){
-            console.log('Boundary has been updated', this.boundary)
             this._map?.createBoundaryBox(this.boundary)
         }
     }
