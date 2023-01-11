@@ -227,7 +227,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             this._activeAssetPromises.set(type, promise);
             const data = await promise;
             this._activeAssetPromises.delete(type);
-            this._loadedAssets = data.loadedAssets!;
             return data.assets;
         }
     }
