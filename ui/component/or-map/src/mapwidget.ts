@@ -1,27 +1,39 @@
 import manager from "@openremote/core";
-import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
-    MapMouseEvent,
-    NavigationControl,
-    GeolocateControl,
-    Control,
-    IControl,
-    LngLatBoundsLike} from "maplibre-gl";
-import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
-import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
-import {debounce} from "lodash";
-import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, OrMapLongPressEvent, OrMapGeocoderChangeEvent, ViewSettings} from "./index";
 import {
-    OrMapMarker
-} from "./markers/or-map-marker";
-import {getLatLngBounds, getLngLat} from "./util";
+    Control,
+    GeolocateControl,
+    IControl,
+    LngLat,
+    LngLatLike,
+    Map as MapGL,
+    MapboxOptions as OptionsGL,
+    MapMouseEvent,
+    Marker as MarkerGL,
+    NavigationControl,
+    Style as StyleGL,
+} from "maplibre-gl";
+import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
+import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
+import { debounce } from "lodash";
+import {
+    ControlPosition,
+    OrMapClickedEvent,
+    OrMapGeocoderChangeEvent,
+    OrMapLoadedEvent,
+    OrMapLongPressEvent,
+    ViewSettings,
+} from "./index";
+import { OrMapMarker } from "./markers/or-map-marker";
+import { getLatLngBounds, getLngLat } from "./util";
 import { MapType } from "@openremote/model";
+
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
 
 // TODO: fix any type
-const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
-    meters / 0.075 / Math.cos(latitude * Math.PI / 180);
+const metersToPixelsAtMaxZoom = (meters: number, latitude: number) =>
+  meters / 0.075 / Math.cos(latitude * Math.PI / 180);
 
 
 export class MapWidget {
