@@ -41,6 +41,7 @@ import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 public abstract class OAuthGrant implements Serializable {
 
     public static final String VALUE_KEY_GRANT_TYPE = "grant_type";
+    public static final String VALUE_KEY_TOKEN_ENDPOINT_URI = "tokenEndpointUri";
     public static final String VALUE_KEY_CLIENT_ID = "client_id";
     public static final String VALUE_KEY_CLIENT_SECRET = "client_secret";
     public static final String VALUE_KEY_SCOPE = "scope";

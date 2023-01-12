@@ -138,9 +138,8 @@ public abstract class MQTTHandler {
     /**
      * Will be called when any client connects; if returns false then subsequent handlers will not be called
      */
-    public boolean onConnect(RemotingConnection connection) {
+    public void onConnect(RemotingConnection connection) {
 
-        return true;
     }
 
     /**
@@ -154,6 +153,15 @@ public abstract class MQTTHandler {
      * Will be called when any client loses connection
      */
     public void onConnectionLost(RemotingConnection connection) {
+
+    }
+
+    /**
+     * Called when an existing {@link RemotingConnection} is authenticated sometime after initially connecting
+     * (see {@link UserAssetProvisioningMQTTHandler}); the authenticated
+     * {@link Subject} can be retrieved using {@link RemotingConnection#getSubject}
+     */
+    public void onConnectionAuthenticated(RemotingConnection connection) {
 
     }
 

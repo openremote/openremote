@@ -17,20 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.provisioning;
+package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.mqtt.MQTTHandler;
-import org.openremote.manager.mqtt.Topic;
+import org.openremote.manager.provisioning.ProvisioningService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
@@ -89,9 +87,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
                     if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
                         // Force disconnect if the certain properties have changed
-                        forceDisconnect = Arrays.stream(persistenceEvent.getPropertyNames()).anyMatch((propertyName) ->
-                            propertyName.equals(ProvisioningConfig.DISABLED_PROPERTY_NAME)
-                                || propertyName.equals(ProvisioningConfig.DATA_PROPERTY_NAME));
+                        forceDisconnect = persistenceEvent.hasPropertyChanged(ProvisioningConfig.DISABLED_PROPERTY_NAME)
+                                || persistenceEvent.hasPropertyChanged(ProvisioningConfig.DATA_PROPERTY_NAME);
                     }
 
                     if (forceDisconnect) {
@@ -234,13 +231,11 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
-        mqttBrokerService.removeTransientCredentials(connection);
         provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
-        mqttBrokerService.removeTransientCredentials(connection);
         provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
     }
 
@@ -368,8 +363,11 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         LOG.fine("Client successfully initialised: topic=" + topic+ mqttBrokerService.connectionToString(connection) + ", config=" + matchingConfig);
 
-        // Store transient service user credentials (this is used by the custom ActiveMQSecurityManager)
-        mqttBrokerService.addTransientCredentials(connection, new ImmutableTriple<>(serviceUser.getId(), realm + ":" + serviceUser.getUsername(), serviceUser.getSecret()));
+        // Authenticate the connection using this service user's credentials - this will also update the connection's subject
+        connection.setSubject(null); // Clear existing anonymous subject
+        mqttBrokerService.securityManager.authenticate(realm + ":" + serviceUser.getUsername(), serviceUser.getSecret(), connection, null);
+        mqttBrokerService.notifyConnectionAuthenticated(connection);
+
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
                 connections = new HashSet<>();
