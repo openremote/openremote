@@ -430,7 +430,7 @@ export class OrDashboardBuilder extends LitElement {
         if(this.selectedDashboard != null) {
             const dashboard = this.selectedDashboard;
             dashboard.displayName = value;
-            this.selectedDashboard = Object.assign({}, dashboard);
+            this.requestUpdate("selectedDashboard");
         }
     }
 

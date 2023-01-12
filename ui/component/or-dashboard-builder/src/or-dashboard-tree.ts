@@ -42,9 +42,7 @@ export class OrDashboardTree extends LitElement {
     @property()
     private dashboards: Dashboard[] | undefined;
 
-    @property({hasChanged: (oldVal, val): boolean => {
-        return JSON.stringify(oldVal) != JSON.stringify(val);
-    }})
+    @property()
     private selected: Dashboard | undefined;
 
     @property() // REQUIRED
@@ -71,10 +69,22 @@ export class OrDashboardTree extends LitElement {
         });
     }
 
+    shouldUpdate(changedProperties: Map<string, any>) {
+        if(changedProperties.size == 1) {
+
+            // prevent update since it is not used in render.
+            // However, do update when dashboard is saved (aka when hasChanged is set back to false)
+            if(changedProperties.has("hasChanged") && this.hasChanged) {
+                return false;
+            }
+        }
+        return super.shouldUpdate(changedProperties);
+    }
+
     private async getAllDashboards() {
         return manager.rest.api.DashboardResource.getAllRealmDashboards(this.realm!)
             .then((result) => {
-                this.dashboards = result.data;
+                this.dashboards = result.data.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0);
             }).catch((reason) => {
                 console.error(reason);
                 showSnackbar(undefined, i18next.t('errorOccurred'));
@@ -157,12 +167,16 @@ export class OrDashboardTree extends LitElement {
                 })
                 if(myDashboards.length > 0) {
                     const items: ListItem[] = [];
-                    myDashboards.forEach((d) => { items.push({ icon: "view-dashboard", text: d.displayName, value: d.id }); });
+                    myDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach((d) => {
+                        items.push({ icon: "view-dashboard", text: d.displayName, value: d.id });
+                    });
                     dashboardItems.push(items);
                 }
                 if(otherDashboards.length > 0) {
                     const items: ListItem[] = [];
-                    otherDashboards.forEach((d) => { items.push({ icon: "view-dashboard", text: d.displayName, value: d.id }); });
+                    otherDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach((d) => {
+                        items.push({ icon: "view-dashboard", text: d.displayName, value: d.id });
+                    });
                     dashboardItems.push(items);
                 }
             }
