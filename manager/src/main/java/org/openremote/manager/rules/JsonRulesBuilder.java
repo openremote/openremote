@@ -47,6 +47,7 @@ import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
+import javax.ws.rs.core.MediaType;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -874,16 +875,22 @@ public class JsonRulesBuilder extends RulesBuilder {
                 if (!TextUtil.isNullOrEmpty(webhook.getPayload()) && webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                     String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
                     webhook.setPayload(webhook.getPayload()
-                            .replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo)
                             .replace(('"' + PLACEHOLDER_TRIGGER_ASSETS + '"'), triggeredAssetInfo)
+                            .replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo)
                     );
+                }
+
+                if (webhookAction.mediaType == null) {
+                    Optional<Map.Entry<String, List<String>>> contentTypeHeader = webhook.getHeaders().entrySet().stream().filter((entry) -> entry.getKey().equalsIgnoreCase("content-type")).findFirst();
+                    String contentType = contentTypeHeader.isPresent() ? contentTypeHeader.get().getValue().get(0) : MediaType.APPLICATION_JSON;
+                    webhookAction.mediaType = MediaType.valueOf(contentType);
                 }
 
                 if(webhookAction.target == null) {
                     webhookAction.target = webhooksFacade.buildTarget(webhook);
                 }
 
-                return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.target), 0);
+                return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.mediaType, webhookAction.target), 0);
             }
         }
 
