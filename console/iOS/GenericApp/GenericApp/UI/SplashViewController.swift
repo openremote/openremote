@@ -55,8 +55,6 @@ class SplashViewController: UIViewController {
 
 //                orViewController.baseUrl = host
             }
-        } else if segue.identifier == Segues.goToSettingsView {
-            let settingsViewController = segue.destination as! SettingsViewController
         }
     }
 

@@ -21,7 +21,7 @@ class ProjectTableViewCell: UITableViewCell {
     func setProject(_ project: ProjectConfig) {
         self.project = project
         domainLabel.text = project.domain
-        appLabel.text = project.app
-        realmLabel.text = project.realm ?? ""
+        appLabel.text = "App: \(project.app)"
+        realmLabel.text = project.realm != nil ? "Realm: \(project.realm!)" : ""
     }
 }

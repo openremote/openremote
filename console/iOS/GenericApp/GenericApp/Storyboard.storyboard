@@ -9,6 +9,22 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
+        <!--Navigation Controller-->
+        <scene sceneID="rdM-dC-Axh">
+            <objects>
+                <navigationController id="21M-Zl-EXA" sceneMemberID="viewController">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="0H5-oT-M2w">
+                        <rect key="frame" x="0.0" y="48" width="414" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <connections>
+                        <segue destination="uoK-29-uZr" kind="relationship" relationship="rootViewController" id="yRF-XH-Bcz"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Eh6-Kw-RtT" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-14400" y="-1081"/>
+        </scene>
         <!--Splash View Controller-->
         <scene sceneID="xjs-uN-Dtd">
             <objects>
@@ -22,7 +38,7 @@
                     <connections>
                         <segue destination="HSA-l5-YFF" kind="presentation" identifier="goToWebView" modalPresentationStyle="fullScreen" id="5Oq-tw-rj7"/>
                         <segue destination="7TF-fh-Sa5" kind="presentation" identifier="goToWizardDomainView" modalPresentationStyle="fullScreen" id="ttr-A8-IEy"/>
-                        <segue destination="uoK-29-uZr" kind="presentation" identifier="goToSettingsView" modalPresentationStyle="fullScreen" id="PCt-br-aki"/>
+                        <segue destination="21M-Zl-EXA" kind="presentation" identifier="goToSettingsView" modalPresentationStyle="fullScreen" id="rYX-YJ-3zl"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Afh-RU-OvJ" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -50,17 +66,17 @@
             <objects>
                 <viewController id="Pi7-Rw-ZSt" customClass="WizardDomainViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="IR5-tW-Kgn">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="838"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="     Connect to your app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WNe-Oj-DbK">
-                                <rect key="frame" x="30" y="112" width="354" height="21"/>
+                                <rect key="frame" x="30" y="68" width="354" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="RWD-5Z-rop">
-                                <rect key="frame" x="30" y="153" width="354" height="200"/>
+                                <rect key="frame" x="30" y="109" width="354" height="200"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Enter the App Domain" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1O0-Xo-WpU">
                                         <rect key="frame" x="10" y="10" width="167" height="21"/>
@@ -99,7 +115,7 @@
                                 </constraints>
                             </view>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="or_push_icon" translatesAutoresizingMaskIntoConstraints="NO" id="SQD-g8-nGt">
-                                <rect key="frame" x="30" y="114.5" width="16" height="16"/>
+                                <rect key="frame" x="30" y="70.5" width="16" height="16"/>
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="El4-H3-bSM"/>
@@ -132,17 +148,17 @@
             <objects>
                 <viewController id="P3v-2u-Uf5" customClass="WizardRealmViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="AsW-xQ-7Do">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="838"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connect to your app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GVA-jq-dIF">
-                                <rect key="frame" x="30" y="112" width="354" height="21"/>
+                                <rect key="frame" x="30" y="68" width="354" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="rds-tC-Xfi">
-                                <rect key="frame" x="30" y="153" width="354" height="200"/>
+                                <rect key="frame" x="30" y="109" width="354" height="200"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Enter the Realm" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8fN-pT-WOs">
                                         <rect key="frame" x="10" y="10" width="121" height="21"/>
@@ -225,17 +241,17 @@
             <objects>
                 <viewController id="ccW-7o-aWn" customClass="WizardAppViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="R9V-9S-UMe">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="838"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Connect to your app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="a8w-Ut-lvr">
-                                <rect key="frame" x="30" y="112" width="354" height="20.5"/>
+                                <rect key="frame" x="30" y="68" width="354" height="20.5"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="bYT-CK-7We">
-                                <rect key="frame" x="30" y="152.5" width="354" height="200"/>
+                                <rect key="frame" x="30" y="108.5" width="354" height="200"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Select an app" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Q03-kj-Zcn">
                                         <rect key="frame" x="10" y="10" width="104" height="21"/>
@@ -335,35 +351,35 @@
         <scene sceneID="UWg-Ah-L22">
             <objects>
                 <tableViewController id="uoK-29-uZr" customClass="SettingsViewController" customModule="OpenRemote" customModuleProvider="target" sceneMemberID="viewController">
-                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" id="gda-jc-Zpb">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="insetGrouped" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" estimatedSectionHeaderHeight="-1" sectionFooterHeight="18" estimatedSectionFooterHeight="-1" id="gda-jc-Zpb">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="ProjectCell" id="Y2L-n2-cJa" customClass="ProjectTableViewCell" customModule="OpenRemote" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="50" width="414" height="102"/>
+                                <rect key="frame" x="20" y="55.5" width="374" height="102"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="Y2L-n2-cJa" id="Zgr-l4-ccF">
-                                    <rect key="frame" x="0.0" y="0.0" width="414" height="102"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="374" height="102"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="y0W-JM-etk">
-                                            <rect key="frame" x="10" y="10" width="394" height="82"/>
+                                            <rect key="frame" x="10" y="10" width="354" height="82"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EtF-YJ-IWv">
-                                                    <rect key="frame" x="0.0" y="0.0" width="394" height="21"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="354" height="21"/>
                                                     <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="KP5-vy-3yX">
-                                                    <rect key="frame" x="0.0" y="31" width="394" height="20.5"/>
+                                                    <rect key="frame" x="0.0" y="31" width="354" height="20.5"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="E1L-sy-49t">
-                                                    <rect key="frame" x="0.0" y="61.5" width="394" height="20.5"/>
+                                                    <rect key="frame" x="0.0" y="61.5" width="354" height="20.5"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                     <nil key="textColor"/>
                                                     <nil key="highlightedColor"/>
@@ -384,6 +400,30 @@
                                     <outlet property="realmLabel" destination="E1L-sy-49t" id="Ukk-Yd-KWY"/>
                                 </connections>
                             </tableViewCell>
+                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="AddProjectCell" id="yWF-fc-yGg" customClass="ProjectTableViewCell" customModule="OpenRemote" customModuleProvider="target">
+                                <rect key="frame" x="20" y="157.5" width="374" height="55"/>
+                                <autoresizingMask key="autoresizingMask"/>
+                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="yWF-fc-yGg" id="iQt-oN-W3l">
+                                    <rect key="frame" x="0.0" y="0.0" width="374" height="55"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <subviews>
+                                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zRD-KP-jnx">
+                                            <rect key="frame" x="10" y="10" width="354" height="35"/>
+                                            <state key="normal" title="Button"/>
+                                            <buttonConfiguration key="configuration" style="plain" title="Add new project"/>
+                                            <connections>
+                                                <segue destination="Pi7-Rw-ZSt" kind="showDetail" id="RzU-Rj-FyM"/>
+                                            </connections>
+                                        </button>
+                                    </subviews>
+                                    <constraints>
+                                        <constraint firstAttribute="bottom" secondItem="zRD-KP-jnx" secondAttribute="bottom" constant="10" id="0gc-3g-fLx"/>
+                                        <constraint firstItem="zRD-KP-jnx" firstAttribute="leading" secondItem="iQt-oN-W3l" secondAttribute="leading" constant="10" id="fAQ-Sv-5fS"/>
+                                        <constraint firstAttribute="trailing" secondItem="zRD-KP-jnx" secondAttribute="trailing" constant="10" id="gQf-4n-U3t"/>
+                                        <constraint firstItem="zRD-KP-jnx" firstAttribute="top" secondItem="iQt-oN-W3l" secondAttribute="top" constant="10" id="rik-f8-xhC"/>
+                                    </constraints>
+                                </tableViewCellContentView>
+                            </tableViewCell>
                         </prototypes>
                         <sections/>
                         <connections>
@@ -391,15 +431,17 @@
                             <outlet property="delegate" destination="uoK-29-uZr" id="2g4-I7-4nv"/>
                         </connections>
                     </tableView>
+                    <navigationItem key="navigationItem" id="dHG-vp-5iB"/>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Yg6-ke-1om" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-13877" y="-1122"/>
+            <point key="canvasLocation" x="-13488" y="-1081"/>
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="61Y-JM-NmK"/>
-        <segue reference="4Aa-7e-CLQ"/>
+        <segue reference="9ZZ-gO-4Go"/>
+        <segue reference="RzU-Rj-FyM"/>
+        <segue reference="5Oq-tw-rj7"/>
     </inferredMetricsTieBreakers>
     <resources>
         <image name="or_push_icon" width="16" height="16"/>

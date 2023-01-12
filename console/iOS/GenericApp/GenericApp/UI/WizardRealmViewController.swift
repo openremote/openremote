@@ -97,9 +97,15 @@ class WizardRealmViewController: UIViewController {
         switch state {
         case let .complete(project):
             if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement) {
-                // TODO: we really want to add to the existing collection
                 do {
-                    let data = try JSONEncoder().encode([project])
+                    var projects: [ProjectConfig]
+                    if let projectsData = userDefaults.data(forKey: DefaultsKey.projectsConfigurationKey) {
+                        projects = (try? JSONDecoder().decode([ProjectConfig].self, from: projectsData)) ?? []
+                        projects.append(project)
+                    } else {
+                        projects = [project]
+                    }
+                    let data = try JSONEncoder().encode(projects)
                     userDefaults.setValue(data, forKey: DefaultsKey.projectsConfigurationKey)
                     userDefaults.setValue(project.id, forKey: DefaultsKey.projectKey)
                     self.performSegue(withIdentifier: Segues.goToWebView, sender: self)

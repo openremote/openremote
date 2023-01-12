@@ -75,12 +75,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
     func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
         if shortcutItem.type == "settings" {
             let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
-            userDefaults?.removeObject(forKey: DefaultsKey.projectKey)
             userDefaults?.removeObject(forKey: DefaultsKey.realmKey)
-
-            
-            // TODO: try displaying a simple image
-            
             (self.window?.rootViewController as? SplashViewController)?.displaySettings = true
             self.window?.rootViewController?.dismiss(animated: false)
         }
