@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, RealmRuleset, WellknownRulesetMetaItems} from "@openremote/model";
+import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, RealmRuleset, GlobalRuleset} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -123,6 +123,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     protected _globalRulesets: boolean = false;
 
     protected _selectedNodes: RulesetNode[] = [];
+    protected _rulesetPromises: Map<string, Promise<any[]>> = new Map<string, Promise<any[]>>();
     protected _ready = false;
 
     static get styles() {
@@ -134,7 +135,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     public async refresh() {
         this._nodes = undefined;
-        await this._loadRulesets();
+        // reloading rulesets is automatically done in shouldUpdate()
     }
 
     protected get _allowedLanguages(): RulesetLang[] | undefined {
@@ -637,28 +638,37 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     protected async _loadRulesets() {
         const sortFunction = this._getSortFunction();
+        let data;
 
-        if(this._globalRulesets) {
-            manager.rest.api.RulesResource.getGlobalRulesets({fullyPopulate: true }).then((response: any) => {
-                if (response && response.data) {
-                    this._buildTreeNodes(response.data, sortFunction);
-                }
-            }).catch((reason: any) => {
-                console.error("Error: " + reason);
-            });
-        } else {
-            const params = {
-                fullyPopulate: true,
-                language:  this._allowedLanguages
+        // Global rulesets
+        if (this._globalRulesets) {
+            if (this._rulesetPromises.size == 0 && !this._rulesetPromises.has("global")) {
+                this._rulesetPromises.set("global", new Promise<GlobalRuleset[]>(async (resolve) => {
+                    const response = await manager.rest.api.RulesResource.getGlobalRulesets({fullyPopulate: true});
+                    resolve(response.data);
+                }));
             }
-            try {
-                const response = await manager.rest.api.RulesResource.getRealmRulesets(this._getRealm() || manager.displayRealm, params);
-                if (response && response.data) {
-                    this._buildTreeNodes(response.data, sortFunction);
-                }
-            } catch (e) {
-                console.error("Error: " + e);
+            data = await this._rulesetPromises.get("global");
+            this._rulesetPromises.delete("global");
+        }
+
+        // Realm rulesets
+        else {
+            const ruleRealm: string = this._getRealm() || manager.displayRealm;
+            if (this._rulesetPromises.size == 0 && !this._rulesetPromises.has(ruleRealm)) {
+                this._rulesetPromises.set(ruleRealm, new Promise<RealmRuleset[]>(async (resolve) => {
+                    const params = {fullyPopulate: true, language: this._allowedLanguages}
+                    const response = await manager.rest.api.RulesResource.getRealmRulesets(ruleRealm, params);
+                    resolve(response.data);
+                }));
             }
+            data = await this._rulesetPromises.get(ruleRealm);
+            this._rulesetPromises.delete(ruleRealm);
+        }
+
+        // ... building the nodes
+        if (data) {
+            this._buildTreeNodes(data, sortFunction);
         }
     }
 
