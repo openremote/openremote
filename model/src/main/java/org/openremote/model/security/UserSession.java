@@ -25,14 +25,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UserSession {
     protected final String username;
-    @JsonIgnore
     protected final long startTimeMillis;
     protected final String remoteAddress;
 
     @JsonCreator
-    public UserSession(String username, long startTime, String remoteAddress) {
+    public UserSession(String username, long startTimeMillis, String remoteAddress) {
         this.username = username;
-        this.startTimeMillis = startTime;
+        this.startTimeMillis = startTimeMillis;
         this.remoteAddress = remoteAddress;
     }
 
@@ -40,8 +39,7 @@ public class UserSession {
         return username;
     }
 
-    @JsonProperty("durationMins")
-    public long getDuration() {
+    public long getStartTimeMillis() {
         return startTimeMillis;
     }
 
