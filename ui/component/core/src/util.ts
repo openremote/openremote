@@ -635,14 +635,14 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
                         // Assume UNIX timestamp in ms
                         const offset = (new Date()).getTimezoneOffset() * 60000;
                         value = new Date(value - offset);
-                    }
+                    } 
                 } else if (typeof(value) === "boolean" && format.asNumber) {
                     value = value ? 1 : 0;
                 }
 
                 switch (typeof(value)) {
                     case "number":
-                        valueStr = new Intl.NumberFormat(language || i18next.language, format).format(value);
+                        valueStr = new Intl.NumberFormat(language, format).format(value);
                         break;
                     case "boolean":
                         if (format.asOnOff) {
