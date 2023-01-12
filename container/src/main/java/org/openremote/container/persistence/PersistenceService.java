@@ -488,6 +488,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         flyway = Flyway.configure()
             .cleanDisabled(false)
+            .validateMigrationNaming(true)
             .dataSource(connectionUrl, databaseUsername, databasePassword)
             .schemas(schemas.toArray(new String[0]))
             .locations(locations.toArray(new String[0]))

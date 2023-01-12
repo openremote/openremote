@@ -1516,10 +1516,18 @@ export class OrMwcInput extends LitElement {
                         observer.observe(this.shadowRoot!.getElementById("component")!);
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
+                        const searchable: boolean = (this.searchProvider != undefined);
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
                             const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
                             if (this.adapter.isElementInContainer(el)) {
-                                return;
+                                if(!searchable) {
+                                    return; // Normal select menu closes automatically, so abort
+                                }
+                                // if searchable, we manually close the menu when clicking a list item.
+                                // However, if something else than a list item (for example the search field) is clicked, it should not close, so abort.
+                                else if (el instanceof Element && !el.className.includes('mdc-list-item')) {
+                                    return;
+                                }
                             }
                             (mdcSelect as any).menu.menuSurface_.close();
                         };
