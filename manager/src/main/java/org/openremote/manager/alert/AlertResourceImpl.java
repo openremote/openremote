@@ -70,7 +70,6 @@ public class AlertResourceImpl extends WebResource implements AlertResource {
         if (alertId == null) {
             throw new WebApplicationException("Missing alert ID", BAD_REQUEST);
         }
-
         alertService.removeAlert(alertId);
     }
 
@@ -92,6 +91,16 @@ public class AlertResourceImpl extends WebResource implements AlertResource {
         if (!success) {
             throw new WebApplicationException(BAD_REQUEST);
         }
+    }
+
+    @Override
+    public void setAlertStatus(RequestParams requestParams, String status, Long alertId) {
+        if (alertId == null) {
+            throw new WebApplicationException("Missing alert ID", BAD_REQUEST);
+        }
+//        SentAlert sentAlert = alertService.getSentAlert(alertId);
+        //TODO: fetch the userId who changed the status
+        alertService.setAlertStatus(alertId, status, "");
     }
 
     protected void verifyAccess(SentAlert sentAlert, String targetId) {

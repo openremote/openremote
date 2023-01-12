@@ -50,6 +50,7 @@ export const enum ConditionType {
 
 export const enum ActionType {
     WAIT = "wait",
+    ALERT = "alert",
     EMAIL = "email",
     PUSH_NOTIFICATION = "push",
     ATTRIBUTE = "attribute"

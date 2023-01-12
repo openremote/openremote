@@ -23,18 +23,22 @@ import "./or-rule-action-notification";
 import {translate} from "@openremote/or-translate";
 
 const NOTIFICATION_COLOR = "4B87EA";
+// TODO: Set alert color different from the notification color
+const ALERT_COLOR = "FC2D2D";
 const WAIT_COLOR = "EACC54";
 
 function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): ListItem[] {
 
     let addAssetTypes = true;
     let addWait = true;
+    let addAlert = true
     let addNotification = true;
     let addPushNotification = true;
 
     if (config && config.controls && config.controls.allowedActionTypes) {
         addAssetTypes = config.controls.allowedActionTypes.indexOf(ActionType.ATTRIBUTE) >= 0;
         addWait = config.controls.allowedActionTypes.indexOf(ActionType.WAIT) >= 0;
+        addAlert = config.controls.allowedActionTypes.indexOf(ActionType.ALERT) >= 0;
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.EMAIL) >= 0;
         addPushNotification = config.controls.allowedActionTypes.indexOf(ActionType.PUSH_NOTIFICATION) >= 0;
     }
@@ -56,6 +60,16 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
                 styleMap: styleMap
             } as ListItem;
         }));
+    }
+
+    if (addAlert) {
+        menu.push({
+            text: i18next.t("alert"),
+            // TODO: Change icon
+            icon: "alert",
+            value: ActionType.ALERT,
+            styleMap: {"--or-icon-fill": "#" + ALERT_COLOR}
+        } as ListItem)
     }
 
     if (addNotification) {

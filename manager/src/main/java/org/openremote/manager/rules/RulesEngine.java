@@ -269,7 +269,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, alertsFacade,notificationFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, alertsFacade, notificationFacade, historicFacade, predictedFacade);
         boolean compiled;
 
         if (TextUtil.isNullOrEmpty(ruleset.getRules())) {

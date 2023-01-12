@@ -29,6 +29,7 @@ import java.util.function.Function;
         @JsonSubTypes.Type(value = RuleActionWait.class, name = "wait"),
         @JsonSubTypes.Type(value = RuleActionWriteAttribute.class, name = "write-attribute"),
         @JsonSubTypes.Type(value = RuleActionNotification.class, name = "notification"),
+        @JsonSubTypes.Type(value = RuleActionAlert.class, name= "Alert"),
         @JsonSubTypes.Type(value = RuleActionUpdateAttribute.class, name = "update-attribute")
 })
 @JsonTypeInfo(

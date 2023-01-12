@@ -4,7 +4,6 @@ import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.core.RuleBuilder;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.manager.rules.flow.*;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.*;
@@ -18,6 +17,7 @@ public class FlowRulesBuilder {
     private List<NodeCollection> nodeCollections = new ArrayList<>();
     private Assets assetsFacade;
     private Users usersFacade;
+    private Alerts alertsFacade;
     private Notifications notificationFacade;
     private HistoricDatapoints historicDatapointsFacade;
     private PredictedDatapoints predictedDatapointsFacade;
@@ -29,6 +29,7 @@ public class FlowRulesBuilder {
             AssetStorageService assetStorageService,
             Assets assetsFacade,
             Users usersFacade,
+            Alerts alertsFacade,
             Notifications notificationFacade,
             HistoricDatapoints historicDatapointsFacade,
             PredictedDatapoints predictedDatapointsFacade) {
@@ -36,6 +37,7 @@ public class FlowRulesBuilder {
         this.assetStorageService = assetStorageService;
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
+        this.alertsFacade = alertsFacade;
         this.notificationFacade = notificationFacade;
         this.historicDatapointsFacade = historicDatapointsFacade;
         this.predictedDatapointsFacade = predictedDatapointsFacade;
@@ -64,7 +66,7 @@ public class FlowRulesBuilder {
     }
 
     private Rule createRule(String name, NodeCollection collection, Node outputNode) throws Exception {
-        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, historicDatapointsFacade, predictedDatapointsFacade));
+        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, alertsFacade, notificationFacade, historicDatapointsFacade, predictedDatapointsFacade));
 
         if (implementationResult == null)
             throw new NullPointerException(outputNode.getName() + " node returns null");
