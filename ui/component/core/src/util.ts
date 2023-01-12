@@ -642,7 +642,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
 
                 switch (typeof(value)) {
                     case "number":
-                        valueStr = new Intl.NumberFormat(language, format).format(value);
+                        valueStr = new Intl.NumberFormat(language || i18next.language, format).format(value);
                         break;
                     case "boolean":
                         if (format.asOnOff) {
