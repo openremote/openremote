@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.alert.Alert;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -592,7 +593,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     public void stop(RulesFacts facts) {
         Arrays.stream(jsonRules).forEach(jsonRule ->
-            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
+            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, alertsFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
 
         // Remove temporal fact for timer rule evaluation
         String tempFactName = TIMER_TEMPORAL_FACT_NAME_PREFIX + jsonRuleset.getId();
@@ -604,7 +605,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         Arrays.stream(jsonRules).forEach(jsonRule -> {
             hasTimeTrigger.set(hasTimeTrigger.get() || LogicGroup.getItemsRecursive(jsonRule.when).stream().anyMatch(RuleCondition::hasTimeTrigger));
-            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
+            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, alertsFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
         });
 
         // Initialise asset states
@@ -689,12 +690,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             try {
                 if (ruleState.thenMatched()) {
                     log(Level.FINER, "Triggered rule so executing 'then' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, alertsFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
 
                 if (rule.otherwise != null && ruleState.otherwiseMatched()) {
                     log(Level.FINER, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, alertsFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
@@ -736,7 +737,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    public static void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public static void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Alerts alertsFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
 
         if (ruleActions != null && ruleActions.length > 0) {
 
@@ -756,6 +757,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     assetsFacade,
                     usersFacade,
                     notificationsFacade,
+                    alertsFacade,
                     predictedDatapointsFacade
                 );
 
@@ -783,7 +785,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             .collect(Collectors.toList());
     }
 
-    protected static RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapointsFacade) {
+    protected static RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Alerts alertsFacade, PredictedDatapoints predictedDatapointsFacade) {
 
         if (ruleAction instanceof RuleActionNotification notificationAction) {
 
@@ -861,6 +863,21 @@ public class JsonRulesBuilder extends RulesBuilder {
                 Notification finalNotification = notification;
                 return new RuleActionExecution(() -> notificationsFacade.send(finalNotification), 0);
             }
+        }
+
+        if (ruleAction instanceof RuleActionAlert alertAction) {
+
+            if (alertAction.alert != null){
+
+                Alert alert = alertAction.alert;
+
+                //TODO: Set up the alert data from the action rule
+
+//                log();
+                Alert finalAlert = alert;
+                return new RuleActionExecution(() -> alertsFacade.send(finalAlert), 0);
+            }
+
         }
 
         if (ruleAction instanceof RuleActionWriteAttribute attributeAction) {

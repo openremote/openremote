@@ -27,11 +27,12 @@ import static org.openremote.model.util.ValueUtil.parse
 
 class  AlertTest extends Specification implements ManagerContainerTrait {
 
-    def "Check alert functionality"() {
 
-        List<Alert> alerts = []
+    def "Check alert service functionality"() {
 
-        given: "the container environment is started with the "
+        List<Alert> createdAlerts = []
+
+        given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
@@ -39,13 +40,12 @@ class  AlertTest extends Specification implements ManagerContainerTrait {
         def alertService = container.getService(AlertService.class)
 //        def consoleResource = (ConsoleResourceImpl)container.getService(ManagerWebService.class).apiSingletons.find {it instanceof ConsoleResourceImpl}
 
-        and "a mock persistence service"
+        and: "a mock persistence service"
         AlertService mockAlertService = Spy(alertService)
-        mockAlertService.createAlert()
+//        mockAlertService.createAlert() >>
 
 //        and: "an authenticated test user"
-//        def realm = keycloakTestSetup.realmBuilding.name
-//        def testuser1AccessToken  = authenticate(
+//        def realm = keycloakTestSetup.realmBuilding.name//        def testuser1AccessToken  = authenticate(
 //                container,
 //                MASTER_REALM,
 //                KEYCLOAK_CLIENT_ID,
@@ -104,11 +104,33 @@ class  AlertTest extends Specification implements ManagerContainerTrait {
 
         then: "an alert should have been added to the database"
 
+    }
 
+    // -----------------------------------------------
+    //    Check alert resource api
+    // -----------------------------------------------
+    def "Check alert resource functionality"() {
 
-        // -----------------------------------------------
-        //    Check alert resource
-        // -----------------------------------------------
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def alertService = container.getService(AlertService.class)
+
+    }
+
+    // -----------------------------------------------
+    //    Check rules engine integration
+    // -----------------------------------------------
+    def "Check alert integration with rules engine"() {
+
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def alertService = container.getService(AlertService.class)
 
     }
 }

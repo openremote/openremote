@@ -60,4 +60,11 @@ public interface AlertResource {
     @Consumes(APPLICATION_JSON)
     void createAlert(@BeanParam RequestParams requestParams,
                    Alert alert);
+
+    @PUT
+    @Path("{alertId}/setStatus")
+//    @Consumes(APPLICATION_JSON)
+    void setAlertStatus(@BeanParam RequestParams requestParams,
+                        @QueryParam("status") String status,
+                        @PathParam("alertId") Long alertId);
 }

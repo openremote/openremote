@@ -214,13 +214,13 @@ public class RulesetDeployment {
 
         switch (ruleset.getLang()) {
             case JAVASCRIPT:
-                return compileRulesJavascript(ruleset, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
+                return compileRulesJavascript(ruleset, assetsFacade, usersFacade, alertsFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
             case GROOVY:
-                return compileRulesGroovy(ruleset, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
+                return compileRulesGroovy(ruleset, assetsFacade, usersFacade, alertsFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
             case JSON:
                 return compileRulesJson(ruleset);
             case FLOW:
-                return compileRulesFlow(ruleset, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
+                return compileRulesFlow(ruleset, assetsFacade, usersFacade, alertsFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
         }
         return false;
     }
@@ -269,7 +269,7 @@ public class RulesetDeployment {
     protected boolean compileRulesJson(Ruleset ruleset) {
 
         try {
-            jsonRulesBuilder = new JsonRulesBuilder(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, alertsFacade,notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
+            jsonRulesBuilder = new JsonRulesBuilder(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, alertsFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
 
             for (Rule rule : jsonRulesBuilder.build()) {
                 RulesEngine.LOG.finer("Registering JSON rule: " + rule.getName());
@@ -283,7 +283,7 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
+    protected boolean compileRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Alerts alertsFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         // TODO https://github.com/pfisterer/scripting-sandbox/blob/master/src/main/java/de/farberg/scripting/sandbox/ScriptingSandbox.java
         ScriptEngine scriptEngine = scriptEngineManager.getEngineByName("nashorn");
         ScriptContext newContext = new SimpleScriptContext();
@@ -292,6 +292,7 @@ public class RulesetDeployment {
 
         engineScope.put("assets", assetsFacade);
         engineScope.put("users", usersFacade);
+        engineScope.put("alerts", alertsFacade);
         engineScope.put("notifications", notificationsFacade);
         engineScope.put("historicDatapoints", historicDatapointsFacade);
         engineScope.put("predictedDatapoints", predictedDatapointsFacade);
@@ -426,7 +427,7 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
+    protected boolean compileRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Alerts alertsFacade, Notifications notificationFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         try {
             // TODO Implement sandbox
             // new DenyAll().register();
@@ -437,6 +438,7 @@ public class RulesetDeployment {
             binding.setVariable("rules", rulesBuilder);
             binding.setVariable("assets", assetsFacade);
             binding.setVariable("users", usersFacade);
+            binding.setVariable("alerts", alertsFacade);
             binding.setVariable("notifications", notificationFacade);
             binding.setVariable("historicDatapoints", historicDatapointsFacade);
             binding.setVariable("predictedDatapoints", predictedDatapointsFacade);
@@ -464,9 +466,9 @@ public class RulesetDeployment {
         }
     }
 
-    protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
+    protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Alerts alertsFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         try {
-            flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
+            flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, alertsFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
             NodeCollection nodeCollection = ValueUtil.JSON.readValue(ruleset.getRules(), NodeCollection.class);
             flowRulesBuilder.add(nodeCollection);
             for (Rule rule : flowRulesBuilder.build()) {
