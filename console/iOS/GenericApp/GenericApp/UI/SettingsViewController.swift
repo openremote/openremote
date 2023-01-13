@@ -111,6 +111,7 @@ class SettingsViewController: UITableViewController {
         if let cell = tableView.cellForRow(at: indexPath) {
             cell.accessoryType = .checkmark
         }
+        doneTapped()
     }
     
     private func selectProject(id: String?) {
