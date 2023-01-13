@@ -61,6 +61,7 @@ class SettingsViewController: UITableViewController {
             let project = projects[indexPath.row]
             cell.setProject(project)
             cell.accessoryType = project.id == selectedProjectId ? .checkmark : .none
+            cell.tintColor = UIColor(named: "or_green")
             return cell
         } else {
             let cell = tableView.dequeueReusableCell(withIdentifier: "NoProjectsCell", for: indexPath)

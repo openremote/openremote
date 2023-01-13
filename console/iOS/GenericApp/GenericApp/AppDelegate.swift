@@ -25,6 +25,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
     var fcmToken: String?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        UIBarButtonItem.appearance().setTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor(named: "or_green") as Any], for: .normal)
+        UINavigationBar.appearance().titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor(named: "or_green") as Any]
+        UIBarButtonItem.appearance().tintColor = UIColor(named: "or_green")
+        
         IQKeyboardManager.shared.enable = true
 
         UNUserNotificationCenter.current().delegate = self
