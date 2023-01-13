@@ -4,6 +4,7 @@
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21505"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -119,7 +120,7 @@
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="El4-H3-bSM"/>
-                        <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <color key="backgroundColor" name="or_grey_background"/>
                         <constraints>
                             <constraint firstItem="RWD-5Z-rop" firstAttribute="leading" secondItem="El4-H3-bSM" secondAttribute="leading" constant="30" id="83B-XS-r1h"/>
                             <constraint firstItem="WNe-Oj-DbK" firstAttribute="top" secondItem="El4-H3-bSM" secondAttribute="top" constant="20" id="8fa-ya-RZF"/>
@@ -214,7 +215,7 @@
                             </view>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="C0m-OJ-atI"/>
-                        <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <color key="backgroundColor" name="or_grey_background"/>
                         <constraints>
                             <constraint firstItem="GVA-jq-dIF" firstAttribute="leading" secondItem="C0m-OJ-atI" secondAttribute="leading" constant="30" id="Avn-Cc-29U"/>
                             <constraint firstItem="rds-tC-Xfi" firstAttribute="top" secondItem="GVA-jq-dIF" secondAttribute="bottom" constant="20" id="XdW-U9-RRG"/>
@@ -307,7 +308,7 @@
                             </view>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="JdK-us-UvR"/>
-                        <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <color key="backgroundColor" name="or_grey_background"/>
                         <constraints>
                             <constraint firstItem="JdK-us-UvR" firstAttribute="trailing" secondItem="a8w-Ut-lvr" secondAttribute="trailing" constant="30" id="H8O-bM-YUP"/>
                             <constraint firstItem="bYT-CK-7We" firstAttribute="leading" secondItem="JdK-us-UvR" secondAttribute="leading" constant="30" id="JYy-v5-wnQ"/>
@@ -369,19 +370,19 @@
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EtF-YJ-IWv">
                                                     <rect key="frame" x="0.0" y="0.0" width="354" height="21"/>
                                                     <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
-                                                    <nil key="textColor"/>
+                                                    <color key="textColor" name="or_green"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="KP5-vy-3yX">
                                                     <rect key="frame" x="0.0" y="31" width="354" height="20.5"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                                    <nil key="textColor"/>
+                                                    <color key="textColor" name="or_green"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="E1L-sy-49t">
                                                     <rect key="frame" x="0.0" y="61.5" width="354" height="20.5"/>
                                                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                                    <nil key="textColor"/>
+                                                    <color key="textColor" name="or_green"/>
                                                     <nil key="highlightedColor"/>
                                                 </label>
                                             </subviews>
@@ -410,7 +411,7 @@
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="No projects defined, please add one" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="HVr-9p-A9z">
                                             <rect key="frame" x="20" y="10" width="354" height="21"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                            <nil key="textColor"/>
+                                            <color key="textColor" name="or_green"/>
                                             <nil key="highlightedColor"/>
                                         </label>
                                     </subviews>
@@ -440,12 +441,18 @@
         </scene>
     </scenes>
     <inferredMetricsTieBreakers>
-        <segue reference="9ZZ-gO-4Go"/>
+        <segue reference="61Y-JM-NmK"/>
         <segue reference="LIp-dG-xAs"/>
-        <segue reference="5Oq-tw-rj7"/>
+        <segue reference="4Aa-7e-CLQ"/>
     </inferredMetricsTieBreakers>
     <resources>
         <image name="or_push_icon" width="16" height="16"/>
+        <namedColor name="or_green">
+            <color red="0.28999999165534973" green="0.6119999885559082" blue="0.17599999904632568" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="or_grey_background">
+            <color red="0.97647058823529409" green="0.97647058823529409" blue="0.97647058823529409" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
