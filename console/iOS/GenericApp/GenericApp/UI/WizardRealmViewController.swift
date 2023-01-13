@@ -22,6 +22,7 @@ class WizardRealmViewController: UIViewController {
     
     @IBOutlet weak var realmTextInput: ORTextInput!
     @IBOutlet weak var nextButton: MDCRaisedButton!
+    @IBOutlet weak var boxView: UIView!
     
     @IBOutlet weak var realmsSelectionButton: UIButton!
     var dropDown = DropDown()
@@ -33,6 +34,8 @@ class WizardRealmViewController: UIViewController {
 
         nextButton.backgroundColor = orGreenColor
         nextButton.tintColor = UIColor.white
+
+        boxView.layer.cornerRadius = 10
     }
 
     override func viewDidAppear(_ animated: Bool) {
