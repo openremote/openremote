@@ -25,7 +25,6 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.rules.AssetState;
-import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.util.TsIgnore;
 
 import javax.validation.constraints.Pattern;
@@ -187,6 +186,12 @@ public final class MetaItemType {
      * false/off/released/open value when released.
      */
     public static final MetaItemDescriptor<Boolean> MOMENTARY = new MetaItemDescriptor<>("momentary", ValueType.BOOLEAN);
+
+    /**
+     * Can be used on a {@link ValueType#BOOLEAN} attribute to indicate if a service user is connected to the MQTT
+     * broker; the value of this meta item should be the username of the user to monitor
+     */
+    public static final MetaItemDescriptor<String> USER_CONNECTED = new MetaItemDescriptor<>("userConnected", ValueType.TEXT);
 
     protected MetaItemType() {
     }

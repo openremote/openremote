@@ -621,5 +621,10 @@
     "reloadPage" : "To see the changes that have been made, reload the page",
     "deleteRealmCustomization": "Delete Style",
     "deleteRealmCustomizationConfirm":"Are you sure you want to delete this Realm style?"
-  }
+  },
+  "mqttSessions": "MQTT sessions",
+  "address": "Address",
+  "since": "Since",
+  "roles": "Roles",
+  "restrictedUser": "Restricted user"
 }
