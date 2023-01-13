@@ -548,6 +548,7 @@
   "screen": "Screen",
   "uploadFile" : "Upload file",
   "thresholds": "Thresholds",
+  "threshold": "Threshold",
   "noDashboardSelected": "Please select a dashboard on the left",
   "noDashboardFound": "No dashboard could be found.",
   "noDashboardWriteAccess": "You don't have access to edit this dashboard.",
@@ -593,7 +594,11 @@
     "showValueAs": "Show value as",
     "deleteWidget": "Delete widget",
     "myDashboards": "My dashboards",
-    "createdByOthers": "Created by others"
+    "createdByOthers": "Created by others",
+    "showUnits": "Show units",
+    "showLabels": "Show labels",
+    "zoom": "Zoom",
+    "center": "Center"
   },
   "appearance": "Appearance",
   "configuration": {

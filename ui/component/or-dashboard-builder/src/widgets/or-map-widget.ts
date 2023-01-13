@@ -241,7 +241,7 @@ class OrMapWidgetSettings extends LitElement {
 
                         <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;"
-                                          .value="${config.zoom}" label="${i18next.t('Zoom')}"
+                                          .value="${config.zoom}" label="${i18next.t('zoom')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               config.zoom = event.detail.value;
                                               this.updateConfig(this.widget!, config);
@@ -251,7 +251,7 @@ class OrMapWidgetSettings extends LitElement {
                         <div style="display: flex; gap: 8px;">
                             <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;"
                                           .value="${config.center ? 'Lat: ' + (Object.values(config.center))[1] + ', Lng: ' + (Object.values(config.center))[0] : undefined}"
-                                          label="${i18next.t('Center')}"
+                                          label="${i18next.t('center')}"
                                           .pattern="${CoordinatesRegexPattern}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               if (event.detail.value) {

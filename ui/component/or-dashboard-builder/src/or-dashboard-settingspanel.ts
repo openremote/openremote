@@ -595,7 +595,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;"
                                           .options="${this._config.attributes}"
-                                          .value="${config.attributeName}" label="${i18next.t('Attribute')}"
+                                          .value="${config.attributeName}" label="${i18next.t('filter.attributeLabel')}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
                                               this.handleAttributeSelect(event.detail.value);
                                           }}"
@@ -604,7 +604,7 @@ export class OrDashboardSettingsPanel extends LitElement {
 
                         <div style="padding: 0 10px 12px 10px;">
                             <div class="switchMwcInputContainer">
-                                <span>${i18next.t('Show labels')}</span>
+                                <span>${i18next.t('showLabels')}</span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                               .value="${config.showLabels}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
@@ -614,7 +614,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                                 ></or-mwc-input>
                             </div>
                             <div class="switchMwcInputContainer">
-                                <span>${i18next.t('Show units')}</span>
+                                <span>${i18next.t('showUnits')}</span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                               .value="${config.showUnits}"
                                               .disabled="${!config.showLabels}"

@@ -548,6 +548,7 @@
   "screen": "Scherm",
   "uploadFile" : "Uploaden bestand",
   "thresholds": "Drempelwaardes",
+  "threshold": "Drempelwaarde",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
   "noDashboardFound": "Geen dashboard gevonden.",
   "noDashboardWriteAccess": "U heeft geen rechten om dit dashboard aan te passen.",
@@ -593,7 +594,11 @@
     "showValueAs": "Laat waarde zien als",
     "deleteWidget": "Verwijder widget",
     "myDashboards": "Mijn dashboards",
-    "createdByOthers": "Gemaakt door anderen"
+    "createdByOthers": "Gemaakt door anderen",
+    "showUnits": "Toon eenheden",
+    "showLabels": "Toon labels",
+    "zoom": "Zoom",
+    "center": "Middelpunt"
   },
   "appearance": "Weergave",
   "configuration": {
