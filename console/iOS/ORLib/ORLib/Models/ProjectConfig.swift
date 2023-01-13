@@ -11,9 +11,9 @@ public struct ProjectConfig: Codable, Equatable {
     public var id: String
     var projectName = "TODO"
 
-    var domain: String
-    var app: String
-    var realm: String?
+    public var domain: String
+    public var app: String
+    public var realm: String?
     
     public var providers: [String]?
     
