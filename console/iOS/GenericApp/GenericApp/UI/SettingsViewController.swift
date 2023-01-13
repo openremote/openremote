@@ -24,8 +24,8 @@ class SettingsViewController: UITableViewController {
             }
         }
 
-        navigationItem.rightBarButtonItem = self.editButtonItem;
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(doneTapped))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addTapped))
         navigationItem.title = "Projects"
     }
     
@@ -38,6 +38,10 @@ class SettingsViewController: UITableViewController {
         super.setEditing(editing, animated: animated)
     }
 
+    @objc func addTapped() {
+        self.performSegue(withIdentifier: Segues.addProject, sender: self)
+    }
+    
     @objc func doneTapped() {
         self.dismiss(animated: true)
     }
@@ -45,15 +49,12 @@ class SettingsViewController: UITableViewController {
     override func numberOfSections(in tableView: UITableView) -> Int {
         return 2
     }
-
+    
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return section == 0 ? projects.count : 1
     }
-    
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        return indexPath.section == 0
-    }
-    
+   
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
             let cell: ProjectTableViewCell = tableView.dequeueReusableCell(withIdentifier: "ProjectCell", for: indexPath) as! ProjectTableViewCell
@@ -62,23 +63,23 @@ class SettingsViewController: UITableViewController {
             cell.accessoryType = project.id == selectedProjectId ? .checkmark : .none
             return cell
         } else {
-            return tableView.dequeueReusableCell(withIdentifier: "AddProjectCell", for: indexPath)
+            let cell = tableView.dequeueReusableCell(withIdentifier: "NoProjectsCell", for: indexPath)
+            cell.isHidden = projects.count > 0
+            return cell
         }
     }
     
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        var rowsToReload = [IndexPath]()
         if editingStyle == .delete {
             let removedProject = projects.remove(at: indexPath.row)
-            if selectedProjectId == removedProject.id {
-                selectProject(id: projects.first?.id)
-                /*
-                if projects.count > 0 {
-                    if let firstCell = tableView.cellForRow(at: IndexPath(row: 0, section: 0)) {
-                        firstCell.accessoryType = .checkmark
-                    }
+            if projects.isEmpty {
+                rowsToReload.append(IndexPath(row: 0, section: 1))
+            } else {
+                if selectedProjectId == removedProject.id {
+                    selectProject(id: projects.first?.id)
+                    rowsToReload.append(IndexPath(row: 0, section: 0))
                 }
-                 This did not help with proper display of selection checkmark
-                 */
             }
             
             do {
@@ -90,6 +91,9 @@ class SettingsViewController: UITableViewController {
             } catch {
                 print(error.localizedDescription)
             }
+        }
+        if !rowsToReload.isEmpty {
+            tableView.reloadRows(at: rowsToReload, with: .none)
         }
     }
     
