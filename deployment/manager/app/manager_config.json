@@ -3,6 +3,16 @@
     "default": {
       "appTitle": "OpenRemote Manager Demo",
       "language": "en"
+    },
+    "smartcity": {
+      "styles": ":host > * {--or-app-color2: #F6F7FA; --or-app-color3: #1B1464; --or-app-color4: #662D91;}",
+      "logo": "/images/logo_smartcity.svg",
+      "logoMobile": "/images/logo-mobile_smartcity.svg"
+    },
+    "manufacturer": {
+      "styles": ":host > * {--or-app-color2: #F6FAFA; --or-app-color3: #1A2456; --or-app-color4: #29ABE2;}",
+      "logo": "/images/logo_manufacturer.svg",
+      "logoMobile": "/images/logo-mobile_manufacturer.svg"
     }
   }
 }

@@ -44,11 +44,11 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     private static final Logger LOG = Logger.getLogger(KeycloakDemoSetup.class.getName());
 
     public String smartCityUserId;
-    public String manufacturerUserId;
-    public String customerUserId;
+    public static String manufacturerUserId;
+    public static String customerUserId;
     public Realm realmMaster;
     public Realm realmCity;
-    public Realm realmManufacturer;
+    public static Realm realmManufacturer;
 
     public KeycloakDemoSetup(Container container) {
         super(container);
