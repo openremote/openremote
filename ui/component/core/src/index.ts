@@ -457,10 +457,14 @@ export class Manager implements EventProviderFactory {
         });
 
         // Look for language preference in local storage
-        const language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
+        const fallbackLanguage = "en";
+        let language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
+        if(!language || language == "undefined") {
+            language = fallbackLanguage
+        }
         const initOptions: InitOptions = {
             lng: language,
-            fallbackLng: "en",
+            fallbackLng: fallbackLanguage,
             defaultNS: "app",
             fallbackNS: "or",
             ns: this.config.loadTranslations,
