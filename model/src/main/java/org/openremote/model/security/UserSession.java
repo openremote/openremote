@@ -17,15 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.rules.json;
+package org.openremote.model.security;
 
-import org.openremote.model.webhook.Webhook;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
+public class UserSession {
+    protected final String username;
+    protected final long startTimeMillis;
+    protected final String remoteAddress;
 
-public class RuleActionWebhook extends RuleAction {
-    public Webhook webhook;
-    public MediaType mediaType;
-    public WebTarget target;
+    @JsonCreator
+    public UserSession(String username, long startTimeMillis, String remoteAddress) {
+        this.username = username;
+        this.startTimeMillis = startTimeMillis;
+        this.remoteAddress = remoteAddress;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public long getStartTimeMillis() {
+        return startTimeMillis;
+    }
+
+    public String getRemoteAddress() {
+        return remoteAddress;
+    }
 }

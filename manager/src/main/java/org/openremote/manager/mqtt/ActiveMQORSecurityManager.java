@@ -77,7 +77,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     @Override
     public Subject authenticate(String user, String password, RemotingConnection remotingConnection, String securityDomain) {
         try {
-            return getAuthenticatedSubject(user, password, remotingConnection, securityDomain);
+            return remotingConnection.getSubject() != null ? remotingConnection.getSubject() : getAuthenticatedSubject(user, password, remotingConnection, securityDomain);
         } catch (LoginException e) {
             return null;
         }
@@ -91,17 +91,6 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         String realm = null;
         ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
         ClassLoader thisLoader = this.getClass().getClassLoader();
-
-        // A bit of a hack to allow auto provisioned clients to remain connected after authentication and to then have
-        // the usual service user authentication without having to disconnect and reconnect
-        if (user == null) {
-            Triple<String, String, String> transientCredentials = brokerService.transientCredentials.get(remotingConnection.getID());
-            if (transientCredentials != null) {
-                LOG.finer("Using transient credentials (user=" + transientCredentials.getMiddle() + ") for connection: " + brokerService.connectionToString(remotingConnection));
-                user = transientCredentials.getMiddle();
-                password = transientCredentials.getRight();
-            }
-        }
 
         if (user != null) {
             String[] realmAndUsername = user.split(":");
