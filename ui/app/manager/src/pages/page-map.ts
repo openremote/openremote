@@ -132,7 +132,7 @@ export class PageMap extends Page<MapStateKeyed> {
     static get styles() {
         // language=CSS
         return css`
-            or-map-asset-card {
+           or-map-asset-card {
                 height: 35vh;
                 position: absolute;
                 bottom: 0;
@@ -140,13 +140,13 @@ export class PageMap extends Page<MapStateKeyed> {
                 width: 100vw;
                 z-index: 3;
             }
-
+        
             or-map {
                 display: block;
                 height: 100%;
                 width: 100%;
             }
-
+        
             @media only screen and (min-width: 415px){
                 or-map-asset-card {
                     position: absolute;
