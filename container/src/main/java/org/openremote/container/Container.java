@@ -22,15 +22,19 @@ package org.openremote.container;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreads;
-import org.openremote.container.util.LogUtil;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -72,16 +76,10 @@ public class Container implements org.openremote.model.Container {
         }
     }
 
-    public static final Logger LOG;
+    public static final Logger LOG = Logger.getLogger(Container.class.getName());
     public static ScheduledExecutorService EXECUTOR_SERVICE;
     public static final String OR_SCHEDULED_TASKS_THREADS_MAX = "OR_SCHEDULED_TASKS_THREADS_MAX";
     public static final int OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
-
-    static {
-        LogUtil.configureLogging();
-        LOG = Logger.getLogger(Container.class.getName());
-    }
-
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
 

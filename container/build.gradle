@@ -46,6 +46,7 @@ dependencies {
     api "org.apache.camel:camel-jackson:$camelVersion"
     api "org.apache.camel:camel-snmp:$camelVersion"
     api "org.apache.camel:camel-health:$camelVersion"
+    api "org.apache.camel:camel-management:$camelVersion"
 
     api("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
         exclude group: "log4j"
@@ -57,6 +58,8 @@ dependencies {
         exclude group: "logkit"
         exclude group: "commons-logging"
     }
+
+    api "org.jboss.logmanager:jboss-logmanager:$jbossLoggingManagerVersion"
 
     api "com.vladmihalcea:hibernate-types-52:$hibernateTypesVersion"
 }
