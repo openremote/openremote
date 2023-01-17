@@ -595,6 +595,11 @@
     "myDashboards": "My dashboards",
     "createdByOthers": "Created by others"
   },
+  "south": "South",
+  "east": "East",
+  "west": "West",
+  "north": "North",
+  "default": "Default",
   "appearance": "Appearance",
   "configuration": {
     "" : "Appearance",
@@ -605,6 +610,7 @@
     "defaultLanguage": "Default language",
     "images": "Images",
     "logo": "Logo",
+    "center": "Center",
     "logoMobile": "Logo mobile",
     "realmColors": "Realm colours",
     "--or-app-color4": "Primary: buttons, actions, and list headers",
@@ -623,8 +629,11 @@
     "deleteRealmCustomizationConfirm":"Are you sure you want to delete this Realm style?",
     "mapBounds": "Boundaries",
     "mapZoom": "Zoom",
-    "deleteMapCustomization": "Delete map customization",
+    "mapSettings": "Map settings",
+    "maxZoom": "Maximal zoom",
+    "minZoom": "Minimal zoom",
+    "deleteMapCustomization": "Delete map settings",
     "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
-    "addMapCustomization" : "Add Map customization"
+    "addMapCustomization" : "Add map settings"
   }
 }

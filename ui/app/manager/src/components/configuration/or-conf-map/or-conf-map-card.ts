@@ -57,53 +57,39 @@ export class OrConfMapCard extends LitElement {
     }
 
     .boundary-container {
-      width: 20%;
+      width: 50%;
     }
 
-    .boundary-item {
+    .boundary-item, .input {
       width: 100%;
       max-width: 800px;
       padding: 10px 0;
     }
 
-    .input {
-      width: 100%;
-      max-width: 800px;
-      padding: 10px 0px;
-    }
+    //.input {
+    //  width: 100%;
+    //  max-width: 800px;
+    //  padding: 10px 0;
+    //}
 
     .input or-mwc-input:not([icon]) {
       width: 80%;
     }
 
     .zoom-group {
-      width: 100%;
+      width: 50%;
+      padding-left: 12px;
     }
 
-    .main-section {
+    .map-container {
+      width: 100%
+    }
+    .settings-container{
       display: inline-flex;
-      width: 100%;
-    }
-
-    .main-section .map-container {
-      width: 80% !important;
-    }
-
-    .main-section .boundary-container {
-      margin-left: 8px;
     }
 
     @media screen and (max-width: 768px) {
-      .main-section{
-        display: block;
-      }
-      .main-section .map-container {
-        width: 100% !important;
-      }
-      .boundary-container {
-        width: 100%!important;
-        margin-left: 0!important;
-      }
+
     }
   `;
 
@@ -167,18 +153,28 @@ export class OrConfMapCard extends LitElement {
     this.requestUpdate();
   }
 
-  protected setCenter(cor: LngLat) {
-    const BetweenNorthSouth = this.map.bounds[3] > cor.lat && this.map.bounds[1] < cor.lat;
-    const BetweenWestEast = this.map.bounds[0] < cor.lng && this.map.bounds[2] > cor.lng;
+  protected setCenter(cor: LngLat|string) {
+    let centerCoordinate: LngLat
+    if (typeof cor == "string"){
+      // @ts-ignore
+      centerCoordinate = {
+        lat: parseFloat(cor.split(',')[1]),
+        lng: parseFloat(cor.split(',')[0])
+      }
+    } else {
+      centerCoordinate = cor
+    }
+    const BetweenNorthSouth = this.map.bounds[3] > centerCoordinate.lat && this.map.bounds[1] < centerCoordinate.lat;
+    const BetweenWestEast = this.map.bounds[0] < centerCoordinate.lng && this.map.bounds[2] > centerCoordinate.lng;
     if (!(BetweenNorthSouth && BetweenWestEast)) {
       this.map.bounds = [
-        (cor.lng - .2).toFixed(3),
-        (cor.lat - .1).toFixed(3),
-        (cor.lng + .2).toFixed(3),
-        (cor.lat + .1).toFixed(3),
+        (centerCoordinate.lng - .2).toFixed(3),
+        (centerCoordinate.lat - .1).toFixed(3),
+        (centerCoordinate.lng + .2).toFixed(3),
+        (centerCoordinate.lat + .1).toFixed(3),
       ];
     }
-    this.map.center = [cor.lng, cor.lat];
+    this.map.center = [centerCoordinate.lng, centerCoordinate.lat];
     this.requestUpdate();
   }
 
@@ -191,7 +187,6 @@ export class OrConfMapCard extends LitElement {
 
 
   render() {
-    const app = this;
     return html`
       <or-collapsible-panel
         .expanded="${this.expanded}">
@@ -199,80 +194,84 @@ export class OrConfMapCard extends LitElement {
           ${this.name}
         </div>
         <div slot="content" class="panel-content">
-          <div class="main-section">
+          <div class="map-container">
+            <div class="subheader">${i18next.t("map")}</div>
+            <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .zoom="${this.zoom}"
+                    .boundary="${this.map.bounds}"
+                    @or-map-long-press="${(ev: OrMapLongPressEvent) => {
+                      this.setCenter(ev.detail.lngLat);
+                    }}" .showGeoCodingControl="${true}"
+                    .useZoomControl="${false}"
+                    style="height: 500px; width: 100%;">
+              ${this.map.center ? html`
+                <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}" .lat="${this.map.center[1]}"
+                               active></or-map-marker>` : ""}
 
-            <div class="map-container">
-              <div class="subheader">${i18next.t("map")}</div>
-              <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .zoom="${this.zoom}"
-                      .boundary="${this.map.bounds}"
-                      @or-map-long-press="${(ev: OrMapLongPressEvent) => {
-                        this.setCenter(ev.detail.lngLat);
-                      }}" .showGeoCodingControl="${true}"
-                      .useZoomControl="${false}"
-                      style="height: 500px; width: 100%;">
-                ${this.map.center ? html`
-                  <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}" .lat="${this.map.center[1]}"
-                                 active></or-map-marker>` : ""}
+            </or-map>
+          </div>
 
-              </or-map>
-            </div>
-
-
+          <div class="settings-container">
             <div class="boundary-container">
               <div class="subheader">${i18next.t("configuration.mapBounds")}</div>
-              <or-mwc-input .value="${this.map?.bounds[3]}" .type="${InputType.NUMBER}" label="North"
+              <span>Define a view box that the user sees</span>
+              <or-mwc-input .value="${this.map?.bounds[3]}" .type="${InputType.NUMBER}" .label="${i18next.t("north")}"
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(3, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
-              <or-mwc-input .value="${this.map?.bounds[2]}" .type="${InputType.NUMBER}" label="East"
+              <or-mwc-input .value="${this.map?.bounds[2]}" .type="${InputType.NUMBER}" .label="${i18next.t("east")}"
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(2, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
-              <or-mwc-input .value="${this.map?.bounds[0]}" .type="${InputType.NUMBER}" label="West"
+              <or-mwc-input .value="${this.map?.bounds[0]}" .type="${InputType.NUMBER}" .label="${i18next.t("west")}"
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(0, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
-              <or-mwc-input .value="${this.map?.bounds[1]}" .type="${InputType.NUMBER}" label="South"
+              <or-mwc-input .value="${this.map?.bounds[1]}" .type="${InputType.NUMBER}" .label="${i18next.t("south")}"
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
+              <div class="subheader">${i18next.t("configuration.center")}</div>
+              <span>The center point where the user will start on when loading the map</span>
+              <or-mwc-input .value="${Array.isArray(this.map.center) ? this.map.center.join() :  undefined}" .type="${InputType.TEXT}" label="Center"
+                            class="boundary-item"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCenter(e.detail.value)}"
+                            .step="${.01}"></or-mwc-input>
+            </div>
+
+            <div class="zoom-group">
+              <div class="subheader">${i18next.t("configuration.mapZoom")}</div>
+              <span>Define the zoom level. The entire Earth is '1' and '24' shows the most detail</span>
+              <div class="input">
+                <or-mwc-input .value="${this.map.zoom}" .type="${InputType.NUMBER}" .label="${i18next.t('default')}"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.zoom = e.detail.value}"
+                              .step="${1}"></or-mwc-input>
+                <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.zoom)}"
+                              .step="${1}"></or-mwc-input>
+              </div>
+              <div class="input">
+                <or-mwc-input .value="${this.map.minZoom}" .type="${InputType.NUMBER}" .label="${i18next.t("configuration.minZoom")}"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.minZoom = e.detail.value}"
+                              .step="${1}"></or-mwc-input>
+                <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.minZoom)}"
+                              .step="${1}"></or-mwc-input>
+              </div>
+              <div class="input">
+                <or-mwc-input .value="${this.map.maxZoom}" .type="${InputType.NUMBER}" .label="${i18next.t("configuration.minZoom")}"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.maxZoom = e.detail.value}"
+                              .step="${1}"></or-mwc-input>
+                <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.maxZoom)}"
+                              .step="${1}"></or-mwc-input>
+              </div>
+
+              <or-mwc-input .value="${this.map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.boxZoom = e.detail.value}"
+                            .step="${1}"></or-mwc-input>
             </div>
           </div>
 
-          <div class="zoom-group">
-            <div class="subheader">${i18next.t("configuration.mapZoom")}</div>
-            <div class="input">
-              <or-mwc-input .value="${this.map.zoom}" .type="${InputType.NUMBER}" label="Zoom"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.zoom = e.detail.value}"
-                            .step="${1}"></or-mwc-input>
-              <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.zoom)}"
-                            .step="${1}"></or-mwc-input>
-            </div>
-            <div class="input">
-              <or-mwc-input .value="${this.map.minZoom}" .type="${InputType.NUMBER}" label="Min Zoom"
-                            class="input"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.minZoom = e.detail.value}"
-                            .step="${1}"></or-mwc-input>
-              <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.minZoom)}"
-                            .step="${1}"></or-mwc-input>
-            </div>
-            <div class="input">
-              <or-mwc-input .value="${this.map.maxZoom}" .type="${InputType.NUMBER}" label="Max Zoom"
-                            class="input"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.maxZoom = e.detail.value}"
-                            .step="${1}"></or-mwc-input>
-              <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.maxZoom)}"
-                            .step="${1}"></or-mwc-input>
-            </div>
-
-            <or-mwc-input .value="${this.map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
-                          class="input"
-                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.boxZoom = e.detail.value}"
-                          .step="${1}"></or-mwc-input>
-          </div>
 
           <or-mwc-input outlined .type="${InputType.BUTTON}" id="remove-map"
                         .label="${i18next.t("configuration.deleteMapCustomization")}"

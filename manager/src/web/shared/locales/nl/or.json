@@ -595,6 +595,11 @@
     "myDashboards": "Mijn dashboards",
     "createdByOthers": "Gemaakt door anderen"
   },
+  "south": "Zuid",
+  "east": "Oost",
+  "west": "West",
+  "north": "Noord",
+  "default": "Standaard",
   "appearance": "Weergave",
   "configuration": {
     "" : "Weergave",
@@ -605,6 +610,7 @@
     "defaultLanguage": "Standaard taal",
     "images": "Afbeeldingen",
     "logo": "Logo",
+    "center": "Midden",
     "logoMobile": "Logo mobiel",
     "realmColors": "Realm kleuren",
     "--or-app-color4": "Primair: knoppen, acties, and lijst header",
@@ -623,8 +629,11 @@
     "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?",
     "mapBounds": "Randen",
     "mapZoom": "Zoom",
-    "deleteMapCustomization": "Verwijder kaart",
+    "mapSettings": "Kaartinstelling",
+    "maxZoom": "Maximale zoom",
+    "minZoom": "Minimale zoom",
+    "deleteMapCustomization": "Kaartinstelling verwijderen",
     "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
-    "addMapCustomization" : "Voeg een kaart toe"
+    "addMapCustomization" : "Voeg een Kaartinstelling toe"
   }
 }

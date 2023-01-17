@@ -229,7 +229,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
                     <or-panel .heading="${i18next.t("configuration.realmStyling")}">
                         <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
                     </or-panel>
-                    <or-panel .heading="${i18next.t("map").toUpperCase()}">
+                    <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
                         <or-conf-map .config="${this.mapConfig}"></or-conf-map>
                     </or-panel>
                 </div>`}
