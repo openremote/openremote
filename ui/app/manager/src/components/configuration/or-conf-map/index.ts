@@ -46,12 +46,12 @@ export class OrConfMap extends LitElement {
   protected _loadListOfAvailableRealms(){
     const app = this
     this._availableRealms = this._allRealms.filter(function(realm){
-      if (realm.name && app.config){
-        if (!app.config[realm.name]){
-          return realm
+      if (realm.name && 'realm' in app.config){
+        if (app.config[realm.name]){
+          return null
         }
       }
-      return null
+      return realm
     }).sort(function(a, b){
       if (a.displayName && b.displayName){
         return (a.displayName > b.displayName) ? 1 : -1

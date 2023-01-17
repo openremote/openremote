@@ -156,15 +156,18 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" })
           .then(async (response) => {
               return response.json().then((json) => {
-                  this.managerConfiguration = json;
+                  this.managerConfiguration = {};
                   this.loading = false;
-                  this.requestUpdate();
                   return true;
               });
 
           }).catch(() => {
-              return false;
-          });
+            this.managerConfiguration = {};
+            this.loading = false;
+            return false;
+          }).finally(() => {
+            this.requestUpdate();
+        });
 
         manager.rest.api.MapResource.getSettings().then((response) => {
             this.mapConfig = response.data.options
