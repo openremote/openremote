@@ -300,8 +300,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
                 break;
             case UPDATE:
-                int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
-                if (attributesIndex < 0) {
+                if (!persistenceEvent.hasPropertyChanged("attributes")) {
                     return;
                 }
 

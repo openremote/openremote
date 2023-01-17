@@ -635,5 +635,10 @@
     "deleteMapCustomization": "Delete map settings",
     "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
     "addMapCustomization" : "Add map settings"
-  }
+  },
+  "mqttSessions": "MQTT sessions",
+  "address": "Address",
+  "since": "Since",
+  "roles": "Roles",
+  "restrictedUser": "Restricted user"
 }

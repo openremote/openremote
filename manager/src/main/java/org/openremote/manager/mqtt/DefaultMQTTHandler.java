@@ -137,7 +137,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public boolean onConnect(RemotingConnection connection) {
+    public void onConnect(RemotingConnection connection) {
         super.onConnect(connection);
         Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
@@ -154,7 +154,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
             .withHeaders(headers)
             .to(CLIENT_EVENT_QUEUE)
             .asyncSend();
-        return true;
     }
 
     @Override

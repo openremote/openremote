@@ -306,7 +306,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         return html`
             <div style="min-width: 635px; display:grid; flex-direction: row;">
                 <div class="layout horizontal">
-                    <or-mwc-input .value="${validityType}" .type="${InputType.SELECT}" .options="${validityTypes}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-mwc-input>
+                    <or-mwc-input style="min-width: 280px;" .value="${validityType}" .type="${InputType.SELECT}" .options="${validityTypes}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-mwc-input>
                 </div>
 
                 ${validity && (validityType  === "validityPeriod" || validityType  === "validityRecurrence") ? html`

@@ -1507,8 +1507,10 @@ export class OrMwcInput extends LitElement {
 
                         // Set width of fixed select menu to match the component width
                         // Using an observer to prevent forced reflow / DOM measurements; prevents blocking the thread
-                        const observer = new IntersectionObserver((entries, observer) => {
-                            (entries[0].target as HTMLElement).style.width = entries[0].boundingClientRect.width + "px";
+                        // ResizeObserver is required instead of MutationObserver to allow rendering without painting it.
+                        // (such as a dialog where it's initial width is 0px, but when opened it changes)
+                        const observer = new ResizeObserver((entries, observer) => {
+                            (entries[0].target as HTMLElement).style.width = entries[0].contentRect.width + "px";
                             observer.unobserve(entries[0].target);
                         })
                         observer.observe(this.shadowRoot!.getElementById("component")!);

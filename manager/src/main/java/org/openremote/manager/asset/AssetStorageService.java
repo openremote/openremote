@@ -1439,8 +1439,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 break;
             case UPDATE:
 
-                String[] updatedProperties = persistenceEvent.getPropertyNames();
-                boolean attributesChanged = Arrays.asList(updatedProperties).contains("attributes");
+                boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
 
 //                String[] updatedProperties = Arrays.stream(persistenceEvent.getPropertyNames()).filter(propertyName -> {
 //                    Object oldValue = persistenceEvent.getPreviousState(propertyName);
@@ -1458,7 +1457,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 LOG.finer("Asset updated: " + persistenceEvent);
 
                 clientEventService.publishEvent(
-                    new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, updatedProperties)
+                    new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, persistenceEvent.getPropertyNames().toArray(String[]::new))
                 );
 
                 // Did any attributes change if so raise attribute events on the event bus
