@@ -1,19 +1,16 @@
-import {css, html} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
-import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
+import { css, html } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { createSlice, PayloadAction, Store } from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {
     MapAssetCardConfig,
+    MapMarkerAssetConfig,
     OrMap,
-    OrMapAssetCardLoadAssetEvent,
-    OrMapClickedEvent,
-    OrMapMarkerAsset,
-    OrMapMarkerClickedEvent,
-    OrMapGeocoderChangeEvent,
-    MapMarkerAssetConfig
+    OrMapAssetCardLoadAssetEvent, OrMapClickedEvent,
+    OrMapGeocoderChangeEvent, OrMapMarkerAsset, OrMapMarkerClickedEvent,
 } from "@openremote/or-map";
-import manager, {Util} from "@openremote/core";
-import {createSelector} from "reselect";
+import manager, { Util } from "@openremote/core";
+import { createSelector } from "reselect";
 import {
     Asset,
     AssetEvent,
@@ -23,11 +20,11 @@ import {
     AttributeEvent,
     GeoJSONPoint,
     WellknownAttributes,
-    WellknownMetaItems
+    WellknownMetaItems,
 } from "@openremote/model";
-import {getAssetsRoute, getMapRoute} from "../routes";
-import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {GenericAxiosResponse} from "@openremote/rest";
+import { AppStateKeyed, Page, PageProvider, router } from "@openremote/or-app";
+import { GenericAxiosResponse } from "@openremote/rest";
+import { getAssetsRoute, getMapRoute } from "../routes";
 
 export interface MapState {
     assets: Asset[];
@@ -341,9 +338,44 @@ export class PageMap extends Page<MapStateKeyed> {
 
     protected render() {
 
-        return html`
-            <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}"></or-map>
-        `;
+        return html
+          `
+              ${this._currentAsset ? html`
+                  <or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"
+                                     .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
+
+              <or-map id="map" class="or-map" showGeoCodingControl
+                      @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {
+                          this._setCenter(ev.detail.geocode);
+                      }}">
+                  ${
+                    this._assets.filter((asset) => {
+                        if (!asset.attributes) {
+                            return false;
+                        }
+                        const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
+                        return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+                    })
+                      .sort((a, b) => {
+                          if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value) {
+                              return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
+                          } else {
+                              return;
+                          }
+                      })
+                      .map(asset => {
+                          return html`
+                              <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}"
+                                                   .asset="${asset}"
+                                                   .config="${this.config.markers}"></or-map-marker-asset>
+                          `;
+                      })
+                  }
+              </or-map>
+              <or-map id="map" class="or-map" showGeoCodingControl
+                      @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {
+                          this._setCenter(ev.detail.geocode);
+                      }}"></or-map>`;
     }
 
     public connectedCallback() {
