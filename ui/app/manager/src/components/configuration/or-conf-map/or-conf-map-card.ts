@@ -204,8 +204,8 @@ export class OrConfMapCard extends LitElement {
                     .useZoomControl="${false}"
                     style="height: 500px; width: 100%;">
               ${this.map.center ? html`
-                <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}" .lat="${this.map.center[1]}"
-                               active></or-map-marker>` : ""}
+                <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}"
+                               .lat="${this.map.center[1]}"></or-map-marker>` : ""}
 
             </or-map>
           </div>
