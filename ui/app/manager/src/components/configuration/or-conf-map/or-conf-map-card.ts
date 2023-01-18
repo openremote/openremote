@@ -66,12 +66,6 @@ export class OrConfMapCard extends LitElement {
       padding: 10px 0;
     }
 
-    //.input {
-    //  width: 100%;
-    //  max-width: 800px;
-    //  padding: 10px 0;
-    //}
-
     .input or-mwc-input:not([icon]) {
       width: 80%;
     }
@@ -89,7 +83,13 @@ export class OrConfMapCard extends LitElement {
     }
 
     @media screen and (max-width: 768px) {
-
+      .zoom-group, .boundary-container{
+        width: 100%;
+        padding: unset;
+      }
+      .settings-container{
+        display: block;
+      }
     }
   `;
 
@@ -213,7 +213,7 @@ export class OrConfMapCard extends LitElement {
           <div class="settings-container">
             <div class="boundary-container">
               <div class="subheader">${i18next.t("configuration.mapBounds")}</div>
-              <span>Define a view box that the user sees</span>
+              <span>${i18next.t("configuration.mapBoundsDescription")}</span>
               <or-mwc-input .value="${this.map?.bounds[3]}" .type="${InputType.NUMBER}" .label="${i18next.t("north")}"
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(3, e.detail.value)}"
@@ -231,9 +231,9 @@ export class OrConfMapCard extends LitElement {
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
               <div class="subheader">${i18next.t("configuration.center")}</div>
-              <span>The center point where the user will start on when loading the map</span>
+              <span>${i18next.t("configuration.centerDescription")}</span>
               <or-mwc-input .value="${Array.isArray(this.map.center) ? this.map.center.join() : undefined}"
-                            .type="${InputType.TEXT}" label="Center"
+                            .type="${InputType.TEXT}" label="${i18next.t("configuration.center")}"
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCenter(e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
@@ -241,7 +241,7 @@ export class OrConfMapCard extends LitElement {
 
             <div class="zoom-group">
               <div class="subheader">${i18next.t("configuration.mapZoom")}</div>
-              <span>Define the zoom level. The entire Earth is '1' and '24' shows the most detail</span>
+              <span>${i18next.t("configuration.mapZoomDescription")}</span>
               <div class="input">
                 <or-mwc-input .value="${this.map.zoom}" .type="${InputType.NUMBER}" .label="${i18next.t('default')}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.zoom = e.detail.value}"
