@@ -232,7 +232,8 @@ export class OrConfMapCard extends LitElement {
                             .step="${.01}"></or-mwc-input>
               <div class="subheader">${i18next.t("configuration.center")}</div>
               <span>The center point where the user will start on when loading the map</span>
-              <or-mwc-input .value="${Array.isArray(this.map.center) ? this.map.center.join() :  undefined}" .type="${InputType.TEXT}" label="Center"
+              <or-mwc-input .value="${Array.isArray(this.map.center) ? this.map.center.join() : undefined}"
+                            .type="${InputType.TEXT}" label="Center"
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCenter(e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
@@ -250,7 +251,8 @@ export class OrConfMapCard extends LitElement {
                               .step="${1}"></or-mwc-input>
               </div>
               <div class="input">
-                <or-mwc-input .value="${this.map.minZoom}" .type="${InputType.NUMBER}" .label="${i18next.t("configuration.minZoom")}"
+                <or-mwc-input .value="${this.map.minZoom}" .type="${InputType.NUMBER}"
+                              .label="${i18next.t("configuration.minZoom")}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.minZoom = e.detail.value}"
                               .step="${1}"></or-mwc-input>
                 <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
@@ -258,7 +260,8 @@ export class OrConfMapCard extends LitElement {
                               .step="${1}"></or-mwc-input>
               </div>
               <div class="input">
-                <or-mwc-input .value="${this.map.maxZoom}" .type="${InputType.NUMBER}" .label="${i18next.t("configuration.minZoom")}"
+                <or-mwc-input .value="${this.map.maxZoom}" .type="${InputType.NUMBER}"
+                              .label="${i18next.t("configuration.minZoom")}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.maxZoom = e.detail.value}"
                               .step="${1}"></or-mwc-input>
                 <or-mwc-input .type="${InputType.BUTTON}" icon="eye"

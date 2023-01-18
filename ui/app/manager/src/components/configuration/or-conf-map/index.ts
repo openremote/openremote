@@ -17,7 +17,7 @@ export class OrConfMap extends LitElement {
     #btn-add-realm {
       margin-top: 4px;
     }
-    `;
+  `;
 
   @property({attribute: false})
   public config: MapConfig = {};
