@@ -253,7 +253,8 @@ export class OrConfMapCard extends LitElement {
               <div class="input">
                 <or-mwc-input .value="${this.map.minZoom}" .type="${InputType.NUMBER}"
                               .label="${i18next.t("configuration.minZoom")}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.minZoom = e.detail.value}"
+                              max="${this.map.maxZoom}"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {this.map.minZoom = e.detail.value; this.requestUpdate() }}"
                               .step="${1}"></or-mwc-input>
                 <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.minZoom)}"
@@ -261,8 +262,9 @@ export class OrConfMapCard extends LitElement {
               </div>
               <div class="input">
                 <or-mwc-input .value="${this.map.maxZoom}" .type="${InputType.NUMBER}"
-                              .label="${i18next.t("configuration.minZoom")}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.maxZoom = e.detail.value}"
+                              .label="${i18next.t("configuration.maxZoom")}"
+                              min="${this.map.minZoom}"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this.map.maxZoom = e.detail.value;this.requestUpdate()}}"
                               .step="${1}"></or-mwc-input>
                 <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.maxZoom)}"
