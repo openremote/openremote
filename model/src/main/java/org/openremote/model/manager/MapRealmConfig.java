@@ -22,8 +22,8 @@ package org.openremote.model.manager;
 import java.lang.reflect.Array;
 
 public class MapRealmConfig {
-    protected Array center;
-    protected Array bounds;
+    protected float[] center;
+    protected float[] bounds;
     protected int zoom;
     protected int minZoom;
     protected int maxZoom;

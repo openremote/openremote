@@ -111,7 +111,7 @@ public class MapService implements ContainerService {
             throw exception;
         }
 
-        return null;
+        return mapSettings;
     }
 
     protected static Metadata getMetadata(Connection connection) {
