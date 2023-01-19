@@ -148,7 +148,7 @@ export class OrConfMapCard extends LitElement {
   }
 
   protected setBoundary(key: number, value: any) {
-    this.map.bounds[key] = parseFloat(value).toFixed(2);
+    this.map.bounds[key] = parseFloat(parseFloat(value).toFixed(2));
     this.map.bounds = JSON.parse(JSON.stringify(this.map.bounds));
     this.requestUpdate();
   }
@@ -168,10 +168,10 @@ export class OrConfMapCard extends LitElement {
     const BetweenWestEast = this.map.bounds[0] < centerCoordinate.lng && this.map.bounds[2] > centerCoordinate.lng;
     if (!(BetweenNorthSouth && BetweenWestEast)) {
       this.map.bounds = [
-        (centerCoordinate.lng - .2).toFixed(3),
-        (centerCoordinate.lat - .1).toFixed(3),
-        (centerCoordinate.lng + .2).toFixed(3),
-        (centerCoordinate.lat + .1).toFixed(3),
+        parseFloat((centerCoordinate.lng - .2).toFixed(3)),
+        parseFloat((centerCoordinate.lat - .1).toFixed(3)),
+        parseFloat((centerCoordinate.lng + .2).toFixed(3)),
+        parseFloat((centerCoordinate.lat + .1).toFixed(3)),
       ];
     }
     this.map.center = [centerCoordinate.lng, centerCoordinate.lat];
