@@ -23,11 +23,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.map.MapResource;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.Map;
 
 public class MapResourceImpl extends WebResource implements MapResource {
 
@@ -40,7 +42,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Object saveSettings(RequestParams requestParams, Object mapConfig) throws Exception {
+    public Object saveSettings(RequestParams requestParams, Map<String, MapRealmConfig> mapConfig) throws Exception {
         return mapService.saveMapConfig(mapConfig);
     }
 

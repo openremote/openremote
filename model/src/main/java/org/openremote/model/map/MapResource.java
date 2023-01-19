@@ -22,10 +22,12 @@ package org.openremote.model.map;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.manager.MapRealmConfig;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.util.Map;
 
 @Tag(name = "Map")
 @Path("map")
@@ -36,7 +38,7 @@ public interface MapResource {
      */
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
-    Object saveSettings(@BeanParam RequestParams requestParams, Object mapConfig) throws Exception;
+    Object saveSettings(@BeanParam RequestParams requestParams, Map<String, MapRealmConfig> mapConfig) throws Exception;
 
     /**
      * Returns style used to initialise Mapbox GL

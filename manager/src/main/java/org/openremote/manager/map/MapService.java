@@ -35,6 +35,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -88,7 +89,7 @@ public class MapService implements ContainerService {
     protected Map<String, ObjectNode> mapSettings = new HashMap<>();
     protected Map<String, ObjectNode> mapSettingsJs = new HashMap<>();
 
-    public ObjectNode saveMapConfig(Object mapConfiguration) throws Exception {
+    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws Exception {
         LOG.log(Level.INFO, "Saving mapsettings.json");
         this.mapConfig.putNull("options");
         this.mapSettings.clear();
