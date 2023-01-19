@@ -28,6 +28,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
+import org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.CORSFilter;
@@ -262,7 +263,9 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
         resteasyDeployment.getProviders().add(new JacksonConfig());
 
-        resteasyDeployment.getProviders().add(new GZIPEncodingInterceptor(!container.isDevMode()));
+        if (!container.isDevMode()) {
+            resteasyDeployment.getProviders().add(GZIPEncodingInterceptor.class);
+        }
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
 

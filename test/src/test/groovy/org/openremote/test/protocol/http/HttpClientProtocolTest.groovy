@@ -25,6 +25,7 @@ import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.http.HTTPProtocol
+import org.openremote.agent.protocol.websocket.WebsocketAgentProtocol
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -255,8 +256,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         def agentService = container.getService(AgentService.class)
 
         when: "the web target builder is configured to use the mock server"
-        if (!HTTPProtocol.client.configuration.isRegistered(mockServer)) {
-            HTTPProtocol.client.register(mockServer, Integer.MAX_VALUE)
+        HTTPProtocol.initClient()
+        if (!HTTPProtocol.client.get().configuration.isRegistered(mockServer)) {
+            HTTPProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
         }
 
         and: "a HTTP client agent is created"
@@ -541,6 +543,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         then: "the server should have received the request"
         conditions.eventually {
             assert mockServer.successCount == 1
+        }
+
+        cleanup: "remove mock"
+        if (HTTPProtocol.client.get() != null) {
+            HTTPProtocol.client.set(null)
         }
     }
 }

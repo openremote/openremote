@@ -405,7 +405,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 return null;
             });
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Credentials are invalid", e);
+            LOG.info("Credentials are invalid");
             return false;
         }
 

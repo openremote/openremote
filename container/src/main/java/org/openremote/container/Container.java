@@ -26,18 +26,12 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
@@ -76,7 +70,8 @@ public class Container implements org.openremote.model.Container {
         }
     }
 
-    public static final Logger LOG = Logger.getLogger(Container.class.getName());
+    // Use System.Logger to correctly initialise the logging framework using java 9 SPI
+    public static final System.Logger LOG = System.getLogger(Container.class.getName());
     public static ScheduledExecutorService EXECUTOR_SERVICE;
     public static final String OR_SCHEDULED_TASKS_THREADS_MAX = "OR_SCHEDULED_TASKS_THREADS_MAX";
     public static final int OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
@@ -124,14 +119,6 @@ public class Container implements org.openremote.model.Container {
 
         EXECUTOR_SERVICE = new NoShutdownScheduledExecutorService("Scheduled task", scheduledTasksThreadsMax);
 
-        // Any log handlers of the root logger that are container services must be registered
-        for (Handler handler : Logger.getLogger("").getHandlers()) {
-            if (handler instanceof ContainerService) {
-                ContainerService containerServiceLogHandler = (ContainerService) handler;
-                this.services.put(containerServiceLogHandler.getClass(), containerServiceLogHandler);
-            }
-        }
-
         if (services != null) {
             services.forEach(svc -> this.services.put(svc.getClass(), svc));
         }
@@ -155,33 +142,33 @@ public class Container implements org.openremote.model.Container {
     public synchronized void start() throws Exception {
         if (isRunning())
             return;
-        LOG.info(">>> Starting runtime container...");
+        LOG.log(System.Logger.Level.INFO, ">>> Starting runtime container...");
         try {
             for (ContainerService service : getServices()) {
-                LOG.info("Initializing service: " + service.getClass().getName());
+                LOG.log(System.Logger.Level.INFO, "Initializing service: " + service.getClass().getName());
                 service.init(Container.this);
             }
             for (ContainerService service : getServices()) {
-                LOG.info("Starting service: " + service.getClass().getName());
+                LOG.log(System.Logger.Level.INFO, "Starting service: " + service.getClass().getName());
                 service.start(Container.this);
             }
         } catch (Exception ex) {
-            LOG.log(Level.SEVERE, ">>> Runtime container startup failed", ex);
+            LOG.log(System.Logger.Level.ERROR, ">>> Runtime container startup failed", ex);
             throw ex;
         }
-        LOG.info(">>> Runtime container startup complete");
+        LOG.log(System.Logger.Level.INFO, ">>> Runtime container startup complete");
     }
 
     public synchronized void stop() {
         if (!isRunning())
             return;
-        LOG.info("<<< Stopping runtime container...");
+        LOG.log(System.Logger.Level.INFO, "<<< Stopping runtime container...");
 
         List<ContainerService> servicesToStop = Arrays.asList(getServices());
         Collections.reverse(servicesToStop);
         try {
             for (ContainerService service : servicesToStop) {
-                LOG.fine("Stopping service: " + service.getClass().getName());
+                LOG.log(System.Logger.Level.INFO, "Stopping service: " + service.getClass().getName());
                 service.stop(this);
             }
         } catch (Exception ex) {
@@ -189,15 +176,15 @@ public class Container implements org.openremote.model.Container {
         }
 
         try {
-            LOG.info("Cancelling scheduled tasks");
+            LOG.log(System.Logger.Level.INFO, "Cancelling scheduled tasks");
             ((NoShutdownScheduledExecutorService) EXECUTOR_SERVICE).doShutdownNow();
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Exception thrown whilst trying to stop scheduled tasks", e);
+            LOG.log(WARNING, "Exception thrown whilst trying to stop scheduled tasks", e);
         }
 
         waitingThread.interrupt();
         waitingThread = null;
-        LOG.info("<<< Runtime container stopped");
+        LOG.log(INFO, "<<< Runtime container stopped");
     }
 
     /**
