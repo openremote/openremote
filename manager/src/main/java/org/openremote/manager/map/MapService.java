@@ -53,6 +53,7 @@ import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -92,8 +93,7 @@ public class MapService implements ContainerService {
         this.mapConfig.putNull("options");
         this.mapSettings.clear();
         ObjectNode mapSettings = loadMapSettingsJson(mapSettingsPath);
-        try {
-            OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()));
+        try(OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()))){
             ObjectMapper mapper = new ObjectMapper();
             mapSettings.putPOJO("options", mapConfiguration);
             mapper
