@@ -54,6 +54,7 @@ import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -86,8 +87,8 @@ public class MapService implements ContainerService {
     protected Metadata metadata;
     protected ObjectNode mapConfig;
     protected ObjectNode mapSource;
-    protected Map<String, ObjectNode> mapSettings = new HashMap<>();
-    protected Map<String, ObjectNode> mapSettingsJs = new HashMap<>();
+    protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
+    protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
     public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws Exception {
         LOG.log(Level.INFO, "Saving mapsettings.json");
