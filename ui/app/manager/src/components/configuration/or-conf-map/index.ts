@@ -125,7 +125,7 @@ export class OrConfMap extends LitElement {
     const app = this;
     return html`
       <div class="panels">
-        ${Object.entries(this.config === undefined ? {} : this.config).map(function([key , value]){
+        ${Object.entries(this.config === undefined ? {} : this.config).map(([key , value]) => {
       return html`<or-conf-map-card .expanded="${app._addedRealm === key}" .name="${key}" .map="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-map-card>`
     })}
       </div>
