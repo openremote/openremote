@@ -583,6 +583,11 @@ export class OrDashboardPreview extends LitElement {
 
     protected previousObserverEntry?: ResizeObserverEntry;
 
+    disconnectedCallback() {
+        super.disconnectedCallback()
+        this.resizeObserver?.disconnect();
+    }
+
     // Triggering a Grid rerender on every time the element resizes.
     // In fullscreen, debounce (only trigger after 550ms of no changes) to limit amount of rerenders.
     setupResizeObserver(element: Element): ResizeObserver {
