@@ -471,6 +471,9 @@ export class OrMap extends LitElement {
         if (this._observer) {
             this._observer.disconnect();
         }
+        if(this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
     }
 
     protected render() {
