@@ -156,7 +156,7 @@ export class PageConfiguration extends Page<AppStateKeyed>  {
         fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" })
           .then(async (response) => {
               return response.json().then((json) => {
-                  this.managerConfiguration = {};
+                  this.managerConfiguration = json;
                   this.loading = false;
                   return true;
               });
