@@ -4,6 +4,7 @@
 create extension if not exists POSTGIS;
 create extension if not exists POSTGIS_TOPOLOGY;
 create extension if not exists ltree;
+create extension if not exists timescaledb;
 /*
   ############################# SEQUENCES #############################
  */
