@@ -4,7 +4,6 @@ platform :ios, '13.0'
 use_frameworks!
 
 def shared_pods
-  pod 'Popover'
   pod 'MaterialComponents/TextFields'
   pod 'MaterialComponents/Buttons'
 end
@@ -17,6 +16,7 @@ target 'GenericApp' do
   pod 'Firebase/Crashlytics'
   pod 'Firebase/Analytics'
   pod 'IQKeyboardManagerSwift'
+  pod 'DropDown'
 end
 
 target 'NotificationService' do

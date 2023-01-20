@@ -289,7 +289,7 @@ jobs:
                 for key in managerPushConfig.keys():
                   # Output new tag cache files (for generating hash)
                   os.system(f"echo 'Outputting manifest info for tag: {key}'")
-                  os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
+                  os.system(f"docker buildx imagetools inspect --raw openremote/manager:{key} > ~/manager-tags-new/{key}")
               os.system("echo 'Tag manifests generated:'")
               os.system("find ~/manager-tags-new")
         env:

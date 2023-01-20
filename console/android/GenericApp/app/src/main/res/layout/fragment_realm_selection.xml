@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.HostSelectionFragment">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/input_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="10dp"
+                android:text="@string/select_the_realm"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/error_view"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_marginTop="7dp"
+                android:layout_marginBottom="7dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/error_red_background"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp"
+                app:layout_constraintBottom_toTopOf="@+id/input_barrier"
+                app:layout_constraintEnd_toEndOf="@id/finish_button"
+                app:layout_constraintStart_toStartOf="@id/input_title"
+                app:layout_constraintTop_toBottomOf="@+id/input_title">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    android:padding="14dp">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center_vertical"
+                        android:src="@drawable/ic_alert_circle" />
+
+                    <TextView
+                        android:id="@+id/error_text_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="10dp"
+                        android:gravity="center_vertical"
+                        android:text="@string/could_not_connect_to_domain"
+                        android:textColor="@color/error_red_text"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/input_barrier"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="realm_spinner, realm_input_layout"
+                app:layout_constraintEnd_toEndOf="@+id/finish_button"
+                app:layout_constraintStart_toStartOf="@+id/input_title"
+                app:layout_constraintTop_toBottomOf="@id/error_view" />
+
+            <Spinner
+                android:id="@+id/realm_spinner"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="14dp"
+                android:background="@color/bright_grey"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="@+id/finish_button"
+                app:layout_constraintStart_toStartOf="@+id/input_title"
+                app:layout_constraintTop_toBottomOf="@id/error_view" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/realm_input_layout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@color/bright_grey"
+                android:hint="@string/realm"
+                android:padding="5dp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="@id/finish_button"
+                app:layout_constraintStart_toStartOf="@id/input_title"
+                app:layout_constraintTop_toBottomOf="@id/error_view">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/realm_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:singleLine="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/finish_button"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:layout_marginEnd="14dp"
+                android:layout_marginBottom="14dp"
+                android:background="@drawable/rounded_corner"
+                android:text="@string/finish"
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/input_barrier" />
+
+            <Button
+                android:id="@+id/back_button"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="14dp"
+                android:background="@color/white"
+                android:text="@string/back"
+                android:textColor="@color/medium_grey"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/input_barrier" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

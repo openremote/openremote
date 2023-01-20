@@ -433,6 +433,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             return;
         }
 
+        if (user.getUsername().equals(MASTER_REALM_ADMIN_USER) && user.getRealm().equals(MASTER_REALM)) {
+            throw new IllegalStateException("Cannot delete master realm admin user");
+        }
+
         getRealms(realmsResource -> {
 
             if (user.isServiceAccount()) {

@@ -20,6 +20,7 @@
 package org.openremote.model;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class PersistenceEvent<T> {
 
@@ -29,14 +30,14 @@ public class PersistenceEvent<T> {
 
     final protected Cause cause;
     final protected T entity;
-    final protected String[] propertyNames;
+    final protected List<String> propertyNames;
     final protected Object[] currentState;
     final protected Object[] previousState;
 
     public PersistenceEvent(Cause cause, T entity, String[] propertyNames, Object[] currentState, Object[] previousState) {
         this.cause = cause;
         this.entity = entity;
-        this.propertyNames = propertyNames;
+        this.propertyNames = propertyNames != null ? Arrays.asList(propertyNames) : null;
         this.currentState = currentState;
         this.previousState = previousState;
     }
@@ -53,7 +54,7 @@ public class PersistenceEvent<T> {
         return entity;
     }
 
-    public String[] getPropertyNames() {
+    public List<String> getPropertyNames() {
         return propertyNames;
     }
 
@@ -65,24 +66,32 @@ public class PersistenceEvent<T> {
         return previousState;
     }
 
+    public boolean hasPropertyChanged(String propertyName) {
+        return propertyNames != null && propertyNames.contains(propertyName);
+    }
+
     @SuppressWarnings("unchecked")
     public <E> E getPreviousState(String propertyName) {
-        return getPreviousState() != null ? (E) getPreviousState()[getPropertyIndex(propertyName)] : null;
+        if (propertyNames == null || previousState == null) {
+            return null;
+        }
+        int index = propertyNames.indexOf(propertyName);
+        if (index < 0) {
+            return null;
+        }
+        return (E) previousState[index];
     }
 
     @SuppressWarnings("unchecked")
     public <E> E getCurrentState(String propertyName) {
-        return (E) getCurrentState()[getPropertyIndex(propertyName)];
-    }
-
-    protected int getPropertyIndex(String propertyName) {
-        for (int i = 0; i < getPropertyNames().length; i++) {
-            String property = getPropertyNames()[i];
-            if (property.equals(propertyName)) {
-                return i;
-            }
+        if (propertyNames == null || currentState == null) {
+            return null;
         }
-        throw new IllegalArgumentException("Property not found: " + propertyName);
+        int index = propertyNames.indexOf(propertyName);
+        if (index < 0) {
+            return null;
+        }
+        return (E) currentState[index];
     }
 
     @Override
@@ -90,7 +99,7 @@ public class PersistenceEvent<T> {
         return getClass().getSimpleName() + "{" +
             "cause=" + cause +
             ", entity=" + entity +
-            ", propertyNames=" + Arrays.toString(propertyNames) +
+            ", propertyNames=" + String.join(",", propertyNames) +
             ", currentState=" + Arrays.toString(currentState) +
             ", previousState=" + Arrays.toString(previousState) +
             '}';

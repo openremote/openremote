@@ -37,7 +37,7 @@ import org.openremote.model.value.MetaItemType;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import static org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
+import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
 import static org.openremote.model.value.ValueType.NUMBER;
 
