@@ -46,8 +46,9 @@ export class OrConfMap extends LitElement {
   protected _loadListOfAvailableRealms(){
     const app = this
     this._availableRealms = this._allRealms.filter(function(realm){
-      if (realm.name && 'realm' in app.config){
-        if (app.config[realm.name]){
+      if (!!realm.name && !!app.config){
+        if (realm.name in app.config){
+          console.log(realm.name)
           return null
         }
       }
@@ -67,7 +68,7 @@ export class OrConfMap extends LitElement {
         if (!this.config){
           this.config = {}
         }
-        this.config[this._addedRealm] = {bounds: ["4.42", "51.88", "4.55", "51.94"], zoom: 0, minZoom: 0, maxZoom: 0}
+        this.config[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
         this._loadListOfAvailableRealms()
         this.requestUpdate()
         return true

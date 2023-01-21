@@ -63,9 +63,10 @@ export class OrConfRealm extends LitElement {
   protected _loadListOfAvailableRealms() {
     const app = this;
     this._availableRealms = this._allRealms.filter(function(realm) {
-      if (realm.name && "realm" in app.config) {
-        if (app.config?.realms[realm.name]) {
-          return null;
+      if (!!realm.name && !!app.config){
+        if (realm.name in app.config){
+          console.log(realm.name)
+          return null
         }
       }
       return realm;
