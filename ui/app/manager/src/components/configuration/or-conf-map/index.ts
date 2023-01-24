@@ -48,7 +48,6 @@ export class OrConfMap extends LitElement {
     this._availableRealms = this._allRealms.filter(function(realm){
       if (!!realm.name && !!app.config){
         if (realm.name in app.config){
-          console.log(realm.name)
           return null
         }
       }
