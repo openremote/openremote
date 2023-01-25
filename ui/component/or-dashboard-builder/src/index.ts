@@ -32,6 +32,7 @@ import {OrWidgetEntity} from "./widgets/or-base-widget";
 import {OrChartWidget} from "./widgets/or-chart-widget";
 import { OrKpiWidget } from "./widgets/or-kpi-widget";
 import { OrGaugeWidget } from "./widgets/or-gauge-widget";
+import {OrMapWidget} from "./widgets/or-map-widget";
 
 // language=CSS
 const styling = css`
@@ -283,6 +284,7 @@ export class OrDashboardBuilder extends LitElement {
         this.registerWidgetType("linechart", new OrChartWidget());
         this.registerWidgetType("kpi", new OrKpiWidget());
         this.registerWidgetType("gauge", new OrGaugeWidget());
+        this.registerWidgetType("map", new OrMapWidget());
 
         this.updateComplete.then(async () => {
             await this.updateDashboards(this.realm!);
