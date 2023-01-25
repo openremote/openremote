@@ -30,7 +30,7 @@ export * from "./or-map-asset-card";
 
 export interface ViewSettings {
     center: LngLatLike;
-    bounds: LngLatBoundsLike;
+    bounds?: LngLatBoundsLike | null;
     zoom: number;
     maxZoom: number;
     minZoom: number;
@@ -430,6 +430,15 @@ export class OrMap extends LitElement {
     @property({type: Boolean})
     public showGeoCodingControl: boolean = false;
 
+    @property({type: Boolean})
+    public showBoundaryBoxControl: boolean = false;
+
+    @property({type: Boolean})
+    public useZoomControl: boolean = true;
+
+    @property({type: Array})
+    public boundary: string[] = [];
+
     public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
@@ -493,6 +502,9 @@ export class OrMap extends LitElement {
         if (changedProperties.has("center") || changedProperties.has("zoom")) {
             this.flyTo(this.center, this.zoom);
         }
+        if (changedProperties.has("boundary") && this.showBoundaryBoxControl){
+            this._map?.createBoundaryBox(this.boundary)
+        }
     }
 
     public refresh() {
@@ -512,7 +524,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer)
+            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer, this.showBoundaryBoxControl, this.useZoomControl)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls);
