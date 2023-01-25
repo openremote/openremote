@@ -203,6 +203,9 @@ export class MapWidget {
             if (!this._center) {
                 this.setCenter(this._viewSettings.center);
             }
+            else {
+                this.setCenter(this._center);
+            }
         }
 
         return settings;
