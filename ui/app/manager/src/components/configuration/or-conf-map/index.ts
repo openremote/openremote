@@ -1,43 +1,26 @@
-/*
- * Copyright 2022, OpenRemote Inc.
- *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 import { css, html, LitElement, PropertyValues } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import "./or-conf-realm-card";
+import "./or-conf-map-card";
 import { customElement, property } from "lit/decorators.js";
 import manager from "@openremote/core";
-import { ManagerAppConfig } from "@openremote/model";
+import { MapConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 
-@customElement("or-conf-realm")
-export class OrConfRealm extends LitElement {
+
+@customElement("or-conf-map")
+export class OrConfMap extends LitElement {
+
 
   static styles = css`
     #btn-add-realm {
       margin-top: 4px;
     }
-    `;
+  `;
 
   @property({attribute: false})
-  public config: ManagerAppConfig = {};
+  public config: MapConfig = {};
 
   protected _availableRealms: {name:string, displayName:string}[] = [];
   protected _allRealms: {name:string, displayName:string}[] = [];
@@ -53,40 +36,38 @@ export class OrConfRealm extends LitElement {
   }
 
   protected _removeRealm(realm:string){
-    if (this.config.realms){
-      delete this.config?.realms[realm]
+    if (this.config){
+      delete this.config[realm]
       this._loadListOfAvailableRealms()
       this.requestUpdate()
     }
   }
 
-  protected _loadListOfAvailableRealms() {
-    const app = this;
-    this._availableRealms = this._allRealms.filter(function(realm) {
+  protected _loadListOfAvailableRealms(){
+    const app = this
+    this._availableRealms = this._allRealms.filter(function(realm){
       if (!!realm.name && !!app.config){
-        if (realm.name in app.config?.realms){
+        if (realm.name in app.config){
           return null
         }
       }
-      return realm;
-    }).sort(function(a, b) {
-      if (a.displayName && b.displayName) {
-        return (a.displayName > b.displayName) ? 1 : -1;
+      return realm
+    }).sort(function(a, b){
+      if (a.displayName && b.displayName){
+        return (a.displayName > b.displayName) ? 1 : -1
       }
-      return -1;
-    });
+      return -1
+    })
   }
 
   protected _showAddingRealmDialog(){
     this._addedRealm = null;
     const _AddRealmToView =  () => {
       if (this._addedRealm){
-        if (!this.config.realms){
-          this.config.realms = {}
+        if (!this.config){
+          this.config = {}
         }
-        this.config.realms[this._addedRealm] = {
-          styles: ":host > * {--or-app-color1:#FFFFFF;--or-app-color2:#F9F9F9;--or-app-color3:#4c4c4c;--or-app-color4:#4d9d2a;--or-app-color5:#CCCCCC;--or-app-color6:#be0000;"
-      }
+        this.config[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
         this._loadListOfAvailableRealms()
         this.requestUpdate()
         return true
@@ -107,7 +88,7 @@ export class OrConfRealm extends LitElement {
 
     ];
     const dialog = showDialog(new OrMwcDialog()
-      .setHeading(i18next.t('configuration.addRealmCustomization'))
+      .setHeading(i18next.t('configuration.addMapCustomization'))
       .setActions(dialogActions)
       .setContent(html `
         <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
@@ -144,12 +125,14 @@ export class OrConfRealm extends LitElement {
     const app = this;
     return html`
       <div class="panels">
-        ${Object.entries(this.config.realms === undefined ? {} : this.config.realms).map(function([key , value]){
-          return html`<or-conf-realm-card .expanded="${app._addedRealm === key}" .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
-        })}
+        ${Object.entries(this.config === undefined ? {} : this.config).map(([key , value]) => {
+      return html`<or-conf-map-card .expanded="${app._addedRealm === key}" .name="${key}" .map="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-map-card>`
+    })}
       </div>
       
-      <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addRealmCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
+      <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addMapCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
     `
   }
+
+
 }
