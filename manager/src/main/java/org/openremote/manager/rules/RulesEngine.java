@@ -543,7 +543,7 @@ public class RulesEngine<T extends Ruleset> {
                     // Reset facts for this firing (loop detection etc.)
                     facts.reset();
 
-                    long startTimestamp = System.currentTimeMillis();
+                    long startTimestamp = timerService.getCurrentTimeMillis();
                     lastFireTimestamp = startTimestamp;
                     engine.fire(deployment.getRules(), facts);
                     long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
