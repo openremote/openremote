@@ -184,7 +184,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         // See if a custom handler wants to handle authorisation for this topic pub/sub
         for (MQTTHandler handler : brokerService.getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.finer("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + brokerService.connectionToString(connection));
+                LOG.finest("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + brokerService.connectionToString(connection));
                 boolean result;
 
                 if (isWrite) {
@@ -193,15 +193,15 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                     result = handler.checkCanSubscribe(connection, securityContext, topic);
                 }
                 if (result) {
-                    LOG.finer("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+                    LOG.finest("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
                 } else {
-                    LOG.finer("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+                    LOG.finest("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
                 }
                 return result;
             }
         }
 
-        LOG.info("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+        LOG.info("Un-supported request " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
         return false;
     }
 

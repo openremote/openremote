@@ -123,8 +123,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
                             }
                         }
                     })
-                    .otherwise()
-                    .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
             }
         });
@@ -196,7 +194,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
-            LOG.finer("Identity provider is not keycloak");
+            LOG.finest("Identity provider is not keycloak");
             return false;
         }
 
@@ -293,7 +291,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
-            LOG.finer("Identity provider is not keycloak");
+            LOG.finest("Identity provider is not keycloak");
             return false;
         }
 

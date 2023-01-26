@@ -164,7 +164,7 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
                 .collect(Collectors.toList());
 
             if (!obsoleteAssetIds.isEmpty()) {
-                LOG.finer("Removing " + obsoleteAssetIds.size() + " obsolete asset(s): " + this);
+                LOG.finest("Removing " + obsoleteAssetIds.size() + " obsolete asset(s): " + this);
                 assetService.deleteAssets(obsoleteAssetIds.toArray(new String[0]));
             }
 
@@ -189,7 +189,7 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
             });
 
             if (!obsoleteAssetIds.isEmpty()) {
-                LOG.finer("Removing " + obsoleteAssetIds.size() + " obsolete asset(s): " + this);
+                LOG.finest("Removing " + obsoleteAssetIds.size() + " obsolete asset(s): " + this);
                 obsoleteAssetIds.forEach(this::removeDevice);
                 assetService.deleteAssets(obsoleteAssetIds.toArray(new String[0]));
             }

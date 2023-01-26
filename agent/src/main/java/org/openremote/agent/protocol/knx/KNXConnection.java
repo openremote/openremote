@@ -101,7 +101,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
                 onConnectionStatusChanged(ConnectionStatus.CONNECTED);
 
                 // Get the values of all registered group addresses
-                LOG.finer("Initialising group address values");
+                LOG.finest("Initialising group address values");
                 synchronized (groupAddressConsumerMap) {
                     groupAddressConsumerMap.forEach((groupAddress, datapointConsumerList) -> {
                         if (!datapointConsumerList.isEmpty()) {
@@ -167,7 +167,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     public void sendCommand(Datapoint datapoint, Optional<Object> value) {
         try {
             if (this.connectionStatus == ConnectionStatus.CONNECTED && value.isPresent()) {
-                LOG.finer("Sending to KNX action datapoint '" + datapoint + "': " + value);
+                LOG.finest("Sending to KNX action datapoint '" + datapoint + "': " + value);
                 Object val = value.get();
                 DPTXlator translator = TypeMapper.toDPTXlator(datapoint, val);
                 processCommunicator.write(datapoint.getMainAddress(), translator);
@@ -301,12 +301,12 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
 
     protected void getGroupAddressValue(GroupAddress groupAddress, Priority priority) {
         if (knxLink == null || !knxLink.isOpen()) {
-            LOG.finer("Cannot send read request not currently connected: " + groupAddress);
+            LOG.finest("Cannot send read request not currently connected: " + groupAddress);
             return;
         }
 
         try {
-            LOG.finer("Sending read request to KNX group address: " + groupAddress);
+            LOG.finest("Sending read request to KNX group address: " + groupAddress);
             this.knxLink.sendRequest(groupAddress, priority, DataUnitBuilder.createLengthOptimizedAPDU(0x00, null));
         } catch (Exception e) {
             LOG.log(Level.INFO, "Error sending KNX read request for group address: " + groupAddress, e);

@@ -249,7 +249,7 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
 
     @Override
     public void disconnectClient(U client) {
-        LOG.finer("Disconnecting client: " + getClientDescriptor(client));
+        LOG.finest("Disconnecting client: " + getClientDescriptor(client));
         client.close();
     }
 

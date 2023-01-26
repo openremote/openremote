@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.lang.System.Logger.Level.WARNING;
 import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
 /**
@@ -116,7 +117,7 @@ public abstract class MQTTHandler {
                 RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
 
                 if (connection == null) {
-                    LOG.warning("Failed to find connection for connected client so dropping publish to topic '" + topic + "': clientID=" +  clientID);
+                    LOG.log(WARNING, "Failed to find connection for connected client so dropping publish to topic '" + topic + "': clientID=" +  clientID);
                     return;
                 }
 

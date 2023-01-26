@@ -202,7 +202,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
 
             if (connectionStatus != ConnectionStatus.DISCONNECTED) {
-                LOG.finer("Must be disconnected before calling connect: " + getClientUri());
+                LOG.finest("Must be disconnected before calling connect: " + getClientUri());
                 return;
             }
 
@@ -344,7 +344,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     protected void doDisconnect() {
-        LOG.finer("Performing disconnect: " + getClientUri());
+        LOG.finest("Performing disconnect: " + getClientUri());
         try {
             if (channelStartFuture != null) {
                 channelStartFuture.cancel(true);
@@ -363,7 +363,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 workerGroup = null;
             }
         }
-        LOG.finer("Disconnect done: " + getClientUri());
+        LOG.finest("Disconnect done: " + getClientUri());
     }
 
     @Override

@@ -905,12 +905,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                 // Handle removed roles
                 existingRealmRoles.stream().filter(realmRole -> !realmRoles.contains(realmRole)).forEach(realmRole -> {
-                    LOG.finer("Removing realm role + " + realmRole);
+                    LOG.finest("Removing realm role + " + realmRole);
                     rolesResource.deleteRole(realmRole.getName());
                 });
                 // Handle added roles
                 realmRoles.stream().filter(realmRole -> !existingRealmRoles.contains(realmRole)).forEach(realmRole -> {
-                    LOG.finer("Adding realm role + " + realmRole);
+                    LOG.finest("Adding realm role + " + realmRole);
                     rolesResource.create(new RoleRepresentation(realmRole.getName(), realmRole.getDescription(), false));
                 });
             }
@@ -949,7 +949,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 List<RoleRepresentation> existingRealmRoles = rolesResource.list();
                 realm.getNormalisedRealmRoles().stream().filter(realmRole -> existingRealmRoles.stream().noneMatch(roleRepresentation -> roleRepresentation.getName().equals(realmRole.getName())))
                 .forEach(realmRole -> {
-                    LOG.finer("Adding realm role + " + realmRole);
+                    LOG.finest("Adding realm role + " + realmRole);
                     rolesResource.create(new RoleRepresentation(realmRole.getName(), realmRole.getDescription(), false));
                 });
 

@@ -35,12 +35,13 @@ dependencies {
 
     implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
         exclude group: "org.osgi"
-        exclude group: "org.jboss.logging"
+        exclude group: "org.jboss.logmanager"
     }
 
     // Needed for reference in tests
     api("org.apache.activemq:artemis-server:$activeMQVersion") {
         exclude group: "org.osgi"
+        exclude group: "org.jboss.logmanager"
     }
 
     implementation("org.quartz-scheduler:quartz:$quartzVersion") {
@@ -48,6 +49,8 @@ dependencies {
     }
 
     implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
+
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }
 
 jar {

@@ -278,14 +278,14 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         X509ProvisioningConfig matchingConfig = getMatchingX509ProvisioningConfig(connection, clientCertificate);
 
         if (matchingConfig == null) {
-            LOG.finer("No matching provisioning config found for client certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection));
+            LOG.finest("No matching provisioning config found for client certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         // Check if config is disabled
         if (matchingConfig.isDisabled()) {
-            LOG.finer("Matching provisioning config is disabled for client certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection));
+            LOG.finest("Matching provisioning config is disabled for client certificate: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -295,13 +295,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         String uniqueId = topicTokenIndexToString(topic, 1);
 
         if (TextUtil.isNullOrEmpty(certUniqueId)) {
-            LOG.finer("Client X.509 certificate missing unique ID in subject CN: topic=" + topic+ mqttBrokerService.connectionToString(connection));
+            LOG.finest("Client X.509 certificate missing unique ID in subject CN: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         if (TextUtil.isNullOrEmpty(uniqueId) || !certUniqueId.equals(uniqueId)) {
-            LOG.finer("Client X.509 certificate unique ID doesn't match topic unique ID: topic=" + topic+ mqttBrokerService.connectionToString(connection));
+            LOG.finest("Client X.509 certificate unique ID doesn't match topic unique ID: topic=" + topic+ mqttBrokerService.connectionToString(connection));
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
             return;
         }
@@ -321,7 +321,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
             if (serviceUser != null) {
                 if (!serviceUser.getEnabled()) {
-                    LOG.finer("Client service user has been disabled: topic=" + topic+ mqttBrokerService.connectionToString(connection));
+                    LOG.finest("Client service user has been disabled: topic=" + topic+ mqttBrokerService.connectionToString(connection));
                     mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
                     return;
                 }
@@ -421,7 +421,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     protected User createClientServiceUser(String realm, String username, ProvisioningConfig<?, ?> provisioningConfig) {
-        LOG.finer("Creating client service user: realm=" + realm + ", username=" + username);
+        LOG.finest("Creating client service user: realm=" + realm + ", username=" + username);
 
         User serviceUser = new User()
             .setServiceAccount(true)
@@ -432,7 +432,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret, true);
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
-            LOG.finer("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
+            LOG.finest("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
             identityProvider.updateUserRoles(
                 realm,
                 serviceUser.getId(),
@@ -440,11 +440,11 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                 Arrays.stream(provisioningConfig.getUserRoles()).map(ClientRole::getValue).toArray(String[]::new)
             );
         } else {
-            LOG.finer("No user roles defined: realm=" + realm + ", username=" + username);
+            LOG.finest("No user roles defined: realm=" + realm + ", username=" + username);
         }
 
         if (provisioningConfig.isRestrictedUser()) {
-            LOG.finer("User will be made restricted: realm=" + realm + ", username=" + username);
+            LOG.finest("User will be made restricted: realm=" + realm + ", username=" + username);
             identityProvider.updateUserRealmRoles(realm, serviceUser.getId(), identityProvider.addRealmRoles(realm, serviceUser.getId(),RESTRICTED_USER_REALM_ROLE));
         }
 
@@ -454,7 +454,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     }
 
     protected Asset<?> createClientAsset(String realm, String assetId, String uniqueId, User serviceUser, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
-        LOG.finer("Creating client asset: realm=" + realm + ", username=" + serviceUser.getUsername());
+        LOG.finest("Creating client asset: realm=" + realm + ", username=" + serviceUser.getUsername());
 
         if (TextUtil.isNullOrEmpty(provisioningConfig.getAssetTemplate())) {
             return null;

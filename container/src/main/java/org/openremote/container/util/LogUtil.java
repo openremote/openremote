@@ -19,8 +19,9 @@
  */
 package org.openremote.container.util;
 
-import org.jboss.logmanager.ConfigurationLocator;
 import org.openremote.model.util.TextUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,12 +29,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
+import java.util.logging.LogManager;
 
 import static org.openremote.model.Container.OR_DEV_MODE;
 
 /**
- * If system property <code>java.util.logging.config.file</code> has not been set, try to load the
- * logging configuration specified in environment variable <code>OR_LOGGING_CONFIG_FILE</code> as a file.
+ * If system property <code>java.util.logging.config.file</code> or <code>java.util.logging.config.file</code> has been
+ * set then the normal {@link LogManager#readConfiguration()} will be used, otherwise try to load the logging
+ * configuration specified in environment variable <code>OR_LOGGING_CONFIG_FILE</code> as a file.
  * If this wasn't set, try to find the file <code>/deployment/manager/logging.properties</code>.
  * If this also wasn't found, load the given default logging configuration from the classpath
  * (logging-dev.properties when OR_DEV_MODE=true otherwise logging.properties).
@@ -41,44 +44,51 @@ import static org.openremote.model.Container.OR_DEV_MODE;
  * This method should be called in a <code>static { ... }</code> block in the "first" class of your
  * application (typically where your <code>main()</code> method is located).
  */
-public class LogConfigurationLocator implements ConfigurationLocator {
+public class LogUtil {
 
+    protected static final Logger LOG = LoggerFactory.getLogger(LogUtil.class);
     public static final String OR_LOGGING_CONFIG_FILE = "OR_LOGGING_CONFIG_FILE";
 
-    @Override
-    public InputStream findConfiguration() throws IOException {
+    public static void initialiseJUL() throws ExceptionInInitializerError {
 
-        // Use JUL configuration property if set
-        boolean julConfigSet = !TextUtil.isNullOrEmpty(System.getProperty("java.util.logging.config.file"));
-        if (julConfigSet) {
-            InputStream configFile = getFileInputStream(System.getProperty("java.util.logging.config.file"));
-
-            if (configFile != null) {
-                System.out.println("Using logging configuration: " + System.getProperty("java.util.logging.config.file"));
-                return configFile;
-            }
-
-            throw new IOException("Cannot access specified logging configuration: " + System.getProperty("java.util.logging.config.file"));
+        // Don't do anything if standard JUL system properties set
+        if (!TextUtil.isNullOrEmpty(System.getProperty("java.util.logging.config.class"))) {
+            LOG.info("Using specified java.util.logging.config.class system property: " + System.getProperty("java.util.logging.config.class"));
+            return;
+        }
+        if (!TextUtil.isNullOrEmpty(System.getProperty("java.util.logging.config.file"))) {
+            LOG.info("Using specified java.util.logging.config.file system property: " + System.getProperty("java.util.logging.config.file"));
+            return;
         }
 
-        // Use env variable config file
+        InputStream configFile = getConfigInputStream();
+        if (configFile != null) {
+            try {
+                LogManager.getLogManager().readConfiguration(configFile);
+            } catch (IOException ex) {
+                throw new ExceptionInInitializerError(ex);
+            }
+        }
+    }
+
+    protected static InputStream getConfigInputStream() {
+
+        // Look for env variable config file
         boolean envConfigFileSet = !TextUtil.isNullOrEmpty(System.getenv(OR_LOGGING_CONFIG_FILE));
         if (envConfigFileSet) {
             InputStream configFile = getFileInputStream(System.getenv(OR_LOGGING_CONFIG_FILE));
 
             if (configFile != null) {
-                System.out.println("Using logging configuration: " + System.getenv(OR_LOGGING_CONFIG_FILE));
+                LOG.info("Using logging configuration: " + System.getenv(OR_LOGGING_CONFIG_FILE));
                 return configFile;
             }
 
             // Look for the file on the classpath
             configFile = Thread.currentThread().getContextClassLoader().getResourceAsStream(System.getenv(OR_LOGGING_CONFIG_FILE));
             if (configFile != null) {
-                System.out.println("Using logging configuration from classpath: " + System.getenv(OR_LOGGING_CONFIG_FILE));
+                LOG.info("Using logging configuration from classpath: " + System.getenv(OR_LOGGING_CONFIG_FILE));
                 return configFile;
             }
-
-            throw new IOException("Cannot access specified logging configuration: " + System.getenv(OR_LOGGING_CONFIG_FILE));
         }
 
         // Use built in config on the classpath
@@ -88,14 +98,14 @@ public class LogConfigurationLocator implements ConfigurationLocator {
         InputStream configFile = org.openremote.model.Container.class.getClassLoader().getResourceAsStream(loggingFile);
 
         if (configFile != null) {
-            System.out.println("Using built in logging configuration from classpath: " + loggingFile);
+            LOG.info("Using built in logging configuration from classpath: " + loggingFile);
             return configFile;
         }
 
-        throw new IOException("Cannot access specified logging configuration: " + loggingFile);
+        return null;
     }
 
-    protected InputStream getFileInputStream(String path) {
+    protected static InputStream getFileInputStream(String path) {
         if (TextUtil.isNullOrEmpty(path)) {
             return null;
         }

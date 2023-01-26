@@ -20,7 +20,6 @@
 package org.openremote.manager.asset;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
@@ -49,6 +48,7 @@ import org.openremote.model.value.ValueType;
 
 import javax.persistence.EntityManager;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -213,14 +213,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             // Check realm against user
             if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
                 requestedRealm)) {
-                LOG.finest("Realm is inactive, inaccessible or nonexistent: " + requestedRealm);
+                LOG.info("Realm is inactive, inaccessible or nonexistent: " + requestedRealm);
                 return false;
             }
 
             // Users must have write attributes role
             if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
                 Constants.KEYCLOAK_CLIENT_ID)) {
-                LOG.finest("User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                LOG.fine("User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
                 return false;
             }
 
@@ -231,10 +231,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getAttributeName()).orElse(null) : null;
 
             if (asset == null || !asset.hasAttribute(attributeEvent.getAttributeName())) {
-                LOG.finest("Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getAssetId());
+                LOG.info("Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getAssetId());
                 return false;
             } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
-                LOG.finest("Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getAttributeRef());
+                LOG.info("Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getAttributeRef());
                 return false;
             }
 
@@ -244,19 +244,19 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     // Must be asset linked to user
                     if (!assetStorageService.isUserAsset(authContext.getUserId(),
                         attributeEvent.getAssetId())) {
-                        LOG.finest("Restricted user is not linked to asset '" + attributeEvent.getAssetId() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                        LOG.fine("Restricted user is not linked to asset '" + attributeEvent.getAssetId() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
                         return false;
                     }
 
                     if (attribute == null || !attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
-                        LOG.finest("Asset attribute doesn't support restricted write on '" + attributeEvent.getAttributeRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                        LOG.fine("Asset attribute doesn't support restricted write on '" + attributeEvent.getAttributeRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
                         return false;
                     }
                 }
             } else {
                 // Check attribute has public write flag for anonymous write
                 if (attribute == null || !attribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
-                    LOG.finest("Asset doesn't support public write on '" + attributeEvent.getAttributeRef() + "': username=null");
+                    LOG.fine("Asset doesn't support public write on '" + attributeEvent.getAttributeRef() + "': username=null");
                     return false;
                 }
             }
@@ -295,6 +295,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .to(ASSET_QUEUE);
 
         // Process attribute events
+        // TODO: Make SENDER much more granular (switch to microservices with RBAC)
+        // TODO: Unify logging of attribute updates
         /* TODO This message consumer should be transactionally consistent with the database, this is currently not the case
 
          Our "if I have not processed this message before" duplicate detection:
@@ -427,7 +429,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                     // Push through all processors
                     processAssetUpdate(em, asset, updatedAttribute, source);
-                    LOG.fine("Attribute event processed in " + (System.currentTimeMillis() - lastProcessedEventTimestamp) + "ms: " + event.getAttributeRef());
                 });
             }))
             .endDoTry()
@@ -465,14 +466,22 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                          Attribute<?> attribute,
                                          Source source) throws AssetProcessingException {
 
-        String attributeStr = "Asset ID=" + asset.getId() + ", Asset name=" + asset.getName() + ", " + attribute;
+        Supplier<String> attributeStrSupplier = () -> "Asset ID=" + asset.getId() + ", Asset name=" + asset.getName() + ", " + attribute;
 
-        LOG.finest(">>> Processing start: " + attributeStr);
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(">>> Attribute event processing start: " + attributeStrSupplier.get());
+        }
+
         String consumerProcessor = null;
-
         boolean complete = false;
+        long startMillis = System.currentTimeMillis();
+
         for (AssetUpdateProcessor processor : processors) {
-            LOG.finest("==> Processor " + processor + " accepts: " + attributeStr);
+
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("==> Processor " + processor + " accepts: " + attributeStrSupplier.get());
+            }
+
             try {
                 complete = processor.processAssetUpdate(em, asset, attribute, source);
             } catch (AssetProcessingException ex) {
@@ -485,10 +494,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 );
             }
             if (complete) {
-                if (LOG.isLoggable(Level.FINEST)) {
-                    consumerProcessor = processor.toString();
-                    LOG.finest("<== Processor " + consumerProcessor + " completely consumed: " + attributeStr);
-                }
+                consumerProcessor = processor.toString();
                 break;
             }
         }
@@ -501,10 +507,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
         }
 
-        if (consumerProcessor != null) {
-            LOG.finest("<<< Processing complete - completely consumed by '" + consumerProcessor +"': " + attributeStr);
-        } else {
-            LOG.finest("<<< Processing complete - not consumed: " + attributeStr);
+
+        if (LOG.isLoggable(Level.FINE)) {
+            LOG.fine("<<< Attribute event processed in " + (System.currentTimeMillis() - startMillis) + "ms: attribute=" + attributeStrSupplier.get() + ", consumer=" + consumerProcessor);
         }
         return complete;
     }
