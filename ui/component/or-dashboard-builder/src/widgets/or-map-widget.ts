@@ -123,11 +123,10 @@ export class OrMapWidgetContent extends LitElement {
     /* ---------- */
 
     render() {
-        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as MapWidgetConfig;
         this.markers = {};
         return html`
-            <or-map id="miniMap" class="or-map" .zoom="${config.zoom ? config.zoom! : undefined}"
-                    .center="${config.center ? config.center! : undefined}"
+            <or-map id="miniMap" class="or-map" .zoom="${this.widget!.widgetConfig.zoom ? this.widget!.widgetConfig.zoom! : undefined}"
+                    .center="${this.widget!.widgetConfig.center ? this.widget!.widgetConfig.center! : undefined}"
                     style="height: 100%">
                 ${(this.assets) ?
                         this.assets.filter((asset: Asset) => {
@@ -220,7 +219,7 @@ class OrMapWidgetSettings extends LitElement {
     private assetTypes: string[] = [];
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('map')];
+    private expandedPanels: string[] = [i18next.t('map'), i18next.t('display')];
 
 
     static get styles() {
@@ -302,6 +301,17 @@ class OrMapWidgetSettings extends LitElement {
                 </div>
             ` : null}
         `
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        if(!this.widget?.widgetConfig.zoom && !this.widget?.widgetConfig.center){
+            manager.rest.api.MapResource.getSettings().then((response) => {
+                this.widget!.widgetConfig.zoom = response.data.options.default.zoom;
+                this.widget!.widgetConfig.center = response.data.options.default.center;
+                this.updateConfig(this.widget!, this.widget!.widgetConfig);
+            })
+        }
     }
 
     updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
