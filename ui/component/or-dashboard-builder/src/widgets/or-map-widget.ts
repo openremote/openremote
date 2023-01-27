@@ -219,7 +219,7 @@ class OrMapWidgetSettings extends LitElement {
     private assetTypes: string[] = [];
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('map'), i18next.t('display')];
+    private expandedPanels: string[] = [i18next.t('configuration.mapSettings'), i18next.t('attributes'), i18next.t('thresholds')];
 
 
     static get styles() {
@@ -232,15 +232,15 @@ class OrMapWidgetSettings extends LitElement {
         const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
         return html`
             <div>
-                ${this.generateExpandableHeader(i18next.t('map'))}
+                ${this.generateExpandableHeader(i18next.t('configuration.mapSettings'))}
             </div>
             <div>
-                ${this.expandedPanels.includes(i18next.t('map')) ? html`
+                ${this.expandedPanels.includes(i18next.t('configuration.mapSettings')) ? html`
                     <div style="padding: 12px 24px 48px 24px; display: flex; flex-direction: column; gap: 16px;">
 
                         <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;"
-                                          .value="${config.zoom}" label="${i18next.t('zoom')}"
+                                          .value="${this.widget?.widgetConfig.zoom}" label="${i18next.t('dashboard.zoom')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               config.zoom = event.detail.value;
                                               this.updateConfig(this.widget!, config);
@@ -249,16 +249,15 @@ class OrMapWidgetSettings extends LitElement {
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;"
-                                          .value="${config.center ? 'Lat: ' + (Object.values(config.center))[1] + ', Lng: ' + (Object.values(config.center))[0] : undefined}"
-                                          label="${i18next.t('center')}"
-                                          .pattern="${CoordinatesRegexPattern}"
+                                          .value="${this.widget?.widgetConfig.center ? (Object.values(this.widget.widgetConfig.center))[0] + ', ' + (Object.values(this.widget.widgetConfig.center))[1] : undefined}"
+                                          label="${i18next.t('dashboard.center')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               if (event.detail.value) {
-                                                  const lngLatArr = (event.detail.value as string).replace('Lat:', '').replace('Lng:', '').split(/[, ]/).filter(v => !!v);
+                                                  const lngLatArr = (event.detail.value as string).split(/[, ]/).filter(v => !!v);
                                                   if (lngLatArr.length === 2) {
                                                       var value = new LngLat(
-                                                              Number.parseFloat(lngLatArr[1]),
-                                                              Number.parseFloat(lngLatArr[0])
+                                                              Number.parseFloat(lngLatArr[0]),
+                                                              Number.parseFloat(lngLatArr[1])
                                                       );
                                                       config.center = value as LngLatLike;
                                                       this.updateConfig(this.widget!, config);
@@ -273,10 +272,10 @@ class OrMapWidgetSettings extends LitElement {
                 ` : null}
             </div>
             <div>
-                ${this.generateExpandableHeader(i18next.t('display'))}
+                ${this.generateExpandableHeader(i18next.t('attributes'))}
             </div>
             <div>
-                ${this.expandedPanels.includes(i18next.t('display')) ? html`
+                ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.ASSETTYPES}"
                                                 .widgetConfig="${this.widget?.widgetConfig}"
                                                 @updated="${(event: CustomEvent) => {
@@ -303,8 +302,7 @@ class OrMapWidgetSettings extends LitElement {
         `
     }
 
-    connectedCallback() {
-        super.connectedCallback();
+    updated(changedProperties: Map<string, any>){
         if(!this.widget?.widgetConfig.zoom && !this.widget?.widgetConfig.center){
             manager.rest.api.MapResource.getSettings().then((response) => {
                 this.widget!.widgetConfig.zoom = response.data.options.default.zoom;
