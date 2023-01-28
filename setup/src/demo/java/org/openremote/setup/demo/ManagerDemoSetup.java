@@ -66,8 +66,9 @@ public class ManagerDemoSetup extends ManagerSetup {
     public String energyManagementId;
     public String weatherHttpApiAgentId;
 
-    public String irrigation4Id;
-    public String irrigation5Id;
+    public String harvestRobot1Id;
+    public String harvestRobot2Id;
+    public String environmentSensor1Id;
 
     private final long halfHourInMillis = Duration.ofMinutes(30).toMillis();
 
@@ -84,7 +85,7 @@ public class ManagerDemoSetup extends ManagerSetup {
     }
 
     // ################################ Realm manufacturer methods ###################################
-
+    // TODO: greenhouse locations: 51.979143, 4.278692 -- 51.987146, 4.528056 -- 51.986913, 4.408141
     protected HarvestRobotAsset createDemoHarvestRobotAsset(String name, Asset<?> parent, GeoJSONPoint location,
             OperationMode operationMode, VegetableType vegetableType) {
         HarvestRobotAsset harvestRobotAsset = new HarvestRobotAsset(name);
@@ -136,7 +137,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Realm realmMaster = keycloakDemoSetup.realmMaster;
         Realm realmCity = keycloakDemoSetup.realmCity;
-        Realm realmManufacturer = keycloakDemoSetup.realmManufacturer;
+        Realm realmManufacturer = KeycloakDemoSetup.realmManufacturer;
         realmMasterName = realmMaster.getName();
         this.realmCityName = realmCity.getName();
         this.realmManufacturerName = realmManufacturer.getName();
@@ -1673,30 +1674,33 @@ public class ManagerDemoSetup extends ManagerSetup {
         
         // ################################ Manufacturer realm assets ###################################
         
-        // ### GreenHouse Specialist ###
+        // ### Greenhouse equipment distribution ###
 
-        Asset<?> greenhouseSpecialist = new ThingAsset("GreenHouse Specialist");
-        greenhouseSpecialist.setRealm(this.realmManufacturerName);
-        greenhouseSpecialist.setId(UniqueIdentifierGenerator.generateId(greenhouseSpecialist.getName()));
-        greenhouseSpecialist = assetStorageService.merge(greenhouseSpecialist);
+        Asset<?> distributor1 = new ThingAsset("Greenhouse Equipment Distribution");
+        distributor1.setRealm(this.realmManufacturerName);
+        distributor1.setId(UniqueIdentifierGenerator.generateId(distributor1.getName()));
+        distributor1 = assetStorageService.merge(distributor1);
 
         Asset<?> vegetablesAndMore = new ThingAsset("Vegetables & More");
-        vegetablesAndMore.setParent(greenhouseSpecialist);
+        vegetablesAndMore.setParent(distributor1);
         vegetablesAndMore.setId(UniqueIdentifierGenerator.generateId(vegetablesAndMore.getName()));
         vegetablesAndMore = assetStorageService.merge(vegetablesAndMore);
 
         HarvestRobotAsset harvestRobot1 = createDemoHarvestRobotAsset("Robot 1", vegetablesAndMore, new GeoJSONPoint(4.482669, 51.916436), OperationMode.CUTTING, VegetableType.BELL_PEPPER);
         harvestRobot1.setId(UniqueIdentifierGenerator.generateId(harvestRobot1.getName()));
+        harvestRobot1Id = harvestRobot1.getId();
         harvestRobot1 = assetStorageService.merge(harvestRobot1);   
         HarvestRobotAsset harvestRobot2 = createDemoHarvestRobotAsset("Robot 2", vegetablesAndMore, new GeoJSONPoint(4.482669, 51.916436), OperationMode.SCANNING, VegetableType.BELL_PEPPER);
         harvestRobot2.setId(UniqueIdentifierGenerator.generateId(harvestRobot2.getName()));
+        harvestRobot2Id = harvestRobot2.getId();
         harvestRobot2 = assetStorageService.merge(harvestRobot2); 
         EnvironmentSensorAsset environmentSensor1 = createDemoEnvironmentAsset("Climate", vegetablesAndMore, new GeoJSONPoint(4.480434, 51.899287), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         environmentSensor1.setId(UniqueIdentifierGenerator.generateId(environmentSensor1.getName()));
-        environmentSensor1 = assetStorageService.merge(environmentSensor1); 
+        environmentSensor1Id = environmentSensor1.getId();
+        environmentSensor1 = assetStorageService.merge(environmentSensor1);
  
         Asset<?> moreauHorticulture = new ThingAsset("Moreau Horticulture");
-        moreauHorticulture.setParent(greenhouseSpecialist);
+        moreauHorticulture.setParent(distributor1);
         moreauHorticulture.setId(UniqueIdentifierGenerator.generateId(moreauHorticulture.getName()));
         moreauHorticulture = assetStorageService.merge(moreauHorticulture);
 
@@ -1712,21 +1716,26 @@ public class ManagerDemoSetup extends ManagerSetup {
         irrigation3.setId(UniqueIdentifierGenerator.generateId(irrigation3.getName()));
         irrigation3 = assetStorageService.merge(irrigation3);
         irrigation4.setId(UniqueIdentifierGenerator.generateId(irrigation4.getName()));
-        irrigation4Id = irrigation4.getId();
-        irrigation4 = assetStorageService.merge(irrigation4); 
+        irrigation4 = assetStorageService.merge(irrigation4);
         irrigation5.setId(UniqueIdentifierGenerator.generateId(irrigation5.getName()));
-        irrigation5Id = irrigation5.getId();
         irrigation5 = assetStorageService.merge(irrigation5);
         EnvironmentSensorAsset environmentSensor2 = createDemoEnvironmentAsset("Air Quality", moreauHorticulture, new GeoJSONPoint(4.480434, 51.899287), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         environmentSensor2.setId(UniqueIdentifierGenerator.generateId(environmentSensor2.getName()));
         environmentSensor2 = assetStorageService.merge(environmentSensor2);
 
-        Asset<?> bertHaanen = new ThingAsset("Bert Haanen");
-        bertHaanen.setParent(greenhouseSpecialist);
+        // ### Distributor 2 ###
+
+        Asset<?> distributor2 = new ThingAsset("High-Tech Greenhouse Distribution");
+        distributor2.setRealm(this.realmManufacturerName);
+        distributor2.setId(UniqueIdentifierGenerator.generateId(distributor2.getName()));
+        distributor2 = assetStorageService.merge(distributor2);
+
+        Asset<?> bertHaanen = new ThingAsset("Haanen Vegetables BV");
+        bertHaanen.setParent(distributor2);
         bertHaanen.setId(UniqueIdentifierGenerator.generateId(bertHaanen.getName()));
         bertHaanen = assetStorageService.merge(bertHaanen);
 
-        HarvestRobotAsset harvestRobot3 = createDemoHarvestRobotAsset("Plukrobot", bertHaanen, new GeoJSONPoint(4.482669, 51.916436), OperationMode.UNLOADING, VegetableType.TOMATO);
+        HarvestRobotAsset harvestRobot3 = createDemoHarvestRobotAsset("Harvester", bertHaanen, new GeoJSONPoint(4.482669, 51.916436), OperationMode.UNLOADING, VegetableType.TOMATO);
         harvestRobot3.setId(UniqueIdentifierGenerator.generateId(harvestRobot3.getName()));
         harvestRobot3 = assetStorageService.merge(harvestRobot3);
 
@@ -1735,10 +1744,13 @@ public class ManagerDemoSetup extends ManagerSetup {
         assetStorageService.storeUserAssetLinks(Arrays.asList(
                 new UserAssetLink(KeycloakDemoSetup.realmManufacturer.getName(),
                         KeycloakDemoSetup.customerUserId,
-                        irrigation5Id),
+                        harvestRobot1Id),
                 new UserAssetLink(KeycloakDemoSetup.realmManufacturer.getName(),
                         KeycloakDemoSetup.customerUserId,
-                        irrigation4Id)));
+                        harvestRobot2Id),
+                new UserAssetLink(KeycloakDemoSetup.realmManufacturer.getName(),
+                        KeycloakDemoSetup.customerUserId,
+                        environmentSensor1Id)));
 
         // ################################ Make user restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
