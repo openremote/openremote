@@ -459,7 +459,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     }
 
     public String toStringAll() {
-        return "Asset{" +
+        return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
             ", version=" + version +
             ", createdOn=" + createdOn +

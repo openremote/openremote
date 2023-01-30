@@ -42,7 +42,7 @@ public class RealmFilter<T extends RealmScopedEvent> extends EventFilter<T> {
     }
 
     @Override
-    public RealmScopedEvent apply(RealmScopedEvent event) {
+    public T apply(T event) {
         return getName().equals(event.getRealm()) ? event : null;
     }
 

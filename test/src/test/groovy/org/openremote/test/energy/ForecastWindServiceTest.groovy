@@ -3,6 +3,7 @@ package org.openremote.test.energy
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
+import org.openremote.manager.energy.ForecastSolarService
 import org.openremote.manager.energy.ForecastWindService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.Asset
@@ -642,8 +643,9 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         def config = defaultConfig()
         config << [(OR_OPEN_WEATHER_API_APP_ID): "test-key"]
 
-        if (!ForecastWindService.resteasyClient.configuration.isRegistered(mockServer)) {
-            ForecastWindService.resteasyClient.register(mockServer, Integer.MAX_VALUE)
+        ForecastWindService.initClient()
+        if (!ForecastWindService.resteasyClient.get().configuration.isRegistered(mockServer)) {
+            ForecastWindService.resteasyClient.get().register(mockServer, Integer.MAX_VALUE)
         }
 
         def container = startContainer(config, defaultServices())
@@ -769,6 +771,11 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
             assert newWindAsset3.getAttribute(ElectricityProducerWindAsset.POWER_FORECAST).flatMap { it.value }.orElse(0d) != 0d
             assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newWindAsset3.getId(), ElectricityProducerWindAsset.POWER.getName())).size() > 0
             assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newWindAsset3.getId(), ElectricityProducerWindAsset.POWER_FORECAST.getName())).size() > 0
+        }
+
+        cleanup: "remove mock"
+        if (ForecastSolarService.resteasyClient.get() != null) {
+            ForecastSolarService.resteasyClient.set(null)
         }
     }
 }

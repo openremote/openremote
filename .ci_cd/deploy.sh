@@ -265,8 +265,6 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
-echo "Deleting existing EFS mount volume"
-docker volume rm or_efs-data 1>/dev/null
 
 # Start the stack
 echo "Starting the stack"
@@ -306,6 +304,7 @@ if [ "\$STATUSES_OK" == 'true' ]; then
   echo "All services are healthy"
 else
   echo "One or more services are unhealthy"
+  docker ps -a
   exit 1
 fi
 
@@ -334,13 +333,17 @@ EOF
 
 if [ $? -ne 0 ]; then
   echo "Deployment failed or is unhealthy"
-  if [ "$ROLLBACK_ON_ERROR" != 'true' ]; then
-    revoke_ssh
-    exit 1
-  else
-    DO_ROLLBACK=true
-  fi
 fi
+
+revoke_ssh
+exit 1
+
+# ROLLBACK FUNCTIONALITY DISABLED FOR NOW AS WASN'T WORKING AND MANUAL INTERVENTION IS FINE AT THIS POINT
+
+#if [ "$ROLLBACK_ON_ERROR" != 'true' ]; then
+#else
+#  DO_ROLLBACK=true
+#fi
 
 if [ "$DO_ROLLBACK" == 'true' ]; then
   echo "Attempting rollback"
@@ -402,8 +405,6 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
-echo "Deleting existing EFS mount volume"
-docker volume rm or_efs-data 1>/dev/null
 
 # Start the stack
 echo "Starting the stack"

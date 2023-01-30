@@ -44,11 +44,6 @@ class BasicRulesFactsTest extends Specification {
     RulesFacts rulesFacts
     TimerService timerService
 
-    def setupSpec() {
-        // Init logging config
-        Container.LOG.info("Running test...")
-    }
-
     def setup() {
         given: "some rule facts"
         assetsFacade = Mock(AssetsFacade)

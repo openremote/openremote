@@ -19,14 +19,12 @@
  */
 package org.openremote.container.message;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
 import org.apache.camel.component.snmp.SnmpComponent;
 import org.apache.camel.health.HealthCheckRegistry;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.engine.DefaultHealthCheckResolver;
 import org.apache.camel.impl.engine.DefaultStreamCachingStrategy;
 import org.apache.camel.impl.health.ConsumersHealthCheckRepository;
 import org.apache.camel.impl.health.ContextHealthCheck;
@@ -117,9 +115,6 @@ public class MessageBrokerService implements ContainerService {
                 return name;
             }
         });
-
-        // TODO make configurable in environment
-        context.disableJMX();
 
         // TODO might need this for errorhandler?
         context.setAllowUseOriginalMessage(false);

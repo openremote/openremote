@@ -120,7 +120,7 @@ public class RulesetStorageService implements ContainerService {
 
     public <T extends Ruleset> List<T> findAll(Class<T> rulesetType, RulesetQuery query) {
         return persistenceService.doReturningTransaction(em -> {
-            LOG.finer("Building: " + query);
+            LOG.finest("Building: " + query);
             StringBuilder sb = new StringBuilder();
             List<ParameterBinder> binders = new ArrayList<>();
             appendSelectString(sb, rulesetType, query);
@@ -134,7 +134,7 @@ public class RulesetStorageService implements ContainerService {
             return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<T>>() {
                 @Override
                 public List<T> execute(Connection connection) throws SQLException {
-                    LOG.finer("Executing: " + sqlQuery);
+                    LOG.finest("Executing: " + sqlQuery);
                     try (PreparedStatement st = connection.prepareStatement(sqlQuery)) {
                         binders.forEach(parameterBinder -> parameterBinder.accept(st));
 

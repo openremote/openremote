@@ -87,7 +87,7 @@ public class EventSubscriptions {
     }
 
     protected void createOrUpdate(String sessionKey, EventSubscription<?> subscription) {
-        LOG.finer("For session '" + sessionKey + "', creating/updating: " + subscription);
+        LOG.finest("Create/update subscription for session '" + sessionKey + "': " + subscription);
         SessionSubscriptions sessionSubscriptions =
             this.sessionSubscriptionIdMap.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
         sessionSubscriptions.createOrUpdate(subscription);
@@ -100,7 +100,7 @@ public class EventSubscriptions {
         if (subscription.getEventType() == null && subscription.getSubscriptionId() == null) {
             return;
         }
-        LOG.finer("For session '" + sessionKey + "', cancelling: " + subscription);
+        LOG.finest("Cancel subscription for session '" + sessionKey + "': " + subscription);
         SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
         if (!TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
             sessionSubscriptions.cancelById(subscription.getSubscriptionId());
@@ -114,7 +114,7 @@ public class EventSubscriptions {
 
     protected void cancelAll(String sessionKey) {
         if (this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
-            LOG.finer("Cancelling all subscriptions for session: " + sessionKey);
+            LOG.finest("Cancelling all subscriptions for session: " + sessionKey);
             this.sessionSubscriptionIdMap.remove(sessionKey);
         }
     }
@@ -140,7 +140,7 @@ public class EventSubscriptions {
                 T filteredEvent = sessionSub.subscription.getFilter() == null ? event : sessionSub.subscription.getFilter().apply(event);
 
                 if (filteredEvent != null) {
-                    LOG.finer("Creating message for subscribed session '" + sessionKey + "': " + event);
+                    LOG.finest("Creating message for subscribed session '" + sessionKey + "': " + event);
                     List<T> events = Collections.singletonList(event);
                     TriggeredEventSubscription<T> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSub.subscriptionId);
 
