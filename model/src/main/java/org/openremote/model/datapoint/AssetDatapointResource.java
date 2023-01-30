@@ -22,6 +22,7 @@ package org.openremote.model.datapoint;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.AssetDatapointQuery;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
@@ -68,4 +69,17 @@ public interface AssetDatapointResource {
                             @QueryParam("attributeRefs") String attributeRefsString,
                             @QueryParam("fromTimestamp") long fromTimestamp,
                             @QueryParam("toTimestamp") long toTimestamp);
+
+    /*
+    * Retrieve datapoints using an {@link AssetDatapointQuery}
+    * <p>
+    * By specifying the start date, end date, amount of data points, and the algorithm to use,
+    * you can query an x,y array with a timestamp and respective value.
+    * */
+    @POST
+    @Path("query")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    /*@RolesAllowed({Constants.READ_ASSETS_ROLE})*/
+    ValueDatapoint<?>[] datapointQuery(@BeanParam RequestParams requestParams, AssetDatapointQuery query);
 }

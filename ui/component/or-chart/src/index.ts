@@ -1144,11 +1144,18 @@ export class OrChart extends translate(i18next)(LitElement) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
 
             if (!predicted) {
-                response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                response = await manager.rest.api.AssetDatapointResource.datapointQuery({
+                    assetId: asset.id,
+                    attributeName: attribute.name,
+                    amountOfPoints: 50,
+                    fromTimestamp: from,
+                    toTimestamp: to
+                });
+                /*response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                     asset.id,
                     attribute.name,
                     queryParams
-                );
+                );*/
             } else {
                 response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
                     asset.id,

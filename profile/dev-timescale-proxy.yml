@@ -1,26 +1,32 @@
 #
 # TEMPORARILY FILE USED FOR TIMESCALEDB TESTING
-# File is based on dev-testing but postgres is replaced with timescaledb image
+# File is based on dev-proxy but postgres is replaced with timescaledb image
 #
 version: '2.4'
 
+volumes:
+  postgresql-data:
+
 services:
+
+  proxy:
+    extends:
+      file: deploy.yml
+      service: proxy
+    environment:
+      MANAGER_HOST: 'host.docker.internal'
 
   keycloak:
     extends:
       file: deploy.yml
       service: keycloak
+    # Access directly if needed on localhost
     ports:
       - "8081:8080"
     depends_on:
       - timescaledb
     environment:
       KC_DB_URL_HOST: timescaledb
-      KC_HOSTNAME_STRICT_HTTPS: 'false'
-      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
-      # Prevent theme caching during dev
-      KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
-
 
   timescaledb:
     extends:

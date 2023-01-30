@@ -15,6 +15,7 @@ import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.query.AssetDatapointQuery;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGInterval;
@@ -27,10 +28,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
@@ -165,6 +165,79 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                 .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeRef.getName()));
 
         return getValueDatapoints(asset.getId(), assetAttribute, datapointInterval, stepSize, fromTimestamp, toTimestamp);
+    }
+
+    public ValueDatapoint<?>[] queryDatapoints(AssetDatapointQuery datapointQuery) {
+
+        AttributeRef attributeRef = new AttributeRef(datapointQuery.assetId, datapointQuery.attributeName);
+        LocalDateTime fromTimestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(datapointQuery.fromTimestamp), ZoneId.systemDefault());
+        LocalDateTime toTimestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(datapointQuery.toTimestamp), ZoneId.systemDefault());
+
+        return persistenceService.doReturningTransaction(entityManager ->
+                entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint<?>[]>() {
+
+                    @Override
+                    public ValueDatapoint<?>[] execute(Connection connection) throws SQLException {
+                        StringBuilder sqlQuery = new StringBuilder();
+                        Map<Integer, Object> parameters = new HashMap<Integer, Object>();
+                        switch (datapointQuery.hyperfunction.function) {
+                            case ASAP_SMOOTH -> {
+                                // language=sql
+                                sqlQuery.append("select * from public.unnest((select public.asap_smooth(timestamp::timestamptz, value::double precision, ?) from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))");
+                                parameters.put(1, datapointQuery.amountOfPoints);
+                                parameters.put(2, attributeRef.getId());
+                                parameters.put(3, attributeRef.getName());
+                                parameters.put(4, fromTimestamp);
+                                parameters.put(5, toTimestamp);
+                            }
+                            case GP_LTTB -> {
+                                // language=sql
+                                sqlQuery.append("select * from public.unnest((select toolkit_experimental.gp_lttb(timestamp::timestamptz, value::double precision, ?) from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))");
+                                parameters.put(1, datapointQuery.amountOfPoints);
+                                parameters.put(2, attributeRef.getId());
+                                parameters.put(3, attributeRef.getName());
+                                parameters.put(4, fromTimestamp);
+                                parameters.put(5, toTimestamp);
+                            }
+                            default -> { // = LTTB
+                                // language=sql
+                                sqlQuery.append("select * from public.unnest((select public.lttb(timestamp::timestamptz, value::double precision, ?) from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))");
+                                /*sqlQuery.append("SELECT toolkit_experimental.days_in_month(?::timestamptz)");*/
+                                parameters.put(1, datapointQuery.amountOfPoints);
+                                parameters.put(2, attributeRef.getId());
+                                parameters.put(3, attributeRef.getName());
+                                parameters.put(4, fromTimestamp);
+                                parameters.put(5, toTimestamp);
+                            }
+                        }
+                        try (PreparedStatement st = connection.prepareStatement(sqlQuery.toString())) {
+
+                            if(parameters.size() > 0) {
+                                for(Map.Entry<Integer, Object> param : parameters.entrySet()) {
+                                    if(param.getValue() instanceof String) {
+                                        st.setString(param.getKey(), param.getValue().toString());
+                                    } else {
+                                        st.setObject(param.getKey(), param.getValue());
+                                    }
+                                }
+                            }
+                            System.out.println(st);
+
+                            try (ResultSet rs = st.executeQuery()) {
+                                List<ValueDatapoint<?>> result = new ArrayList<>();
+                                while (rs.next()) {
+                                    Object value = null;
+                                    if (rs.getObject(2) != null) {
+                                        value = ValueUtil.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null);
+                                    }
+                                    result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
+                                }
+                                return result.toArray(new ValueDatapoint<?>[0]);
+                            }
+                        }
+                    }
+                })
+        );
     }
 
     public ValueDatapoint<?>[] getValueDatapoints(String assetId,

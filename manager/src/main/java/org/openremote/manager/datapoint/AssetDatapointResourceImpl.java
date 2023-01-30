@@ -33,6 +33,7 @@ import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.AssetDatapointQuery;
 import org.openremote.model.syslog.SyslogCategory;
 
 import javax.ws.rs.BadRequestException;
@@ -214,5 +215,23 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
         } catch (JsonProcessingException ex) {
             asyncResponse.resume(new BadRequestException(ex));
         }
+    }
+
+    @Override
+    public ValueDatapoint<?>[] datapointQuery(RequestParams requestParams, AssetDatapointQuery query) {
+
+        try {
+            System.out.println(JSON.writeValueAsString(query));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if(query.assetId == null || query.attributeName == null) {
+            throw new BadRequestException();
+        }
+        if(query.hyperfunction.function == null) {
+            query.hyperfunction.function = AssetDatapointQuery.Function.LTTB;
+        }
+
+        return assetDatapointService.queryDatapoints(query);
     }
 }
