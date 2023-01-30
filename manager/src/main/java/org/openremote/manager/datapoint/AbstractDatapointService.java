@@ -202,7 +202,6 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                             default -> { // = LTTB
                                 // language=sql
                                 sqlQuery.append("select * from public.unnest((select public.lttb(timestamp::timestamptz, value::double precision, ?) from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))");
-                                /*sqlQuery.append("SELECT toolkit_experimental.days_in_month(?::timestamptz)");*/
                                 parameters.put(1, datapointQuery.amountOfPoints);
                                 parameters.put(2, attributeRef.getId());
                                 parameters.put(3, attributeRef.getName());

@@ -80,6 +80,6 @@ public interface AssetDatapointResource {
     @Path("query")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    /*@RolesAllowed({Constants.READ_ASSETS_ROLE})*/
+    /*@RolesAllowed({Constants.READ_ASSETS_ROLE})*/ // Temporarily disabled for testing
     ValueDatapoint<?>[] datapointQuery(@BeanParam RequestParams requestParams, AssetDatapointQuery query);
 }
