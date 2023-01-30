@@ -59,6 +59,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -278,11 +279,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     public static final String DEFAULT_CONTENT_TYPE = MediaType.TEXT_PLAIN;
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HTTPProtocol.class);
     public static int MIN_POLLING_MILLIS = 5000;
-    protected static ResteasyClient client;
-
-    static {
-        client = createClient(org.openremote.container.Container.EXECUTOR_SERVICE);
-    }
+    protected static final AtomicReference<ResteasyClient> client = new AtomicReference<>();
 
     protected final Map<AttributeRef, HttpClientRequest> requestMap = new HashMap<>();
     protected final Map<AttributeRef, ScheduledFuture<?>> pollingMap = new HashMap<>();
@@ -291,6 +288,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
     public HTTPProtocol(HTTPAgent agent) {
         super(agent);
+
+        initClient();
     }
 
     @Override
@@ -333,7 +332,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         if (readTimeout != null) {
             webTargetBuilder = new WebTargetBuilder(WebTargetBuilder.createClient(executorService, WebTargetBuilder.CONNECTION_POOL_SIZE, readTimeout.longValue(), null), uri);
         } else {
-            webTargetBuilder = new WebTargetBuilder(client, uri);
+            webTargetBuilder = new WebTargetBuilder(client.get(), uri);
         }
 
         if (oAuthGrant.isPresent()) {
@@ -451,6 +450,14 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     @Override
     public String getProtocolInstanceUri() {
         return webTarget != null ? webTarget.getUri().toString() : agent.getBaseURI().orElse("");
+    }
+
+    protected static void initClient() {
+        synchronized (client) {
+            if (client.get() == null) {
+                client.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+            }
+        }
     }
 
     protected HttpClientRequest buildClientRequest(String path, String method, MultivaluedMap<String, Object> headers, MultivaluedMap<String, String> queryParams, boolean pagingEnabled, String contentType) {

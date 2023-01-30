@@ -335,7 +335,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
 
                 if (noLongerMatches) {
-                    log(Level.FINER, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
+                    log(Level.FINEST, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
                 }
 
                 return noLongerMatches;
@@ -691,12 +691,12 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             try {
                 if (ruleState.thenMatched()) {
-                    log(Level.FINER, "Triggered rule so executing 'then' actions for rule: " + rule.name);
+                    log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
                     executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
 
                 if (rule.otherwise != null && ruleState.otherwiseMatched()) {
-                    log(Level.FINER, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
+                    log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
                     executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
             } catch (Exception e) {

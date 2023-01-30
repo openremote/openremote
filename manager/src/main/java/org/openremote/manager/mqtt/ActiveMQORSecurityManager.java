@@ -166,14 +166,14 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         String topicClientID = MQTTHandler.topicClientID(topic);
 
         if (topicClientID == null) {
-            LOG.warning("Client ID not found but it must be included as the second token in the topic: topic=" + topic);
+            LOG.info("Client ID not found but it must be included as the second token in the topic: topic=" + topic);
             return false;
         }
 
         RemotingConnection connection = RemotingConnectionPrincipal.getRemotingConnectionFromSubject(subject);
 
         if (connection == null) {
-            LOG.warning("Failed to find connection for the specified client ID: clientID=" + topicClientID);
+            LOG.info("Failed to find connection for the specified client ID: clientID=" + topicClientID);
             return false;
         }
 
@@ -184,7 +184,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         // See if a custom handler wants to handle authorisation for this topic pub/sub
         for (MQTTHandler handler : brokerService.getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.fine("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + brokerService.connectionToString(connection));
+                LOG.finest("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + brokerService.connectionToString(connection));
                 boolean result;
 
                 if (isWrite) {
@@ -193,15 +193,15 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                     result = handler.checkCanSubscribe(connection, securityContext, topic);
                 }
                 if (result) {
-                    LOG.info("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+                    LOG.finest("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
                 } else {
-                    LOG.info("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+                    LOG.finest("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
                 }
                 return result;
             }
         }
 
-        LOG.info("No handler has allowed " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
+        LOG.info("Un-supported request " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + brokerService.connectionToString(connection));
         return false;
     }
 

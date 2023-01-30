@@ -22,8 +22,8 @@ package org.openremote.manager.setup;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
-import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
+import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
@@ -31,14 +31,15 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.impl.*;
-import org.openremote.model.attribute.*;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.setup.Setup;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
-
-import jline.internal.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,16 +49,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.*;
-import static org.openremote.container.util.MapAccess.getString;
 
 public class ManagerSetup implements Setup {
 
     public static final String OR_PROVISIONING_DOCROOT = "OR_PROVISIONING_DOCROOT";
     public static final String OR_PROVISIONING_DOCROOT_DEFAULT = "deployment/manager/provisioning";
-
+    protected static final Logger LOG = LoggerFactory.getLogger(ManagerSetup.class);
     protected Path provisionDocRoot;
 
     final protected ScheduledExecutorService executorService;
@@ -462,7 +463,7 @@ public class ManagerSetup implements Setup {
             return;
         }
 
-        Log.info("Provisioning assets");
+        LOG.info("Provisioning assets");
 
         Files.list(Paths.get(provisionDocRoot.toString(), "assets")).sorted()
                 .forEach(file -> {
@@ -470,9 +471,9 @@ public class ManagerSetup implements Setup {
                         Asset<?> asset =  ValueUtil.JSON.readValue(file.toFile(), Asset.class);
                         asset = assetStorageService.merge(asset);
 
-                        Log.info("Asset merged: " + asset.toString());
+                        LOG.info("Asset merged: " + asset.toString());
                     } catch (IOException e) {
-                        Log.warn("Processing of file " + file.getFileName() + " went wrong", e);
+                        LOG.warn("Processing of file " + file.getFileName() + " went wrong", e);
                     }
                 });
 

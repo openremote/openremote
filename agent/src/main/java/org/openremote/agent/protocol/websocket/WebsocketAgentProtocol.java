@@ -49,6 +49,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -73,18 +74,16 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     public static final String PROTOCOL_DISPLAY_NAME = "Websocket Client";
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketAgentProtocol.class);
     public static final int CONNECTED_SEND_DELAY_MILLIS = 2000;
-    protected static final ResteasyClient resteasyClient;
+    protected static final AtomicReference<ResteasyClient> resteasyClient = new AtomicReference<>();
     protected List<Runnable> protocolConnectedTasks;
     protected Map<AttributeRef, Runnable> attributeConnectedTasks;
     protected Map<String, List<String>> clientHeaders;
     protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();
 
-    static {
-        resteasyClient = createClient(org.openremote.container.Container.EXECUTOR_SERVICE);
-    }
-
     public WebsocketAgentProtocol(WebsocketAgent agent) {
         super(agent);
+
+        initClient();
     }
 
     @Override
@@ -207,6 +206,14 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
         attributeConnectedTasks.remove(attributeRef);
     }
 
+    protected static void initClient() {
+        synchronized (resteasyClient) {
+            if (resteasyClient.get() == null) {
+                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+            }
+        }
+    }
+
     protected void onConnected() {
         // Look for any subscriptions that need to be processed
         if (protocolConnectedTasks != null) {
@@ -293,7 +300,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
                 });
             }
 
-            WebTargetBuilder webTargetBuilder = new WebTargetBuilder(resteasyClient, uri);
+            WebTargetBuilder webTargetBuilder = new WebTargetBuilder(resteasyClient.get(), uri);
 
             if (headers != null) {
                 webTargetBuilder.setInjectHeaders(headers);

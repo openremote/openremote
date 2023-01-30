@@ -291,7 +291,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             if(existingUser != null && !allowUpdate) {
                 String msg = "Attempt to create user but it already exists: User=" + user;
-                LOG.fine(msg);
+                LOG.warning(msg);
                 throw new ForbiddenException(msg);
             }
 
@@ -301,7 +301,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     UserRepresentation userRep = clientResource.getServiceAccountUser();
                     if (userRep == null) {
                         String msg = "Attempt to update/create service user but a regular client with same client ID as this username already exists: User=" + user;
-                        LOG.fine(msg);
+                        LOG.warning(msg);
                         throw new NotAllowedException(msg);
                     }
                     return userRep;
@@ -314,7 +314,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             if (existingUser != null && user.getId() != null && !existingUser.getId().equals(user.getId())) {
                 String msg = "Attempt to update user but retrieved user ID doesn't match supplied so ignoring: User=" + user;
-                LOG.fine(msg);
+                LOG.warning(msg);
                 throw new BadRequestException(msg);
             }
 
@@ -323,13 +323,13 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                 if (existingUser.isServiceAccount() != user.isServiceAccount()) {
                     String msg = "Attempt to update user service account flag not allowed: User=" + user;
-                    LOG.fine(msg);
+                    LOG.warning(msg);
                     throw new NotAllowedException(msg);
                 }
 
                 if (existingUser.isServiceAccount() && !existingUser.getUsername().equals(user.getUsername())) {
                     String msg = "Attempt to update username of service user not allowed: User=" + user;
-                    LOG.fine(msg);
+                    LOG.warning(msg);
                     throw new NotAllowedException(msg);
                 }
             }
@@ -905,12 +905,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                 // Handle removed roles
                 existingRealmRoles.stream().filter(realmRole -> !realmRoles.contains(realmRole)).forEach(realmRole -> {
-                    LOG.finer("Removing realm role + " + realmRole);
+                    LOG.finest("Removing realm role + " + realmRole);
                     rolesResource.deleteRole(realmRole.getName());
                 });
                 // Handle added roles
                 realmRoles.stream().filter(realmRole -> !existingRealmRoles.contains(realmRole)).forEach(realmRole -> {
-                    LOG.finer("Adding realm role + " + realmRole);
+                    LOG.finest("Adding realm role + " + realmRole);
                     rolesResource.create(new RoleRepresentation(realmRole.getName(), realmRole.getDescription(), false));
                 });
             }
@@ -949,7 +949,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 List<RoleRepresentation> existingRealmRoles = rolesResource.list();
                 realm.getNormalisedRealmRoles().stream().filter(realmRole -> existingRealmRoles.stream().noneMatch(roleRepresentation -> roleRepresentation.getName().equals(realmRole.getName())))
                 .forEach(realmRole -> {
-                    LOG.finer("Adding realm role + " + realmRole);
+                    LOG.finest("Adding realm role + " + realmRole);
                     rolesResource.create(new RoleRepresentation(realmRole.getName(), realmRole.getDescription(), false));
                 });
 
