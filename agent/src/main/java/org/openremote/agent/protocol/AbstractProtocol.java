@@ -283,7 +283,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         }
 
         AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(state.getRef(), ignoreAndConverted.value), timestamp);
-        LOG.finer("Sending linked attribute update on sensor queue: " + attributeEvent);
+        LOG.finest("Sending linked attribute update on sensor queue: " + attributeEvent);
         producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
     }
 
@@ -296,7 +296,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
             return;
         }
         AttributeEvent attributeEvent = new AttributeEvent(state, timerService.getCurrentTimeMillis());
-        LOG.finer("Sending protocol agent attribute update: " + attributeEvent);
+        LOG.finest("Sending protocol agent attribute update: " + attributeEvent);
         assetService.sendAttributeEvent(attributeEvent);
     }
 
