@@ -28,7 +28,7 @@ public class OAuthClientCredentialsGrant extends OAuthGrant {
     public static final String CLIENT_CREDENTIALS_GRANT_TYPE = "client_credentials";
 
     @JsonCreator
-    public OAuthClientCredentialsGrant(@JsonProperty("tokenEndpointUri") String tokenEndpointUri,
+    public OAuthClientCredentialsGrant(@JsonProperty(VALUE_KEY_TOKEN_ENDPOINT_URI) String tokenEndpointUri,
                                        @JsonProperty(VALUE_KEY_CLIENT_ID) String clientId,
                                        @JsonProperty(VALUE_KEY_CLIENT_SECRET) String clientSecret,
                                        @JsonProperty(VALUE_KEY_SCOPE) String scope) {

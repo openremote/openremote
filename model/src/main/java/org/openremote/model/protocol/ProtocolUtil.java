@@ -108,7 +108,7 @@ public final class ProtocolUtil {
         // value conversion
         Object finalValue = value;
         ignoreAndConvertedValue = agentLink.getWriteValueConverter().map(converter -> {
-            Protocol.LOG.finer("Applying attribute write value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            Protocol.LOG.finest("Applying attribute write value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             return applyValueConverter(finalValue, converter);
         }).orElse(new Pair<>(false, finalValue));
 
@@ -149,7 +149,7 @@ public final class ProtocolUtil {
 
         // value filtering
         agentLink.getValueFilters().ifPresent(valueFilters -> {
-            Protocol.LOG.finer("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            Protocol.LOG.finest("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             Object o = ValueUtil.applyValueFilters(value, valueFilters);
             if (o == null) {
                 Protocol.LOG.info("Value filters generated a null value for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
@@ -159,7 +159,7 @@ public final class ProtocolUtil {
 
         // value conversion
         ignoreAndConvertedValue = agentLink.getValueConverter().map(converter -> {
-            Protocol.LOG.finer("Applying attribute value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            Protocol.LOG.finest("Applying attribute value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             return applyValueConverter(valRef.get(), converter);
         }).orElse(new Pair<>(false, valRef.get()));
 
@@ -178,7 +178,7 @@ public final class ProtocolUtil {
         Class<?> fromType = valRef.get().getClass();
 
         if (toType != fromType) {
-            Protocol.LOG.finer("Applying built in attribute value conversion: " + fromType + " -> " + toType);
+            Protocol.LOG.finest("Applying built in attribute value conversion: " + fromType + " -> " + toType);
             valRef.set(ValueUtil.getValueCoerced(valRef.get(), toType).orElse(null));
 
             if (valRef.get() == null) {

@@ -294,7 +294,7 @@ public class SyslogService extends Handler implements ContainerService {
             batch.clear();
             if (transientEvents.size() == 0)
                 return;
-            LOG.finer("Flushing syslog batch: " + transientEvents.size());
+            LOG.finest("Flushing syslog batch: " + transientEvents.size());
             try {
                 persistenceService.doTransaction(em -> {
                     try {

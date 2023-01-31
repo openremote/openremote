@@ -154,7 +154,7 @@ fetch(configURL).then(async (result) => {
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];
 
-        if (!manager.isSuperUser() && appConfig.pages) {
+        if (!(manager.isSuperUser() && manager.username === "admin") && appConfig.pages) {
 
             // Replace any supplied page configs
             pages = pages.map(pageProvider => {

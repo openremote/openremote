@@ -22,6 +22,7 @@ package org.openremote.manager.security;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.mqtt.MQTTBrokerService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 
@@ -39,12 +40,14 @@ public class ManagerIdentityService extends IdentityService {
     public void init(Container container) throws Exception {
         super.init(container);
         persistenceService = container.getService(PersistenceService.class);
+        MQTTBrokerService mqttBrokerService = container.getService(MQTTBrokerService.class);
+        ManagerWebService managerWebService = container.getService(ManagerWebService.class);
 
-        container.getService(ManagerWebService.class).addApiSingleton(
+        managerWebService.addApiSingleton(
             new RealmResourceImpl(container.getService(TimerService.class), this, container)
         );
-        container.getService(ManagerWebService.class).addApiSingleton(
-            new UserResourceImpl(container.getService(TimerService.class), this)
+        managerWebService.addApiSingleton(
+            new UserResourceImpl(container.getService(TimerService.class), this, mqttBrokerService)
         );
     }
 

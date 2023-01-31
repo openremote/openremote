@@ -60,21 +60,21 @@ export class OrConfRealm extends LitElement {
     }
   }
 
-  protected _loadListOfAvailableRealms(){
-    const app = this
-    this._availableRealms = this._allRealms.filter(function(realm){
-      if (realm.name && app.config?.realms){
-        if (!app.config?.realms[realm.name]){
-          return realm
+  protected _loadListOfAvailableRealms() {
+    const app = this;
+    this._availableRealms = this._allRealms.filter(function(realm) {
+      if (!!realm.name && !!app.config){
+        if (realm.name in app.config?.realms){
+          return null
         }
       }
-      return null
-    }).sort(function(a, b){
-      if (a.displayName && b.displayName){
-        return (a.displayName > b.displayName) ? 1 : -1
+      return realm;
+    }).sort(function(a, b) {
+      if (a.displayName && b.displayName) {
+        return (a.displayName > b.displayName) ? 1 : -1;
       }
-      return -1
-    })
+      return -1;
+    });
   }
 
   protected _showAddingRealmDialog(){

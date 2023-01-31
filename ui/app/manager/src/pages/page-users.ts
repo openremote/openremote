@@ -197,7 +197,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected _realmRoles: Role[] = [];
 
     protected _realmRolesFilter = (role: Role) => {
-        return !role.composite && !["uma_authorization", "offline_access", "admin"].includes(role.name) && !role.name.startsWith("default-roles")
+        return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name) && !role.name.startsWith("default-roles"))
     };
 
     @state()
@@ -493,8 +493,10 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 <p class="panel-title">
                                     ${user.serviceAccount ? i18next.t('serviceUser') : i18next.t('user')}
                                     ${i18next.t('settings')}</p>
-                                ${this.getSingleUserView((index != undefined ? mergedUserList[index] : this.creationState.userModel), compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined))}
+                                ${this.getSingleUserView(user, compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined))}
                             </div>
+                            
+                            ${user.serviceAccount ? this.getMQTTSessionTemplate(user) : ``}
                         `;
                     })}
 
@@ -728,6 +730,32 @@ export class PageUsers extends Page<AppStateKeyed> {
                     ${until(content, html`${i18next.t('loading')}`)}
                 `;
             })}
+        `;
+    }
+
+    protected getMQTTSessionTemplate(user: UserModel): TemplateResult {
+
+        const sessionLoader = async () => {
+
+            const userSessionsResponse = await (manager.rest.api.UserResource.getUserSessions(manager.displayRealm, user.id));
+
+            if (!this.responseAndStateOK(() => userSessionsResponse.status === 200, userSessionsResponse, i18next.t("loadFailedUserInfo"))) {
+                return html``;
+            }
+
+            const cols = [i18next.t("address"), i18next.t("since")];
+            const rows = userSessionsResponse.data.map((session) => {
+                return [session.remoteAddress, new Date(session.startTimeMillis)]
+            });
+
+            return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
+        };
+
+        return html`
+            <div id="content" class="panel">
+                <p class="panel-title">${i18next.t('mqttSessions')}</p>
+                ${until(sessionLoader(), html`${i18next.t('loading')}`)}
+            </div>
         `;
     }
 

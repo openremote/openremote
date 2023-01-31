@@ -226,7 +226,7 @@ public class ManagerWebService extends WebService {
                     "Default app redirect",
                     exchange -> exchange.getRequestPath().equals("/"),
                     exchange -> {
-                        LOG.finer("Handling root request, redirecting client to default app");
+                        LOG.finest("Handling root request, redirecting client to default app");
                         new RedirectHandler(redirect(exchange, rootRedirectPath)).handleRequest(exchange);
                     }));
         }

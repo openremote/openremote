@@ -67,6 +67,8 @@ public class SetupService implements ContainerService {
         boolean keycloakEnabled = container.getService(ManagerIdentityService.class).isKeycloakEnabled();
         String setupType = container.getConfig().get(SetupTasks.OR_SETUP_TYPE);
 
+        LOG.info(SetupTasks.OR_SETUP_TYPE + " value: " + setupType);
+
         if (keycloakEnabled) {
             // Keycloak is not managed by persistence service so need separate clean task
             tasks.add(new KeycloakCleanSetup(container));
@@ -77,7 +79,6 @@ public class SetupService implements ContainerService {
             .flatMap(discoveredSetupTasks -> {
                 LOG.info("Found custom SetupTasks provider on classpath: " + discoveredSetupTasks.getClass().getName());
                 List<Setup> tasks = discoveredSetupTasks.createTasks(container, setupType, keycloakEnabled);
-                LOG.info("Custom SetupTasks provider task count for setupType '" + setupType + "' = " + (tasks == null ? 0 : tasks.size()));
                 return tasks != null ? tasks.stream() : null;
             }).toList());
 
