@@ -1,26 +1,39 @@
 import manager from "@openremote/core";
-import maplibregl, {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
-    MapMouseEvent,
-    NavigationControl,
-    GeolocateControl,
+import maplibregl,{
     Control,
-    IControl} from "maplibre-gl";
+    GeolocateControl,
+    IControl,
+    LngLat,
+    LngLatLike,
+    Map as MapGL,
+    MapboxOptions as OptionsGL,
+    MapMouseEvent,
+    Marker as MarkerGL,
+    NavigationControl,
+    Style as StyleGL,
+} from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
-import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
-import {debounce} from "lodash";
-import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, OrMapLongPressEvent, OrMapGeocoderChangeEvent, ViewSettings} from "./index";
+import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
+import { debounce } from "lodash";
 import {
-    OrMapMarker
-} from "./markers/or-map-marker";
-import {getLatLngBounds, getLngLat} from "./util";
+    ControlPosition,
+    OrMapClickedEvent,
+    OrMapGeocoderChangeEvent,
+    OrMapLoadedEvent,
+    OrMapLongPressEvent,
+    ViewSettings,
+} from "./index";
+import { OrMapMarker } from "./markers/or-map-marker";
+import { getLatLngBounds, getLngLat } from "./util";
 import { MapType } from "@openremote/model";
+
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
 
 // TODO: fix any type
-const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
-    meters / 0.075 / Math.cos(latitude * Math.PI / 180);
+const metersToPixelsAtMaxZoom = (meters: number, latitude: number) =>
+  meters / 0.075 / Math.cos(latitude * Math.PI / 180);
 
 
 export class MapWidget {
@@ -36,15 +49,19 @@ export class MapWidget {
     protected _center?: LngLatLike;
     protected _zoom?: number;
     protected _showGeoCodingControl: boolean = false;
+    protected _showBoundaryBox: boolean = false;
+    protected _useZoomControls: boolean = true;
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
 
-    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement) {
+    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement, showBoundaryBox = false, useZoomControls = true) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
         this._showGeoCodingControl = showGeoCodingControl;
+        this._showBoundaryBox = showBoundaryBox;
+        this._useZoomControls= useZoomControls;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -179,10 +196,15 @@ export class MapWidget {
             if (this._mapGl) {
                 this._mapGl.setMinZoom(this._viewSettings.minZoom);
                 this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
-                this._mapGl.setMaxBounds(this._viewSettings.bounds);
+                if (this._viewSettings.bounds){
+                    this._mapGl.setMaxBounds(this._viewSettings.bounds);
+                }
             }
             if (!this._center) {
                 this.setCenter(this._viewSettings.center);
+            }
+            else {
+                this.setCenter(this._center);
             }
         }
 
@@ -209,8 +231,11 @@ export class MapWidget {
 
                 // JS zoom is out compared to GL
                 options.zoom = this._viewSettings.zoom ? this._viewSettings.zoom + 1 : undefined;
-                options.maxZoom = this._viewSettings.maxZoom ? this._viewSettings.maxZoom - 1 : undefined;
-                options.minZoom = this._viewSettings.minZoom ? this._viewSettings.minZoom + 1 : undefined;
+
+                if (this._useZoomControls){
+                    options.maxZoom = this._viewSettings.maxZoom ? this._viewSettings.maxZoom - 1 : undefined;
+                    options.minZoom = this._viewSettings.minZoom ? this._viewSettings.minZoom + 1 : undefined;
+                }
                 options.boxZoom = this._viewSettings.boxZoom;
 
                 // JS uses lat then lng unlike GL
@@ -270,9 +295,14 @@ export class MapWidget {
             };
 
             if (this._viewSettings) {
-                options.minZoom = this._viewSettings.minZoom;
-                options.maxZoom = this._viewSettings.maxZoom;
-                options.maxBounds = this._viewSettings.bounds;
+                if (this._useZoomControls){
+                    options.maxZoom = this._viewSettings.maxZoom
+                    options.minZoom = this._viewSettings.minZoom
+                }
+                if (this._viewSettings.bounds && !this._showBoundaryBox){
+                    options.maxBounds = this._viewSettings.bounds;
+                }
+
                 options.boxZoom = this._viewSettings.boxZoom;
                 options.zoom = this._viewSettings.zoom;
                 options.center = this._viewSettings.center;
@@ -387,6 +417,7 @@ export class MapWidget {
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
         this._loaded = true;
+        this.createBoundaryBox()
     }
 
     protected styleLoaded(): Promise<void> {
@@ -539,42 +570,92 @@ export class MapWidget {
     protected _createMarkerRadius(marker:OrMapMarker){
         if(this._mapGl && this._loaded && marker.radius && marker.lat && marker.lng){
 
-              this._removeMarkerRadius(marker);
+            this._removeMarkerRadius(marker);
 
-                this._mapGl.addSource('circleData', {
-                    type: 'geojson',
-                    data: {
-                        type: 'FeatureCollection',
-                        features: [{
-                            type: "Feature",
-                            geometry: {
-                                "type": "Point",
-                                "coordinates": [marker.lng, marker.lat]
-                            },
-                            properties: {
-                                "title": "You Found Me",
-                            }
-                        }]
-                    }
-                });
-
-                this._mapGl.addLayer({
-                    "id": "marker-radius-circle",
-                    "type": "circle",
-                    "source": "circleData",
-                    "paint": {
-                        "circle-radius": {
-                            stops: [
-                                [0, 0],
-                                [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
-                            ],
-                            base: 2
+            this._mapGl.addSource('circleData', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: [{
+                        type: "Feature",
+                        geometry: {
+                            "type": "Point",
+                            "coordinates": [marker.lng, marker.lat]
                         },
-                        "circle-color": "red",
-                        "circle-opacity": 0.3
-                    }
-                });
+                        properties: {
+                            "title": "You Found Me",
+                        }
+                    }]
+                }
+            });
+
+            this._mapGl.addLayer({
+                "id": "marker-radius-circle",
+                "type": "circle",
+                "source": "circleData",
+                "paint": {
+                    "circle-radius": {
+                        stops: [
+                            [0, 0],
+                            [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
+                        ],
+                        base: 2
+                    },
+                    "circle-color": "red",
+                    "circle-opacity": 0.3
+                }
+            });
+        }
+    }
+
+    public createBoundaryBox(boundsArray: string[] = []){
+        if(this._mapGl && this._loaded && this._showBoundaryBox && this._viewSettings?.bounds){
+
+            if (this._mapGl.getSource('bounds')) {
+                this._mapGl.removeLayer('bounds');
+                this._mapGl.removeSource('bounds');
             }
+
+            if (boundsArray.length !== 4){
+                boundsArray = this._viewSettings?.bounds.toString().split(",")
+            }
+            var req = [
+                [
+                    [boundsArray[0], boundsArray[3]],
+                    [boundsArray[2], boundsArray[3]],
+                    [boundsArray[2], boundsArray[1]],
+                    [boundsArray[0], boundsArray[1]],
+                ]
+            ]
+            this._mapGl.fitBounds([
+                parseFloat(boundsArray[0]) + .01,
+                parseFloat(boundsArray[1]) - .01,
+                parseFloat(boundsArray[2]) - .01,
+                parseFloat(boundsArray[3]) + .01,
+            ])
+            this._mapGl.addSource('bounds', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': {
+                        'type': 'Polygon',
+                        // @ts-ignore
+                        'coordinates': req
+                    }
+                }
+            });
+
+            this._mapGl.addLayer({
+                'id': 'bounds',
+                'type': 'fill',
+                'source': 'bounds',
+                'paint': {
+                    'fill-color': '#FF0000',
+                    'fill-opacity': .4
+                }
+            });
+        }
     }
 
     protected _addMarkerClickHandler(marker: OrMapMarker, elem: HTMLElement) {

@@ -1,5 +1,6 @@
 package org.openremote.test.rules.residence
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.firebase.messaging.Message
 import net.fortuna.ical4j.model.Recur
@@ -13,6 +14,7 @@ import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.*
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
+import org.openremote.manager.webhook.WebhookService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ThingAsset
@@ -39,9 +41,14 @@ import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import org.simplejavamail.email.Email
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.ws.rs.client.ClientRequestContext
+import javax.ws.rs.client.ClientRequestFilter
+import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -50,10 +57,52 @@ import java.util.concurrent.TimeUnit
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
+import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.model.util.ValueUtil.parse
+import static org.openremote.model.value.ValueType.TEXT
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 
 class JsonRulesTest extends Specification implements ManagerContainerTrait {
+
+    @Shared
+    def mockServer = new ClientRequestFilter() {
+
+        private int successCount = 0
+        private int failureCount = 0
+
+        @Override
+        void filter(ClientRequestContext requestContext) throws IOException {
+            def requestUri = requestContext.uri
+            def requestPath = requestUri.scheme + "://" + requestUri.host + requestUri.path
+
+            switch (requestPath) {
+                case "https://basicserver/webhookplain":
+                    if (requestContext.method == "POST" && requestContext.mediaType == MediaType.TEXT_PLAIN_TYPE && requestContext.hasEntity() && requestContext.entity == "test-value") {
+                        successCount++
+                        requestContext.abortWith(Response.ok().build()); return
+                    }
+                    break
+                case "https://basicserver/webhookjson":
+                    if (requestContext.method == "POST" && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') == "test-value" && requestContext.hasEntity()) {
+                        Optional<JsonNode> jsonBody = parse(requestContext.entity.toString())
+                        if (jsonBody.isPresent() && jsonBody.get().size() == 1
+                                && jsonBody.get().iterator().next().get(0).get("assetName").asText() == "TestThing"
+                                && jsonBody.get().iterator().next().get(0).get("value").asText() == "test_message") {
+                            successCount++
+                            requestContext.abortWith(Response.ok().build()); return
+                        }
+                    }
+                    break
+            }
+            failureCount++
+            requestContext.abortWith(Response.serverError().build())
+        }
+    }
+
+    def cleanup() {
+        mockServer.successCount = 0
+        mockServer.failureCount = 0
+    }
 
     def "Turn all lights off when console exits the residence geofence"() {
 
@@ -730,6 +779,84 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         if (notificationService != null) {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
+        }
+    }
+
+    def "Trigger webhook when thing asset has changed"() {
+
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def webhookService = container.getService(WebhookService.class)
+        RulesEngine realmBuildingEngine
+
+        and: "the web target builder is configured to use the mock server"
+        if (!webhookService.clientBuilder.configuration.isRegistered(mockServer)) {
+            webhookService.clientBuilder.register(mockServer, Integer.MAX_VALUE)
+        }
+        assert webhookService.clientBuilder.configuration.isRegistered(mockServer)
+
+        and: "a thing asset is added to the building realm"
+        def thingId = UniqueIdentifierGenerator.generateId("TestThing")
+        def thingAsset = new ThingAsset("TestThing")
+                .setId(thingId)
+                .setRealm(keycloakTestSetup.realmBuilding.name)
+                .setLocation(new GeoJSONPoint(0, 0))
+                .addAttributes(
+                        new Attribute<>("webhookAttribute", TEXT).addMeta(
+                                new MetaItem<>(MetaItemType.RULE_STATE)
+                        )
+                )
+        thingAsset = assetStorageService.merge(thingAsset)
+
+        and: "a ruleset with 'has value' condition is added whose action triggers the webhook"
+        Ruleset ruleset = new RealmRuleset(
+                keycloakTestSetup.realmBuilding.name,
+                "Webhook Rule",
+                Ruleset.Lang.JSON,
+                getClass().getResource("/org/openremote/test/rules/JsonRuleWebhook.json").text)
+        ruleset = rulesetStorageService.merge(ruleset)
+        assert ruleset != null
+
+        expect: "the attribute we will change being unset"
+        conditions.eventually {
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset != null
+            assert thingAsset.getAttribute("webhookAttribute").get() != null
+            assert !thingAsset.getAttribute("webhookAttribute").get().getValue().isPresent()
+        }
+
+        and: "the rule engines to become available and be running with asset states and deployments inserted"
+        conditions.eventually {
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.deployments.size() == 1
+            assert realmBuildingEngine.deployments.values().iterator().next().name == "Webhook Rule"
+            assert realmBuildingEngine.deployments.values().iterator().next().status == DEPLOYED
+            assert realmBuildingEngine.assetStates.size() == (DEMO_RULE_STATES_SMART_BUILDING + 1)
+            assert realmBuildingEngine.lastFireTimestamp > 0
+        }
+
+        when: "the webhook attribute is changing"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(thingId, "webhookAttribute", "test_message"))
+
+        then: "the webhook attribute should have been updated"
+        conditions.eventually {
+            def thingAsset2 = assetStorageService.find(thingId, true)
+            assert thingAsset2 != null
+            assert thingAsset2.getAttribute("webhookAttribute").get().value.get() == "test_message"
+        }
+
+        expect: "The mock server has received a successful response"
+        conditions.eventually {
+            assert mockServer.successCount == 2
+            assert mockServer.failureCount == 0
         }
     }
 }

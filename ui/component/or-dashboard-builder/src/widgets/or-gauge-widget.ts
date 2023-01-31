@@ -17,7 +17,8 @@ export interface GaugeWidgetConfig extends OrWidgetConfig {
     thresholds: [number, string][];
     decimals: number;
     min: number,
-    max: number
+    max: number,
+    valueType: string,
 }
 
 export class OrGaugeWidget implements OrWidgetEntity {
@@ -35,7 +36,8 @@ export class OrGaugeWidget implements OrWidgetEntity {
             thresholds: [[0, "#4caf50"],[75, "#ff9800"],[90, "#ef5350"]], // colors from https://mui.com/material-ui/customization/palette/ as reference (since material has no official colors)
             decimals: 0,
             min: 0,
-            max: 100
+            max: 100,
+            valueType: 'number',
         } as GaugeWidgetConfig;
     }
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {

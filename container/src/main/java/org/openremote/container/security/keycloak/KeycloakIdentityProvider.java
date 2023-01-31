@@ -193,7 +193,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             // The realm we authenticate against must be available as a request header
             String realm = request.getHeader(REALM_PARAM_NAME);
             if (realm == null || realm.length() == 0) {
-                LOG.finer("No realm in request, no authentication will be attempted: " + request.getURI());
+                LOG.finest("No realm in request, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
             }
             KeycloakDeployment keycloakDeployment = getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID);
@@ -405,7 +405,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 return null;
             });
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Credentials are invalid", e);
+            LOG.info("Credentials are invalid");
             return false;
         }
 
@@ -428,7 +428,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         CacheLoader<KeycloakRealmClient, KeycloakDeployment> loader =
             new CacheLoader<KeycloakRealmClient, KeycloakDeployment>() {
                 public KeycloakDeployment load(KeycloakRealmClient keycloakRealmClient) {
-                    LOG.fine("Loading adapter config for client '" + keycloakRealmClient.clientId + "' in realm '" + keycloakRealmClient.realm + "'");
+                    LOG.finest("Loading adapter config for client '" + keycloakRealmClient.clientId + "' in realm '" + keycloakRealmClient.realm + "'");
 
                     //KeycloakResource keycloak = getKeycloak();
                     KeycloakResource keycloak = getTarget(httpClient, keycloakServiceUri.build(), null, null, null).proxy(KeycloakResource.class);
@@ -490,6 +490,33 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
             .map(Principal::getName).orElse(null);
+    }
+
+    public static String getSubjectName(Principal principal) {
+        return Optional.ofNullable(principal).map(Principal::getName).orElse(null);
+    }
+
+    public static String getSubjectNameAndRealm(Principal principal) {
+        return Optional.ofNullable(principal).map(p -> {
+            if (p instanceof KeycloakPrincipal<?>) {
+                String realm = ((KeycloakPrincipal<?>)p).getKeycloakSecurityContext().getRealm();
+                return realm + ":" + p.getName();
+            } else {
+                return p.getName();
+            }
+        }).orElse(null);
+    }
+
+    public static String getSubjectNameAndRealm(Subject subject) {
+        if (subject == null || subject.getPrincipals() == null) {
+            return null;
+        }
+
+        return subject.getPrincipals().stream().filter(p -> p instanceof KeycloakPrincipal<?>).findFirst()
+            .map(keycloakPrincipal -> {
+                String realm = ((KeycloakPrincipal<?>)keycloakPrincipal).getKeycloakSecurityContext().getRealm();
+                return realm + ":" + keycloakPrincipal.getName();
+            }).orElse(null);
     }
 
     public static String getSubjectId(Subject subject) {

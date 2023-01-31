@@ -402,8 +402,9 @@ open class OrMainActivity : Activity() {
         //TODO should we always ignore image errors and locale json files?
         if (failingUrl != null && (failingUrl.endsWith("png")
                     || failingUrl.endsWith("jpg")
-                    || failingUrl.endsWith("ico") ||
-                    failingUrl.contains("locales"))
+                    || failingUrl.endsWith("ico")
+                    || failingUrl.contains("locales")
+                    || failingUrl.contains( "consoleappconfig"))
         ) {
             LOG.info("Ignoring error loading image resource")
             return

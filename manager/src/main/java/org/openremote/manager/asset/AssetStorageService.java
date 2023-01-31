@@ -75,6 +75,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.logging.Level.FINE;
 import static java.util.stream.Collectors.groupingBy;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
@@ -452,21 +453,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (!isSuperUser) {
             if (TextUtil.isNullOrEmpty(realm)) {
                 String msg = "Realm must be specified to read assets";
-                LOG.finer(msg);
+                LOG.finest(msg);
                 return false;
             }
 
             if (isAnonymous) {
                 if (query.access != null && query.access != PUBLIC) {
                     String msg = "Only public access allowed for anonymous requests";
-                    LOG.finer(msg);
+                    LOG.finest(msg);
                     return false;
                 }
                 query.access = PUBLIC;
             } else if (isRestricted) {
                 if (query.access == PRIVATE) {
                     String msg = "Only public or restricted access allowed for restricted requests";
-                    LOG.finer(msg);
+                    LOG.finest(msg);
                     return false;
                 }
                 if (query.access == null) {
@@ -476,13 +477,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (query.access != PUBLIC && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 String msg = "User must have '" + ClientRole.READ_ASSETS.getValue() + "' role to read non public assets";
-                LOG.finer(msg);
+                LOG.finest(msg);
                 return false;
             }
 
             if (query.access != PUBLIC && !realm.equals(authContext.getAuthenticatedRealmName())) {
                 String msg = "Realm must match authenticated realm for non public access queries";
-                LOG.finer(msg);
+                LOG.finest(msg);
                 return false;
             }
 
@@ -495,7 +496,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, realm)) {
             String msg = "Realm is not present or is inactive";
-            LOG.finer(msg);
+            LOG.finest(msg);
             return false;
         }
 
@@ -637,8 +638,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     @SuppressWarnings("unchecked")
     public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean skipGatewayCheck, String userName) throws IllegalStateException, ConstraintViolationException {
 
-        if (LOG.isLoggable(Level.FINER)) {
-            LOG.finer("Merging asset: " + asset);
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finest("Merging asset: " + asset);
         }
 
         return persistenceService.doReturningTransaction(em -> {
@@ -675,13 +676,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // Verify type has not been changed
                 if (!existingAsset.getType().equals(asset.getType())) {
                     String msg = "Asset type cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 if (!existingAsset.getRealm().equals(asset.getRealm())) {
                     String msg = "Asset realm cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
 
@@ -706,13 +707,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (!identityService.getIdentityProvider().realmExists(asset.getRealm())) {
                 String msg = "Asset realm not found or is inactive: asset=" + asset;
-                LOG.info(msg);
+                LOG.warning(msg);
                 throw new IllegalStateException(msg);
             }
 
             if (asset.getParentId() != null && asset.getParentId().equals(asset.getId())) {
                 String msg = "Asset parent cannot be the asset: asset=" + asset;
-                LOG.info(msg);
+                LOG.warning(msg);
                 throw new IllegalStateException(msg);
             }
 
@@ -725,21 +726,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // The parent must exist
                 if (parent == null) {
                     String msg = "Asset parent not found: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 // The parent can not be a child of the asset
                 if (parent.pathContains(asset.getId())) {
                     String msg = "Asset parent cannot be a descendant of the asset: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
 
                 // The parent should be in the same realm
                 if (!parent.getRealm().equals(asset.getRealm())) {
                     String msg = "Asset parent must be in the same realm: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
 
@@ -748,7 +749,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     String childAssetType = parent.getAttributes().getValue(GroupAsset.CHILD_ASSET_TYPE)
                         .orElseThrow(() -> {
                             String msg = "Asset parent is of type GROUP but the childAssetType attribute is invalid: asset=" + asset;
-                            LOG.info(msg);
+                            LOG.warning(msg);
                             return new IllegalStateException(msg);
                         });
 
@@ -763,7 +764,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                     if (!typeMatch) {
                         String msg = "Asset type does not match parent GROUP asset's childAssetType attribute: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.warning(msg);
                         throw new IllegalStateException(msg);
                     }
                 }
@@ -775,7 +776,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     .map(childAssetTypeString -> TextUtil.isNullOrEmpty(childAssetTypeString) ? null : childAssetTypeString)
                     .orElseThrow(() -> {
                         String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.warning(msg);
                         return new IllegalStateException(msg);
                     });
 
@@ -783,13 +784,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     .getChildAssetType()
                     .orElseThrow(() -> {
                         String msg = "Asset of type GROUP childAssetType attribute must be a valid string: asset=" + asset;
-                        LOG.info(msg);
+                        LOG.warning(msg);
                         return new IllegalStateException(msg);
                     }) : childAssetType;
 
                 if (!childAssetType.equals(existingChildAssetType)) {
                     String msg = "Asset of type GROUP so childAssetType attribute cannot be changed: asset=" + asset;
-                    LOG.info(msg);
+                    LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
             }
@@ -809,15 +810,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 user = identityService.getIdentityProvider().getUserByUsername(asset.getRealm(), userName);
                 if (user == null) {
                     String msg = "User not found: " + userName;
-                    LOG.info(msg);
+                    LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
             }
 
             T updatedAsset = em.merge(asset);
 
-            if (LOG.isLoggable(Level.FINE)) {
-                LOG.fine("Asset merge took (ms): " + (System.currentTimeMillis() - startTime));
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Asset merge took: " + (System.currentTimeMillis() - startTime) + "ms");
             }
 
             if (user != null) {
@@ -1148,6 +1149,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 UserAssetLink.class,
                 null,
                 null));
+
+        if (LOG.isLoggable(FINE)) {
+            LOG.fine("Deleted user asset links: count=" + userAssetLinks.size() + ", links=" + userAssetLinks.stream().map(Object::toString).collect(Collectors.joining(", ")));
+        }
     }
 
     /**
@@ -1195,7 +1200,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         em.unwrap(Session.class).doWork(connection -> {
 
-            LOG.finest("Storing user assets: count=" + userAssets.size());
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Storing user asset links: count=" + userAssets.size() + ", links=" + userAssets.stream().map(Object::toString).collect(Collectors.joining(", ")));
+            }
             PreparedStatement st;
 
             try {
@@ -1220,7 +1227,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         null)
                 );
             } catch (Exception e) {
-                String msg = "Failed to create user assets: count=" + userAssets.size();
+                String msg = "Failed to create user asset links: count=" + userAssets.size();
                 LOG.log(Level.WARNING, msg, e);
                 throw new IllegalStateException(msg, e);
             }
@@ -1277,7 +1284,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         boolean containsCalendarPredicate = queryAndContainsCalendarPredicate.value;
 
         if (containsCalendarPredicate && (query.select != null && (query.select.attributes == null))) {
-            LOG.info("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
+            LOG.warning("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
             throw new IllegalArgumentException("Asset query contains a calendar event predicate which requires the attribute values and types to be included in the select (as calendar event predicate is applied post DB query)");
         }
 
@@ -1313,7 +1320,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return assets.stream().filter(asset -> calendarEventPredicateMatches(timerService::getCurrentTimeMillis, query, asset)).toList();
         }
 
-        if (LOG.isLoggable(Level.FINE)) {
+        if (LOG.isLoggable(FINE)) {
             LOG.fine("Asset query took " + (System.currentTimeMillis() - startMillis) + "ms: return count=" + assets.size());
         }
 
@@ -1417,8 +1424,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     return;
                 }
 
-                if (LOG.isLoggable(Level.FINER)) {
-                    LOG.finer("Asset created: " + loadedAsset.toStringAll());
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("Asset created: " + loadedAsset.toStringAll());
                 } else {
                     LOG.fine("Asset created: " + loadedAsset);
                 }
@@ -1439,8 +1446,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 break;
             case UPDATE:
 
-                String[] updatedProperties = persistenceEvent.getPropertyNames();
-                boolean attributesChanged = Arrays.asList(updatedProperties).contains("attributes");
+                boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
 
 //                String[] updatedProperties = Arrays.stream(persistenceEvent.getPropertyNames()).filter(propertyName -> {
 //                    Object oldValue = persistenceEvent.getPreviousState(propertyName);
@@ -1455,10 +1461,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     return;
                 }
 
-                LOG.finer("Asset updated: " + persistenceEvent);
+                LOG.finest("Asset updated: " + persistenceEvent);
 
                 clientEventService.publishEvent(
-                    new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, updatedProperties)
+                    new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, persistenceEvent.getPropertyNames().toArray(String[]::new))
                 );
 
                 // Did any attributes change if so raise attribute events on the event bus
@@ -1487,8 +1493,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 break;
             case DELETE:
 
-                if (LOG.isLoggable(Level.FINER)) {
-                    LOG.finer("Asset deleted: " + asset.toStringAll());
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("Asset deleted: " + asset.toStringAll());
                 } else {
                     LOG.fine("Asset deleted: " + asset);
                 }

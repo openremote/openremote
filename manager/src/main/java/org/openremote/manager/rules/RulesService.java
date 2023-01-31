@@ -55,6 +55,7 @@ import org.openremote.model.security.Realm;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 
 import javax.persistence.EntityManager;
@@ -366,8 +367,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
     }
 
-    protected static boolean attributeIsRuleState(Attribute<?> attribute) {
-        return attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(attribute.hasMeta(MetaItemType.AGENT_LINK));
+    protected static boolean isRuleState(MetaHolder metaHolder) {
+        if (metaHolder.getMeta() == null) {
+            return false;
+        }
+
+        return metaHolder.getMeta().getValue(MetaItemType.RULE_STATE)
+            .orElse(metaHolder.getMeta().has(MetaItemType.AGENT_LINK));
     }
 
     @Override
@@ -388,7 +394,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         // We might process two facts for a single attribute update, if that is what the user wants
 
         // First as asset state
-        if (assetState.getMetaValue(MetaItemType.RULE_STATE).orElse(assetState.hasMeta(MetaItemType.AGENT_LINK))) {
+        if (isRuleState(assetState)) {
             updateAssetState(assetState);
         }
 
@@ -513,39 +519,39 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     asset
                         .getAttributes()
                         .stream()
-                        .filter(RulesService::attributeIsRuleState)
+                        .filter(RulesService::isRuleState)
                         .forEach(attribute -> {
                             AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
-                            LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
+                            LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
                             updateAssetState(assetState);
                         });
                     break;
                 }
                 case UPDATE: {
 
-                    boolean attributesChanged = Arrays.asList(persistenceEvent.getPropertyNames()).contains("attributes");
+                    boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
                     AttributeMap oldAttributes = attributesChanged ? ((AttributeMap) persistenceEvent.getPreviousState("attributes")) : asset.getAttributes();
                     AttributeMap currentAttributes = asset.getAttributes();
 
                     List<Attribute<?>> oldStateAttributes = oldAttributes
                         .stream()
-                        .filter(RulesService::attributeIsRuleState).toList();
+                        .filter(RulesService::isRuleState).toList();
 
                     List<Attribute<?>> newStateAttributes = currentAttributes
                         .stream()
-                        .filter(RulesService::attributeIsRuleState).toList();
+                        .filter(RulesService::isRuleState).toList();
 
                     // Just retract all old attributes rather than compare every value that might cause asset state to mutate
                     oldStateAttributes.forEach(attribute -> {
                         AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
-                        LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), retracting obsolete fact: " + assetState);
+                        LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), retracting obsolete fact: " + assetState);
                         retractAssetState(assetState);
                     });
 
                     // Insert new states for new or changed attributes
                     newStateAttributes.forEach(attribute -> {
                         AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
-                        LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
+                        LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
                         updateAssetState(assetState);
                     });
                     break;
@@ -553,10 +559,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 case DELETE:
                     // Retract any facts that were associated with this asset
                     asset.getAttributes().stream()
-                        .filter(RulesService::attributeIsRuleState)
+                        .filter(RulesService::isRuleState)
                         .forEach(attribute -> {
                             AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
-                            LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
+                            LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                             retractAssetState(assetState);
                         });
                     break;
@@ -801,7 +807,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void updateAssetState(AssetState<?> assetState) {
-        LOG.finer("Updating asset state: " + assetState);
+        LOG.finest("Updating asset state: " + assetState);
 
         // Get the chain of rule engines that we need to pass through
         List<RulesEngine<?>> rulesEngines = getEnginesInScope(assetState.getRealm(), assetState.getPath());
@@ -875,7 +881,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         return assets.stream()
             .map(asset ->
                 new Pair<>(asset, asset.getAttributes().stream()
-                    .filter(RulesService::attributeIsRuleState))
+                    .filter(RulesService::isRuleState))
             );
     }
 

@@ -1,0 +1,77 @@
+{
+  "rules": [
+    {
+      "name": "Webhook Rule",
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "ThingAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "webhookAttribute"
+                        },
+                        "value": {
+                          "match": "EXACT",
+                          "negate": false,
+                          "predicateType": "string",
+                          "value": "test_message"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "webhook",
+          "webhook": {
+            "httpMethod": "POST",
+            "payload": "test-value",
+            "headers": {
+              "": [],
+              "content-type": [
+                "text/plain"
+              ]
+            },
+            "url": "https://basicserver/webhookplain"
+          }
+        },
+        {
+          "action": "webhook",
+          "webhook": {
+            "httpMethod": "POST",
+            "payload": "%TRIGGER_ASSETS%",
+            "headers": {
+              "": [],
+              "test-header": [
+                "test-value"
+              ],
+              "content-type": [
+                "application/json"
+              ]
+            },
+            "url": "https://basicserver/webhookjson"
+          }
+        }
+      ],
+      "recurrence": {
+        "mins": 0
+      }
+    }
+  ]
+}

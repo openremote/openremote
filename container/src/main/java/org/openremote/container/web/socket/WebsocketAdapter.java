@@ -19,8 +19,10 @@
  */
 package org.openremote.container.web.socket;
 
+import io.undertow.websockets.jsr.UndertowSession;
 import org.apache.camel.Exchange;
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.model.Constants;
 
@@ -45,10 +47,7 @@ public class WebsocketAdapter extends Endpoint {
 
     @Override
     public void onOpen(Session session, EndpointConfig config) {
-        if (LOG.isLoggable(Level.FINE))
-            LOG.fine("Websocket session open: " + session.getId());
-        // TODO We never expire idle websocket sessions, the assumption is that only authenticated clients can
-        // open a session and if their SSO (managed by Keycloak) expires, they are logged out
+        LOG.fine("Client connection created: " + sessionToString(session));
         session.setMaxIdleTimeout(0);
         consumer.getEndpoint().getWebsocketSessions().add(session);
         this.consumer.sendMessage(null, exchange -> {
@@ -56,8 +55,8 @@ public class WebsocketAdapter extends Endpoint {
             exchange.getIn().setHeader(ConnectionConstants.SESSION_OPEN, true);
         });
         session.addMessageHandler(String.class, message -> {
-            if (LOG.isLoggable(Level.FINE)) {
-                LOG.fine("Websocket session " + session.getId() + " message received: " + message);
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Websocket session '" + sessionToString(session) + "' message received: " + message);
             }
             this.consumer.sendMessage(message, exchange -> this.prepareExchange(exchange, session));
         });
@@ -65,9 +64,7 @@ public class WebsocketAdapter extends Endpoint {
 
     @Override
     public void onClose(Session session, CloseReason closeReason) {
-        if (LOG.isLoggable(Level.FINE)) {
-            LOG.fine("Websocket session close: " + session.getId() + " " + closeReason);
-        }
+        LOG.fine("Client connection closed: " + sessionToString(session));
         this.consumer.sendMessage(closeReason, exchange -> {
             this.prepareExchange(exchange, session);
             exchange.getIn().setHeader(ConnectionConstants.SESSION_CLOSE, true);
@@ -78,17 +75,22 @@ public class WebsocketAdapter extends Endpoint {
     @Override
     public void onError(Session session, Throwable thr) {
         super.onError(session, thr);
-        
         // Ignore connection reset
         if (!(thr instanceof IOException && thr.getMessage().equals("Connection reset by peer"))) {
-            if (LOG.isLoggable(Level.INFO))
-                LOG.log(Level.INFO, "Websocket session error: " + session.getId(), thr);
+            LOG.info("Client connection error: " + sessionToString(session));
         }
         this.consumer.sendMessage(thr, exchange -> {
             this.prepareExchange(exchange, session);
             exchange.getIn().setHeader(ConnectionConstants.SESSION_CLOSE_ERROR, true);
         });
         consumer.getEndpoint().getWebsocketSessions().remove(session);
+    }
+
+    protected String sessionToString(Session session) {
+        UndertowSession undertowSession = ((UndertowSession) session);
+        String sourceAddress = undertowSession.getWebSocketChannel().getSourceAddress().toString();
+        String usernameAndRealm = KeycloakIdentityProvider.getSubjectNameAndRealm(undertowSession.getUserPrincipal());
+        return "connection=" + sourceAddress + ", sessionID=" + session.getId() + ", subject=" + usernameAndRealm;
     }
 
     protected void prepareExchange(Exchange exchange, Session session) {

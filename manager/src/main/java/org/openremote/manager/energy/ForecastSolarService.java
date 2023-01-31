@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -84,16 +85,10 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     protected TimerService timerService;
 
     protected static final Logger LOG = SyslogCategory.getLogger(DATA, ForecastSolarService.class.getName());
-
-    protected static ResteasyClient resteasyClient;
+    protected static final AtomicReference<ResteasyClient> resteasyClient = new AtomicReference<>();
     protected ResteasyWebTarget forecastSolarTarget;
     private String forecastSolarApiKey;
-
     private final Map<String, ScheduledFuture<?>> calculationFutures = new HashMap<>();
-
-    static {
-        resteasyClient = createClient(org.openremote.container.Container.EXECUTOR_SERVICE);
-    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -126,7 +121,9 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             return;
         }
 
-        forecastSolarTarget = resteasyClient
+        initClient();
+
+        forecastSolarTarget = resteasyClient.get()
                 .target("https://api.forecast.solar/" + forecastSolarApiKey + "/estimate");
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
@@ -156,6 +153,14 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     @Override
     public void stop(Container container) throws Exception {
         new ArrayList<>(calculationFutures.keySet()).forEach(this::stopProcessing);
+    }
+
+    protected static void initClient() {
+        synchronized (resteasyClient) {
+            if (resteasyClient.get() == null) {
+                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+            }
+        }
     }
 
     protected void processAttributeEvent(AttributeEvent attributeEvent) {

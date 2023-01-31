@@ -179,7 +179,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                     LOG.log(Level.INFO, "Failed to publish to MQTT broker '" + getClientUri() + "'", throwable);
                 } else {
                     // Success
-                    LOG.finer("Published message to MQTT broker '" + getClientUri() + "'");
+                    LOG.finest("Published message to MQTT broker '" + getClientUri() + "'");
                 }
             });
     }
@@ -343,7 +343,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                 return;
             }
             if (!disconnected) {
-                LOG.finer("Must be disconnected before calling connect: " + getClientUri());
+                LOG.finest("Must be disconnected before calling connect: " + getClientUri());
                 return;
             }
 

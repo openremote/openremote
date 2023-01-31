@@ -497,20 +497,27 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 
 // Function for getting assets by type
 // loadedAssets is an object given as parameter that will be updated if new assets are fetched.
-export async function getAssetsByType(type: string, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
+export async function getAssetsByType(type: string, realm?: string, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
     if(loadedAssets?.has(type)) {
         return {
             assets: loadedAssets?.get(type),
             loadedAssets: loadedAssets
         }
     } else {
-        const response = await manager.rest.api.AssetResource.queryAssets({
-            types: [ type ],
+        if(!loadedAssets) {
+            loadedAssets = new Map<string, any[]>();
+        }
+        const assetQuery: AssetQuery = {
+            types: [type],
             orderBy: {
                 property: AssetQueryOrderBy$Property.NAME
             }
-        });
-        loadedAssets?.set(type, response.data);
+        }
+        if(realm != undefined) {
+            assetQuery.realm = { name: realm }
+        }
+        const response = await manager.rest.api.AssetResource.queryAssets(assetQuery);
+        loadedAssets.set(type, response.data);
         return {
             assets: response.data,
             loadedAssets: loadedAssets
@@ -791,6 +798,7 @@ export class OrRules extends translate(i18next)(LitElement) {
     }
 
     public refresh() {
+        this._viewer.ruleset = undefined;
         this._rulesList.refresh();
     }
 
