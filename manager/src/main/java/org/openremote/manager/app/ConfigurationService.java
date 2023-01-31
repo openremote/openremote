@@ -90,7 +90,6 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         LOG.log(Level.INFO, "Saving manager_config.json");
         try {
             OutputStream out = new FileOutputStream(new File(pathPublicRoot + "/manager_config.json"));
-            out.close();
             ObjectMapper mapper = new ObjectMapper();
 
             mapper
