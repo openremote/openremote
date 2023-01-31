@@ -648,5 +648,10 @@
   "address": "Address",
   "since": "Since",
   "roles": "Roles",
-  "restrictedUser": "Restricted user"
+  "restrictedUser": "Restricted user",
+  "realmRole": {
+    "admin": "Super admin"
+  },
+  "saveRealmFailed": "Save realm failed",
+  "saveRealmSucceeded": "Saved realm successfully!"
 }
