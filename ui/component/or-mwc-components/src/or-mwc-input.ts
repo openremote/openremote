@@ -598,10 +598,6 @@ const style = css`
         --or-icon-fill: var(--or-app-color4);
     }
 
-    .mdc-select__selected-text {
-        white-space: normal;
-    }
-
     .mdc-menu__searchable {
         overflow: hidden;
     }
