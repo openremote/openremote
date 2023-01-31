@@ -192,6 +192,16 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
             }
         );
     }
+    //Check if .appignore file exists
+    if (fs.existsSync(path.join(dirname, ".appignore"))) {
+      patterns.push(
+        {
+          from: ".appignore",
+          to: ".appignore",
+          toType: 'file'
+        }
+      );
+    }
 
     // Copy unprocessed files
     config.plugins.push(
