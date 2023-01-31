@@ -8,6 +8,7 @@ bin-release/
 [Tt]mp/
 
 # Other files and folders
+deployment/manager/fcm.json
 .settings/
 .gradle/
 .vagrant/
