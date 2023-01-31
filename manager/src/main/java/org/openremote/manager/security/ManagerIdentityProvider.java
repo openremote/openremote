@@ -263,10 +263,12 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     }
 
     static List<String> getUserIds(PersistenceService persistenceService, String realm, List<String> usernames) {
+        List<String> CIUsernames = usernames.stream().map(String::toLowerCase).toList();
+
         return persistenceService.doReturningTransaction(em -> {
             Map<String, String> usernameIdMap = em.createQuery(
                 "select u.username, u.id from User u join Realm r on r.id = u.realmId where u.username in :usernames and r.name = :realm", Tuple.class)
-                    .setParameter("usernames", usernames)
+                    .setParameter("usernames", CIUsernames)
                     .setParameter("realm", realm)
                     .getResultList()
                     .stream()
@@ -277,7 +279,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                         )
                     );
 
-            return usernames.stream().map(usernameIdMap::get).collect(Collectors.toList());
+            return CIUsernames.stream().map(usernameIdMap::get).collect(Collectors.toList());
         });
     }
 
