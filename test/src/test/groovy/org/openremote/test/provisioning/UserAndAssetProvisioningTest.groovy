@@ -40,6 +40,7 @@ import org.openremote.manager.provisioning.ProvisioningService
 import org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.WeatherAsset
@@ -189,11 +190,14 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         )
 
         then: "the broker should have published to the response topic a success message containing the provisioned asset"
+        String weatherAssetID
+        Asset<WeatherAsset> weatherAsset
         conditions.eventually {
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
-            def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            weatherAssetID = ((SuccessResponseMessage)device1Responses.get(0)).asset.id
+            weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert weatherAsset != null
             assert weatherAsset instanceof WeatherAsset
             assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
@@ -235,7 +239,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
-            def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert weatherAsset != null
             assert weatherAsset instanceof WeatherAsset
             assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
@@ -243,9 +247,28 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         and: "the connected attribute of the provisioned asset should show as connected"
         conditions.eventually {
-            def weatherAssetID = ((SuccessResponseMessage)device1Responses.get(0)).asset.id
-            def weatherAsset = assetStorageService.find(weatherAssetID)
+            weatherAsset = assetStorageService.find(weatherAssetID)
             assert weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(false)
+        }
+
+        when: "the connected attribute user name is changed to something invalid"
+        weatherAsset.getAttribute("connected").ifPresent{it.addOrReplaceMeta(new MetaItem<>(MetaItemType.USER_CONNECTED, "invalidUser"))}
+        weatherAsset = assetStorageService.merge(weatherAsset)
+
+        then: "the connected attribute should now be disconnected"
+        conditions.eventually {
+            weatherAsset = assetStorageService.find(weatherAssetID)
+            assert !weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(true)
+        }
+
+        when: "the connected attribute user name is changed to upper case"
+        weatherAsset.getAttribute("connected").ifPresent{it.addOrReplaceMeta(new MetaItem<>(MetaItemType.USER_CONNECTED, PROVISIONING_USER_PREFIX + device1UniqueId.toUpperCase()))}
+        weatherAsset = assetStorageService.merge(weatherAsset)
+
+        then: "the connected attribute should still find the right user and be connected"
+        conditions.eventually {
+            weatherAsset = assetStorageService.find(weatherAssetID)
+                assert weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(false)
         }
 
         when: "the client then subscribes to attribute events for the generated asset and asset events for all assets"
@@ -337,7 +360,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         and: "the connected attribute of the provisioned asset should show as not connected"
         conditions.eventually {
-            def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert !weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(true)
         }
 
