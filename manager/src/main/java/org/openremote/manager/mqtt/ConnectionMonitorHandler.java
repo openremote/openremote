@@ -253,7 +253,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
         List<String> usernames = assetIdsAttrs.stream().map(assetIdAttr -> assetIdAttr.getValue().getMetaValue(USER_CONNECTED).orElse(null))
             .filter(Objects::nonNull)
             .distinct()
-            .map(username -> User.SERVICE_ACCOUNT_PREFIX + username)
+            .map(username -> username.startsWith(User.SERVICE_ACCOUNT_PREFIX) ? username : User.SERVICE_ACCOUNT_PREFIX + username)
             .toList();
 
         // Convert usernames to userIds
@@ -280,6 +280,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
 
     protected void removeSessionAttribute(String userID, AttributeRef attributeRef) {
         LOG.finest("Removing userID '" + userID + "' monitoring for attribute: " + attributeRef);
+        updateUserConnectedStatus(userID, Collections.singletonList(attributeRef), false);
         userIDAttributeRefs.computeIfPresent(userID, (ID, refs) -> {
             refs.remove(attributeRef);
             return refs.isEmpty() ? null : refs;

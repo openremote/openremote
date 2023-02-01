@@ -28,6 +28,7 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,7 +89,7 @@ public class ConsoleAppService implements ContainerService {
                 Files.list(managerWebService.getBuiltInAppDocRoot()),
                 Files.list(managerWebService.getCustomAppDocRoot()))
             .filter(Files::isDirectory)
-            .filter(path -> !path.endsWith("shared") && !path.endsWith("swagger"))
+            .filter(path -> !new File(path.toString(), ".appignore").exists())
             .map(dir -> dir.getFileName().toString())
             .distinct()
             .toArray(String[]::new);
