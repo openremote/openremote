@@ -248,12 +248,12 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     }
 
     protected void addSessionAttributes(String realm, List<Pair<String, Attribute<?>>> assetIdsAttrs) {
-        LOG.finer("Adding '" + assetIdsAttrs.size() + "' attributes(s) with user linked attributes in realm: " + realm);
+        LOG.fine("Adding '" + assetIdsAttrs.size() + "' attributes(s) with user linked attributes in realm: " + realm);
 
         List<String> usernames = assetIdsAttrs.stream().map(assetIdAttr -> assetIdAttr.getValue().getMetaValue(USER_CONNECTED).orElse(null))
             .filter(Objects::nonNull)
             .distinct()
-            .map(username -> User.SERVICE_ACCOUNT_PREFIX + username)
+            .map(username -> username.startsWith(User.SERVICE_ACCOUNT_PREFIX) ? username : User.SERVICE_ACCOUNT_PREFIX + username)
             .toList();
 
         // Convert usernames to userIds
@@ -264,7 +264,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
                 String userID = userIds.get(usernames.indexOf(User.SERVICE_ACCOUNT_PREFIX + username));
 
                 if (userID == null) {
-                    LOG.warning("Invalid username so skipping: " + username);
+                    LOG.warning("Invalid username so skipping add session attributes: realm=" + realm + ", username=" + username);
                 } else {
                     addSessionAttribute(userID, new AttributeRef(assetIdAttr.key, assetIdAttr.getValue().getName()));
                 }
@@ -280,6 +280,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
 
     protected void removeSessionAttribute(String userID, AttributeRef attributeRef) {
         LOG.finest("Removing userID '" + userID + "' monitoring for attribute: " + attributeRef);
+        updateUserConnectedStatus(userID, Collections.singletonList(attributeRef), false);
         userIDAttributeRefs.computeIfPresent(userID, (ID, refs) -> {
             refs.remove(attributeRef);
             return refs.isEmpty() ? null : refs;
@@ -303,7 +304,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
             }
         }
 
-        LOG.finer("Updating connected status for '" + userID + "' on " + attributeRefs.size() + " attribute(s) connected=" + connected);
+        LOG.fine("Updating connected status for '" + userID + "' on " + attributeRefs.size() + " attribute(s) connected=" + connected);
         attributeRefs.forEach(attributeRef ->
             assetProcessingService.sendAttributeEvent(new AttributeEvent(attributeRef, connected)));
     }

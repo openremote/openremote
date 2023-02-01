@@ -131,7 +131,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     protected void purgeDataPoints() {
-        LOG.info("Starting data points purge daily task");
+        LOG.info("Running data points purge daily task");
 
         try {
             // Get list of attributes that have custom durations
@@ -183,8 +183,6 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to run data points purge", e);
         }
-
-        LOG.info("Finished data points purge daily task");
     }
 
     protected String buildWhereClause(List<Pair<String, Attribute<?>>> attributes, boolean negate) {

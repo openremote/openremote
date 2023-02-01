@@ -361,7 +361,7 @@ public class EnergyOptimiser {
      * updated as a result.
      */
     public void applyEarningOpportunities(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] energyLevelMaxs, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator) {
-        LOG.finer("Applying earning opportunities");
+        LOG.finest("Applying earning opportunities");
 
         // Look for import and export earning opportunities
         double[][] primary = importCostAndPower != null ? importCostAndPower : exportCostAndPower; // Never null
@@ -520,7 +520,7 @@ public class EnergyOptimiser {
             energySpaceMax = Math.min(energySpaceMax, energySpace);
             powerCapacity = Math.min(impPowerMax - powerSetpoints[interval], (energySpaceMax / intervalSize));
             powerSetpoints[interval] = powerSetpoints[interval] + powerCapacity;
-            LOG.finer("Applied import earning opportunity: set point=" + powerSetpoints[interval] + " (delta: " + powerCapacity + ")");
+            LOG.finest("Applied import earning opportunity: set point=" + powerSetpoints[interval] + " (delta: " + powerCapacity + ")");
         }
     }
 
@@ -660,7 +660,7 @@ public class EnergyOptimiser {
             energySurplusMax = Math.min(energySurplusMax, energySurplus);
             powerCapacity = Math.max(expPowerMax - powerSetpoints[interval], -1d * (energySurplusMax / intervalSize));
             powerSetpoints[interval] = powerSetpoints[interval] + powerCapacity;
-            LOG.finer("Applied export earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval] + " (delta: " + powerCapacity + ")");
+            LOG.finest("Applied export earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval] + " (delta: " + powerCapacity + ")");
         }
     }
 

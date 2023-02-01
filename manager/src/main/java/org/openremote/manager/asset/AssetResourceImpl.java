@@ -477,7 +477,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             if (asset == null) {
-                LOG.finer("No asset in request");
+                LOG.finest("No asset in request");
                 throw new WebApplicationException(BAD_REQUEST);
             }
 

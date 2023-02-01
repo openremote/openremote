@@ -174,7 +174,7 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
             return;
         }
 
-        AbstractIOClientProtocol.LOG.finer("Sending message to IO client: " + client.getClientUri());
+        AbstractIOClientProtocol.LOG.finest("Sending message to IO client: " + client.getClientUri());
         client.sendMessage(message);
     }
 

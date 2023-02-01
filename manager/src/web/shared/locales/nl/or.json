@@ -642,6 +642,9 @@
     "minZoom": "Minimale zoom",
     "deleteMapCustomization": "Kaartinstelling verwijderen",
     "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
-    "addMapCustomization" : "Voeg een Kaartinstelling toe"
+    "addMapCustomization" : "Voeg een Kaartinstelling toe",
+    "realmRole": {
+      "admin": "Super admin"
+    }
   }
 }

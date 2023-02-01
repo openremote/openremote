@@ -281,7 +281,7 @@ public class RulesEngine<T extends Ruleset> {
         } else {
             deployment.updateValidity();
             if (deployment.hasExpired()) {
-                LOG.finer("Ruleset validity period has expired: " + ruleset.getName());
+                LOG.finest("Ruleset validity period has expired: " + ruleset.getName());
                 deployment.setStatus(EXPIRED);
                 publishRulesetStatus(deployment);
                 compiled = true;
@@ -313,7 +313,7 @@ public class RulesEngine<T extends Ruleset> {
         RulesetDeployment deployment = deployments.get(ruleset.getId());
 
         if (deployment == null) {
-            LOG.finer("Ruleset cannot be retracted as it was never deployed: " + ruleset);
+            LOG.finest("Ruleset cannot be retracted as it was never deployed: " + ruleset);
             return deployments.size() == 0;
         }
 
@@ -340,7 +340,7 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         if (deployments.size() == 0) {
-            LOG.finer("No rulesets so nothing to start");
+            LOG.finest("No rulesets so nothing to start");
             return;
         }
 
@@ -487,7 +487,7 @@ public class RulesEngine<T extends Ruleset> {
 
         long fireTimeMillis = quickFire ? rulesService.quickFireMillis : rulesService.tempFactExpirationMillis;
 
-        LOG.finer("Scheduling rules firing in " + fireTimeMillis + "ms on: " + this);
+        LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms on: " + this);
         fireTimer = executorService.schedule(
             () -> {
                 synchronized (RulesEngine.this) {
@@ -534,7 +534,7 @@ public class RulesEngine<T extends Ruleset> {
 
                 if (deployment.getStatus() == DEPLOYED) {
 
-                    LOG.finer("Executing rules of: " + deployment);
+                    LOG.finest("Executing rules of: " + deployment);
 
                     // If full detail logging is enabled
                     // Log asset states and events before firing
@@ -550,7 +550,7 @@ public class RulesEngine<T extends Ruleset> {
                     executionTotalMillis += executionMillis;
                     LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
                 } else {
-                    LOG.finer("Rules deployment '" + deployment.getName() + "' skipped as status is: " + deployment.getStatus());
+                    LOG.finest("Rules deployment '" + deployment.getName() + "' skipped as status is: " + deployment.getStatus());
                 }
             } catch (Exception ex) {
                 LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
@@ -676,7 +676,7 @@ public class RulesEngine<T extends Ruleset> {
             engineInfo
         );
 
-        LOG.finer("Publishing rules engine status event: " + event);
+        LOG.finest("Publishing rules engine status event: " + event);
 
         // Notify clients
         clientEventService.publishEvent(event);
@@ -695,7 +695,7 @@ public class RulesEngine<T extends Ruleset> {
             ruleset
         );
 
-        LOG.finer("Publishing ruleset status event: " + event);
+        LOG.finest("Publishing ruleset status event: " + event);
 
         // Notify clients
         clientEventService.publishEvent(event);

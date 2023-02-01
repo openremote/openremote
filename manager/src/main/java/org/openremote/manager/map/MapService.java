@@ -40,17 +40,11 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -86,29 +80,20 @@ public class MapService implements ContainerService {
     protected Path mapSettingsPath;
     protected Metadata metadata;
     protected ObjectNode mapConfig;
-    protected ObjectNode mapSource;
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
-    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws Exception {
-        LOG.log(Level.INFO, "Saving mapsettings.json");
+    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
+        LOG.log(Level.INFO, "Saving mapsettings.json..");
         this.mapConfig.putNull("options");
         this.mapSettings.clear();
         ObjectNode mapSettings = loadMapSettingsJson(mapSettingsPath);
         try(OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()))){
-            ObjectMapper mapper = new ObjectMapper();
             mapSettings.putPOJO("options", mapConfiguration);
-            mapper
-                    .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-                    .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                    .enable(SerializationFeature.INDENT_OUTPUT);
-
-            out.write(mapper.writeValueAsString(mapSettings).getBytes());
-            out.close();
+            out.write(ValueUtil.JSON.writeValueAsString(mapSettings).getBytes());
             this.setData();
-        } catch (IOException exception) {
-            LOG.log(Level.WARNING, "Saving mapsettings.json error", exception);
-            throw exception;
+        } catch (Exception exception) {
+            LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
         }
 
         return mapSettings;
