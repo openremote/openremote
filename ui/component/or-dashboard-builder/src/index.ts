@@ -1,6 +1,7 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
+import {styleMap} from 'lit/directives/style-map.js';
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-preview";
@@ -124,7 +125,6 @@ const styling = css`
     #builder {
         flex: 1 0 auto;
         height: 100%;
-        max-height: calc(100vh - 77px - 50px); /* Fix for not extending screen height. Mobile has a different one */
     }
     
     /* ----------------------------- */
@@ -507,6 +507,10 @@ export class OrDashboardBuilder extends LitElement {
             this.dispatchEvent(new CustomEvent('editToggle', { detail: false }));
             this.showDashboardTree = true;
         }
+        const builderStyles = {
+            display: (this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? 'none' : undefined,
+            maxHeight: this.editMode ? "calc(100vh - 77px - 50px)" : "inherit"
+        };
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${(this.showDashboardTree) ? html`
@@ -574,7 +578,7 @@ export class OrDashboardBuilder extends LitElement {
                                     <span>${!this._hasEditAccess() ? i18next.t('noDashboardWriteAccess') : i18next.t('errorOccurred')}.</span>
                                 </div>
                             ` : undefined}
-                            <div id="builder" style="${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? 'display: none' : undefined}">
+                            <div id="builder" style="${styleMap(builderStyles)}">
                                 ${(this.selectedDashboard != null) ? html`
                                     <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .realm="${this.realm}" .template="${this.currentTemplate}" .rerenderPending="${this.rerenderPending}"

@@ -72,7 +72,7 @@ export class OrDashboardTree extends LitElement {
     shouldUpdate(changedProperties: Map<string, any>) {
         if(changedProperties.size == 1) {
 
-            // prevent update since it is not used in render.
+            // Prevent any update since it is not necessary in its current state.
             // However, do update when dashboard is saved (aka when hasChanged is set back to false)
             if(changedProperties.has("hasChanged") && this.hasChanged) {
                 return false;
@@ -84,7 +84,7 @@ export class OrDashboardTree extends LitElement {
     private async getAllDashboards() {
         return manager.rest.api.DashboardResource.getAllRealmDashboards(this.realm!)
             .then((result) => {
-                this.dashboards = result.data.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0);
+                this.dashboards = result.data;
             }).catch((reason) => {
                 console.error(reason);
                 showSnackbar(undefined, i18next.t('errorOccurred'));
