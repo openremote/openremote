@@ -1511,12 +1511,14 @@ export class OrMwcInput extends LitElement {
 
                         // Set width of fixed select menu to match the component width
                         // Using an observer to prevent forced reflow / DOM measurements; prevents blocking the thread
-                        this._menuObserver = new IntersectionObserver((entries, observer) => {
-                            if((entries[0].target as HTMLElement).style.minWidth != (entries[0].target.parentElement?.clientWidth + "px")) {
-                                (entries[0].target as HTMLElement).style.minWidth = entries[0].target.parentElement?.clientWidth + "px";
-                            }
-                        })
-                        this._menuObserver.observe(this.shadowRoot!.getElementById("mdc-select-menu")!);
+                        if(!this._menuObserver) {
+                            this._menuObserver = new IntersectionObserver((entries, observer) => {
+                                if((entries[0].target as HTMLElement).style.minWidth != (entries[0].target.parentElement?.clientWidth + "px")) {
+                                    (entries[0].target as HTMLElement).style.minWidth = entries[0].target.parentElement?.clientWidth + "px";
+                                }
+                            })
+                            this._menuObserver.observe(this.shadowRoot!.getElementById("mdc-select-menu")!);
+                        }
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         const searchable: boolean = (this.searchProvider != undefined);
