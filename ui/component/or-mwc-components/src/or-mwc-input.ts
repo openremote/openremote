@@ -612,6 +612,11 @@ const style = css`
     .mdc-menu__searchable.mdc-menu-surface--is-open-below {
         flex-direction: column;
     }
+    
+    /* Prevent mouse events being fired from inside the or-icon shadowDOM */
+    .mdc-list-item__graphic > or-icon {
+        pointer-events: none;
+    }
 `;
 
 @customElement("or-mwc-input")

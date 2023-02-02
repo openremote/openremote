@@ -25,9 +25,6 @@ import org.openremote.model.rules.RulesClock;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -94,19 +91,23 @@ public class TimerService implements ContainerService, RulesClock {
             @Override
             public long advanceTime(long amount, TimeUnit unit) {
                 offset.addAndGet(unit.toMillis(amount));
-                return getCurrentTimeMillis();
+                long currentMillis = getCurrentTimeMillis();
+                LOG.info("Clock advanced to: " + (currentMillis) + "/" + new Date(currentMillis));
+                return currentMillis;
             }
 
             @Override
             public void stop() {
                 if (stopTime == null) {
                     stopTime = System.currentTimeMillis();
+                    LOG.info("Clock stopped at: " + (stopTime) + "/" + new Date(stopTime));
                 }
             }
 
             @Override
             public void start() {
                 stopTime = null;
+                LOG.info("Clock started at: " + (System.currentTimeMillis()) + "/" + new Date(System.currentTimeMillis()));
             }
 
             @Override

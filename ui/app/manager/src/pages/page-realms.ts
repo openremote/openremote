@@ -10,6 +10,7 @@ import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {ClientRole, Realm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
+import {Util} from "@openremote/core"
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -103,7 +104,7 @@ export class PageRealms extends Page<AppStateKeyed> {
           width: 50%
         }
 
-        .meta-item-container {
+        .realm-container {
           flex-direction: row;
           overflow: hidden;
           max-height: 0;
@@ -147,21 +148,25 @@ export class PageRealms extends Page<AppStateKeyed> {
         .mdc-data-table__header-cell:first-child {
             padding-left: 36px;
         }
+
+        .mdc-data-table__row {
+            cursor: pointer;
+        }
         
         .padded-cell {
           overflow-wrap: break-word;
           word-wrap: break-word
         }
 
-        .attribute-meta-row td {
+        .realm-row td {
           padding: 0;
         }
 
-        .attribute-meta-row {
+        .realm-row {
           max-width: 0px;
         }
 
-        .attribute-meta-row.expanded .meta-item-container {
+        .realm-row.expanded .realm-container {
           max-height: 1000px;
           max-width: none;
           transition: max-height 1s ease-in;
@@ -266,7 +271,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                 <div class="panel">
                 <p class="panel-title">${i18next.t("realm_plural")}</p>
                   <div id="table-roles" class="mdc-data-table">
-                  <table class="mdc-data-table__table" aria-label="attribute list" >
+                  <table class="mdc-data-table__table" aria-label="realm list" >
                       <thead>
                           <tr class="mdc-data-table__header-row">
                               <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
@@ -293,13 +298,14 @@ export class PageRealms extends Page<AppStateKeyed> {
 
                             </td>
                           </tr>
-                          <tr id="attribute-meta-row-${index}" class="attribute-meta-row${!realm.id ? " expanded" : ""}">
+                          <tr id="realm-row-${index}" class="realm-row${!realm.id ? " expanded" : ""}">
                             <td colspan="100%">
-                              <div class="meta-item-container">
+                              <div class="realm-container">
                                  
                                   <div class="row">
                                     <div class="column">
-                                      <or-mwc-input ?readonly="${realm.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.name = e.detail.value}"></or-mwc-input>            
+                                      <or-mwc-input ?readonly="${realm.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.name = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
@@ -313,10 +319,10 @@ export class PageRealms extends Page<AppStateKeyed> {
                                         <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" .disabled="${manager.displayRealm === realm.name}" @or-mwc-input-changed="${() => this._deleteRealm(realm)}"></or-mwc-input>  
                                       ` : ``}
                                       <or-mwc-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRealm(realm)}"></or-mwc-input>   
-                                  ` : html`
+                                  ` : !readonly ? html`
                                     <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}"></or-mwc-input>            
                                     <or-mwc-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._createRealm(realm)}"></or-mwc-input>   
-                                  `}    
+                                  `: ``}    
                                   </div>
                               </div>
                             </td>
@@ -352,17 +358,22 @@ export class PageRealms extends Page<AppStateKeyed> {
 
     private async _updateRealm(realm) {
         const response = await manager.rest.api.RealmResource.update(realm.name, realm);
-        const data: any = response.data;
-        this._realms = this._realms.map(t => {
-            if (t.id === data.id) {
-                return data;
-            }
-            return t;
-        })
+        if (response.status === 204) {
+            showSnackbar(undefined, i18next.t("saveRealmSucceeded"));
+        } else {
+            showSnackbar(undefined, i18next.t("saveRealmFailed"));
+        }
+        //TODO improve this so that header realm picker is updated
+        window.location.reload();
     }
 
     private async _createRealm(realm) {
         await manager.rest.api.RealmResource.create(realm).then(response => {
+            if (response.status === 204) {
+                showSnackbar(undefined, i18next.t("saveRealmSucceeded"));
+            } else {
+                showSnackbar(undefined, i18next.t("saveRealmFailed"));
+            }
             //TODO improve this so that header realm picker is updated
             window.location.reload();
         });
@@ -441,7 +452,7 @@ export class PageRealms extends Page<AppStateKeyed> {
     }
 
     private expanderToggle(ev: MouseEvent, index:number) {
-        const metaRow = this.shadowRoot.getElementById('attribute-meta-row-'+index)
+        const metaRow = this.shadowRoot.getElementById('realm-row-'+index)
         const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
         if (metaRow.classList.contains('expanded')) {
             metaRow.classList.remove("expanded");

@@ -197,7 +197,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected _realmRoles: Role[] = [];
 
     protected _realmRolesFilter = (role: Role) => {
-        return !role.composite && !["uma_authorization", "offline_access", "admin"].includes(role.name) && !role.name.startsWith("default-roles")
+        return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name) && !role.name.startsWith("default-roles"))
     };
 
     @state()

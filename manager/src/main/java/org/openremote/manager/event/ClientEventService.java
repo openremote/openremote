@@ -27,7 +27,6 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.mqtt.DefaultMQTTHandler;
-import org.openremote.manager.mqtt.MQTTBrokerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
@@ -45,6 +44,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.apache.camel.builder.PredicateBuilder.or;
@@ -92,6 +92,7 @@ import static org.openremote.container.web.ConnectionConstants.SESSION_TERMINATO
  * </p></dd>
  * </dl>
  */
+// TODO: Implement session expiry based on security principal
 public class ClientEventService extends RouteBuilder implements ContainerService {
 
     protected static class SessionInfo {
@@ -251,7 +252,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .when(header(ConnectionConstants.SESSION_OPEN))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
-                LOG.fine("Adding session: " + sessionKey);
+                LOG.finest("Adding session: " + sessionKey);
                 sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
                 passToInterceptors(exchange);
             })
@@ -262,7 +263,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             ))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
-                LOG.fine("Removing session: " + sessionKey);
+                LOG.finest("Removing session: " + sessionKey);
                 sessionKeyInfoMap.remove(sessionKey);
                 eventSubscriptions.cancelAll(sessionKey);
                 passToInterceptors(exchange);
@@ -378,9 +379,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         if (!authorized) {
             if (authContext != null) {
-                LOG.info("Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", username=" + authContext.getAuthenticatedRealmName() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                LOG.fine("Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
             } else {
-                LOG.info("Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", user=null");
+                LOG.fine("Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", user=null");
             }
         }
 
@@ -396,9 +397,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         if (!authorized) {
             if (authContext != null) {
-                LOG.info("Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", username=" + authContext.getAuthenticatedRealmName() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                LOG.fine("Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
             } else {
-                LOG.info("Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=null");
+                LOG.fine("Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=null");
             }
         }
 
@@ -414,7 +415,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         if (messageBrokerService != null && messageBrokerService.getFluentProducerTemplate() != null) {
             // Don't log that we are publishing a syslog event,
             if (!(event instanceof SyslogEvent)) {
-                LOG.finer("Publishing: " + event);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("Publishing: " + event);
+                }
             }
             messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
@@ -425,10 +428,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
     public void sendToSession(String sessionKey, Object data) {
         if (messageBrokerService != null && messageBrokerService.getFluentProducerTemplate() != null) {
-            LOG.finer("Sending to session '" + sessionKey + "': " + data);
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Sending to session '" + sessionKey + "': " + data);
+            }
             SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
             if (sessionInfo == null) {
-                LOG.fine("Cannot send to requested session it doesn't exist or is disconnected");
+                LOG.info("Cannot send to requested session it doesn't exist or is disconnected:" + sessionKey);
                 return;
             }
             if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
@@ -464,7 +469,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             interceptor.accept(exchange);
             boolean stop = exchange.isRouteStop();
             if (stop) {
-                LOG.finer("Client event interceptor marked exchange as `stop routing`");
+                LOG.finest("Client event interceptor marked exchange as `stop routing`");
             }
             return stop;
         }));

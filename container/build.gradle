@@ -10,9 +10,9 @@ dependencies {
     api "org.codehaus.groovy:groovy-all:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
 
-    api "org.slf4j:slf4j-api:$slf4jVersion"
+    // SLF4J JUL provider
     api "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    api "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    // Log4J redirect to SLF4J
     api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
     api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
@@ -46,18 +46,8 @@ dependencies {
     api "org.apache.camel:camel-jackson:$camelVersion"
     api "org.apache.camel:camel-snmp:$camelVersion"
     api "org.apache.camel:camel-health:$camelVersion"
-
-    api("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
-        exclude group: "log4j"
-    }
-
-    api("org.cyclopsgroup:jmxterm:$jmxtermVersion") {
-        exclude group: "javax.servlet"
-        exclude group: "log4j"
-        exclude group: "logkit"
-        exclude group: "commons-logging"
-    }
-
+    api "org.apache.camel:camel-management:$camelVersion"
+    api("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion")
     api "com.vladmihalcea:hibernate-types-52:$hibernateTypesVersion"
 }
 
