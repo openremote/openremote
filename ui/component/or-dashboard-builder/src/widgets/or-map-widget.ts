@@ -7,7 +7,6 @@ import {
     WellknownMetaItems,
     GeoJSONPoint,
     AssetDescriptor,
-    WellknownValueTypes
 } from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
@@ -28,10 +27,8 @@ import {
     RangeAttributeMarkerColours,
     AttributeMarkerColoursRange,
     MapMarkerColours,
-    OrMapLongPressEvent,
-    ViewSettings,
 } from "@openremote/or-map";
-import {LngLat, LngLatBounds, LngLatBoundsLike} from "maplibre-gl";
+import {LngLat} from "maplibre-gl";
 
 export interface MapWidgetConfig extends OrWidgetConfig {
     // General values
@@ -125,8 +122,8 @@ export class OrMapWidgetContent extends LitElement {
     render() {
         this.markers = {};
         return html`
-            <or-map id="miniMap" class="or-map" .zoom="${this.widget!.widgetConfig.zoom ? this.widget!.widgetConfig.zoom! : undefined}"
-                    .center="${this.widget!.widgetConfig.center ? this.widget!.widgetConfig.center! : undefined}"
+            <or-map id="miniMap" class="or-map" .zoom="${this.widget?.widgetConfig?.zoom}"
+                    .center="${this.widget?.widgetConfig?.center}"
                     style="height: 100%">
                 ${(this.assets) ?
                         this.assets.filter((asset: Asset) => {
@@ -229,7 +226,6 @@ class OrMapWidgetSettings extends LitElement {
     // UI Rendering
     render() {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as MapWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
-        const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
         return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('configuration.mapSettings'))}
@@ -240,7 +236,7 @@ class OrMapWidgetSettings extends LitElement {
 
                         <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;"
-                                          .value="${this.widget?.widgetConfig.zoom}" label="${i18next.t('dashboard.zoom')}"
+                                          .value="${this.widget?.widgetConfig?.zoom}" label="${i18next.t('dashboard.zoom')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               config.zoom = event.detail.value;
                                               this.updateConfig(this.widget!, config);
@@ -249,7 +245,7 @@ class OrMapWidgetSettings extends LitElement {
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;"
-                                          .value="${this.widget?.widgetConfig.center ? (Object.values(this.widget.widgetConfig.center))[0] + ', ' + (Object.values(this.widget.widgetConfig.center))[1] : undefined}"
+                                          .value="${this.widget?.widgetConfig?.center ? (Object.values(this.widget.widgetConfig.center))[0] + ', ' + (Object.values(this.widget.widgetConfig.center))[1] : undefined}"
                                           label="${i18next.t('dashboard.center')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               if (event.detail.value) {
@@ -303,7 +299,7 @@ class OrMapWidgetSettings extends LitElement {
     }
 
     updated(changedProperties: Map<string, any>){
-        if(!this.widget?.widgetConfig.zoom && !this.widget?.widgetConfig.center){
+        if(!this.widget?.widgetConfig?.zoom && !this.widget?.widgetConfig?.center){
             manager.rest.api.MapResource.getSettings().then((response) => {
                 this.widget!.widgetConfig.zoom = response.data.options.default.zoom;
                 this.widget!.widgetConfig.center = response.data.options.default.center;
