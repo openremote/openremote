@@ -643,5 +643,10 @@
     "deleteMapCustomization": "Kaartinstelling verwijderen",
     "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
     "addMapCustomization" : "Voeg een Kaartinstelling toe"
-  }
+  },
+  "mqttSessions": "MQTT sessies",
+  "address": "Adres",
+  "since": "Vanaf",
+  "roles": "Rollen",
+  "restrictedUser": "Gebruiker met beperkte toegang"
 }

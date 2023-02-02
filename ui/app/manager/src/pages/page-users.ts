@@ -496,7 +496,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 ${this.getSingleUserView(user, compositeRoleOptions, realmRoleOptions, ("user" + index), (readonly || this._saveUserPromise != undefined))}
                             </div>
                             
-                            ${user.serviceAccount ? this.getMQTTSessionTemplate(user) : ``}
+                            ${user.serviceAccount && user.id ? this.getMQTTSessionTemplate(user) : ``}
                         `;
                     })}
 
@@ -747,6 +747,9 @@ export class PageUsers extends Page<AppStateKeyed> {
             const rows = userSessionsResponse.data.map((session) => {
                 return [session.remoteAddress, new Date(session.startTimeMillis)]
             });
+            if (rows.length < 1){
+                return html`<or-mwc-table .rows="${[['This user has no active MQTT sessions',null]]}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
+            }
 
             return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
         };
