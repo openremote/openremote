@@ -189,6 +189,9 @@ export class OrMapWidgetContent extends LitElement {
         if (config.assetType && config.attributeName) {
             let assets: Asset[] = [];
             await manager.rest.api.AssetResource.queryAssets({
+                realm: {
+                    name: this.realm
+                },
                 select: {
                     attributes: [config.attributeName, 'location']
                 },
