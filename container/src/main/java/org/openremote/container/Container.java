@@ -29,6 +29,8 @@ import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static java.lang.System.Logger.Level.*;
@@ -121,6 +123,14 @@ public class Container implements org.openremote.model.Container {
             OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT);
 
         EXECUTOR_SERVICE = new NoShutdownScheduledExecutorService("Scheduled task", scheduledTasksThreadsMax);
+
+        // Any log handlers of the root logger that are container services must be registered
+        for (Handler handler : Logger.getLogger("").getHandlers()) {
+            if (handler instanceof ContainerService) {
+                ContainerService containerServiceLogHandler = (ContainerService) handler;
+                this.services.put(containerServiceLogHandler.getClass(), containerServiceLogHandler);
+            }
+        }
 
         if (services != null) {
             services.forEach(svc -> this.services.put(svc.getClass(), svc));
