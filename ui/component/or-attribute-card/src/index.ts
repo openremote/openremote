@@ -11,7 +11,8 @@ import {
     DatapointInterval,
     ReadAttributeEvent,
     ValueDatapoint,
-    AssetModelUtil
+    AssetModelUtil,
+    AssetDatapointLTTBQuery
 } from "@openremote/model";
 import {DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
 import {Chart, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
@@ -737,10 +738,11 @@ export class OrAttributeCard extends LitElement {
             assetId,
             attributeName,
             {
-                interval: interval,
+                type: "lttb",
                 fromTimestamp: startOfPeriod,
-                toTimestamp: endOfPeriod
-            }
+                toTimestamp: endOfPeriod,
+                amountOfPoints: 20,
+            } as AssetDatapointLTTBQuery
         );
 
         this._loading = false;

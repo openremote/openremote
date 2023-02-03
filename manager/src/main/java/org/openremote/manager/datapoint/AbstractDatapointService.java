@@ -1,3 +1,22 @@
+/*
+ * Copyright 2023, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.datapoint;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,14 +30,12 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.datapoint.Datapoint;
-import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.query.AssetDatapointQuery;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
-import org.postgresql.util.PGInterval;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.TypedQuery;
@@ -28,7 +45,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -150,66 +166,29 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         });
     }
 
-    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
-                                                  DatapointInterval datapointInterval,
-                                                  Integer stepSize,
-                                                  LocalDateTime fromTimestamp,
-                                                  LocalDateTime toTimestamp) {
+    public ValueDatapoint<?>[] queryDatapoints(String assetId, String attributeName, AssetDatapointQuery datapointQuery) {
+        Asset<?> asset = assetStorageService.find(assetId, true);
+        Attribute<?> assetAttribute = asset.getAttribute(attributeName)
+                .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeName));
 
-        Asset<?> asset = assetStorageService.find(attributeRef.getId());
-        if (asset == null) {
-            throw new IllegalStateException("Asset not found: " + attributeRef.getId());
-        }
-
-        Attribute<?> assetAttribute = asset.getAttribute(attributeRef.getName())
-                .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeRef.getName()));
-
-        return getValueDatapoints(asset.getId(), assetAttribute, datapointInterval, stepSize, fromTimestamp, toTimestamp);
+        return this.queryDatapoints(assetId, assetAttribute, datapointQuery);
     }
 
-    public ValueDatapoint<?>[] queryDatapoints(AssetDatapointQuery datapointQuery) {
+    public ValueDatapoint<?>[] queryDatapoints(String assetId, Attribute<?> attribute, AssetDatapointQuery datapointQuery) {
 
-        AttributeRef attributeRef = new AttributeRef(datapointQuery.assetId, datapointQuery.attributeName);
-        LocalDateTime fromTimestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(datapointQuery.fromTimestamp), ZoneId.systemDefault());
-        LocalDateTime toTimestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(datapointQuery.toTimestamp), ZoneId.systemDefault());
+        AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+        Map<Integer, Object> parameters = datapointQuery.getSQLParameters(attributeRef);
+
+        getLogger().finest("Querying datapoints for: " + attributeRef);
 
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint<?>[]>() {
 
                     @Override
                     public ValueDatapoint<?>[] execute(Connection connection) throws SQLException {
-                        StringBuilder sqlQuery = new StringBuilder();
-                        Map<Integer, Object> parameters = new HashMap<Integer, Object>();
-                        switch (datapointQuery.hyperfunction.function) {
-                            case ASAP_SMOOTH -> {
-                                // language=sql
-                                sqlQuery.append("select * from public.unnest((select public.asap_smooth(timestamp::timestamptz, value::double precision, ?) from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))");
-                                parameters.put(1, datapointQuery.amountOfPoints);
-                                parameters.put(2, attributeRef.getId());
-                                parameters.put(3, attributeRef.getName());
-                                parameters.put(4, fromTimestamp);
-                                parameters.put(5, toTimestamp);
-                            }
-                            case GP_LTTB -> {
-                                // language=sql
-                                sqlQuery.append("select * from public.unnest((select toolkit_experimental.gp_lttb(timestamp::timestamptz, value::double precision, ?) from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))");
-                                parameters.put(1, datapointQuery.amountOfPoints);
-                                parameters.put(2, attributeRef.getId());
-                                parameters.put(3, attributeRef.getName());
-                                parameters.put(4, fromTimestamp);
-                                parameters.put(5, toTimestamp);
-                            }
-                            default -> { // = LTTB
-                                // language=sql
-                                sqlQuery.append("select * from public.unnest((select public.lttb(timestamp::timestamptz, value::double precision, ?) from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))");
-                                parameters.put(1, datapointQuery.amountOfPoints);
-                                parameters.put(2, attributeRef.getId());
-                                parameters.put(3, attributeRef.getName());
-                                parameters.put(4, fromTimestamp);
-                                parameters.put(5, toTimestamp);
-                            }
-                        }
-                        try (PreparedStatement st = connection.prepareStatement(sqlQuery.toString())) {
+
+                        Class<?> attributeType = attribute.getType().getType();
+                        try (PreparedStatement st = connection.prepareStatement(datapointQuery.getSQLQuery(getDatapointTableName(), attributeType))) {
 
                             if(parameters.size() > 0) {
                                 for(Map.Entry<Integer, Object> param : parameters.entrySet()) {
@@ -220,7 +199,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                     }
                                 }
                             }
-                            System.out.println(st);
+                            System.out.println(st); // temp
 
                             try (ResultSet rs = st.executeQuery()) {
                                 List<ValueDatapoint<?>> result = new ArrayList<>();
@@ -228,178 +207,6 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                     Object value = null;
                                     if (rs.getObject(2) != null) {
                                         value = ValueUtil.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null);
-                                    }
-                                    result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
-                                }
-                                return result.toArray(new ValueDatapoint<?>[0]);
-                            }
-                        }
-                    }
-                })
-        );
-    }
-
-    public ValueDatapoint<?>[] getValueDatapoints(String assetId,
-                                                  Attribute<?> attribute,
-                                                  DatapointInterval datapointInterval,
-                                                  final Integer stepSize,
-                                                  LocalDateTime fromTimestamp,
-                                                  LocalDateTime toTimestamp) {
-
-        AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
-
-        getLogger().finest("Getting datapoints for: " + attributeRef);
-
-        return persistenceService.doReturningTransaction(entityManager ->
-
-                entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint<?>[]>() {
-                    @Override
-                    public ValueDatapoint<?>[] execute(Connection connection) throws SQLException {
-
-                        Class<?> attributeType = attribute.getType().getType();
-                        boolean isNumber = Number.class.isAssignableFrom(attributeType);
-                        boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
-                        StringBuilder query = new StringBuilder();
-                        boolean downsample = isNumber || isBoolean;
-
-                        String truncate = null;
-                        String part = null;
-                        String interval = null;
-                        String stepStr = null;
-                        String partQuery = "date_part(?, ?)::int";
-                        String partQuery2 = "date_part(?, TIMESTAMP)::int";
-                        int step = 1;
-
-                        if (downsample) {
-
-                            switch (datapointInterval) {
-
-                                case MINUTE:
-                                    // This works with minutes of the day so not constrained to step size < 60
-                                    step = stepSize == null ? 1 : Math.max(1, Math.min(1440, stepSize));
-                                    truncate = "day";
-                                    part = "min";
-                                    interval = "min";
-                                    partQuery = "(date_part('hour', ?)::int * 60 + date_part(?, ?)::int)";
-                                    partQuery2 = "(date_part('hour', TIMESTAMP)::int * 60 + date_part(?, TIMESTAMP)::int)";
-                                    break;
-                                case HOUR:
-                                    step = stepSize == null ? 1 : Math.max(1, Math.min(24, stepSize));
-                                    truncate = "day";
-                                    part = "hour";
-                                    interval = "hour";
-                                    break;
-                                case DAY:
-                                    step = stepSize == null ? 1 : Math.max(1, Math.min(365, stepSize));
-                                    truncate = "year";
-                                    part = "doy";
-                                    interval = "day";
-                                    break;
-                                case WEEK:
-                                    step = stepSize == null ? 1 : Math.max(1, Math.min(53, stepSize));
-                                    truncate = "year";
-                                    part = "week";
-                                    interval = "week";
-                                    break;
-                                case MONTH:
-                                    step = stepSize == null ? 1 : Math.max(1, Math.min(12, stepSize));
-                                    truncate = "year";
-                                    part = "month";
-                                    interval = "month";
-                                    break;
-                                case YEAR:
-                                    step = stepSize == null ? 1 : Math.max(1, stepSize);
-                                    truncate = "decade";
-                                    part = "year";
-                                    interval = "year";
-                                    break;
-                                default:
-                                    throw new UnsupportedOperationException("Can't handle interval: " + datapointInterval);
-                            }
-                            stepStr = step + " " + interval;
-
-                            // TODO: Change this to use something like this max min decimation algorithm https://knowledge.ni.com/KnowledgeArticleDetails?id=kA00Z0000019YLKSA2&l=en-GB)
-                            query.append("select PERIOD as X, AVG_VALUE as Y " +
-                                    "from generate_series(date_trunc(?, ?) + " + partQuery + " / ? * ?, date_trunc(?, ?) + " + partQuery + " / ? * ?, ?) PERIOD left join ( " +
-                                    "select (date_trunc(?, TIMESTAMP) + " + partQuery2 + " / ? * ?)::timestamp as TS, ");
-
-                            if (isNumber) {
-                                query.append(" AVG(VALUE::text::numeric) as AVG_VALUE ");
-                            } else {
-                                query.append(" AVG(case when VALUE::text::boolean is true then 1 else 0 end) as AVG_VALUE ");
-                            }
-
-                            query.append("from " + getDatapointTableName() +
-                                    " where TIMESTAMP >= date_trunc(?, ?) and TIMESTAMP < (date_trunc(?, ?) + ?) and ENTITY_ID = ? and ATTRIBUTE_NAME = ? group by TS) DP on DP.TS = PERIOD order by PERIOD asc");
-
-                        } else {
-                            query.append("select distinct TIMESTAMP AS X, value AS Y from " + getDatapointTableName() +
-                                    " where " +
-                                    "TIMESTAMP >= ?" +
-                                    "and " +
-                                    "TIMESTAMP <= ? " +
-                                    "and " +
-                                    "ENTITY_ID = ? and ATTRIBUTE_NAME = ?"
-                            );
-                        }
-
-                        try (PreparedStatement st = connection.prepareStatement(query.toString())) {
-
-                            if (downsample) {
-                                int counter = 1;
-                                boolean isMinute = datapointInterval == DatapointInterval.MINUTE;
-
-                                st.setString(counter++, truncate);
-                                st.setObject(counter++, fromTimestamp);
-                                if (isMinute) {
-                                    st.setObject(counter++, fromTimestamp);
-                                }
-                                st.setString(counter++, part);
-                                st.setObject(counter++, fromTimestamp);
-                                st.setInt(counter++, step);
-                                st.setObject(counter++, new PGInterval(stepStr));
-                                st.setString(counter++, truncate);
-                                st.setObject(counter++, toTimestamp);
-                                if (isMinute) {
-                                    st.setObject(counter++, toTimestamp);
-                                }
-                                st.setString(counter++, part);
-                                st.setObject(counter++, toTimestamp);
-                                st.setInt(counter++, step);
-                                st.setObject(counter++, new PGInterval(stepStr));
-                                st.setObject(counter++, new PGInterval(stepStr));
-                                st.setString(counter++, truncate);
-                                st.setString(counter++, part);
-                                st.setInt(counter++, step);
-                                st.setObject(counter++, new PGInterval(stepStr));
-                                st.setString(counter++, interval);
-                                st.setObject(counter++, fromTimestamp);
-                                st.setString(counter++, interval);
-                                st.setObject(counter++, toTimestamp);
-                                st.setObject(counter++, new PGInterval(stepStr));
-                                st.setString(counter++, attributeRef.getId());
-                                st.setString(counter++, attributeRef.getName());
-                            } else {
-                                st.setObject(1, fromTimestamp);
-                                st.setObject(2, toTimestamp);
-                                st.setString(3, attributeRef.getId());
-                                st.setString(4, attributeRef.getName());
-                            }
-
-                            try (ResultSet rs = st.executeQuery()) {
-                                List<ValueDatapoint<?>> result = new ArrayList<>();
-                                while (rs.next()) {
-                                    Object value = null;
-                                    if (rs.getObject(2) != null) {
-                                        if (downsample) {
-                                            value = ValueUtil.getValueCoerced(rs.getObject(2), Double.class).orElse(null);
-                                        } else {
-                                            if (rs.getObject(2) instanceof PGobject) {
-                                                value = ValueUtil.parse(((PGobject) rs.getObject(2)).getValue()).orElse(null);
-                                            } else {
-                                                value = ValueUtil.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null);
-                                            }
-                                        }
                                     }
                                     result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                                 }

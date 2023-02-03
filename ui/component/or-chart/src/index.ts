@@ -9,7 +9,7 @@ import {
 import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {AssetModelUtil, Asset, Attribute, AttributeRef, DatapointInterval, WellknownMetaItems, ReadAssetEvent, AssetEvent, ValueDatapoint, AssetQuery} from "@openremote/model";
+import {AssetModelUtil, Asset, Attribute, AttributeRef, DatapointInterval, WellknownMetaItems, ReadAssetEvent, AssetEvent, ValueDatapoint, AssetQuery, AssetDatapointQuery, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, AssetDatapointLTTBQuery} from "@openremote/model";
 import manager, {
     DefaultColor2,
     DefaultColor3,
@@ -1135,32 +1135,30 @@ export class OrChart extends translate(i18next)(LitElement) {
         };
 
         if (asset.id && attribute.name) {
-            const queryParams = {
-                interval: interval,
-                fromTimestamp: from,
-                toTimestamp: to
-            };
-
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
 
             if (!predicted) {
-                response = await manager.rest.api.AssetDatapointResource.datapointQuery({
-                    assetId: asset.id,
-                    attributeName: attribute.name,
-                    amountOfPoints: 50,
-                    fromTimestamp: from,
-                    toTimestamp: to
-                });
-                /*response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                     asset.id,
                     attribute.name,
-                    queryParams
-                );*/
+                    {
+                        type: "lttb",
+                        fromTimestamp: from,
+                        toTimestamp: to,
+                        amountOfPoints: 50 // temp hardcode
+                    } as AssetDatapointLTTBQuery
+                );
             } else {
                 response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
                     asset.id,
                     attribute.name,
-                    queryParams
+                    {
+                        type: "interval",
+                        fromTimestamp: from,
+                        toTimestamp: to,
+                        interval: "1 minute", // temp hardcode
+                        formula: AssetDatapointIntervalQueryFormula.AVG
+                    } as AssetDatapointIntervalQuery
                 );
             }
 

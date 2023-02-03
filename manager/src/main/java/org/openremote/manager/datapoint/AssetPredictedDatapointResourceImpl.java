@@ -25,17 +25,14 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.datapoint.AssetPredictedDatapointResource;
-import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.logging.Logger;
 
 public class AssetPredictedDatapointResourceImpl extends ManagerWebResource implements AssetPredictedDatapointResource {
@@ -58,10 +55,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
     public ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
                                                       String assetId,
                                                       String attributeName,
-                                                      DatapointInterval interval,
-                                                      Integer stepSize,
-                                                      long fromTimestamp,
-                                                      long toTimestamp) {
+                                                      AssetDatapointQuery query) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -83,12 +77,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
-            return assetPredictedDatapointService.getValueDatapoints(assetId,
-                attribute,
-                interval,
-                stepSize,
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault()),
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault()));
+            return assetPredictedDatapointService.queryDatapoints(assetId, attribute, query);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }

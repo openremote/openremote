@@ -37,8 +37,8 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.AttributePredicate;
@@ -799,12 +799,15 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         if (attribute.hasMeta(MetaItemType.HAS_PREDICTED_DATA_POINTS)) {
             LocalDateTime timestamp = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault());
-            ValueDatapoint<?>[] predictedData = assetPredictedDatapointService.getValueDatapoints(
-                ref,
-                DatapointInterval.MINUTE,
-                (int)(intervalSize * 60),
-                timestamp,
-                timestamp.plus(24, HOURS).minus((long)(intervalSize * 60), ChronoUnit.MINUTES)
+            ValueDatapoint<?>[] predictedData = assetPredictedDatapointService.queryDatapoints(
+                    ref.getId(),
+                    ref.getName(),
+                    new AssetDatapointIntervalQuery(
+                            timestamp,
+                            timestamp.plus(24, HOURS).minus((long)(intervalSize * 60), ChronoUnit.MINUTES),
+                            (intervalSize * 60) + " minutes",
+                            AssetDatapointIntervalQuery.Formula.AVG
+                    ) // TODO: double check if these properties are correct for getting the predicted datapoints
             );
             if (predictedData.length != values.length) {
                 LOG.warning("Returned predicted data point count does not match interval count: Ref=" + ref + ", expected=" + values.length + ", actual=" + predictedData.length);

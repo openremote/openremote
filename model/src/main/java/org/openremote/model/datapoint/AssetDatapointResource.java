@@ -21,8 +21,8 @@ package org.openremote.model.datapoint;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.query.AssetDatapointQuery;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
@@ -41,17 +41,15 @@ public interface AssetDatapointResource {
      * restricted and the asset is not linked to the user. A 400 status is returned if the asset attribute does
      * not have datapoint storage enabled.
      */
-    @GET
+    @POST
     @Path("{assetId}/attribute/{attributeName}")
+    @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
     ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,
-                                   @PathParam("assetId") String assetId,
-                                   @PathParam("attributeName") String attributeName,
-                                   @QueryParam("interval") DatapointInterval datapointInterval,
-                                   @QueryParam("step") Integer stepSize,
-                                   @QueryParam("fromTimestamp") long fromTimestamp,
-                                   @QueryParam("toTimestamp") long toTimestamp);
+                                      @PathParam("assetId") String assetId,
+                                      @PathParam("attributeName") String attributeName,
+                                      AssetDatapointQuery query);
 
     @GET
     @Path("periods")
@@ -76,10 +74,10 @@ public interface AssetDatapointResource {
     * By specifying the start date, end date, amount of data points, and the algorithm to use,
     * you can query an x,y array with a timestamp and respective value.
     * */
-    @POST
+    /*@POST
     @Path("query")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    /*@RolesAllowed({Constants.READ_ASSETS_ROLE})*/ // Temporarily disabled for testing
-    ValueDatapoint<?>[] datapointQuery(@BeanParam RequestParams requestParams, AssetDatapointQuery query);
+    *//*@RolesAllowed({Constants.READ_ASSETS_ROLE})*//* // Temporarily disabled for testing
+    ValueDatapoint<?>[] datapointQuery(@BeanParam RequestParams requestParams, AssetDatapointQuery query);*/
 }
