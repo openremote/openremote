@@ -493,7 +493,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             .schemas(schemas.toArray(new String[0]))
             .locations(locations.toArray(new String[0]))
             .baselineOnMigrate(true)
-            .validateOnMigrate(false) // temp
             .load();
 
         MigrationInfo currentMigration = flyway.info().current();
@@ -513,10 +512,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         for (MigrationInfo i : flyway.info().pending()) {
             LOG.info("Pending task: " + i.getVersion() + ", " + i.getDescription() + ", " + i.getScript());
         }
-        // Temporarily commented out for local testing with production database
-        /*MigrateResult result = flyway.migrate();
+        MigrateResult result = flyway.migrate();
         LOG.info("Applied database schema migrations: " + result.migrationsExecuted);
-        flyway.validate();*/
+        flyway.validate();
     }
 
     protected void appendSchemaLocations(List<String> locations) {

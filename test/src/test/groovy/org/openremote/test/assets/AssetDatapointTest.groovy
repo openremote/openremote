@@ -6,11 +6,10 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.datapoint.DatapointInterval
+import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
 import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -21,9 +20,7 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import static java.util.concurrent.TimeUnit.DAYS
-import static java.util.concurrent.TimeUnit.MINUTES
-import static java.util.concurrent.TimeUnit.SECONDS
+import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT
 import static org.openremote.setup.integration.ManagerTestSetup.thingLightToggleAttributeName
 import static spock.util.matcher.HamcrestMatchers.closeTo
