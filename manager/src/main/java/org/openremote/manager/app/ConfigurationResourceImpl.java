@@ -42,13 +42,13 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
 
     @Override
-    public Object update(RequestParams requestParams, Object managerConfiguration) throws IOException {
+    public Object update(RequestParams requestParams, Object managerConfiguration) {
         this.configurationService.saveMangerConfig(managerConfiguration);
         return managerConfiguration;
     }
 
     @Override
-    public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) throws IOException {
+    public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
         this.configurationService.saveImageFile(path, fileInfo);
         return path;
     }

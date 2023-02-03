@@ -333,10 +333,30 @@ EOF
 
 if [ $? -ne 0 ]; then
   echo "Deployment failed or is unhealthy"
+  revoke_ssh
+  exit 1
+fi
+
+echo "Testing manager web server https://$OR_HOSTNAME..."
+response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
+count=0
+while [[ $response -ne 200 ]] && [ $count -lt 12 ]; do
+  echo "https://$OR_HOSTNAME/manager/ RESPONSE CODE: $response...Sleeping 5 seconds"
+  sleep 5
+  response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
+  count=$((count+1))
+done
+
+if [ $response -ne 200 ]; then
+  echo "Manager web server is unreachable https://$OR_HOSTNAME..."
+  revoke_ssh
+  exit 1
+else
+  echo "Manager web server now reachable https://$OR_HOSTNAME..."
 fi
 
 revoke_ssh
-exit 1
+exit 0
 
 # ROLLBACK FUNCTIONALITY DISABLED FOR NOW AS WASN'T WORKING AND MANUAL INTERVENTION IS FINE AT THIS POINT
 
