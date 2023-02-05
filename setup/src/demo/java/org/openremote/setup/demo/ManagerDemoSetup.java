@@ -30,6 +30,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeLink;
@@ -50,6 +51,7 @@ import java.time.LocalTime;
 import java.util.Collections;
 import java.util.Random;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 import static java.time.temporal.ChronoField.SECOND_OF_DAY;
 import static org.openremote.model.value.ValueType.MultivaluedStringMap;
@@ -68,7 +70,7 @@ public class ManagerDemoSetup extends ManagerSetup {
 
     public String harvestRobot1Id;
     public String harvestRobot2Id;
-    public String environmentSensor1Id;
+    public String soilSensor1Id;
 
     private final long halfHourInMillis = Duration.ofMinutes(30).toMillis();
 
@@ -85,9 +87,8 @@ public class ManagerDemoSetup extends ManagerSetup {
     }
 
     // ################################ Realm manufacturer methods ###################################
-    // TODO: greenhouse locations: 51.979143, 4.278692 -- 51.987146, 4.528056 -- 51.986913, 4.408141
     protected HarvestRobotAsset createDemoHarvestRobotAsset(String name, Asset<?> parent, GeoJSONPoint location,
-            OperationMode operationMode, VegetableType vegetableType) {
+            OperationMode operationMode, VegetableType vegetableType, int direction, int harvestedTotal, Supplier<AgentLink<?>> agentLinker) {
         HarvestRobotAsset harvestRobotAsset = new HarvestRobotAsset(name);
         harvestRobotAsset.setParent(parent);
         harvestRobotAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
@@ -98,36 +99,61 @@ public class ManagerDemoSetup extends ManagerSetup {
                 .addMeta(new MetaItem<>(RULE_STATE))
                 .setValue(vegetableType);
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.DIRECTION)
-                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY))
+                .setValue(direction);;
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.SPEED)
-                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+                .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
+                        new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.HARVESTED_SESSION)
-                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+                .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
+                        new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
         harvestRobotAsset.getAttributes().getOrCreate(HarvestRobotAsset.HARVESTED_TOTAL)
-                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY))
+                .setValue(harvestedTotal);;
 
         return harvestRobotAsset;
     }
 
-    protected IrrigationAsset createDemoIrrigationAsset(String name, Asset<?> parent, GeoJSONPoint location,
-            int soilTensionMin, int soilTensionMax) {
+    protected IrrigationAsset createDemoIrrigationAsset(String name, Asset<?> parent, GeoJSONPoint location, Supplier<AgentLink<?>> agentLinker) {
         IrrigationAsset irrigationAsset = new IrrigationAsset(name);
         irrigationAsset.setParent(parent);
         irrigationAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
-        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.SOIL_TENSION_MEASURED)
-                .addMeta(new MetaItem<>(RULE_STATE), new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(READ_ONLY));
-        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.SOIL_TENSION_MIN)
-                .addMeta(new MetaItem<>(RULE_STATE))
-                .setValue(soilTensionMin);
-        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.SOIL_TENSION_MAX)
-                .addMeta(new MetaItem<>(RULE_STATE))
-                .setValue(soilTensionMax);
         irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.FLOW_WATER)
-                .addMeta(new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(RULE_STATE));
+                .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
+                        new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
         irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.FLOW_NUTRIENTS)
-                .addMeta(new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(RULE_STATE));
+                .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
+                        new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.FLOW_TOTAL)
+                .addMeta(new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
+        irrigationAsset.getAttributes().getOrCreate(IrrigationAsset.TANK_LEVEL)
+                .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
+                        new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(RULE_STATE), new MetaItem<>(READ_ONLY));
 
         return irrigationAsset;
+    }
+    protected SoilSensorAsset createDemoSoilSensorAsset(String name, Asset<?> parent, GeoJSONPoint location,
+                                                        int soilTensionMin, int soilTensionMax, Supplier<AgentLink<?>> agentLinker) {
+        SoilSensorAsset soilSensorAsset = new SoilSensorAsset(name);
+        soilSensorAsset.setParent(parent);
+        soilSensorAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
+        soilSensorAsset.getAttributes().getOrCreate(SoilSensorAsset.SOIL_TENSION_MEASURED)
+                .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
+                        new MetaItem<>(RULE_STATE), new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(READ_ONLY));
+        soilSensorAsset.getAttributes().getOrCreate(SoilSensorAsset.SOIL_TENSION_MIN)
+                .addMeta(new MetaItem<>(RULE_STATE))
+                .setValue(soilTensionMin);
+        soilSensorAsset.getAttributes().getOrCreate(SoilSensorAsset.SOIL_TENSION_MAX)
+                .addMeta(new MetaItem<>(RULE_STATE))
+                .setValue(soilTensionMax);
+        soilSensorAsset.getAttributes().getOrCreate(SoilSensorAsset.TEMPERATURE)
+                .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
+                        new MetaItem<>(RULE_STATE), new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(READ_ONLY));
+        soilSensorAsset.getAttributes().getOrCreate(SoilSensorAsset.SALINITY)
+                .addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()),
+                        new MetaItem<>(RULE_STATE), new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(READ_ONLY));
+
+        return soilSensorAsset;
     }
 
     @Override
@@ -1664,9 +1690,9 @@ public class ManagerDemoSetup extends ManagerSetup {
         ship1Asset.setId(UniqueIdentifierGenerator.generateId(ship1Asset.getName()));
         ship1Asset = assetStorageService.merge(ship1Asset);
 
-        // ################################ Realm smartcity ###################################
+        // ################################ Realm Manufaturer Simulator ###################################
 
-        SimulatorAgent manufacturerSimulatorAgent = new SimulatorAgent("Simulator agent");
+        SimulatorAgent manufacturerSimulatorAgent = new SimulatorAgent("Simulator");
         manufacturerSimulatorAgent.setRealm(this.realmManufacturerName);
 
         manufacturerSimulatorAgent = assetStorageService.merge(manufacturerSimulatorAgent);
@@ -1681,34 +1707,34 @@ public class ManagerDemoSetup extends ManagerSetup {
         distributor1.setId(UniqueIdentifierGenerator.generateId(distributor1.getName()));
         distributor1 = assetStorageService.merge(distributor1);
 
-        Asset<?> vegetablesAndMore = new ThingAsset("Vegetables & More");
+        BuildingAsset vegetablesAndMore = new BuildingAsset("Vegetables & More");
         vegetablesAndMore.setParent(distributor1);
         vegetablesAndMore.setId(UniqueIdentifierGenerator.generateId(vegetablesAndMore.getName()));
         vegetablesAndMore = assetStorageService.merge(vegetablesAndMore);
 
-        HarvestRobotAsset harvestRobot1 = createDemoHarvestRobotAsset("Robot 1", vegetablesAndMore, new GeoJSONPoint(4.482669, 51.916436), OperationMode.CUTTING, VegetableType.BELL_PEPPER);
+        HarvestRobotAsset harvestRobot1 = createDemoHarvestRobotAsset("Robot 1", vegetablesAndMore, new GeoJSONPoint(4.279166, 51.978078), OperationMode.CUTTING, VegetableType.BELL_PEPPER, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         harvestRobot1.setId(UniqueIdentifierGenerator.generateId(harvestRobot1.getName()));
         harvestRobot1Id = harvestRobot1.getId();
         harvestRobot1 = assetStorageService.merge(harvestRobot1);   
-        HarvestRobotAsset harvestRobot2 = createDemoHarvestRobotAsset("Robot 2", vegetablesAndMore, new GeoJSONPoint(4.482669, 51.916436), OperationMode.SCANNING, VegetableType.BELL_PEPPER);
+        HarvestRobotAsset harvestRobot2 = createDemoHarvestRobotAsset("Robot 2", vegetablesAndMore, new GeoJSONPoint(4.277852, 51.977487), OperationMode.SCANNING, VegetableType.BELL_PEPPER, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         harvestRobot2.setId(UniqueIdentifierGenerator.generateId(harvestRobot2.getName()));
         harvestRobot2Id = harvestRobot2.getId();
         harvestRobot2 = assetStorageService.merge(harvestRobot2); 
-        EnvironmentSensorAsset environmentSensor1 = createDemoEnvironmentAsset("Climate", vegetablesAndMore, new GeoJSONPoint(4.480434, 51.899287), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
-        environmentSensor1.setId(UniqueIdentifierGenerator.generateId(environmentSensor1.getName()));
-        environmentSensor1Id = environmentSensor1.getId();
-        environmentSensor1 = assetStorageService.merge(environmentSensor1);
- 
-        Asset<?> moreauHorticulture = new ThingAsset("Moreau Horticulture");
+        SoilSensorAsset soilSensor1 = createDemoSoilSensorAsset("Climate sensor", vegetablesAndMore, new GeoJSONPoint(4.279010, 51.977391), 41, 53, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        soilSensor1.setId(UniqueIdentifierGenerator.generateId(soilSensor1.getName()));
+        soilSensor1Id = soilSensor1.getId();
+        soilSensor1 = assetStorageService.merge(soilSensor1);
+
+        BuildingAsset moreauHorticulture = new BuildingAsset("Moreau Horticulture");
         moreauHorticulture.setParent(distributor1);
         moreauHorticulture.setId(UniqueIdentifierGenerator.generateId(moreauHorticulture.getName()));
         moreauHorticulture = assetStorageService.merge(moreauHorticulture);
 
-        IrrigationAsset irrigation1 = createDemoIrrigationAsset("Soil drip 1", moreauHorticulture, new GeoJSONPoint(4.480434, 51.899287), 26, 32);
-        IrrigationAsset irrigation2 = createDemoIrrigationAsset("Soil drip 2", moreauHorticulture, new GeoJSONPoint(4.480434, 51.899287), 35, 45);
-        IrrigationAsset irrigation3 = createDemoIrrigationAsset("Soil drip 3", moreauHorticulture, new GeoJSONPoint(4.480434, 51.899287), 29, 38);
-        IrrigationAsset irrigation4 = createDemoIrrigationAsset("Soil drip 4", moreauHorticulture, new GeoJSONPoint(4.480434, 51.899287), 45, 55);
-        IrrigationAsset irrigation5 = createDemoIrrigationAsset("Soil drip 5", moreauHorticulture, new GeoJSONPoint(4.480434, 51.899287), 26, 32);
+        IrrigationAsset irrigation1 = createDemoIrrigationAsset("Soil drip 1", moreauHorticulture, new GeoJSONPoint(4.527094, 51.983469), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation2 = createDemoIrrigationAsset("Soil drip 2", moreauHorticulture, new GeoJSONPoint(4.527818, 51.983140), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation3 = createDemoIrrigationAsset("Soil drip 3", moreauHorticulture, new GeoJSONPoint(4.528843, 51.982657), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation4 = createDemoIrrigationAsset("Soil drip 4", moreauHorticulture, new GeoJSONPoint(4.529672, 51.982248), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation5 = createDemoIrrigationAsset("Soil drip 5", moreauHorticulture, new GeoJSONPoint(4.530518, 51.981853), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         irrigation1.setId(UniqueIdentifierGenerator.generateId(irrigation1.getName()));
         irrigation1 = assetStorageService.merge(irrigation1);
         irrigation2.setId(UniqueIdentifierGenerator.generateId(irrigation2.getName()));
@@ -1719,9 +1745,32 @@ public class ManagerDemoSetup extends ManagerSetup {
         irrigation4 = assetStorageService.merge(irrigation4);
         irrigation5.setId(UniqueIdentifierGenerator.generateId(irrigation5.getName()));
         irrigation5 = assetStorageService.merge(irrigation5);
-        EnvironmentSensorAsset environmentSensor2 = createDemoEnvironmentAsset("Air Quality", moreauHorticulture, new GeoJSONPoint(4.480434, 51.899287), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
-        environmentSensor2.setId(UniqueIdentifierGenerator.generateId(environmentSensor2.getName()));
-        environmentSensor2 = assetStorageService.merge(environmentSensor2);
+        SoilSensorAsset soilSensor2 = createDemoSoilSensorAsset("Air Quality", moreauHorticulture, new GeoJSONPoint(4.527976, 51.981779), 27, 35, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        soilSensor2.setId(UniqueIdentifierGenerator.generateId(soilSensor2.getName()));
+        soilSensor2 = assetStorageService.merge(soilSensor2);
+
+        BuildingAsset paprika = new BuildingAsset("Paprika Perfect BV");
+        paprika.setParent(distributor1);
+        paprika.setId(UniqueIdentifierGenerator.generateId(paprika.getName()));
+        paprika = assetStorageService.merge(paprika);
+
+        HarvestRobotAsset harvestRobot5 = createDemoHarvestRobotAsset("Harvest Robot 1", paprika, new GeoJSONPoint(4.282415, 51.975951), OperationMode.UNLOADING, VegetableType.TOMATO, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        harvestRobot5.setId(UniqueIdentifierGenerator.generateId(harvestRobot5.getName()));
+        harvestRobot5 = assetStorageService.merge(harvestRobot5);
+
+        IrrigationAsset irrigation9 = createDemoIrrigationAsset("Irrigation 1", paprika, new GeoJSONPoint(4.283731, 51.976526), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        irrigation9.setId(UniqueIdentifierGenerator.generateId(irrigation9.getName()));
+        irrigation9 = assetStorageService.merge(irrigation9);
+        IrrigationAsset irrigation10 = createDemoIrrigationAsset("Irrigation 2", paprika, new GeoJSONPoint(4.285047, 51.975652), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        irrigation10.setId(UniqueIdentifierGenerator.generateId(irrigation10.getName()));
+        irrigation10 = assetStorageService.merge(irrigation10);
+        IrrigationAsset irrigation11 = createDemoIrrigationAsset("Irrigation 3", paprika, new GeoJSONPoint(4.286504, 51.974613), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        irrigation11.setId(UniqueIdentifierGenerator.generateId(irrigation11.getName()));
+        irrigation11 = assetStorageService.merge(irrigation11);
+
+        SoilSensorAsset soilSensor4 = createDemoSoilSensorAsset("Climate", paprika, new GeoJSONPoint(4.285034, 51.973881), 34, 47, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        soilSensor4.setId(UniqueIdentifierGenerator.generateId(soilSensor4.getName()));
+        soilSensor4 = assetStorageService.merge(soilSensor4);
 
         // ### Distributor 2 ###
 
@@ -1730,14 +1779,37 @@ public class ManagerDemoSetup extends ManagerSetup {
         distributor2.setId(UniqueIdentifierGenerator.generateId(distributor2.getName()));
         distributor2 = assetStorageService.merge(distributor2);
 
-        Asset<?> bertHaanen = new ThingAsset("Haanen Vegetables BV");
+        BuildingAsset bertHaanen = new BuildingAsset("Haanen Vegetables BV");
         bertHaanen.setParent(distributor2);
         bertHaanen.setId(UniqueIdentifierGenerator.generateId(bertHaanen.getName()));
         bertHaanen = assetStorageService.merge(bertHaanen);
 
-        HarvestRobotAsset harvestRobot3 = createDemoHarvestRobotAsset("Harvester", bertHaanen, new GeoJSONPoint(4.482669, 51.916436), OperationMode.UNLOADING, VegetableType.TOMATO);
+        HarvestRobotAsset harvestRobot3 = createDemoHarvestRobotAsset("Harvest", bertHaanen, new GeoJSONPoint(4.286209, 51.983544), OperationMode.UNLOADING, VegetableType.TOMATO, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         harvestRobot3.setId(UniqueIdentifierGenerator.generateId(harvestRobot3.getName()));
         harvestRobot3 = assetStorageService.merge(harvestRobot3);
+
+        BuildingAsset rtd = new BuildingAsset("RTD Vegetable Grower");
+        rtd.setParent(distributor2);
+        rtd.setId(UniqueIdentifierGenerator.generateId(rtd.getName()));
+        rtd = assetStorageService.merge(rtd);
+
+        HarvestRobotAsset harvestRobot4 = createDemoHarvestRobotAsset("Harvester", rtd, new GeoJSONPoint(51.975951, 4.282415), OperationMode.UNLOADING, VegetableType.TOMATO, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        harvestRobot4.setId(UniqueIdentifierGenerator.generateId(harvestRobot4.getName()));
+        harvestRobot4 = assetStorageService.merge(harvestRobot4);
+
+        IrrigationAsset irrigation6 = createDemoIrrigationAsset("Irrigation N", rtd, new GeoJSONPoint(4.408287, 51.987239), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        irrigation6.setId(UniqueIdentifierGenerator.generateId(irrigation6.getName()));
+        irrigation6 = assetStorageService.merge(irrigation6);
+        IrrigationAsset irrigation7 = createDemoIrrigationAsset("Irrigation S", rtd, new GeoJSONPoint(4.408313, 51.986357), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        irrigation7.setId(UniqueIdentifierGenerator.generateId(irrigation7.getName()));
+        irrigation7 = assetStorageService.merge(irrigation7);
+        IrrigationAsset irrigation8 = createDemoIrrigationAsset("Irrigation W", rtd, new GeoJSONPoint(4.407037, 51.986598), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        irrigation8.setId(UniqueIdentifierGenerator.generateId(irrigation8.getName()));
+        irrigation8 = assetStorageService.merge(irrigation8);
+
+        SoilSensorAsset soilSensor3 = createDemoSoilSensorAsset("Air monitor", rtd, new GeoJSONPoint(4.408088, 51.986793), 44, 68, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        soilSensor3.setId(UniqueIdentifierGenerator.generateId(soilSensor3.getName()));
+        soilSensor3 = assetStorageService.merge(soilSensor3);
 
         // ################################ Link users and assets ###################################
 
@@ -1750,7 +1822,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                         harvestRobot2Id),
                 new UserAssetLink(KeycloakDemoSetup.realmManufacturer.getName(),
                         KeycloakDemoSetup.customerUserId,
-                        environmentSensor1Id)));
+                        soilSensor1Id)));
 
         // ################################ Make user restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
