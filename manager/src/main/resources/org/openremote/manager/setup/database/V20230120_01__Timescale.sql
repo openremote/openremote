@@ -1,3 +1,3 @@
 create extension if not exists timescaledb;
-create extension if not exists timescaledb_toolkit; /*Not sure whether this is required*/
-SELECT create_hypertable('ASSET_DATAPOINT', 'timestamp');
+SELECT create_hypertable('asset_datapoint', 'timestamp');
+SELECT create_hypertable('asset_predicted_datapoint', 'timestamp');

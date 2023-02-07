@@ -23,9 +23,9 @@ public class AssetDatapointAllQuery extends AssetDatapointQuery {
         System.out.println("getSQLQuery() of AssetDatapointAllQuery."); // temp
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
         if (isNumber) {
-            return "select timestamp, value::text::numeric from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?";
+            return "select timestamp, value::text::numeric from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
         } else {
-            return "select timestamp, (case when VALUE::text::boolean is true then 1 else 0 end) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?";
+            return "select timestamp, (case when VALUE::text::boolean is true then 1 else 0 end) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
         }
     }
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {

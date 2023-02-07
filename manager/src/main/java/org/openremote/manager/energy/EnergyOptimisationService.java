@@ -806,7 +806,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                             timestamp,
                             timestamp.plus(24, HOURS).minus((long)(intervalSize * 60), ChronoUnit.MINUTES),
                             (intervalSize * 60) + " minutes",
-                            AssetDatapointIntervalQuery.Formula.AVG
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
                     ) // TODO: double check if these properties are correct for getting the predicted datapoints
             );
             if (predictedData.length != values.length) {

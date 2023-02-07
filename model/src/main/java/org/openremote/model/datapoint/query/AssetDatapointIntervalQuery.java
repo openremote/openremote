@@ -10,6 +10,7 @@ import java.util.HashMap;
 public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
 
     public String interval;
+    public boolean gapFill;
     public Formula formula;
 
     public enum Formula {
@@ -18,16 +19,18 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
 
     public AssetDatapointIntervalQuery() {
     }
-    public AssetDatapointIntervalQuery(long fromTimestamp, long toTimestamp, String interval, Formula formula) {
+    public AssetDatapointIntervalQuery(long fromTimestamp, long toTimestamp, String interval, Formula formula, boolean gapFill) {
         this.fromTimestamp = fromTimestamp;
         this.toTimestamp = toTimestamp;
         this.interval = interval;
+        this.gapFill = gapFill;
         this.formula = formula;
     }
-    public AssetDatapointIntervalQuery(LocalDateTime fromTime, LocalDateTime toTime, String interval, Formula formula) {
+    public AssetDatapointIntervalQuery(LocalDateTime fromTime, LocalDateTime toTime, String interval, Formula formula, boolean gapFill) {
         this.fromTime = fromTime;
         this.toTime = toTime;
         this.interval = interval;
+        this.gapFill = gapFill;
         this.formula = formula;
     }
 
@@ -35,10 +38,11 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
     public String getSQLQuery(String tableName, Class<?> attributeType) {
         System.out.println("getSQLQuery() of AssetDatapointIntervalQuery."); // temp
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
+        String function = (gapFill ? "time_bucket_gapfill" : "time_bucket");
         if (isNumber) {
-            return "select public.time_bucket(?::interval, timestamp::timestamptz) AS x, " + this.formula.toString().toLowerCase() + "(value::text::double precision) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x;";
+            return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(value::text::numeric) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x;";
         } else {
-            return "select public.time_bucket(?::interval, timestamp::timestamptz) AS x, " + this.formula.toString().toLowerCase() + "(value::text::boolean) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x;";
+            return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when VALUE::text::boolean is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x;";
         }
     }
 
