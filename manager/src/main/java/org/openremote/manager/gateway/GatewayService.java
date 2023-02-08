@@ -680,4 +680,11 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             connector.onGatewayEvent(messageId, event);
         }
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "active=" + active +
+            '}';
+    }
 }

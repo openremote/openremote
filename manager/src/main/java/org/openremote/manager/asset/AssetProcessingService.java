@@ -475,8 +475,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         String consumerProcessor = null;
         boolean complete = false;
         long startMillis = System.currentTimeMillis();
+        StringBuilder processorTimings = new StringBuilder();
 
         for (AssetUpdateProcessor processor : processors) {
+            long processorStartMillis = System.currentTimeMillis();
 
             if (LOG.isLoggable(Level.FINEST)) {
                 LOG.finest("==> Processor " + processor + " accepts: " + attributeStrSupplier.get());
@@ -484,6 +486,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             try {
                 complete = processor.processAssetUpdate(em, asset, attribute, source);
+                processorTimings.append(processor).append("=").append(System.currentTimeMillis() - processorStartMillis).append("ms ");
             } catch (AssetProcessingException ex) {
                 throw ex;
             } catch (Throwable t) {
@@ -507,9 +510,16 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
         }
 
+        long processingMillis = System.currentTimeMillis() - startMillis;
 
-        if (LOG.isLoggable(Level.FINE)) {
-            LOG.fine("<<< Attribute event processed in " + (System.currentTimeMillis() - startMillis) + "ms: attribute=" + attributeStrSupplier.get() + ", consumer=" + consumerProcessor);
+        if (processingMillis > 50) {
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.info("<<< Attribute event processing took a long time " + processingMillis + "ms: attribute=" + attributeStrSupplier.get() + ", consumer=" + consumerProcessor + ", timings=" + processorTimings);
+            }
+        } else {
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.fine("<<< Attribute event processed in " + processingMillis + "ms: attribute=" + attributeStrSupplier.get() + ", consumer=" + consumerProcessor);
+            }
         }
         return complete;
     }

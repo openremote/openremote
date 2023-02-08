@@ -653,5 +653,7 @@
     "admin": "Super admin"
   },
   "saveRealmFailed": "Save realm failed",
-  "saveRealmSucceeded": "Saved realm successfully!"
+  "saveRealmSucceeded": "Saved realm successfully!",
+  "userDisconnected": "Disconnected successfully!",
+  "userDisconnectFailed": "Disconnect failed"
 }
