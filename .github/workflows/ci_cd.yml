@@ -707,10 +707,10 @@ jobs:
             os.system(f"echo 'Setting environment variable {key}...'")
             os.putenv(key, value)
           
-          subprocess.run(f"bash env >> temp_file", shell=True)
+          subprocess.run(f"env", shell=True, capture_output=True)
           sys.exit(0)
           buildCmd = os.getenv("CMD")
-          result = subprocess.run(f"bash {buildCmd}", shell=True)
+          result = subprocess.run(f"bash {buildCmd}", shell=True, capture_output=True)
 
           if result.returncode != 0:
             os.system("echo 'installDist failed'")
