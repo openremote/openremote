@@ -35,11 +35,3 @@ task checkFilesGitIgnoredNew(type: Exec) {
 
     commandLine args
 }
-
-task outputEnv {
-    doFirst {
-        def f = file("temp_file")
-        f << "*** ENVIRONMENT VARIABLE DUMP ***"
-        System.getenv().each { k, v -> f << '\n' << "${k}:${v}" }
-    }
-}

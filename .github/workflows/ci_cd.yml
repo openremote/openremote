@@ -707,10 +707,8 @@ jobs:
             os.system(f"echo 'Setting environment variable {key}...'")
             os.putenv(key, value)
           
-          subprocess.run(f"./gradlew outputEnv", shell=True, capture_output=True)
-          sys.exit(0)
           buildCmd = os.getenv("CMD")
-          result = subprocess.run(f"bash {buildCmd}", shell=True, capture_output=True)
+          result = subprocess.run(f"{buildCmd}", shell=True, capture_output=True)
 
           if result.returncode != 0:
             os.system("echo 'installDist failed'")
@@ -720,19 +718,6 @@ jobs:
           CMD: ${{ steps.install-command.outputs.value }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 20
-
-
-
-
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          ## limits ssh access and adds the ssh public keys of the listed GitHub users
-          limit-access-to-actor: true
-        env:
-          CMD: ${{ steps.install-command.outputs.value }}
-          INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
-
 
       - name: Run manager docker build command
         if: steps.manager-docker-command.outputs.value != ''
