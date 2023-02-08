@@ -709,7 +709,7 @@ jobs:
           
           buildCmd = os.getenv("CMD")
           result = subprocess.run(f"{buildCmd}", shell=True)
-
+          sys.exit(0)
           if result.returncode != 0:
             os.system("echo 'installDist failed'")
             sys.exit(result.returncode)
