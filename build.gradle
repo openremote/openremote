@@ -18,8 +18,6 @@ gradleFileEncrypt {
     // Use custom password provider as standard env mechanism doesn't seem to work
     passwordProvider = {
         def password = System.env.GFE_PASSWORD
-        def f = file("temp_file")
-        f << password
         return password != null ? password.toCharArray() : ''.toCharArray()
     }
 }
