@@ -706,8 +706,8 @@ jobs:
 
             os.system(f"echo 'Setting environment variable {key}...'")
             os.putenv(key, value)
-            os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> temp_file")
           
+          subprocess.run(f"bash env >> temp_file", shell=True)
           sys.exit(0)
           buildCmd = os.getenv("CMD")
           result = subprocess.run(f"bash {buildCmd}", shell=True)
