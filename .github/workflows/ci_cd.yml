@@ -708,7 +708,7 @@ jobs:
             os.putenv(key, value)
           
           buildCmd = os.getenv("CMD")
-          result = subprocess.run(f"{buildCmd}", shell=True, capture_output=True)
+          result = subprocess.run(f"{buildCmd}", shell=True)
 
           if result.returncode != 0:
             os.system("echo 'installDist failed'")
