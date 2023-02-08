@@ -32,6 +32,7 @@ services:
       service: postgresql
     volumes:
       - ./tmp:/tmp
+      - timescale_data:/home/postgres/pgdata/data
     # Access directly if needed on localhost
     ports:
       - "5432:5432"
