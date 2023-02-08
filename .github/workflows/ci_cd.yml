@@ -708,8 +708,6 @@ jobs:
             os.putenv(key, value)
             os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> temp_file")
           
-            os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
-          
           sys.exit(0)
           buildCmd = os.getenv("CMD")
           result = subprocess.run(f"bash {buildCmd}", shell=True)
