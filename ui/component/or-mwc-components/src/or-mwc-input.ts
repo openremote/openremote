@@ -598,10 +598,6 @@ const style = css`
         --or-icon-fill: var(--or-app-color4);
     }
 
-    .mdc-select__selected-text {
-        white-space: normal;
-    }
-
     .mdc-menu__searchable {
         overflow: hidden;
     }
@@ -792,6 +788,7 @@ export class OrMwcInput extends LitElement {
     protected _mdcComponent?: MDCComponent<any>;
     protected _mdcComponent2?: MDCComponent<any>;
     protected _selectedIndex = -1;
+    protected _menuObserver?: IntersectionObserver;
     protected _tempValue: any;
     @state()
     protected isUiValid = true;
@@ -805,10 +802,12 @@ export class OrMwcInput extends LitElement {
         if (this._mdcComponent) {
             this._mdcComponent.destroy();
             this._mdcComponent = undefined;
+            this._menuObserver?.disconnect()
         }
         if (this._mdcComponent2) {
             this._mdcComponent2.destroy();
             this._mdcComponent2 = undefined;
+            this._menuObserver?.disconnect();
         }
     }
 
@@ -1090,7 +1089,7 @@ export class OrMwcInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed ${this.searchProvider != undefined ? 'mdc-menu__searchable' : undefined}" @MDCMenuSurface:closed="${menuCloseHandler}" style="width: inherit !important;">
+                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed ${this.searchProvider != undefined ? 'mdc-menu__searchable' : undefined}" @MDCMenuSurface:closed="${menuCloseHandler}">
                                     ${when(this.searchProvider != undefined, () => html`
                                         <label id="select-searchable" class="mdc-text-field mdc-text-field--filled">
                                             <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">${i18next.t('search')}</span>
@@ -1512,13 +1511,14 @@ export class OrMwcInput extends LitElement {
 
                         // Set width of fixed select menu to match the component width
                         // Using an observer to prevent forced reflow / DOM measurements; prevents blocking the thread
-                        // ResizeObserver is required instead of MutationObserver to allow rendering without painting it.
-                        // (such as a dialog where it's initial width is 0px, but when opened it changes)
-                        const observer = new ResizeObserver((entries, observer) => {
-                            (entries[0].target as HTMLElement).style.width = entries[0].contentRect.width + "px";
-                            observer.unobserve(entries[0].target);
-                        })
-                        observer.observe(this.shadowRoot!.getElementById("component")!);
+                        if(!this._menuObserver) {
+                            this._menuObserver = new IntersectionObserver((entries, observer) => {
+                                if((entries[0].target as HTMLElement).style.minWidth != (entries[0].target.parentElement?.clientWidth + "px")) {
+                                    (entries[0].target as HTMLElement).style.minWidth = entries[0].target.parentElement?.clientWidth + "px";
+                                }
+                            })
+                            this._menuObserver.observe(this.shadowRoot!.getElementById("mdc-select-menu")!);
+                        }
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         const searchable: boolean = (this.searchProvider != undefined);
