@@ -32,11 +32,11 @@ import javax.persistence.Entity;
 public class IrrigationAsset extends Asset<IrrigationAsset> {
 
     public static final AttributeDescriptor<Double> FLOW_WATER = new AttributeDescriptor<>("flowWater",
-            ValueType.POSITIVE_NUMBER).withUnits(UNITS_LITRE, UNITS_HOUR);
+            ValueType.POSITIVE_NUMBER).withUnits(UNITS_LITRE, UNITS_PER, UNITS_HOUR);
     public static final AttributeDescriptor<Double> FLOW_NUTRIENTS = new AttributeDescriptor<>("flowNutrients",
-            ValueType.POSITIVE_NUMBER).withUnits(UNITS_LITRE, UNITS_HOUR);
+            ValueType.POSITIVE_NUMBER).withUnits(UNITS_LITRE, UNITS_PER, UNITS_HOUR);
     public static final AttributeDescriptor<Double> FLOW_TOTAL = new AttributeDescriptor<>("flowTotal",
-            ValueType.POSITIVE_NUMBER).withUnits(UNITS_LITRE, UNITS_HOUR);
+            ValueType.POSITIVE_NUMBER).withUnits(UNITS_LITRE, UNITS_PER, UNITS_HOUR);
     public static final AttributeDescriptor<Double> TANK_LEVEL = new AttributeDescriptor<>("tankLevel",
             ValueType.POSITIVE_NUMBER).withUnits(UNITS_LITRE);
 
