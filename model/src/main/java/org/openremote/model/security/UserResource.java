@@ -166,4 +166,8 @@ public interface UserResource {
     @Path("{realm}/userSessions/{userId}")
     @Produces(APPLICATION_JSON)
     UserSession[] getUserSessions(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+
+    @GET
+    @Path("{realm}/disconnect/{sessionID}")
+    void disconnectUserSession(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("sessionID") String sessionID);
 }

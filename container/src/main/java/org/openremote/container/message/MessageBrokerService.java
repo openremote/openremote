@@ -58,11 +58,11 @@ public class MessageBrokerService implements ContainerService {
     public static final String MESSAGE_SESSION_ALLOWED_ORIGIN = "MESSAGE_SESSION_ALLOWED_ORIGIN";
     public static final String MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT = null;
     private static final Logger LOG = Logger.getLogger(MessageBrokerService.class.getName());
-    public static final int PRIORITY = ContainerService.HIGH_PRIORITY;
+    public static final int PRIORITY = ContainerService.LOW_PRIORITY;
 
-    protected ProducerTemplate producerTemplate;
-    protected FluentProducerTemplate fluentProducerTemplate;
-    protected DefaultCamelContext context;
+    protected DefaultCamelContext context = new DefaultCamelContext();
+    protected ProducerTemplate producerTemplate = context.createProducerTemplate();
+    protected FluentProducerTemplate fluentProducerTemplate = context.createFluentProducerTemplate();
 
     @Override
     public int getPriority() {
@@ -72,8 +72,6 @@ public class MessageBrokerService implements ContainerService {
     @SuppressWarnings("deprecation")
     @Override
     public void init(Container container) throws Exception {
-
-        context = new DefaultCamelContext();
 
         final ExecutorServiceManager executorServiceManager = context.getExecutorServiceManager();
         executorServiceManager.setThreadNamePattern("#counter# #name#");
@@ -156,8 +154,6 @@ public class MessageBrokerService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        producerTemplate = context.createProducerTemplate();
-        fluentProducerTemplate = context.createFluentProducerTemplate();
         LOG.info("Starting Camel message broker");
         context.start();
     }

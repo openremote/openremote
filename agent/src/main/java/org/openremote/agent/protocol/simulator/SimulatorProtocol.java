@@ -145,7 +145,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             .orElse(simulatorReplayDatapoints[0]);
 
         if (nextDatapoint == null) {
-            LOG.info("Next datapoint not found so replay cancelled: " + attributeRef);
+            LOG.warning("Next datapoint not found so replay cancelled: " + attributeRef);
             return null;
         }
         long nextRun = nextDatapoint.timestamp;
@@ -154,10 +154,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
         long nextRunRelative = nextRun - now;
 
-        LOG.info("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRunRelative + " second(s)");
+        LOG.fine("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRunRelative + " second(s)");
         return executorService.schedule(() -> {
             withLock(getProtocolName() + "::firingNextUpdate", () -> {
-                LOG.info("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
+                LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
                 try {
                     updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
                 } catch (Exception e) {

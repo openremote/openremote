@@ -294,22 +294,20 @@ services:
       # OR_FORECAST_SOLAR_API_KEY
 
       # Custom JVM options (override default manager options)
-#      OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g
-#      -XX:NativeMemoryTracking=summary
-#      -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10
-#      -XX:GCLogFileSize=50M -Xloggc:/gc.log
-#      -XX:OnOutOfMemoryError="shutdown -r" -d64
-#      -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
-#
-# THE FOLLOWING OPTIONS CAN BE USED TO ENABLE JMX; PORT MUST ALSO BE EXPOSED
-# ACCESS SHOULD BE RESTRICTED BY FIREWALL TO SPECIFIC IPs FOR DIAGNOSTIC PURPOSES
-#
-#  -Dcom.sun.management.jmxremote=true
-#  -Dcom.sun.management.jmxremote.ssl=false
-#  -Dcom.sun.management.jmxremote.authenticate=false
-#  -Dcom.sun.management.jmxremote.port=8085
-#  -Dcom.sun.management.jmxremote.rmi.port=8085
-#  -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
+  #OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx2g
+  #  -XX:NativeMemoryTracking=summary
+  #  -Xlog:all=warning:stdout:uptime,level,tags
+  #  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
+  #
+  # THE FOLLOWING OPTIONS CAN BE USED TO ENABLE JMX; PORT MUST ALSO BE EXPOSED
+  # ACCESS SHOULD BE RESTRICTED BY FIREWALL TO SPECIFIC IPs FOR DIAGNOSTIC PURPOSES
+  #
+  #  -Dcom.sun.management.jmxremote=true
+  #  -Dcom.sun.management.jmxremote.ssl=false
+  #  -Dcom.sun.management.jmxremote.authenticate=false
+  #  -Dcom.sun.management.jmxremote.port=8085
+  #  -Dcom.sun.management.jmxremote.rmi.port=8085
+  #  -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
 
 # Custom JVM tool options (for remote debugging)
 #JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n'
