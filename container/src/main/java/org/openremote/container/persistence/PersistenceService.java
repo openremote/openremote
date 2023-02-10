@@ -490,8 +490,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         // Excluding the extension(s) in the cleanup process will not be added soon https://github.com/flyway/flyway/issues/2271
         // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
         StringBuilder initSql = new StringBuilder();
-        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb cascade;");
-        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit cascade;");
+        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb SCHEMA public cascade;");
+        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit SCHEMA public cascade;");
 
         flyway = Flyway.configure()
             .cleanDisabled(false)
