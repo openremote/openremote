@@ -18,7 +18,7 @@ gradleFileEncrypt {
     // Use custom password provider as standard env mechanism doesn't seem to work
     passwordProvider = {
         def password = System.env.GFE_PASSWORD
-        return password != null ? password.toCharArray() : 'd'.toCharArray()
+        return password != null ? password.toCharArray() : ''.toCharArray()
     }
 }
 task checkFilesGitIgnoredNew(type: Exec) {

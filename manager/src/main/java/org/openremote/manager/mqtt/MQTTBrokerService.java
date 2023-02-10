@@ -464,6 +464,17 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         connection.disconnect(false);
     }
 
+    public boolean disconnectSession(String sessionID) {
+        RemotingConnection connection = connectionIDConnectionMap.get(sessionID);
+        if (connection != null) {
+            LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
+            doForceDisconnect(connection);
+            return true;
+        }
+
+        return false;
+    }
+
     public void publishMessage(String topic, Object data, MqttQoS qoS) {
         try {
             if (internalSession != null) {

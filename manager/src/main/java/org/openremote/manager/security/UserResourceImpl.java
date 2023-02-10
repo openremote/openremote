@@ -336,9 +336,17 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
 
         return mqttBrokerService.getUserConnections(userId).stream().map(connection -> new UserSession(
+            MQTTBrokerService.getConnectionIDString(connection),
             connection.getSubject() != null ? KeycloakIdentityProvider.getSubjectName(connection.getSubject()) : userId,
             connection.getCreationTime(),
             connection.getRemoteAddress())).toArray(UserSession[]::new);
+    }
+
+    @Override
+    public void disconnectUserSession(RequestParams requestParams, String realm, String sessionID) {
+        if (!mqttBrokerService.disconnectSession(sessionID)) {
+            throw new NotFoundException("User session not found");
+        }
     }
 
     protected void throwIfIllegalMasterAdminUserDeletion(RequestParams requestParams, String realm, String userId) throws WebApplicationException {
