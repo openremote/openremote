@@ -597,10 +597,9 @@ export class OrDashboardSettingsPanel extends LitElement {
                                           }}"
                             ></or-mwc-input>
                         </div>
-
                         <div style="padding: 0 10px 12px 10px;">
                             <div class="switchMwcInputContainer">
-                                <span>${i18next.t('showLabels')}</span>
+                                <span>${i18next.t('dashboard.showLabels')}</span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                               .value="${config.showLabels}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
@@ -610,7 +609,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                                 ></or-mwc-input>
                             </div>
                             <div class="switchMwcInputContainer">
-                                <span>${i18next.t('showUnits')}</span>
+                                <span>${i18next.t('dashboard.showUnits')}</span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                               .value="${config.showUnits}"
                                               .disabled="${!config.showLabels}"
