@@ -19,7 +19,7 @@
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/rest": "workspace:*",
-    "gridstack": "^6.0.2",
+    "gridstack": "^7.2.0",
     "lit": "^2.0.2"
   },
   "devDependencies": {
