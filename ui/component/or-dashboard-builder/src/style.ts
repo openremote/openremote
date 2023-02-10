@@ -37,10 +37,7 @@ export const style = css`
             display: none !important;
         }
     }
-
-    #content {
-        display: table-row;
-    }
+    
     #container {
         display: flex;
         width: 100%;
