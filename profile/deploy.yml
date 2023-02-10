@@ -384,24 +384,6 @@ services:
       POSTGRES_USER: ${OR_DB_USER:-postgres}
       POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
 
-  timescaledb:
-    image: timescale/timescaledb-ha:pg14-latest
-    restart: always
-    # Docker volume for persistent storage of DB; can alternatively map to host
-    volumes:
-      - temp-data:/tmp
-    environment:
-
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
-      TZ: ${TZ:-Europe/Amsterdam}
-      PGTZ: ${PGTZ:-Europe/Amsterdam}
-
-      # Database settings
-      POSTGRES_DB: ${OR_DB_NAME:-openremote}
-      POSTGRES_USER: ${OR_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
-
   # Map tile server
   tileserver:
     image: openremote/tileserver:${TILESERVER_VERSION:-latest}
