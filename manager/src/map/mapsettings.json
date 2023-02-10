@@ -1,17 +1,17 @@
 {
   "options" : {
     "default" : {
-      "center" : [ 4.485222, 51.911713 ],
-      "bounds" : [ 4.26, 51.84, 4.67, 52.0 ],
-      "zoom" : 14,
+      "center" : [ 4.483118, 51.915767 ],
+      "bounds" : [ 4.24, 51.89, 4.51, 51.99 ],
+      "zoom" : 15,
       "minZoom" : 0,
       "maxZoom" : 19,
       "boxZoom" : false,
       "geocodeUrl" : "https://nominatim.openstreetmap.org"
     },
     "smartcity": {
-      "center": [ 4.485222, 51.911712 ],
-      "bounds" : [ 4.26, 51.84, 4.67, 52.0 ],
+      "center": [ 4.483118, 51.915767 ],
+      "bounds" : [ 4.24, 51.89, 4.51, 51.99 ],
       "zoom": 15,
       "minZoom": 11,
       "maxZoom": 19,
@@ -19,9 +19,9 @@
       "geocodeUrl": "https://nominatim.openstreetmap.org"
     },
     "manufacturer": {
-      "center": [ 4.4133334, 51.956898 ],
-      "bounds" : [ 4.26, 51.84, 4.67, 52.0 ],
-      "zoom": 12,
+      "center": [ 4.352753, 51.961949 ],
+      "bounds" : [ 4.24, 51.89, 4.51, 51.99 ],
+      "zoom": 13,
       "minZoom": 10,
       "maxZoom": 19,
       "boxZoom": true,

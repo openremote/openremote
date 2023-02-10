@@ -1731,11 +1731,11 @@ public class ManagerDemoSetup extends ManagerSetup {
         moreauHorticulture.setId(UniqueIdentifierGenerator.generateId(moreauHorticulture.getName()));
         moreauHorticulture = assetStorageService.merge(moreauHorticulture);
 
-        IrrigationAsset irrigation1 = createDemoIrrigationAsset("Soil drip 1", moreauHorticulture, new GeoJSONPoint(4.527094, 51.983469), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
-        IrrigationAsset irrigation2 = createDemoIrrigationAsset("Soil drip 2", moreauHorticulture, new GeoJSONPoint(4.527818, 51.983140), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
-        IrrigationAsset irrigation3 = createDemoIrrigationAsset("Soil drip 3", moreauHorticulture, new GeoJSONPoint(4.528843, 51.982657), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
-        IrrigationAsset irrigation4 = createDemoIrrigationAsset("Soil drip 4", moreauHorticulture, new GeoJSONPoint(4.529672, 51.982248), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
-        IrrigationAsset irrigation5 = createDemoIrrigationAsset("Soil drip 5", moreauHorticulture, new GeoJSONPoint(4.530518, 51.981853), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation1 = createDemoIrrigationAsset("Soil drip 1", moreauHorticulture, new GeoJSONPoint(4.311493, 51.961554), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation2 = createDemoIrrigationAsset("Soil drip 2", moreauHorticulture, new GeoJSONPoint(4.310893, 51.961354), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation3 = createDemoIrrigationAsset("Soil drip 3", moreauHorticulture, new GeoJSONPoint(4.310293, 51.961154), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation4 = createDemoIrrigationAsset("Soil drip 4", moreauHorticulture, new GeoJSONPoint(4.309617, 51.960975), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        IrrigationAsset irrigation5 = createDemoIrrigationAsset("Soil drip 5", moreauHorticulture, new GeoJSONPoint(4.309153, 51.960901), () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         irrigation1.setId(UniqueIdentifierGenerator.generateId(irrigation1.getName()));
         irrigation1 = assetStorageService.merge(irrigation1);
         irrigation2.setId(UniqueIdentifierGenerator.generateId(irrigation2.getName()));
@@ -1746,7 +1746,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         irrigation4 = assetStorageService.merge(irrigation4);
         irrigation5.setId(UniqueIdentifierGenerator.generateId(irrigation5.getName()));
         irrigation5 = assetStorageService.merge(irrigation5);
-        SoilSensorAsset soilSensor2 = createDemoSoilSensorAsset("Soil measurement", moreauHorticulture, new GeoJSONPoint(4.527976, 51.981779), 27, 35, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        SoilSensorAsset soilSensor2 = createDemoSoilSensorAsset("Soil measurement", moreauHorticulture, new GeoJSONPoint(4.310436, 51.961354), 27, 35, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         soilSensor2.setId(UniqueIdentifierGenerator.generateId(soilSensor2.getName()));
         soilSensor2 = assetStorageService.merge(soilSensor2);
 
@@ -2240,7 +2240,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         rtd.setId(UniqueIdentifierGenerator.generateId(rtd.getName()));
         rtd = assetStorageService.merge(rtd);
 
-        HarvestRobotAsset harvestRobot4 = createDemoHarvestRobotAsset("Harvester", rtd, new GeoJSONPoint(51.975951, 4.282415), OperationMode.UNLOADING, VegetableType.TOMATO, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
+        HarvestRobotAsset harvestRobot4 = createDemoHarvestRobotAsset("Harvester", rtd, new GeoJSONPoint(4.408010, 51.986839), OperationMode.UNLOADING, VegetableType.TOMATO, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         harvestRobot4.setId(UniqueIdentifierGenerator.generateId(harvestRobot4.getName()));
         harvestRobot4 = assetStorageService.merge(harvestRobot4);
 
