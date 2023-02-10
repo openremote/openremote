@@ -38,7 +38,7 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
     public String getSQLQuery(String tableName, Class<?> attributeType) {
         System.out.println("getSQLQuery() of AssetDatapointIntervalQuery."); // temp
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
-        String function = (gapFill ? "time_bucket_gapfill" : "time_bucket");
+        String function = (gapFill ? "public.time_bucket_gapfill" : "public.time_bucket");
         if (isNumber) {
             return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(value::text::numeric) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x;";
         } else {

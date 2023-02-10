@@ -486,12 +486,20 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         appendSchemas(schemas);
         appendSchemaLocations(locations);
 
+        // Adding timescaledb extension to make sure it has been initialized. Flyway clean caused issues with relations to timescaledb tables.
+        // Excluding the extension(s) in the cleanup process will not be added soon https://github.com/flyway/flyway/issues/2271
+        // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
+        StringBuilder initSql = new StringBuilder();
+        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb cascade;");
+        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit cascade;");
+
         flyway = Flyway.configure()
             .cleanDisabled(false)
             .validateMigrationNaming(true)
             .dataSource(connectionUrl, databaseUsername, databasePassword)
             .schemas(schemas.toArray(new String[0]))
             .locations(locations.toArray(new String[0]))
+            .initSql(initSql.toString())
             .baselineOnMigrate(true)
             .load();
 

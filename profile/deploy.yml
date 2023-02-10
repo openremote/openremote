@@ -364,7 +364,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    image: timescale/timescaledb-ha:pg14-latest
     restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:

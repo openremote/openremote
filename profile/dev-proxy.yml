@@ -35,8 +35,7 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      postgresql:
-        condition: service_healthy
+      - postgresql
 
   postgresql:
     extends:
