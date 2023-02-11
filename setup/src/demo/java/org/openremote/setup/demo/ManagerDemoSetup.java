@@ -1756,7 +1756,8 @@ public class ManagerDemoSetup extends ManagerSetup {
                 .addMeta(new MetaItem<>(READ_ONLY), new MetaItem<>(RULE_STATE), new MetaItem<>(STORE_DATA_POINTS),
                         new MetaItem<>(UNITS, Constants.units(UNITS_LITRE, UNITS_PER, UNITS_METRE, UNITS_SQUARED, UNITS_HOUR)));
         paprika.getAttribute(BuildingAsset.AREA).ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(new MetaItem<>(RULE_STATE));});
+            assetAttribute.addMeta(new MetaItem<>(RULE_STATE))
+                    .setValue(1800);});
         paprika.getAttributes().stream().forEach(assetAttribute -> {
             assetAttribute.addMeta(new MetaItem<>(ACCESS_RESTRICTED_READ), new MetaItem<>(ACCESS_RESTRICTED_WRITE));});
         paprika.setId(UniqueIdentifierGenerator.generateId(paprika.getName()));

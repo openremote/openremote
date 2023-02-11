@@ -9,7 +9,6 @@ version: '2.4'
 
 volumes:
   proxy-data:
-  deployment-data:
   temp-data:
   postgresql-data:
 #  btmesh-data:
@@ -85,8 +84,6 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - temp-data:/tmp
-      - deployment-data:/deployment
-
 #      - /var/run/dbus:/var/run/dbus
 #      # Bluetooth mesh volume
 #      - btmesh-data:/btmesh
