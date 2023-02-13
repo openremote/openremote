@@ -170,13 +170,13 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             )
 
             assert setpoints.size() == 7
-            assert setpoints[0].value == 0d
-            assert setpoints[1].value == 0d
-            assert setpoints[2].value == 0d
-            assert setpoints[3].value == 0d
-            assert setpoints[4].value == 0d
-            assert setpoints[5].value == 0d
-            assert setpoints[6].value == 0d
+            assert ValueUtil.getValue(setpoints[0].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[1].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[2].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[3].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[4].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[5].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[6].value, BigDecimal.class).orElse(null) == 0d
         }
 
         when: "storage asset import and export tariffs are modified to make storage viable in limited intervals and optimisation is run"
@@ -309,13 +309,13 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             )
 
             assert setpoints.size() == 7
-            assert setpoints[0].value == 10d
-            assert setpoints[1].value == 10d
-            assert setpoints[2].value == 10d
-            assert setpoints[3].value == -10d
-            assert setpoints[4].value == -10d
-            assert setpoints[5].value == -10d
-            assert setpoints[6].value == -10d
+            ValueUtil.getValue(setpoints[0].value, BigDecimal.class).orElse(null) == 10d
+            ValueUtil.getValue(setpoints[1].value, BigDecimal.class).orElse(null) == 10d
+            ValueUtil.getValue(setpoints[2].value, BigDecimal.class).orElse(null) == 10d
+            ValueUtil.getValue(setpoints[3].value, BigDecimal.class).orElse(null) == -10d
+            ValueUtil.getValue(setpoints[4].value, BigDecimal.class).orElse(null) == -10d
+            ValueUtil.getValue(setpoints[5].value, BigDecimal.class).orElse(null) == -10d
+            ValueUtil.getValue(setpoints[6].value, BigDecimal.class).orElse(null) == -10d
         }
 
         and: "the optimisation saving should be inverse of earning from lost production export -(10x3x0.05)"
