@@ -35,7 +35,7 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      - postgresql
+      - postgresql # timescaledb image has no healthcheck config
 
   postgresql:
     extends:

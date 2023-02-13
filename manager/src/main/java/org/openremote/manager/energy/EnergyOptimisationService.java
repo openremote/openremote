@@ -48,6 +48,7 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
+import java.math.BigDecimal;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -816,7 +817,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
                 IntStream.range(0, predictedData.length).forEach(i -> {
                     if (predictedData[i].getValue() != null) {
-                        values[i] = (double) (Object) predictedData[i].getValue();
+                        ValueUtil.getValue(predictedData[i].getValue(), BigDecimal.class).ifPresent(bigDecimal -> values[i] = bigDecimal.doubleValue());
                     } else {
                         // Average previous and next values to fill in gaps (goes up to 5 back and forward) - this fixes
                         // issues with resolution differences between stored predicted data and optimisation interval

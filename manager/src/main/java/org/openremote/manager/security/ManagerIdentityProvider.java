@@ -264,9 +264,6 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     static List<String> getUserIds(PersistenceService persistenceService, String realm, List<String> usernames) {
         List<String> CIUsernames = usernames.stream().map(String::toLowerCase).toList();
-        if(!CIUsernames.isEmpty()) {
-            System.out.println("Not empty!");
-        }
 
         return persistenceService.doReturningTransaction(em -> {
             Map<String, String> usernameIdMap = em.createQuery(
