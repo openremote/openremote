@@ -2006,7 +2006,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                                             new SimulatorReplayDatapoint(midnight.plusHours(20).plusMinutes(30).get(SECOND_OF_DAY), 1002),
                                             new SimulatorReplayDatapoint(midnight.plusHours(21).get(SECOND_OF_DAY), 995),
                                             new SimulatorReplayDatapoint(midnight.plusHours(21).plusMinutes(30).get(SECOND_OF_DAY), 1050),
-                                            new SimulatorReplayDatapoint(midnight.plusHours(22).get(SECOND_OF_DAY), 11150),
+                                            new SimulatorReplayDatapoint(midnight.plusHours(22).get(SECOND_OF_DAY), 1150),
                                             new SimulatorReplayDatapoint(midnight.plusHours(22).plusMinutes(30).get(SECOND_OF_DAY), 1290),
                                             new SimulatorReplayDatapoint(midnight.plusHours(23).get(SECOND_OF_DAY), 1250),
                                             new SimulatorReplayDatapoint(midnight.plusHours(23).plusMinutes(30).get(SECOND_OF_DAY), 1210)
