@@ -133,18 +133,19 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
                             LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                             LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                             (optimiser.intervalSize * 60) + " minutes",
-                            AssetDatapointIntervalQuery.Formula.AVG
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
                     )
             )
 
             assert setpoints.size() == 7
-            assert setpoints[0].value == 0d
-            assert setpoints[1].value == -20d
-            assert setpoints[2].value == 7d //that(setpoints[2].value, closeTo(2.33333, 0.0001))
-            assert setpoints[3].value == 0d
-            assert setpoints[4].value == 7d
-            assert setpoints[5].value == -14d
-            assert setpoints[6].value == 0d
+            assert ValueUtil.getValue(setpoints[0].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[1].value, BigDecimal.class).orElse(null) == -20d
+            assert ValueUtil.getValue(setpoints[2].value, BigDecimal.class).orElse(null) == 7d //that(setpoints[2].value, closeTo(2.33333, 0.0001))
+            assert ValueUtil.getValue(setpoints[3].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[4].value, BigDecimal.class).orElse(null) == 7d
+            assert ValueUtil.getValue(setpoints[5].value, BigDecimal.class).orElse(null) == -14d
+            assert ValueUtil.getValue(setpoints[6].value, BigDecimal.class).orElse(null) == 0d
         }
 
         when: "storage asset import and export tariffs are added to make storage un-viable and optimisation is run"
@@ -165,7 +166,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
                             LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                             LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                             (optimiser.intervalSize * 60) + " minutes",
-                            AssetDatapointIntervalQuery.Formula.AVG
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
                     )
             )
 
@@ -197,18 +199,19 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
                             LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                             LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                             (optimiser.intervalSize * 60) + " minutes",
-                            AssetDatapointIntervalQuery.Formula.AVG
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
                     )
             )
 
             assert setpoints.size() == 7
-            assert setpoints[0].value == 0d
-            assert setpoints[1].value == -20d
-            assert setpoints[2].value == 0d
-            assert setpoints[3].value == 0d
-            assert setpoints[4].value == 0d
-            assert setpoints[5].value == 0d
-            assert setpoints[6].value == 0d
+            assert ValueUtil.getValue(setpoints[0].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[1].value, BigDecimal.class).orElse(null) == -20d
+            assert ValueUtil.getValue(setpoints[2].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[3].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[4].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[5].value, BigDecimal.class).orElse(null) == 0d
+            assert ValueUtil.getValue(setpoints[6].value, BigDecimal.class).orElse(null) == 0d
         }
     }
 
@@ -300,12 +303,16 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 10d
 
-            def setpoints = assetPredictedDatapointService.getValueDatapoints(
-                    new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
-                    DatapointInterval.MINUTE,
-                    (int)(optimiser.intervalSize * 60),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
+            def setpoints = assetPredictedDatapointService.queryDatapoints(
+                    managerTestSetup.electricityBatteryAssetId,
+                    ElectricityAsset.POWER_SETPOINT.name,
+                    new AssetDatapointIntervalQuery(
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            (optimiser.intervalSize * 60) + " minutes",
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
+                    )
             )
 
             assert setpoints.size() == 7

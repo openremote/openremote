@@ -825,12 +825,12 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                         Double next = null;
                         int j = i-1;
                         while (previous == null && j >= 0) {
-                           previous = (Double) predictedData[j].getValue();
-                           j--;
+                            previous = ValueUtil.getValue(predictedData[i].getValue(), Double.class).orElse(null);
+                            j--;
                         }
                         j = i+1;
                         while (next == null && j < predictedData.length) {
-                            next = (Double) predictedData[j].getValue();
+                            next = ValueUtil.getValue(predictedData[i].getValue(), Double.class).orElse(null);
                             j++;
                         }
                         if (next == null) {
