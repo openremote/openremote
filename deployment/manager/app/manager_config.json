@@ -3,6 +3,181 @@
     "default": {
       "appTitle": "OpenRemote Manager Demo",
       "language": "en"
+    },
+    "smartcity": {
+      "styles": ":host > * {--or-app-color2: #F6F7FA; --or-app-color3: #1B1464; --or-app-color4: #662D91;}",
+      "logo": "/images/logo_smartcity.svg",
+      "logoMobile": "/images/logo-mobile_smartcity.svg"
+    },
+    "manufacturer": {
+      "styles": ":host > * {--or-app-color2: #F6FAFA; --or-app-color3: #1A2456; --or-app-color4: #29ABE2;}",
+      "logo": "/images/logo_manufacturer.svg",
+      "logoMobile": "/images/logo-mobile_manufacturer.svg"
+    }
+  },
+  "pages": {
+    "assets": {
+      "viewer": {
+        "assetTypes": {
+          "SoilSensorAsset": {
+            "viewerStyles": {},
+            "panels": [
+              {
+                "type": "group",
+                "title": "underlyingAssets"
+              },
+              {
+                "type": "info",
+                "hideOnMobile": true,
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": ["notes"]
+                }
+              },
+              {
+                "type": "info",
+                "column": 1,
+                "title": "location",
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": [
+                    "location"
+                  ],
+                  "itemConfig": {
+                    "location": {
+                      "label": ""
+                    }
+                  }
+                }
+              },
+              {
+                "type": "info",
+                "title": "Sensor Values",
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": [
+                    "salinity",
+                    "soilTensionMeasured",
+                    "temperature"
+                  ]
+                }
+              },
+              {
+                "type": "info",
+                "title": "Settings",
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": [
+                    "soilTensionMin",
+                    "soilTensionMax"
+                  ]
+                }
+              },
+              {
+                "type": "history",
+                "column": 1
+              },
+              {
+                "type": "linkedUsers",
+                "column": 1
+              }
+            ]
+          },
+          "HarvestRobotAsset": {
+            "viewerStyles": {},
+            "panels": [
+              {
+                "type": "group",
+                "title": "underlyingAssets"
+              },
+              {
+                "type": "info",
+                "hideOnMobile": true,
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": ["notes"]
+                }
+              },
+              {
+                "type": "info",
+                "column": 1,
+                "title": "location",
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": [
+                    "location"
+                  ],
+                  "itemConfig": {
+                    "location": {
+                      "label": ""
+                    }
+                  }
+                }
+              },
+              {
+                "type": "info",
+                "title": "Operation",
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": [
+                    "operationMode",
+                    "speed",
+                    "direction"
+                  ]
+                }
+              },
+              {
+                "type": "info",
+                "column": 1,
+                "title": "Settings",
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": [
+                    "vegetableType"
+                  ]
+                }
+              },
+              {
+                "type": "info",
+                "title": "Harvested",
+                "properties": {
+                  "include": []
+                },
+                "attributes": {
+                  "include": [
+                    "harvestedSession",
+                    "harvestedTotal"
+                  ]
+                }
+              },
+              {
+                "type": "history",
+                "column": 1
+              },
+              {
+                "type": "linkedUsers",
+                "column": 1
+              }
+            ]
+          }
+        }
+      }
     }
   }
 }
