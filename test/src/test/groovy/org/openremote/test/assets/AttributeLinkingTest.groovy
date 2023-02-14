@@ -2,12 +2,15 @@ package org.openremote.test.assets
 
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
+import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.*
 import org.openremote.model.value.JsonPathFilter
 import org.openremote.model.value.ValueFilter
 import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -28,6 +31,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
 
         then: "the system should settle down"
         conditions.eventually {
@@ -39,7 +43,8 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         asset1.setRealm(Constants.MASTER_REALM)
         asset1.addOrReplaceAttributes(
             new Attribute<>("button", TEXT, "RELEASED"),
-            new Attribute<>("array", JSON_OBJECT.asArray(), null)
+            new Attribute<>("array", JSON_OBJECT.asArray(), null),
+            new Attribute<>("crossRealm", TEXT, null)
         )
         asset1 = assetStorageService.merge(asset1)
 
@@ -75,6 +80,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
 
         asset1.getAttribute("button").get().addMeta(new MetaItem<>(ATTRIBUTE_LINKS, [attributeLinkOnOff, attributeLinkCounter] as AttributeLink[]))
         asset1.getAttribute("array").get().addMeta(new MetaItem<>(ATTRIBUTE_LINKS, [attributeLinkProp] as AttributeLink[]))
+        asset1.getAttribute("crossRealm").get().addMeta(new MetaItem<>(ATTRIBUTE_LINKS, [new AttributeLink(new AttributeRef(managerTestSetup.apartment1Id, BuildingAsset.STREET.name), null, null)] as AttributeLink[]))
         asset1 = assetStorageService.merge(asset1)
 
         and: "the button is pressed for a short period"
@@ -203,5 +209,19 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
             asset2 = assetStorageService.find(asset2.id, true)
             assert !asset2.getAttribute("item2Prop1").flatMap{it.value}.orElse(true)
         }
+
+        when: "the crossRealm attribute is written to"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, "crossRealm", "Test"))
+
+        then: "the source attribute should be updated"
+        conditions.eventually {
+            asset1 = assetStorageService.find(asset1.id, true)
+            assert asset1.getAttribute("crossRealm").flatMap{it.value}.orElse(null) == "Test"
+        }
+
+        and: "the cross realm asset attribute should not have been updated after a short wait"
+        Thread.sleep(1000)
+        def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id, true) as BuildingAsset
+        assert apartment1.getStreet().orElse(null) == null
     }
 }

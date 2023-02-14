@@ -13,12 +13,14 @@ import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.gateway.GatewayClientService
 import org.openremote.manager.gateway.GatewayConnector
 import org.openremote.manager.gateway.GatewayService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.security.User
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.*
@@ -758,6 +760,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def gatewayClientService = container.getService(GatewayClientService.class)
         def agentService = container.getService(AgentService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def clientEventService = container.getService(ClientEventService.class)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -904,6 +907,25 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert mirroredMicrophone2 != null
             assert microphone2.getAttribute("test").flatMap{it.getValue()}.orElse("") == "newerValue"
             assert mirroredMicrophone2.getAttribute("test").flatMap{it.getValue()}.orElse("") == "newerValue"
+        }
+
+        when: "we subscribe to attribute events"
+        List<AttributeEvent> attributeEvents = []
+        clientEventService.addInternalSubscription(AttributeEvent.class, null, {attributeEvent ->
+            attributeEvents.add(attributeEvent)
+        })
+
+        and: "an attribute with an attribute link is updated on the gateway"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true))
+
+        then: "only four attribute events should have been generated, one for each of light1 and light2 and one for each of their mirrored assets below the gateway asset"
+        Thread.sleep(1000)
+        conditions.eventually {
+            assert attributeEvents.size() == 4
+            assert attributeEvents.any{it.assetId == managerTestSetup.light2Id && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.assetId == managerTestSetup.light1Id && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.assetId == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.assetId == mapAssetId(gateway.id, managerTestSetup.light1Id, false) && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
         }
 
         when: "a gateway client asset is deleted"
