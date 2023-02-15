@@ -1,21 +1,22 @@
-import {Asset, Attribute, AttributeRef, DashboardWidget} from "@openremote/model";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef, DashboardWidget} from "@openremote/model";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {html, LitElement, TemplateResult} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
+import {when} from "lit/directives/when.js";
+import {choose} from 'lit/directives/choose.js';
 import {OrWidgetConfig, OrWidgetEntity} from "./or-base-widget";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
 import {style} from "../style";
 import manager from "@openremote/core";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import moment from "moment";
 
 
 export interface ChartWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
-    timestamp?: Date;
-    compareTimestamp?: Date;
+    datapointQuery: AssetDatapointQueryUnion;
     showTimestampControls: boolean;
     showLegend: boolean;
 }
@@ -34,8 +35,12 @@ export class OrChartWidget implements OrWidgetEntity {
         return {
             displayName: widget?.displayName,
             attributeRefs: [],
-            period: "day",
-            timestamp: new Date(),
+            datapointQuery: {
+                type: "lttb",
+                fromTimestamp: Date.now(),
+                toTimestamp: Date.now(),
+                amountOfPoints: 100
+            },
             showTimestampControls: false,
             showLegend: true
         } as ChartWidgetConfig;
@@ -76,15 +81,32 @@ export class OrChartWidgetContent extends LitElement {
 
     render() {
         return html`
-            <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig?.period}" denseLegend="${true}"
-                      .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}" .realm="${this.realm}"
-                      .attributeControls="${false}" .timestampControls="${this.widget?.widgetConfig?.showTimestampControls}"
-                      .compareTimestamp="${false}" style="height: 100%"
+            <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" denseLegend="${true}" .realm="${this.realm}"
+                      .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}"
+                      .attributeControls="${false}" .timestampControls="${this.widget?.widgetConfig?.showTimestampControls}" .algorithm="${this.widget?.widgetConfig?.algorithm}"
+                      .datapointQuery="${this.widget?.widgetConfig?.datapointQuery}"
+                      style="height: 100%"
             ></or-chart>
         `
     }
 
+    shouldUpdate(changedProperties: Map<string, any>) {
+
+        // Add datapointQuery if not set yet (due to migration)
+        if(this.widget && this.widget.widgetConfig.datapointQuery == undefined) {
+            this.widget.widgetConfig.datapointQuery = {
+                type: "lttb",
+                fromTimestamp: moment().set('minute', -60).toDate().getTime(),
+                toTimestamp: moment().set('minute', 60).toDate().getTime(),
+                amountOfPoints: 100
+            };
+        }
+        return super.shouldUpdate(changedProperties);
+    }
+
     updated(changedProperties: Map<string, any>) {
+
+        // Fetch assets
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
             if(this.assetAttributes.length != this.widget!.widgetConfig.attributeRefs.length) {
                 this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
@@ -184,7 +206,7 @@ class OrChartWidgetSettings extends LitElement {
     public widget?: DashboardWidget;
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('algorithm'), i18next.t('display')];
 
 
     static get styles() {
@@ -206,22 +228,46 @@ class OrChartWidgetSettings extends LitElement {
                 ` : null}
             </div>
             <div>
+                ${this.generateExpandableHeader(i18next.t('algorithm'))}
+            </div>
+            <div>
+                ${this.expandedPanels.includes('algorithm') ? html`
+                    ${when(config.datapointQuery, () => {
+                        const typeOptions = new Map<string, string>([["Default", 'lttb'], ["With interval", 'interval']]);
+                        const typeValue = Array.from(typeOptions.entries()).find((entry => entry[1] == config.datapointQuery.type))![0]
+                        return html`
+                            <div style="padding: 24px 24px 48px 24px;">
+                                <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(typeOptions.keys())}"
+                                              .value="${typeValue}" label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                                  config.datapointQuery.type = typeOptions.get(event.detail.value)! as any;
+                                                  this.updateConfig(this.widget!, config, true);
+                                              }}"
+                                ></or-mwc-input>
+                                ${choose(config.datapointQuery.type, [
+                                    ['interval', () => {
+                                        const intervalQuery = config.datapointQuery as AssetDatapointIntervalQuery;
+                                        const formulaOptions = [AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MAX];
+                                        return html`
+                                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%; margin-top: 18px;" .options="${formulaOptions}"
+                                                          .value="${intervalQuery.formula}" label="${i18next.t('formula')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                                              intervalQuery.formula = event.detail.value;this.updateConfig(this.widget!, config, true);
+                                                          }}"
+                                            ></or-mwc-input>
+                                        `;
+                                    }]
+                                ])}
+                            </div>
+                        `
+                    }, () => html`Loading..`)}
+                ` : null}
+            </div>
+            <div>
                 ${this.generateExpandableHeader(i18next.t('display'))}
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('display')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;"
-                                          .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}"
-                                          .value="${config.period}" label="${i18next.t('timeframe')}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              config.period = event.detail.value;
-                                              this.updateConfig(this.widget!, config);
-                                          }}"
-                            ></or-mwc-input>
-                        </div>
-                        <div class="switchMwcInputContainer" style="margin-top: 18px;">
+                        <div class="switchMwcInputContainer">
                             <span>${i18next.t('dashboard.showTimestampControls')}</span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                           .value="${config.showTimestampControls}"
@@ -249,6 +295,23 @@ class OrChartWidgetSettings extends LitElement {
 
     updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
         const oldWidget = JSON.parse(JSON.stringify(widget)) as DashboardWidget;
+
+        if(config.datapointQuery) {
+            switch (config.datapointQuery.type) {
+                case 'lttb': {
+                    const query = config.datapointQuery as AssetDatapointLTTBQuery;
+                    if(!query.amountOfPoints) { query.amountOfPoints = 100; }
+                    break;
+                }
+                case 'interval': {
+                    const query = config.datapointQuery as AssetDatapointIntervalQuery;
+                    if(!query.interval) { query.interval = "1 hour"; }
+                    if(!query.gapFill) { query.gapFill = false; }
+                    if(!query.formula) { query.formula = AssetDatapointIntervalQueryFormula.AVG; }
+                }
+            }
+        }
+
         widget.widgetConfig = config;
         this.requestUpdate("widget", oldWidget);
         this.forceParentUpdate(new Map<string, any>([["widget", widget]]), force);
