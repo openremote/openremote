@@ -90,7 +90,7 @@ export class OrChartWidgetContent extends LitElement {
         `
     }
 
-    shouldUpdate(changedProperties: Map<string, any>) {
+    willUpdate(changedProperties: Map<string, any>) {
 
         // Add datapointQuery if not set yet (due to migration)
         if(this.widget && this.widget.widgetConfig.datapointQuery == undefined) {
@@ -100,8 +100,11 @@ export class OrChartWidgetContent extends LitElement {
                 toTimestamp: moment().set('minute', 60).toDate().getTime(),
                 amountOfPoints: 100
             };
+            if(!changedProperties.has("widget")) {
+                changedProperties.set("widget", this.widget);
+            }
         }
-        return super.shouldUpdate(changedProperties);
+        super.willUpdate(changedProperties);
     }
 
     updated(changedProperties: Map<string, any>) {
@@ -213,6 +216,23 @@ class OrChartWidgetSettings extends LitElement {
         return [style, widgetSettingsStyling];
     }
 
+    willUpdate(changedProperties: Map<string, any>) {
+
+        // Add datapointQuery if not set yet (due to migration)
+        if(this.widget && this.widget.widgetConfig.datapointQuery == undefined) {
+            this.widget.widgetConfig.datapointQuery = {
+                type: "lttb",
+                fromTimestamp: moment().set('minute', -60).toDate().getTime(),
+                toTimestamp: moment().set('minute', 60).toDate().getTime(),
+                amountOfPoints: 100
+            };
+            if(!changedProperties.has("widget")) {
+                changedProperties.set("widget", this.widget);
+            }
+        }
+        super.willUpdate(changedProperties);
+    }
+
     // UI Rendering
     render() {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ChartWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
@@ -258,7 +278,10 @@ class OrChartWidgetSettings extends LitElement {
                                 ])}
                             </div>
                         `
-                    }, () => html`Loading..`)}
+                    }, () => {
+                        console.error(config);
+                        return html`${i18next.t('errorOccurred')}`;
+                    })}
                 ` : null}
             </div>
             <div>
