@@ -135,7 +135,6 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         and: "the aggregated datapoints should match"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            // TODO: Quickly translated to new format, so check if format is correct
             def aggregatedDatapoints = assetDatapointService.queryDatapoints(
                     thing.getId(),
                     thing.getAttribute("light1PowerConsumption").orElseThrow({ new RuntimeException("Missing attribute") }),
@@ -148,19 +147,18 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     )
             )
             assert aggregatedDatapoints.size() == 61
-            assert ValueUtil.getValue(aggregatedDatapoints[54].value, BigDecimal.class).orElse(null) == 13.3
-            assert ValueUtil.getValue(aggregatedDatapoints[55].value, BigDecimal.class).orElse(null) == null
-            assert ValueUtil.getValue(aggregatedDatapoints[56].value, BigDecimal.class).orElse(null)  == 13.3
-            assert ValueUtil.getValue(aggregatedDatapoints[57].value, BigDecimal.class).orElse(null)  == 13.5
-            assert ValueUtil.getValue(aggregatedDatapoints[58].value, BigDecimal.class).orElse(null)  == 14.4
-            assert ValueUtil.getValue(aggregatedDatapoints[59].value, BigDecimal.class).orElse(null)  == 15.5
-            assert ValueUtil.getValue(aggregatedDatapoints[60].value, BigDecimal.class).orElse(null)  == null
+            assert aggregatedDatapoints[54].value == 13.3
+            assert aggregatedDatapoints[55].value == null
+            assert aggregatedDatapoints[56].value == 13.3
+            assert aggregatedDatapoints[57].value == 13.5
+            assert aggregatedDatapoints[58].value == 14.4
+            assert aggregatedDatapoints[59].value == 15.5
+            assert aggregatedDatapoints[60].value == null
         }
 
         and: "when the step size is set on the datapoint retrieval then the datapoints should match"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            // TODO: Quickly translated to new format, so check if format is correct
             def aggregatedDatapoints = assetDatapointService.queryDatapoints(
                     thing.getId(),
                     thing.getAttribute("light1PowerConsumption").orElseThrow({ new RuntimeException("Missing attribute") }),
@@ -173,8 +171,8 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     )
             )
             assert aggregatedDatapoints.size() == 13
-            assert ValueUtil.getValue(aggregatedDatapoints[11].value, BigDecimal.class).orElse(null), closeTo(13.36666, 0.0001)
-            assert ValueUtil.getValue(aggregatedDatapoints[12].value, BigDecimal.class).orElse(null) == 14.95
+            assert aggregatedDatapoints[11].value, closeTo(13.36666, 0.0001)
+            assert aggregatedDatapoints[12].value == 14.95
         }
 
 
@@ -233,7 +231,6 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         and: "the aggregated datapoints should match"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            // TODO: Quickly translated to new format, so check if format is correct
             def aggregatedDatapoints = assetDatapointService.queryDatapoints(
                     thing.getId(),
                     thing.getAttribute(thingLightToggleAttributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
@@ -246,9 +243,9 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     )
             )
             assert aggregatedDatapoints.size() == 61
-            assert ValueUtil.getValue(aggregatedDatapoints[58].value, BigDecimal.class).orElse(null) == 0
-            assert ValueUtil.getValue(aggregatedDatapoints[59].value, BigDecimal.class).orElse(null) == 1
-            assert ValueUtil.getValue(aggregatedDatapoints[60].value, BigDecimal.class).orElse(null) == 0
+            assert aggregatedDatapoints[58].value == 0
+            assert aggregatedDatapoints[59].value == 1d
+            assert aggregatedDatapoints[60].value == 0
         }
 
         // ------------------------------------

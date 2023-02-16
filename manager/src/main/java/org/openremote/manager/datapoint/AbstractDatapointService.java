@@ -171,10 +171,13 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
 
     public ValueDatapoint<?>[] queryDatapoints(String assetId, String attributeName, AssetDatapointQuery datapointQuery) {
         Asset<?> asset = assetStorageService.find(assetId, true);
+        if(asset == null) {
+            throw new IllegalStateException("Asset not found: " + assetId);
+        }
         Attribute<?> assetAttribute = asset.getAttribute(attributeName)
                 .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeName));
 
-        return this.queryDatapoints(assetId, assetAttribute, datapointQuery);
+        return this.queryDatapoints(asset.getId(), assetAttribute, datapointQuery);
     }
 
     public ValueDatapoint<?>[] queryDatapoints(String assetId, Attribute<?> attribute, AssetDatapointQuery datapointQuery) {
@@ -191,6 +194,9 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                     public ValueDatapoint<?>[] execute(Connection connection) throws SQLException {
 
                         Class<?> attributeType = attribute.getType().getType();
+                        boolean isNumber = Number.class.isAssignableFrom(attributeType);
+                        boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
+
                         try (PreparedStatement st = connection.prepareStatement(datapointQuery.getSQLQuery(getDatapointTableName(), attributeType))) {
 
                             if(parameters.size() > 0) {
@@ -209,7 +215,15 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                 while (rs.next()) {
                                     Object value = null;
                                     if (rs.getObject(2) != null) {
-                                        value = ValueUtil.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null);
+                                        if(isNumber || isBoolean) {
+                                            value = ValueUtil.getValueCoerced(rs.getObject(2), Double.class).orElse(null);
+                                        } else {
+                                            if (rs.getObject(2) instanceof PGobject) {
+                                                value = ValueUtil.parse(((PGobject) rs.getObject(2)).getValue()).orElse(null);
+                                            } else {
+                                                value = ValueUtil.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null);
+                                            }
+                                        }
                                     }
                                     result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                                 }

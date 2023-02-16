@@ -68,16 +68,4 @@ public interface AssetDatapointResource {
                             @QueryParam("fromTimestamp") long fromTimestamp,
                             @QueryParam("toTimestamp") long toTimestamp);
 
-    /*
-    * Retrieve datapoints using an {@link AssetDatapointQuery}
-    * <p>
-    * By specifying the start date, end date, amount of data points, and the algorithm to use,
-    * you can query an x,y array with a timestamp and respective value.
-    * */
-    /*@POST
-    @Path("query")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    *//*@RolesAllowed({Constants.READ_ASSETS_ROLE})*//* // Temporarily disabled for testing
-    ValueDatapoint<?>[] datapointQuery(@BeanParam RequestParams requestParams, AssetDatapointQuery query);*/
 }

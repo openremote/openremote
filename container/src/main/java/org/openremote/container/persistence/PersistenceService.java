@@ -523,7 +523,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         MigrateResult result = flyway.migrate();
         LOG.info("Applied database schema migrations: " + result.migrationsExecuted);
         flyway.validate();
-        System.out.println();
     }
 
     protected void appendSchemaLocations(List<String> locations) {

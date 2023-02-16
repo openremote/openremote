@@ -125,7 +125,6 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         then: "the setpoints of the storage asset for the next 24hrs should be correctly optimised"
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
-            // TODO: Quickly translated to new format, so check if format is correct
             def setpoints = assetPredictedDatapointService.queryDatapoints(
                     managerTestSetup.electricityBatteryAssetId,
                     ElectricityAsset.POWER_SETPOINT.name,
@@ -139,13 +138,13 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             )
 
             assert setpoints.size() == 7
-            assert ValueUtil.getValue(setpoints[0].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[1].value, BigDecimal.class).orElse(null) == -20d
-            assert ValueUtil.getValue(setpoints[2].value, BigDecimal.class).orElse(null) == 7d //that(setpoints[2].value, closeTo(2.33333, 0.0001))
-            assert ValueUtil.getValue(setpoints[3].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[4].value, BigDecimal.class).orElse(null) == 7d
-            assert ValueUtil.getValue(setpoints[5].value, BigDecimal.class).orElse(null) == -14d
-            assert ValueUtil.getValue(setpoints[6].value, BigDecimal.class).orElse(null) == 0d
+            assert setpoints[0].value == 0d
+            assert setpoints[1].value == -20d
+            assert setpoints[2].value == 7d //that(setpoints[2].value, closeTo(2.33333, 0.0001))
+            assert setpoints[3].value == 0d
+            assert setpoints[4].value == 7d
+            assert setpoints[5].value == -14d
+            assert setpoints[6].value == 0d
         }
 
         when: "storage asset import and export tariffs are added to make storage un-viable and optimisation is run"
@@ -158,7 +157,6 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         then: "the battery should not be used in any interval"
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
-            // TODO: Quickly translated to new format, so check if format is correct
             def setpoints = assetPredictedDatapointService.queryDatapoints(
                     managerTestSetup.electricityBatteryAssetId,
                     ElectricityAsset.POWER_SETPOINT.name,
@@ -172,13 +170,13 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             )
 
             assert setpoints.size() == 7
-            assert ValueUtil.getValue(setpoints[0].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[1].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[2].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[3].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[4].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[5].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[6].value, BigDecimal.class).orElse(null) == 0d
+            assert setpoints[0].value == 0d
+            assert setpoints[1].value == 0d
+            assert setpoints[2].value == 0d
+            assert setpoints[3].value == 0d
+            assert setpoints[4].value == 0d
+            assert setpoints[5].value == 0d
+            assert setpoints[6].value == 0d
         }
 
         when: "storage asset import and export tariffs are modified to make storage viable in limited intervals and optimisation is run"
@@ -191,7 +189,6 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         then: "the battery should only be used in the correct intervals"
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
-            // TODO: Quickly translated to new format, so check if format is correct
             def setpoints = assetPredictedDatapointService.queryDatapoints(
                     managerTestSetup.electricityBatteryAssetId,
                     ElectricityAsset.POWER_SETPOINT.name,
@@ -205,13 +202,13 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             )
 
             assert setpoints.size() == 7
-            assert ValueUtil.getValue(setpoints[0].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[1].value, BigDecimal.class).orElse(null) == -20d
-            assert ValueUtil.getValue(setpoints[2].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[3].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[4].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[5].value, BigDecimal.class).orElse(null) == 0d
-            assert ValueUtil.getValue(setpoints[6].value, BigDecimal.class).orElse(null) == 0d
+            assert setpoints[0].value == 0d
+            assert setpoints[1].value == -20d
+            assert setpoints[2].value == 0d
+            assert setpoints[3].value == 0d
+            assert setpoints[4].value == 0d
+            assert setpoints[5].value == 0d
+            assert setpoints[6].value == 0d
         }
     }
 
@@ -316,13 +313,13 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             )
 
             assert setpoints.size() == 7
-            ValueUtil.getValue(setpoints[0].value, BigDecimal.class).orElse(null) == 10d
-            ValueUtil.getValue(setpoints[1].value, BigDecimal.class).orElse(null) == 10d
-            ValueUtil.getValue(setpoints[2].value, BigDecimal.class).orElse(null) == 10d
-            ValueUtil.getValue(setpoints[3].value, BigDecimal.class).orElse(null) == -10d
-            ValueUtil.getValue(setpoints[4].value, BigDecimal.class).orElse(null) == -10d
-            ValueUtil.getValue(setpoints[5].value, BigDecimal.class).orElse(null) == -10d
-            ValueUtil.getValue(setpoints[6].value, BigDecimal.class).orElse(null) == -10d
+            assert setpoints[0].value == 10d
+            assert setpoints[1].value == 10d
+            assert setpoints[2].value == 10d
+            assert setpoints[3].value == -10d
+            assert setpoints[4].value == -10d
+            assert setpoints[5].value == -10d
+            assert setpoints[6].value == -10d
         }
 
         and: "the optimisation saving should be inverse of earning from lost production export -(10x3x0.05)"

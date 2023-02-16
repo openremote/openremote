@@ -809,7 +809,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                             (intervalSize * 60) + " minutes",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
-                    ) // TODO: double check if these properties are correct for getting the predicted datapoints
+                    )
             );
             if (predictedData.length != values.length) {
                 LOG.warning("Returned predicted data point count does not match interval count: Ref=" + ref + ", expected=" + values.length + ", actual=" + predictedData.length);
@@ -817,7 +817,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
                 IntStream.range(0, predictedData.length).forEach(i -> {
                     if (predictedData[i].getValue() != null) {
-                        ValueUtil.getValue(predictedData[i].getValue(), BigDecimal.class).ifPresent(bigDecimal -> values[i] = bigDecimal.doubleValue());
+                        values[i] = (double) (Object) predictedData[i].getValue();
                     } else {
                         // Average previous and next values to fill in gaps (goes up to 5 back and forward) - this fixes
                         // issues with resolution differences between stored predicted data and optimisation interval
@@ -825,12 +825,12 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                         Double next = null;
                         int j = i-1;
                         while (previous == null && j >= 0) {
-                            previous = ValueUtil.getValue(predictedData[i].getValue(), Double.class).orElse(null);
+                            previous = (Double) predictedData[j].getValue();
                             j--;
                         }
                         j = i+1;
                         while (next == null && j < predictedData.length) {
-                            next = ValueUtil.getValue(predictedData[i].getValue(), Double.class).orElse(null);
+                            next = (Double) predictedData[j].getValue();
                             j++;
                         }
                         if (next == null) {
