@@ -34,6 +34,8 @@ dependencies {
     api "com.github.weliem:blessed-bluez:$bluetoothVersion"
 
     implementation "dev.failsafe:failsafe:$failsafeVersion"
+
+    implementation "com.sun.mail:jakarta.mail:$javaMailVersion"
 }
 
 jar {

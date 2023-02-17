@@ -32,14 +32,13 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.util.TextUtil;
-import org.simplejavamail.email.Email;
-import org.simplejavamail.email.EmailBuilder;
-import org.simplejavamail.email.EmailPopulatingBuilder;
-import org.simplejavamail.email.Recipient;
-import org.simplejavamail.mailer.Mailer;
-import org.simplejavamail.mailer.MailerBuilder;
-import org.simplejavamail.mailer.config.TransportStrategy;
 
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,7 +53,7 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     private static final Logger LOG = Logger.getLogger(EmailNotificationHandler.class.getName());
     protected String defaultFrom;
-    protected Mailer mailer;
+    protected Session mailSession;
     protected Map<String, String> headers;
     protected ManagerIdentityService managerIdentityService;
     protected AssetStorageService assetStorageService;
@@ -89,16 +88,33 @@ public class EmailNotificationHandler implements NotificationHandler {
         defaultFrom = container.getConfig().getOrDefault(OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT);
 
         if (!TextUtil.isNullOrEmpty(host) && !TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)) {
-            MailerBuilder.MailerRegularBuilder mailerBuilder = MailerBuilder.withSMTPServer(host, port, user, password);
             boolean startTls = getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT);
 
-            mailerBuilder.withTransportStrategy(startTls ? TransportStrategy.SMTP_TLS : TransportStrategy.SMTP);
-            mailer = mailerBuilder.buildMailer();
-            try {
-                mailer.testConnection();
+            Properties props = new Properties();
+            props.put("mail.smtp.auth", true);
+            props.put("mail.smtp.starttls.enable", startTls);
+            props.put("mail.smtp.host", host);
+            props.put("mail.smtp.port", port);
+
+            mailSession = Session.getInstance(props, new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(user, password);
+                }
+            });
+
+            boolean valid;
+            try (Transport transport = mailSession.getTransport(startTls ? "smtps" : "smtp")) {
+                transport.connect();
+                valid = transport.isConnected();
             } catch (Exception e) {
+                valid = false;
                 LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications", e);
-                mailer = null;
+            }
+
+            if (!valid) {
+                mailSession = null;
+                LOG.log(Level.INFO, "SMTP credentials are not valid so email notifications will not function");
             }
         }
     }
@@ -115,7 +131,7 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     @Override
     public boolean isValid() {
-        return mailer != null;
+        return mailSession != null;
     }
 
     @Override
@@ -300,46 +316,53 @@ public class EmailNotificationHandler implements NotificationHandler {
                 LOG.warning("Target type not supported: " + targetType);
         }
 
-        EmailNotificationMessage emailNotificationMessage = (EmailNotificationMessage) message;
-        EmailPopulatingBuilder emailBuilder = buildEmailBuilder(id, emailNotificationMessage);
+        try {
+            MimeMessage email = new MimeMessage(mailSession);
 
-        if (!toRecipients.isEmpty()) {
-            toRecipients.forEach(recipient -> {
-                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
-                    emailBuilder.to(convertRecipient(recipient));
+            if (!toRecipients.isEmpty()) {
+                for (EmailNotificationMessage.Recipient recipient : toRecipients) {
+                    if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                        email.addRecipient(Message.RecipientType.TO, convertRecipient(recipient));
+                    }
                 }
-            });
-        }
-        if (!ccRecipients.isEmpty()) {
-            ccRecipients.forEach(recipient -> {
-                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
-                    emailBuilder.cc(convertRecipient(recipient));
+            }
+            if (!ccRecipients.isEmpty()) {
+                for (EmailNotificationMessage.Recipient recipient : ccRecipients) {
+                    if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                        email.addRecipient(Message.RecipientType.CC, convertRecipient(recipient));
+                    }
                 }
-            });
-        }
-        if (!bccRecipients.isEmpty()) {
-            bccRecipients.forEach(recipient -> {
-                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
-                    emailBuilder.bcc(convertRecipient(recipient));
+            }
+            if (!bccRecipients.isEmpty()) {
+                for (EmailNotificationMessage.Recipient recipient : bccRecipients) {
+                    if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                        email.addRecipient(Message.RecipientType.BCC, convertRecipient(recipient));
+                    }
                 }
-            });
-        }
+            }
 
-        if (emailBuilder.getRecipients().isEmpty()) {
-            return NotificationSendResult.failure("No recipients set for " + targetType.name().toLowerCase() + ": " + targetId);
-        }
+            buildEmail(id, (EmailNotificationMessage) message, email);
 
-        // Set from based on source if not already set
-        if (emailBuilder.getFromRecipient() == null) {
-            emailBuilder.from(defaultFrom);
-        }
+            Address[] recipients = email.getAllRecipients();
+            if (recipients == null || recipients.length == 0) {
+                return NotificationSendResult.failure("No recipients set for " + targetType.name().toLowerCase() + ": " + targetId);
+            }
 
-        return sendMessage(emailBuilder.buildEmail());
+            // Set from based on source if not already set
+            if (email.getFrom() == null || email.getFrom().length == 0) {
+                email.setFrom(new InternetAddress(defaultFrom));
+            }
+
+            return sendMessage(email);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Email send failed: " + e.getMessage(), e);
+            return NotificationSendResult.failure("Email send failed: " + e.getMessage());
+        }
     }
 
-    protected NotificationSendResult sendMessage(Email email) {
+    protected NotificationSendResult sendMessage(Message email) {
         try {
-            mailer.sendMail(email);
+            Transport.send(email);
             return NotificationSendResult.success();
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Email send failed: " + e.getMessage(), e);
@@ -347,46 +370,59 @@ public class EmailNotificationHandler implements NotificationHandler {
         }
     }
 
-    protected EmailPopulatingBuilder buildEmailBuilder(long id, EmailNotificationMessage emailNotificationMessage) {
-        EmailPopulatingBuilder emailBuilder = EmailBuilder.startingBlank()
-            .withReplyTo(convertRecipient(emailNotificationMessage.getReplyTo()))
-            .withSubject(emailNotificationMessage.getSubject())
-            .withPlainText(emailNotificationMessage.getText())
-            .withHTMLText(emailNotificationMessage.getHtml());
-
-        if (headers != null) {
-            emailBuilder.withHeaders(headers);
+    protected void buildEmail(long id, EmailNotificationMessage emailNotificationMessage, MimeMessage email) throws Exception {
+        if (emailNotificationMessage.getReplyTo() != null) {
+            email.setReplyTo(new Address[]{convertRecipient(emailNotificationMessage.getReplyTo())});
         }
-
         if (emailNotificationMessage.getFrom() != null) {
-            emailBuilder.from(convertRecipient(emailNotificationMessage.getFrom()));
+            email.setFrom(convertRecipient(emailNotificationMessage.getFrom()));
         }
-
+        if (emailNotificationMessage.getSubject() != null) {
+            email.setSubject(emailNotificationMessage.getSubject());
+        }
+        if (headers != null) {
+            for (Map.Entry<String, String >entry : headers.entrySet()) {
+                email.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
         if (emailNotificationMessage.getTo() != null) {
-            emailBuilder.to(
-                emailNotificationMessage.getTo().stream()
-                    .map(this::convertRecipient).collect(Collectors.toList()));
+            for (EmailNotificationMessage.Recipient recipient : emailNotificationMessage.getTo()) {
+                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                    email.addRecipient(Message.RecipientType.TO, convertRecipient(recipient));
+                }
+            }
         }
-
         if (emailNotificationMessage.getCc() != null) {
-            emailBuilder.cc(
-                emailNotificationMessage.getCc().stream()
-                    .map(this::convertRecipient).collect(Collectors.toList()));
+            for (EmailNotificationMessage.Recipient recipient : emailNotificationMessage.getCc()) {
+                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                    email.addRecipient(Message.RecipientType.CC, convertRecipient(recipient));
+                }
+            }
         }
-
         if (emailNotificationMessage.getBcc() != null) {
-            emailBuilder.bcc(
-                emailNotificationMessage.getBcc().stream()
-                    .map(this::convertRecipient).collect(Collectors.toList()));
+            for (EmailNotificationMessage.Recipient recipient : emailNotificationMessage.getBcc()) {
+                if (!TextUtil.isNullOrEmpty(recipient.getAddress())) {
+                    email.addRecipient(Message.RecipientType.BCC, convertRecipient(recipient));
+                }
+            }
         }
-
-        // Use the notification ID as the message ID
-        emailBuilder.fixingMessageId("<" + id + "@openremote.io>");
-
-        return emailBuilder;
+        if (emailNotificationMessage.getText() != null) {
+            email.setText(emailNotificationMessage.getText());
+        } else if (emailNotificationMessage.getHtml() != null) {
+            MimeBodyPart mimeBodyPart = new MimeBodyPart();
+            mimeBodyPart.setContent(emailNotificationMessage.getHtml(), "text/html; charset=utf-8");
+            Multipart multipart = new MimeMultipart();
+            multipart.addBodyPart(mimeBodyPart);
+            email.setContent(multipart);
+        }
     }
 
-    protected Recipient convertRecipient(EmailNotificationMessage.Recipient recipient) {
-        return recipient == null ? null : new Recipient(recipient.getName(), recipient.getAddress(), null);
+    protected InternetAddress convertRecipient(EmailNotificationMessage.Recipient recipient) {
+        try {
+            return recipient == null ? null : new InternetAddress(recipient.getAddress(), recipient.getName());
+        } catch (UnsupportedEncodingException e) {
+            LOG.log(Level.WARNING, "Failed to process email recipient: " + recipient.getAddress(), e);
+        }
+        return null;
     }
 }

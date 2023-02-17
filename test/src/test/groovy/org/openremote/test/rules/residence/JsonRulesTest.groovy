@@ -40,7 +40,6 @@ import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
-import org.simplejavamail.email.Email
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -107,7 +106,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
     def "Turn all lights off when console exits the residence geofence"() {
 
         List<PushNotificationMessage> pushMessages = []
-        List<Email> emailMessages = []
+        List<javax.mail.Message> emailMessages = []
         List<Notification.Target> pushTargets = []
         List<Notification.Target> emailTargets = []
 
@@ -155,7 +154,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         // Assume sent to FCM
-        mockEmailNotificationHandler.sendMessage(_ as Email) >> {
+        mockEmailNotificationHandler.sendMessage(_ as Message) >> {
             email ->
                 emailMessages << email.get(0)
                 return NotificationSendResult.success()
