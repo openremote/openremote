@@ -105,7 +105,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
 
         if (query.attributes != null) {
             // TODO: LogicGroup AND doesn't make much sense when applying to a single asset state
-            if (!asPredicate(timerService::getCurrentTimeMillis, query.attributes).test(assetState)) {
+            if (!asAssetPredicate(timerService::getCurrentTimeMillis, query.attributes).test(Collections.singletonList(assetState))) {
                 return false;
             }
         }
@@ -179,21 +179,25 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
             && valuePredicate.test(valueExtractor.get().apply(nameValueHolder));
     }
 
+    /**
+     * A predicate for {@link AssetState}s of an asset; the states must be related to the same asset to allow
+     * {@link LogicGroup.Operator#AND} to be applied.
+     */
     @SuppressWarnings("unchecked")
-    public static Predicate<AssetState<?>> asPredicate(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
+    public static Predicate<List<AssetState<?>>> asAssetPredicate(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
         if (groupIsEmpty(condition)) {
             return as -> true;
         }
 
         LogicGroup.Operator operator = condition.operator == null ? LogicGroup.Operator.AND : condition.operator;
-
-        List<Predicate<AssetState<?>>> assetStatePredicates = new ArrayList<>();
+        List<Predicate<List<AssetState<?>>>> assetPredicates = new ArrayList<>();
+        List<Predicate<AssetState<?>>> attributePredicates = new ArrayList<>();
 
         if (condition.getItems().size() > 0) {
 
             condition.getItems().stream()
                 .forEach(p -> {
-                    assetStatePredicates.add((Predicate<AssetState<?>>)(Predicate)asPredicate(currentMillisProducer, p));
+                    attributePredicates.add((Predicate<AssetState<?>>)(Predicate)asPredicate(currentMillisProducer, p));
 
                     AtomicReference<Predicate<AssetState<?>>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
                     AtomicReference<Predicate<AssetState<?>>> oldValuePredicate = new AtomicReference<>(value -> true);
@@ -209,25 +213,37 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
                                 innerMetaPredicate.test(assetState)
                             );
                         });
-                        assetStatePredicates.add(metaPredicate.get());
+                        attributePredicates.add(metaPredicate.get());
                     }
 
                     if (p.previousValue != null) {
                         Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
                         oldValuePredicate.set(nameValueHolder -> innerOldValuePredicate.test((nameValueHolder).getOldValue()));
-                        assetStatePredicates.add(oldValuePredicate.get());
+                        attributePredicates.add(oldValuePredicate.get());
                     }
                 });
         }
 
         if (condition.groups != null && condition.groups.size() > 0) {
-            assetStatePredicates.addAll(
+            assetPredicates.addAll(
                 condition.groups.stream()
-                            .map(c -> asPredicate(currentMillisProducer, c)).collect(Collectors.toList())
+                    .map(c -> asAssetPredicate(currentMillisProducer, c)).toList()
             );
         }
 
-        return asPredicate(assetStatePredicates, operator);
+        if (operator == LogicGroup.Operator.AND) {
+            // All predicates must match at least one of the asset's state
+            assetPredicates.add(assetStates ->
+                attributePredicates.stream().allMatch(attributePredicate -> assetStates.stream().anyMatch(attributePredicate))
+            );
+        } else {
+            // Any of the predicates must match at least one of the asset's state
+            assetPredicates.add(assetStates ->
+                attributePredicates.stream().anyMatch(attributePredicate -> assetStates.stream().anyMatch(attributePredicate))
+            );
+        }
+
+        return asPredicate(assetPredicates, operator);
     }
 
     protected static boolean groupIsEmpty(LogicGroup<?> condition) {
