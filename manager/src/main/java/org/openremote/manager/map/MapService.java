@@ -19,7 +19,12 @@
  */
 package org.openremote.manager.map;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
@@ -30,20 +35,21 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.core.UriBuilder;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -74,9 +80,24 @@ public class MapService implements ContainerService {
     protected Path mapSettingsPath;
     protected Metadata metadata;
     protected ObjectNode mapConfig;
-    protected ObjectNode mapSource;
-    protected Map<String, ObjectNode> mapSettings = new HashMap<>();
-    protected Map<String, ObjectNode> mapSettingsJs = new HashMap<>();
+    protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
+    protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
+
+    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
+        LOG.log(Level.INFO, "Saving mapsettings.json..");
+        this.mapConfig.putNull("options");
+        this.mapSettings.clear();
+        ObjectNode mapSettings = loadMapSettingsJson(mapSettingsPath);
+        try(OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()))){
+            mapSettings.putPOJO("options", mapConfiguration);
+            out.write(ValueUtil.JSON.writeValueAsString(mapSettings).getBytes());
+            this.setData();
+        } catch (Exception exception) {
+            LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
+        }
+
+        return mapSettings;
+    }
 
     protected static Metadata getMetadata(Connection connection) {
 
@@ -223,7 +244,10 @@ public class MapService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        this.setData();
+    }
 
+    public void setData() throws Exception{
         if (mapTilesPath == null || mapSettingsPath == null) {
             return;
         }

@@ -161,4 +161,13 @@ public interface UserResource {
     @Consumes(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     void updateUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
+
+    @GET
+    @Path("{realm}/userSessions/{userId}")
+    @Produces(APPLICATION_JSON)
+    UserSession[] getUserSessions(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+
+    @GET
+    @Path("{realm}/disconnect/{sessionID}")
+    void disconnectUserSession(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("sessionID") String sessionID);
 }

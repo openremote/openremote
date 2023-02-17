@@ -635,7 +635,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
                         // Assume UNIX timestamp in ms
                         const offset = (new Date()).getTimezoneOffset() * 60000;
                         value = new Date(value - offset);
-                    }
+                    } 
                 } else if (typeof(value) === "boolean" && format.asNumber) {
                     value = value ? 1 : 0;
                 }

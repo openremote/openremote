@@ -18,6 +18,7 @@ import {
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
+import { debounce } from "lodash";
 import { MapType } from "@openremote/model";
 
 // Re-exports
@@ -29,7 +30,7 @@ export * from "./or-map-asset-card";
 
 export interface ViewSettings {
     center: LngLatLike;
-    bounds: LngLatBoundsLike;
+    bounds?: LngLatBoundsLike | null;
     zoom: number;
     maxZoom: number;
     minZoom: number;
@@ -396,7 +397,6 @@ export class OrMap extends LitElement {
     public type: MapType = manager.mapType;
 
     protected _markerStyles: string[] = [];
-
     @property({type: String, converter: {
             fromAttribute(value: string | null, type?: String): LngLatLike | undefined {
                 if (!value) {
@@ -430,6 +430,15 @@ export class OrMap extends LitElement {
     @property({type: Boolean})
     public showGeoCodingControl: boolean = false;
 
+    @property({type: Boolean})
+    public showBoundaryBoxControl: boolean = false;
+
+    @property({type: Boolean})
+    public useZoomControl: boolean = true;
+
+    @property({type: Array})
+    public boundary: string[] = [];
+
     public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
@@ -437,6 +446,8 @@ export class OrMap extends LitElement {
     protected _loaded: boolean = false;
     protected _observer?: FlattenedNodesObserver;
     protected _markers: OrMapMarker[] = [];
+
+    protected _resizeObserver?: ResizeObserver;
 
     @query("#map")
     protected _mapContainer?: HTMLElement;
@@ -469,6 +480,9 @@ export class OrMap extends LitElement {
         if (this._observer) {
             this._observer.disconnect();
         }
+        if(this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
     }
 
     protected render() {
@@ -485,9 +499,11 @@ export class OrMap extends LitElement {
 
     protected updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
-
         if (changedProperties.has("center") || changedProperties.has("zoom")) {
             this.flyTo(this.center, this.zoom);
+        }
+        if (changedProperties.has("boundary") && this.showBoundaryBoxControl){
+            this._map?.createBoundaryBox(this.boundary)
         }
     }
 
@@ -508,7 +524,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer)
+            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer, this.showBoundaryBoxControl, this.useZoomControl)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls);
@@ -518,6 +534,14 @@ export class OrMap extends LitElement {
                     this._processNewMarkers(info.addedNodes);
                     this._processRemovedMarkers(info.removedNodes);
                 });
+                this._resizeObserver?.disconnect();
+                this._resizeObserver = new ResizeObserver(debounce(() => {
+                    this.resize();
+                }, 200));
+                var container = this._mapContainer?.parentElement;
+                if (container) {
+                    this._resizeObserver.observe(container);
+                }
             });
         }
 

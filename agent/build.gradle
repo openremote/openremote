@@ -12,13 +12,10 @@ dependencies {
 
     api "com.fazecast:jSerialComm:$jSerialCommVersion"
 
-    api("com.github.calimero:calimero-core:$calimeroVersion") {
-        // Libraries should not depend on a logging implementation and/or alpha versions!
-        exclude group: "org.slf4j"
-    }
+    api "com.github.calimero:calimero-core:$calimeroVersion"
 
     api ("com.github.calimero:calimero-tools:$calimeroVersion") {
-        // Libraries should not depend on a logging implementation and/or alpha versions!
+        // Has a dependency on the SLF4J simple provider
         exclude group: "org.slf4j"
     }
 
@@ -34,13 +31,7 @@ dependencies {
 
     api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
-    api ("com.github.weliem:blessed-bluez:$bluetoothVersion") {
-        // Libraries should not depend on a logging implementation and/or alpha versions!
-        exclude group: "org.slf4j"
-
-        // Conflicts with asm version bundled with GWT
-        exclude group: "org.ow2.asm"
-    }
+    api "com.github.weliem:blessed-bluez:$bluetoothVersion"
 
     implementation "dev.failsafe:failsafe:$failsafeVersion"
 }

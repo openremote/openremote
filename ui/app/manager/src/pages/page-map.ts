@@ -187,8 +187,8 @@ export class PageMap extends Page<MapStateKeyed> {
 
         if (this.config && this.config.markers) {
             markerLabelAttributes = Object.values(this.config.markers)
-                .filter(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName)
-                .map(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName);
+              .filter(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName)
+              .map(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName);
         }
 
         return [
@@ -293,38 +293,38 @@ export class PageMap extends Page<MapStateKeyed> {
     };
 
     protected getRealmState = createSelector(
-        [this._realmSelector],
-        async (realm) => {
-            if (this._assets.length > 0) {
-                // Clear existing assets
-                this._assets = [];
-            }
-            this.unsubscribeAssets();
-            this.subscribeAssets(realm);
+      [this._realmSelector],
+      async (realm) => {
+          if (this._assets.length > 0) {
+              // Clear existing assets
+              this._assets = [];
+          }
+          this.unsubscribeAssets();
+          this.subscribeAssets(realm);
 
-            if (this._map) {
-                this._map.refresh();
-            }
-        }
+          if (this._map) {
+              this._map.refresh();
+          }
+      }
     )
 
     protected _getMapAssets = createSelector(
-        [this._assetSelector],
-        (assets) => {
-            return assets;
-        });
+      [this._assetSelector],
+      (assets) => {
+          return assets;
+      });
 
     protected _getCurrentAsset = createSelector(
-        [this._assetSelector, this._paramsSelector],
-        (assets, params) => {
-            const currentId = params ? params.id : undefined;
+      [this._assetSelector, this._paramsSelector],
+      (assets, params) => {
+          const currentId = params ? params.id : undefined;
 
-            if (!currentId) {
-                return null;
-            }
+          if (!currentId) {
+              return null;
+          }
 
-            return assets.find((asset) => asset.id === currentId);
-    });
+          return assets.find((asset) => asset.id === currentId);
+      });
 
     protected _setCenter(geocode: any) {
         this._map!.center = [geocode.geometry.coordinates[0], geocode.geometry.coordinates[1]];
@@ -347,26 +347,26 @@ export class PageMap extends Page<MapStateKeyed> {
             
             <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${
-                    this._assets.filter((asset) => {
-                        if (!asset.attributes) {
-                            return false;
-                        }
-                        const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                        return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-                    })
-                    .sort((a,b) => {
-                        if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
-                            return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
-                        } else {
-                            return;
-                        }
-                    })
-                    .map(asset => {
-                        return html`
+          this._assets.filter((asset) => {
+              if (!asset.attributes) {
+                  return false;
+              }
+              const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
+              return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+          })
+            .sort((a,b) => {
+                if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
+                    return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
+                } else {
+                    return;
+                }
+            })
+            .map(asset => {
+                return html`
                             <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
                         `;
-                    })
-                }
+            })
+        }
             </or-map>
         `;
     }

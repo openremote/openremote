@@ -28,6 +28,7 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
+import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -258,6 +259,27 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                     .setParameter("userId", userId)
                     .getResultList();
             return result.size() > 0 ? result.get(0) : null;
+        });
+    }
+
+    static List<String> getUserIds(PersistenceService persistenceService, String realm, List<String> usernames) {
+        List<String> CIUsernames = usernames.stream().map(String::toLowerCase).toList();
+
+        return persistenceService.doReturningTransaction(em -> {
+            Map<String, String> usernameIdMap = em.createQuery(
+                "select u.username, u.id from User u join Realm r on r.id = u.realmId where u.username in :usernames and r.name = :realm", Tuple.class)
+                    .setParameter("usernames", CIUsernames)
+                    .setParameter("realm", realm)
+                    .getResultList()
+                    .stream()
+                    .collect(
+                        Collectors.toMap(
+                            tuple -> (String) tuple.get(0),
+                            tuple -> (String) tuple.get(1)
+                        )
+                    );
+
+            return CIUsernames.stream().map(usernameIdMap::get).collect(Collectors.toList());
         });
     }
 

@@ -300,8 +300,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
                 break;
             case UPDATE:
-                int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
-                if (attributesIndex < 0) {
+                if (!persistenceEvent.hasPropertyChanged("attributes")) {
                     return;
                 }
 
@@ -394,7 +393,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 protocol.start(container);
                 LOG.fine("Started protocol instance:" + protocol);
 
-                LOG.finer("Linking attributes to protocol instance: " + protocol);
+                LOG.finest("Linking attributes to protocol instance: " + protocol);
 
                 // Get all assets that have attributes with agent link meta for this agent
                 List<Asset<?>> assets = assetStorageService.findAll(
@@ -406,7 +405,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                         )
                 );
 
-                LOG.finer("Found '" + assets.size() + "' asset(s) with attributes linked to this protocol instance: " + protocol);
+                LOG.finest("Found '" + assets.size() + "' asset(s) with attributes linked to this protocol instance: " + protocol);
 
                 assets.forEach(
                     asset ->
@@ -474,7 +473,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
                 try {
                     if (!protocol.getLinkedAttributes().containsKey(attributeRef)) {
-                        LOG.finer("Linking attribute '" + attributeRef + "' to protocol: " + protocol);
+                        LOG.finest("Linking attribute '" + attributeRef + "' to protocol: " + protocol);
                         protocol.linkAttribute(assetId, attribute);
                     }
                 } catch (Exception ex) {
@@ -498,7 +497,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 try {
                     AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
                     if (protocol.getLinkedAttributes().containsKey(attributeRef)) {
-                        LOG.finer("Unlinking attribute '" + attributeRef + "' to protocol: " + protocol);
+                        LOG.finest("Unlinking attribute '" + attributeRef + "' to protocol: " + protocol);
                         protocol.unlinkAttribute(assetId, attribute);
                     }
                 } catch (Exception ex) {
@@ -542,7 +541,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 agent.addOrReplaceAttributes(attribute);
 
                 if (source == CLIENT && agent.isConfigurationAttribute(attribute.getName())) {
-                    LOG.finer("Agent attribute event occurred from a client for an agent config attribute so updating: agent=" + agent.getId() + ", event=" + attributeEvent);
+                    LOG.finest("Agent attribute event occurred from a client for an agent config attribute so updating: agent=" + agent.getId() + ", event=" + attributeEvent);
                     onAgentUpdated(agent);
                 }
             }
@@ -554,7 +553,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         Boolean result = withLockReturning(getClass().getSimpleName() + "::processAssetUpdate", () ->
             attribute.getMetaValue(AGENT_LINK)
                 .map(agentLink -> {
-                    LOG.finer("Attribute write for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + asset.getId() + ", attribute=" + attribute.getName());
+                    LOG.finest("Attribute write for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + asset.getId() + ", attribute=" + attribute.getName());
 
                     messageBrokerService.getFluentProducerTemplate()
                         .withBody(attributeEvent)
@@ -679,7 +678,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected void notifyChildAssetChange(String agentId, PersistenceEvent<Asset<?>> assetPersistenceEvent) {
         withLock(getClass().getSimpleName() + "::notifyChildAssetChange", () ->
             childAssetSubscriptions.computeIfPresent(agentId, (id, consumerList) -> {
-                LOG.finer("Notifying child asset change consumers of change to agent child asset: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId());
+                LOG.finest("Notifying child asset change consumers of change to agent child asset: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId());
                 try {
                     consumerList.forEach(consumer -> consumer.accept(assetPersistenceEvent));
                 } catch (Exception e) {

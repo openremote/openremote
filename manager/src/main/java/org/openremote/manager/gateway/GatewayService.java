@@ -61,7 +61,6 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.apache.camel.builder.PredicateBuilder.and;
 import static org.apache.camel.builder.PredicateBuilder.or;
@@ -555,13 +554,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 }
                 connector.setDisabled(isNowDisabled);
 
-                int attributeIndex = persistenceEvent.getPropertyNames() != null
-                    ? IntStream.range(0, persistenceEvent.getPropertyNames().length)
-                        .filter(i -> "attributes".equals(persistenceEvent.getPropertyNames()[i]))
-                        .findFirst()
-                        .orElse(-1)
-                    : -1;
-                if (attributeIndex >= 0) {
+                if (persistenceEvent.hasPropertyChanged("attributes")) {
                     // Check if disabled attribute has changed
                     AttributeMap oldAttributes = persistenceEvent.getPreviousState("attributes");
                     boolean wasDisabled = oldAttributes.getValue(GatewayAsset.DISABLED).orElse(false);
@@ -686,5 +679,12 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         if (connector != null) {
             connector.onGatewayEvent(messageId, event);
         }
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "active=" + active +
+            '}';
     }
 }

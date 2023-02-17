@@ -37,9 +37,10 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.provisioning.ProvisioningService
-import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler
+import org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.WeatherAsset
@@ -62,7 +63,8 @@ import spock.util.concurrent.PollingConditions
 import java.util.function.Consumer
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
-import static org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler.*
+import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.*
+import static org.openremote.model.value.ValueType.BOOLEAN
 import static org.openremote.model.value.ValueType.NUMBER
 
 class UserAndAssetProvisioningTest extends Specification implements ManagerContainerTrait {
@@ -122,7 +124,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
                                         new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_READ),
                                         new MetaItem<>(MetaItemType.ACCESS_RESTRICTED_WRITE)
                                 ),
-                                new Attribute<>("serialNumber", ValueType.TEXT, UNIQUE_ID_PLACEHOLDER)
+                                new Attribute<>("serialNumber", ValueType.TEXT, UNIQUE_ID_PLACEHOLDER),
+                                new Attribute<>("connected", BOOLEAN).addMeta(
+                                        new MetaItem<>(MetaItemType.USER_CONNECTED, PROVISIONING_USER_PREFIX + "device1")
+                                )
                             )
                 ).orElse("")
         ).setRealm("building")
@@ -185,11 +190,14 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         )
 
         then: "the broker should have published to the response topic a success message containing the provisioned asset"
+        String weatherAssetID
+        Asset<WeatherAsset> weatherAsset
         conditions.eventually {
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
-            def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            weatherAssetID = ((SuccessResponseMessage)device1Responses.get(0)).asset.id
+            weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert weatherAsset != null
             assert weatherAsset instanceof WeatherAsset
             assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
@@ -231,10 +239,36 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingName
-            def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
             assert weatherAsset != null
             assert weatherAsset instanceof WeatherAsset
             assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+        }
+
+        and: "the connected attribute of the provisioned asset should show as connected"
+        conditions.eventually {
+            weatherAsset = assetStorageService.find(weatherAssetID)
+            assert weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(false)
+        }
+
+        when: "the connected attribute user name is changed to something invalid"
+        weatherAsset.getAttribute("connected").ifPresent{it.addOrReplaceMeta(new MetaItem<>(MetaItemType.USER_CONNECTED, "invalidUser"))}
+        weatherAsset = assetStorageService.merge(weatherAsset)
+
+        then: "the connected attribute should now be disconnected"
+        conditions.eventually {
+            weatherAsset = assetStorageService.find(weatherAssetID)
+            assert !weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(true)
+        }
+
+        when: "the connected attribute user name is changed to upper case"
+        weatherAsset.getAttribute("connected").ifPresent{it.addOrReplaceMeta(new MetaItem<>(MetaItemType.USER_CONNECTED, PROVISIONING_USER_PREFIX + device1UniqueId.toUpperCase()))}
+        weatherAsset = assetStorageService.merge(weatherAsset)
+
+        then: "the connected attribute should still find the right user and be connected"
+        conditions.eventually {
+            weatherAsset = assetStorageService.find(weatherAssetID)
+                assert weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(false)
         }
 
         when: "the client then subscribes to attribute events for the generated asset and asset events for all assets"
@@ -322,6 +356,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
             assert device1Client.getConnectionStatus() == ConnectionStatus.DISCONNECTED
+        }
+
+        and: "the connected attribute of the provisioned asset should show as not connected"
+        conditions.eventually {
+            weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert !weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(true)
         }
 
         when: "the client reconnects"

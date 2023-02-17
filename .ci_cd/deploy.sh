@@ -143,7 +143,7 @@ PLATFORM="linux/$PLATFORM"
 
 # Verify manager tag and create docker image tarballs as required
 if [ "$MANAGER_TAG" != '#ref' ]; then
-  docker manifest inspect openremote/manager:$MANAGER_TAG > /dev/null 2> /dev/null
+  docker buildx imagetools inspect --raw openremote/manager:$MANAGER_TAG > /dev/null 2> /dev/null
   if [ $? -ne 0 ]; then
     echo "Specified manager tag does not exist in docker hub"
     revoke_ssh
@@ -265,8 +265,6 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
-echo "Deleting existing EFS mount volume"
-docker volume rm or_efs-data 1>/dev/null
 
 # Start the stack
 echo "Starting the stack"
@@ -306,6 +304,7 @@ if [ "\$STATUSES_OK" == 'true' ]; then
   echo "All services are healthy"
 else
   echo "One or more services are unhealthy"
+  docker ps -a
   exit 1
 fi
 
@@ -334,13 +333,37 @@ EOF
 
 if [ $? -ne 0 ]; then
   echo "Deployment failed or is unhealthy"
-  if [ "$ROLLBACK_ON_ERROR" != 'true' ]; then
-    revoke_ssh
-    exit 1
-  else
-    DO_ROLLBACK=true
-  fi
+  revoke_ssh
+  exit 1
 fi
+
+echo "Testing manager web server https://$OR_HOSTNAME..."
+response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
+count=0
+while [[ $response -ne 200 ]] && [ $count -lt 12 ]; do
+  echo "https://$OR_HOSTNAME/manager/ RESPONSE CODE: $response...Sleeping 5 seconds"
+  sleep 5
+  response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
+  count=$((count+1))
+done
+
+if [ $response -ne 200 ]; then
+  echo "Manager web server is unreachable https://$OR_HOSTNAME..."
+  revoke_ssh
+  exit 1
+else
+  echo "Manager web server now reachable https://$OR_HOSTNAME..."
+fi
+
+revoke_ssh
+exit 0
+
+# ROLLBACK FUNCTIONALITY DISABLED FOR NOW AS WASN'T WORKING AND MANUAL INTERVENTION IS FINE AT THIS POINT
+
+#if [ "$ROLLBACK_ON_ERROR" != 'true' ]; then
+#else
+#  DO_ROLLBACK=true
+#fi
 
 if [ "$DO_ROLLBACK" == 'true' ]; then
   echo "Attempting rollback"
@@ -402,8 +425,6 @@ fi
 # Delete any deployment volume so we get the latest
 echo "Deleting existing deployment data volume"
 docker volume rm or_deployment-data 1>/dev/null
-echo "Deleting existing EFS mount volume"
-docker volume rm or_efs-data 1>/dev/null
 
 # Start the stack
 echo "Starting the stack"

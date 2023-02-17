@@ -89,7 +89,6 @@ export class OrRuleFormWebhook extends LitElement {
     /* ---------------- */
 
     // Template rendering
-
     render() {
         return when(!this.webhook, () => html`
             ${i18next.t('errorOccurred')}

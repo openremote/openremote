@@ -39,7 +39,7 @@ public interface ConfigurationResource {
     @Produces(APPLICATION_JSON)
     @Path("manager")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    Object update(@BeanParam RequestParams requestParams, Object managerConfiguration) throws IOException;
+    Object update(@BeanParam RequestParams requestParams, Object managerConfiguration);
 
     @POST
     @Consumes(APPLICATION_JSON)
@@ -51,7 +51,7 @@ public interface ConfigurationResource {
             @QueryParam("path")
             String path,
             FileInfo fileInfo
-    ) throws IOException;
+    );
 
 
 }

@@ -30,6 +30,8 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeLink;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
@@ -97,6 +99,8 @@ public class ManagerTestSetup extends ManagerSetup {
     public String electricityWindAssetId;
     public String electricitySupplierAssetId;
     public String electricityBatteryAssetId;
+    public String light1Id;
+    public String light2Id;
 
     public ManagerTestSetup(Container container) {
         super(container);
@@ -613,6 +617,8 @@ public class ManagerTestSetup extends ManagerSetup {
         );
         smartCity = assetStorageService.merge(smartCity);
 
+
+
         SimulatorAgent smartCityServiceAgent = new SimulatorAgent("Service Agent (Simulator)");
         smartCityServiceAgent.setParent(smartCity);
         smartCityServiceAgent = assetStorageService.merge(smartCityServiceAgent);
@@ -643,9 +649,12 @@ public class ManagerTestSetup extends ManagerSetup {
 
         Asset<?> light1Asset = createDemoLightAsset("Light 1", assetArea1, new GeoJSONPoint(5.476111, 51.438492));
         light1Asset = assetStorageService.merge(light1Asset);
+        light1Id = light1Asset.getId();
 
         Asset<?> light2Asset = createDemoLightAsset("Light 2", assetArea1, new GeoJSONPoint(5.477272, 51.439214));
+        light2Asset.getAttribute(LightAsset.ON_OFF).get().addMeta(new MetaItem<>(ATTRIBUTE_LINKS, new AttributeLink[]{new AttributeLink(new AttributeRef(light1Asset.getId(), LightAsset.ON_OFF.getName()), null, null)}));
         light2Asset = assetStorageService.merge(light2Asset);
+        light2Id = light2Asset.getId();
 
         // ################################ Realm B Area 2 ###################################
 

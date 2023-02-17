@@ -13,6 +13,9 @@ apply plugin: "signing"
 
 dependencies {
 
+    // SLF4J facade
+    testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+
     testImplementation resolveProject(":setup").sourceSets.integration.output
     api resolveProject(":manager")
 
@@ -24,24 +27,24 @@ dependencies {
     testFixturesRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
     testFixturesRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
-    testImplementation("com.github.calimero:calimero-server:$calimeroVersion") {
-        // Libraries should not depend on a logging implementation and/or alpha versions!
-        exclude group: "org.slf4j"
-    }
+    testImplementation "com.github.calimero:calimero-server:$calimeroVersion"
 
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
 }
-
-tasks.withType(Test) {
-    environment("OR_LOGGING_CONFIG_FILE", "test/src/logging-test.properties")
-}
+//
+//tasks.withType(Test) {
+//    logging.captureStandardError LogLevel.LIFECYCLE
+//}
 
 test {
+    outputs.upToDateWhen { false }
     workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
     useJUnitPlatform()
+
     testLogging {
+
         // set options for log level LIFECYCLE
         events TestLogEvent.FAILED,
                 TestLogEvent.PASSED,
@@ -57,15 +60,16 @@ test {
                     TestLogEvent.FAILED,
                     TestLogEvent.PASSED,
                     TestLogEvent.SKIPPED,
+                    TestLogEvent.STANDARD_OUT,
                     TestLogEvent.STANDARD_ERROR
             exceptionFormat TestExceptionFormat.FULL
         }
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat
 
-//        afterTest { desc, result ->
-//            logger.quiet "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
-//        }
+        afterTest { desc, result ->
+            logger.lifecycle "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
+        }
 
         afterSuite { desc, result ->
             if (!desc.parent) { // will match the outermost suite

@@ -548,6 +548,7 @@
   "screen": "Scherm",
   "uploadFile" : "Uploaden bestand",
   "thresholds": "Drempelwaardes",
+  "threshold": "Drempelwaarde",
   "noDashboardSelected": "Selecteer een dashboard aan de linkerkant",
   "noDashboardFound": "Geen dashboard gevonden.",
   "noDashboardWriteAccess": "U heeft geen rechten om dit dashboard aan te passen.",
@@ -558,10 +559,10 @@
     "widgets": "Widgets",
     "widget-kpi": "KPI",
     "widget-linechart": "Lijngrafiek",
-    "presets.wrap_to_single_column": "Widgets onder elkaar zetten",
-    "presets.keep_layout": "Behoud indeling",
-    "presets.block_device": "Blokkeer dit apparaat",
-    "presets.redirect": "Open een ander dashboard..",
+    "presets.wrap_to_single_column": "Krimpen naar één kolom",
+    "presets.keep_layout": "Indeling behouden",
+    "presets.block_device": "Geblokkeerd worden",
+    "presets.redirect": "Een ander dashboard openen..",
     "size.fullscreen": "Volledig scherm",
     "size.large": "Groot",
     "size.desktop": "Desktop",
@@ -593,8 +594,17 @@
     "showValueAs": "Laat waarde zien als",
     "deleteWidget": "Verwijder widget",
     "myDashboards": "Mijn dashboards",
-    "createdByOthers": "Gemaakt door anderen"
+    "createdByOthers": "Gemaakt door anderen",
+    "showUnits": "Toon eenheden",
+    "showLabels": "Toon labels",
+    "zoom": "Zoom",
+    "center": "Middelpunt"
   },
+  "south": "Zuid",
+  "east": "Oost",
+  "west": "West",
+  "north": "Noord",
+  "default": "Standaard",
   "appearance": "Weergave",
   "configuration": {
     "" : "Weergave",
@@ -605,6 +615,8 @@
     "defaultLanguage": "Standaard taal",
     "images": "Afbeeldingen",
     "logo": "Logo",
+    "center": "Midden",
+    "centerDescription": "Het midden waar de gebruiker zal starten wanneer de kaart wordt geladen.",
     "logoMobile": "Logo mobiel",
     "realmColors": "Realm kleuren",
     "--or-app-color4": "Primair: knoppen, acties, and lijst header",
@@ -620,6 +632,19 @@
     "secondaryNavigation" : "Secundair menu",
     "reloadPage" : "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",
     "deleteRealmCustomization": "Verwijder stijl",
-    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?"
+    "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?",
+    "mapBounds": "Randen",
+    "mapBoundsDescription": "Defineer het gebied dat de gebruiker kan gebruiken",
+    "mapZoom": "Zoom",
+    "mapZoomDescription": "Defineer het zoom niveau. De gehele wereld is '1' en '24' laat het meeste detail zien",
+    "mapSettings": "Kaartinstelling",
+    "maxZoom": "Maximale zoom",
+    "minZoom": "Minimale zoom",
+    "deleteMapCustomization": "Kaartinstelling verwijderen",
+    "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
+    "addMapCustomization" : "Voeg een Kaartinstelling toe",
+    "realmRole": {
+      "admin": "Super admin"
+    }
   }
 }

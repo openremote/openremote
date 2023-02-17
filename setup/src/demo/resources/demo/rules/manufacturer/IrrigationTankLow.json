@@ -1,0 +1,123 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "IrrigationAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "tankLevel"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "LESS_THAN",
+                          "value": 900
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "7atRfYJf83HuiHB6ZdM3ko"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "IrrigationAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "tankLevel"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "LESS_THAN",
+                          "value": 900
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "7jSsUaNvM3ZQGfRqBTsOpJ"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "IrrigationAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "tankLevel"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "LESS_THAN",
+                          "value": 900
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "72f37OCsEYkVPdzgcKDlRL"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "target": {
+            "custom": "test@test12345.com"
+          },
+          "notification": {
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "%TRIGGER_ASSETS%"
+            }
+          }
+        }
+      ],
+      "name": "Irrigation tank low"
+    }
+  ]
+}

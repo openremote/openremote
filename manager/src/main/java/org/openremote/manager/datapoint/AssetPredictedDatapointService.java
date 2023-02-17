@@ -107,7 +107,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
     protected void purgeDataPoints() {
         try {
             // Purge data points not in the above list using default duration
-            LOG.finer("Purging predicted data points older than now");
+            LOG.finest("Purging predicted data points older than now");
             doPurge("where dp.timestamp < :dt", Date.from(timerService.getNow().truncatedTo(HOURS)));
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to run data points purge", e);

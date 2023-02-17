@@ -773,6 +773,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             return;
         }
 
+        const cols = [i18next.t("username"), i18next.t("roles"), i18next.t("restrictedUser")];
         const rows = assetLinkInfos.sort(Util.sortByString(u => u.usernameAndId)).map(assetLinkInfo => {
             return [
                 assetLinkInfo.usernameAndId,
@@ -781,7 +782,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             ];
         });
 
-        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${["Username", "Roles", "Restricted user"]}"></or-mwc-table>`;
+        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
     }
 }
 

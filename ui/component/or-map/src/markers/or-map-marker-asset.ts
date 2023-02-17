@@ -39,7 +39,7 @@ export type RangeAttributeMarkerColours = {
 }
 
 export type AttributeMarkerColoursRange = {
-    max: number;
+    min: number;
     colour: string;
 }
 

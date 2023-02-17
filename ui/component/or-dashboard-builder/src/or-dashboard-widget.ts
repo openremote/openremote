@@ -53,6 +53,11 @@ export class OrDashboardWidget extends LitElement {
         return changed.size > 0;
     }
 
+    disconnectedCallback() {
+        super.disconnectedCallback()
+        this.resizeObserver?.disconnect();
+    }
+
     firstUpdated(_changedProperties: Map<string, any>) {
         this.updateComplete.then(() => {
             const gridItemElement = this.widgetContainerElement;

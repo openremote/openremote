@@ -106,7 +106,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         // Assume write through and endpoint returned the value we sent
-        LOG.finer("Write to linked attribute so simulating that the endpoint returned the written value");
+        LOG.finest("Write to linked attribute so simulating that the endpoint returned the written value");
         updateSensor(event.getAttributeRef(), processedValue);
     }
 
@@ -135,7 +135,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     }
 
     protected ScheduledFuture<?> scheduleReplay(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints) {
-        LOG.finer("Scheduling linked attribute replay update");
+        LOG.finest("Scheduling linked attribute replay update");
 
         long now = LocalDateTime.now().get(ChronoField.SECOND_OF_DAY);
 
@@ -145,7 +145,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
             .orElse(simulatorReplayDatapoints[0]);
 
         if (nextDatapoint == null) {
-            LOG.info("Next datapoint not found so replay cancelled: " + attributeRef);
+            LOG.warning("Next datapoint not found so replay cancelled: " + attributeRef);
             return null;
         }
         long nextRun = nextDatapoint.timestamp;
@@ -154,10 +154,10 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
         long nextRunRelative = nextRun - now;
 
-        LOG.info("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRunRelative + " second(s)");
+        LOG.fine("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRunRelative + " second(s)");
         return executorService.schedule(() -> {
             withLock(getProtocolName() + "::firingNextUpdate", () -> {
-                LOG.info("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
+                LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
                 try {
                     updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
                 } catch (Exception e) {

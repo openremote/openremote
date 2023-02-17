@@ -42,7 +42,7 @@ const editorStyling = css`
     
     .maingridContainer {
         position: absolute;
-        padding-bottom: 64px;
+        padding-bottom: 32px;
     }
     .maingridContainer__fullscreen {
         width: 100%;
@@ -63,7 +63,7 @@ const editorStyling = css`
         border-radius: 0;
         overflow-x: hidden;
         overflow-y: scroll;
-        /*height: 100% !important;*/ /* To override .maingrid */
+        height: 100% !important; /* To override .maingrid */
         width: 100% !important; /* To override .maingrid */
         padding: 0;
         /*pointer-events: none;*/
@@ -468,18 +468,6 @@ export class OrDashboardPreview extends LitElement {
             }
         } catch (e) { console.error(e); }
 
-        // Set manual px height in case of fullscreen, to make scrollbar work without issues (especially when drag-and-dropping widgets)
-        this.waitUntil((_: any) => this.shadowRoot?.querySelector('.maingrid') != null).then(() => {
-            const grid: HTMLElement = this.shadowRoot?.querySelector('.maingrid') as HTMLElement;
-            if(grid && this.fullscreen) {
-                grid.style.height = grid.parentElement!.clientHeight + "px";
-            }
-            const background: HTMLElement = this.shadowRoot?.getElementById('gridElement') as HTMLElement;
-            if(background) {
-                background.style.height = grid.scrollHeight + "px";
-            }
-        })
-
         const customPreset = "Custom";
         let screenPresets = this.template?.screenPresets?.map(s => s.displayName);
         screenPresets?.push(customPreset);
@@ -594,6 +582,11 @@ export class OrDashboardPreview extends LitElement {
     protected resizeObserver?: ResizeObserver;
 
     protected previousObserverEntry?: ResizeObserverEntry;
+
+    disconnectedCallback() {
+        super.disconnectedCallback()
+        this.resizeObserver?.disconnect();
+    }
 
     // Triggering a Grid rerender on every time the element resizes.
     // In fullscreen, debounce (only trigger after 550ms of no changes) to limit amount of rerenders.
