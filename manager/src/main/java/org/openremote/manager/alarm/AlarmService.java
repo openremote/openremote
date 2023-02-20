@@ -20,8 +20,8 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.notification.Notification;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.util.*;
@@ -139,7 +139,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             String msg = "Failed to create alarm: " + alarm.getTitle();
             LOG.log(Level.WARNING, msg, e);
             return new SentAlarm();
-        } 
+        }
     }
 
     public void setAlarmAcknowledged(String id) {
