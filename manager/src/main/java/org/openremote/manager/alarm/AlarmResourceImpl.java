@@ -123,7 +123,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         List<AlarmUserLink> result = alarmService.getUserLinks(alarmId, realm);
         return result;
     }
-    
+
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
         if (alarmId == null) {
@@ -135,7 +135,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
         return result;
     }
-    
+
     protected void verifyAccess(SentAlarm sentAlarm) {
         if (sentAlarm == null) {
             LOG.fine("DENIED: Alarm not found");
@@ -153,5 +153,5 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         }
     }
 
-    
+
 }
