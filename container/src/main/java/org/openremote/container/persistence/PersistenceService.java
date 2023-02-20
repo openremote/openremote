@@ -61,6 +61,7 @@ import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
+//import org.openremote.model.alarm.SentAlarm;
 
 import javax.sql.DataSource;
 import java.io.File;
@@ -360,6 +361,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(Dashboard.class.getName());
         entityClasses.add(ProvisioningConfig.class.getName());
         entityClasses.add(X509ProvisioningConfig.class.getName());
+        //entityClasses.add(SentAlarm.class.getName());
 
         // Add packages with package-info (don't think this is JPA spec but hibernate specific)
         entityClasses.add("org.openremote.container.util");
