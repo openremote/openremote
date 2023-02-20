@@ -3,8 +3,8 @@ package org.openremote.model.alarm;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.openremote.model.asset.Asset;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Date;
 import java.util.List;
