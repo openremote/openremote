@@ -164,7 +164,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
         return result;
     }
-    
+
     protected void verifyAccess(SentAlarm sentAlarm) {
         if (sentAlarm == null) {
             LOG.fine("DENIED: Alarm not found");
