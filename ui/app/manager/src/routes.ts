@@ -40,3 +40,11 @@ export function getNewUserRoute(serviceAccount?: boolean) {
     }
     return route
 }
+
+export function getAlarmsRoute(alarmId?: string) {
+    let route = "alarms";
+    if(alarmId) {
+        route += "/" + alarmId;
+    }
+    return route;
+}
