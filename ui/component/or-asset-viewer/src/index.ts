@@ -963,7 +963,6 @@ async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
             {realm: manager.displayRealm, assetId: asset.id}
         ).then((response) => {
             const userAssetLinks = response.data;
-            console.log(userAssetLinks);
             const infoPromises = userAssetLinks.map(userAssetLink => {
                 return getLinkedUserInfo(userAssetLink)
             });
