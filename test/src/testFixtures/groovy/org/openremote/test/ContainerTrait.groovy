@@ -56,6 +56,8 @@ import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.security.User
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import javax.persistence.TypedQuery
 import javax.websocket.ClientEndpointConfig
@@ -74,6 +76,8 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
 trait ContainerTrait {
+
+    Logger LOG = LoggerFactory.getLogger(ContainerTrait.class)
 
     Container startContainer(Map<String, String> config, Iterable<ContainerService> services) {
 
@@ -112,7 +116,7 @@ trait ContainerTrait {
 
             if (configsMatch && servicesMatch) {
                 try {
-                    println("Services and config matches already running container so checking state")
+                    LOG.info("Services and config matches already running container so checking state")
                     def counter = 0
 
                     // Reset users - just delete ones that weren't there before (if tests change user roles etc. then the test should force stop the container in cleanup)
@@ -124,7 +128,7 @@ trait ContainerTrait {
                             throw new IllegalStateException("Users have been modified so cannot do simple purge")
                         }
 
-                        println("Purging ${newUsers.size()} new user(s)")
+                        LOG.info("Purging ${newUsers.size()} new user(s)")
                         newUsers.forEach {user ->
                             // Never delete the master admin user
                             if (user.getUsername() != MASTER_REALM_ADMIN_USER && user.getRealm() != MASTER_REALM) {
@@ -137,7 +141,7 @@ trait ContainerTrait {
                     if (container.hasService(GatewayClientService.class)) {
                         def gatewayClientService = container.getService(GatewayClientService.class)
                         def gatewayConnections = getGatewayConnections()
-                        println("Purging ${gatewayConnections.size()} gateway connection(s)")
+                        LOG.info("Purging ${gatewayConnections.size()} gateway connection(s)")
                         gatewayClientService.deleteConnections(gatewayConnections.stream().map { it.localRealm }.collect(Collectors.toList()))
                     }
 
@@ -150,7 +154,7 @@ trait ContainerTrait {
                         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
                         if (!assetRulesets.isEmpty()) {
-                            println("Purging ${assetRulesets.size()} asset ruleset(s)")
+                            LOG.info("Purging ${assetRulesets.size()} asset ruleset(s)")
                             assetRulesets.forEach {
                                 rulesetStorageService.delete(AssetRuleset.class, it.id)
                                 def assetEngine = rulesService.assetEngines.get(((AssetRuleset) it).assetId)
@@ -165,7 +169,7 @@ trait ContainerTrait {
                             }
                         }
                         if (!realmRulesets.isEmpty()) {
-                            println("Purging ${realmRulesets.size()} realm ruleset(s)")
+                            LOG.info("Purging ${realmRulesets.size()} realm ruleset(s)")
                             realmRulesets.forEach {
                                 rulesetStorageService.delete(RealmRuleset.class, it.id)
                                 def realmEngine = rulesService.realmEngines.get(((RealmRuleset) it).realm)
@@ -180,7 +184,7 @@ trait ContainerTrait {
                             }
                         }
                         if (!globalRulesets.isEmpty()) {
-                            println("Purging ${globalRulesets.size()} global ruleset(s)")
+                            LOG.info("Purging ${globalRulesets.size()} global ruleset(s)")
                             globalRulesets.forEach {
                                 rulesetStorageService.delete(GlobalRuleset.class, it.id)
                                 def rulesStopped = false
@@ -210,7 +214,7 @@ trait ContainerTrait {
                     // Wait for system to settle down
                     def assetProcessingService = container.hasService(AssetProcessingService.class) ? container.getService(AssetProcessingService.class) : null
                     if (assetProcessingService != null) {
-                        println("Waiting for the system to settle down")
+                        LOG.info("Waiting for the system to settle down")
                         def j=0
                         while (j < 100 && !noEventProcessedIn(assetProcessingService, 300)) {
                             Thread.sleep(100)
@@ -224,7 +228,7 @@ trait ContainerTrait {
                         def assetStorageService = container.getService(AssetStorageService.class)
 
                         if (!currentAssets.isEmpty()) {
-                            println("Purging ${currentAssets.size()} asset(s)")
+                            LOG.info("Purging ${currentAssets.size()} asset(s)")
                             assetStorageService.delete(currentAssets, true)
                         }
 
@@ -239,14 +243,14 @@ trait ContainerTrait {
                         }
 
                         if (!TestFixture.assets.isEmpty()) {
-                            println("Re-inserting ${TestFixture.assets.size()} asset(s)")
+                            LOG.info("Re-inserting ${TestFixture.assets.size()} asset(s)")
                             TestFixture.assets.forEach { a ->
                                 a.version = 0
                                 assetStorageService.merge(a, true)
                             }
                         }
                         if (!TestFixture.userAssets.isEmpty()) {
-                            println("Re-linking ${TestFixture.userAssets.size()} user asset(s)")
+                            LOG.info("Re-linking ${TestFixture.userAssets.size()} user asset(s)")
                             TestFixture.userAssets.groupBy {it.id.userId}.values().forEach { ua ->
                                 assetStorageService.storeUserAssetLinks(ua)
                             }
@@ -258,25 +262,25 @@ trait ContainerTrait {
                         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
                         if (!TestFixture.assetRulesets.isEmpty()) {
-                            println("Re-inserting ${TestFixture.assetRulesets.size()} asset ruleset(s)")
+                            LOG.info("Re-inserting ${TestFixture.assetRulesets.size()} asset ruleset(s)")
                             TestFixture.assetRulesets.forEach { rulesetStorageService.merge(it) }
                         }
                         if (!TestFixture.realmRulesets.isEmpty()) {
-                            println("Re-inserting ${TestFixture.realmRulesets.size()} realm ruleset(s)")
+                            LOG.info("Re-inserting ${TestFixture.realmRulesets.size()} realm ruleset(s)")
                             TestFixture.realmRulesets.forEach { rulesetStorageService.merge(it) }
                         }
                         if (!TestFixture.globalRulesets.isEmpty()) {
-                            println("Re-inserting ${TestFixture.globalRulesets.size()} global ruleset(s)")
+                            LOG.info("Re-inserting ${TestFixture.globalRulesets.size()} global ruleset(s)")
                             TestFixture.globalRulesets.forEach { rulesetStorageService.merge(it) }
                         }
                     }
                 } catch (IllegalStateException e) {
-                    System.out.println("Failed to clean the existing container so creating a new one")
+                    LOG.info("Failed to clean the existing container so creating a new one")
                     stopContainer()
                     TestFixture.container = null
                 }
             } else {
-                System.out.println("Request to start container with different config and/or services as already running container so restarting")
+                LOG.info("Request to start container with different config and/or services as already running container so restarting")
                 stopContainer()
                 TestFixture.container = null
             }
@@ -314,43 +318,43 @@ trait ContainerTrait {
         int i=0
 
         if (agentService != null) {
-            println("Waiting for agents to be deployed")
+            LOG.info("Waiting for agents to be deployed")
             i=0
             while (i < 100 && TestFixture.assets.stream().filter { it instanceof Agent }.any { !agentService.agentMap.containsKey(it.id) }) {
                 Thread.sleep(100)
                 i++
             }
-            println("Agents are deployed")
+            LOG.info("Agents are deployed")
         }
 
         if (rulesService != null) {
-            println("Waiting for global rulesets to be deployed")
+            LOG.info("Waiting for global rulesets to be deployed")
             i=0
             while (i < 100 && TestFixture.globalRulesets.stream().filter { it.enabled }.any { rulesService.globalEngine == null || !rulesService.globalEngine.deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
                 i++
             }
-            println("Global rulesets are deployed")
+            LOG.info("Global rulesets are deployed")
 
-            println("Waiting for realm rulesets to be deployed")
+            LOG.info("Waiting for realm rulesets to be deployed")
             i=0
             while (i < 100 && TestFixture.realmRulesets.stream().filter { it.enabled }.any { !rulesService.realmEngines.containsKey(it.realm) || !rulesService.realmEngines.get(it.realm).deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
                 i++
             }
-            println("Realm rulesets are deployed")
+            LOG.info("Realm rulesets are deployed")
 
-            println("Waiting for asset rulesets to be deployed")
+            LOG.info("Waiting for asset rulesets to be deployed")
             i=0
             while (i < 100 && TestFixture.assetRulesets.stream().filter { it.enabled }.any { !rulesService.assetEngines.containsKey(it.assetId) || !rulesService.assetEngines.get(it.assetId).deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
                 i++
             }
-            println("Asset rulesets are deployed")
+            LOG.info("Asset rulesets are deployed")
         }
 
         if (assetProcessingService != null) {
-            println("Waiting for the system to settle down")
+            LOG.info("Waiting for the system to settle down")
             def j=0
             while (j < 100 && !noEventProcessedIn(assetProcessingService, 300)) {
                 Thread.sleep(100)

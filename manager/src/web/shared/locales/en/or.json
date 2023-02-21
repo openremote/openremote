@@ -94,6 +94,7 @@
   "twilight_morning_civil": "Morning twilight",
   "twilight_evening_civil": "Evening twilight",
   "rulesEditorAddCondition": "Add condition",
+  "rulesEditorAddAttribute": "Add attribute",
   "rulesEditorAddGroup": "Add group",
   "rulesEditorAddAction": "Add action",
   "sortBy": "Sort by",
@@ -648,5 +649,12 @@
   "address": "Address",
   "since": "Since",
   "roles": "Roles",
-  "restrictedUser": "Restricted user"
+  "restrictedUser": "Restricted user",
+  "realmRole": {
+    "admin": "Super admin"
+  },
+  "saveRealmFailed": "Save realm failed",
+  "saveRealmSucceeded": "Saved realm successfully!",
+  "userDisconnected": "Disconnected successfully!",
+  "userDisconnectFailed": "Disconnect failed"
 }

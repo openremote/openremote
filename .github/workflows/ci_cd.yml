@@ -177,7 +177,7 @@ jobs:
       - name: Backend files changed
         id: backend-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v34
+        uses: tj-actions/changed-files@v35
         with:
           files_ignore: |
             .ci_cd/**
@@ -193,7 +193,7 @@ jobs:
       - name: UI files changed
         id: ui-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v34
+        uses: tj-actions/changed-files@v35
         with:
           files: |
             ui/app/manager/**
@@ -701,15 +701,14 @@ jobs:
             if key.startswith("_"):
               if key.startswith("_TEMP_"):
                 key = key.replace("_TEMP_", "")
-                envFile = "temp.env"
               else:
                 continue
 
             os.system(f"echo 'Setting environment variable {key}...'")
             os.putenv(key, value)
-
+          
           buildCmd = os.getenv("CMD")
-          result = subprocess.run(f"bash {buildCmd}", shell=True)
+          result = subprocess.run(f"{buildCmd}", shell=True)
 
           if result.returncode != 0:
             os.system("echo 'installDist failed'")

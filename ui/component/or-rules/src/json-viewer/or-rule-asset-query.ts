@@ -31,6 +31,7 @@ import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
+import {getWhenTypesMenu} from "./or-rule-condition";
 
 // language=CSS
 const style = css`
@@ -44,7 +45,7 @@ const style = css`
     .attribute-group {
         flex-grow: 1;
         display: flex;
-        align-items: center;
+        align-items: start;
         flex-direction: row;
         flex-wrap: wrap;
     }
@@ -56,6 +57,37 @@ const style = css`
     .attribute-group > * {
         margin: 10px 3px 6px 3px;
     }
+    .attributes {
+        flex: 1 1 min-content;
+        display: flex;
+        flex-direction: column;
+        row-gap: 10px;
+    }
+    or-icon.small {
+        --or-icon-width: 14px;
+        --or-icon-height: 14px;
+    }
+    .attribute {
+        display: flex;
+        align-items: center;
+    }
+    .attribute > div {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }    
+    .attribute > div > * {
+        min-width: 200px;
+    }
+    .button-clear {
+        margin-left: auto;
+    }
+    .attribute:hover .button-clear {
+        visibility: visible;
+    }
+    
     .invalidLabel {
         display: flex;
         align-items: center;
@@ -187,8 +219,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const operators = attributeName ? this.getOperators(assetDescriptor, descriptors ? descriptors[0] : undefined, descriptors ? descriptors[1] : undefined, attribute, attributeName) : [];
 
         return html`
-            <or-mwc-input type="${InputType.SELECT}" class="min-width" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-mwc-input>
-            ${attributeName ? html`<or-mwc-input type="${InputType.SELECT}" class="min-width" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-mwc-input>` : ``}
+            <or-mwc-input type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setAttributeName(attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${attributeName}" .label="${i18next.t("attribute")}"></or-mwc-input>
+            ${attributeName ? html`<or-mwc-input type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setOperator(assetDescriptor, attribute, attributeName, attributePredicate, e.detail.value)}" .readonly="${this.readonly || false}" .options="${operators}" .value="${operator}" .label="${i18next.t("operator")}"></or-mwc-input>` : ``}
             ${attributePredicate ? this.attributePredicateValueEditorTemplate(assetDescriptor, asset, attributePredicate) : ``}
         `;
     }
@@ -212,7 +244,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
         switch (valuePredicate.predicateType) {
             case "string":
-                return html`<or-attribute-input class="min-width" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>`;
+                return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("value")}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}" .fullWidth="${true}"></or-attribute-input>`;
             case "boolean":
                 return html ``; // Handled by the operator IS_TRUE or IS_FALSE
             case "datetime":
@@ -326,19 +358,32 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                             }
                         }
                     }
+
+                    const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
+                    
                     return html`
                         <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
                                       .options="${idOptions}" .value="${idValue}" .searchProvider="${searchProvider}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this.refresh(); }}"
                         ></or-mwc-input>
-                        ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate) => {
-                            return html`
-                                ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
-                                ${showRemoveAttribute ? html`
-                                    <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
-                                ` : ``}
-                            `;
-                        }) : ``}
+                        <div class="attributes">
+                            ${this.query.attributes && this.query.attributes.items ? this.query.attributes.items.map((attributePredicate, index) => {
+                                return html`
+                                    ${index > 0 ? html`<or-icon class="small" icon="ampersand"></or-icon>` : ``}
+                                    <div class="attribute">
+                                        <div>
+                                    ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                                        </div>
+                                    ${showRemoveAttribute ? html`
+                                        <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
+                                    </div>` : ``}
+                                `;
+                            }) : ``}
+                            ${showAddAttribute ? html`
+                                <or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
+                                              .label="${i18next.t("rulesEditorAddAttribute")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.addAttributePredicate(this.query!.attributes!)}"></or-mwc-input>
+                            `: ``}
+                        </div>
                     `;
                 })}
             </div>

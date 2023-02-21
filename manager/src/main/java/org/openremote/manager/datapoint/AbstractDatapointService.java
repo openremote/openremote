@@ -176,7 +176,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
 
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
-        getLogger().finer("Getting datapoints for: " + attributeRef);
+        getLogger().finest("Getting datapoints for: " + attributeRef);
 
         return persistenceService.doReturningTransaction(entityManager ->
 

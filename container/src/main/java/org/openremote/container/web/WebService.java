@@ -20,6 +20,8 @@
 package org.openremote.container.web;
 
 import io.undertow.Undertow;
+import io.undertow.security.api.SecurityContext;
+import io.undertow.security.idm.Account;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.RequestDumpingHandler;
@@ -28,25 +30,29 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
+import io.undertow.util.HeaderMap;
+import org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.xnio.Options;
 
 import javax.servlet.DispatcherType;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 import java.net.Inet4Address;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static java.lang.System.Logger.Level.*;
 import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
 import static org.openremote.model.Constants.OR_HOSTNAME;
@@ -90,7 +96,7 @@ public abstract class WebService implements ContainerService {
     public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
     public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
     public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
-    private static final Logger LOG = Logger.getLogger(WebService.class.getName());
+    private static final System.Logger LOG = System.getLogger(WebService.class.getName());
     protected static AtomicReference<CORSFilter> corsFilterRef;
     protected boolean devMode;
     protected String host;
@@ -105,6 +111,11 @@ public abstract class WebService implements ContainerService {
 
     public static RequestHandler pathStartsWithHandler(String name, String path, HttpHandler handler) {
         return new RequestHandler(name, exchange -> exchange.getRequestPath().startsWith(path), handler);
+    }
+
+    @Override
+    public int getPriority() {
+        return LOW_PRIORITY;
     }
 
     @Override
@@ -137,7 +148,7 @@ public abstract class WebService implements ContainerService {
     public void start(Container container) throws Exception {
         if (undertow != null) {
             undertow.start();
-            LOG.info("Webserver ready on http://" + host + ":" + port);
+            LOG.log(INFO, "Webserver ready on http://" + host + ":" + port);
         }
     }
 
@@ -165,7 +176,7 @@ public abstract class WebService implements ContainerService {
                     );
                 identityService.secureDeployment(deploymentInfo);
             } else {
-                LOG.info("Deploying insecure web context: " + deploymentInfo.getContextPath());
+                LOG.log(INFO, "Deploying insecure web context: " + deploymentInfo.getContextPath());
             }
 
             // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
@@ -218,16 +229,31 @@ public abstract class WebService implements ContainerService {
 
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
-        LOG.info("Building web routing with handler(s): " + getRequestHandlers().stream().map(h -> h.name).collect(Collectors.joining("\n")));
+        LOG.log(INFO, () -> "Building web routing with handler(s): " + getRequestHandlers().stream().map(h -> h.name).collect(Collectors.joining("\n")));
 
         HttpHandler handler = exchange -> {
-            String requestPath = exchange.getRequestPath();
-            LOG.fine("Handling request: " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
+
+            LOG.log(DEBUG, () -> {
+                String requestPath = exchange.getRequestURI();
+                String address = exchange.getSourceAddress().toString();
+                HeaderMap headers = exchange.getRequestHeaders();
+                String forwardedAddress = headers.getFirst("X-Forwarded-For");
+                String responseType = headers.getFirst(HttpHeaders.ACCEPT);
+                SecurityContext securityContext = exchange.getSecurityContext();
+                Account account = securityContext != null ? securityContext.getAuthenticatedAccount() : null;
+                String userAndRealm
+                    = account != null
+                    ? KeycloakIdentityProvider.getSubjectNameAndRealm(account.getPrincipal())
+                    : null;
+
+                return "Client request '" + requestPath +" (responseType=" + responseType +")': user=" + userAndRealm  + ", origin=" +
+                    address +", forwarded-for=" + forwardedAddress;
+            });
 
             boolean handled = false;
             for (RequestHandler requestHandler : getRequestHandlers()) {
                 if (requestHandler.handlePredicate.test(exchange)) {
-                    LOG.fine("Handling '" + requestPath + "' with handler: " + requestHandler.name);
+                    LOG.log(TRACE, () -> "Handling '" + exchange.getRequestURI() + "' with handler: " + requestHandler.name);
                     requestHandler.handler.handleRequest(exchange);
                     handled = true;
                     break;
@@ -235,7 +261,7 @@ public abstract class WebService implements ContainerService {
             }
 
             if (!handled) {
-                LOG.warning("No handler found for request: " + exchange.getRequestPath());
+                LOG.log(WARNING, "No handler found for request: " + exchange.getRequestURI());
             }
         };
 
@@ -262,9 +288,12 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
         resteasyDeployment.getProviders().add(new JacksonConfig());
 
-        resteasyDeployment.getProviders().add(new GZIPEncodingInterceptor(!container.isDevMode()));
+        if (!container.isDevMode()) {
+            resteasyDeployment.getProviders().add(GZIPEncodingInterceptor.class);
+        }
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
+        resteasyDeployment.getActualProviderClasses().add(RequestLogger.class);
 
         resteasyDeployment.setSecurityEnabled(secure);
 

@@ -94,6 +94,7 @@
   "twilight_morning_civil": "Ochtendschemering",
   "twilight_evening_civil": "Avondschemering",
   "rulesEditorAddCondition": "Voeg voorwaarde toe",
+  "rulesEditorAddAttribute": "Voeg attribute toe",
   "rulesEditorAddGroup": "Groep",
   "rulesEditorAddAction": "Voeg actie toe",
   "sortBy": "Sorteren op",
@@ -559,10 +560,10 @@
     "widgets": "Widgets",
     "widget-kpi": "KPI",
     "widget-linechart": "Lijngrafiek",
-    "presets.wrap_to_single_column": "Widgets onder elkaar zetten",
-    "presets.keep_layout": "Behoud indeling",
-    "presets.block_device": "Blokkeer dit apparaat",
-    "presets.redirect": "Open een ander dashboard..",
+    "presets.wrap_to_single_column": "Krimpen naar één kolom",
+    "presets.keep_layout": "Indeling behouden",
+    "presets.block_device": "Geblokkeerd worden",
+    "presets.redirect": "Een ander dashboard openen..",
     "size.fullscreen": "Volledig scherm",
     "size.large": "Groot",
     "size.desktop": "Desktop",
@@ -643,6 +644,9 @@
     "deleteMapCustomization": "Kaartinstelling verwijderen",
     "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
     "addMapCustomization" : "Voeg een Kaartinstelling toe"
+  },
+  "realmRole": {
+    "admin": "Super admin"
   },
   "mqttSessions": "MQTT sessies",
   "address": "Adres",

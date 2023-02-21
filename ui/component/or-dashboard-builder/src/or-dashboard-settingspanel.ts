@@ -311,7 +311,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                                      style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                                     <div style="height: 100%; padding: 8px 14px 8px 0;">
                                         <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
-                                                      style="width: 32px; height: 32px;"
                                                       @or-mwc-input-changed="${(event: CustomEvent) => {
                                                           this._config.thresholds[index][1] = event.detail.value;
                                                           this.updateParent(new Map<string, any>([["config", this._config]]));
@@ -348,7 +347,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                              style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                             <div style="height: 100%; padding: 8px 14px 8px 0;">
                                 <or-mwc-input type="${InputType.COLOUR}" value="${config.boolColors.true}"
-                                              style="width: 32px; height: 32px;"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   this._config.boolColors.true = event.detail.value;
                                                   this.updateParent(new Map<string, any>([["config", this._config]]));
@@ -362,7 +360,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                              style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                             <div style="height: 100%; padding: 8px 14px 8px 0;">
                                 <or-mwc-input type="${InputType.COLOUR}" value="${config.boolColors.false}"
-                                              style="width: 32px; height: 32px;"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   this._config.boolColors.false = event.detail.value;
                                                   this.updateParent(new Map<string, any>([["config", this._config]]));
@@ -380,7 +377,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                                      style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                                     <div style="height: 100%; padding: 8px 14px 8px 0;">
                                         <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
-                                                      style="width: 32px; height: 32px;"
                                                       @or-mwc-input-changed="${(event: CustomEvent) => {
                                                           this._config.textColors[index][1] = event.detail.value;
                                                           this.updateParent(new Map<string, any>([["config", this._config]]));
@@ -601,10 +597,9 @@ export class OrDashboardSettingsPanel extends LitElement {
                                           }}"
                             ></or-mwc-input>
                         </div>
-
                         <div style="padding: 0 10px 12px 10px;">
                             <div class="switchMwcInputContainer">
-                                <span>${i18next.t('showLabels')}</span>
+                                <span>${i18next.t('dashboard.showLabels')}</span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                               .value="${config.showLabels}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
@@ -614,7 +609,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                                 ></or-mwc-input>
                             </div>
                             <div class="switchMwcInputContainer">
-                                <span>${i18next.t('showUnits')}</span>
+                                <span>${i18next.t('dashboard.showUnits')}</span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                               .value="${config.showUnits}"
                                               .disabled="${!config.showLabels}"

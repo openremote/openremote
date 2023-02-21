@@ -123,8 +123,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
                             }
                         }
                     })
-                    .otherwise()
-                    .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
             }
         });
@@ -196,14 +194,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
-            LOG.fine("Identity provider is not keycloak");
+            LOG.finest("Identity provider is not keycloak");
             return false;
         }
 
         AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
-            LOG.fine("Anonymous connection not supported: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            LOG.finest("Anonymous connection not supported: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
 
@@ -211,58 +209,58 @@ public class DefaultMQTTHandler extends MQTTHandler {
         boolean isAssetTopic = isAssetTopic(topic);
 
         if (!isAssetTopic && !isAttributeTopic) {
-            LOG.fine("Topic must have 3 or more tokens and third token must be 'asset, attribute or attributevalue': topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            LOG.finest("Topic must have 3 or more tokens and third token must be 'asset, attribute or attributevalue': topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
 
         if (isAssetTopic) {
             if (topic.getTokens().size() < 4 || topic.getTokens().size() > 5) {
-                LOG.fine("Asset subscribe token count should be 4 or 5: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                LOG.finest("Asset subscribe token count should be 4 or 5: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().size() == 4) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.finest("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().size() == 5) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Asset subscribe forth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.finest("Asset subscribe forth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
                 if (!TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Asset subscribe fifth token must be a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.finest("Asset subscribe fifth token must be a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             }
         } else {
             // Attribute topic
             if (topic.getTokens().size() < 5 || topic.getTokens().size() > 6) {
-                LOG.fine("Attribute subscribe token count should be 5 or 6: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                LOG.finest("Attribute subscribe token count should be 5 or 6: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().size() == 5) {
                 if (TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
-                    LOG.fine("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.finest("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.finest("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().size() == 6) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                    LOG.fine("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.finest("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
                 if (!TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 5))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 5))) {
-                    LOG.fine("Attribute subscribe sixth token must be a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.finest("Attribute subscribe sixth token must be a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             }
@@ -272,7 +270,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AssetFilter<?> filter = buildAssetFilter(topic);
 
         if (filter == null) {
-            LOG.fine("Failed to process subscription topic: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            LOG.finest("Failed to process subscription topic: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
 
@@ -282,54 +280,31 @@ public class DefaultMQTTHandler extends MQTTHandler {
         );
 
         if (!clientEventService.authorizeEventSubscription(topicRealm(topic), authContext, subscription)) {
-            LOG.fine("Subscription was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+            LOG.finest("Subscription was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
 
         return true;
-
-//            Asset<?> asset;
-//            if(identityProvider.isRestrictedUser(authContext.getUserId())) {
-//                Optional<UserAssetLink> userAsset = assetStorageService.findUserAssets(connection.realm, authContext.getUserId(), assetId).stream().findFirst();
-//                asset = userAsset.map(value -> assetStorageService.find(value.getId().getAssetId())).orElse(null);
-//            } else {
-//                asset = assetStorageService.find(assetId, false);
-//            }
-//
-//            if (asset == null) {
-//                LOG.fine("Asset not found for topic '" + topic + "': " + connection);
-//                return false;
-//            }
-//
-//            if (isAttributeTopic && topicTokenCountGreaterThan(topic, 4)
-//                && !(Token.topic.getTokens().get(4)SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(4)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(4)))) {
-//                String attributeName = topicTokens.get(4);
-//
-//                if (!asset.hasAttribute(attributeName)) {
-//                    LOG.fine("Asset attribute not found for topic '" + topic + "': " + connection);
-//                    return false;
-//                }
-//            }
     }
 
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
-            LOG.fine("Identity provider is not keycloak");
+            LOG.finest("Identity provider is not keycloak");
             return false;
         }
 
         AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
-            LOG.fine("Anonymous publish not supported: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
+            LOG.finest("Anonymous publish not supported: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
             return false;
         }
 
         if (isAttributeValueWriteTopic(topic)) {
             if (topic.getTokens().size() != 5 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                LOG.fine("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
+                LOG.finest("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
                 return false;
             }
         } else {
@@ -339,7 +314,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         // We don't know the value at this point so just use a null value for authorization (value type will be handled
         // when the event is processed)
         if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
-            LOG.info("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+            LOG.finest("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
 
@@ -356,7 +331,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Class subscriptionClass = isAssetTopic ? AssetEvent.class : AttributeEvent.class;
 
         if (filter == null) {
-            LOG.fine("Invalid event filter generated for topic '" + topic + "': " + connection);
+            LOG.info("Invalid event filter generated for topic '" + topic + "': " + connection);
             return;
         }
 
@@ -437,7 +412,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void onUserAssetLinksChanged(RemotingConnection connection) {
         if (connectionSubscriberInfoMap.containsKey(getConnectionIDString(connection))) {
-            LOG.fine("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + mqttBrokerService.connectionToString(connection));
+            LOG.info("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + mqttBrokerService.connectionToString(connection));
             mqttBrokerService.doForceDisconnect(connection);
         }
     }

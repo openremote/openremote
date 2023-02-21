@@ -186,7 +186,7 @@ public class TypeMapper {
     }
 
     static public ValueDescriptor<?> toAttributeType(Datapoint datapoint) {
-        LOG.finer("toTypeClass looking for dptId = " + datapoint.getDPT());
+        LOG.finest("toTypeClass looking for dptId = " + datapoint.getDPT());
         ValueDescriptor<?> t = dptToTypeMap.get(datapoint.getDPT());
         
         if (t == null) {

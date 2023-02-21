@@ -43,13 +43,9 @@ import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.util.ValueUtil
-import org.openremote.model.value.JsonPathFilter
-import org.openremote.model.value.RegexValueFilter
-import org.openremote.model.value.SubStringValueFilter
-import org.openremote.model.value.ValueFilter
-import org.openremote.model.value.ValueType
-import org.openremote.test.ManagerContainerTrait
+import org.openremote.model.value.*
 import org.openremote.setup.integration.ManagerTestSetup
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -134,8 +130,9 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         def clientEventService = container.getService(ClientEventService.class)
 
         when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
-        if (!WebsocketAgentProtocol.resteasyClient.configuration.isRegistered(mockServer)) {
-            WebsocketAgentProtocol.resteasyClient.register(mockServer, Integer.MAX_VALUE)
+        WebsocketAgentProtocol.initClient()
+        if (!WebsocketAgentProtocol.resteasyClient.get().configuration.isRegistered(mockServer)) {
+            WebsocketAgentProtocol.resteasyClient.get().register(mockServer, Integer.MAX_VALUE)
         }
 
         and: "a Websocket client agent is created to connect to this tests manager"
@@ -308,6 +305,11 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
             assert asset.getAttribute("readCo2Level").flatMap{it.getValue()}.orElse(null) == 600d
+        }
+
+        cleanup: "remove mock"
+        if (WebsocketAgentProtocol.resteasyClient.get() != null) {
+            WebsocketAgentProtocol.resteasyClient.set(null)
         }
     }
 }

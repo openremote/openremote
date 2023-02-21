@@ -90,7 +90,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         AssetQuery.OrderBy orderBy;
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
-        Predicate<AssetState<?>> assetStatePredicate = null;
+        Predicate<List<AssetState<?>>> assetPredicate = null;
         Set<AssetState<?>> unfilteredAssetStates = new HashSet<>();
         Set<AssetState<?>> previouslyMatchedAssetStates = new HashSet<>();
         Set<AssetState<?>> previouslyUnmatchedAssetStates;
@@ -199,7 +199,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-                    assetStatePredicate = AssetQueryPredicate.asPredicate(timerService::getCurrentTimeMillis, attributePredicates);
+                    assetPredicate = AssetQueryPredicate.asAssetPredicate(timerService::getCurrentTimeMillis, attributePredicates);
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
@@ -278,30 +278,19 @@ public class JsonRulesBuilder extends RulesBuilder {
                 matchedAssetStates = new ArrayList<>(unfilteredAssetStates);
             } else {
 
-                Map<Boolean, List<AssetState<?>>> results;
-                boolean isAndGroup = attributePredicates.operator == null || attributePredicates.operator == LogicGroup.Operator.AND;
+                Map<Boolean, List<AssetState<?>>> results = new HashMap<>();
+                ArrayList<AssetState<?>> matched = new ArrayList<>();
+                ArrayList<AssetState<?>> unmatched = new ArrayList<>();
+                results.put(true, matched);
+                results.put(false, unmatched);
 
-                if (isAndGroup) {
-
-                    // ANDs need to be applied in the context of an entire asset as don't make any sense otherwise
-                    results = new HashMap<>();
-                    ArrayList<AssetState<?>> matched = new ArrayList<>();
-                    ArrayList<AssetState<?>> unmatched = new ArrayList<>();
-                    results.put(true, matched);
-                    results.put(false, unmatched);
-
-                    unfilteredAssetStates.stream().collect(Collectors.groupingBy(AssetState::getId)).forEach((id, states) -> {
-
-                        Map<Boolean, List<AssetState<?>>> assetResults = states.stream().collect(Collectors.groupingBy(assetStatePredicate::test));
-                        matched.addAll(assetResults.getOrDefault(true, Collections.emptyList()));
-                        unmatched.addAll(assetResults.getOrDefault(false, Collections.emptyList()));
-                    });
-
-                } else {
-
-                    results = unfilteredAssetStates.stream().collect(Collectors.groupingBy(assetStatePredicate::test));
-
-                }
+                unfilteredAssetStates.stream().collect(Collectors.groupingBy(AssetState::getId)).forEach((id, states) -> {
+                    if (assetPredicate.test(states)) {
+                        matched.addAll(states);
+                    } else {
+                        unmatched.addAll(states);
+                    }
+                });
 
                 matchedAssetStates = results.getOrDefault(true, Collections.emptyList());
                 unmatchedAssetStates = results.getOrDefault(false, Collections.emptyList());
@@ -335,7 +324,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
 
                 if (noLongerMatches) {
-                    log(Level.FINER, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
+                    log(Level.FINEST, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
                 }
 
                 return noLongerMatches;
@@ -691,12 +680,12 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             try {
                 if (ruleState.thenMatched()) {
-                    log(Level.FINER, "Triggered rule so executing 'then' actions for rule: " + rule.name);
+                    log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
                     executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
 
                 if (rule.otherwise != null && ruleState.otherwiseMatched()) {
-                    log(Level.FINER, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
+                    log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
                     executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
             } catch (Exception e) {
