@@ -6,7 +6,7 @@ import { html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "@openremote/or-gauge";
 import { i18next } from "@openremote/or-translate";
-import manager from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import { when } from "lit/directives/when.js";
@@ -40,6 +40,13 @@ export class OrGaugeWidget implements OrWidgetEntity {
             valueType: 'number',
         } as GaugeWidgetConfig;
     }
+
+    // Triggered every update to double check if the specification.
+    // It will merge missing values, or you can add custom logic to process here.
+    verifyConfigSpec(widget: DashboardWidget): GaugeWidgetConfig {
+        return Util.mergeObjects(widget.widgetConfig, this.getDefaultConfig(widget), false) as GaugeWidgetConfig;
+    }
+
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
         return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-gauge-widget>`;
     }

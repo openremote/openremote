@@ -48,6 +48,18 @@ export class OrDashboardWidget extends LitElement {
     }
 
     shouldUpdate(changedProperties: Map<PropertyKey, unknown>): boolean {
+
+        // Update config if some values in the spec are not set.
+        // Useful for when migrations have taken place.
+        if(this.widget) {
+            const widgetType = widgetTypes.get(this.widget!.widgetTypeId!);
+            if(widgetType) {
+                console.log(this.widget.widgetConfig);
+                this.widget.widgetConfig = widgetType.verifyConfigSpec(this.widget);
+                console.log(this.widget.widgetConfig)
+            }
+        }
+
         const changed = changedProperties;
         changed.delete('resizeObserver');
         return changed.size > 0;

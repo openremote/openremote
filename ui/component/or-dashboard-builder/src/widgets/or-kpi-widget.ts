@@ -1,4 +1,4 @@
-import manager from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import {Asset, Attribute, AttributeRef, DashboardWidget } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
@@ -35,6 +35,13 @@ export class OrKpiWidget implements OrWidgetEntity {
             showTimestampControls: false
         } as KpiWidgetConfig;
     }
+
+    // Triggered every update to double check if the specification.
+    // It will merge missing values, or you can add custom logic to process here.
+    verifyConfigSpec(widget: DashboardWidget): KpiWidgetConfig {
+        return Util.mergeObjects(widget.widgetConfig, this.getDefaultConfig(widget), false) as KpiWidgetConfig;
+    }
+
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
         return html`<or-kpi-widgetsettings .widget="${widget}" realm="${realm}"></or-kpi-widgetsettings>`;

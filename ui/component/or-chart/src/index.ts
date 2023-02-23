@@ -387,6 +387,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public config?: OrChartConfig;
 
+    @property({type: Object}) // options that will get merged with our default chartjs configuration.
+    public chartOptions?: any
+
     @property({type: String})
     public realm?: string;
 
@@ -558,7 +561,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
             } as ChartConfiguration<"line", ScatterDataPoint[]>;
 
-            this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
+            const mergedOptions = Util.mergeObjects(options, this.chartOptions, false);
+
+            this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, mergedOptions as ChartConfiguration<"line", ScatterDataPoint[]>);
         } else {
             if (changedProperties.has("_data")) {
                 this._chart.options.scales!.x!.min = this._startOfPeriod;
