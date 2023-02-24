@@ -3,36 +3,41 @@ package org.openremote.manager.alarm;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.hibernate.Session;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
-import org.openremote.model.alarm.AlarmAssetLink;
-import org.openremote.model.alarm.AlarmUserLink;
-import org.openremote.model.alarm.Alarm.Status;
 import org.openremote.model.alarm.SentAlarm;
+import org.openremote.manager.alarm.AlarmProcessingException;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.TimeUtil;
 
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import java.sql.PreparedStatement;
-import java.sql.Timestamp;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.util.logging.Level.FINE;
+import static java.time.temporal.ChronoUnit.*;
+import static org.openremote.manager.alarm.AlarmProcessingException.Reason.*;
 import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
 import static org.openremote.model.alarm.Alarm.Source.*;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AlarmService extends RouteBuilder implements ContainerService {
 
