@@ -687,5 +687,13 @@
   "saveRealmFailed": "Save realm failed",
   "saveRealmSucceeded": "Saved realm successfully!",
   "userDisconnected": "Disconnected successfully!",
-  "userDisconnectFailed": "Disconnect failed"
+  "userDisconnectFailed": "Disconnect failed",
+  "alarm": {
+    "alarm_plural": "Alarms",
+    "inactive_plural": "Inactive alarms",
+    "active_plural" : "Active alarms",
+    "title": "Title",
+    "content": "Content",
+    "severity": "Severity"
+  }
 }
