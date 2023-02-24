@@ -170,7 +170,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     gap: 12px;
                     width: 100%;
                 }
-                
+
                 .column {
                     display: flex;
                     flex-direction: column;
@@ -479,6 +479,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             this.reset();
         }
     }
+
 
 
     protected render() {
