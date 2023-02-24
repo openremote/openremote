@@ -712,5 +712,13 @@
   "withInterval": "With interval",
   "AVG": "Average (mean)",
   "MIN": "Minimum",
-  "MAX": "Maximum"
+  "MAX": "Maximum",
+  "alarm": {
+    "alarm_plural": "Alarms",
+    "inactive_plural": "Inactive alarms",
+    "active_plural" : "Active alarms",
+    "title": "Title",
+    "content": "Content",
+    "severity": "Severity"
+  }
 }
