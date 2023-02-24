@@ -653,5 +653,13 @@
     "admin": "Super admin"
   },
   "saveRealmFailed": "Save realm failed",
-  "saveRealmSucceeded": "Saved realm successfully!"
+  "saveRealmSucceeded": "Saved realm successfully!",
+  "alarm": {
+    "alarm_plural": "Alarms",
+    "inactive_plural": "Inactive alarms",
+    "active_plural" : "Active alarms",
+    "title": "Title",
+    "content": "Content",
+    "severity": "Severity"
+  }
 }
