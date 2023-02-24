@@ -427,6 +427,5 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                     .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
             query.executeUpdate();
         });
-
     }
 }

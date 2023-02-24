@@ -4,7 +4,7 @@ import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import "@openremote/or-app";
 import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {
-    headerItemAccount,
+    headerItemAccount, headerItemAlarms,
     headerItemAssets,
     headerItemConfiguration,
     headerItemExport,
@@ -88,6 +88,7 @@ export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     gateway: headerItemGatewayConnection(orApp),
     language: headerItemLanguage(orApp),
+    alarms: headerItemAlarms(orApp),
     logs: headerItemLogs(orApp),
     account: headerItemAccount(orApp),
     users: headerItemUsers(orApp),
