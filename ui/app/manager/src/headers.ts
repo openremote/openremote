@@ -145,3 +145,13 @@ export function headerItemConfiguration<S extends AppStateKeyed, A extends AnyAc
         roles: () => manager.isSuperUser()
     };
 }
+
+export function headerItemAlarms<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "alert-outline",
+        value: "alarms",
+        href: "alarms",
+        text: "alarm.alarm_plural",
+        roles: () => manager.isSuperUser()
+    };
+}

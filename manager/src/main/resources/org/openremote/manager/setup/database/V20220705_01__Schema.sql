@@ -10,3 +10,16 @@ create table DASHBOARD (
   TEMPLATE           jsonb                    not null,
   primary key (ID)
 );
+
+create table ALARM (
+  ID                 int8                     not null,
+  TITLE              varchar(255),
+  CONTENT            varchar(4096),
+  SEVERITY           varchar(15)              not null,
+  STATUS             varchar(15)              not null,
+  SOURCE             varchar(50)              not null,
+  SOURCE_ID          varchar(43)              not null,
+  CREATED_ON         timestamp with time zone not null,
+  ACKNOWLEDGED_ON    timestamp with time zone,
+  primary key (ID)
+);
