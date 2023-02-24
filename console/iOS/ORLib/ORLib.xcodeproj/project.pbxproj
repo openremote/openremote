@@ -137,21 +137,12 @@
 			path = ../../../../../../../../../Desktop/K2/Pods;
 			sourceTree = "<group>";
 		};
-		4C537EE0299D3BA0006EFB94 /* ORLibb */ = {
-			isa = PBXGroup;
-			children = (
-				4C537EE1299D3BA0006EFB94 /* ORLib.h */,
-			);
-			path = ORLibb;
-			sourceTree = "<group>";
-		};
 		4CF5D03E27143EEB00D705BE = {
 			isa = PBXGroup;
 			children = (
 				4CC64C3E27C3CDD400A2FA4C /* Media.xcassets */,
 				4CF5D04927143EEC00D705BE /* ORLib */,
 				91A9A8F128BF6A3300DF8928 /* Tests */,
-				4C537EE0299D3BA0006EFB94 /* ORLibb */,
 				4CF5D04827143EEC00D705BE /* Products */,
 				15E46D9A67E43A8180E89721 /* Pods */,
 				717C35290053DAF6024CFEA7 /* Frameworks */,
@@ -176,6 +167,7 @@
 				4CF5D05527143F1F00D705BE /* UI */,
 				4CF5D05B27143F1F00D705BE /* Utils */,
 				4CF5D04A27143EEC00D705BE /* ORLib.swift */,
+				4C537EE1299D3BA0006EFB94 /* ORLib.h */,
 				91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */,
 			);
 			path = ORLib;
