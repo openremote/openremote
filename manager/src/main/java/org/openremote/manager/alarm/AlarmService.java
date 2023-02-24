@@ -1,3 +1,4 @@
+
 package org.openremote.manager.alarm;
 
 import org.apache.camel.Exchange;

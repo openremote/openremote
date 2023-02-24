@@ -64,7 +64,7 @@ import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
-//import org.openremote.model.alarm.SentAlarm;
+import org.openremote.model.alarm.SentAlarm;
 
 import javax.sql.DataSource;
 import java.io.File;
