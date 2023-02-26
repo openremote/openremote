@@ -20,7 +20,6 @@
 package org.openremote.manager.system;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.grpc.netty.shaded.io.netty.internal.tcnative.SSL;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;

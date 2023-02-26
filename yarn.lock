@@ -2456,7 +2456,7 @@ __metadata:
     "@openremote/model": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
-    gridstack: ^6.0.2
+    gridstack: ^7.2.0
     lit: ^2.0.2
   languageName: unknown
   linkType: soft
@@ -5563,10 +5563,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gridstack@npm:^6.0.2":
-  version: 6.0.2
-  resolution: "gridstack@npm:6.0.2"
-  checksum: 6ed7b323d549e7e7a4a09617994de61a8a22ec7949c1f3042eab274f4e931a0e9df49e9797bfc13cad1f7f6f06ed680137c1356c0b9e075f6bf05447b9a4eec9
+"gridstack@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "gridstack@npm:7.2.0"
+  checksum: 695183f0e1aa1610990466b8df95ace8e014cb0f1f50b94aa38d445665cc9224707de280941242685f80ccdba43be6395afd72b005b13d7e150791e9ada83434
   languageName: node
   linkType: hard
 
@@ -5719,9 +5719,9 @@ __metadata:
   linkType: hard
 
 "http-cache-semantics@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "http-cache-semantics@npm:4.1.0"
-  checksum: 974de94a81c5474be07f269f9fd8383e92ebb5a448208223bfb39e172a9dbc26feff250192ecc23b9593b3f92098e010406b0f24bd4d588d631f80214648ed42
+  version: 4.1.1
+  resolution: "http-cache-semantics@npm:4.1.1"
+  checksum: 83ac0bc60b17a3a36f9953e7be55e5c8f41acc61b22583060e8dedc9dd5e3607c823a88d0926f9150e571f90946835c7fe150732801010845c72cd8bbff1a236
   languageName: node
   linkType: hard
 

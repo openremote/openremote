@@ -69,11 +69,6 @@ const style = css`
         cursor: default;
     }
 
-    th:not(:first-of-type), td:not(:first-of-type) {
-        max-width: 100px;
-        text-overflow: ellipsis;
-    }
-
     .mdc-data-table__header-cell {
         font-weight: bold;
         color: ${unsafeCSS(DefaultColor3)};
@@ -90,6 +85,37 @@ const style = css`
 
     .mdc-data-table__cell--clickable {
         cursor: pointer;
+    }
+    
+    #column-1 {
+        width: var(--or-mwc-table-column-width-1, unset);
+    }    
+    #column-2 {
+        width: var(--or-mwc-table-column-width-2, unset);
+    }    
+    #column-3 {
+        width: var(--or-mwc-table-column-width-3, unset);
+    }    
+    #column-4 {
+        width: var(--or-mwc-table-column-width-4, unset);
+    }    
+    #column-5 {
+        width: var(--or-mwc-table-column-width-5, unset);
+    }    
+    #column-6 {
+        width: var(--or-mwc-table-column-width-6, unset);
+    }    
+    #column-7 {
+        width: var(--or-mwc-table-column-width-7, unset);
+    }    
+    #column-8 {
+        width: var(--or-mwc-table-column-width-8, unset);
+    }    
+    #column-9 {
+        width: var(--or-mwc-table-column-width-9, unset);
+    }    
+    #column-10 {
+        width: var(--or-mwc-table-column-width-10, unset);
     }
 
     @media screen and (max-width: 768px) {
@@ -114,7 +140,7 @@ export interface TableColumn {
 }
 
 export interface TableRow {
-    content?: string[]
+    content?: (string | number | TemplateResult)[]
     clickable?: boolean
 }
 
@@ -213,9 +239,9 @@ export class OrMwcTable extends LitElement {
                             return this.columns ? html`
                                 <thead>
                                 <tr class="mdc-data-table__header-row">
-                                    ${this.columns.map((column: TableColumn | string) => {
+                                    ${this.columns.map((column: TableColumn | string, index: number) => {
                                         return (typeof column == "string") ? html`
-                                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col"
+                                            <th class="mdc-data-table__header-cell" id="column-${index+1}" role="columnheader" scope="col"
                                                 title="${column}">${column}
                                             </th>
                                         ` : html`
@@ -250,11 +276,11 @@ export class OrMwcTable extends LitElement {
                             return this.rows ? (this.rows as any[])
                                             .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
                                             .map((item: TableRow | string[]) => {
-                                                const content: string[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
+                                                const content: (string | number | TemplateResult)[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
                                                 return html`
                                                     <tr class="mdc-data-table__row"
                                                         @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent((this.rows as any[]).indexOf(item)))}">
-                                                        ${content?.map((cell: string | number, index: number) => {
+                                                        ${content?.map((cell: string | number | TemplateResult, index: number) => {
                                                             const classes = {
                                                                 "mdc-data-table__cell": true,
                                                                 "mdc-data-table__cell--numeric": typeof cell === "number",

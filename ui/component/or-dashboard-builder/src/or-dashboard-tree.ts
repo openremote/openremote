@@ -42,9 +42,7 @@ export class OrDashboardTree extends LitElement {
     @property()
     private dashboards: Dashboard[] | undefined;
 
-    @property({hasChanged: (oldVal, val): boolean => {
-        return JSON.stringify(oldVal) != JSON.stringify(val);
-    }})
+    @property()
     private selected: Dashboard | undefined;
 
     @property() // REQUIRED
@@ -69,6 +67,18 @@ export class OrDashboardTree extends LitElement {
                 await this.getAllDashboards();
             }
         });
+    }
+
+    shouldUpdate(changedProperties: Map<string, any>) {
+        if(changedProperties.size == 1) {
+
+            // Prevent any update since it is not necessary in its current state.
+            // However, do update when dashboard is saved (aka when hasChanged is set back to false)
+            if(changedProperties.has("hasChanged") && this.hasChanged) {
+                return false;
+            }
+        }
+        return super.shouldUpdate(changedProperties);
     }
 
     private async getAllDashboards() {
@@ -157,12 +167,16 @@ export class OrDashboardTree extends LitElement {
                 })
                 if(myDashboards.length > 0) {
                     const items: ListItem[] = [];
-                    myDashboards.forEach((d) => { items.push({ icon: "view-dashboard", text: d.displayName, value: d.id }); });
+                    myDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach((d) => {
+                        items.push({ icon: "view-dashboard", text: d.displayName, value: d.id });
+                    });
                     dashboardItems.push(items);
                 }
                 if(otherDashboards.length > 0) {
                     const items: ListItem[] = [];
-                    otherDashboards.forEach((d) => { items.push({ icon: "view-dashboard", text: d.displayName, value: d.id }); });
+                    otherDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach((d) => {
+                        items.push({ icon: "view-dashboard", text: d.displayName, value: d.id });
+                    });
                     dashboardItems.push(items);
                 }
             }

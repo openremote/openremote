@@ -94,6 +94,7 @@
   "twilight_morning_civil": "Ochtendschemering",
   "twilight_evening_civil": "Avondschemering",
   "rulesEditorAddCondition": "Voeg voorwaarde toe",
+  "rulesEditorAddAttribute": "Voeg attribute toe",
   "rulesEditorAddGroup": "Groep",
   "rulesEditorAddAction": "Voeg actie toe",
   "sortBy": "Sorteren op",
