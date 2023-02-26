@@ -114,6 +114,11 @@ public abstract class WebService implements ContainerService {
     }
 
     @Override
+    public int getPriority() {
+        return LOW_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         devMode = container.isDevMode();
         host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);

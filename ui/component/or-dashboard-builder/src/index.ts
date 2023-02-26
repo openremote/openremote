@@ -1,6 +1,7 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
+import {styleMap} from 'lit/directives/style-map.js';
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-preview";
@@ -39,12 +40,20 @@ const styling = css`
     
     @media only screen and (min-width: 641px){
         #tree {
-            max-width: 300px !important;
+            min-width: 300px !important;
+        }
+    }
+    @media only screen and (max-width: 641px) {
+        #tree {
+            flex: 1 !important;
+        }
+        #builder {
+            max-height: inherit !important;
         }
     }
     
     #tree {
-        flex-shrink: 0;
+        flex: 0;
         align-items: stretch;
         z-index: 1;
         box-shadow: rgb(0 0 0 / 21%) 0px 1px 3px 0px;
@@ -52,8 +61,6 @@ const styling = css`
     
     /* Header related styling */
     #header {
-        display: table-row;
-        height: 1px;
         background: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
     }
     #header-wrapper {
@@ -81,10 +88,6 @@ const styling = css`
     }
 
     /* Header related styling */
-    #fullscreen-header {
-        display: table-row;
-        height: 1px;
-    }
     @media screen and (max-width: 700px) {
         #fullscreen-header-wrapper {
             padding: 11px !important;
@@ -434,7 +437,7 @@ export class OrDashboardBuilder extends LitElement {
         if(this.selectedDashboard != null) {
             const dashboard = this.selectedDashboard;
             dashboard.displayName = value;
-            this.selectedDashboard = Object.assign({}, dashboard);
+            this.requestUpdate("selectedDashboard");
         }
     }
 
@@ -506,6 +509,10 @@ export class OrDashboardBuilder extends LitElement {
             this.dispatchEvent(new CustomEvent('editToggle', { detail: false }));
             this.showDashboardTree = true;
         }
+        const builderStyles = {
+            display: (this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? 'none' : undefined,
+            maxHeight: this.editMode ? "calc(100vh - 77px - 50px)" : "inherit"
+        };
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${(this.showDashboardTree) ? html`
@@ -516,9 +523,9 @@ export class OrDashboardBuilder extends LitElement {
                                        @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"
                     ></or-dashboard-tree>
                 ` : undefined}
-                <div id="container" class="${this.selectedDashboard == null ? 'hideMobile' : undefined}" style="display: table;">
+                <div class="${this.selectedDashboard == null ? 'hideMobile' : undefined}" style="flex: 1; display: flex; flex-direction: column;">
                     ${this.editMode ? html`
-                        <div id="header" class="hideMobile" style="display: ${this.selectedDashboard == null && 'none'}">
+                        <div id="header" class="hideMobile">
                             <div id="header-wrapper">
                                 <div id="header-title">
                                     <or-icon icon="view-dashboard"></or-icon>
@@ -566,14 +573,14 @@ export class OrDashboardBuilder extends LitElement {
                             </div>
                         </div>
                     `}
-                    <div id="content">
+                    <div id="content" style="flex: 1;">
                         <div id="container">
                             ${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? html`
                                 <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
                                     <span>${!this._hasEditAccess() ? i18next.t('noDashboardWriteAccess') : i18next.t('errorOccurred')}.</span>
                                 </div>
                             ` : undefined}
-                            <div id="builder" style="${(this.editMode && (this._isReadonly() || !this._hasEditAccess())) ? 'display: none' : undefined}">
+                            <div id="builder" style="${styleMap(builderStyles)}">
                                 ${(this.selectedDashboard != null) ? html`
                                     <or-dashboard-preview class="editor" style="background: transparent;"
                                                           .realm="${this.realm}" .template="${this.currentTemplate}" .rerenderPending="${this.rerenderPending}"

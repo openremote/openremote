@@ -1,0 +1,94 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "SoilSensorAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "salinity"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "BETWEEN",
+                          "value": 20,
+                          "rangeValue": 25
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2XOXVoMmDkOyLjY1JEnuoF"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "72f37OCsEYkVPdzgcKDlRL"
+              ],
+              "types": [
+                "IrrigationAsset"
+              ]
+            }
+          },
+          "value": 1,
+          "attributeName": "flowNutrients"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "7jSsUaNvM3ZQGfRqBTsOpJ"
+              ],
+              "types": [
+                "IrrigationAsset"
+              ]
+            }
+          },
+          "value": 1.2,
+          "attributeName": "flowNutrients"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "7atRfYJf83HuiHB6ZdM3ko"
+              ],
+              "types": [
+                "IrrigationAsset"
+              ]
+            }
+          },
+          "value": 1.4,
+          "attributeName": "flowNutrients"
+        }
+      ],
+      "name": "Salinity 20 < 25"
+    }
+  ]
+}

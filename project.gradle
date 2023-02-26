@@ -48,8 +48,9 @@ exit \$status
                 Files.setPosixFilePermissions(path, perms)
             } catch (Exception ignored) {}
 
-            // Add dependency on decrypt task for deployment installDist if custom project
-            if (isCustomProject()) {
+            // Add dependency on decrypt task for deployment installDist only if GFE_PASSWORD defined
+            def password = System.env.GFE_PASSWORD
+            if (password != null) {
                 Task decryptTask = getTasksByName("decryptFiles", false)[0]
 
                 try {

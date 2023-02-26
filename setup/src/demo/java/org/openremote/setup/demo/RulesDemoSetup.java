@@ -38,6 +38,7 @@ public class RulesDemoSetup extends ManagerSetup {
     }
 
     public Long realmSmartCityRulesetId;
+    public Long realmManufacturerRulesetId;
 
     @Override
     public void onStart() throws Exception {
@@ -168,6 +169,55 @@ public class RulesDemoSetup extends ManagerSetup {
                     keycloakDemoSetup.realmCity.getName(), "Light group: On/Off", Ruleset.Lang.FLOW, rules
             );
             realmSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        /// Manufacturer rules
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/manufacturer/FlowPerMeter.flow")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new RealmRuleset(
+                    keycloakDemoSetup.realmManufacturer.getName(), "KPI: Flow per m2", Ruleset.Lang.FLOW, rules
+            );
+            realmManufacturerRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/manufacturer/SalinityBetween20And25.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new RealmRuleset(
+                    keycloakDemoSetup.realmManufacturer.getName(), "Salinity 20 < 25", Ruleset.Lang.JSON, rules
+            );
+            realmManufacturerRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/manufacturer/SalinityGreaterThan25.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new RealmRuleset(
+                    keycloakDemoSetup.realmManufacturer.getName(), "Salinity > 25", Ruleset.Lang.JSON, rules
+            );
+            realmManufacturerRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/manufacturer/SalinityLessThan3.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new RealmRuleset(
+                    keycloakDemoSetup.realmManufacturer.getName(), "Salinity < 3", Ruleset.Lang.JSON, rules
+            );
+            realmManufacturerRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/manufacturer/IrrigationTankLow.json")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new RealmRuleset(
+                    keycloakDemoSetup.realmManufacturer.getName(), "Irrigation tank low", Ruleset.Lang.JSON, rules
+            );
+            realmManufacturerRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/manufacturer/TotalFlow.flow")) {
+            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            Ruleset ruleset = new RealmRuleset(
+                    keycloakDemoSetup.realmManufacturer.getName(), "Irrigation flow total", Ruleset.Lang.FLOW, rules
+            );
+            realmManufacturerRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }
 }

@@ -311,7 +311,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                                      style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                                     <div style="height: 100%; padding: 8px 14px 8px 0;">
                                         <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
-                                                      style="width: 32px; height: 32px;"
                                                       @or-mwc-input-changed="${(event: CustomEvent) => {
                                                           this._config.thresholds[index][1] = event.detail.value;
                                                           this.updateParent(new Map<string, any>([["config", this._config]]));
@@ -348,7 +347,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                              style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                             <div style="height: 100%; padding: 8px 14px 8px 0;">
                                 <or-mwc-input type="${InputType.COLOUR}" value="${config.boolColors.true}"
-                                              style="width: 32px; height: 32px;"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   this._config.boolColors.true = event.detail.value;
                                                   this.updateParent(new Map<string, any>([["config", this._config]]));
@@ -362,7 +360,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                              style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                             <div style="height: 100%; padding: 8px 14px 8px 0;">
                                 <or-mwc-input type="${InputType.COLOUR}" value="${config.boolColors.false}"
-                                              style="width: 32px; height: 32px;"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   this._config.boolColors.false = event.detail.value;
                                                   this.updateParent(new Map<string, any>([["config", this._config]]));
@@ -380,7 +377,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                                      style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
                                     <div style="height: 100%; padding: 8px 14px 8px 0;">
                                         <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
-                                                      style="width: 32px; height: 32px;"
                                                       @or-mwc-input-changed="${(event: CustomEvent) => {
                                                           this._config.textColors[index][1] = event.detail.value;
                                                           this.updateParent(new Map<string, any>([["config", this._config]]));
