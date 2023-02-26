@@ -2034,7 +2034,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (nameValuePredicate.value instanceof GeofencePredicate) {
                 if (nameValuePredicate.value instanceof RadialGeofencePredicate) {
                     RadialGeofencePredicate location = (RadialGeofencePredicate) nameValuePredicate.value;
-                    attributeBuilder.append("ST_DistanceSphere(ST_MakePoint((");
+                    attributeBuilder.append("public.ST_DistanceSphere(public.ST_MakePoint((");
                     valuePathInserter.accept(attributeBuilder, binders);
                     attributeBuilder
                         .append(" #>> '{coordinates,0}')\\:\\:numeric")
@@ -2042,7 +2042,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     valuePathInserter.accept(attributeBuilder, binders);
                     attributeBuilder
                         .append(" #>> '{coordinates,1}')\\:\\:numeric")
-                        .append("), ST_MakePoint(")
+                        .append("), public.ST_MakePoint(")
                         .append(location.lng)
                         .append(",")
                         .append(location.lat)
@@ -2053,7 +2053,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     if (location.negated) {
                         attributeBuilder.append("NOT");
                     }
-                    attributeBuilder.append(" ST_Within(ST_MakePoint((");
+                    attributeBuilder.append(" public.ST_Within(public.ST_MakePoint((");
                     valuePathInserter.accept(attributeBuilder, binders);
                     attributeBuilder
                         .append(" #>> '{coordinates,0}')\\:\\:numeric")
@@ -2062,7 +2062,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     attributeBuilder
                         .append(" #>> '{coordinates,1}')\\:\\:numeric")
                         .append(")")
-                        .append(", ST_MakeEnvelope(")
+                        .append(", public.ST_MakeEnvelope(")
                         .append(location.lngMin)
                         .append(",")
                         .append(location.latMin)

@@ -54,9 +54,7 @@ export class OrDashboardWidget extends LitElement {
         if(this.widget) {
             const widgetType = widgetTypes.get(this.widget!.widgetTypeId!);
             if(widgetType) {
-                console.log(this.widget.widgetConfig);
                 this.widget.widgetConfig = widgetType.verifyConfigSpec(this.widget);
-                console.log(this.widget.widgetConfig)
             }
         }
 

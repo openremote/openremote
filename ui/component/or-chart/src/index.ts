@@ -49,6 +49,8 @@ import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-at
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
 import {debounce, throttle} from "lodash";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
@@ -197,10 +199,11 @@ const style = css`
     .interval-controls,
     .period-controls {
         display: flex;
+        min-width: 180px;
         flex-wrap: wrap;
         flex-direction: column;
         justify-content: center;
-        align-items: end;
+        align-items: center;
         gap: 8px;
     }
 
@@ -403,6 +406,12 @@ export class OrChart extends translate(i18next)(LitElement) {
     public timestampControls: boolean = true;
 
     @property()
+    public timePresetOptions?: Map<string, (date: Date) => [Date, Date]>;
+
+    @property()
+    public timePreset?: [string, (date: Date) => [Date, Date]];
+
+    @property()
     public showLegend: boolean = true;
 
     @property()
@@ -459,7 +468,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has("fromTimestamp") || changedProperties.has("toTimestamp") || changedProperties.has("datapointQuery") ||
+        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePreset") ||
             changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
@@ -618,35 +627,23 @@ export class OrChart extends translate(i18next)(LitElement) {
                 
                 ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
                     <div id="chart-controls">
-                        ${this.timestampControls || this.attributeControls ? html`
-                            <div id="controls">
-                                ${this.timestampControls ? html`
-                                    <div class="period-controls">
-                                        <or-mwc-input id="starting-date" .checkAssetWrite="${false}" .type="${InputType.DATETIME}" ?disabled="${disabled}" .value="${this.datapointQuery.fromTimestamp}"
-                                                      @or-mwc-input-changed="${debounce((evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), 'start'), 1500)}">
-                                        ></or-mwc-input>
-                                        <or-mwc-input id="ending-date" .checkAssetWrite="${false}" .type="${InputType.DATETIME}" ?disabled="${disabled}" .value="${this.datapointQuery.toTimestamp}"
-                                                      @or-mwc-input-changed="${debounce((evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), 'end'), 1500)}">
-                                        </or-mwc-input>
-                                        <div>
-                                            <or-icon class="button-icon" icon="chevron-left" @click="${() => {
-                                                const diff = this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!;
-                                                this._updateTimestamp(moment(this.datapointQuery.fromTimestamp! - diff).toDate(), 'start');
-                                                this._updateTimestamp(moment(this.datapointQuery.toTimestamp! - diff).toDate(), 'end');
-                                            }}"></or-icon>
-                                            <or-icon class="button-icon" icon="chevron-right" @click="${() => {
-                                                const diff = this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!;
-                                                this._updateTimestamp(moment(this.datapointQuery.fromTimestamp! + diff).toDate(), 'start');
-                                                this._updateTimestamp(moment(this.datapointQuery.toTimestamp! + diff).toDate(), 'end');
-                                            }}"></or-icon>
-                                        </div>
-                                    </div>
-                                ` : undefined}
-                                ${this.attributeControls ? html`
-                                    <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
+                        <div id="controls">
+                            <div class="period-controls">
+                                ${this.timePresetOptions && this.timePreset ? html`
+                                    ${getContentWithMenuTemplate(
+                                            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${this.timePreset![0]}" .disabled="${!this.timestampControls}"></or-mwc-input>`,
+                                            Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)), 
+                                            this.timePreset![0],
+                                            (value: string | string[]) => {
+                                                this.timePreset = Array.from(this.timePresetOptions!).find((option) => option[0] == value.toString());
+                                            }
+                                    )}
                                 ` : undefined}
                             </div>
-                        ` : undefined}
+                            ${this.attributeControls ? html`
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
+                            ` : undefined}
+                        </div>
                         ${cache(this.showLegend ? html`
                             <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="padding: ${this.denseLegend ? '6px' : '12px'};">
                                 ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
@@ -740,6 +737,13 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if (!this.realm) {
             this.realm = manager.getRealm();
+        }
+
+        if (!this.timePresetOptions) {
+            this.timePresetOptions = this._getDefaultTimestampOptions();
+        }
+        if (!this.timePreset) {
+            this.timePreset = Array.from(this.timePresetOptions)[0];
         }
 
         if (!this.panelName) {
@@ -955,6 +959,18 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
+    protected _getDefaultTimestampOptions(): Map<string, (date: Date) => [Date, Date]> {
+        return new Map<string, (date: Date) => [Date, Date]>([
+            ["Last hour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
+            ["Last 24 hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
+            ["Last 7 days", (date) => [moment(date).subtract(7, 'days').toDate(), date]],
+            ["Last 30 days", (date) => [moment(date).subtract(30, 'days').toDate(), date]],
+            ["Last 90 days", (date) => [moment(date).subtract(90, 'days').toDate(), date]],
+            ["Last 6 months", (date) => [moment(date).subtract(6, 'months').toDate(), date]],
+            ["Last year", (date) => [moment(date).subtract(1, 'year').toDate(), date]]
+        ]);
+    }
+
     protected _getInterval(diffInHours: number): [number, DatapointInterval] {
 
         if(diffInHours <= 1) {
@@ -981,15 +997,17 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this._loading = true;
 
-        const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
+        const dates = this.timePreset![1](new Date());
+        this._startOfPeriod = dates[0].getTime();
+        this._endOfPeriod = dates[1].getTime();
+
+        const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
         const intervalArr = this._getInterval(diffInHours);
 
         const stepSize: number = intervalArr[0];
         const interval: DatapointInterval = intervalArr[1];
 
         const lowerCaseInterval = interval.toLowerCase();
-        this._startOfPeriod = this.datapointQuery.fromTimestamp!;
-        this._endOfPeriod = this.datapointQuery.toTimestamp!;
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
         const now = moment().toDate().getTime();
@@ -1067,20 +1085,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         return dataset;
-    }
-
-    protected _updateTimestamp(timestamp: Date, type: 'start' | 'end', /*forward?: boolean, compare= false, timeout= 1500*/) {
-        const newMoment = moment(timestamp);
-        switch (type) {
-            case "start": {
-                this.datapointQuery.fromTimestamp = newMoment.set('second', 0).toDate().getTime(); break;
-            }
-            case "end": {
-                this.datapointQuery.toTimestamp = newMoment.set('second', 0).toDate().getTime(); break;
-            }
-        }
-        this.requestUpdate("datapointQuery");
-        this.saveSettings();
     }
 
 }

@@ -8,7 +8,7 @@ import {choose} from 'lit/directives/choose.js';
 import {OrWidgetConfig, OrWidgetEntity} from "./or-base-widget";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
 import {style} from "../style";
-import manager, { Util } from "@openremote/core";
+import manager from "@openremote/core";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import moment from "moment";
 
@@ -19,9 +19,29 @@ export interface ChartWidgetConfig extends OrWidgetConfig {
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
     showTimestampControls: boolean;
+    defaultTimePreset: [string, (date: Date) => [Date, Date]];
     showLegend: boolean;
 }
 
+const timePresetOptions = new Map<string, (date: Date) => [Date, Date]>([
+    ["Last hour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
+    ["Last 24 hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
+    ["Last 7 days", (date) => [moment(date).subtract(7, 'days').toDate(), date]],
+    ["Last 30 days", (date) => [moment(date).subtract(30, 'days').toDate(), date]],
+    ["Last 90 days", (date) => [moment(date).subtract(90, 'days').toDate(), date]],
+    ["Last 6 months", (date) => [moment(date).subtract(6, 'months').toDate(), date]],
+    ["Last year", (date) => [moment(date).subtract(1, 'year').toDate(), date]],
+    ["This hour", (date) => [moment(date).startOf('hour').toDate(), moment(date).endOf('hour').toDate()]],
+    ["This day", (date) => [moment(date).startOf('day').toDate(), moment(date).endOf('day').toDate()]],
+    ["This week", (date) => [moment(date).startOf('isoWeek').toDate(), moment(date).endOf('isoWeek').toDate()]],
+    ["This month", (date) => [moment(date).startOf('month').toDate(), moment(date).endOf('month').toDate()]],
+    ["This year", (date) => [moment(date).startOf('year').toDate(), moment(date).endOf('year').toDate()]],
+    ["Yesterday", (date) => [moment(date).subtract(24, 'hours').startOf('day').toDate(), moment(date).subtract(24, 'hours').endOf('day').toDate()]],
+    ["This day last week", (date) => [moment(date).subtract(1, 'week').startOf('day').toDate(), moment(date).subtract(1, 'week').endOf('day').toDate()]],
+    ["Previous week", (date) => [moment(date).subtract(1, 'week').startOf('isoWeek').toDate(), moment(date).subtract(1, 'week').endOf('isoWeek').toDate()]],
+    ["Previous month", (date) => [moment(date).subtract(1, 'month').startOf('month').toDate(), moment(date).subtract(1, 'month').endOf('month').toDate()]],
+    ["Previous year", (date) => [moment(date).subtract(1, 'year').startOf('year').toDate(), moment(date).subtract(1, 'year').endOf('year').toDate()]]
+])
 
 export class OrChartWidget implements OrWidgetEntity {
 
@@ -33,13 +53,16 @@ export class OrChartWidget implements OrWidgetEntity {
     readonly MIN_PIXEL_HEIGHT: number = 0;
 
     getDefaultConfig(widget: DashboardWidget): ChartWidgetConfig {
+        const dateFunc = timePresetOptions.get("Last hour");
+        const dates = dateFunc!(new Date());
+        const timePreset = Array.from(timePresetOptions)[0];
         return {
             displayName: widget?.displayName,
             attributeRefs: [],
             datapointQuery: {
                 type: "lttb",
-                fromTimestamp: Date.now(),
-                toTimestamp: Date.now(),
+                fromTimestamp: dates[0].getTime(),
+                toTimestamp: dates[1].getTime(),
                 amountOfPoints: 100
             },
             chartOptions: {
@@ -53,6 +76,7 @@ export class OrChartWidget implements OrWidgetEntity {
                 },
             },
             showTimestampControls: false,
+            defaultTimePreset: timePreset,
             showLegend: true
         } as ChartWidgetConfig;
     }
@@ -60,7 +84,14 @@ export class OrChartWidget implements OrWidgetEntity {
     // Triggered every update to double check if the specification.
     // It will merge missing values, or you can add custom logic to process here.
     verifyConfigSpec(widget: DashboardWidget): ChartWidgetConfig {
-        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as ChartWidgetConfig;
+        return widget.widgetConfig;
+
+        // Temporarily removed migration since it gave issues
+        /*const defaultConfig = this.getDefaultConfig(widget);
+        const merged = Util.mergeObjects(defaultConfig, widget.widgetConfig, false) as ChartWidgetConfig;
+        console.warn(merged)
+
+        return merged;*/
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string): TemplateResult {
@@ -101,6 +132,7 @@ export class OrChartWidgetContent extends LitElement {
             <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" denseLegend="${true}" .realm="${this.realm}"
                       .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}"
                       .attributeControls="${false}" .timestampControls="${this.widget?.widgetConfig?.showTimestampControls}" .algorithm="${this.widget?.widgetConfig?.algorithm}"
+                      .timePresetOptions="${timePresetOptions}" .timePreset="${this.widget?.widgetConfig?.defaultTimePreset}"
                       .datapointQuery="${this.widget?.widgetConfig?.datapointQuery}" .chartOptions="${this.widget?.widgetConfig?.chartOptions}"
                       style="height: 100%"
             ></or-chart>
@@ -272,7 +304,11 @@ class OrChartWidgetSettings extends LitElement {
                     <div style="padding: 12px 24px 48px 24px;">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timerangeDefault')}" style="width: 100%;"
-                                          .options="${['Last 24 Hours', 'Last week']}" value="${'Last 24 Hours'}"
+                                          .options="${Array.from(timePresetOptions.keys())}" value="${config.defaultTimePreset[0]}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              config.defaultTimePreset = Array.from(timePresetOptions).find((option) => option[0] == event.detail.value)!;
+                                              this.updateConfig(this.widget!, config);
+                                          }}"
                             ></or-mwc-input>
                         </div>
                         <div class="switchMwcInputContainer" style="margin-top: 16px;">

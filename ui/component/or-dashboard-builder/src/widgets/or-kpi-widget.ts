@@ -39,7 +39,7 @@ export class OrKpiWidget implements OrWidgetEntity {
     // Triggered every update to double check if the specification.
     // It will merge missing values, or you can add custom logic to process here.
     verifyConfigSpec(widget: DashboardWidget): KpiWidgetConfig {
-        return Util.mergeObjects(widget.widgetConfig, this.getDefaultConfig(widget), false) as KpiWidgetConfig;
+        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as KpiWidgetConfig;
     }
 
 

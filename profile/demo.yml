@@ -58,7 +58,7 @@ services:
 
   postgresql:
     restart: always
-    image: timescale/timescaledb-ha:pg14-latest
+    image: openremote/postgresql:develop
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - temp-data:/tmp

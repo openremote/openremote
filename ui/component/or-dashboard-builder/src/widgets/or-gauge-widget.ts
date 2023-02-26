@@ -44,7 +44,7 @@ export class OrGaugeWidget implements OrWidgetEntity {
     // Triggered every update to double check if the specification.
     // It will merge missing values, or you can add custom logic to process here.
     verifyConfigSpec(widget: DashboardWidget): GaugeWidgetConfig {
-        return Util.mergeObjects(widget.widgetConfig, this.getDefaultConfig(widget), false) as GaugeWidgetConfig;
+        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as GaugeWidgetConfig;
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
