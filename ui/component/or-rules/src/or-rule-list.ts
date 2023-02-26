@@ -557,6 +557,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
 
         const rulesetsToDelete = this._selectedNodes.map((rulesetNode) => rulesetNode.ruleset);
+        const rulesetNamesToDelete = rulesetsToDelete.map(ruleset => "\n- " + ruleset.name);
 
         const doDelete = async () => {
             this.disabled = true;
@@ -602,7 +603,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm", { ruleName: rulesetsToDelete[0].name}), i18next.t("delete"))
+        showOkCancelDialog(i18next.t("deleteRulesets"), i18next.t("deleteRulesetsConfirm", { ruleNames: rulesetNamesToDelete}), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     doDelete();
