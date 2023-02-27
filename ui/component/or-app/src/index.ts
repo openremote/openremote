@@ -120,7 +120,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 
             .main-content {
                 display: flex;
-                flex-direction: column;
                 flex: 1;
                 box-sizing: border-box;
                 background-color: var(--or-app-color2);
