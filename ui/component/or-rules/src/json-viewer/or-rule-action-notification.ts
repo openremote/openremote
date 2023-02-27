@@ -199,7 +199,7 @@ export class OrRuleActionNotification extends LitElement {
                     values = [...additionalValues, ...values];
                 } else if (targetType === NotificationTargetType.USER) {
                     // Add additional option for linked users
-                    values = [["linkedUsers", i18next.t("linked")], ...values];
+                    values = [["linkedUsers", i18next.t("linked")], ...values.sort(Util.sortByString(user => user[1]))];
                 }
 
                 return html`
