@@ -19,13 +19,13 @@
  */
 package org.openremote.container.security;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Base64;
 
-import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.openremote.container.web.WebClient.REQUEST_PROPERTY_CLIENT_ID;
 import static org.openremote.container.web.WebClient.REQUEST_PROPERTY_CLIENT_SECRET;
 

@@ -30,7 +30,7 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.*;
 
-import javax.ws.rs.*;
+import jakarta.ws.rs.*;
 import java.util.Arrays;
 import java.util.Objects;
 

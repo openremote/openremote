@@ -28,14 +28,14 @@ import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.RealmResource;
 
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.NotAllowedException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.NotAllowedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.Constants.MASTER_REALM;
 
 public class RealmResourceImpl extends ManagerWebResource implements RealmResource {

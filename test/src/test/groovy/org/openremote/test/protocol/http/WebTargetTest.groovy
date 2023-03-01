@@ -34,9 +34,9 @@ import org.openremote.model.util.ValueUtil
 import spock.lang.Shared
 import spock.lang.Specification
 
-import javax.ws.rs.client.ClientRequestContext
-import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.*
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.*
 
 class WebTargetTest extends Specification {
 

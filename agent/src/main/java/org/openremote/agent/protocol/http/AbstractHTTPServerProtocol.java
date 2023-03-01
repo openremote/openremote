@@ -43,7 +43,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import jakarta.servlet.ServletException;
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.core.Application;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;

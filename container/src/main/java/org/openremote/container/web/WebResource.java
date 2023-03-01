@@ -27,11 +27,11 @@ import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.*;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.*;
 import java.security.Principal;
 
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 public class WebResource implements AuthContext {

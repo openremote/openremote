@@ -65,7 +65,7 @@ import jakarta.websocket.ClientEndpointConfig
 import jakarta.websocket.Endpoint
 import jakarta.websocket.Session
 import jakarta.websocket.WebSocketContainer
-import javax.ws.rs.core.UriBuilder
+import jakarta.ws.rs.core.UriBuilder
 import java.util.concurrent.TimeUnit
 import java.util.logging.Handler
 import java.util.stream.Collectors

@@ -60,7 +60,7 @@ import javax.persistence.*;
 import javax.persistence.spi.ClassTransformer;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.sql.DataSource;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilder;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.*;

@@ -29,7 +29,7 @@ import spock.util.concurrent.PollingConditions
 import jakarta.mail.Message
 import jakarta.mail.Multipart
 import jakarta.mail.internet.InternetAddress
-import javax.ws.rs.WebApplicationException
+import jakarta.ws.rs.WebApplicationException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit

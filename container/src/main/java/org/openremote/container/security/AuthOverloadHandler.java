@@ -25,7 +25,7 @@ import io.undertow.util.HttpString;
 
 import java.util.Deque;
 
-import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 /**

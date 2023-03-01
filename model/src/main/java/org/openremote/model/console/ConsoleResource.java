@@ -26,9 +26,9 @@ import org.openremote.model.http.RequestParams;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import javax.ws.rs.*;
+import jakarta.ws.rs.*;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Console")
 @Path("console")

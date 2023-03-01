@@ -47,7 +47,7 @@ import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;

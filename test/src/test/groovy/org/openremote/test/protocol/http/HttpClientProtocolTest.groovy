@@ -49,10 +49,10 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.HttpMethod
-import javax.ws.rs.client.ClientRequestContext
-import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.*
+import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.*
 import java.util.regex.Pattern
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK

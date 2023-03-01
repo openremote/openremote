@@ -2,9 +2,9 @@ package org.openremote.model.rules.flow;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
-import javax.ws.rs.*;
+import jakarta.ws.rs.*;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Flow")
 @Path("flow")
