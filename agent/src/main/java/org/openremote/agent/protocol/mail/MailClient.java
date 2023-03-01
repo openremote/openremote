@@ -19,11 +19,12 @@
  */
 package org.openremote.agent.protocol.mail;
 
+import io.undertow.util.Headers;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.mail.*;
-import javax.mail.event.ConnectionEvent;
-import javax.mail.event.ConnectionListener;
+import jakarta.mail.*;
+import jakarta.mail.event.ConnectionEvent;
+import jakarta.mail.event.ConnectionListener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -36,10 +37,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-public class EmailClient implements ConnectionListener {
+public class MailClient implements ConnectionListener {
 
-    public static final System.Logger LOG = System.getLogger(EmailClient.class.getName() + "." + SyslogCategory.AGENT.name());
-    protected EmailClientBuilder config;
+    public static final System.Logger LOG = System.getLogger(MailClient.class.getName() + "." + SyslogCategory.AGENT.name());
+    protected MailClientBuilder config;
     protected Session session;
     protected Date lastMessageDate;
     protected Future<?> mailChecker;
@@ -48,7 +49,7 @@ public class EmailClient implements ConnectionListener {
     protected List<Consumer<ConnectionEvent>> connectionListeners = new CopyOnWriteArrayList<>();
     protected List<Consumer<Message>> messageListeners = new CopyOnWriteArrayList<>();
 
-    EmailClient(EmailClientBuilder config) {
+    MailClient(MailClientBuilder config) {
         this.config = config;
 
         if (config.getEarliestMessageDatePersistencePath() != null) {
@@ -83,8 +84,8 @@ public class EmailClient implements ConnectionListener {
             LOG.log(System.Logger.Level.INFO, "Connecting to server: " + config.getHost());
             Store emailStore = session.getStore();
             store.set(emailStore);
-            emailStore.connect(config.getUser(), config.getPassword());
             emailStore.addConnectionListener(this);
+            emailStore.connect(config.getUser(), config.getPassword());
 
             try (Folder emailFolder = emailStore.getFolder(config.getFolder())) {
                 if (emailFolder == null || !emailFolder.exists()) {
@@ -96,6 +97,7 @@ public class EmailClient implements ConnectionListener {
             }
 
             // For IMAP folders we can use listener for new messages for POP3 we need to open/close the folder
+            // we'll just use a mechanism that should work for both for now
 //            emailFolder.addMessageCountListener(new MessageCountAdapter() {
 //                public void messagesAdded(MessageCountEvent ev) {
 //                    Message[] messages = ev.getMessages();
@@ -222,23 +224,31 @@ public class EmailClient implements ConnectionListener {
             }
 
             emailFolder.open(config.deleteMessageOnceProcessed ? Folder.READ_WRITE : Folder.READ_ONLY);
+            Message[] messages = emailFolder.getMessages();
 
-            Arrays.stream(emailFolder.getMessages())
+            // Fetch profile only works for IMAP - For POP3 the headers will be loaded and cached once we read one of them
+            FetchProfile fp = new FetchProfile();
+            fp.add(FetchProfile.Item.ENVELOPE);
+            fp.add(Headers.CONTENT_TYPE_STRING);
+            emailFolder.fetch(messages, fp);
+
+            Arrays.stream(messages)
                 .filter(message -> {
-
                     try {
                         if (message.getFlags().contains(Flags.Flag.SEEN)) {
-                            LOG.log(System.Logger.Level.TRACE, "Message is older than last message date so ignoring: num=" + message.getMessageNumber());
+                            LOG.log(System.Logger.Level.TRACE, "Message has already been seen so ignoring: num=" + message.getMessageNumber());
                             return false;
                         }
                         if (lastMessageDate != null) {
-                            if (message.getReceivedDate().before(lastMessageDate)) {
-                                LOG.log(System.Logger.Level.TRACE, "Message is older than last message date so ignoring");
+                            Date sentDate = message.getSentDate();
+
+                            if (sentDate.before(lastMessageDate)) {
+                                LOG.log(System.Logger.Level.TRACE, "Message is older than last message date so ignoring: " + messageToString(message));
                                 return false;
                             }
                         }
                     } catch (MessagingException e) {
-                        LOG.log(System.Logger.Level.TRACE, "Failed to read message details");
+                        LOG.log(System.Logger.Level.TRACE, "Failed to read message details: num=" + message.getMessageNumber());
                         return false;
                     }
 
@@ -246,20 +256,34 @@ public class EmailClient implements ConnectionListener {
                 })
                 .forEach(message -> {
                     try {
-                        onMessage(message);
-                        if (config.isDeleteMessageOnceProcessed()) {
-                            message.setFlag(Flags.Flag.DELETED, true);
-                        }
-                        lastMessageDate = message.getReceivedDate();
-                        if (persistenceFileAccessible) {
-                            try {
-                                Files.writeString(config.getEarliestMessageDatePersistencePath(), Long.toString(lastMessageDate.getTime()), StandardOpenOption.WRITE);
-                            } catch (IOException e) {
-                                LOG.log(System.Logger.Level.INFO, "Failed to write to earliest message date persistence file: " + config.getEarliestMessageDatePersistencePath(), e);
+                        String contentType = message.getContentType();
+
+                        if (contentType == null || !contentType.startsWith("text")) {
+                            LOG.log(System.Logger.Level.INFO, "Only text based content types are supported; actual content type '" + contentType + "': " + messageToString(message));
+                        } else {
+
+                            // Load the message content
+                            message.getContent();
+                            onMessage(message);
+
+                            if (config.isDeleteMessageOnceProcessed()) {
+                                message.setFlag(Flags.Flag.DELETED, true);
+                            }
+                            if (lastMessageDate == null || message.getSentDate().after(lastMessageDate)) {
+                                lastMessageDate = message.getSentDate();
+                            }
+                            if (persistenceFileAccessible) {
+                                try {
+                                    Files.writeString(config.getEarliestMessageDatePersistencePath(), Long.toString(lastMessageDate.getTime()), StandardOpenOption.WRITE);
+                                } catch (IOException e) {
+                                    LOG.log(System.Logger.Level.INFO, "Failed to write to earliest message date persistence file: " + config.getEarliestMessageDatePersistencePath(), e);
+                                }
                             }
                         }
+                    } catch (IOException e) {
+                            LOG.log(System.Logger.Level.INFO, "Failed to read message content: " + messageToString(message), e);
                     } catch (MessagingException e) {
-                        LOG.log(System.Logger.Level.INFO, "An exception occurred whilst processing a message", e);
+                        LOG.log(System.Logger.Level.INFO, "An exception occurred whilst processing a message: " + messageToString(message), e);
                     }
                 });
         } catch (Exception e) {
@@ -278,5 +302,19 @@ public class EmailClient implements ConnectionListener {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    public static final String messageToString(Message message) {
+        String subject = null;
+        Date sentDate = null;
+
+        try {
+            subject = message.getSubject();
+            sentDate = message.getSentDate();
+        } catch (MessagingException e) {
+            LOG.log(System.Logger.Level.TRACE, "Message to string failed to extract basic message headers");
+        }
+
+        return "Message{subject=" + subject + ", date=" + sentDate + "}";
     }
 }

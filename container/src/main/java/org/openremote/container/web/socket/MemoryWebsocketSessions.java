@@ -19,7 +19,7 @@
  */
 package org.openremote.container.web.socket;
 
-import javax.websocket.Session;
+import jakarta.websocket.Session;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 

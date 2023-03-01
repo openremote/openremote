@@ -26,9 +26,9 @@ import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.mail.Message
-import javax.mail.Multipart
-import javax.mail.internet.InternetAddress
+import jakarta.mail.Message
+import jakarta.mail.Multipart
+import jakarta.mail.internet.InternetAddress
 import javax.ws.rs.WebApplicationException
 import java.time.Instant
 import java.time.temporal.ChronoUnit

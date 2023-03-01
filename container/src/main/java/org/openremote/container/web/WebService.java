@@ -42,7 +42,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.xnio.Options;
 
-import javax.servlet.DispatcherType;
+import jakarta.servlet.DispatcherType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 import java.net.Inet4Address;

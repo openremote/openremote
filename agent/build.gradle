@@ -35,7 +35,7 @@ dependencies {
 
     implementation "dev.failsafe:failsafe:$failsafeVersion"
 
-    implementation "com.sun.mail:jakarta.mail:$javaMailVersion"
+    implementation "jakarta.mail:jakarta.mail-api:$javaMailVersion"
 }
 
 jar {

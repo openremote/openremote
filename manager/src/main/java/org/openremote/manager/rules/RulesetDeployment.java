@@ -39,7 +39,7 @@ import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 
-import javax.script.*;
+import jakarta.script.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;

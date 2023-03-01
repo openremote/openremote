@@ -19,16 +19,11 @@ dependencies {
 
     api "io.undertow:undertow-servlet:$undertowVersion"
     api "io.undertow:undertow-websockets-jsr:$undertowVersion"
-
-    api "org.jboss.resteasy:resteasy-jaxrs:$resteasyVersion"
+    api "org.jboss.resteasy:resteasy-undertow:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-client:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
-    api("org.jboss.resteasy:resteasy-cache-core:$resteasyVersion") {
-        exclude group: "org.infinispan"
-    }
     api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
-    api "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersionAsyncHttpServlet"
 
     api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     api "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"

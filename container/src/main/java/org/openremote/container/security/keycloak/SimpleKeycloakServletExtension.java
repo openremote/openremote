@@ -31,7 +31,7 @@ import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.NodesRegistrationManagement;
 import org.keycloak.adapters.undertow.*;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 import java.util.Map;
 
 /**

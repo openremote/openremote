@@ -25,7 +25,7 @@ import org.apache.camel.Message;
 import org.apache.camel.support.DefaultProducer;
 import org.openremote.container.web.ConnectionConstants;
 
-import javax.websocket.Session;
+import jakarta.websocket.Session;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.logging.Level;

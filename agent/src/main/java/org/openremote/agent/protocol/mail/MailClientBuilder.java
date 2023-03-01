@@ -24,9 +24,10 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class EmailClientBuilder {
+public class MailClientBuilder {
     public static final String DEFAULT_FOLDER_NAME = "INBOX";
     public static final int DEFAULT_CHECK_INTERVAL_MILLIS = 5 * 60000;
+    protected static int MIN_CHECK_INTERVAL_MILLIS = 10000;
     protected ScheduledExecutorService scheduledExecutorService;
     protected int checkIntervalMillis = DEFAULT_CHECK_INTERVAL_MILLIS;
     protected String folder;
@@ -40,7 +41,7 @@ public class EmailClientBuilder {
     protected boolean deleteMessageOnceProcessed;
     protected Properties properties = new Properties();
 
-    public EmailClientBuilder(ScheduledExecutorService scheduledExecutorService, String protocol, String host, int port, String user, String password) {
+    public MailClientBuilder(ScheduledExecutorService scheduledExecutorService, String protocol, String host, int port, String user, String password) {
         this.scheduledExecutorService = scheduledExecutorService;
         this.protocol = protocol;
         this.host = host;
@@ -53,32 +54,32 @@ public class EmailClientBuilder {
         properties.put("mail." + protocol + ".port", port);
     }
 
-    public EmailClientBuilder setCheckIntervalMillis(int checkIntervalMillis) {
-        this.checkIntervalMillis = Math.max(checkIntervalMillis, 10000);
+    public MailClientBuilder setCheckIntervalMillis(int checkIntervalMillis) {
+        this.checkIntervalMillis = Math.max(checkIntervalMillis, MIN_CHECK_INTERVAL_MILLIS);
         return this;
     }
 
-    public EmailClientBuilder setFolder(String folder) {
+    public MailClientBuilder setFolder(String folder) {
         this.folder = folder;
         return this;
     }
 
-    public EmailClientBuilder setEarliestMessageDate(Date earliestMessageDate) {
+    public MailClientBuilder setEarliestMessageDate(Date earliestMessageDate) {
         this.earliestMessageDate = earliestMessageDate;
         return this;
     }
 
-    public EmailClientBuilder setEarliestMessageDatePersistencePath(Path earliestMessageDatePersistencePath) {
+    public MailClientBuilder setEarliestMessageDatePersistencePath(Path earliestMessageDatePersistencePath) {
         this.earliestMessageDatePersistencePath = earliestMessageDatePersistencePath;
         return this;
     }
 
-    public EmailClientBuilder setDeleteMessageOnceProcessed(boolean deleteMessageOnceProcessed) {
+    public MailClientBuilder setDeleteMessageOnceProcessed(boolean deleteMessageOnceProcessed) {
         this.deleteMessageOnceProcessed = deleteMessageOnceProcessed;
         return this;
     }
 
-    public EmailClientBuilder setProperty(String property, Object value) {
+    public MailClientBuilder setProperty(String property, Object value) {
         properties.put(property, value);
         return this;
     }
@@ -131,7 +132,7 @@ public class EmailClientBuilder {
         return properties;
     }
 
-    public EmailClient build() {
-        return new EmailClient(this);
+    public MailClient build() {
+        return new MailClient(this);
     }
 }

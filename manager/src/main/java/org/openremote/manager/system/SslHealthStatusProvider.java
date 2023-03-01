@@ -26,7 +26,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
 
-import javax.net.ssl.*;
+import jakarta.net.ssl.*;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;

@@ -25,8 +25,8 @@ import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
 import java.security.Principal;

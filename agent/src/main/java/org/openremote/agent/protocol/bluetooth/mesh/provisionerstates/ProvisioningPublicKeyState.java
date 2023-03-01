@@ -35,7 +35,7 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.BigIntegers;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
-import javax.crypto.KeyAgreement;
+import jakarta.crypto.KeyAgreement;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

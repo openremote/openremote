@@ -24,8 +24,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.ExceptionHandler;
 import io.undertow.util.HttpString;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;

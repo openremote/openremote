@@ -22,7 +22,7 @@ package org.openremote.container.web;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Context;
