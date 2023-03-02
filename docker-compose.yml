@@ -47,7 +47,15 @@ services:
       - postgresql-data:/home/postgres/pgdata/data
       - temp-data:/tmp
     environment:
-      - POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
+      TZ: ${TZ:-Europe/Amsterdam}
+      PGTZ: ${PGTZ:-Europe/Amsterdam}
+
+      # Database settings
+      POSTGRES_DB: ${OR_DB_NAME:-openremote}
+      POSTGRES_USER: ${OR_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
 
   keycloak:
     restart: always
