@@ -379,9 +379,7 @@ export class OrDashboardBuilder extends LitElement {
             gridItem: gridItem,
             widgetTypeId: gridStackNode.widgetTypeId,
         } as DashboardWidget;
-        console.log(widget);
         widget.widgetConfig = widgetTypes.get(gridStackNode.widgetTypeId)?.getDefaultConfig(widget);
-        console.log(widget);
 
         const tempTemplate = JSON.parse(JSON.stringify(this.currentTemplate)) as DashboardTemplate;
         if(tempTemplate.widgets == undefined) {

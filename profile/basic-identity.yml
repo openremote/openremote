@@ -30,7 +30,7 @@ services:
       file: deploy.yml
       service: postgresql
     volumes:
-      - postgresql-data:/var/lib/postgresql/data
+      - postgresql-data:/home/postgres/pgdata/data
       - temp-data:/tmp
 
   manager:

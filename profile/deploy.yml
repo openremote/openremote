@@ -362,7 +362,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:develop
+    image: timescaledev/timescaledb-ha:pg15-multi
     restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:

@@ -70,6 +70,8 @@ export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
     }
 }
 
+export type TimePresetCallback = (date: Date) => [Date, Date];
+
 export interface ChartViewConfig {
     attributeRefs?: AttributeRef[];
     fromTimestamp?: number;
@@ -196,35 +198,26 @@ const style = css`
     #msg:not([hidden]) {
         display: flex;    
     }
-    .interval-controls,
     .period-controls {
         display: flex;
         min-width: 180px;
-        flex-wrap: wrap;
-        flex-direction: column;
-        justify-content: center;
         align-items: center;
-        gap: 8px;
-    }
-
-    .period-controls {
-        --or-icon-fill: var(--or-app-color3);
     }
 
     #controls {
         display: flex;
         flex-wrap: wrap;
         margin: var(--internal-or-chart-controls-margin);
-        /*min-width: 320px;*/
-        padding-left: 10px;
+        width: 100%;
         flex-direction: column;
         margin: 0;
     }
 
     #attribute-list {
-        /*overflow: auto;*/
+        overflow: hidden auto;
+        min-height: 50px;
         flex: 1 1 0;
-        width: 95%;
+        width: 100%;
         display: flex;
         flex-direction: column;
     }
@@ -313,10 +306,11 @@ const style = css`
         max-height: 550px;*/
     }
     #chart-controls {
-        overflow: hidden auto;
+        min-width: 220px;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
-        align-items: end;
+        align-items: center;
     }
     canvas {
         width: 100% !important;
@@ -406,10 +400,10 @@ export class OrChart extends translate(i18next)(LitElement) {
     public timestampControls: boolean = true;
 
     @property()
-    public timePresetOptions?: Map<string, (date: Date) => [Date, Date]>;
+    public timePresetOptions?: Map<string, TimePresetCallback>;
 
     @property()
-    public timePreset?: [string, (date: Date) => [Date, Date]];
+    public timePresetKey?: string;
 
     @property()
     public showLegend: boolean = true;
@@ -468,7 +462,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePreset") ||
+        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") ||
             changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
@@ -597,21 +591,26 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(this.shadowRoot) {
             const container = this.shadowRoot.getElementById('container');
             if(container) {
-                const bottomLegenda = (container.clientWidth < 600);
-                container.style.flexDirection = bottomLegenda ? 'column' : 'row';
-                const attributeList = this.shadowRoot.getElementById('attribute-list');
-                if(attributeList) {
-                    attributeList.style.gap = bottomLegenda ? '0 12px' : '';
-                    attributeList.style.maxHeight = bottomLegenda ? '90px' : '';
-                    attributeList.style.flexDirection = bottomLegenda ? 'row' : 'column';
-                }
+                const bottomLegend: boolean = (container.clientWidth < 600);
+                container.style.flexDirection = bottomLegend ? 'column' : 'row';
                 const periodControls = this.shadowRoot.querySelector('.period-controls') as HTMLElement;
                 if(periodControls) {
-                    periodControls.style.flexDirection = bottomLegenda ? 'row' : 'column';
+                    periodControls.style.justifyContent = bottomLegend ? 'center' : 'start';
+                    periodControls.style.paddingLeft = bottomLegend ? '' : '18px';
+                }
+                const attributeList = this.shadowRoot.getElementById('attribute-list');
+                if(attributeList) {
+                    attributeList.style.gap = bottomLegend ? '4px 12px' : '';
+                    attributeList.style.maxHeight = bottomLegend ? '90px' : '';
+                    attributeList.style.flexDirection = bottomLegend ? 'row' : 'column';
+                    attributeList.style.flexWrap = bottomLegend ? 'wrap' : 'no-wrap';
+                    attributeList.style.padding = bottomLegend ? '0' : '12px 0';
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
-                    (item as HTMLElement).style.minHeight = bottomLegenda ? '' : '44px';
-                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegenda ? 'row' : 'column';
+                    (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
+                    (item as HTMLElement).style.paddingLeft = bottomLegend ? '' : '16px';
+                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegend ? 'row' : 'column';
+                    (item.children[1] as HTMLElement).style.gap = bottomLegend ? '4px' : '';
                 });
             }
         }
@@ -629,14 +628,16 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div id="chart-controls">
                         <div id="controls">
                             <div class="period-controls">
-                                ${this.timePresetOptions && this.timePreset ? html`
+                                ${this.timePresetOptions && this.timePresetKey ? html`
                                     ${getContentWithMenuTemplate(
-                                            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${this.timePreset![0]}" .disabled="${!this.timestampControls}"></or-mwc-input>`,
+                                            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${this.timePresetKey}" .disabled="${!this.timestampControls}"></or-mwc-input>`,
                                             Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)), 
-                                            this.timePreset![0],
-                                            (value: string | string[]) => {
-                                                this.timePreset = Array.from(this.timePresetOptions!).find((option) => option[0] == value.toString());
-                                            }
+                                            this.timePresetKey,
+                                            (value: string | string[]) => this.timePresetKey = value.toString(),
+                                            undefined,
+                                            undefined,
+                                            undefined,
+                                            true
                                     )}
                                 ` : undefined}
                             </div>
@@ -645,7 +646,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             ` : undefined}
                         </div>
                         ${cache(this.showLegend ? html`
-                            <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="padding: ${this.denseLegend ? '6px' : '12px'};">
+                            <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
                                 ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                     <div>
                                         <span>${i18next.t('noAttributesConnected')}</span>
@@ -668,12 +669,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 })}
                             </div>
                         ` : undefined)}
-                        ${this.timestampControls && this.datapointQuery.type == 'lttb' ? html`
-                            <span>Showing ${this.datapointQuery.amountOfPoints} points.</span>
-                        ` : undefined}
-                        ${this.timestampControls && this.datapointQuery.type == 'interval' ? html`
-                            <span>Interval: ${this.datapointQuery.interval}</span>
-                        ` : undefined}
                     </div>
                 ` : undefined}
             </div>
@@ -742,8 +737,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (!this.timePresetOptions) {
             this.timePresetOptions = this._getDefaultTimestampOptions();
         }
-        if (!this.timePreset) {
-            this.timePreset = Array.from(this.timePresetOptions)[0];
+        if (!this.timePresetKey) {
+            this.timePresetKey = this.timePresetOptions.keys().next().value.toString();
         }
 
         if (!this.panelName) {
@@ -959,8 +954,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _getDefaultTimestampOptions(): Map<string, (date: Date) => [Date, Date]> {
-        return new Map<string, (date: Date) => [Date, Date]>([
+    protected _getDefaultTimestampOptions(): Map<string, TimePresetCallback> {
+        return new Map<string, TimePresetCallback>([
             ["Last hour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
             ["Last 24 hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
             ["Last 7 days", (date) => [moment(date).subtract(7, 'days').toDate(), date]],
@@ -997,7 +992,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         this._loading = true;
 
-        const dates = this.timePreset![1](new Date());
+        const dates: [Date, Date] = this.timePresetOptions!.get(this.timePresetKey!)!(new Date());
         this._startOfPeriod = dates[0].getTime();
         this._endOfPeriod = dates[1].getTime();
 

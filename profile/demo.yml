@@ -58,9 +58,9 @@ services:
 
   postgresql:
     restart: always
-    image: openremote/postgresql:develop
+    image: timescaledev/timescaledb-ha:pg15-multi
     volumes:
-      - postgresql-data:/var/lib/postgresql/data
+      - postgresql-data:/home/postgres/pgdata/data
       - temp-data:/tmp
     <<: *awslogs
 
