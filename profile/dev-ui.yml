@@ -35,7 +35,7 @@ services:
       file: deploy.yml
       service: postgresql
     volumes:
-      - temp-data:/tmp
+      - temp-data:/tmp/or
     # Access directly if needed on localhost
     ports:
       - "5432:5432"
@@ -52,7 +52,7 @@ services:
       postgresql:
         condition: service_healthy
     volumes:
-      - temp-data:/tmp
+      - temp-data:/tmp/or
     environment:
       OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-true}
       OR_DEV_MODE: ${OR_DEV_MODE:-true}

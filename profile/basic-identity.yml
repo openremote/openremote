@@ -31,7 +31,7 @@ services:
       service: postgresql
     volumes:
       - postgresql-data:/home/postgres/pgdata/data
-      - temp-data:/tmp
+      - temp-data:/tmp/or
 
   manager:
     extends:
@@ -41,6 +41,6 @@ services:
       postgresql:
         condition: service_healthy
     volumes:
-      - temp-data:/tmp
+      - temp-data:/tmp/or
     environment:
       OR_IDENTITY_PROVIDER: basic

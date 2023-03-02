@@ -68,7 +68,7 @@ services:
 
     volumes:
       - postgresql-data:/home/postgres/pgdata/data
-      - temp-data:/tmp
+      - temp-data:/tmp/or
     environment:
       TZ: ${TZ:-Europe/Amsterdam}
       PGTZ: ${PGTZ:-Europe/Amsterdam}
@@ -121,7 +121,7 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_KNX:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
-      - temp-data:/tmp
+      - temp-data:/tmp/or
       - deployment-data:/deployment
     <<: *awslogs
 
