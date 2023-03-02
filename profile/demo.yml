@@ -62,6 +62,8 @@ services:
     volumes:
       - postgresql-data:/home/postgres/pgdata/data
       - temp-data:/tmp
+    environment:
+      - POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
     <<: *awslogs
 
   keycloak:
