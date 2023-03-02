@@ -44,7 +44,7 @@ public class SimpleKeycloakServletExtension implements ServletExtension {
 
     public static final String AUTH_MECHANISM = "SIMPLE_KEYCLOAK";
 
-    protected static Logger log = Logger.getLogger(KeycloakServletExtension.class);
+    protected static Logger log = Logger.getLogger(SimpleKeycloakServletExtension.class);
 
     final protected KeycloakConfigResolver configResolver;
     final protected AdapterDeploymentContext deploymentContext;

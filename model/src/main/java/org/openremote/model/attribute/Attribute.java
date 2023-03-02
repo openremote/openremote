@@ -34,8 +34,8 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;

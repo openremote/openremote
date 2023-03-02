@@ -21,7 +21,7 @@ import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaItemType;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;

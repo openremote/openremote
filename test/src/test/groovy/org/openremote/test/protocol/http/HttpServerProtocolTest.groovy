@@ -22,7 +22,7 @@ package org.openremote.test.protocol.http
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.undertow.servlet.Servlets
 import io.undertow.servlet.api.DeploymentManager
-import org.jboss.resteasy.spi.ResteasyUriInfo
+import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol
 import org.openremote.container.util.UniqueIdentifierGenerator

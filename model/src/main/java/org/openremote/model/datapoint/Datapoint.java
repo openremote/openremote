@@ -19,11 +19,12 @@
  */
 package org.openremote.model.datapoint;
 
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
@@ -52,7 +53,7 @@ public abstract class Datapoint implements Serializable {
     protected Date timestamp;
 
     @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    @org.hibernate.annotations.Type(JsonBinaryType.class)
     protected Object value;
 
     public Datapoint() {

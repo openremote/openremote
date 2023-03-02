@@ -57,12 +57,12 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
 
-import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1160,8 +1160,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      */
     public void deleteUserAssetLinks(String userId) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?0");
-            query.setParameter(0, userId);
+            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?1");
+            query.setParameter(1, userId);
             int deleteCount = query.executeUpdate();
             LOG.fine("Deleted all user asset links for user: user ID=" + userId + ", count=" + deleteCount);
         });

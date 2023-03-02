@@ -20,31 +20,33 @@
 package org.openremote.container.persistence;
 
 import org.apache.commons.io.IOUtils;
-import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractor;
-import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
-import org.hibernate.tool.hbm2ddl.SingleLineSqlCommandExtractor;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.tool.schema.internal.script.MultiLineSqlScriptExtractor;
+import org.hibernate.tool.schema.internal.script.SingleLineSqlScriptExtractor;
+import org.hibernate.tool.schema.spi.SqlScriptCommandExtractor;
+import org.hibernate.tool.schema.spi.SqlScriptException;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.List;
 
 /**
  * Load and parse import SQL files, either the whole file as a single statement if its first line
  * is <code>-- importOneStatementOnly</code>, or as a semicolon-separated list of statements.
  */
-@SuppressWarnings("deprecation")
-public class EnhancedImportSqlCommandExtractor implements ImportSqlCommandExtractor {
+public class EnhancedImportSqlCommandExtractor implements SqlScriptCommandExtractor {
 
     @Override
-    public String[] extractCommands(Reader reader) {
+    public List<String> extractCommands(Reader reader, Dialect dialect) {
         try {
             String sql = IOUtils.toString(reader);
             if (sql.startsWith("-- importOneStatementOnly")) {
-                return new SingleLineSqlCommandExtractor().extractCommands(reader);
+                return new SingleLineSqlScriptExtractor().extractCommands(reader, dialect);
             } else {
-                return new MultipleLinesSqlCommandExtractor().extractCommands(reader);
+                return new MultiLineSqlScriptExtractor().extractCommands(reader, dialect);
             }
         } catch (IOException e) {
-            throw new org.hibernate.tool.hbm2ddl.ImportScriptException("Error during import script parsing.", e);
+            throw new SqlScriptException("Error during import script parsing.", e);
         }
     }
 }

@@ -1,6 +1,6 @@
 package org.openremote.model.dashboard;
 
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Min;
 
 public class DashboardGridItem {
 

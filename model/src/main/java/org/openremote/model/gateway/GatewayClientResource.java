@@ -24,7 +24,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.http.RequestParams;
 import jakarta.annotation.security.RolesAllowed;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 
 import java.util.List;

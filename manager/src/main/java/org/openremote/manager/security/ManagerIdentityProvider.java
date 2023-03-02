@@ -28,8 +28,8 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.Tuple;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.Tuple;
+import jakarta.persistence.TypedQuery;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -286,7 +286,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
             List<Realm> realms = entityManager.createQuery(
-                "select r from Realm r where r.notBefore is null or r.notBefore = 0 or to_timestamp(r.notBefore) <= now()"
+                "select r from Realm r where r.notBefore is null or r.notBefore = 0"
                 , Realm.class).getResultList();
 
             // Make sure the master realm is always on top
@@ -315,7 +315,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         return persistenceService.doReturningTransaction(em -> {
 
             long count = em.createQuery(
-                "select count(r) from Realm r where r.name = :realm and r.enabled = true and (r.notBefore is null or r.notBefore = 0 or to_timestamp(r.notBefore) <= now())",
+                "select count(r) from Realm r where r.name = :realm and r.enabled = true and (r.notBefore is null or r.notBefore = 0)",
                 Long.class).setParameter("realm", realm).getSingleResult();
 
             return count > 0;

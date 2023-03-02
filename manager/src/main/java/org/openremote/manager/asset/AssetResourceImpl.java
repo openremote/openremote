@@ -37,8 +37,8 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.persistence.OptimisticLockException;
-import javax.validation.ConstraintViolationException;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotAuthorizedException;

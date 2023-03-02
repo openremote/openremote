@@ -53,7 +53,7 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;

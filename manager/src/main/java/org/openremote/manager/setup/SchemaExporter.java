@@ -24,7 +24,7 @@ import org.openremote.container.persistence.Database;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.persistence.ManagerPersistenceService;
 
-import javax.persistence.Persistence;
+import jakarta.persistence.Persistence;
 import java.io.File;
 import java.util.Properties;
 import java.util.logging.Logger;

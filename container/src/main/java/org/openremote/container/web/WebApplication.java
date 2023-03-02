@@ -46,6 +46,7 @@ public class WebApplication extends Application {
         return classes;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public Set<Object> getSingletons() {
         return singletons;

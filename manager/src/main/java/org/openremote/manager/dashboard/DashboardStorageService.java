@@ -11,12 +11,12 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.dashboard.DashboardAccess;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.ArrayList;
 import java.util.Collection;

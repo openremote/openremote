@@ -25,7 +25,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.UserQuery;
 
 import jakarta.annotation.security.RolesAllowed;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;

@@ -23,7 +23,7 @@ import org.openremote.agent.protocol.velbus.VelbusAgent;
 import org.openremote.agent.protocol.velbus.VelbusAgentLink;
 import org.openremote.model.asset.agent.AgentDescriptor;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class MockVelbusAgent extends VelbusAgent<MockVelbusAgent, MockVelbusProtocol> {

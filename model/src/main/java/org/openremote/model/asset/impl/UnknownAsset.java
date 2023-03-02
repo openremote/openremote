@@ -21,8 +21,8 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.Asset;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 
 /**
  * This is only needed so JPA can deserialise an Asset whose type doesn't match an entity otherwise it is un-used

@@ -22,7 +22,7 @@ package org.openremote.model.provisioning;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;

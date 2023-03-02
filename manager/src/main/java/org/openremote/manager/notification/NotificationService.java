@@ -42,8 +42,8 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;

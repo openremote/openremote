@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import jakarta.annotation.security.RolesAllowed;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import java.util.List;

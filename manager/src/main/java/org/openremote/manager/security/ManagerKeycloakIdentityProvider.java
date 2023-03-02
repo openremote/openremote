@@ -56,8 +56,8 @@ import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.persistence.Query;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Query;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
@@ -983,22 +983,22 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                 // Delete gateway connections
                 Query query = entityManager.createQuery("delete from " + GatewayConnection.class.getSimpleName() + " gc " +
-                    "where gc.localRealm = ?0");
+                    "where gc.localRealm = ?1");
 
-                query.setParameter(0, realmName);
+                query.setParameter(1, realmName);
                 query.executeUpdate();
 
                 // Delete provisioning configs
                 query = entityManager.createQuery("delete from " + ProvisioningConfig.class.getSimpleName() + " pc " +
-                    "where pc.realm = ?0");
+                    "where pc.realm = ?1");
 
-                query.setParameter(0, realmName);
+                query.setParameter(1, realmName);
                 query.executeUpdate();
 
                 // Delete Rules
                 query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
-                    "where rs.realm = ?0");
-                query.setParameter(0, realmName);
+                    "where rs.realm = ?1");
+                query.setParameter(1, realmName);
                 query.executeUpdate();
 
                 // Delete Assets

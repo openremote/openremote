@@ -56,9 +56,9 @@ import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
 
-import javax.persistence.*;
-import javax.persistence.spi.ClassTransformer;
-import javax.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.persistence.*;
+import jakarta.persistence.spi.ClassTransformer;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
 import javax.sql.DataSource;
 import jakarta.ws.rs.core.UriBuilder;
 import java.lang.reflect.Field;
@@ -77,7 +77,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     /**
      * Programmatic definition of OpenRemotePU for hibernate
      */
-    public static class PersistenceUnitInfo implements javax.persistence.spi.PersistenceUnitInfo {
+    public static class PersistenceUnitInfo implements jakarta.persistence.spi.PersistenceUnitInfo {
 
         List<String> managedClassNames;
         Properties properties;
@@ -91,7 +91,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             props.put(AvailableSettings.SCANNER_DISCOVERY, "none");
             //props.put(AvailableSettings.SHOW_SQL, "true");
             props.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "thread");
-            props.put(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.openremote.container.persistence.EnhancedImportSqlCommandExtractor");
+            props.put(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.openremote.container.persistence.EnhancedSqlScriptExtractor");
 
             // Add custom properties
             props.putAll(properties);
@@ -315,7 +315,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(X509ProvisioningConfig.class.getName());
 
         // Add packages with package-info (don't think this is JPA spec but hibernate specific)
-        entityClasses.add("org.openremote.container.persistence");
         entityClasses.add("org.openremote.container.util");
 
         // Get asset sub type entities from asset model

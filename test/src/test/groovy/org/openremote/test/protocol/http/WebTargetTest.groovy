@@ -21,7 +21,7 @@ package org.openremote.test.protocol.http
 
 import org.apache.http.client.utils.URIBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
-import org.jboss.resteasy.spi.ResteasyUriInfo
+import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.auth.OAuthGrant

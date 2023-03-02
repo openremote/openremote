@@ -20,7 +20,7 @@ import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGInterval;
 import org.postgresql.util.PGobject;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

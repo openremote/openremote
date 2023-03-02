@@ -26,6 +26,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -150,7 +151,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     }
 
     protected ResteasyDeployment createDeployment(Application application) {
-        ResteasyDeployment resteasyDeployment = new ResteasyDeployment();
+        ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
         resteasyDeployment.setApplication(application);
 
         List<String> allowedOrigins;

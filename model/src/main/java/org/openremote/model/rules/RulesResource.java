@@ -25,7 +25,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
 import jakarta.annotation.security.RolesAllowed;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 
 import java.util.List;
