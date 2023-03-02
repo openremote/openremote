@@ -81,20 +81,21 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            Asset<?> asset = assetStorageService.find(assetId, true);
-
-            if (asset == null) {
-                throw new WebApplicationException(Response.Status.NOT_FOUND);
+            if (!isRealmActiveAndAccessible(getRequestRealmName())) {
+                LOG.info("Forbidden access for user '" + getUsername() + "': " + getRequestRealm());
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            if (!isRealmActiveAndAccessible(asset.getRealm())) {
-                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            Asset<?> asset = assetStorageService.find(assetId, true);
+
+            if (asset == null || !asset.getRealm().equals(getRequestRealmName())) {
+                throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
             Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
                     new WebApplicationException(Response.Status.NOT_FOUND)
             );
+
             return assetDatapointService.queryDatapoints(assetId, attribute, query);
 
         } catch (IllegalStateException ex) {

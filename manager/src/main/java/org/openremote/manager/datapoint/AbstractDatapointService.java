@@ -188,7 +188,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         getLogger().finest("Querying datapoints for: " + attributeRef);
 
         return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint<?>[]>() {
+                entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<>() {
 
                     @Override
                     public ValueDatapoint<?>[] execute(Connection connection) throws SQLException {
