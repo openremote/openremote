@@ -208,7 +208,6 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                     }
                                 }
                             }
-                            System.out.println(st); // temp
 
                             try (ResultSet rs = st.executeQuery()) {
                                 List<ValueDatapoint<?>> result = new ArrayList<>();

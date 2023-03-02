@@ -18,7 +18,8 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      - postgresql # timescaledb image has no healthcheck config
+      postgresql:
+        condition: service_healthy
     environment:
       KC_HOSTNAME_STRICT_HTTPS: 'false'
       KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}

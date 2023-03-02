@@ -36,7 +36,6 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
 
     @Override
     public String getSQLQuery(String tableName, Class<?> attributeType) {
-        System.out.println("getSQLQuery() of AssetDatapointIntervalQuery."); // temp
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
         String function = (gapFill ? "public.time_bucket_gapfill" : "public.time_bucket");
         if (isNumber) {
@@ -48,7 +47,6 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
 
     @Override
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
-        System.out.println("getSQLParemeters() of AssetDatapointIntervalQuery."); // temp
         HashMap<Integer, Object> parameters = new HashMap<>();
         LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime :  LocalDateTime.ofInstant(Instant.ofEpochMilli(super.fromTimestamp), ZoneId.systemDefault());
         LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime :  LocalDateTime.ofInstant(Instant.ofEpochMilli(super.toTimestamp), ZoneId.systemDefault());

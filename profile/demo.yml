@@ -59,11 +59,24 @@ services:
   postgresql:
     restart: always
     image: timescaledev/timescaledb-ha:pg15-multi
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 2s
+
     volumes:
       - postgresql-data:/home/postgres/pgdata/data
       - temp-data:/tmp
     environment:
-      - POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      TZ: ${TZ:-Europe/Amsterdam}
+      PGTZ: ${PGTZ:-Europe/Amsterdam}
+
+      # Database settings
+      POSTGRES_DB: ${OR_DB_NAME:-openremote}
+      POSTGRES_USER: ${OR_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
     <<: *awslogs
 
   keycloak:

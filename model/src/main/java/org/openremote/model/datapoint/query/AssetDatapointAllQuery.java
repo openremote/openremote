@@ -20,7 +20,6 @@ public class AssetDatapointAllQuery extends AssetDatapointQuery {
     }
 
     public String getSQLQuery(String tableName, Class<?> attributeType) {
-        System.out.println("getSQLQuery() of AssetDatapointAllQuery."); // temp
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
         if (isNumber) {
             return "select timestamp, value::text::numeric from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
@@ -29,7 +28,6 @@ public class AssetDatapointAllQuery extends AssetDatapointQuery {
         }
     }
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
-        System.out.println("getSQLParemeters() of AssetDatapointAllQuery."); // temp
         HashMap<Integer, Object> parameters = new HashMap<>();
         LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(this.fromTimestamp), ZoneId.systemDefault());
         LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(this.toTimestamp), ZoneId.systemDefault());

@@ -38,7 +38,7 @@
     window.onload = function() {
       // Begin Swagger UI call region
       const ui = SwaggerUIBundle({
-        url: "localhost:8080/api/master/openapi.json", // temporary for testing
+        url: "/api/master/openapi.json",
         oauth2RedirectUrl: window.location.protocol + "//" + window.location.host + "/swagger/oauth2-redirect.html",
         dom_id: '#swagger-ui',
         deepLinking: true,

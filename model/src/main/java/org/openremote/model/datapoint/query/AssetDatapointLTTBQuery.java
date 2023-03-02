@@ -25,7 +25,6 @@ public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
 
     @Override
     public String getSQLQuery(String tableName, Class<?> attributeType) {
-        System.out.println("getSQLQuery() of AssetDatapointLTTBQuery."); // temo
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
         if (isNumber) {
             return "select * from public.unnest((select public.lttb(timestamp::timestamptz, value::double precision, ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
@@ -36,7 +35,6 @@ public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
 
     @Override
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
-        System.out.println("getSQLParemeters() of AssetDatapointLTTBQuery."); // temp
         LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(super.fromTimestamp), ZoneId.systemDefault());
         LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(super.toTimestamp), ZoneId.systemDefault());
         HashMap<Integer, Object> parameters = new HashMap<>();
