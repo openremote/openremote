@@ -5,7 +5,7 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {SentAlarm, ClientRole, Role, UserQuery} from "@openremote/model";
+import {SentAlarm, ClientRole, Role, UserQuery, AlarmSeverity, AlarmStatus} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -114,7 +114,11 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     flex: 1 1 0;
                     gap: 24px;
                 }
-
+                
+                .row > td[value="LOW"]{
+                    color: green;
+                }
+                
                 .column {
                     display: flex;
                     flex-direction: column;
@@ -416,6 +420,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 clickable: true
             }
         });
+
+        // const activeAlarmTableRows: TableRow[] = [({content: ["", "Test", "Test", AlarmSeverity.LOW, AlarmStatus.ACTIVE], clickable: true} as TableRow)];
 
         const inactiveAlarmTableRows: TableRow[] = this._inactiveAlarms.map((alarm) => {
             return {
