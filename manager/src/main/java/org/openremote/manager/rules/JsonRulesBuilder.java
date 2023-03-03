@@ -29,6 +29,7 @@ import org.openremote.model.PersistenceEvent;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
@@ -994,6 +995,14 @@ public class JsonRulesBuilder extends RulesBuilder {
                     return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
                 }
                 return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);
+            }
+        }
+
+        if (ruleAction instanceof  RuleActionAlarm alarmAction) {
+            if (alarmAction.alarm != null) {
+                Alarm alarm = alarmAction.alarm;
+
+
             }
         }
 
