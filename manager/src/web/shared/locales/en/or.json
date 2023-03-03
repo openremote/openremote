@@ -687,6 +687,7 @@
   "userDisconnected": "Disconnected successfully!",
   "userDisconnectFailed": "Disconnect failed",
   "alarm": {
+    "": "Alarm",
     "alarm_plural": "Alarms",
     "inactive_plural": "Inactive alarms",
     "active_plural" : "Active alarms",
