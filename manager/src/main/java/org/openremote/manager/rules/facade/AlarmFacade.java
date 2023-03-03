@@ -53,9 +53,9 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         }
     }
 
-    // public void assignUser(String userId, Long alarmId){
-    //     if(userId != null && !userId.isEmpty()){
-    //         alarmService.assignUser(alarmId, userId);
-    //     }
-    // }
+    public void assignUser(String userId, Long alarmId){
+        if(userId != null && !userId.isEmpty()){
+            alarmService.assignUser(alarmId, userId);
+        }
+    }
 }

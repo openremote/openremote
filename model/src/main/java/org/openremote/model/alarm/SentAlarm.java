@@ -16,7 +16,7 @@ public class SentAlarm {
     @Id
     @Column(name = "ID")
     @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
-    protected Long id;
+    protected String id;
 
     @NotNull
     @Column(name = "REALM", nullable = false, updatable = false)
@@ -66,7 +66,7 @@ public class SentAlarm {
 
     public Long getId() { return id; }
 
-    public SentAlarm setId(Long id) {
+    public SentAlarm setId(String id) {
         this.id = id;
         return this;
     }
