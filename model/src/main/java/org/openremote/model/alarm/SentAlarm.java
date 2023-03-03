@@ -13,7 +13,7 @@ public class SentAlarm {
     @Id
     @Column(name = "ID")
     @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
-    protected Long id;
+    protected String id;
 
     @Column(name = "TITLE")
     protected String title;
@@ -47,9 +47,9 @@ public class SentAlarm {
     @Column(name = "ACKNOWLEDGED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Date acknowledgedOn;
 
-    public Long getId() { return id; }
+    public String getId() { return id; }
 
-    public SentAlarm setId(Long id) {
+    public SentAlarm setId(String id) {
         this.id = id;
         return this;
     }
