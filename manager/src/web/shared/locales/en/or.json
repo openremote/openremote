@@ -741,6 +741,7 @@
   "MIN": "Minimum",
   "MAX": "Maximum",
   "alarm": {
+    "": "Alarm",
     "alarm_plural": "Alarms",
     "inactive_plural": "Inactive alarms",
     "active_plural" : "Active alarms",

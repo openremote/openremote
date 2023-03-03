@@ -40,6 +40,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.EntityClassProvider;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -61,7 +62,6 @@ import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.alarm.SentAlarm;
 
 import javax.sql.DataSource;
 import java.io.File;

@@ -278,11 +278,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 .process(handleNotificationProcessingException(LOG));
     }
 
-    public boolean sendNotification(Alarm notification) {
-        return sendNotification(notification, INTERNAL, "");
+    public boolean sendAlarm(Alarm alarm) {
+        return sendAlarm(alarm, INTERNAL, "");
     }
 
-    public boolean sendNotification(Alarm notification, Alarm.Source source, String sourceId) {
+    public boolean sendAlarm(Alarm notification, Alarm.Source source, String sourceId) {
 //        Map<String, Object> headers = new HashMap<>();
 //        headers.put(Notification.HEADER_SOURCE, source);
 //        headers.put(Notification.HEADER_SOURCE_ID, sourceId);
@@ -290,11 +290,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         return false;
     }
 
-    public void setNotificationAcknowledged(long id) {
-        setNotificationAcknowledged(id, timerService.getCurrentTimeMillis());
+    public void setAlarmAcknowledged(String id) {
+        setAlarmAcknowledged(id, timerService.getCurrentTimeMillis());
     }
 
-    public void setNotificationAcknowledged(long id, long timestamp) {
+    public void setAlarmAcknowledged(String id, long timestamp) {
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("UPDATE SentAlarm SET acknowledgedOn=:timestamp WHERE id =:id");
             query.setParameter("id", id);
