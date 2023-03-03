@@ -32,6 +32,7 @@ import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.notification.NotificationService;
+import org.openremote.manager.alarm.AlarmService;
 import org.openremote.manager.rules.flow.FlowResourceImpl;
 import org.openremote.manager.rules.geofence.GeofenceAssetAdapter;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -127,6 +128,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected AssetStorageService assetStorageService;
     protected NotificationService notificationService;
     protected WebhookService webhookService;
+    protected AlarmService alarmService;
     protected AssetProcessingService assetProcessingService;
     protected AssetDatapointService assetDatapointService;
     protected AssetPredictedDatapointService assetPredictedDatapointService;
@@ -162,6 +164,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         identityService = container.getService(ManagerIdentityService.class);
         notificationService = container.getService(NotificationService.class);
         webhookService = container.getService(WebhookService.class);
+        alarmService = container.getService(AlarmService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
@@ -649,6 +652,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     assetProcessingService,
                     notificationService,
                     webhookService,
+                    alarmService,
                     clientEventService,
                     assetDatapointService,
                     assetPredictedDatapointService,
@@ -691,6 +695,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetProcessingService,
                         notificationService,
                         webhookService,
+                        alarmService,
                         clientEventService,
                         assetDatapointService,
                         assetPredictedDatapointService,
@@ -769,6 +774,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetProcessingService,
                         notificationService,
                         webhookService,
+                        alarmService,
                         clientEventService,
                         assetDatapointService,
                         assetPredictedDatapointService,

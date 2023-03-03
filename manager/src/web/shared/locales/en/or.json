@@ -655,6 +655,7 @@
   "saveRealmFailed": "Save realm failed",
   "saveRealmSucceeded": "Saved realm successfully!",
   "alarm": {
+    "": "Alarm",
     "alarm_plural": "Alarms",
     "inactive_plural": "Inactive alarms",
     "active_plural" : "Active alarms",
