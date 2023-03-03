@@ -1049,6 +1049,14 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
         }
 
+        if (ruleAction instanceof  RuleActionAlarm alarmAction) {
+            if (alarmAction.alarm != null) {
+                Alarm alarm = alarmAction.alarm;
+
+
+            }
+        }
+
         if (ruleAction instanceof RuleActionWriteAttribute attributeAction) {
 
             if (targetIsNotAssets(ruleAction.target)) {
