@@ -29,15 +29,13 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
 
-import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
-
 /**
  * <p>
  * A datapoint is used to hold time series data of an entity attribute.
  * <p>
  */
 @MappedSuperclass
-@IdClass(Datapoint.class)
+@IdClass(DatapointID.class)
 public abstract class Datapoint implements Serializable {
 
     @Id
