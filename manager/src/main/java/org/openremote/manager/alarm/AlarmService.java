@@ -396,32 +396,32 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             parameters.add(new Date(toTimestamp));
         }
 
-        if (hasAssets) {
-            builder.append(" AND n.target = ?")
-                    .append(parameters.size() + 1)
-                    .append(" AND n.targetId IN ?")
-                    .append(parameters.size() + 2);
-
-            parameters.add(Notification.TargetType.ASSET);
-            parameters.add(assetIds);
-
-        } else if (hasUsers) {
-            builder.append(" AND n.target = ?")
-                    .append(parameters.size() + 1)
-                    .append(" AND n.targetId IN ?")
-                    .append(parameters.size() + 2);
-
-            parameters.add(Notification.TargetType.USER);
-            parameters.add(userIds);
-
-        } else if (hasRealms) {
-            builder.append(" AND n.target = ?")
-                    .append(parameters.size() + 1)
-                    .append(" AND n.targetId IN ?")
-                    .append(parameters.size() + 2);
-
-            parameters.add(Notification.TargetType.REALM);
-            parameters.add(realmIds);
-        }
+//        if (hasAssets) {
+//            builder.append(" AND n.target = ?")
+//                    .append(parameters.size() + 1)
+//                    .append(" AND n.targetId IN ?")
+//                    .append(parameters.size() + 2);
+//
+//            parameters.add(Notification.TargetType.ASSET);
+//            parameters.add(assetIds);
+//
+//        } else if (hasUsers) {
+//            builder.append(" AND n.target = ?")
+//                    .append(parameters.size() + 1)
+//                    .append(" AND n.targetId IN ?")
+//                    .append(parameters.size() + 2);
+//
+//            parameters.add(Notification.TargetType.USER);
+//            parameters.add(userIds);
+//
+//        } else if (hasRealms) {
+//            builder.append(" AND n.target = ?")
+//                    .append(parameters.size() + 1)
+//                    .append(" AND n.targetId IN ?")
+//                    .append(parameters.size() + 2);
+//
+//            parameters.add(Notification.TargetType.REALM);
+//            parameters.add(realmIds);
+//        }
     }
 }
