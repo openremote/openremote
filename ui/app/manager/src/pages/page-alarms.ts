@@ -170,7 +170,11 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     gap: 12px;
                     width: 100%;
                 }
-
+                
+                .row > td[value="LOW"]{
+                    color: green;
+                }
+                
                 .column {
                     display: flex;
                     flex-direction: column;
