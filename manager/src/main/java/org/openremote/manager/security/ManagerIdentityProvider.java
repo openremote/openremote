@@ -211,7 +211,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
         List<User> users = persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<User> sqlQuery = entityManager.createQuery(sb.toString(), User.class);
-            IntStream.range(0, parameters.size()).forEach(i -> sqlQuery.setParameter(i + 1, parameters.get(i)));
+            IntStream.rangeClosed(1, parameters.size()).forEach(i -> sqlQuery.setParameter(i, parameters.get(i-1)));
 
             if (userQuery.limit != null && userQuery.limit > 0) {
                 sqlQuery.setMaxResults(userQuery.limit);

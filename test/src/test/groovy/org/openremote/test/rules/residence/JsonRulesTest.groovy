@@ -106,7 +106,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
     def "Turn all lights off when console exits the residence geofence"() {
 
         List<PushNotificationMessage> pushMessages = []
-        List<javax.mail.Message> emailMessages = []
+        List<jakarta.mail.Message> emailMessages = []
         List<Notification.Target> pushTargets = []
         List<Notification.Target> emailTargets = []
 

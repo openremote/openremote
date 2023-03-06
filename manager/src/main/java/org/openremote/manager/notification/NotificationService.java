@@ -349,8 +349,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         builder.append(" order by n.sentOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            IntStream.rangeClosed(1, parameters.size())
+                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
             return query.getResultList();
         });
     }
@@ -372,8 +372,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            IntStream.rangeClosed(1, parameters.size())
+                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
             query.executeUpdate();
         });
     }

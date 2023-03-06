@@ -30,7 +30,7 @@ dependencies {
     testImplementation "com.github.calimero:calimero-server:$calimeroVersion"
 
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
-    testImplementation "jakarta.mail:jakarta.mail-api:$javaMailVersion"
+    testImplementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
 }

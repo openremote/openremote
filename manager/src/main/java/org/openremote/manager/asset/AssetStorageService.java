@@ -1117,11 +1117,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             StringBuilder sb = new StringBuilder("DELETE FROM user_asset_link WHERE (1=0");
 
             IntStream.range(0, userAssetLinks.size()).forEach(i -> sb.append(" OR (asset_id=?")
-                .append(3*i)
-                .append(" AND user_id=?")
                 .append((3*i)+1)
-                .append(" AND realm=?")
+                .append(" AND user_id=?")
                 .append((3*i)+2)
+                .append(" AND realm=?")
+                .append((3*i)+3)
                 .append(")"));
             sb.append(")");
 
@@ -1129,9 +1129,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             IntStream.range(0, userAssetLinks.size()).forEach(i -> {
                 UserAssetLink userAssetLink = userAssetLinks.get(i);
-                query.setParameter((3*i), userAssetLink.getId().getAssetId());
-                query.setParameter((3*i)+1, userAssetLink.getId().getUserId());
-                query.setParameter((3*i)+2, userAssetLink.getId().getRealm());
+                query.setParameter((3*i)+1, userAssetLink.getId().getAssetId());
+                query.setParameter((3*i)+2, userAssetLink.getId().getUserId());
+                query.setParameter((3*i)+3, userAssetLink.getId().getRealm());
             });
 
             int deleteCount = query.executeUpdate();

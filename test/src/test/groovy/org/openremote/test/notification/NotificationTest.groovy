@@ -548,7 +548,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
     def "Check email notification functionality"() {
 
-        List<javax.mail.Message> sentEmails = []
+        List<Message> sentEmails = []
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -566,8 +566,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         mockEmailNotificationHandler.isValid() >> true
 
         // Log email and assume sent to SMTP Server
-        mockEmailNotificationHandler.sendMessage(_ as javax.mail.Message) >> {
-            javax.mail.Message email ->
+        mockEmailNotificationHandler.sendMessage(_ as Message) >> {
+            Message email ->
                 sentEmails << email
                 return NotificationSendResult.success()
         }
