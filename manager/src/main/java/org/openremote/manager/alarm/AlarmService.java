@@ -455,9 +455,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         //processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, true);
 
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery(builder.toString());
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            Query query = entityManager.createQuery("UPDATE SentAlarm SET status=:status WHERE id =:id");
+            query.setParameter("id", id);
+            query.setParameter("status", status);
             query.executeUpdate();
         });
 
