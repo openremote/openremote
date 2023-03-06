@@ -1,5 +1,4 @@
 package org.openremote.model.alarm;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
@@ -97,5 +96,4 @@ public interface AlarmResource {
     @GET
     @Produces(APPLICATION_JSON)
     List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
-
 }
