@@ -282,12 +282,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         return sendAlarm(alarm, INTERNAL, "");
     }
 
-    public boolean sendAlarm(Alarm notification, Alarm.Source source, String sourceId) {
-//        Map<String, Object> headers = new HashMap<>();
-//        headers.put(Notification.HEADER_SOURCE, source);
-//        headers.put(Notification.HEADER_SOURCE_ID, sourceId);
-//        return messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(org.openremote.manager.notification.NotificationService.NOTIFICATION_QUEUE).request(Boolean.class);
-        return false;
+    public boolean sendAlarm(Alarm alarm, Alarm.Source source, String sourceId) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Alarm.HEADER_SOURCE, source);
+        headers.put(Alarm.HEADER_SOURCE_ID, sourceId);
+        return messageBrokerService.getFluentProducerTemplate().withBody(alarm).withHeaders(headers).to(AlarmService.ALARM_QUEUE).request(Boolean.class);
     }
 
     public void setAlarmAcknowledged(String id) {
@@ -303,131 +302,89 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         });
     }
 
-    public SentAlarm getSentAlarm(Long alarmId) {
-        return persistenceService.doReturningTransaction(em -> em.find(SentAlarm.class, alarmId));
-    }
-
-    public List<SentAlarm> getAlarms(List<Long> ids, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
-//        StringBuilder builder = new StringBuilder();
-//        builder.append("select n from SentNotification n where 1=1");
-//        List<Object> parameters = new ArrayList<>();
-//        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
-//        builder.append(" order by n.sentOn asc");
-//        return persistenceService.doReturningTransaction(entityManager -> {
-//            TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
-//            IntStream.range(0, parameters.size())
-//                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
-//            return query.getResultList();
-//
-//        });
-        return new ArrayList<>();
-    }
-
-    public void removeAlarm(Long id) {
-        persistenceService.doTransaction(entityManager -> entityManager
-                .createQuery("delete SentAlarm where id = :id")
-                .setParameter("id", id)
-                .executeUpdate()
-        );
-    }
-
-    public void removeAlarms(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
-
-        StringBuilder builder = new StringBuilder();
-        builder.append("delete from SentAlarm n where 1=1");
-        List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, true);
-
+    public void updateAlarmStatus(String id, String status) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery(builder.toString());
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            Query query = entityManager.createQuery("UPDATE SentAlarm SET status=:status WHERE id =:id");
+            query.setParameter("id", id);
+            query.setParameter("status", status);
             query.executeUpdate();
         });
     }
 
-    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds, boolean isRemove) {
-        boolean hasIds = ids != null && !ids.isEmpty();
-        boolean hasTypes = types != null && !types.isEmpty();
-        boolean hasRealms = realmIds != null && !realmIds.isEmpty();
-        boolean hasUsers = userIds != null && !userIds.isEmpty();
-        boolean hasAssets = assetIds != null && !assetIds.isEmpty();
+    public SentAlarm getSentAlarm(String alarmId) {
+        return persistenceService.doReturningTransaction(em -> em.find(SentAlarm.class, alarmId));
+    }
+
+    public List<SentAlarm> getAlarms(String id, String severity) throws IllegalArgumentException {
+        StringBuilder builder = new StringBuilder();
+        builder.append("select n from SentAlarm n where 1=1");
+        List<Object> parameters = new ArrayList<>();
+        processCriteria(builder, parameters, id, severity, false);
+        builder.append(" order by n.createdOn asc");
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<SentAlarm> query = entityManager.createQuery(builder.toString(), SentAlarm.class);
+            IntStream.range(0, parameters.size())
+                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            return query.getResultList();
+
+        });
+    }
+
+//    public void removeAlarm(Long id) {
+//        persistenceService.doTransaction(entityManager -> entityManager
+//                .createQuery("delete SentAlarm where id = :id")
+//                .setParameter("id", id)
+//                .executeUpdate()
+//        );
+//    }
+//
+//    public void removeAlarms(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+//
+//        StringBuilder builder = new StringBuilder();
+//        builder.append("delete from SentAlarm n where 1=1");
+//        List<Object> parameters = new ArrayList<>();
+//        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, true);
+//
+//        persistenceService.doTransaction(entityManager -> {
+//            Query query = entityManager.createQuery(builder.toString());
+//            IntStream.range(0, parameters.size())
+//                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+//            query.executeUpdate();
+//        });
+//    }
+
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, String id, String severity, boolean isRemove) {
+        boolean hasIds = id != null;
         int counter = 0;
 
         if (hasIds) {
             counter++;
         }
-        if (hasTypes) {
-            counter++;
-        }
-        if (hasRealms) {
-            counter++;
-        }
-        if (hasUsers) {
-            counter++;
-        }
-        if (hasAssets) {
-            counter++;
-        }
 
-        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
-            LOG.fine("No filters set for remove notifications request so not allowed");
-            throw new IllegalArgumentException("No criteria specified");
-        }
+//        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
+//            LOG.fine("No filters set for remove alarms request so not allowed");
+//            throw new IllegalArgumentException("No criteria specified");
+//        }
 
         if (hasIds) {
             builder.append(" AND n.id IN ?")
                     .append(parameters.size() + 1);
-            parameters.add(ids);
+            parameters.add(id);
             return;
         }
-
-        if (hasTypes) {
-            builder.append(" AND n.type IN ?")
-                    .append(parameters.size() + 1);
-            parameters.add(types);
-        }
-
-        if (fromTimestamp != null) {
-            builder.append(" AND n.sentOn >= ?")
-                    .append(parameters.size() + 1);
-
-            parameters.add(new Date(fromTimestamp));
-        }
-
-        if (toTimestamp != null) {
-            builder.append(" AND n.sentOn <= ?")
-                    .append(parameters.size() + 1);
-
-            parameters.add(new Date(toTimestamp));
-        }
-
-//        if (hasAssets) {
-//            builder.append(" AND n.target = ?")
-//                    .append(parameters.size() + 1)
-//                    .append(" AND n.targetId IN ?")
-//                    .append(parameters.size() + 2);
 //
-//            parameters.add(Notification.TargetType.ASSET);
-//            parameters.add(assetIds);
+//        if (fromTimestamp != null) {
+//            builder.append(" AND n.createdOn >= ?")
+//                    .append(parameters.size() + 1);
 //
-//        } else if (hasUsers) {
-//            builder.append(" AND n.target = ?")
-//                    .append(parameters.size() + 1)
-//                    .append(" AND n.targetId IN ?")
-//                    .append(parameters.size() + 2);
+//            parameters.add(new Date(fromTimestamp));
+//        }
 //
-//            parameters.add(Notification.TargetType.USER);
-//            parameters.add(userIds);
+//        if (toTimestamp != null) {
+//            builder.append(" AND n.createdOn <= ?")
+//                    .append(parameters.size() + 1);
 //
-//        } else if (hasRealms) {
-//            builder.append(" AND n.target = ?")
-//                    .append(parameters.size() + 1)
-//                    .append(" AND n.targetId IN ?")
-//                    .append(parameters.size() + 2);
-//
-//            parameters.add(Notification.TargetType.REALM);
-//            parameters.add(realmIds);
+//            parameters.add(new Date(toTimestamp));
 //        }
     }
 }
