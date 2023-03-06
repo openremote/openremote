@@ -1,5 +1,4 @@
 package org.openremote.model.alarm;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
