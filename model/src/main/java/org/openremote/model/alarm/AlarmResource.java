@@ -20,6 +20,7 @@ public interface AlarmResource {
      */
     @Path("all")
     @GET
+    @Path("all")
     @Produces(APPLICATION_JSON)
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
