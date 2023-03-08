@@ -19,41 +19,65 @@
  */
 package org.openremote.container.util;
 
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Part;
+import org.openremote.model.mail.MailMessage;
+
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
 
 import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class MailUtil {
 
-    public static class MessageContent {
+    protected static class MessageContent {
 
+        protected List<Header> headers;
         protected String mimeType;
         protected String content;
 
-        protected MessageContent(String mimeType, String content) {
+        protected MessageContent(String mimeType, String content, List<Header> headers) {
             this.mimeType = mimeType;
             this.content = content;
-        }
-
-        public String getMimeType() {
-            return mimeType;
-        }
-
-        public String getContent() {
-            return content;
+            this.headers = headers;
         }
     }
 
     protected MailUtil() {
     }
 
-    public static MessageContent getMessageContent(Part p) throws MessagingException, IOException {
+    public static MailMessage toMailMessage(Message message) throws MessagingException, IOException {
+        MessageContent messageContent = getMessageContent(message, new ArrayList<>(), true);
+        if (messageContent == null) {
+            return null;
+        }
+
+        List<Header> headers = messageContent.headers;
+        Map<String, List<String>> headerStrings = headers.stream()
+            .collect(Collectors.groupingBy(
+                Header::getName,
+                Collectors.mapping(Header::getValue, Collectors.toList())));
+
+        return new MailMessage(
+            messageContent.content,
+            messageContent.mimeType,
+            headerStrings,
+            message.getSubject(),
+            message.getSentDate(),
+            Arrays.stream(message.getFrom()).map(a -> ((InternetAddress)a).getAddress()).toArray(String[]::new));
+    }
+
+    protected static MessageContent getMessageContent(Part p, List<Header> headers, boolean isTopLevel) throws MessagingException, IOException {
+
+        if (isTopLevel) {
+            headers.addAll(Collections.list(p.getAllHeaders()));
+        }
+
         if (p.isMimeType("text/*")) {
             String s = (String)p.getContent();
             String mimeType = p.getContentType();
-            return new MessageContent(mimeType, s);
+            return new MessageContent(mimeType, s, headers);
         }
 
         if (p.isMimeType("multipart/alternative")) {
@@ -61,27 +85,31 @@ public class MailUtil {
             // prefer html text over plain text
             Multipart mp = (Multipart)p.getContent();
             String text = null;
+            Enumeration<Header> partHeaders = null;
             for (int i = 0; i < mp.getCount(); i++) {
                 Part bp = mp.getBodyPart(i);
                 if (bp.isMimeType("text/plain")) {
-                    if (text == null)
-                        text = (String)bp.getContent();
+                    if (text == null) {
+                        text = (String) bp.getContent();
+                        partHeaders = bp.getAllHeaders();
+                    }
                 } else if (bp.isMimeType("text/html")) {
-                    MessageContent content = getMessageContent(bp);
+                    MessageContent content = getMessageContent(bp, headers, false);
                     if (content != null) {
                         return content;
                     }
                 } else {
-                    return getMessageContent(bp);
+                    return getMessageContent(bp, headers, false);
                 }
             }
             if (text != null) {
-                return new MessageContent("text/plain", text);
+                headers.addAll(Collections.list(partHeaders));
+                return new MessageContent("text/plain", text, headers);
             }
         } else if (p.isMimeType("multipart/*")) {
             Multipart mp = (Multipart)p.getContent();
             for (int i = 0; i < mp.getCount(); i++) {
-                MessageContent content = getMessageContent(mp.getBodyPart(i));
+                MessageContent content = getMessageContent(mp.getBodyPart(i), headers, false);
                 if (content != null)
                     return content;
             }

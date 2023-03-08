@@ -23,6 +23,9 @@ import io.undertow.util.Headers;
 import javax.mail.*;
 import javax.mail.event.ConnectionEvent;
 import javax.mail.event.ConnectionListener;
+
+import org.openremote.container.util.MailUtil;
+import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.IOException;
@@ -47,7 +50,7 @@ public class MailClient implements ConnectionListener {
     protected boolean persistenceFileAccessible;
     protected final AtomicReference<Store> store = new AtomicReference<>();
     protected List<Consumer<ConnectionEvent>> connectionListeners = new CopyOnWriteArrayList<>();
-    protected List<Consumer<Message>> messageListeners = new CopyOnWriteArrayList<>();
+    protected List<Consumer<MailMessage>> messageListeners = new CopyOnWriteArrayList<>();
 
     MailClient(MailClientBuilder config) {
         this.config = config;
@@ -196,16 +199,22 @@ public class MailClient implements ConnectionListener {
         connectionListeners.forEach(listener -> listener.accept(e));
     }
 
-    public void addMessageListener(Consumer<Message> listener) {
+    public void addMessageListener(Consumer<MailMessage> listener) {
         messageListeners.add(listener);
     }
 
-    public void removeMessageListener(Consumer<Message> listener) {
+    public void removeMessageListener(Consumer<MailMessage> listener) {
         messageListeners.remove(listener);
     }
 
     public void onMessage(Message message) {
-        messageListeners.forEach(listener -> listener.accept(message));
+
+        try {
+            MailMessage mailMessage = MailUtil.toMailMessage(message);
+            messageListeners.forEach(listener -> listener.accept(mailMessage));
+        } catch (Exception e) {
+            LOG.log(System.Logger.Level.ERROR, "Failed to process received message", e);
+        }
     }
 
     protected void checkForMessages() {
