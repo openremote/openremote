@@ -11,6 +11,7 @@ import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.alarm.Alarm.Source;
 import org.openremote.model.http.RequestParams;
 
+import javax.ws.rs.POST;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
 import java.util.Collections;
@@ -39,12 +40,9 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     }
 
     @Override
-    public SentAlarm[] getAlarms(RequestParams requestParams, String id, String severity) {
+    public SentAlarm[] getAlarms(RequestParams requestParams) {
         try{
-            return alarmService.getAlarms(
-                    id,
-                    severity
-            ).toArray(new SentAlarm[0]);
+            return alarmService.getAlarms().toArray(new SentAlarm[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", Status.BAD_REQUEST);
         }
@@ -72,23 +70,25 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 //    }
 
     @Override
+    @POST
     public void createAlarm(RequestParams requestParams, Alarm alarm) {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Alarm.HEADER_SOURCE, Source.CLIENT);
-
-        if (isAuthenticated()){
-            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
-        }
-
-        boolean success = messageBrokerService.getFluentProducerTemplate()
-                .withBody(alarm)
-                .withHeaders(headers)
-                .to(AlarmService.ALARM_QUEUE)
-                .request(Boolean.class);
-
-        if (!success) {
-            throw new WebApplicationException(Status.BAD_REQUEST);
-        }
+        LOG.fine("Create alarm method called!");
+//        Map<String, Object> headers = new HashMap<>();
+//        headers.put(Alarm.HEADER_SOURCE, Source.CLIENT);
+//
+//        if (isAuthenticated()){
+//            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+//        }
+//
+//        boolean success = messageBrokerService.getFluentProducerTemplate()
+//                .withBody(alarm)
+//                .withHeaders(headers)
+//                .to(AlarmService.ALARM_QUEUE)
+//                .request(Boolean.class);
+//
+//        if (!success) {
+//            throw new WebApplicationException(Status.BAD_REQUEST);
+//        }
     }
 
     @Override

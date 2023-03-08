@@ -10,20 +10,17 @@ import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Tag(name = "Alarm")
-@Path("/AlarmService")
+@Path("alarm")
 public interface AlarmResource {
     /**
      * @param requestParams
-     * @param id
-     * @param severity
      * @return
      */
     @GET
+    @Path("all")
     @Produces(APPLICATION_JSON)
-    @Path("/alarms")
-    SentAlarm[] getAlarms(@BeanParam RequestParams requestParams,
-                          @QueryParam("id") String id,
-                          @QueryParam("severity") String severity);
+    @RolesAllowed(Constants.READ_ADMIN_ROLE)
+    SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
 //    /**
 //     *
@@ -54,8 +51,8 @@ public interface AlarmResource {
      * @param alarm
      */
     @POST
-    @Path("/alarms")
     @Consumes(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     void createAlarm(@BeanParam RequestParams requestParams,
                      Alarm alarm);
 
