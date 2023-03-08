@@ -286,7 +286,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
             List<Realm> realms = entityManager.createQuery(
-                "select r from Realm r where r.notBefore is null or r.notBefore = 0"
+                "select r from Realm r where r.notBefore is null or r.notBefore = 0 or to_timestamp(r.notBefore) <= now()"
                 , Realm.class).getResultList();
 
             // Make sure the master realm is always on top
@@ -315,7 +315,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         return persistenceService.doReturningTransaction(em -> {
 
             long count = em.createQuery(
-                "select count(r) from Realm r where r.name = :realm and r.enabled = true and (r.notBefore is null or r.notBefore = 0)",
+                "select count(r) from Realm r where r.name = :realm and r.enabled = true and (r.notBefore is null or r.notBefore = 0 or to_timestamp(r.notBefore) <= now())",
                 Long.class).setParameter("realm", realm).getSingleResult();
 
             return count > 0;

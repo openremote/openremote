@@ -2,6 +2,9 @@ package org.openremote.test.notification
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
+import jakarta.mail.Message
+import jakarta.mail.internet.InternetAddress
+import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.console.ConsoleResourceImpl
@@ -20,16 +23,12 @@ import org.openremote.model.notification.*
 import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.util.TextUtil
-import org.openremote.test.ManagerContainerTrait
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import jakarta.mail.Message
-import jakarta.mail.Multipart
-import jakarta.mail.internet.InternetAddress
-import jakarta.ws.rs.WebApplicationException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit

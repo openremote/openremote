@@ -33,8 +33,7 @@ dependencies {
 
     api "org.postgresql:postgresql:$postgresJdbcVersion"
     api "org.flywaydb:flyway-core:$flywaydbVersion"
-    api "com.zaxxer:HikariCP:$hikaricpVersion"
-    api "org.hibernate.orm:hibernate-core:$hibernateVersion"
+    api "org.hibernate.orm:hibernate-hikaricp:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
 
     api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
