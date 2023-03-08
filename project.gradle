@@ -21,6 +21,7 @@ if (project == rootProject) {
 
         if (rootProject.hasProperty("gradleFileEncrypt")) {
             println("File encryption plugin config found, configuring git pre commit hook and decrypt task dependency")
+            try {
 
             // Write git hook for encryption plugin checks before any commit
             def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
@@ -35,7 +36,6 @@ status=\$?
 
 exit \$status
 """
-            try {
                 Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()
                 perms.add(PosixFilePermission.OWNER_WRITE)
                 perms.add(PosixFilePermission.OWNER_READ)
