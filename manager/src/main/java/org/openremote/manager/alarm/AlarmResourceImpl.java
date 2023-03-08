@@ -169,6 +169,4 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
             throw new WebApplicationException(Status.FORBIDDEN);
         }
     }
-
-
 }
