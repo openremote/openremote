@@ -19,6 +19,7 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 import { when } from "lit/directives/when.js";
 import { cache } from "lit/directives/cache.js";
+import {OrDashboardEngine} from "./or-dashboard-engine";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -217,6 +218,9 @@ export class OrDashboardPreview extends LitElement {
         }
         // Defaulting to a Phone view
         if(!this.previewSize) { this.previewSize = this.availablePreviewSizes[3]; }
+
+        // Register custom override functions for GridStack
+        GridStack.registerEngine(OrDashboardEngine);
     }
 
     static get styles() {

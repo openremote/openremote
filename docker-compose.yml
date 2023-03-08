@@ -36,13 +36,7 @@ services:
 
   postgresql:
     restart: always
-    image: timescaledev/timescaledb-ha:pg15-multi
-    healthcheck:
-      test: [ "CMD", "pg_isready" ]
-      interval: 3s
-      timeout: 3s
-      retries: 30
-      start_period: 2s
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     volumes:
       - postgresql-data:/home/postgres/pgdata/data
       - temp-data:/tmp/or

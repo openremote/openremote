@@ -24,8 +24,10 @@ import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.Predicate;
 import org.apache.camel.ProducerTemplate;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.output.MigrateResult;
+import org.flywaydb.core.internal.sqlscript.FlywaySqlScriptException;
 import org.hibernate.Session;
 import org.hibernate.annotations.Formula;
 import org.hibernate.cfg.AvailableSettings;
@@ -55,6 +57,7 @@ import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
+import org.postgresql.util.PSQLException;
 
 import javax.persistence.*;
 import javax.persistence.spi.ClassTransformer;
@@ -503,7 +506,15 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             .baselineOnMigrate(true)
             .load();
 
-        MigrationInfo currentMigration = flyway.info().current();
+        MigrationInfo currentMigration;
+        try {
+            currentMigration = flyway.info().current();
+        } catch (FlywaySqlScriptException fssex) {
+            if(fssex.getStatement().contains("CREATE EXTENSION IF NOT EXISTS timescaledb")) { // ... SCHEMA public cascade;
+                LOG.severe("Fail during database schema migration. It failed creating the TimescaleDB extension. Try to upgrade the database to the newest version.");
+            }
+            throw fssex;
+        }
 
         if (currentMigration == null && !forceClean) {
             LOG.warning("DB is empty so changing forceClean to true");

@@ -362,15 +362,8 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: timescaledev/timescaledb-ha:pg15-multi
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     restart: always
-    healthcheck:
-      test: ["CMD", "pg_isready"]
-      interval: 3s
-      timeout: 3s
-      retries: 30
-      start_period: 2s
-
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
       - temp-data:/tmp/or
