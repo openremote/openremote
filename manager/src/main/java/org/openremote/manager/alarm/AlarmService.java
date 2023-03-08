@@ -351,56 +351,18 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         if (hasIds) {
             counter++;
         }
-        if (hasTypes) {
-            counter++;
-        }
-        if (hasRealms) {
-            counter++;
-        }
-        if (hasUsers) {
-            counter++;
-        }
-        if (hasAssets) {
-            counter++;
-        }
 
-        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
-            LOG.fine("No filters set for remove notifications request so not allowed");
-            throw new IllegalArgumentException("No criteria specified");
-        }
+//        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
+//            LOG.fine("No filters set for remove alarms request so not allowed");
+//            throw new IllegalArgumentException("No criteria specified");
+//        }
 
-        if (hasIds) {
-            builder.append(" AND n.id IN ?")
-                    .append(parameters.size() + 1);
-            parameters.add(ids);
-            return;
-        }
-
-        if (hasTypes) {
-            builder.append(" AND n.type IN ?")
-                    .append(parameters.size() + 1);
-            parameters.add(types);
-        }
-
-        if (fromTimestamp != null) {
-            builder.append(" AND n.sentOn >= ?")
-                    .append(parameters.size() + 1);
-
-            parameters.add(new Date(fromTimestamp));
-        }
-
-        if (toTimestamp != null) {
-            builder.append(" AND n.sentOn <= ?")
-                    .append(parameters.size() + 1);
-
-            parameters.add(new Date(toTimestamp));
-        }
-
-//        if (hasAssets) {
-//            builder.append(" AND n.target = ?")
-//                    .append(parameters.size() + 1)
-//                    .append(" AND n.targetId IN ?")
-//                    .append(parameters.size() + 2);
+//        if (hasIds) {
+//            builder.append(" AND n.id IN ?")
+//                    .append(parameters.size() + 1);
+//            parameters.add(id);
+//            return;
+//        }
 //
 //            parameters.add(Notification.TargetType.ASSET);
 //            parameters.add(assetIds);
