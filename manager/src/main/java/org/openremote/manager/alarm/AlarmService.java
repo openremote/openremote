@@ -315,11 +315,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         return persistenceService.doReturningTransaction(em -> em.find(SentAlarm.class, alarmId));
     }
 
-    public List<SentAlarm> getAlarms(String id, String severity) throws IllegalArgumentException {
+    public List<SentAlarm> getAlarms() throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
         builder.append("select n from SentAlarm n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, id, severity, false);
+        processCriteria(builder, parameters,false);
         builder.append(" order by n.createdOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentAlarm> query = entityManager.createQuery(builder.toString(), SentAlarm.class);
@@ -353,25 +353,25 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 //        });
 //    }
 
-    protected void processCriteria(StringBuilder builder, List<Object> parameters, String id, String severity, boolean isRemove) {
-        boolean hasIds = id != null;
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, boolean isRemove) {
+        //boolean hasIds = id != null;
         int counter = 0;
 
-        if (hasIds) {
-            counter++;
-        }
+//        if (hasIds) {
+//            counter++;
+//        }
 
 //        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
 //            LOG.fine("No filters set for remove alarms request so not allowed");
 //            throw new IllegalArgumentException("No criteria specified");
 //        }
 
-        if (hasIds) {
-            builder.append(" AND n.id IN ?")
-                    .append(parameters.size() + 1);
-            parameters.add(id);
-            return;
-        }
+//        if (hasIds) {
+//            builder.append(" AND n.id IN ?")
+//                    .append(parameters.size() + 1);
+//            parameters.add(id);
+//            return;
+//        }
 //
 //        if (fromTimestamp != null) {
 //            builder.append(" AND n.createdOn >= ?")
