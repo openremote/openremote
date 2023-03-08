@@ -1,16 +1,16 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import manager, {DefaultColor3, DefaultColor4, Util} from "@openremote/core";
+import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {SentAlarm, ClientRole, Role, UserQuery, AlarmSeverity, AlarmStatus} from "@openremote/model";
+import {Alarm, AlarmSeverity, AlarmStatus, ClientRole, Role, SentAlarm, UserQuery} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
+import {GenericAxiosResponse} from "@openremote/rest";
 import {getAlarmsRoute} from "../routes";
 import {when} from 'lit/directives/when.js';
 import {until} from 'lit/directives/until.js';
@@ -270,9 +270,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
-        const realmResponse = await manager.rest.api.RealmResource.get(manager.displayRealm);
-
-        if (!this.responseAndStateOK(stateChecker, realmResponse, i18next.t("loadFailedRoles"))) {
+        const alarm = {title: "Alarm Title", content: "Alarm Content", severity: AlarmSeverity.MEDIUM, status: AlarmStatus.ACTIVE} as Alarm;
+        const alarmResponse = await manager.rest.api.AlarmResource.getAlarms(null);
+        console.log(alarmResponse);
+        if (!this.responseAndStateOK(stateChecker, alarmResponse, i18next.t("loadFailedRoles"))) {
             return;
         }
 
