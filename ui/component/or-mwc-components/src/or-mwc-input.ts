@@ -868,7 +868,7 @@ export class OrMwcInput extends LitElement {
                 "mdc-text-field-helper-text--persistent": !showValidationMessage && this.helperPersistent,
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
-            const hasValue = this.value || this.value === false;
+            const hasValue = (this.value !== null && this.value !== undefined) || this.value === false;
             let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
 
             switch (this.type) {
