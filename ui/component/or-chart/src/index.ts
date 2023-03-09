@@ -626,16 +626,20 @@ export class OrChart extends translate(i18next)(LitElement) {
                         <div id="controls">
                             <div class="period-controls">
                                 ${this.timePresetOptions && this.timePresetKey ? html`
-                                    ${getContentWithMenuTemplate(
-                                            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}" .disabled="${!this.timestampControls}"></or-mwc-input>`,
-                                            Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)), 
-                                            this.timePresetKey,
-                                            (value: string | string[]) => this.timePresetKey = value.toString(),
-                                            undefined,
-                                            undefined,
-                                            undefined,
-                                            true
-                                    )}
+                                    ${this.timestampControls ? html`
+                                        ${getContentWithMenuTemplate(
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}"></or-mwc-input>`,
+                                                Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)),
+                                                this.timePresetKey,
+                                                (value: string | string[]) => this.timePresetKey = value.toString(),
+                                                undefined,
+                                                undefined,
+                                                undefined,
+                                                true
+                                        )}
+                                    ` : html`
+                                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}" disabled="true"></or-mwc-input>
+                                    `}
                                 ` : undefined}
                             </div>
                             ${this.attributeControls ? html`
