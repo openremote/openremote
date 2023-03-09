@@ -115,7 +115,7 @@ services:
     #   /deployment/map/mapdata.mbtiles - map tile data
     #   /deployment/map/mapsettings.json - map styling
     volumes:
-      - temp-data:/tmp/or
+      - temp-data:/tmp
     #  - deployment-data:/deployment
     #  - postgresql-data:/postgres
     # Expose any devices required by agents
@@ -366,8 +366,8 @@ services:
     restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
-      - temp-data:/tmp/or
-#      - postgresql-data:/home/postgres/pgdata/data
+      - temp-data:/tmp
+#      - postgresql-data:/var/lib/postgresql/data
     #ports:
     #  - "5432:5432" # DB server
     environment:
