@@ -31,6 +31,7 @@ public class MailClientBuilder {
     protected ScheduledExecutorService scheduledExecutorService;
     protected int checkIntervalMillis = DEFAULT_CHECK_INTERVAL_MILLIS;
     protected String folder;
+    protected boolean preferHTML;
     protected Date earliestMessageDate;
     protected Path earliestMessageDatePersistencePath;
     protected String protocol;
@@ -84,6 +85,11 @@ public class MailClientBuilder {
         return this;
     }
 
+    public MailClientBuilder setPreferHTML(boolean preferHTML) {
+        this.preferHTML = preferHTML;
+        return this;
+    }
+
     public String getFolder() {
         return folder != null ? folder : DEFAULT_FOLDER_NAME;
     }
@@ -126,6 +132,10 @@ public class MailClientBuilder {
 
     public boolean isDeleteMessageOnceProcessed() {
         return deleteMessageOnceProcessed;
+    }
+
+    public boolean isPreferHTML() {
+        return preferHTML;
     }
 
     public Properties getProperties() {

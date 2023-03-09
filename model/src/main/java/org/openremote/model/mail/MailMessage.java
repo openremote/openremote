@@ -19,10 +19,7 @@
  */
 package org.openremote.model.mail;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Represents a mail message; only represents text part with combined headers from the outer message and any mime part
@@ -80,5 +77,15 @@ public class MailMessage {
 
     public Map<String, List<String>> getHeaders() {
         return headers;
+    }
+
+    @Override
+    public String toString() {
+        return "MailMessage{" +
+            "contentType='" + contentType + '\'' +
+            ", subject='" + subject + '\'' +
+            ", sentDate=" + sentDate +
+            ", from=" + Arrays.toString(from) +
+            '}';
     }
 }

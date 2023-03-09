@@ -47,8 +47,8 @@ public class MailUtil {
     protected MailUtil() {
     }
 
-    public static MailMessage toMailMessage(Message message) throws MessagingException, IOException {
-        MessageContent messageContent = getMessageContent(message, new ArrayList<>(), true);
+    public static MailMessage toMailMessage(Message message, boolean preferHTML) throws MessagingException, IOException {
+        MessageContent messageContent = getMessageContent(message, new ArrayList<>(), true, preferHTML);
         if (messageContent == null) {
             return null;
         }
@@ -68,7 +68,7 @@ public class MailUtil {
             Arrays.stream(message.getFrom()).map(a -> ((InternetAddress)a).getAddress()).toArray(String[]::new));
     }
 
-    protected static MessageContent getMessageContent(Part p, List<Header> headers, boolean isTopLevel) throws MessagingException, IOException {
+    protected static MessageContent getMessageContent(Part p, List<Header> headers, boolean isTopLevel, boolean preferHTML) throws MessagingException, IOException {
 
         if (isTopLevel) {
             headers.addAll(Collections.list(p.getAllHeaders()));
@@ -77,41 +77,38 @@ public class MailUtil {
         if (p.isMimeType("text/*")) {
             String s = (String)p.getContent();
             String mimeType = p.getContentType();
+            if (!isTopLevel) {
+                headers.addAll(Collections.list(p.getAllHeaders()));
+            }
             return new MessageContent(mimeType, s, headers);
         }
 
-        if (p.isMimeType("multipart/alternative")) {
+        if (p.isMimeType("multipart/*")) {
+
             // This mimetype means user agent should pick the most favourable message part
-            // prefer html text over plain text
-            Multipart mp = (Multipart)p.getContent();
-            String text = null;
-            Enumeration<Header> partHeaders = null;
+            // use preferHTML option to determine which part the return if any
+            boolean isAlternative = p.isMimeType("multipart/alternative");
+
+            Multipart mp = (Multipart) p.getContent();
+            MessageContent nonPreferredContent = null;
+
             for (int i = 0; i < mp.getCount(); i++) {
                 Part bp = mp.getBodyPart(i);
-                if (bp.isMimeType("text/plain")) {
-                    if (text == null) {
-                        text = (String) bp.getContent();
-                        partHeaders = bp.getAllHeaders();
+                List<Header> partHeaders = new ArrayList<>();
+                MessageContent partContent = getMessageContent(bp, partHeaders, false, preferHTML);
+                boolean returnPart;
+
+                if (partContent != null) {
+                    returnPart = !isAlternative || (preferHTML && partContent.mimeType.startsWith("text/html")) || (!preferHTML && partContent.mimeType.startsWith("text/"));
+
+                    if (returnPart) {
+                        // Add any top level headers
+                        partContent.headers.addAll(headers);
+                        return partContent;
+                    } else if (nonPreferredContent == null) {
+                        nonPreferredContent = partContent;
                     }
-                } else if (bp.isMimeType("text/html")) {
-                    MessageContent content = getMessageContent(bp, headers, false);
-                    if (content != null) {
-                        return content;
-                    }
-                } else {
-                    return getMessageContent(bp, headers, false);
                 }
-            }
-            if (text != null) {
-                headers.addAll(Collections.list(partHeaders));
-                return new MessageContent("text/plain", text, headers);
-            }
-        } else if (p.isMimeType("multipart/*")) {
-            Multipart mp = (Multipart)p.getContent();
-            for (int i = 0; i < mp.getCount(); i++) {
-                MessageContent content = getMessageContent(mp.getBodyPart(i), headers, false);
-                if (content != null)
-                    return content;
             }
         }
 

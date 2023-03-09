@@ -33,10 +33,10 @@ dependencies {
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
 }
-//
-//tasks.withType(Test) {
-//    logging.captureStandardError LogLevel.LIFECYCLE
-//}
+
+tasks.withType(Test) {
+    environment("OR_LOGGING_CONFIG_FILE", "test/src/logging-test.properties")
+}
 
 test {
     outputs.upToDateWhen { false }

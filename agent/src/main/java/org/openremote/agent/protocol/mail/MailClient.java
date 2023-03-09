@@ -208,9 +208,8 @@ public class MailClient implements ConnectionListener {
     }
 
     public void onMessage(Message message) {
-
         try {
-            MailMessage mailMessage = MailUtil.toMailMessage(message);
+            MailMessage mailMessage = MailUtil.toMailMessage(message, config.isPreferHTML());
             messageListeners.forEach(listener -> listener.accept(mailMessage));
         } catch (Exception e) {
             LOG.log(System.Logger.Level.ERROR, "Failed to process received message", e);
@@ -223,6 +222,7 @@ public class MailClient implements ConnectionListener {
         try {
             Store emailStore = store.get();
             if (emailStore == null) {
+                LOG.log(System.Logger.Level.WARNING, "Mail store is null so cannot check for messages");
                 return;
             }
             LOG.log(System.Logger.Level.INFO, "Checking for new mail messages from: " + config.getHost());
@@ -324,6 +324,6 @@ public class MailClient implements ConnectionListener {
             LOG.log(System.Logger.Level.TRACE, "Message to string failed to extract basic message headers");
         }
 
-        return "Message{subject=" + subject + ", date=" + sentDate + "}";
+        return "Message{subject=" + subject + ", sentDate=" + sentDate + "}";
     }
 }
