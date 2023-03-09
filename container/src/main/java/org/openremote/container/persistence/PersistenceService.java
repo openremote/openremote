@@ -511,7 +511,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             currentMigration = flyway.info().current();
         } catch (FlywaySqlScriptException fssex) {
             if(fssex.getStatement().contains("CREATE EXTENSION IF NOT EXISTS timescaledb")) { // ... SCHEMA public cascade;
-                LOG.severe("Timescale DB extension not found; please ensure you are using a postgres image with timescale DB extension included.);
+                LOG.severe("Timescale DB extension not found; please ensure you are using a postgres image with timescale DB extension included.");
             }
             throw fssex;
         }
