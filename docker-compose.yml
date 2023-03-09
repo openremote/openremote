@@ -39,7 +39,7 @@ services:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     volumes:
       - postgresql-data:/home/postgres/pgdata/data
-      - temp-data:/tmp/or
+      - temp-data:/tmp
     environment:
       # It is important that all services have the same timezone and are time synchronized.
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
@@ -93,7 +93,7 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_KNX:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
-      - temp-data:/tmp/or
+      - temp-data:/tmp
 #      - /var/run/dbus:/var/run/dbus
 #      # Bluetooth mesh volume
 #      - btmesh-data:/btmesh
