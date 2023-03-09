@@ -30,8 +30,8 @@ services:
       file: deploy.yml
       service: postgresql
     volumes:
-      - postgresql-data:/home/postgres/pgdata/data
-      - temp-data:/tmp/or
+      - postgresql-data:/var/lib/postgresql/data
+      - temp-data:/tmp
 
   manager:
     extends:
@@ -41,6 +41,6 @@ services:
       postgresql:
         condition: service_healthy
     volumes:
-      - temp-data:/tmp/or
+      - temp-data:/tmp
     environment:
       OR_IDENTITY_PROVIDER: basic
