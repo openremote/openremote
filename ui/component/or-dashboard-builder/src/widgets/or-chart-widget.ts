@@ -24,23 +24,23 @@ export interface ChartWidgetConfig extends OrWidgetConfig {
 }
 
 const timePresetOptions = new Map<string, TimePresetCallback>([
-    ["Last hour", (date: Date) => [moment(date).subtract(1, 'hour').toDate(), date]],
-    ["Last 24 hours", (date: Date) => [moment(date).subtract(24, 'hours').toDate(), date]],
-    ["Last 7 days", (date: Date) => [moment(date).subtract(7, 'days').toDate(), date]],
-    ["Last 30 days", (date: Date) => [moment(date).subtract(30, 'days').toDate(), date]],
-    ["Last 90 days", (date: Date) => [moment(date).subtract(90, 'days').toDate(), date]],
-    ["Last 6 months", (date: Date) => [moment(date).subtract(6, 'months').toDate(), date]],
-    ["Last year", (date: Date) => [moment(date).subtract(1, 'year').toDate(), date]],
-    ["This hour", (date: Date) => [moment(date).startOf('hour').toDate(), moment(date).endOf('hour').toDate()]],
-    ["This day", (date: Date) => [moment(date).startOf('day').toDate(), moment(date).endOf('day').toDate()]],
-    ["This week", (date: Date) => [moment(date).startOf('isoWeek').toDate(), moment(date).endOf('isoWeek').toDate()]],
-    ["This month", (date: Date) => [moment(date).startOf('month').toDate(), moment(date).endOf('month').toDate()]],
-    ["This year", (date: Date) => [moment(date).startOf('year').toDate(), moment(date).endOf('year').toDate()]],
-    ["Yesterday", (date: Date) => [moment(date).subtract(24, 'hours').startOf('day').toDate(), moment(date).subtract(24, 'hours').endOf('day').toDate()]],
-    ["This day last week", (date: Date) => [moment(date).subtract(1, 'week').startOf('day').toDate(), moment(date).subtract(1, 'week').endOf('day').toDate()]],
-    ["Previous week", (date: Date) => [moment(date).subtract(1, 'week').startOf('isoWeek').toDate(), moment(date).subtract(1, 'week').endOf('isoWeek').toDate()]],
-    ["Previous month", (date: Date) => [moment(date).subtract(1, 'month').startOf('month').toDate(), moment(date).subtract(1, 'month').endOf('month').toDate()]],
-    ["Previous year", (date: Date) => [moment(date).subtract(1, 'year').startOf('year').toDate(), moment(date).subtract(1, 'year').endOf('year').toDate()]]
+    ["lastHour", (date: Date) => [moment(date).subtract(1, 'hour').toDate(), date]],
+    ["last24Hours", (date: Date) => [moment(date).subtract(24, 'hours').toDate(), date]],
+    ["last7Days", (date: Date) => [moment(date).subtract(7, 'days').toDate(), date]],
+    ["last30Days", (date: Date) => [moment(date).subtract(30, 'days').toDate(), date]],
+    ["last90Days", (date: Date) => [moment(date).subtract(90, 'days').toDate(), date]],
+    ["last6Months", (date: Date) => [moment(date).subtract(6, 'months').toDate(), date]],
+    ["lastYear", (date: Date) => [moment(date).subtract(1, 'year').toDate(), date]],
+    ["thisHour", (date: Date) => [moment(date).startOf('hour').toDate(), moment(date).endOf('hour').toDate()]],
+    ["thisDay", (date: Date) => [moment(date).startOf('day').toDate(), moment(date).endOf('day').toDate()]],
+    ["thisWeek", (date: Date) => [moment(date).startOf('isoWeek').toDate(), moment(date).endOf('isoWeek').toDate()]],
+    ["thisMonth", (date: Date) => [moment(date).startOf('month').toDate(), moment(date).endOf('month').toDate()]],
+    ["thisYear", (date: Date) => [moment(date).startOf('year').toDate(), moment(date).endOf('year').toDate()]],
+    ["yesterday", (date: Date) => [moment(date).subtract(24, 'hours').startOf('day').toDate(), moment(date).subtract(24, 'hours').endOf('day').toDate()]],
+    ["thisDayLastWeek", (date: Date) => [moment(date).subtract(1, 'week').startOf('day').toDate(), moment(date).subtract(1, 'week').endOf('day').toDate()]],
+    ["previousWeek", (date: Date) => [moment(date).subtract(1, 'week').startOf('isoWeek').toDate(), moment(date).subtract(1, 'week').endOf('isoWeek').toDate()]],
+    ["previousMonth", (date: Date) => [moment(date).subtract(1, 'month').startOf('month').toDate(), moment(date).subtract(1, 'month').endOf('month').toDate()]],
+    ["previousYear", (date: Date) => [moment(date).subtract(1, 'year').startOf('year').toDate(), moment(date).subtract(1, 'year').endOf('year').toDate()]]
 ])
 
 export class OrChartWidget implements OrWidgetEntity {
@@ -53,7 +53,7 @@ export class OrChartWidget implements OrWidgetEntity {
     readonly MIN_PIXEL_HEIGHT: number = 0;
 
     getDefaultConfig(widget: DashboardWidget): ChartWidgetConfig {
-        const preset = "Last hour"
+        const preset = "lastHour"
         const dateFunc = timePresetOptions.get(preset);
         const dates = dateFunc!(new Date());
         return {
@@ -297,7 +297,7 @@ class OrChartWidgetSettings extends LitElement {
                 ${this.expandedPanels.includes(i18next.t('display')) ? html`
                     <div style="padding: 12px 24px 48px 24px;">
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timerangeDefault')}" style="width: 100%;"
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
                                           .options="${Array.from(timePresetOptions.keys())}" value="${config.defaultTimePresetKey}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               config.defaultTimePresetKey = event.detail.value.toString();

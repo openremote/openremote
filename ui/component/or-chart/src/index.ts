@@ -627,7 +627,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             <div class="period-controls">
                                 ${this.timePresetOptions && this.timePresetKey ? html`
                                     ${getContentWithMenuTemplate(
-                                            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${this.timePresetKey}" .disabled="${!this.timestampControls}"></or-mwc-input>`,
+                                            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}" .disabled="${!this.timestampControls}"></or-mwc-input>`,
                                             Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)), 
                                             this.timePresetKey,
                                             (value: string | string[]) => this.timePresetKey = value.toString(),
@@ -953,13 +953,13 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected _getDefaultTimestampOptions(): Map<string, TimePresetCallback> {
         return new Map<string, TimePresetCallback>([
-            ["Last hour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
-            ["Last 24 hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
-            ["Last 7 days", (date) => [moment(date).subtract(7, 'days').toDate(), date]],
-            ["Last 30 days", (date) => [moment(date).subtract(30, 'days').toDate(), date]],
-            ["Last 90 days", (date) => [moment(date).subtract(90, 'days').toDate(), date]],
-            ["Last 6 months", (date) => [moment(date).subtract(6, 'months').toDate(), date]],
-            ["Last year", (date) => [moment(date).subtract(1, 'year').toDate(), date]]
+            ["lastHour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
+            ["last24Hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
+            ["last7Days", (date) => [moment(date).subtract(7, 'days').toDate(), date]],
+            ["last30Days", (date) => [moment(date).subtract(30, 'days').toDate(), date]],
+            ["last90Days", (date) => [moment(date).subtract(90, 'days').toDate(), date]],
+            ["last6Months", (date) => [moment(date).subtract(6, 'months').toDate(), date]],
+            ["lastYear", (date) => [moment(date).subtract(1, 'year').toDate(), date]]
         ]);
     }
 
