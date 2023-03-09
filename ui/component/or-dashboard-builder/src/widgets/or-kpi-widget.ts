@@ -12,9 +12,10 @@ import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-
 export interface KpiWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
+    period?: 'year' | 'month' | 'week' | 'day' | 'hour';
     decimals: number;
     deltaFormat: "absolute" | "percentage";
+    showTimestampControls: boolean;
 }
 
 export class OrKpiWidget implements OrWidgetEntity {
@@ -75,7 +76,7 @@ export class OrKpiWidgetContent extends LitElement {
         return html`
             <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig.period}"
                                .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}"
-                               showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
+                               showControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
             </or-attribute-card>
         `
     }
@@ -158,10 +159,19 @@ export class OrKpiWidgetSettings extends LitElement {
                     <div style="padding: 24px 24px 48px 24px;">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" 
-                                          .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" 
+                                          .options="${['year', 'month', 'week', 'day', 'hour']}" 
                                           .value="${config.period}" label="${i18next.t('timeframe')}" 
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               config.period = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
+                                          }}"
+                            ></or-mwc-input>
+                        </div>
+                        <div class="switchMwcInputContainer" style="margin-top: 16px;">
+                            <span>${i18next.t('dashboard.allowTimerangeSelect')}</span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${config.showTimestampControls}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              config.showTimestampControls = event.detail.value;
                                               this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>

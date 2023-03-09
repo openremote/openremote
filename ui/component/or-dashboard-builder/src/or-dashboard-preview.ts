@@ -524,7 +524,7 @@ export class OrDashboardPreview extends LitElement {
                                         return html`
                                             <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
                                                 <div class="grid-stack-item-content" style="display: flex;">
-                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}" style="width: 100%; height: auto; border-radius: 4px; overflow: hidden;"></or-dashboard-widget>
+                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}" style="width: 100%; height: auto; border-radius: 4px;"></or-dashboard-widget>
                                                 </div>
                                             </div>
                                         `

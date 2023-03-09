@@ -48,7 +48,7 @@ export class OrGaugeWidget implements OrWidgetEntity {
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
-        return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-gauge-widget>`;
+        return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}"></or-gauge-widget>`;
     }
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
@@ -82,7 +82,7 @@ export class OrGaugeWidgetContent extends LitElement {
                 return html`
                     <or-gauge .asset="${this.assets[0]}" .assetAttribute="${this.assetAttributes[0]}" .thresholds="${this.widget?.widgetConfig.thresholds}"
                               .decimals="${this.widget?.widgetConfig.decimals}" .min="${this.widget?.widgetConfig.min}" .max="${this.widget?.widgetConfig.max}"
-                              style="height: 100%;"></or-gauge>
+                              style="height: 100%; overflow: hidden;"></or-gauge>
                 `;
             }, () => {
                 return html`
