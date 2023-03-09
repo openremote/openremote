@@ -19,12 +19,9 @@
  */
 package org.openremote.container.persistence;
 
-import org.apache.camel.ExchangePattern;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.Predicate;
-import org.apache.camel.ProducerTemplate;
 import org.flywaydb.core.Flyway;
-import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.output.MigrateResult;
 import org.flywaydb.core.internal.sqlscript.FlywaySqlScriptException;
@@ -35,7 +32,10 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.*;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.EntityClassProvider;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -43,9 +43,9 @@ import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.datapoint.AssetDatapoint;
+import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.notification.SentNotification;
-import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.rules.AssetRuleset;
@@ -57,7 +57,6 @@ import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
-import org.postgresql.util.PSQLException;
 
 import javax.persistence.*;
 import javax.persistence.spi.ClassTransformer;
