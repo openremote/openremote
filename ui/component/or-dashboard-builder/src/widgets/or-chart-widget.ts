@@ -89,7 +89,7 @@ export class OrChartWidget implements OrWidgetEntity {
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string): TemplateResult {
-        return html`<or-chart-widget .widget="${widget}" .editMode="${editMode}" .realm="${realm}" style="overflow: auto; height: 100%;"></or-chart-widget>`;
+        return html`<or-chart-widget .widget="${widget}" .editMode="${editMode}" .realm="${realm}"></or-chart-widget>`;
     }
 
     getSettingsHTML(widget: DashboardWidget, realm: string): TemplateResult {

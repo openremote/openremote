@@ -306,8 +306,6 @@ const style = css`
         max-height: 550px;*/
     }
     #chart-controls {
-        min-width: 220px;
-        overflow: hidden;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -602,8 +600,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if(attributeList) {
                     attributeList.style.gap = bottomLegend ? '4px 12px' : '';
                     attributeList.style.maxHeight = bottomLegend ? '90px' : '';
-                    attributeList.style.flexDirection = bottomLegend ? 'row' : 'column';
-                    attributeList.style.flexWrap = bottomLegend ? 'wrap' : 'no-wrap';
+                    attributeList.style.flexFlow = bottomLegend ? 'row wrap' : 'column nowrap';
                     attributeList.style.padding = bottomLegend ? '0' : '12px 0';
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
