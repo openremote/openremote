@@ -193,8 +193,6 @@ export class OrChartWidgetContent extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else if(!config.attributeRefs) {
-            console.error("Error: attributeRefs are not present in widget config!");
         }
     }
 

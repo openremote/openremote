@@ -112,8 +112,6 @@ export class OrKpiWidgetContent extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else {
-            console.error("Error: attributeRefs are not present in widget config!");
         }
     }
 }
