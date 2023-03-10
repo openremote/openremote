@@ -22,12 +22,11 @@ package org.openremote.manager.rules.facade;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.rules.HistoricDatapoints;
 import org.openremote.model.rules.Ruleset;
 
-import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
 public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
@@ -42,12 +41,7 @@ public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
     }
 
     @Override
-    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, DatapointInterval interval, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
-        return assetDatapointService.getValueDatapoints(attributeRef, interval, null, fromTimestamp, toTimestamp);
-    }
-
-    @Override
-    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, DatapointInterval interval, int stepSize, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
-        return assetDatapointService.getValueDatapoints(attributeRef, interval, stepSize, fromTimestamp, toTimestamp);
+    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, AssetDatapointQuery query) {
+        return assetDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(), query);
     }
 }
