@@ -30,6 +30,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Date;
@@ -55,19 +56,17 @@ public class MailClient implements ConnectionListener {
     MailClient(MailClientBuilder config) {
         this.config = config;
 
-        if (config.getEarliestMessageDatePersistencePath() != null) {
-            if (Files.exists(config.getEarliestMessageDatePersistencePath())) {
-                LOG.log(System.Logger.Level.INFO, "Trying to read last message date from: " + config.getEarliestMessageDatePersistencePath());
-                try {
-                    String millisStr = Files.readString(config.getEarliestMessageDatePersistencePath());
-                    lastMessageDate = new Date(Long.parseLong(millisStr));
-                    persistenceFileAccessible = true;
-                } catch (IOException e) {
-                    LOG.log(System.Logger.Level.WARNING, "Failed to read last message date from: " + config.getEarliestMessageDatePersistencePath(), e);
-                }
-            } else if (config.getEarliestMessageDate() != null) {
-                lastMessageDate = config.getEarliestMessageDate();
+        if (config.getPersistenceDir() != null) {
+            if (Files.exists(config.getPersistenceDir()) && Files.isDirectory(config.getPersistenceDir())) {
+                persistenceFileAccessible = true;
+                lastMessageDate = readLastMessageDate(config);
+            } else {
+                LOG.log(System.Logger.Level.INFO, "Specified path for 'EarliestMessageDatePersistencePath' doesn't exist or is not a file: " + config.getPersistenceDir());
             }
+        }
+
+        if (lastMessageDate == null && config.getEarliestMessageDate() != null) {
+            lastMessageDate = config.getEarliestMessageDate();
         }
 
         this.session = Session.getInstance(config.getProperties());
@@ -207,10 +206,9 @@ public class MailClient implements ConnectionListener {
         messageListeners.remove(listener);
     }
 
-    public void onMessage(Message message) {
+    public void onMessage(MailMessage message) {
         try {
-            MailMessage mailMessage = MailUtil.toMailMessage(message, config.isPreferHTML());
-            messageListeners.forEach(listener -> listener.accept(mailMessage));
+            messageListeners.forEach(listener -> listener.accept(message));
         } catch (Exception e) {
             LOG.log(System.Logger.Level.ERROR, "Failed to process received message", e);
         }
@@ -240,6 +238,7 @@ public class MailClient implements ConnectionListener {
             fp.add(FetchProfile.Item.ENVELOPE);
             fp.add(Headers.CONTENT_TYPE_STRING);
             emailFolder.fetch(messages, fp);
+            Date lastRunLastMessageDate = lastMessageDate;
 
             Arrays.stream(messages)
                 .filter(message -> {
@@ -248,10 +247,10 @@ public class MailClient implements ConnectionListener {
                             LOG.log(System.Logger.Level.TRACE, "Message has already been seen so ignoring: num=" + message.getMessageNumber());
                             return false;
                         }
-                        if (lastMessageDate != null) {
+                        if (lastRunLastMessageDate != null) {
                             Date sentDate = message.getSentDate();
 
-                            if (sentDate.before(lastMessageDate)) {
+                            if (sentDate.before(lastRunLastMessageDate) || sentDate.equals(lastRunLastMessageDate)) {
                                 LOG.log(System.Logger.Level.TRACE, "Message is older than last message date so ignoring: " + messageToString(message));
                                 return false;
                             }
@@ -265,28 +264,18 @@ public class MailClient implements ConnectionListener {
                 })
                 .forEach(message -> {
                     try {
-                        String contentType = message.getContentType();
+                        MailMessage mailMessage = MailUtil.toMailMessage(message, config.isPreferHTML());
 
-                        if (contentType == null || !contentType.startsWith("text")) {
-                            LOG.log(System.Logger.Level.INFO, "Only text based content types are supported; actual content type '" + contentType + "': " + messageToString(message));
+                        if (mailMessage == null) {
+                            LOG.log(System.Logger.Level.INFO, "Unsupported mail message only messages with a text/* part are supported:" + messageToString(message));
                         } else {
-
-                            // Load the message content
-                            message.getContent();
-                            onMessage(message);
+                            onMessage(mailMessage);
 
                             if (config.isDeleteMessageOnceProcessed()) {
                                 message.setFlag(Flags.Flag.DELETED, true);
                             }
                             if (lastMessageDate == null || message.getSentDate().after(lastMessageDate)) {
                                 lastMessageDate = message.getSentDate();
-                            }
-                            if (persistenceFileAccessible) {
-                                try {
-                                    Files.writeString(config.getEarliestMessageDatePersistencePath(), Long.toString(lastMessageDate.getTime()), StandardOpenOption.WRITE);
-                                } catch (IOException e) {
-                                    LOG.log(System.Logger.Level.INFO, "Failed to write to earliest message date persistence file: " + config.getEarliestMessageDatePersistencePath(), e);
-                                }
                             }
                         }
                     } catch (IOException e) {
@@ -295,6 +284,10 @@ public class MailClient implements ConnectionListener {
                         LOG.log(System.Logger.Level.INFO, "An exception occurred whilst processing a message: " + messageToString(message), e);
                     }
                 });
+
+            if (persistenceFileAccessible && (lastRunLastMessageDate == null || (lastMessageDate != null && lastMessageDate.after(lastRunLastMessageDate)))) {
+                writeLastMessageDate(config, lastMessageDate);
+            }
         } catch (Exception e) {
             LOG.log(System.Logger.Level.WARNING, "An error occurred whilst processing mail messages", e);
         } finally {
@@ -311,6 +304,42 @@ public class MailClient implements ConnectionListener {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    protected static Date readLastMessageDate(MailClientBuilder config) {
+        Path filePath = getLastMessageFilePath(config);
+        LOG.log(System.Logger.Level.INFO, "Trying to read last message date from: " + filePath.toAbsolutePath());
+
+        if (!Files.exists(filePath)) {
+            LOG.log(System.Logger.Level.INFO, "Last message date file does not currently exist");
+            return null;
+        }
+
+        try {
+            String millisStr = Files.readString(filePath);
+            return new Date(Long.parseLong(millisStr));
+        } catch (IOException e) {
+            LOG.log(System.Logger.Level.WARNING, "Failed to read last message date from: " + filePath, e);
+        }
+
+        return null;
+    }
+
+    protected static boolean writeLastMessageDate(MailClientBuilder config, Date lastMessageDate) {
+        Path filePath = getLastMessageFilePath(config);
+        LOG.log(System.Logger.Level.INFO, "Trying to write last message date to: " + filePath.toAbsolutePath());
+        try {
+            Files.writeString(filePath, Long.toString(lastMessageDate.getTime()), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            return true;
+        } catch (IOException e) {
+            LOG.log(System.Logger.Level.WARNING, "Failed to write last message date to: " + filePath, e);
+        }
+        return false;
+    }
+
+    protected static final Path getLastMessageFilePath(MailClientBuilder config) {
+        String fileName = config.getHost() + "." + config.getPort() + "." + config.getUser();
+        return config.getPersistenceDir().resolve(fileName);
     }
 
     public static final String messageToString(Message message) {

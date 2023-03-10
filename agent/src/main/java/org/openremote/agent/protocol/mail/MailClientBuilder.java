@@ -33,7 +33,7 @@ public class MailClientBuilder {
     protected String folder;
     protected boolean preferHTML;
     protected Date earliestMessageDate;
-    protected Path earliestMessageDatePersistencePath;
+    protected Path persistenceDir;
     protected String protocol;
     protected String host;
     protected int port;
@@ -70,8 +70,11 @@ public class MailClientBuilder {
         return this;
     }
 
-    public MailClientBuilder setEarliestMessageDatePersistencePath(Path earliestMessageDatePersistencePath) {
-        this.earliestMessageDatePersistencePath = earliestMessageDatePersistencePath;
+    /**
+     * Directory to store information about received message dates between restarts
+     */
+    public MailClientBuilder setPersistenceDir(Path persistenceDir) {
+        this.persistenceDir = persistenceDir;
         return this;
     }
 
@@ -106,8 +109,8 @@ public class MailClientBuilder {
         return earliestMessageDate;
     }
 
-    public Path getEarliestMessageDatePersistencePath() {
-        return earliestMessageDatePersistencePath;
+    public Path getPersistenceDir() {
+        return persistenceDir;
     }
 
     public String getProtocol() {

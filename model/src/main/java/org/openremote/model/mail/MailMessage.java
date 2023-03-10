@@ -36,7 +36,7 @@ public class MailMessage {
 
     public MailMessage(String content, String contentType, Map<String, List<String>> headers, String subject, Date sentDate, String[] from) {
         this.content = content;
-        this.contentType = contentType;
+        this.contentType = contentType.toLowerCase(Locale.ROOT);
         this.headers = headers;
         this.subject = subject;
         this.sentDate = sentDate;

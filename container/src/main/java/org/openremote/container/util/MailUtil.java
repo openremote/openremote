@@ -99,7 +99,7 @@ public class MailUtil {
                 boolean returnPart;
 
                 if (partContent != null) {
-                    returnPart = !isAlternative || (preferHTML && partContent.mimeType.startsWith("text/html")) || (!preferHTML && partContent.mimeType.startsWith("text/"));
+                    returnPart = !isAlternative || (preferHTML && partContent.mimeType.startsWith("text/html")) || (!preferHTML && partContent.mimeType.startsWith("text/plain"));
 
                     if (returnPart) {
                         // Add any top level headers
