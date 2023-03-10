@@ -8,7 +8,6 @@ import {OrWidgetConfig, OrWidgetEntity} from "./or-base-widget";
 import {style} from "../style";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
 import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { when } from "lit/directives/when.js";
 
 export interface KpiWidgetConfig extends OrWidgetConfig {
     displayName: string;
