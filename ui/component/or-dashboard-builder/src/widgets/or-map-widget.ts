@@ -83,10 +83,15 @@ export class OrMapWidget implements OrWidgetEntity {
         } as MapWidgetConfig;
     }
 
+    // Triggered every update to double check if the specification.
+    // It will merge missing values, or you can add custom logic to process here.
+    verifyConfigSpec(widget: DashboardWidget): MapWidgetConfig {
+        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as MapWidgetConfig;
+    }
+
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string): TemplateResult {
         return html`
-            <or-map-widget .widget="${widget}" .editMode="${editMode}" .realm="${realm}"
-                           style="overflow: auto; height: 100%;"></or-map-widget>`;
+            <or-map-widget .widget="${widget}" .editMode="${editMode}" .realm="${realm}" style="overflow: hidden;"></or-map-widget>`;
     }
 
     getSettingsHTML(widget: DashboardWidget, realm: string): TemplateResult {
@@ -122,55 +127,57 @@ export class OrMapWidgetContent extends LitElement {
     render() {
         this.markers = {};
         return html`
-            <or-map id="miniMap" class="or-map" .zoom="${this.widget?.widgetConfig?.zoom}"
-                    .center="${this.widget?.widgetConfig?.center}"
-                    style="height: 100%">
-                ${(this.assets) ?
-                        this.assets.filter((asset: Asset) => {
-                            if (!asset.attributes) {
-                                return false;
-                            }
-                            const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                            return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-                        }).map(asset => {
-                            if (this.markers) {
-                                // Configure map marker asset settings
-                                this.markers[asset.type!] = {attributeName: this.widget!.widgetConfig.attributeName};
-                                this.markers[asset.type!].showUnits = this.widget!.widgetConfig.showUnits;
-                                this.markers[asset.type!].showLabel = this.widget!.widgetConfig.showLabels;
-                                if (this.widget!.widgetConfig.valueType == 'boolean') {
-                                    this.widget!.widgetConfig.boolColors.true = this.widget!.widgetConfig.boolColors.true.replace("#", "");
-                                    this.widget!.widgetConfig.boolColors.false = this.widget!.widgetConfig.boolColors.false.replace("#", "");
-                                    this.markers[asset.type!].colours = this.widget!.widgetConfig.boolColors;
-                                } else if (this.widget!.widgetConfig.valueType == 'text') {
-                                    var colors: AttributeMarkerColours = {type: 'string',};
-                                    (this.widget!.widgetConfig.textColors as [string, string][]).map((threshold) => {
-                                        colors[threshold[0] as string] = (threshold[1] as string).replace('#', '');
-                                    })
-                                    this.markers[asset.type!].colours = colors;
-                                } else {
-                                    var ranges: AttributeMarkerColoursRange[] = [];
-                                    (this.widget!.widgetConfig.thresholds as [number, string][]).sort((x, y) => (x[0] > y[0]) ? -1 : 1).map((threshold, index) => {
-                                        var range: AttributeMarkerColoursRange = {
-                                            min: threshold[0],
-                                            colour: threshold[1].replace('#', '')
-                                        }
-                                        ranges.push(range);
-                                    })
-                                    var colorsNum: RangeAttributeMarkerColours = {
-                                        type: 'range',
-                                        ranges: ranges
-                                    };
-                                    this.markers[asset.type!].colours = colorsNum;
+            <div style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
+                <or-map id="miniMap" class="or-map" .zoom="${this.widget?.widgetConfig?.zoom}"
+                        .center="${this.widget?.widgetConfig?.center}"
+                        style="flex: 1;">
+                    ${(this.assets) ?
+                            this.assets.filter((asset: Asset) => {
+                                if (!asset.attributes) {
+                                    return false;
                                 }
-                            }
-                            return html`
+                                const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
+                                return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+                            }).map(asset => {
+                                if (this.markers) {
+                                    // Configure map marker asset settings
+                                    this.markers[asset.type!] = {attributeName: this.widget!.widgetConfig.attributeName};
+                                    this.markers[asset.type!].showUnits = this.widget!.widgetConfig.showUnits;
+                                    this.markers[asset.type!].showLabel = this.widget!.widgetConfig.showLabels;
+                                    if (this.widget!.widgetConfig.valueType == 'boolean') {
+                                        this.widget!.widgetConfig.boolColors.true = this.widget!.widgetConfig.boolColors.true.replace("#", "");
+                                        this.widget!.widgetConfig.boolColors.false = this.widget!.widgetConfig.boolColors.false.replace("#", "");
+                                        this.markers[asset.type!].colours = this.widget!.widgetConfig.boolColors;
+                                    } else if (this.widget!.widgetConfig.valueType == 'text') {
+                                        var colors: AttributeMarkerColours = {type: 'string',};
+                                        (this.widget!.widgetConfig.textColors as [string, string][]).map((threshold) => {
+                                            colors[threshold[0] as string] = (threshold[1] as string).replace('#', '');
+                                        })
+                                        this.markers[asset.type!].colours = colors;
+                                    } else {
+                                        var ranges: AttributeMarkerColoursRange[] = [];
+                                        (this.widget!.widgetConfig.thresholds as [number, string][]).sort((x, y) => (x[0] > y[0]) ? -1 : 1).map((threshold, index) => {
+                                            var range: AttributeMarkerColoursRange = {
+                                                min: threshold[0],
+                                                colour: threshold[1].replace('#', '')
+                                            }
+                                            ranges.push(range);
+                                        })
+                                        var colorsNum: RangeAttributeMarkerColours = {
+                                            type: 'range',
+                                            ranges: ranges
+                                        };
+                                        this.markers[asset.type!].colours = colorsNum;
+                                    }
+                                }
+                                return html`
                                 <or-map-marker-asset .asset="${asset}"
                                                      .config="${this.markers}"></or-map-marker-asset>
                             `
-                        }) : undefined}
-                }
-            </or-map>
+                            }) : undefined}
+                    }
+                </or-map>
+            </div>
         `
     }
 

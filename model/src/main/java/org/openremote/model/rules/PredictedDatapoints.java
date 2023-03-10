@@ -20,11 +20,10 @@
 package org.openremote.model.rules;
 
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.util.TsIgnore;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -33,16 +32,7 @@ import java.time.LocalDateTime;
 @TsIgnore
 public abstract class PredictedDatapoints {
 
-    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
-                                                           DatapointInterval interval,
-                                                           LocalDateTime fromTimestamp,
-                                                           LocalDateTime toTimestamp);
-
-    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
-                                                           DatapointInterval interval,
-                                                           int stepSize,
-                                                           LocalDateTime fromTimestamp,
-                                                           LocalDateTime toTimestamp);
+    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, AssetDatapointQuery query);
 
     public abstract void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp);
     public abstract void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp);

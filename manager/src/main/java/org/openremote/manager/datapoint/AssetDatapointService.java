@@ -57,7 +57,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
     public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
     public static final String OR_DATA_POINTS_EXPORT_DIR = "OR_DATA_POINTS_EXPORT_DIR";
-    public static final String OR_DATA_POINTS_EXPORT_DIR_DEFAULT = "/tmp";
+    public static final String OR_DATA_POINTS_EXPORT_DIR_DEFAULT = "tmp";
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     protected int maxDatapointAgeDays;
     protected Path exportPath;
@@ -207,7 +207,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
             sb.append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")));
 
-            sb.append(String.format(")) to '/tmp/%s' delimiter ',' CSV HEADER;", fileName));
+            sb.append(String.format(")) to '" + exportPath.toString() + "/%s' delimiter ',' CSV HEADER;", fileName));
 
             persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
 
