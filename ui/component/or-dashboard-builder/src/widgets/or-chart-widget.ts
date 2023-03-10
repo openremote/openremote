@@ -381,7 +381,7 @@ class OrChartWidgetSettings extends LitElement {
                 ${this.generateExpandableHeader(i18next.t('algorithm'))}
             </div>
             <div>
-                ${this.expandedPanels.includes('algorithm') ? html`
+                ${this.expandedPanels.includes(i18next.t('algorithm')) ? html`
                     ${when(config.datapointQuery, () => {
                         const typeOptions = new Map<string, string>([["Default", 'lttb'], ["With interval", 'interval']]);
                         const typeValue = Array.from(typeOptions.entries()).find((entry => entry[1] == config.datapointQuery.type))![0]
