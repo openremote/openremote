@@ -86,7 +86,9 @@ export class OrGaugeWidgetContent extends LitElement {
                 `;
             }, () => {
                 return html`
-                    <span>No attributes selected.</span>
+                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                        <span>${i18next.t('noAttributesConnected')}</span>
+                    </div>
                 `
             })}
             <!--<or-gauge .attrRef="${this.widget?.widgetConfig.attributeRefs[0]}"></or-gauge>-->

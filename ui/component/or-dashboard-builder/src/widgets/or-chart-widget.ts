@@ -123,13 +123,23 @@ export class OrChartWidgetContent extends LitElement {
 
     render() {
         return html`
-            <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .realm="${this.realm}"
-                      .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}"
-                      .attributeControls="${false}" .timestampControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" .algorithm="${this.widget?.widgetConfig?.algorithm}"
-                      .timePresetOptions="${timePresetOptions}" .timePresetKey="${this.widget?.widgetConfig?.defaultTimePresetKey}"
-                      .datapointQuery="${this.widget?.widgetConfig?.datapointQuery}" .chartOptions="${this.widget?.widgetConfig?.chartOptions}"
-                      style="height: 100%"
-            ></or-chart>
+            ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => {
+                return html`
+                    <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .realm="${this.realm}" 
+                              .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}" 
+                              .attributeControls="${false}" .timestampControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" .algorithm="${this.widget?.widgetConfig?.algorithm}" 
+                              .timePresetOptions="${timePresetOptions}" .timePresetKey="${this.widget?.widgetConfig?.defaultTimePresetKey}" 
+                              .datapointQuery="${this.widget?.widgetConfig?.datapointQuery}" .chartOptions="${this.widget?.widgetConfig?.chartOptions}" 
+                              style="height: 100%"
+                    ></or-chart>
+                `;
+            }, () => {
+                return html`
+                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                        <span>${i18next.t('noAttributesConnected')}</span>
+                    </div>
+                `
+            })}
         `
     }
 
