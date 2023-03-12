@@ -17,7 +17,7 @@ public struct ProjectConfig: Codable, Equatable {
     
     public var providers: [String]?
     
-    var baseURL: String {
+    public var baseURL: String {
         return domain
     }
     
