@@ -1,0 +1,10 @@
+{
+    "consoleConfig": {
+        "showAppTextInput" : false,
+        "showRealmTextInput" : false,
+        "app" : null,
+        "allowedApps" : [],
+        "apps" : {}
+    },
+    "apps": ["Console 1"]
+}
