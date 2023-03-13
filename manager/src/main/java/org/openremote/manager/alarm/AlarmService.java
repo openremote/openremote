@@ -101,7 +101,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
-
     }
 
     public SentAlarm sendAlarm(Alarm alarm) {
