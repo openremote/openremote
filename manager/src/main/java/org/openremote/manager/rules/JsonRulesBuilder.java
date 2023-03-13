@@ -583,7 +583,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     public void stop(RulesFacts facts) {
         Arrays.stream(jsonRules).forEach(jsonRule ->
-            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
+            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
 
         // Remove temporal fact for timer rule evaluation
         String tempFactName = TIMER_TEMPORAL_FACT_NAME_PREFIX + jsonRuleset.getId();
@@ -593,7 +593,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     public void start(RulesFacts facts) {
 
         Arrays.stream(jsonRules).forEach(jsonRule -> {
-            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
+            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
         });
 
         // Initialise asset states
@@ -672,12 +672,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             try {
                 if (ruleState.thenMatched()) {
                     log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
 
                 if (rule.otherwise != null && ruleState.otherwiseMatched()) {
                     log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
@@ -719,7 +719,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    public void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, Alarms alarmsFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
 
         if (ruleActions != null && ruleActions.length > 0) {
 
@@ -740,6 +740,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     usersFacade,
                     notificationsFacade,
                     webhooksFacade,
+                    alarmsFacade,
                     predictedDatapointsFacade
                 );
 
@@ -768,7 +769,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    protected RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade) {
+    protected RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, Alarms alarmsFacade, PredictedDatapoints predictedDatapointsFacade) {
 
         if (ruleAction instanceof RuleActionNotification notificationAction) {
 
@@ -940,8 +941,32 @@ public class JsonRulesBuilder extends RulesBuilder {
         if (ruleAction instanceof  RuleActionAlarm alarmAction) {
             if (alarmAction.alarm != null) {
                 Alarm alarm = alarmAction.alarm;
-
-
+                if(alarm.getContent() != null) {
+                    String content = alarm.getContent();
+                    if (!TextUtil.isNullOrEmpty(content)) {
+                        if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
+                            // Need to clone the alarm
+                            alarm = ValueUtil.clone(alarm);
+                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, false);
+                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
+                            alarm.setContent(content);
+                        }
+                    }
+                }
+                else {
+                    log(Level.WARNING, "Alarm content is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                if (alarm.getSeverity() == null) {
+                    log(Level.WARNING, "Alarm severity is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                if (alarm.getTitle() == null) {
+                    log(Level.WARNING, "Alarm title is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                Alarm finalAlarm = alarm;
+                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm), 0);
             }
         }
 
