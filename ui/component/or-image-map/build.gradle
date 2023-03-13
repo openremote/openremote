@@ -1,0 +1,13 @@
+task clean() {
+    doLast {
+        delete "dist"
+    }
+}
+
+task prepareUi() {
+    dependsOn clean, npmPrepare
+}
+
+task publishUi() {
+    dependsOn clean, npmPublish
+}
