@@ -1106,8 +1106,32 @@ public class JsonRulesBuilder extends RulesBuilder {
         if (ruleAction instanceof  RuleActionAlarm alarmAction) {
             if (alarmAction.alarm != null) {
                 Alarm alarm = alarmAction.alarm;
-
-
+                if(alarm.getContent() != null) {
+                    String content = alarm.getContent();
+                    if (!TextUtil.isNullOrEmpty(content)) {
+                        if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
+                            // Need to clone the alarm
+                            alarm = ValueUtil.clone(alarm);
+                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, false);
+                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
+                            alarm.setContent(content);
+                        }
+                    }
+                }
+                else {
+                    log(Level.WARNING, "Alarm content is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                if (alarm.getSeverity() == null) {
+                    log(Level.WARNING, "Alarm severity is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                if (alarm.getTitle() == null) {
+                    log(Level.WARNING, "Alarm title is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                Alarm finalAlarm = alarm;
+                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm), 0);
             }
         }
 
