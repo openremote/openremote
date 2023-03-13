@@ -72,22 +72,11 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     @Override
     public void createAlarm(RequestParams requestParams, Alarm alarm) {
         LOG.fine("Create alarm method called!");
-//        Map<String, Object> headers = new HashMap<>();
-//        headers.put(Alarm.HEADER_SOURCE, Source.CLIENT);
-//
-//        if (isAuthenticated()){
-//            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
-//        }
-//
-//        boolean success = messageBrokerService.getFluentProducerTemplate()
-//                .withBody(alarm)
-//                .withHeaders(headers)
-//                .to(AlarmService.ALARM_QUEUE)
-//                .request(Boolean.class);
-//
-//        if (!success) {
-//            throw new WebApplicationException(Status.BAD_REQUEST);
-//        }
+        boolean success = alarmService.sendAlarm(alarm);
+
+        if (!success) {
+            throw new WebApplicationException(Status.BAD_REQUEST);
+        }
     }
 
     @Override

@@ -85,9 +85,8 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
 
         then: "the notification should have been updated"
         conditions.eventually {
-            alarms = adminResource.getAlarms(null, null, null)
-            assert alarms.length == 1
-            //assert alarms.count {n -> n.deliveredOn != null} == 1
+            alarms = adminResource.getAlarms(null)
+            assert alarms.count {n -> n.content != null} == 1
         }
     }
 }
