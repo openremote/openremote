@@ -348,9 +348,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         boolean hasAssets = assetIds != null && !assetIds.isEmpty();
         int counter = 0;
 
-        if (hasIds) {
-            counter++;
-        }
+//        if (hasIds) {
+//            counter++;
+//        }
 
 //        if (isRemove && fromTimestamp == null && toTimestamp == null && counter == 0) {
 //            LOG.fine("No filters set for remove alarms request so not allowed");
@@ -364,26 +364,18 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 //            return;
 //        }
 //
-//            parameters.add(Notification.TargetType.ASSET);
-//            parameters.add(assetIds);
+//        if (fromTimestamp != null) {
+//            builder.append(" AND n.createdOn >= ?")
+//                    .append(parameters.size() + 1);
 //
-//        } else if (hasUsers) {
-//            builder.append(" AND n.target = ?")
-//                    .append(parameters.size() + 1)
-//                    .append(" AND n.targetId IN ?")
-//                    .append(parameters.size() + 2);
+//            parameters.add(new Date(fromTimestamp));
+//        }
 //
-//            parameters.add(Notification.TargetType.USER);
-//            parameters.add(userIds);
+//        if (toTimestamp != null) {
+//            builder.append(" AND n.createdOn <= ?")
+//                    .append(parameters.size() + 1);
 //
-//        } else if (hasRealms) {
-//            builder.append(" AND n.target = ?")
-//                    .append(parameters.size() + 1)
-//                    .append(" AND n.targetId IN ?")
-//                    .append(parameters.size() + 2);
-//
-//            parameters.add(Notification.TargetType.REALM);
-//            parameters.add(realmIds);
+//            parameters.add(new Date(toTimestamp));
 //        }
     }
 }
