@@ -3,9 +3,12 @@ package org.openremote.manager.alarm;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.hibernate.Session;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.alarm.SentAlarm;
 import org.openremote.manager.alarm.AlarmProcessingException;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -24,6 +27,9 @@ import org.openremote.model.util.TimeUtil;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
+import javax.ws.rs.WebApplicationException;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -35,6 +41,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.time.temporal.ChronoUnit.*;
+import static java.util.logging.Level.FINE;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.manager.alarm.AlarmProcessingException.Reason.*;
 import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
 import static org.openremote.model.alarm.Alarm.Source.*;
@@ -114,80 +122,79 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
-
-        from(ALARM_QUEUE)
-                .routeId("AlarmQueueProcessor")
-                .doTry()
-                .process(exchange -> {
-                    SentAlarm alarm = exchange.getIn().getBody(SentAlarm.class);
-
-                    if (alarm == null) {
-                        throw new AlarmProcessingException(MISSING_ALARM, "Alarm must be set");
-                    }
-
-                    LOG.finest("Processing: " + alarm.getTitle());
-
-                    if (alarm.getContent() == null) {
-                        throw new AlarmProcessingException(MISSING_CONTENT, "Alarm content must be set");
-                    }
-
-                    Alarm.Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Alarm.Source.class);
-
-                    if (source == null) {
-                        throw new AlarmProcessingException(MISSING_SOURCE);
-                    }
-
-                    // Validate access and map targets to handler compatible targets
-                    String realm = null;
-                    String userId = null;
-                    String assetId = null;
-                    AtomicReference<String> sourceId = new AtomicReference<>("");
-                    boolean isSuperUser = false;
-                    boolean isRestrictedUser = false;
-
-                    switch (source) {
-                        case INTERNAL:
-                            isSuperUser = true;
-                            break;
-
-                        case CLIENT:
-
-                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-//                            if (authContext == null) {
-//                                // Anonymous clients cannot send notifications
-//                                throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
-//                            }
-
-                            realm = authContext.getAuthenticatedRealmName();
-                            userId = authContext.getUserId();
-                            sourceId.set(userId);
-                            isSuperUser = authContext.isSuperUser();
-                            isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
-                            break;
-
-                        case GLOBAL_RULESET:
-                            isSuperUser = true;
-                            break;
-
-                        case REALM_RULESET:
-                            realm = exchange.getIn().getHeader(Alarm.HEADER_SOURCE_ID, String.class);
-                            sourceId.set(realm);
-                            break;
-
-                        case ASSET_RULESET:
-                            assetId = exchange.getIn().getHeader(Alarm.HEADER_SOURCE_ID, String.class);
-                            sourceId.set(assetId);
-                            Asset<?> asset = assetStorageService.find(assetId, false);
-                            realm = asset.getRealm();
-                            break;
-                    }
-
-                    LOG.fine("Creating " + alarm.getContent() + " alarm '" + alarm.getTitle() + "': '" + source + ":" + sourceId.get() + "'");
-
-                })
-                .endDoTry()
-                .doCatch(AlarmProcessingException.class)
-                .process(handleAlarmProcessingException(LOG));
+//        from(ALARM_QUEUE)
+//                .routeId("AlarmQueueProcessor")
+//                .doTry()
+//                .process(exchange -> {
+//                    Alarm alarm = exchange.getIn().getBody(Alarm.class);
+//
+//                    if (alarm == null) {
+//                        throw new AlarmProcessingException(MISSING_ALARM, "Alarm must be set");
+//                    }
+//
+//                    LOG.finest("Processing: " + alarm.getTitle());
+//
+//                    if (alarm.getContent() == null) {
+//                        throw new AlarmProcessingException(MISSING_CONTENT, "Alarm content must be set");
+//                    }
+//
+//                    Alarm.Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Alarm.Source.class);
+//
+//                    if (source == null) {
+//                        throw new AlarmProcessingException(MISSING_SOURCE);
+//                    }
+//
+//                    // Validate access and map targets to handler compatible targets
+//                    String realm = null;
+//                    String userId = null;
+//                    String assetId = null;
+//                    AtomicReference<String> sourceId = new AtomicReference<>("");
+//                    boolean isSuperUser = false;
+//                    boolean isRestrictedUser = false;
+//
+//                    switch (source) {
+//                        case INTERNAL:
+//                            isSuperUser = true;
+//                            break;
+//
+//                        case CLIENT:
+//
+//                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+////                            if (authContext == null) {
+////                                // Anonymous clients cannot send notifications
+////                                throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
+////                            }
+//
+//                            realm = authContext.getAuthenticatedRealmName();
+//                            userId = authContext.getUserId();
+//                            sourceId.set(userId);
+//                            isSuperUser = authContext.isSuperUser();
+//                            isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
+//                            break;
+//
+//                        case GLOBAL_RULESET:
+//                            isSuperUser = true;
+//                            break;
+//
+//                        case REALM_RULESET:
+//                            realm = exchange.getIn().getHeader(Alarm.HEADER_SOURCE_ID, String.class);
+//                            sourceId.set(realm);
+//                            break;
+//
+//                        case ASSET_RULESET:
+//                            assetId = exchange.getIn().getHeader(Alarm.HEADER_SOURCE_ID, String.class);
+//                            sourceId.set(assetId);
+//                            Asset<?> asset = assetStorageService.find(assetId, false);
+//                            realm = asset.getRealm();
+//                            break;
+//                    }
+//
+//                    LOG.fine("Creating " + alarm.getContent() + " alarm '" + alarm.getTitle() + "': '" + source + ":" + sourceId.get() + "'");
+//
+//                })
+//                .endDoTry()
+//                .doCatch(AlarmProcessingException.class)
+//                .process(handleAlarmProcessingException(LOG));
     }
 
     public boolean sendAlarm(Alarm alarm) {
@@ -195,11 +202,26 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public boolean sendAlarm(Alarm alarm, Alarm.Source source, String sourceId) {
-        LOG.fine("send alarm method triggered");
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Alarm.HEADER_SOURCE, source);
-        headers.put(Alarm.HEADER_SOURCE_ID, sourceId);
-        return messageBrokerService.getFluentProducerTemplate().withBody(alarm).withHeaders(headers).to(AlarmService.ALARM_QUEUE).request(Boolean.class);
+        try {
+            Timestamp timestamp = new Timestamp(timerService.getCurrentTimeMillis());
+            persistenceService.doTransaction(entityManager -> {
+                SentAlarm sentAlarm = new SentAlarm()
+                        .setTitle(alarm.getTitle())
+                        .setContent(alarm.getContent())
+                        .setSeverity(alarm.getSeverity())
+                        .setStatus(alarm.getStatus())
+                        .setSource(source)
+                        .setSourceId(sourceId)
+                        .setCreatedOn(timestamp);
+
+                entityManager.merge(sentAlarm);
+            });
+            return true;
+        } catch (Exception e) {
+            String msg = "Failed to create alarm: " + alarm.getTitle();
+            LOG.log(Level.WARNING, msg, e);
+            return false;
+        }
     }
 
     public void setAlarmAcknowledged(String id) {
