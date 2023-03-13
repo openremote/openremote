@@ -270,8 +270,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
+        const alarm = {title: "Alarm page alarm", content: "alarm page trigger", severity: AlarmSeverity.MEDIUM} as Alarm;
+        await manager.rest.api.AlarmResource.createAlarm(alarm);
         const alarmResponse = await manager.rest.api.AlarmResource.getAlarms(null);
-
+        console.log(alarmResponse);
         if (!this.responseAndStateOK(stateChecker, alarmResponse, i18next.t("TODO"))) {
             return;
         }
@@ -282,8 +284,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
-        this._activeAlarms = alarmResponse.data.filter(alarm => alarm.status = AlarmStatus.ACTIVE || AlarmStatus.ACKNOWLEDGED);
-        this._inactiveAlarms = alarmResponse.data.filter(alarm => alarm.status = AlarmStatus.INACTIVE || AlarmStatus.RESOLVED);
+        this._activeAlarms = alarmResponse.data.filter(alarm => alarm.status == AlarmStatus.ACTIVE || alarm.status == AlarmStatus.ACKNOWLEDGED);
+        this._inactiveAlarms = alarmResponse.data.filter(alarm => alarm.status == AlarmStatus.INACTIVE || alarm.status == AlarmStatus.RESOLVED);
         // this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         // this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
         // this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
@@ -441,7 +443,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
 
         const mergedAlarmList: AlarmModel[] = [...this._activeAlarms, ...this._inactiveAlarms];
-        const index: number | undefined = (this.alarmId ? mergedAlarmList.findIndex((alarm) => alarm.id == this.alarmId) : undefined);
+        const index: number | undefined = (this.alarmId ? mergedAlarmList.findIndex((alarm) => alarm.id.toString() == this.alarmId) : undefined);
 
         return html`
             <div id="wrapper">
@@ -471,7 +473,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             <p>${i18next.t("alarm.active_plural")}</p>
                         </div>
                         ${until(this.getAlarmsTable(alarmTableColumns, activeAlarmTableRows, tableConfig, (ev) => {
-            this.alarmId = this._activeAlarms[ev.detail.index].id;
+            this.alarmId = this._activeAlarms[ev.detail.index].id.toString();
         }), html`${i18next.t('loading')}`)}
                     </div>
 
@@ -480,7 +482,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             <p>${i18next.t("alarm.inactive_plural")}</p>
                         </div>
                         ${until(this.getAlarmsTable(alarmTableColumns, inactiveAlarmTableRows, tableConfig, (ev) => {
-            this.alarmId = this._inactiveAlarms[ev.detail.index].id;
+            this.alarmId = this._inactiveAlarms[ev.detail.index].id.toString();
         }), html`${i18next.t('loading')}`)}
                     </div>
                 `)}
