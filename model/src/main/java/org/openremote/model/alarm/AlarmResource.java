@@ -21,7 +21,6 @@ public interface AlarmResource {
     @Path("all")
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({ Constants.READ_ALARMS_ROLE })
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
     // /**
@@ -54,7 +53,6 @@ public interface AlarmResource {
      */
     @POST
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
     void createAlarm(@BeanParam RequestParams requestParams,
             Alarm alarm);
 
