@@ -55,7 +55,7 @@ public interface AlarmResource {
     @POST
     @Consumes(APPLICATION_JSON)
     void createAlarm(@BeanParam RequestParams requestParams,
-            Alarm alarm);
+                     Alarm alarm);
 
     @Path("{alarmId}/update")
     @PUT
@@ -80,8 +80,8 @@ public interface AlarmResource {
                         @QueryParam("status") String status,
                         @PathParam("alarmId") String alarmId);
 
-    @Path("{alarmId}/setAcknowledged")
     @PUT
+    @Path("{alarmId}/setAcknowledged")
     void setAlarmAcknowledged(@BeanParam RequestParams requestParams,
                               @PathParam("alarmId") String alarmId);
 
@@ -98,7 +98,7 @@ public interface AlarmResource {
                       @PathParam("alarmId") String alarmId,
                       String assetId,
                       String realm);
-    
+
     @Path("{alarmId}/assetLinks/get")
     @GET
     @Produces(APPLICATION_JSON)
