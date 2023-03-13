@@ -28,8 +28,8 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.datapoint.AssetDatapointResource;
-import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
@@ -44,9 +44,6 @@ import javax.ws.rs.container.ConnectionCallback;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.*;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -77,10 +74,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     public ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,
                                              String assetId,
                                              String attributeName,
-                                             DatapointInterval interval,
-                                             Integer stepSize,
-                                             long fromTimestamp,
-                                             long toTimestamp) {
+                                             AssetDatapointQuery query) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -94,7 +88,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             if (!isRealmActiveAndAccessible(asset.getRealm())) {
-                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
+                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
@@ -102,12 +96,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
-            return assetDatapointService.getValueDatapoints(assetId,
-                    attribute,
-                    interval,
-                    stepSize,
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault()),
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault()));
+            return assetDatapointService.queryDatapoints(assetId, attribute, query);
+
         } catch (IllegalStateException ex) {
             throw new BadRequestException(ex);
         } catch (UnsupportedOperationException ex) {
