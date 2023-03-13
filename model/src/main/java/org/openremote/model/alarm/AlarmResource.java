@@ -13,7 +13,6 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Alarm")
 @Path("alarm")
-@Consumes(APPLICATION_JSON)
 public interface AlarmResource {
     /**
      * @param requestParams
