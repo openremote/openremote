@@ -188,6 +188,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     let required: boolean | undefined;
     let selectOptions: [string, string][] | undefined;
     let valueConverter: (v: any) => any | undefined;
+    let icon: string | undefined;
 
     const assetType = typeof assetDescriptor === "string" ? assetDescriptor : assetDescriptor.name;
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
@@ -221,6 +222,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
 
                 if (format && format.asMomentary) {
                     inputType = InputType.BUTTON_MOMENTARY;
+                    icon = Util.getMetaValue(WellknownMetaItems.BUTTONICON, valueHolder, valueHolderDescriptor);
                 }
                 break;
             case WellknownValueTypes.BIGNUMBER:
@@ -397,7 +399,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         return html`<or-mwc-input ${ref(inputRef)} id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
-            .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
+            .helperText="${helperText}" .helperPersistent="${true}" .icon="${icon}" .resizeVertical="${resizeVertical}"
             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                 e.stopPropagation();
                 e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;

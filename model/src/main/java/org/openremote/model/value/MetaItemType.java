@@ -146,6 +146,11 @@ public final class MetaItemType {
     public static final MetaItemDescriptor<String> LABEL = new MetaItemDescriptor<>("label", ValueType.TEXT);
 
     /**
+     * A string that specifies the icon to be used for a button (currently only momentary button)
+     */
+    public static final MetaItemDescriptor<String> BUTTON_ICON = new MetaItemDescriptor<>("buttonIcon", ValueType.TEXT);
+
+    /**
      * {@link ValueFormat} to be applied when converting the associated {@link Attribute} to string representation.
      */
     public static final MetaItemDescriptor<ValueFormat> FORMAT = new MetaItemDescriptor<>("format", ValueType.VALUE_FORMAT);
