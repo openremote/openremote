@@ -66,7 +66,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 //    }
 
     @Override
-    @POST
     public void createAlarm(RequestParams requestParams, Alarm alarm) {
         SentAlarm success = alarmService.sendAlarm(alarm);
 
