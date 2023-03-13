@@ -3,9 +3,12 @@ package org.openremote.manager.alarm;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.hibernate.Session;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.alarm.SentAlarm;
 import org.openremote.manager.alarm.AlarmProcessingException;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -24,6 +27,9 @@ import org.openremote.model.util.TimeUtil;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
+import javax.ws.rs.WebApplicationException;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -35,6 +41,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.time.temporal.ChronoUnit.*;
+import static java.util.logging.Level.FINE;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.manager.alarm.AlarmProcessingException.Reason.*;
 import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
 import static org.openremote.model.alarm.Alarm.Source.*;
@@ -114,7 +122,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
-
     }
 
     public SentAlarm sendAlarm(Alarm alarm) {
