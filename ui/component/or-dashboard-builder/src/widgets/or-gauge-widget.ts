@@ -6,7 +6,7 @@ import { html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "@openremote/or-gauge";
 import { i18next } from "@openremote/or-translate";
-import manager from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import { when } from "lit/directives/when.js";
@@ -40,8 +40,15 @@ export class OrGaugeWidget implements OrWidgetEntity {
             valueType: 'number',
         } as GaugeWidgetConfig;
     }
+
+    // Triggered every update to double check if the specification.
+    // It will merge missing values, or you can add custom logic to process here.
+    verifyConfigSpec(widget: DashboardWidget): GaugeWidgetConfig {
+        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as GaugeWidgetConfig;
+    }
+
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
-        return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-gauge-widget>`;
+        return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}"></or-gauge-widget>`;
     }
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
@@ -75,11 +82,13 @@ export class OrGaugeWidgetContent extends LitElement {
                 return html`
                     <or-gauge .asset="${this.assets[0]}" .assetAttribute="${this.assetAttributes[0]}" .thresholds="${this.widget?.widgetConfig.thresholds}"
                               .decimals="${this.widget?.widgetConfig.decimals}" .min="${this.widget?.widgetConfig.min}" .max="${this.widget?.widgetConfig.max}"
-                              style="height: 100%;"></or-gauge>
+                              style="height: 100%; overflow: hidden;"></or-gauge>
                 `;
             }, () => {
                 return html`
-                    <span>No attributes selected.</span>
+                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                        <span>${i18next.t('noAttributesConnected')}</span>
+                    </div>
                 `
             })}
             <!--<or-gauge .attrRef="${this.widget?.widgetConfig.attributeRefs[0]}"></or-gauge>-->
@@ -116,8 +125,6 @@ export class OrGaugeWidgetContent extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else {
-            console.error("Error: attributeRefs are not present in widget config!");
         }
     }
 }

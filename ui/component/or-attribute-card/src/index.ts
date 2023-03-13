@@ -11,7 +11,8 @@ import {
     DatapointInterval,
     ReadAttributeEvent,
     ValueDatapoint,
-    AssetModelUtil
+    AssetModelUtil,
+    AssetDatapointLTTBQuery
 } from "@openremote/model";
 import {DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
 import {Chart, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
@@ -142,13 +143,19 @@ const style = css`
     }
     
     .chart-wrapper {
-        flex: 1;
+        flex: 1 1 auto;
         width: 65%;
         height: 75%;
     }
+    .controls-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        place-content: space-between;
+    }
     
     .delta-wrapper {
-        flex: 0 0 50px;
+        /*flex: 0 0 50px;*/
         text-align: right;
         
         /*position: absolute;*/
@@ -162,9 +169,7 @@ const style = css`
     }
     
     .period-selector {
-        position: absolute;
-        right: -12px;
-        bottom: 0;
+        
     }
     
     .delta {
@@ -354,7 +359,6 @@ export class OrAttributeCard extends LitElement {
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : html`
                                 <span>${i18next.t('noAttributesConnected')}</span>
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
                             `}
                         </div>
                     </div>
@@ -370,9 +374,7 @@ export class OrAttributeCard extends LitElement {
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
                             ${this.shouldShowControls() ? html`
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
-                            ` : html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
-                            `}
+                            ` : undefined}
                         </div>
                     </div>
                 </div>
@@ -392,7 +394,7 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
                         ${this.shouldShowTitle() ? html`<span class="panel-title-text">${this.assets[0].name + " - " + i18next.t(this.assetAttributes[0][1].name!)}</span>` : undefined}
-                        ${this.shouldShowControls() ? getContentWithMenuTemplate(html`
+                        ${this.shouldShowTitle() ? getContentWithMenuTemplate(html`
                             <or-mwc-input icon="dots-vertical" type="button"></or-mwc-input>
                         `,
                         [
@@ -426,25 +428,26 @@ export class OrAttributeCard extends LitElement {
                             <div class="chart-wrapper">
                                 <canvas id="chart"></canvas>
                             </div>
-                            <div class="delta-wrapper">
-                                <span class="delta">${this.delta ? this.deltaPlus + (this.delta.val !== undefined && this.delta.val !== null ? this.delta.val : "") + (this.delta.unit || "") : ""}</span>
-                            </div>
-                            
-                            ${this.shouldShowControls() ? html`
-                                <div class="period-selector-wrapper">
-                                    ${getContentWithMenuTemplate(
-                                        html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
-                                        [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}].map((option) => {
-                                            option.text = i18next.t(option.value);
-                                            return option;
-                                        }),
-                                        this.period,
-                                        (value) => this._setPeriodOption(value)
-                                    )}
+                            <div class="controls-wrapper">
+                                <div class="delta-wrapper">
+                                    <span class="delta">${this.delta ? this.deltaPlus + (this.delta.val !== undefined && this.delta.val !== null ? this.delta.val : "") + (this.delta.unit || "") : ""}</span>
                                 </div>
-                            ` : html`
-                                <or-mwc-input class="period-selector" .type="${InputType.BUTTON}" disabled .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>
-                            `}
+                                ${this.shouldShowControls() ? html`
+                                    <div class="period-selector-wrapper">
+                                        ${getContentWithMenuTemplate(
+                                                html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
+                                                [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}].map((option) => {
+                                                    option.text = i18next.t(option.value);
+                                                    return option;
+                                                }),
+                                                this.period,
+                                                (value) => this._setPeriodOption(value)
+                                        )}
+                                    </div>
+                                ` : html`
+                                    <or-mwc-input class="period-selector" .type="${InputType.BUTTON}" disabled .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>
+                                `}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -737,10 +740,11 @@ export class OrAttributeCard extends LitElement {
             assetId,
             attributeName,
             {
-                interval: interval,
+                type: "lttb",
                 fromTimestamp: startOfPeriod,
-                toTimestamp: endOfPeriod
-            }
+                toTimestamp: endOfPeriod,
+                amountOfPoints: 20,
+            } as AssetDatapointLTTBQuery
         );
 
         this._loading = false;
