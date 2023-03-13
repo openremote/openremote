@@ -53,7 +53,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     protected NotificationService notificationService;
     protected ClientEventService clientEventService;
 
-
     protected static Processor handleAlarmProcessingException(Logger logger) {
         return exchange -> {
             Alarm alarm = exchange.getIn().getBody(Alarm.class);
