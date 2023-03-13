@@ -16,8 +16,8 @@ public interface AlarmResource {
      * @param requestParams
      * @return
      */
-    @GET
     @Path("all")
+    @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.READ_ADMIN_ROLE)
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
@@ -56,14 +56,14 @@ public interface AlarmResource {
     void createAlarm(@BeanParam RequestParams requestParams,
                      Alarm alarm);
 
-    @PUT
     @Path("{alarmId}/setStatus")
+    @PUT
     void setAlarmStatus(@BeanParam RequestParams requestParams,
                         @QueryParam("status") String status,
                         @PathParam("alarmId") String alarmId);
 
-    @PUT
     @Path("{alarmId}/setAcknowledged")
+    @PUT
     void setAlarmAcknowledged(@BeanParam RequestParams requestParams,
                               @PathParam("alarmId") String alarmId);
 }

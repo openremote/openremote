@@ -270,10 +270,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
-        const alarm = {title: "Alarm Title", content: "Alarm Content", severity: AlarmSeverity.MEDIUM, status: AlarmStatus.ACTIVE} as Alarm;
         const alarmResponse = await manager.rest.api.AlarmResource.getAlarms(null);
-        console.log(alarmResponse);
-        if (!this.responseAndStateOK(stateChecker, alarmResponse, i18next.t("loadFailedRoles"))) {
+
+        if (!this.responseAndStateOK(stateChecker, alarmResponse, i18next.t("TODO"))) {
             return;
         }
 
@@ -283,6 +282,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
+        this._activeAlarms = alarmResponse.data.filter(alarm => alarm.status = AlarmStatus.ACTIVE || AlarmStatus.ACKNOWLEDGED);
+        this._inactiveAlarms = alarmResponse.data.filter(alarm => alarm.status = AlarmStatus.INACTIVE || AlarmStatus.RESOLVED);
         // this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         // this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
         // this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
@@ -377,16 +378,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
         // }
     }
 
-    private _deleteUser(user) {
+    private _deleteAlarm(alarm) {
         showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
-                    this.doDelete(user);
+                    this.doDelete(alarm);
                 }
             });
     }
 
-    private doDelete(user) {
+    private doDelete(alarm) {
         // manager.rest.api.UserResource.delete(manager.displayRealm, user.id).then(response => {
         //     if (user.serviceAccount) {
         //         this._serviceUsers = [...this._serviceUsers.filter(u => u.id !== user.id)];
@@ -407,7 +408,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
         const readonly = !manager.hasRole(ClientRole.WRITE_ALARMS);
 
-        // Content of User Table
+        // Content of Alarm Table
         const alarmTableColumns: TableColumn[] = [
             {title: i18next.t('createdOn')},
             {title: i18next.t('alarm.title')},
@@ -415,14 +416,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
             {title: i18next.t('alarm.severity')},
             {title: i18next.t('status')}
         ];
+
         const activeAlarmTableRows: TableRow[] = this._activeAlarms.map((alarm) => {
             return {
                 content: [alarm.createdOn.toString(), alarm.title, alarm.content, alarm.severity, alarm.status],
                 clickable: true
             }
         });
-
-        // const activeAlarmTableRows: TableRow[] = [({content: ["", "Test", "Test", AlarmSeverity.LOW, AlarmStatus.ACTIVE], clickable: true} as TableRow)];
 
         const inactiveAlarmTableRows: TableRow[] = this._inactiveAlarms.map((alarm) => {
             return {
