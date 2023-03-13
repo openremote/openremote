@@ -70,7 +70,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 //    }
 
     @Override
-    @POST
     public void createAlarm(RequestParams requestParams, Alarm alarm) {
         LOG.fine("Create alarm method called!");
 //        Map<String, Object> headers = new HashMap<>();
