@@ -359,7 +359,6 @@ export class OrAttributeCard extends LitElement {
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : html`
                                 <span>${i18next.t('noAttributesConnected')}</span>
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
                             `}
                         </div>
                     </div>
@@ -375,9 +374,7 @@ export class OrAttributeCard extends LitElement {
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
                             ${this.shouldShowControls() ? html`
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
-                            ` : html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
-                            `}
+                            ` : undefined}
                         </div>
                     </div>
                 </div>
