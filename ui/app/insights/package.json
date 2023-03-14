@@ -1,7 +1,7 @@
 {
-  "name": "@openremote/dashboard",
+  "name": "@openremote/insights",
   "version": "1.0.0",
-  "description": "OpenRemote Dashboard Viewer",
+  "description": "OpenRemote Insights App",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "private": true,

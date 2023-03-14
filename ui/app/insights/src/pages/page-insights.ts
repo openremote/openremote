@@ -15,7 +15,7 @@ import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
-        name: "dashboard",
+        name: "insights",
         routes: [
             "insights",
             "insights/:id"
