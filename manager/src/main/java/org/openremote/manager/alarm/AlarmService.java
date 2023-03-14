@@ -203,7 +203,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     public boolean sendAlarm(Alarm alarm, Alarm.Source source, String sourceId) {
         try {
-            Timestamp timestamp = new Timestamp(timerService.getCurrentTimeMillis());
+            Long timestamp = timerService.getCurrentTimeMillis();
             persistenceService.doTransaction(entityManager -> {
                 SentAlarm sentAlarm = new SentAlarm()
                         .setTitle(alarm.getTitle())
@@ -212,7 +212,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                         .setStatus(alarm.getStatus())
                         .setSource(source)
                         .setSourceId(sourceId)
-                        .setCreatedOn(timestamp);
+                        .setCreatedOn(new Date(timestamp));
 
                 entityManager.merge(sentAlarm);
             });
@@ -254,7 +254,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         StringBuilder builder = new StringBuilder();
         builder.append("select n from SentAlarm n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        builder.append(" order by n.createdOn asc");
+        builder.append(" order by n.createdOn desc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentAlarm> query = entityManager.createQuery(builder.toString(), SentAlarm.class);
             IntStream.range(0, parameters.size())
