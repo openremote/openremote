@@ -7,11 +7,12 @@ import {
 } from "@openremote/model";
 
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
 const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
     if(form) {
         const inputs = form.querySelectorAll('or-mwc-input');
@@ -123,10 +124,21 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
         };
 
         return html`
-            <or-mwc-input style="width: 200px" .type="${InputType.SELECT}" .label="${i18next.t("alarm.severity")}" .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}"></or-mwc-input>
+            <or-mwc-input style="width: 200px" .type="${InputType.SELECT}" .label="${i18next.t("alarm.severity")}" .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAlarmSeverity(e.detail.value)}"></or-mwc-input>
             <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("config")}" @or-mwc-input-changed="${alarmPickerModalOpen}"></or-mwc-input>
             <or-mwc-dialog id="alarm-modal" heading="${this.title}" .actions="${alarmPickerModalActions}"></or-mwc-dialog>
             <slot class="alarm-form-slot"></slot>
         `
+    }
+
+    protected setActionAlarmSeverity(value: string | undefined) {
+        if(value && this.action.alarm){
+            const alarm:any = this.action.alarm;
+            alarm.severity = value;
+            this.action.alarm = {...alarm};
+        }
+
+        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+        this.requestUpdate();
     }
 }
