@@ -16,7 +16,7 @@ import {
 import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
 import i18next from "i18next";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {GenericAxiosResponse} from "@openremote/rest";
+import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {getAlarmsRoute} from "../routes";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
@@ -170,11 +170,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     gap: 12px;
                     width: 100%;
                 }
-                
-                .row > td[value="LOW"]{
-                    color: green;
-                }
-                
+
                 .column {
                     display: flex;
                     flex-direction: column;
