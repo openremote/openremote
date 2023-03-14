@@ -270,10 +270,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
-        const alarm = {title: "Alarm page alarm", content: "alarm page trigger", severity: AlarmSeverity.MEDIUM} as Alarm;
-        await manager.rest.api.AlarmResource.createAlarm(alarm);
+        // const alarm = {title: "Alarm page alarm", content: "alarm page trigger", severity: AlarmSeverity.MEDIUM} as Alarm;
+        // await manager.rest.api.AlarmResource.createAlarm(alarm);
         const alarmResponse = await manager.rest.api.AlarmResource.getAlarms(null);
-        console.log(alarmResponse);
+        // console.log(alarmResponse);
         if (!this.responseAndStateOK(stateChecker, alarmResponse, i18next.t("TODO"))) {
             return;
         }
@@ -421,14 +421,14 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
         const activeAlarmTableRows: TableRow[] = this._activeAlarms.map((alarm) => {
             return {
-                content: [alarm.createdOn.toString(), alarm.title, alarm.content, alarm.severity, alarm.status],
+                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.content, alarm.severity, alarm.status],
                 clickable: true
             }
         });
 
         const inactiveAlarmTableRows: TableRow[] = this._inactiveAlarms.map((alarm) => {
             return {
-                content: [alarm.createdOn.toString(), alarm.title, alarm.content, alarm.severity, alarm.status],
+                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.content, alarm.severity, alarm.status],
                 clickable: true
             }
         })
