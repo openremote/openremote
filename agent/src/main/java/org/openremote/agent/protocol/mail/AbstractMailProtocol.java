@@ -20,12 +20,126 @@
 package org.openremote.agent.protocol.mail;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.model.Container;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.mail.MailMessage;
+import org.openremote.model.syslog.SyslogCategory;
+
+import javax.mail.event.ConnectionEvent;
+import java.nio.file.Path;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>, U extends AbstractMailProtocol<T, U, V>, V extends AgentLink<V>> extends AbstractProtocol<T, V> {
-
+    protected MailClient mailClient;
+    protected ConcurrentMap<AttributeRef, Function<MailMessage, String>> attributeMessageProcessorMap = new ConcurrentHashMap<>();
+    protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMailProtocol.class);
+    protected static int INITIAL_CHECK_DELAY_MILLIS = 10000;
 
     public AbstractMailProtocol(T agent) {
         super(agent);
     }
+
+    @Override
+    protected void doStart(Container container) throws Exception {
+
+        UsernamePassword usernamePassword = getAgent().getUsernamePassword().orElseThrow();
+        Path storageDir = container.getService(PersistenceService.class).getStorageDir();
+
+        Path persistenceDir = storageDir.resolve("protocol").resolve("mail");
+
+        mailClient = new MailClientBuilder(
+            container.getExecutorService(),
+            getAgent().getProtocol().orElseThrow(),
+            getAgent().getHost().orElseThrow(),
+            getAgent().getPort().orElseThrow(),
+            usernamePassword.getUsername(),
+            usernamePassword.getPassword()
+        )
+            .setCheckIntervalMillis(
+                getAgent().getCheckIntervalSeconds().orElse(MailClientBuilder.DEFAULT_CHECK_INTERVAL_MILLIS)
+            )
+            .setDeleteMessageOnceProcessed(
+                getAgent().getDeleteProcessedMail().orElse(false)
+            )
+            .setFolder(getAgent().getMailFolderName().orElse(null))
+            .setPersistenceDir(persistenceDir)
+            // Set an initial delay to allow attributes to be linked before we read messages - not perfect but it should do
+            .setCheckInitialDelayMillis(INITIAL_CHECK_DELAY_MILLIS)
+            .setPreferHTML(getAgent().getPreferHTML().orElse(false))
+            .build();
+
+        mailClient.addConnectionListener(this::onConnectionEvent);
+        mailClient.addMessageListener(this::onMailMessage);
+    }
+
+    @Override
+    protected void doStop(Container container) throws Exception {
+        if (mailClient != null) {
+            mailClient.disconnect();
+        }
+        setConnectionStatus(ConnectionStatus.STOPPED);
+    }
+
+    @Override
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, V agentLink) throws RuntimeException {
+
+        Predicate<MailMessage> messageFilter = getAttributeMailMessageFilter(assetId, attribute, agentLink);
+
+        Function<MailMessage, String> mailMessageProcessor = mailMessage -> {
+            if (messageFilter == null || messageFilter.test(mailMessage)) {
+                return getMailMessageAttributeValue(assetId, attribute, agentLink, mailMessage);
+            }
+
+            return null;
+        };
+
+        attributeMessageProcessorMap.put(new AttributeRef(assetId, attribute.getName()), mailMessageProcessor);
+    }
+
+    @Override
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, V agentLink) {
+        attributeMessageProcessorMap.remove(new AttributeRef(assetId, attribute.getName()));
+    }
+
+    @Override
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, V agentLink, AttributeEvent event, Object processedValue) {
+        // Not supported
+    }
+
+    protected void onConnectionEvent(ConnectionEvent event) {
+        if (event.getType() == ConnectionEvent.OPENED) {
+            setConnectionStatus(ConnectionStatus.CONNECTED);
+        } else if (event.getType() == ConnectionEvent.CLOSED) {
+            setConnectionStatus(ConnectionStatus.WAITING);
+        }
+    }
+
+    protected void onMailMessage(MailMessage mailMessage) {
+        attributeMessageProcessorMap.forEach(((attributeRef, mailMessageStringFunction) -> {
+            String value = mailMessageStringFunction.apply(mailMessage);
+            if (value != null) {
+                updateLinkedAttribute(new AttributeState(attributeRef, value));
+            } else if (LOG.isLoggable(Level.FINEST)) {
+                LOG.log(Level.FINEST, "MailMessage failed to match linked attribute:" + attributeRef + ", " + mailMessage);
+            }
+        }));
+    }
+
+    protected abstract Predicate<MailMessage> getAttributeMailMessageFilter(String assetId, Attribute<?> attribute, V agentLink);
+
+    protected abstract String getMailMessageAttributeValue(String assetId, Attribute<?> attribute, V agentLink, MailMessage mailMessage);
 }

@@ -416,8 +416,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                                 .orElse(false)
                         ).forEach((agnt, attributes) -> linkAttributes(agnt, asset.getId(), attributes))
                 );
-
-                protocol.startComplete();
             } catch (Exception e) {
                 if (protocol != null) {
                     try {

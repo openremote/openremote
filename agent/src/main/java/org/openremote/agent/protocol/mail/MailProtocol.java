@@ -19,88 +19,21 @@
  */
 package org.openremote.agent.protocol.mail;
 
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.Container;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
+import org.openremote.model.query.filter.StringPredicate;
 
-import javax.mail.event.ConnectionEvent;
-import java.nio.file.Path;
-import java.util.List;
+import java.util.Arrays;
+import java.util.function.Predicate;
 
 public class MailProtocol extends AbstractMailProtocol<MailAgent, MailProtocol, MailAgentLink> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "Mail Client";
-    protected MailClient mailClient;
 
     public MailProtocol(MailAgent agent) {
         super(agent);
     }
 
-    @Override
-    protected void doStart(Container container) throws Exception {
-
-        UsernamePassword usernamePassword = getAgent().getUsernamePassword().orElseThrow();
-        Path storageDir = container.getService(PersistenceService.class).getStorageDir();
-
-        Path persistenceDir = storageDir.resolve("protocol").resolve("mail");
-
-        mailClient = new MailClientBuilder(
-            container.getExecutorService(),
-            getAgent().getProtocol().orElseThrow(),
-            getAgent().getHost().orElseThrow(),
-            getAgent().getPort().orElseThrow(),
-            usernamePassword.getUsername(),
-            usernamePassword.getPassword()
-        )
-            .setCheckIntervalMillis(
-                getAgent().getCheckIntervalSeconds().orElse(MailClientBuilder.DEFAULT_CHECK_INTERVAL_MILLIS)
-            )
-            .setDeleteMessageOnceProcessed(
-                getAgent().getDeleteProcessedMail().orElse(false)
-            )
-            .setFolder(getAgent().getMailFolderName().orElse(null))
-            .setPersistenceDir(persistenceDir)
-            .setCheckInitialDelayMillis(10000) // Set an initial delay to allow attributes to be linked
-            .setPreferHTML(getAgent().getPreferHTML().orElse(false))
-            .build();
-
-        mailClient.addConnectionListener(this::onConnectionEvent);
-        mailClient.addMessageListener(this::onMailMessage);
-    }
-
-    @Override
-    public void startComplete() {
-        if (!mailClient.connect()) {
-            setConnectionStatus(ConnectionStatus.ERROR);
-        }
-    }
-
-    @Override
-    protected void doStop(Container container) throws Exception {
-        if (mailClient != null) {
-            mailClient.disconnect();
-        }
-        setConnectionStatus(ConnectionStatus.STOPPED);
-    }
-
-    @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, MailAgentLink agentLink) throws RuntimeException {
-
-    }
-
-    @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, MailAgentLink agentLink) {
-
-    }
-
-    @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, MailAgentLink agentLink, AttributeEvent event, Object processedValue) {
-
-    }
 
     @Override
     public String getProtocolName() {
@@ -112,15 +45,37 @@ public class MailProtocol extends AbstractMailProtocol<MailAgent, MailProtocol, 
         return "mailClient://" + mailClient.config;
     }
 
-    protected void onConnectionEvent(ConnectionEvent event) {
-        if (event.getType() == ConnectionEvent.OPENED) {
-            setConnectionStatus(ConnectionStatus.CONNECTED);
-        } else if (event.getType() == ConnectionEvent.CLOSED) {
-            setConnectionStatus(ConnectionStatus.WAITING);
-        }
+    @Override
+    protected String getMailMessageAttributeValue(String assetId, Attribute<?> attribute, MailAgentLink agentLink, MailMessage mailMessage) {
+        boolean useSubject = agentLink.getUseSubject() != null && agentLink.getUseSubject();
+        return useSubject ? mailMessage.getSubject() : mailMessage.getContent();
     }
 
-    protected void onMailMessage(MailMessage mailMessage) {
+    @Override
+    protected Predicate<MailMessage> getAttributeMailMessageFilter(String assetId, Attribute<?> attribute, MailAgentLink agentLink) {
 
+        StringPredicate fromPredicate = agentLink.getFromMatchPredicate();
+        StringPredicate subjectPredicate = agentLink.getSubjectMatchPredicate();
+
+        Predicate<MailMessage> messageFilter = null;
+
+        // Do message filtering
+        if (fromPredicate != null) {
+            Predicate<Object> valuePredicate = fromPredicate.asPredicate(timerService::getCurrentTimeMillis);
+            messageFilter = m -> {
+                String[] froms = m.getFrom();
+                return Arrays.stream(froms).anyMatch(valuePredicate);
+            };
+        }
+        if (subjectPredicate != null) {
+            Predicate<Object> valuePredicate = subjectPredicate.asPredicate(timerService::getCurrentTimeMillis);
+            Predicate<MailMessage> subjectFilter = m -> {
+                String subject = m.getSubject();
+                return valuePredicate.test(subject);
+            };
+            messageFilter = messageFilter != null ? messageFilter.and(subjectFilter) : subjectFilter;
+        }
+
+        return messageFilter;
     }
 }

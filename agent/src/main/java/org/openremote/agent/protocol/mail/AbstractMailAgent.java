@@ -102,19 +102,19 @@ public abstract class AbstractMailAgent<T extends AbstractMailAgent<T, U, V>, U 
 
     @SuppressWarnings("unchecked")
     public T setUsernamePassword(UsernamePassword value) {
-        getAttributes().getOrCreate(USERNAME_AND_PASSWORD).setValue(value);
+        super.setUsernamePassword(value);
         return (T) this;
     }
 
     @SuppressWarnings("unchecked")
     public T setHost(String value) {
-        getAttributes().getOrCreate(HOST).setValue(value);
+        super.setHost(value);
         return (T) this;
     }
 
     @SuppressWarnings("unchecked")
     public T setPort(Integer value) {
-        getAttributes().getOrCreate(PORT).setValue(value);
+        super.setPort(value);
         return (T) this;
     }
 }

@@ -220,13 +220,6 @@ public interface Protocol<T extends Agent<T, ?, ?>> {
     void start(Container container) throws Exception;
 
     /**
-     * Called after {@link #start and all attributes have been linked}
-     */
-    default void startComplete() {
-        // Do nothing
-    }
-
-    /**
      * Called once all linked attributes have been unlinked via {@link #unlinkAttribute} to allow the protocol to
      * perform required tasks with {@link ContainerService}s e.g. remove Camel routes, destroy/cleanup resources etc.
      */
