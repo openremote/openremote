@@ -29,7 +29,6 @@ import org.openremote.model.PersistenceEvent;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
@@ -1007,8 +1006,24 @@ public class JsonRulesBuilder extends RulesBuilder {
                         if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                             // Need to clone the alarm
                             alarm = ValueUtil.clone(alarm);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, false);
-                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
+                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
+                            JsonParser parser = new JsonParser();
+                            JsonObject json = parser.parse(triggeredAssetInfo).getAsJsonObject();
+                            Object[] key = json.keySet().toArray();
+                            StringBuilder builder = new StringBuilder();
+                            builder.append("Triggered asset(s):").append("\n");
+                            for (int i = 0; i < key.length; i++) {
+                                JsonArray array = json.getAsJsonArray(key[i].toString());
+                                JsonObject object = array.get(0).getAsJsonObject();
+                                builder.append("ID: " + object.get("id")).append("\n");
+                                builder.append("Asset type: " + object.get("assetType")).append("\n");
+                                builder.append("Asset name: " + object.get("assetName")).append("\n");
+                                builder.append("Attribute name: " + object.get("name")).append("\n");
+                                builder.append("Attribute value: " + object.get("value")).append("\n").append("\n");
+                            }
+
+                            String result = builder.toString();
+                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, result);
                             alarm.setContent(content);
                         }
                     }
