@@ -71,8 +71,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
-import static org.openremote.model.util.ValueUtil.LOG;
-import static org.openremote.model.util.ValueUtil.distinctByKey;
+import static org.openremote.model.util.ValueUtil.*;
 
 public class JsonRulesBuilder extends RulesBuilder {
 
