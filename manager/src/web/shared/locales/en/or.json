@@ -661,6 +661,9 @@
     "active_plural" : "Active alarms",
     "title": "Title",
     "content": "Content",
-    "severity": "Severity"
+    "severity": "Severity",
+    "status": "Status",
+    "linkedAssets": "Linked asset(s)",
+    "linkedUsers": "Linked user(s)"
   }
 }

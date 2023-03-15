@@ -46,7 +46,7 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
     public action!: RuleActionAlarm;
 
     @property({type: String})
-    public title = "config";
+    public title = "settings";
 
     @property({type: Object})
     public query?: AssetQuery;
@@ -124,8 +124,8 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
         };
 
         return html`
-            <or-mwc-input style="width: 200px" .type="${InputType.SELECT}" .label="${i18next.t("alarm.severity")}" .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAlarmSeverity(e.detail.value)}"></or-mwc-input>
-            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("config")}" @or-mwc-input-changed="${alarmPickerModalOpen}"></or-mwc-input>
+            <or-mwc-input style="width: 200px" .type="${InputType.SELECT}" .value="${this.action.alarm?.severity}" .label="${i18next.t("alarm.severity")}" .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAlarmSeverity(e.detail.value)}"></or-mwc-input>
+            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("settings")}" @or-mwc-input-changed="${alarmPickerModalOpen}"></or-mwc-input>
             <or-mwc-dialog id="alarm-modal" heading="${this.title}" .actions="${alarmPickerModalActions}"></or-mwc-dialog>
             <slot class="alarm-form-slot"></slot>
         `

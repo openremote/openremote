@@ -5,9 +5,9 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {Alarm, AlarmSeverity, AlarmStatus, ClientRole, Role, SentAlarm, UserQuery} from "@openremote/model";
+import {AlarmSeverity, AlarmStatus, ClientRole, Role, SentAlarm, UserQuery} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
-import {OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse} from "@openremote/rest";
@@ -113,10 +113,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     margin: 10px 0;
                     flex: 1 1 0;
                     gap: 24px;
-                }
-                
-                .row > td[value="LOW"]{
-                    color: green;
                 }
                 
                 .column {
@@ -459,7 +455,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return html`
                             <div id="content" class="panel">
                                 <p class="panel-title">
-                                    ${i18next.t('alarm')}
+                                    ${i18next.t('alarm.')}
                                     ${i18next.t('settings')}</p>
                                 ${this.getSingleAlarmView(alarm, (readonly || this._loadAlarmsPromise != undefined))}
                             </div>
@@ -685,7 +681,63 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     protected getSingleAlarmTemplate(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
         return html`
+            <div class="row">
+                <div class="column">
+                    <h5>${i18next.t("details")}</h5>
+                    <!-- alarm details -->
+                    <or-mwc-input ?readonly="${true}"
+                                  .label="${i18next.t("createdOn")}"
+                                  .type="${InputType.DATETIME}" 
+                                  .value="${new Date(alarm.createdOn)}"
+                                  }}"></or-mwc-input>
+                    <or-mwc-input ?readonly="${readonly}"
+                                  class="${false ? "hidden" : ""}"
+                                  .label="${i18next.t("alarm.title")}"
+                                  .type="${InputType.TEXT}"
+                                  .value="${alarm.title}"
+                                  .validationMessage="${i18next.t("invalidEmail")}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                    alarm.title = e.detail.value;
+                                    //this.onUserChanged(e, suffix)
+                                  }}"></or-mwc-input>
+                    <or-mwc-input ?readonly="${readonly}"
+                                  class="${false ? "hidden" : ""}"
+                                  .label="${i18next.t("alarm.content")}"
+                                  .type="${InputType.TEXTAREA}" 
+                                  .value="${alarm.content}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                    alarm.content = e.detail.value;
+                                    //this.onUserChanged(e, suffix)
+                                  }}"></or-mwc-input>
+                    <or-mwc-input ?readonly="${readonly}"
+                                  class="${false ? "hidden" : ""}"
+                                  .label="${i18next.t("alarm.severity")}"
+                                  .type="${InputType.SELECT}"
+                                  .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}"
+                                  .value="${alarm.severity}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                    alarm.severity = e.detail.value;
+                                    //this.onUserChanged(e, suffix)
+                                  }}"></or-mwc-input>
+                    <or-mwc-input ?readonly="${readonly}"
+                                  class="${false ? "hidden" : ""}"
+                                  .label="${i18next.t("alarm.status")}"
+                                  .type="${InputType.SELECT}"
+                                  .options="${[AlarmStatus.ACTIVE, AlarmStatus.ACKNOWLEDGED, AlarmStatus.INACTIVE, AlarmStatus.RESOLVED]}"
+                                  .value="${alarm.status}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                    alarm.status = e.detail.value;
+                                    //this.onUserChanged(e, suffix)
+                                  }}"></or-mwc-input>
+                </div>
 
+                
+                
+                <div class="column">
+                    <h5>${i18next.t("alarm.linkedAssets")}</h5>
+                    <!-- enabled -->
+                    <h5>${i18next.t("alarm.linkedUsers")}</h5>
+                </div>
         `;
     }
 
