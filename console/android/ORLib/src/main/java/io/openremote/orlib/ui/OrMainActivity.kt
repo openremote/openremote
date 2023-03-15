@@ -4,13 +4,14 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
 import android.content.*
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.Uri
-import android.net.http.SslError
 import android.os.*
 import android.view.KeyEvent
 import android.view.View
@@ -29,6 +30,7 @@ import io.openremote.orlib.ORConstants.CLEAR_URL
 import io.openremote.orlib.ORConstants.BASE_URL_KEY
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
+import io.openremote.orlib.service.BleProvider
 import io.openremote.orlib.service.GeofenceProvider
 import io.openremote.orlib.service.QrScannerProvider
 import org.json.JSONException
@@ -60,6 +62,7 @@ open class OrMainActivity : Activity() {
     private var webViewLoaded = false
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
+    private var bleProvider: BleProvider? = null
     private var consoleId: String? = null
     private var connectFailCount: Int = 0
     private var connectFailResetHandler: Handler? = null
@@ -106,25 +109,16 @@ open class OrMainActivity : Activity() {
         progressBar?.max = 100
         progressBar?.progress = 1
 
-
-        if (intent.hasExtra(ORConstants.BASE_URL_KEY)) {
-            baseUrl = intent.getStringExtra(ORConstants.BASE_URL_KEY)
-        }
-
         if (intent.hasExtra(BASE_URL_KEY)) {
             baseUrl = intent.getStringExtra(BASE_URL_KEY)
         }
 
-            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-            val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
-            val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
-
-
-                    openIntentUrl(intent)
-
-
+        val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
+        val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
     }
+
 
     override fun onNewIntent(intent: Intent) {
         openIntentUrl(intent)
@@ -457,6 +451,12 @@ open class OrMainActivity : Activity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 locationCallback?.invoke(locationOrigin, true, false)
             }
+        } else if (requestCode == BleProvider.BLUETOOTH_PERMISSION_REQUEST_CODE || requestCode == BleProvider.ENABLE_BLUETOOTH_REQUEST_CODE) {
+            bleProvider?.onRequestPermissionsResult(this, requestCode, object : BleProvider.BleCallback {
+                override fun accept(responseData: Map<String, Any>) {
+                    notifyClient(responseData)
+                }
+            })
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -512,6 +512,9 @@ open class OrMainActivity : Activity() {
                                 }
                                 provider.equals("qr", ignoreCase = true) -> {
                                     handleQrScannerProviderMessage(it)
+                                }
+                                provider.equals("ble", ignoreCase = true) -> {
+                                    handleBleProviderMessage(it)
                                 }
                             }
                         }
@@ -689,6 +692,38 @@ open class OrMainActivity : Activity() {
                 }
                 action.equals("SCAN_QR", ignoreCase = true) -> {
                     qrScannerProvider?.startScanner(this@OrMainActivity)
+                }
+            }
+        }
+
+        @Throws(JSONException::class)
+        private fun handleBleProviderMessage(data: JSONObject) {
+            val action = data.getString("action")
+            if (bleProvider == null) {
+                bleProvider = BleProvider(activity)
+            }
+            when {
+                action.equals("PROVIDER_INIT", ignoreCase = true) -> {
+                    val initData: Map<String, Any> = bleProvider!!.initialize()
+                    notifyClient(initData)
+                }
+                action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
+                    bleProvider?.enable(object : BleProvider.BleCallback {
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
+                }
+                action.equals("PROVIDER_DISABLE", ignoreCase = true) -> {
+                    val response = bleProvider?.disable()
+                    notifyClient(response)
+                }
+                action.equals("SCAN_BLE_DEVICES", ignoreCase = true) -> {
+                    bleProvider?.startBLEScan(this@OrMainActivity,  object : BleProvider.BleCallback {
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
                 }
             }
         }
