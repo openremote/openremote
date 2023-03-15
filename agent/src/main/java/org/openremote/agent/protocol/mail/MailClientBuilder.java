@@ -29,6 +29,7 @@ public class MailClientBuilder {
     public static final int DEFAULT_CHECK_INTERVAL_MILLIS = 5 * 60000;
     protected static int MIN_CHECK_INTERVAL_MILLIS = 10000;
     protected ScheduledExecutorService scheduledExecutorService;
+    protected int checkInitialDelayMillis = 0;
     protected int checkIntervalMillis = DEFAULT_CHECK_INTERVAL_MILLIS;
     protected String folder;
     protected boolean preferHTML;
@@ -57,6 +58,11 @@ public class MailClientBuilder {
 
     public MailClientBuilder setCheckIntervalMillis(int checkIntervalMillis) {
         this.checkIntervalMillis = Math.max(checkIntervalMillis, MIN_CHECK_INTERVAL_MILLIS);
+        return this;
+    }
+
+    public MailClientBuilder setCheckInitialDelayMillis(int checkInitialDelayMillis) {
+        this.checkInitialDelayMillis = Math.max(checkInitialDelayMillis, 0);
         return this;
     }
 
@@ -103,6 +109,10 @@ public class MailClientBuilder {
 
     public int getCheckIntervalMillis() {
         return checkIntervalMillis;
+    }
+
+    public int getCheckInitialDelayMillis() {
+        return checkInitialDelayMillis;
     }
 
     public Date getEarliestMessageDate() {

@@ -129,7 +129,7 @@ public class MailClient implements ConnectionListener {
 //                }
 //            });
 
-            mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, 0, config.getCheckIntervalMillis(), TimeUnit.MILLISECONDS);
+            mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, config.getCheckInitialDelayMillis(), config.getCheckIntervalMillis(), TimeUnit.MILLISECONDS);
             return true;
 
         } catch (Exception e) {
@@ -304,6 +304,10 @@ public class MailClient implements ConnectionListener {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    public MailClientBuilder getConfig() {
+        return config;
     }
 
     protected static Date readLastMessageDate(MailClientBuilder config) {
