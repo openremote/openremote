@@ -22,6 +22,13 @@ package org.openremote.manager.rules;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.api.client.json.Json;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.minidev.json.JSONObject;
+import org.openjdk.nashorn.internal.parser.JSONParser;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -64,8 +71,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
-import static org.openremote.model.util.ValueUtil.LOG;
-import static org.openremote.model.util.ValueUtil.distinctByKey;
+import static org.openremote.model.util.ValueUtil.*;
 
 public class JsonRulesBuilder extends RulesBuilder {
 
@@ -896,8 +902,24 @@ public class JsonRulesBuilder extends RulesBuilder {
                         if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                             // Need to clone the alarm
                             alarm = ValueUtil.clone(alarm);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, false);
-                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
+                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
+                            JsonParser parser = new JsonParser();
+                            JsonObject json = parser.parse(triggeredAssetInfo).getAsJsonObject();
+                            Object[] key = json.keySet().toArray();
+                            StringBuilder builder = new StringBuilder();
+                            builder.append("Triggered asset(s):").append("\n");
+                            for (int i = 0; i < key.length; i++) {
+                                JsonArray array = json.getAsJsonArray(key[i].toString());
+                                JsonObject object = array.get(0).getAsJsonObject();
+                                builder.append("ID: " + object.get("id")).append("\n");
+                                builder.append("Asset type: " + object.get("assetType")).append("\n");
+                                builder.append("Asset name: " + object.get("assetName")).append("\n");
+                                builder.append("Attribute name: " + object.get("name")).append("\n");
+                                builder.append("Attribute value: " + object.get("value")).append("\n").append("\n");
+                            }
+
+                            String result = builder.toString();
+                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, result);
                             alarm.setContent(content);
                         }
                     }
