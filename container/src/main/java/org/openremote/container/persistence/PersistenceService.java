@@ -19,13 +19,12 @@
  */
 package org.openremote.container.persistence;
 
-import org.apache.camel.ExchangePattern;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.Predicate;
-import org.apache.camel.ProducerTemplate;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.output.MigrateResult;
+import org.flywaydb.core.internal.sqlscript.FlywaySqlScriptException;
 import org.hibernate.Session;
 import org.hibernate.annotations.Formula;
 import org.hibernate.cfg.AvailableSettings;
@@ -33,7 +32,10 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.*;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.EntityClassProvider;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -41,9 +43,9 @@ import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.datapoint.AssetDatapoint;
+import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.notification.SentNotification;
-import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.rules.AssetRuleset;
@@ -486,16 +488,32 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         appendSchemas(schemas);
         appendSchemaLocations(locations);
 
+        // Adding timescaledb extension to make sure it has been initialized. Flyway clean caused issues with relations to timescaledb tables.
+        // Excluding the extension(s) in the cleanup process will not be added soon https://github.com/flyway/flyway/issues/2271
+        // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
+        StringBuilder initSql = new StringBuilder();
+        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb SCHEMA public cascade;");
+        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit SCHEMA public cascade;");
+
         flyway = Flyway.configure()
             .cleanDisabled(false)
             .validateMigrationNaming(true)
             .dataSource(connectionUrl, databaseUsername, databasePassword)
             .schemas(schemas.toArray(new String[0]))
             .locations(locations.toArray(new String[0]))
+            .initSql(initSql.toString())
             .baselineOnMigrate(true)
             .load();
 
-        MigrationInfo currentMigration = flyway.info().current();
+        MigrationInfo currentMigration;
+        try {
+            currentMigration = flyway.info().current();
+        } catch (FlywaySqlScriptException fssex) {
+            if(fssex.getStatement().contains("CREATE EXTENSION IF NOT EXISTS timescaledb")) { // ... SCHEMA public cascade;
+                LOG.severe("Timescale DB extension not found; please ensure you are using a postgres image with timescale DB extension included.");
+            }
+            throw fssex;
+        }
 
         if (currentMigration == null && !forceClean) {
             LOG.warning("DB is empty so changing forceClean to true");

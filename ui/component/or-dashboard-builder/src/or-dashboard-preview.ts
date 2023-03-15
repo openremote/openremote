@@ -19,6 +19,7 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 import { when } from "lit/directives/when.js";
 import { cache } from "lit/directives/cache.js";
+import {OrDashboardEngine} from "./or-dashboard-engine";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -79,7 +80,9 @@ const editorStyling = css`
         box-sizing: border-box;
         border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         border-radius: 4px;
-        overflow: hidden !important;
+    }
+    .grid-stack > .grid-stack-item > .grid-stack-item-content {
+        overflow: visible;
     }
     .grid-stack-item-content__active {
         border: 2px solid var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
@@ -217,6 +220,9 @@ export class OrDashboardPreview extends LitElement {
         }
         // Defaulting to a Phone view
         if(!this.previewSize) { this.previewSize = this.availablePreviewSizes[3]; }
+
+        // Register custom override functions for GridStack
+        GridStack.registerEngine(OrDashboardEngine);
     }
 
     static get styles() {
@@ -501,7 +507,7 @@ export class OrDashboardPreview extends LitElement {
                         <span>${i18next.t('dashboard.renderingGrid')}</span>
                     </div>
                 ` : html`
-                    <div id="container" style="justify-content: center; overflow: ${this.fullscreen ? undefined : 'hidden auto'}; position: relative;">
+                    <div id="container" style="justify-content: center; position: relative;">
                         ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                             <div style="position: absolute; z-index: 3; height: 100%; display: flex; align-items: center;">
                                 <span>${i18next.t('dashboard.deviceNotSupported')}</span>
@@ -518,7 +524,7 @@ export class OrDashboardPreview extends LitElement {
                                         return html`
                                             <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
                                                 <div class="grid-stack-item-content" style="display: flex;">
-                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}" style="width: 100%; height: auto;"></or-dashboard-widget>
+                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}" style="width: 100%; height: auto; border-radius: 4px;"></or-dashboard-widget>
                                                 </div>
                                             </div>
                                         `

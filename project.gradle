@@ -22,11 +22,10 @@ if (project == rootProject) {
         if (rootProject.hasProperty("gradleFileEncrypt")) {
             println("File encryption plugin config found, configuring git pre commit hook and decrypt task dependency")
             try {
-
-            // Write git hook for encryption plugin checks before any commit
-            def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
-            def f = path.toFile()
-            f.text = """#!/bin/sh
+                // Write git hook for encryption plugin checks before any commit
+                def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
+                def f = path.toFile()
+                f.text = """#!/bin/sh
 
 echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
 
