@@ -77,7 +77,7 @@ export class PageInsights extends Page<AppStateKeyed> {
 
     shouldUpdate(changedProps): boolean | any {
         console.log(changedProps);
-        if((!this.dashboards || this.dashboards.length == 0) && !this.isLoading()) {
+        if(!this.dashboards && !this.isLoading()) {
             this.fetchAllDashboards();
         }
         return super.shouldUpdate(changedProps);

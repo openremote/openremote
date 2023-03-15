@@ -82,6 +82,7 @@ public class ManagerWebService extends WebService {
     public static final String OR_ROOT_REDIRECT_PATH_DEFAULT = "/manager";
     public static final String API_PATH = "/api";
     public static final String MANAGER_APP_PATH = "/manager";
+    public static final String INSIGHTS_APP_PATH = "/insights";
     public static final String SWAGGER_APP_PATH = "/swagger";
     public static final String CONSOLE_LOADER_APP_PATH = "/console_loader";
     public static final String SHARED_PATH = "/shared";
@@ -212,6 +213,7 @@ public class ManagerWebService extends WebService {
             };
 
             deploymentHandler.addPrefixPath(MANAGER_APP_PATH, appFileHandler);
+            deploymentHandler.addPrefixPath(INSIGHTS_APP_PATH, appFileHandler);
             deploymentHandler.addPrefixPath(SWAGGER_APP_PATH, appFileHandler);
             deploymentHandler.addPrefixPath(CONSOLE_LOADER_APP_PATH, appFileHandler);
             deploymentHandler.addPrefixPath(SHARED_PATH, appFileHandler);
