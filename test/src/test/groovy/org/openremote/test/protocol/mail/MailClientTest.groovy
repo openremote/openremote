@@ -15,7 +15,6 @@ import spock.util.concurrent.PollingConditions
 
 import javax.mail.Message
 import javax.mail.Multipart
-import javax.mail.event.ConnectionEvent
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
@@ -104,9 +103,9 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert connectionEvents.any {it == ConnectionStatus.CONNECTED}
             assert messages.size() == 3
-            assert messages.any {it.content == "Test body 1\r\n" && it.subject == "Test Message 1" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
-            assert messages.any {it.content == "Test body 2\r\n" && it.subject == "Test Message 2" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
-            assert messages.any {it.content == "Test body 3\r\n" && it.subject == "Test Message 3" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 1" && it.subject == "Test Message 1" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 2" && it.subject == "Test Message 2" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 3" && it.subject == "Test Message 3" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
         }
 
         when: "a multipart mail is sent to the mailbox with text and html parts"
@@ -178,8 +177,8 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
             assert connectionEvents.size() == 1
             assert connectionEvents[0] == ConnectionStatus.CONNECTED
             assert messages.size() == 2
-            assert messages.any {it.content == "Test body 4\r\n" && it.subject == "Test Message 4" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
-            assert messages.any {it.content == "Test body 5\r\n" && it.subject == "Test Message 5" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 4" && it.subject == "Test Message 4" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 5" && it.subject == "Test Message 5" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
         }
 
         when: "another multipart mail is sent to the mailbox with text and html parts"
