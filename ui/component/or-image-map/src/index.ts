@@ -3,6 +3,7 @@ import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
+// this import needs to be changed
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import "./markers/or-map-marker";

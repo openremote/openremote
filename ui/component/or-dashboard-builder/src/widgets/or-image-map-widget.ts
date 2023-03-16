@@ -233,7 +233,8 @@ class OrImageWidgetSettings extends LitElement {
         return [style, widgetSettingsStyling];
     }
 
-    // UI Rendering
+    // UI Rendering for settings ig
+
     render() {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
         return html`
