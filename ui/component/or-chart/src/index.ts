@@ -315,11 +315,11 @@ const style = css`
         height: 100%; !important;
     }
 
-    @media screen and (max-width: 1280px) {
+    /*@media screen and (max-width: 1280px) {
         #chart-container {
             max-height: 330px;
         }
-    }
+    }*/
 
     @media screen and (max-width: 769px) {
         .mdc-dialog .mdc-dialog__surface {
@@ -330,7 +330,6 @@ const style = css`
         }
 
         #container {
-            background-color: black;
             flex-direction: column;
         }
 
@@ -631,10 +630,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                                                 html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}"></or-mwc-input>`,
                                                 Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                 this.timePresetKey,
-                                                (value: string | string[]) => this.timePresetKey = value.toString(),
+                                                (value: string | string[]) => {
+                                                    console.error("value change in timestamp controls!")
+                                                    this.timePresetKey = value.toString()
+                                                },
                                                 undefined,
                                                 undefined,
-                                                undefined,
+                                                true,
                                                 true
                                         )}
                                     ` : html`
@@ -739,6 +741,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             this.timePresetOptions = this._getDefaultTimestampOptions();
         }
         if (!this.timePresetKey) {
+            console.log("No timePresetKey was present!");
             this.timePresetKey = this.timePresetOptions.keys().next().value.toString();
         }
 
@@ -989,13 +992,17 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery || !this.timePresetOptions || !this.timePresetKey) {
             return;
         }
 
         this._loading = true;
 
-        const dates: [Date, Date] = this.timePresetOptions!.get(this.timePresetKey!)!(new Date());
+        const presetFunction = this.timePresetOptions.get(this.timePresetKey);
+        console.log(this.timePresetKey);
+        console.log(this.timePresetOptions);
+        console.log(presetFunction);
+        const dates: [Date, Date] = presetFunction!(new Date());
         this._startOfPeriod = dates[0].getTime();
         this._endOfPeriod = dates[1].getTime();
 
