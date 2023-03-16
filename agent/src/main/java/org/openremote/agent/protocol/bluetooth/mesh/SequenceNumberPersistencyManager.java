@@ -31,10 +31,11 @@ import org.openremote.model.syslog.SyslogCategory;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URI;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SequenceNumberPersistencyManager {
@@ -48,7 +49,11 @@ public class SequenceNumberPersistencyManager {
     public static String XML_TAG_SEQUENCE_NUMBER = "SequenceNumber";
 
     private final Map<String, Map<String, Integer>> map = new HashMap<>();
-    private final URI filePath = new File("/btmesh/sequencenumber.xml").toURI();
+    private final Path filePath;
+
+    public SequenceNumberPersistencyManager(Path storagePath) {
+        filePath = storagePath.resolve("sequencenumber.xml");
+    }
 
     public synchronized void save(NetworkKey networkKey, int unicastAddress, int sequenceNumber) {
         String key = MeshParserUtils.bytesToHex(networkKey.key, false);
@@ -65,7 +70,7 @@ public class SequenceNumberPersistencyManager {
         save();
     }
 
-    public synchronized void save() {
+    protected synchronized void save() {
         Document doc = new Document();
 
         Element root = new Element(XML_TAG_SEQUENCE_NUMBER_LIST);
@@ -96,8 +101,8 @@ public class SequenceNumberPersistencyManager {
         FileWriter writer = null;
         File file = null;
         try {
-            file = new File(filePath);
-            writer = new FileWriter(new File(filePath));
+            file = filePath.toFile();
+            writer = new FileWriter(file);
             outputter.output(doc, writer);
             writer.flush();
         } catch (IOException e) {
@@ -114,21 +119,16 @@ public class SequenceNumberPersistencyManager {
     }
 
     public synchronized void load() {
-        if (!fileExists()) {
+        if (!filePath.toFile().exists()) {
             return;
         }
-        File file = new File(filePath);
+        File file = filePath.toFile();
         SAXBuilder builder = new SAXBuilder();
-        Document doc = null;
+        Document doc;
         try {
             doc = builder.build(file);
-        } catch (JDOMException e) {
-            LOG.severe("Failed to load sequence number file: '" + file.getPath() + "' because: " + e.getMessage());
-            e.printStackTrace();
-            return;
-        } catch (IOException e) {
-            LOG.severe("Failed to load sequence number file: '" + file.getPath() + "' because: " + e.getMessage());
-            e.printStackTrace();
+        } catch (JDOMException | IOException e) {
+            LOG.log(Level.SEVERE, "Failed to load sequence number file: '" + file.getPath() + "'", e);
             return;
         }
         map.clear();
@@ -147,14 +147,13 @@ public class SequenceNumberPersistencyManager {
             String number = numberElement.getText();
 
             if (!map.containsKey(key)) {
-                map.put(key, new HashMap<String, Integer>());
+                map.put(key, new HashMap<>());
             }
             try {
                 map.get(key).put(address, Integer.valueOf(number));
             } catch (NumberFormatException e) {
-                LOG.severe("Error while loading sequence number file: '" + file.getPath() + "' because: " + e.getMessage());
+                LOG.log(Level.SEVERE, "Error while loading sequence number file: '" + file.getPath() + "'", e);
                 e.printStackTrace();
-                continue;
             }
         }
     }
@@ -167,11 +166,5 @@ public class SequenceNumberPersistencyManager {
             number = map.get(key).get(address);
         }
         return number;
-    }
-
-    // Private Instance Methods -------------------------------------------------------------------
-
-    private boolean fileExists() {
-        return new File(filePath).exists();
     }
 }

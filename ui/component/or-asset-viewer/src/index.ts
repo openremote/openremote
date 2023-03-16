@@ -574,7 +574,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
             return [attr.name, label];
-        });
+            }).sort(Util.sortByString((item) => item[1] === undefined ? item[0]! : item[1]));
 
         let attrTemplate = html`
                 <div id="attribute-picker">

@@ -63,8 +63,13 @@ import javax.persistence.spi.ClassTransformer;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.sql.DataSource;
 import javax.ws.rs.core.UriBuilder;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -225,6 +230,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     public static final int OR_DB_MAX_POOL_SIZE_DEFAULT = 20;
     public static final String OR_DB_CONNECTION_TIMEOUT_SECONDS = "OR_DB_CONNECTION_TIMEOUT_SECONDS";
     public static final int OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
+    public static final String OR_STORAGE_DIR = "OR_STORAGE_DIR";
+    public static final String OR_STORAGE_DIR_DEFAULT = "tmp";
+    public static final String OR_DB_FLYWAY_OUT_OF_ORDER = "OR_DB_FLYWAY_OUT_OF_ORDER";
     public static final int PRIORITY = Integer.MIN_VALUE + 100;
 
     protected MessageBrokerService messageBrokerService;
@@ -236,6 +244,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     protected boolean forceClean;
     protected Set<String> defaultSchemaLocations = new HashSet<>();
     protected Set<String> schemas = new HashSet<>();
+    protected Path storageDir;
 
     public static Predicate isPersistenceEventForEntityType(Class<?> type) {
         return exchange -> {
@@ -292,8 +301,24 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         forceClean = getBoolean(container.getConfig(), OR_SETUP_RUN_ON_RESTART, container.isDevMode());
 
+        storageDir = Paths.get(getString(container.getConfig(), OR_STORAGE_DIR, OR_STORAGE_DIR_DEFAULT));
+        LOG.log(Level.INFO, "Setting storage directory to '" + storageDir.toAbsolutePath() + "'");
+
+        if (!Files.exists(storageDir) || !Files.isDirectory(storageDir)) {
+            String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' doesn't exist or is not a folder";
+            LOG.log(Level.SEVERE, msg);
+            throw new FileSystemNotFoundException(msg);
+        } else {
+            File testFile = storageDir.toFile();
+            if (!testFile.canRead() || !testFile.canWrite()) {
+                String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' is not writable";
+                LOG.log(Level.SEVERE, msg);
+                throw new FileSystemNotFoundException(msg);
+            }
+        }
+
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
-        prepareSchema(connectionUrl, dbUsername, dbPassword, dbSchema);
+        prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema);
 
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
@@ -480,7 +505,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
     }
 
-    protected void prepareSchema(String connectionUrl, String databaseUsername, String databasePassword, String schemaName) {
+    protected void prepareSchema(Container container, String connectionUrl, String databaseUsername, String databasePassword, String schemaName) {
+
+        boolean outOfOrder = getBoolean(container.getConfig(), OR_DB_FLYWAY_OUT_OF_ORDER, false);
+
         LOG.fine("Preparing database schema");
         List<String> locations = new ArrayList<>();
         List<String> schemas = new ArrayList<>();
@@ -503,6 +531,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             .locations(locations.toArray(new String[0]))
             .initSql(initSql.toString())
             .baselineOnMigrate(true)
+            .outOfOrder(outOfOrder)
             .load();
 
         MigrationInfo currentMigration;
@@ -563,6 +592,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             "database=" + database +
             ", persistenceUnitName='" + persistenceUnitName + '\'' +
             '}';
+    }
+
+    public Path getStorageDir() {
+        return storageDir;
     }
 
     public static Field[] getEntityPropertyFields(Class<?> clazz, List<String> includeFields, List<String> excludeFields) {
