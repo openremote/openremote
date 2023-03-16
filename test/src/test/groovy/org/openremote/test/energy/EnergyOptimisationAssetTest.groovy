@@ -11,7 +11,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.datapoint.DatapointInterval
+import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.setup.integration.ManagerTestSetup
@@ -124,12 +124,16 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         then: "the setpoints of the storage asset for the next 24hrs should be correctly optimised"
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
-            def setpoints = assetPredictedDatapointService.getValueDatapoints(
-                    new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
-                    DatapointInterval.MINUTE,
-                    (int)(optimiser.intervalSize * 60),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
+            def setpoints = assetPredictedDatapointService.queryDatapoints(
+                    managerTestSetup.electricityBatteryAssetId,
+                    ElectricityAsset.POWER_SETPOINT.name,
+                    new AssetDatapointIntervalQuery(
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            (optimiser.intervalSize * 60) + " minutes",
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
+                    )
             )
 
             assert setpoints.size() == 7
@@ -152,12 +156,16 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         then: "the battery should not be used in any interval"
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
-            def setpoints = assetPredictedDatapointService.getValueDatapoints(
-                    new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
-                    DatapointInterval.MINUTE,
-                    (int)(optimiser.intervalSize * 60),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
+            def setpoints = assetPredictedDatapointService.queryDatapoints(
+                    managerTestSetup.electricityBatteryAssetId,
+                    ElectricityAsset.POWER_SETPOINT.name,
+                    new AssetDatapointIntervalQuery(
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            (optimiser.intervalSize * 60) + " minutes",
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
+                    )
             )
 
             assert setpoints.size() == 7
@@ -180,12 +188,16 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         then: "the battery should only be used in the correct intervals"
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
-            def setpoints = assetPredictedDatapointService.getValueDatapoints(
-                    new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
-                    DatapointInterval.MINUTE,
-                    (int)(optimiser.intervalSize * 60),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
+            def setpoints = assetPredictedDatapointService.queryDatapoints(
+                    managerTestSetup.electricityBatteryAssetId,
+                    ElectricityAsset.POWER_SETPOINT.name,
+                    new AssetDatapointIntervalQuery(
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            (optimiser.intervalSize * 60) + " minutes",
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
+                    )
             )
 
             assert setpoints.size() == 7
@@ -287,12 +299,16 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 10d
 
-            def setpoints = assetPredictedDatapointService.getValueDatapoints(
-                    new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
-                    DatapointInterval.MINUTE,
-                    (int)(optimiser.intervalSize * 60),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
+            def setpoints = assetPredictedDatapointService.queryDatapoints(
+                    managerTestSetup.electricityBatteryAssetId,
+                    ElectricityAsset.POWER_SETPOINT.name,
+                    new AssetDatapointIntervalQuery(
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            (optimiser.intervalSize * 60) + " minutes",
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
+                    )
             )
 
             assert setpoints.size() == 7

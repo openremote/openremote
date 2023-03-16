@@ -43,7 +43,7 @@ services:
       file: deploy.yml
       service: postgresql
     volumes:
-      - ./tmp:/tmp
+      - ../tmp:/storage
     # Access directly if needed on localhost
     ports:
       - "5432:5432"

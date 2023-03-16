@@ -48,6 +48,16 @@ export class OrDashboardWidget extends LitElement {
     }
 
     shouldUpdate(changedProperties: Map<PropertyKey, unknown>): boolean {
+
+        // Update config if some values in the spec are not set.
+        // Useful for when migrations have taken place.
+        if(this.widget) {
+            const widgetType = widgetTypes.get(this.widget!.widgetTypeId!);
+            if(widgetType) {
+                this.widget.widgetConfig = widgetType.verifyConfigSpec(this.widget);
+            }
+        }
+
         const changed = changedProperties;
         changed.delete('resizeObserver');
         return changed.size > 0;
@@ -79,20 +89,17 @@ export class OrDashboardWidget extends LitElement {
 
     protected render() {
         return html`
-            <div id="widget-container" style="height: 100%; padding: 8px 16px 8px 16px; display: flex; flex-direction: column; overflow: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-right: -12px; height: 36px;">
+            <div id="widget-container" style="height: calc(100% - 16px); padding: 8px 16px 8px 16px; display: flex; flex-direction: column;">
+                <div style="flex: 0 0 36px; display: flex; justify-content: space-between; align-items: center;">
                     <span class="panel-title" style="width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.widget?.displayName?.toUpperCase()}</span>
-                    <div>
-                            <!--<or-mwc-input type="${InputType.BUTTON}" outlined label="Period"></or-mwc-input>-->
-                            <!--<or-mwc-input type="${InputType.BUTTON}" label="Settings"></or-mwc-input>-->
-                            <!--<or-mwc-input type="${InputType.BUTTON}" icon="refresh" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>-->
-                    </div>
                 </div>
-                ${when((!this.error && !this.loading), () => html`
-                    ${this.getWidgetContent(this.widget!)}
-                `, () => html`
-                    ${this.error ? html`${this.error}` : html`${i18next.t('loading')}`}
-                `)}
+                <div style="flex: 1; max-height: calc(100% - 36px);">
+                    ${when((!this.error && !this.loading), () => html`
+                        ${this.getWidgetContent(this.widget!)}
+                    `, () => html`
+                        ${this.error ? html`${this.error}` : html`${i18next.t('loading')}`}
+                    `)}
+                </div>
             </div>
         `
     }

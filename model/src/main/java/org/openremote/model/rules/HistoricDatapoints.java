@@ -20,11 +20,9 @@
 package org.openremote.model.rules;
 
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.util.TsIgnore;
-
-import java.time.LocalDateTime;
 
 /**
  * Facade for historic data points in rules
@@ -32,14 +30,5 @@ import java.time.LocalDateTime;
 @TsIgnore
 public abstract class HistoricDatapoints {
 
-    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
-                                                           DatapointInterval interval,
-                                                           LocalDateTime fromTimestamp,
-                                                           LocalDateTime toTimestamp);
-
-    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
-                                                           DatapointInterval interval,
-                                                           int stepSize,
-                                                           LocalDateTime fromTimestamp,
-                                                           LocalDateTime toTimestamp);
+    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, AssetDatapointQuery query);
 }

@@ -411,7 +411,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     private _deleteUser(user) {
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"), i18next.t("delete"))
+        showOkCancelDialog(i18next.t("deleteUser"), i18next.t("deleteUserConfirm", { userName: user.username }), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     this.doDelete(user);

@@ -625,6 +625,7 @@ export class MapWidget {
                     [boundsArray[2], boundsArray[3]],
                     [boundsArray[2], boundsArray[1]],
                     [boundsArray[0], boundsArray[1]],
+                    [boundsArray[0], boundsArray[3]]
                 ]
             ]
             this._mapGl.fitBounds([
