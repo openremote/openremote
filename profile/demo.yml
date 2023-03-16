@@ -16,7 +16,7 @@ version: '2.4'
 
 volumes:
   proxy-data:
-  temp-data:
+  manager-data:
   postgresql-data:
   deployment-data:
 
@@ -61,7 +61,7 @@ services:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-      - temp-data:/tmp
+      - manager-data:/storage
     <<: *awslogs
 
   keycloak:
@@ -106,7 +106,7 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_KNX:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
-      - temp-data:/tmp
+      - manager-data:/storage
       - deployment-data:/deployment
     <<: *awslogs
 
