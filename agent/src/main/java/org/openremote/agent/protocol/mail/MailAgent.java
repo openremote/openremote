@@ -30,6 +30,13 @@ public class MailAgent extends AbstractMailAgent<MailAgent, MailProtocol, MailAg
         MailAgent.class, MailProtocol.class, MailAgentLink.class
     );
 
+    public MailAgent() {
+    }
+
+    public MailAgent(String name) {
+        super(name);
+    }
+
     @Override
     public MailProtocol getProtocolInstance() {
         return new MailProtocol(this);

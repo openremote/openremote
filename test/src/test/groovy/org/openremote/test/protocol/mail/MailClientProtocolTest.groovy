@@ -6,22 +6,22 @@ import com.icegreen.greenmail.util.GreenMailUtil
 import com.icegreen.greenmail.util.ServerSetupTest
 import org.openremote.agent.protocol.mail.AbstractMailProtocol
 import org.openremote.agent.protocol.mail.MailAgent
+import org.openremote.agent.protocol.mail.MailAgentLink
 import org.openremote.agent.protocol.mail.MailClientBuilder
 import org.openremote.agent.protocol.mail.MailProtocol
-import org.openremote.agent.protocol.udp.UDPAgent
-import org.openremote.agent.protocol.udp.UDPProtocol
-import org.openremote.container.concurrent.ContainerScheduledExecutor
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.event.ClientEventService
 import org.openremote.model.Constants
+import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.agent.DefaultAgentLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
-import org.openremote.model.mail.MailMessage
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.query.filter.ValueAnyPredicate
@@ -32,29 +32,10 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.mail.Message
-import javax.mail.Multipart
-import javax.mail.event.ConnectionEvent
-import javax.mail.internet.InternetAddress
-import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
-import javax.mail.internet.MimeMultipart
-import java.nio.file.Paths
-import java.util.concurrent.CopyOnWriteArrayList
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
-import static org.openremote.model.value.MetaItemType.AGENT_LINK
-import static org.openremote.model.value.MetaItemType.AGENT_LINK
-import static org.openremote.model.value.MetaItemType.AGENT_LINK
-import static org.openremote.model.value.MetaItemType.AGENT_LINK
-import static org.openremote.model.value.MetaItemType.AGENT_LINK
-import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.EXECUTION_STATUS
-import static org.openremote.model.value.ValueType.TEXT
-import static org.openremote.model.value.ValueType.TEXT
-import static org.openremote.model.value.ValueType.TEXT
-import static org.openremote.model.value.ValueType.TEXT
-import static org.openremote.model.value.ValueType.TEXT
 import static org.openremote.model.value.ValueType.TEXT
 
 /*
@@ -89,14 +70,10 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
     def setupSpec() {
         MailClientBuilder.MIN_CHECK_INTERVAL_MILLIS = 2000
+        AbstractMailProtocol.INITIAL_CHECK_DELAY_MILLIS = 2000
         greenMail = new GreenMail(ServerSetupTest.ALL)
         greenMail.start()
         user = greenMail.setUser("or@localhost", "or", "secret")
-
-        // Send a few messages to the mailbox
-        sendMessage()
-        sendMessage()
-        sendMessage()
     }
 
     def cleanupSpec() {
@@ -105,10 +82,16 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         }
     }
 
-    def sendMessage() {
+    def sendMessage(String fromAddress) {
         def subject = "Test Message ${++messageCounter}"
         def body = "Test body ${messageCounter}"
-        MimeMessage message = GreenMailUtil.createTextEmail("to@localhost", "from@localhost", subject, body, greenMail.getImap().getServerSetup())
+        MimeMessage message = GreenMailUtil.createTextEmail("to@localhost", fromAddress, subject, body, greenMail.getImap().getServerSetup())
+        message.addHeader("Test-Header", "Test Header Value")
+        user.deliver(message)
+    }
+
+    def sendMessage(String fromAddress, String subject, String body) {
+        MimeMessage message = GreenMailUtil.createTextEmail("to@localhost", fromAddress, subject, body, greenMail.getImap().getServerSetup())
         message.addHeader("Test-Header", "Test Header Value")
         user.deliver(message)
     }
@@ -116,14 +99,21 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
     def "Basic agent and attribute linking"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        AbstractMailProtocol.INITIAL_CHECK_DELAY_MILLIS = 1000
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+
+        and: "some mailbox messages"
+        sendMessage("from@localhost")
+        sendMessage("from@localhost")
+        sendMessage("from@localhost")
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
+        def clientEventService = container.getService(ClientEventService.class)
+        List<AttributeEvent> attributeEvents = []
+        def eventSessionID = clientEventService.addInternalSubscription(AttributeEvent.class,  null, it -> attributeEvents.add(it))
 
         when: "a mail client agent is created"
         def agent = new MailAgent("Test agent")
@@ -133,63 +123,39 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
             .setPort(greenMail.getPop3().getServerSetup().getPort())
             .setUsernamePassword(new UsernamePassword("or", "secret"))
             .setCheckIntervalSeconds(2000)
+            .setDisabled(true)
 
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
-        then: "the protocol instance should be created"
-        conditions.eventually {
-            assert agentService.getProtocolInstance(agent.id) != null
-            assert (agentService.getProtocolInstance(agent.id) as MailProtocol).mailClient != null
-        }
-
-        when: "an asset is created with attributes linked to the agent"
+        and: "an asset is created with attributes linked to the agent"
         def asset = new ThingAsset("Test Asset")
                 .setParent(agent)
                 .addOrReplaceAttributes(
-                        new Attribute<>("startHello", EXECUTION_STATUS)
+                        new Attribute<>("fromMatchUseBody", TEXT)
                                 .addMeta(
-                                        new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                                                .setWriteValue("abcdef"))
-                                ),
-                        new Attribute<>("echoHello", TEXT)
-                                .addMeta(
-                                        new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                                                .setWriteValue('Hello {$value};'))
-                                ),
-                        new Attribute<>("echoWorld", TEXT)
-                                .addMeta(
-                                        new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                                                .setWriteValue("World;"))
-                                ),
-                        new Attribute<>("responseHello", TEXT)
-                                .addMeta(
-                                        new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                                                .setMessageMatchPredicate(
-                                                        new StringPredicate(AssetQuery.Match.BEGIN, true, "Hello"))
+                                        new MetaItem<>(AGENT_LINK, new MailAgentLink(agent.id)
+                                            .setFromMatchPredicate(new StringPredicate("from@localhost"))
                                         )
                                 ),
-                        new Attribute<>("responseWorld", TEXT)
+                        new Attribute<>("subjectMatchUseBody", TEXT)
                                 .addMeta(
-                                        new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                                                .setMessageMatchPredicate(
-                                                        new StringPredicate(AssetQuery.Match.BEGIN, true, "Hello"))
+                                        new MetaItem<>(AGENT_LINK, new MailAgentLink(agent.id)
+                                                .setSubjectMatchPredicate(new StringPredicate("Not A Test"))
                                         )
                                 ),
-                        new Attribute<>("updateOnWrite", TEXT)
+                        new Attribute<>("subjectAndFromMatchUseBody", TEXT)
                                 .addMeta(
-                                        new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                                                .setUpdateOnWrite(true)
-                                                .setValueFilters([
-                                                        new SubStringValueFilter(0, -1)
-                                                ] as ValueFilter[])
+                                        new MetaItem<>(AGENT_LINK, new MailAgentLink(agent.id)
+                                                .setFromMatchPredicate(new StringPredicate("fromanother@localhost"))
+                                                .setSubjectMatchPredicate(new StringPredicate("Not A Test"))
                                         )
                                 ),
-                        new Attribute<>("anyValue", TEXT)
+                        new Attribute<>("fromMatchUseSubject", TEXT)
                                 .addMeta(
-                                        new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                                                .setMessageMatchPredicate(
-                                                        new ValueAnyPredicate())
+                                        new MetaItem<>(AGENT_LINK, new MailAgentLink(agent.id)
+                                                .setFromMatchPredicate(new StringPredicate("from@localhost"))
+                                                .setUseSubject(true)
                                         )
                                 )
                 )
@@ -197,10 +163,65 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         and: "the asset is merged into the asset service"
         asset = assetStorageService.merge(asset)
 
+        and: "the agent is enabled"
+        agent.setDisabled(false)
+        agent = assetStorageService.merge(agent)
+
         then: "the attributes should be linked"
         conditions.eventually {
-            assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 7
-            assert ((UDPProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 3
+            assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 4
+            assert ((MailProtocol)agentService.getProtocolInstance(agent.id)).attributeMessageProcessorMap.size() == 4
+        }
+
+        then: "the agent should become connected"
+        conditions.eventually {
+            assert attributeEvents.any {it.assetId == agent.id && it.attributeName == Agent.STATUS.name && it.value.orElse(null) == ConnectionStatus.CONNECTED}
+        }
+
+        then: "the agent should have finished message checking"
+        conditions.eventually {
+            assert attributeEvents.any {it.assetId == agent.id && it.attributeName == Agent.STATUS.name && it.value.orElse(null) == ConnectionStatus.WAITING}
+        }
+
+        then: "the linked attributes should not have been updated with mailbox messages (as creation time of agent is after message timestamps)"
+        conditions.eventually {
+            assert attributeEvents.count {it.assetId == asset.id} == 0
+        }
+
+        when: "more messages are received in the mailbox"
+        sendMessage("from@localhost")
+        sendMessage("1from@localhost")
+        sendMessage("from@localhost")
+        sendMessage("from@localhost", "Not A Test", "Not a test body 1")
+        sendMessage("fromanother@localhost", "Not A Test", "Not a test body 2")
+
+        then: "the matching linked attributes should have been updated with the new mailbox messages"
+        conditions.eventually {
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Test body")} == 2
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "fromMatchUseSubject" && (it.value.orElse(null) as String).startsWith("Test Message")} == 2
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "fromMatchUseSubject" && it.value.orElse(null) == "Not A Test"} == 1
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "subjectMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 2
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "subjectAndFromMatchUseBody" && it.value.orElse(null) == "Not a test body 2"} == 1
+        }
+
+        when: "more messages are received in the mailbox"
+        sendMessage("fromanother@localhost", "Really Not A Test", "Really not a test body 1")
+        sendMessage("fromanotheranother@localhost", "Not A Test", "Not a test body 3")
+
+        then: "the matching linked attributes should have been updated with the new mailbox messages"
+        conditions.eventually {
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Test body")} == 2
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "fromMatchUseSubject" && (it.value.orElse(null) as String).startsWith("Test Message")} == 2
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "fromMatchUseSubject" && it.value.orElse(null) == "Not A Test"} == 1
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "subjectMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 3
+            assert attributeEvents.count {it.assetId == asset.id && it.attributeName == "subjectAndFromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
+        }
+
+        cleanup: "the event subscription is removed"
+        if (eventSessionID != null) {
+            clientEventService.cancelInternalSubscription(eventSessionID)
         }
     }
 }

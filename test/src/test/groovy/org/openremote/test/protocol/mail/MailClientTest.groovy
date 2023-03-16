@@ -6,6 +6,7 @@ import com.icegreen.greenmail.util.GreenMailUtil
 import com.icegreen.greenmail.util.ServerSetupTest
 import org.openremote.agent.protocol.mail.MailClientBuilder
 import org.openremote.container.concurrent.ContainerScheduledExecutor
+import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.mail.MailMessage
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
@@ -57,11 +58,6 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         greenMail = new GreenMail(ServerSetupTest.ALL)
         greenMail.start()
         user = greenMail.setUser("or@localhost", "or", "secret")
-
-        // Send a few messages to the mailbox
-        sendMessage()
-        sendMessage()
-        sendMessage()
     }
 
     def cleanupSpec() {
@@ -81,7 +77,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
     def "POP3 mail receiving test"() {
 
         given: "an email client with callback handlers"
-        List<ConnectionEvent> connectionEvents = new CopyOnWriteArrayList<>()
+        List<ConnectionStatus> connectionEvents = new CopyOnWriteArrayList<>()
         List<MailMessage> messages = new CopyOnWriteArrayList<>()
         def conditions = new PollingConditions(delay: 1, initialDelay: 1, timeout: 10)
         def executor = new ContainerScheduledExecutor("Scheduled task", 1)
@@ -96,13 +92,18 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         mailClient.addConnectionListener{ connectionEvents.add(it)}
         mailClient.addMessageListener{messages.add(it)}
 
+        and: "some messages in the mailbox"
+        sendMessage()
+        sendMessage()
+        sendMessage()
+
         when: "the mail client is connected"
         mailClient.connect()
 
         then: "the connection status should be connected and the 3 messages should have been received"
         conditions.eventually {
             assert connectionEvents.size() == 1
-            assert connectionEvents[0].type == ConnectionEvent.OPENED
+            assert connectionEvents[0] == ConnectionStatus.CONNECTED
             assert messages.size() == 3
             assert messages.any {it.content == "Test body 1\r\n" && it.subject == "Test Message 1" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
             assert messages.any {it.content == "Test body 2\r\n" && it.subject == "Test Message 2" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
@@ -148,7 +149,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         then: "a connection event should have seen sent"
         conditions.eventually {
             assert connectionEvents.size() == 2
-            assert connectionEvents[1].type == ConnectionEvent.CLOSED
+            assert connectionEvents[1] == ConnectionStatus.DISCONNECTED
         }
 
         when: "new mail is received"
@@ -176,7 +177,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         then: "consumers should only be notified of the two new messages"
         conditions.eventually {
             assert connectionEvents.size() == 1
-            assert connectionEvents[0].type == ConnectionEvent.OPENED
+            assert connectionEvents[0] == ConnectionStatus.CONNECTED
             assert messages.size() == 2
             assert messages.any {it.content == "Test body 4\r\n" && it.subject == "Test Message 4" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
             assert messages.any {it.content == "Test body 5\r\n" && it.subject == "Test Message 5" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
@@ -200,12 +201,14 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
 
         cleanup: "clean up client"
         mailClient.disconnect()
+        greenMail.purgeEmailFromAllMailboxes()
+        messageCounter = 0
     }
 
     def "IMAP mail receiving test"() {
 
         given: "an email client with callback handlers"
-        List<ConnectionEvent> connectionEvents = new CopyOnWriteArrayList<>()
+        List<ConnectionStatus> connectionEvents = new CopyOnWriteArrayList<>()
         List<MailMessage> messages = new CopyOnWriteArrayList<>()
         def conditions = new PollingConditions(delay: 1, initialDelay: 1, timeout: 10)
         def executor = new ContainerScheduledExecutor("Scheduled task", 1)
@@ -230,11 +233,11 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         then: "the connection status should be connected and the 3 messages should have been received"
         conditions.eventually {
             assert connectionEvents.size() == 1
-            assert connectionEvents[0].type == ConnectionEvent.OPENED
+            assert connectionEvents[0] == ConnectionStatus.CONNECTED
             assert messages.size() == 3
-            assert messages.any {it.content == "Test body 6" && it.subject == "Test Message 6" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
-            assert messages.any {it.content == "Test body 7" && it.subject == "Test Message 7" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
-            assert messages.any {it.content == "Test body 8" && it.subject == "Test Message 8" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 1" && it.subject == "Test Message 1" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 2" && it.subject == "Test Message 2" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 3" && it.subject == "Test Message 3" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
         }
 
         when: "new mail is received"
@@ -244,11 +247,13 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         then: "consumers should be notified of the two new messages"
         conditions.eventually {
             assert messages.size() == 5
-            assert messages.any {it.content == "Test body 9" && it.subject == "Test Message 9" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
-            assert messages.any {it.content == "Test body 10" && it.subject == "Test Message 10" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 4" && it.subject == "Test Message 4" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
+            assert messages.any {it.content == "Test body 5" && it.subject == "Test Message 5" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
         }
 
         cleanup: "clean up client"
         mailClient.disconnect()
+        greenMail.purgeEmailFromAllMailboxes()
+        messageCounter = 0
     }
 }

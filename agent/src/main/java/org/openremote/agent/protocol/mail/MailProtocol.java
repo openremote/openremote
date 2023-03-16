@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.mail;
 
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.query.filter.StringPredicate;
 
@@ -42,7 +43,7 @@ public class MailProtocol extends AbstractMailProtocol<MailAgent, MailProtocol, 
 
     @Override
     public String getProtocolInstanceUri() {
-        return "mailClient://" + mailClient.config;
+        return "mailClient://" + agent.getHost().orElse("") + ":" + agent.getPort().map(Object::toString).orElse("") + "?username=" + agent.getUsernamePassword().map(UsernamePassword::getUsername).orElse("");
     }
 
     @Override

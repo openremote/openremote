@@ -32,7 +32,6 @@ import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.mail.event.ConnectionEvent;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -80,10 +79,12 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
             // Set an initial delay to allow attributes to be linked before we read messages - not perfect but it should do
             .setCheckInitialDelayMillis(INITIAL_CHECK_DELAY_MILLIS)
             .setPreferHTML(getAgent().getPreferHTML().orElse(false))
+            .setEarliestMessageDate(agent.getCreatedOn())
             .build();
 
         mailClient.addConnectionListener(this::onConnectionEvent);
         mailClient.addMessageListener(this::onMailMessage);
+        mailClient.connect();
     }
 
     @Override
@@ -120,12 +121,8 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
         // Not supported
     }
 
-    protected void onConnectionEvent(ConnectionEvent event) {
-        if (event.getType() == ConnectionEvent.OPENED) {
-            setConnectionStatus(ConnectionStatus.CONNECTED);
-        } else if (event.getType() == ConnectionEvent.CLOSED) {
-            setConnectionStatus(ConnectionStatus.WAITING);
-        }
+    protected void onConnectionEvent(ConnectionStatus status) {
+        setConnectionStatus(status);
     }
 
     protected void onMailMessage(MailMessage mailMessage) {
