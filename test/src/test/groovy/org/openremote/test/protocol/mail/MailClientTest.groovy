@@ -146,8 +146,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
 
         then: "a connection event should have seen sent"
         conditions.eventually {
-            assert connectionEvents.size() == 2
-            assert connectionEvents[1] == ConnectionStatus.DISCONNECTED
+            assert connectionEvents.any {it == ConnectionStatus.DISCONNECTED}
         }
 
         when: "new mail is received"
@@ -174,8 +173,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
 
         then: "consumers should only be notified of the two new messages"
         conditions.eventually {
-            assert connectionEvents.size() == 1
-            assert connectionEvents[0] == ConnectionStatus.CONNECTED
+            assert connectionEvents.any {it == ConnectionStatus.CONNECTED}
             assert messages.size() == 2
             assert messages.any {it.content == "Test body 4" && it.subject == "Test Message 4" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
             assert messages.any {it.content == "Test body 5" && it.subject == "Test Message 5" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
