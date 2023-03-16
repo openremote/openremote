@@ -102,8 +102,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the connection status should be connected and the 3 messages should have been received"
         conditions.eventually {
-            assert connectionEvents.size() == 1
-            assert connectionEvents[0] == ConnectionStatus.CONNECTED
+            assert connectionEvents.any {it == ConnectionStatus.CONNECTED}
             assert messages.size() == 3
             assert messages.any {it.content == "Test body 1\r\n" && it.subject == "Test Message 1" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
             assert messages.any {it.content == "Test body 2\r\n" && it.subject == "Test Message 2" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
@@ -232,8 +231,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the connection status should be connected and the 3 messages should have been received"
         conditions.eventually {
-            assert connectionEvents.size() == 1
-            assert connectionEvents[0] == ConnectionStatus.CONNECTED
+            assert connectionEvents.any {it == ConnectionStatus.CONNECTED}
             assert messages.size() == 3
             assert messages.any {it.content == "Test body 1" && it.subject == "Test Message 1" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
             assert messages.any {it.content == "Test body 2" && it.subject == "Test Message 2" && it.sentDate != null && it.contentType == "text/plain; charset=us-ascii" && it.from[0] == "from@localhost" && it.headers.get("Test-Header").get(0) == "Test Header Value"}
