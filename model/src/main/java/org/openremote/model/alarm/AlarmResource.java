@@ -21,6 +21,7 @@ public interface AlarmResource {
     @Path("all")
     @GET
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
      /**
@@ -32,7 +33,7 @@ public interface AlarmResource {
      @Path("{alarmId}/delete")
      @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
      void removeAlarm(@BeanParam RequestParams requestParams,
-     @PathParam("alarmId") Long alarmId);
+                      @PathParam("alarmId") Long alarmId);
 
     /**
      * @param requestParams
@@ -54,6 +55,8 @@ public interface AlarmResource {
 
     @Path("{alarmId}/update")
     @PUT
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void updateAlarm(@BeanParam RequestParams requestParams,
                      @PathParam("alarmId") Long alarmId,
                      Alarm alarm);
@@ -102,4 +105,5 @@ public interface AlarmResource {
     @GET
     @Produces(APPLICATION_JSON)
     List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
+    
 }
