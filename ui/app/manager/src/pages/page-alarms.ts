@@ -116,7 +116,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     flex: 1 1 0;
                     gap: 24px;
                 }
-
+                
                 .column {
                     display: flex;
                     flex-direction: column;
