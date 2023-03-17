@@ -80,8 +80,8 @@ public interface AlarmResource {
                         @QueryParam("status") String status,
                         @PathParam("alarmId") String alarmId);
 
-    @PUT
     @Path("{alarmId}/setAcknowledged")
+    @PUT
     void setAlarmAcknowledged(@BeanParam RequestParams requestParams,
                               @PathParam("alarmId") String alarmId);
 
