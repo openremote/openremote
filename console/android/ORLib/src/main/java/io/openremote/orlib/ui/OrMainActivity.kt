@@ -10,7 +10,6 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.Uri
-import android.net.http.SslError
 import android.os.*
 import android.view.KeyEvent
 import android.view.View
@@ -19,14 +18,15 @@ import android.webkit.ConsoleMessage.MessageLevel
 import android.webkit.WebView.WebViewTransport
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.firebase.messaging.FirebaseMessaging
 import io.openremote.orlib.ORConstants
-import io.openremote.orlib.ORConstants.CLEAR_URL
 import io.openremote.orlib.ORConstants.BASE_URL_KEY
+import io.openremote.orlib.ORConstants.CLEAR_URL
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
 import io.openremote.orlib.service.GeofenceProvider
@@ -35,6 +35,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.logging.Level
 import java.util.logging.Logger
+
 
 open class OrMainActivity : Activity() {
 
@@ -289,6 +290,20 @@ open class OrMainActivity : Activity() {
                     }
 
                     return super.shouldOverrideUrlLoading(view, request)
+                }
+
+                @RequiresApi(Build.VERSION_CODES.O)
+                override fun onRenderProcessGone(
+                    view: WebView?,
+                    detail: RenderProcessGoneDetail?
+                ): Boolean {
+
+                    if (view == binding.webView && detail?.didCrash() == true) {
+                        onCreate(null)
+                        return true
+                    }
+
+                    return super.onRenderProcessGone(view, detail)
                 }
             }
             webChromeClient = object : WebChromeClient() {
