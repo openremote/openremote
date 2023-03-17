@@ -4,21 +4,16 @@ import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
 import "./or-dashboard-widget";
 import {debounce} from "lodash";
-import {
-    DashboardGridItem,
-    DashboardScalingPreset,
-    DashboardScreenPreset,
-    DashboardTemplate,
-    DashboardWidget
-} from "@openremote/model";
-import { getActivePreset } from "./index";
+import {DashboardGridItem, DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate, DashboardWidget} from "@openremote/model";
+import {getActivePreset} from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-components/or-loading-indicator";
 import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { i18next } from "@openremote/or-translate";
-import { when } from "lit/directives/when.js";
-import { cache } from "lit/directives/cache.js";
+import {i18next} from "@openremote/or-translate";
+import {when} from "lit/directives/when.js";
+import {cache} from "lit/directives/cache.js";
 import {OrDashboardEngine} from "./or-dashboard-engine";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -27,6 +22,15 @@ const extracss = require('gridstack/dist/gridstack-extra.css');
 
 //language=css
 const editorStyling = css`
+    
+    #loadingContainer {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
     
     #view-options {
         padding: 24px;
@@ -202,6 +206,9 @@ export class OrDashboardPreview extends LitElement {
     @state()
     private rerenderActive: boolean = false;
 
+    @state()
+    private isLoading: boolean = false;
+
 
     /* ------------------------------------------- */
 
@@ -239,6 +246,16 @@ export class OrDashboardPreview extends LitElement {
             && (JSON.stringify((changedProperties.get('latestChanges') as any)?.oldValue)) == (JSON.stringify((changedProperties.get('latestChanges') as any)?.newValue))) {
                 changed.delete('latestChanges');
         }
+
+        // Do not update UI if the preview size has changed while being fullscreen,
+        // since it is only used when in "responsive mode".
+        if(this.fullscreen && changedProperties.has('previewWidth')) {
+            changed.delete('previewWidth');
+        }
+        if(this.fullscreen && changedProperties.has('previewHeight')) {
+            changed.delete('previewHeight');
+        }
+
         // Delete ones that not actually change anything
         changed.delete('latestDragWidgetStart');
 
@@ -331,6 +348,7 @@ export class OrDashboardPreview extends LitElement {
 
     // Main setup Grid method (often used)
     async setupGrid(recreate: boolean, force: boolean = false) {
+        this.isLoading = true;
         await this.waitUntil((_: any) => this.shadowRoot?.getElementById("gridElement") != null)
         let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
@@ -418,6 +436,7 @@ export class OrDashboardPreview extends LitElement {
                 setTimeout(() => {  this.latestDragWidgetStart = undefined; }, 200);
             });
         }
+        this.isLoading = false;
     }
 
 
@@ -461,6 +480,10 @@ export class OrDashboardPreview extends LitElement {
         }
     }
 
+    isPreviewVisible(): boolean {
+        return !this.isLoading && this.activePreset?.scalingPreset != DashboardScalingPreset.BLOCK_DEVICE;
+    }
+
     // Render
     protected render() {
 
@@ -478,7 +501,7 @@ export class OrDashboardPreview extends LitElement {
         let screenPresets = this.template?.screenPresets?.map(s => s.displayName);
         screenPresets?.push(customPreset);
         return html`
-            <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
+            <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%; position: relative;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
                 ${this.editMode && !this.fullscreen ? html`
                     <div id="view-options">
                         <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
@@ -508,15 +531,21 @@ export class OrDashboardPreview extends LitElement {
                     </div>
                 ` : html`
                     <div id="container" style="justify-content: center; position: relative;">
-                        ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                        ${when(this.isLoading, () => html`
                             <div style="position: absolute; z-index: 3; height: 100%; display: flex; align-items: center;">
-                                <span>${i18next.t('dashboard.deviceNotSupported')}</span>
+                                <or-loading-indicator></or-loading-indicator>
                             </div>
-                        ` : undefined}
-                        <div class="${this.fullscreen ? 'maingridContainer__fullscreen' : 'maingridContainer'}">
+                        `, () => html`
+                            ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                                <div style="position: absolute; z-index: 3; height: 100%; display: flex; align-items: center;">
+                                    <span>${i18next.t('dashboard.deviceNotSupported')}</span>
+                                </div>
+                            ` : undefined}
+                        `)}
+                        <div class="${this.fullscreen ? 'maingridContainer__fullscreen' : 'maingridContainer'}" style="${this.isLoading ? 'visibility: hidden;' : ''}">
                             <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined }" 
                                  @click="${(ev: MouseEvent) => { if((ev.composedPath()[0] as HTMLElement).id == 'gridElement') { this.onGridItemClick(undefined) }}}" 
-                                 style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.editMode && !this.fullscreen ? this.previewZoom : 'normal'}; ${this.editMode && !this.fullscreen ? ('-moz-transform: scale(' + this.previewZoom + ')') : undefined}; transform-origin: top;"
+                                 style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.isPreviewVisible() ? 'visible' : 'hidden'}; zoom: ${this.editMode && !this.fullscreen ? this.previewZoom : 'normal'}; ${this.editMode && !this.fullscreen ? ('-moz-transform: scale(' + this.previewZoom + ')') : undefined}; transform-origin: top;"
                             >
                                 <!-- Gridstack element on which the Grid will be rendered -->
                                 <div id="gridElement" class="grid-stack ${this.editMode ? 'grid-element' : undefined}" style="margin: auto;">
