@@ -136,11 +136,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     }
 
-    public SentAlarm sendAlarm(Alarm alarm) {
-        return sendAlarm(alarm, INTERNAL, "");
+    public boolean sendAlarm(Alarm alarm) {
+        return sendAlarm(alarm, INTERNAL, "", "master");
     }
 
-    public SentAlarm sendAlarm(Alarm alarm, Alarm.Source source, String sourceId) {
+    public boolean sendAlarm(Alarm alarm, Alarm.Source source, String sourceId, String realm) {
         try {
             long timestamp = timerService.getCurrentTimeMillis();
             return persistenceService.doReturningTransaction(entityManager -> {
@@ -420,6 +420,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
+
+
     public void updateAlarm(Long id, Alarm alarm) {
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("UPDATE SentAlarm SET title=:title, content=:content, severity=:severity, status=:status WHERE id =:id");
@@ -430,6 +432,31 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             query.setParameter("status", alarm.getStatus());
             query.executeUpdate();
         });
+    }
+
+    public void assignUser(String alarmId, String userId, String realm) {
+        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Storing user alarm link");
+            }
+            PreparedStatement st;
+
+            try {
+                st = connection.prepareStatement("INSERT INTO ALARM_USER_LINK (alarm_id, realm, user_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, user_id) DO NOTHING");
+                st.setString(1, alarmId);
+                st.setString(2, realm);
+                st.setObject(3, userId);
+                st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
+                st.addBatch();
+
+                st.executeBatch();
+
+            } catch (Exception e) {
+                String msg = "Failed to create user alarm link";
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
+        }));
     }
 
     public SentAlarm getSentAlarm(String alarmId) {
