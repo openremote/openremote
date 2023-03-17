@@ -59,6 +59,8 @@ import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
+import static org.openremote.model.rules.RulesetStatus.EXPIRED
+import static org.openremote.model.rules.RulesetStatus.PAUSED
 import static org.openremote.model.util.ValueUtil.parse
 import static org.openremote.model.value.ValueType.TEXT
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
@@ -300,14 +302,14 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert emailMessages.any {it.getRecipients(javax.mail.Message.RecipientType.TO).length == 1
                     && (it.getRecipients(javax.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
-                    && MailUtil.getMessageContent(it).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
+                    && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
         }
 
         and : "an email notification should have been sent to the asset's linked user(s) (only testuser2 has email notifications enabled)"
         conditions.eventually {
             assert emailMessages.any {it.getRecipients(javax.mail.Message.RecipientType.TO).length == 1
                     && (it.getRecipients(javax.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
-                    && MailUtil.getMessageContent(it).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
+                    && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
         }
 
         and: "after a few seconds the rule should not have fired again"
@@ -352,7 +354,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         then: "the ruleset to be redeployed"
         conditions.eventually {
             assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
         and: "another notification should have been sent to the console when rule is redeployed"
@@ -437,7 +439,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         then: "the ruleset should be redeployed and paused until 1st occurrence"
         conditions.eventually {
             assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == PAUSED
         }
 
         when: "the same AttributeEvent is sent"
@@ -459,7 +461,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (1st occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
         when: "the same AttributeEvent is sent"
@@ -483,7 +485,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should become paused again (until next occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == PAUSED
         }
 
         when: "the same AttributeEvent is sent"
@@ -505,7 +507,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (next occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
         when: "the un-pause elapses"
@@ -513,7 +515,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should become paused again (until last occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == PAUSED
         }
 
         when: "the pause elapses"
@@ -521,7 +523,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (last occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
         when: "the un-pause elapses"
@@ -529,7 +531,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should expire"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.EXPIRED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == EXPIRED
         }
 
         cleanup: "static variables are reset and the mock is removed"
