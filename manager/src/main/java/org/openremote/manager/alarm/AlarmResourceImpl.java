@@ -80,6 +80,14 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     }
 
     @Override
+    public void updateAlarm(RequestParams requestParams, Long alarmId, Alarm alarm) {
+        if (alarmId == null) {
+            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
+        }
+        alarmService.updateAlarm(alarmId, alarm);
+    }
+
+    @Override
     public void setAlarmAcknowledged(RequestParams requestParams, String alarmId) {
         if (alarmId == null) {
             throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
