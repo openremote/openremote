@@ -1714,9 +1714,7 @@ export class OrMwcInput extends LitElement {
                         newValue = null;
                     } else {
                         try {
-                            const date = Date.parse(newValue);
-                            const offset = (new Date()).getTimezoneOffset() * 60000;
-                            newValue = date + offset;
+                            newValue = Date.parse(newValue);
                         } catch (e) {
                             newValue = this.value;
                             errorMsg = i18next.t("validation.invalidDate");
