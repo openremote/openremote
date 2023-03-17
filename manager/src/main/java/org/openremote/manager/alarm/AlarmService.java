@@ -311,6 +311,31 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         });
     }
 
+    public void assignUser(String alarmId, String userId, String realm) {
+        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Storing user alarm link");
+            }
+            PreparedStatement st;
+
+            try {
+                st = connection.prepareStatement("INSERT INTO ALARM_USER_LINK (alarm_id, realm, user_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, user_id) DO NOTHING");
+                st.setString(1, alarmId);
+                st.setString(2, realm);
+                st.setObject(3, userId);
+                st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
+                st.addBatch();
+
+                st.executeBatch();
+
+            } catch (Exception e) {
+                String msg = "Failed to create user alarm link";
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
+        }));
+    }
+
     public SentAlarm getSentAlarm(String alarmId) {
         return persistenceService.doReturningTransaction(em -> em.find(SentAlarm.class, alarmId));
     }
