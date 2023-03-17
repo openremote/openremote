@@ -264,7 +264,8 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     }
 
     protected PreparedStatement getUpsertPreparedStatement(Connection connection) throws SQLException {
-        return connection.prepareStatement("INSERT INTO " + getDatapointTableName() + " (entity_id, attribute_name, value, timestamp) " +
+        return connection.prepareStatement("" +
+                "INSERT INTO " + getDatapointTableName() + " (entity_id, attribute_name, value, timestamp) " +
                 "VALUES (?, ?, ?, ?) " +
                 "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE " +
                 "SET value = excluded.value");

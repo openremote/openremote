@@ -13,6 +13,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.ws.rs.WebApplicationException
+
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.container.util.MapAccess.getString
@@ -64,6 +66,8 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         ).token
 
         Alarm alarm = new Alarm("Test Alarm", "Test Content", Alarm.Severity.MEDIUM)
+        Alarm alarm1 = new Alarm("Test Alarm1", "Test Content1", Alarm.Severity.LOW)
+        Alarm update = new Alarm("Updated Alarm1", "Updated Content1", Alarm.Severity.HIGH)
         //SentAlarm[] sentAlarms = [new SentAlarm("1", "Test SentAlarm", "Test Content", Alarm.Severity.HIGH, Alarm.Status.ACTIVE), new SentAlarm("2", "Test SentAlarm2", "Test Content", Alarm.Severity.MEDIUM, Alarm.Status.ACTIVE)]
 
 
@@ -72,21 +76,29 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         def adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
         def anonymousResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AlarmResource.class)
 
+        when: "the anonymous user creates an alarm"
+        anonymousResource.createAlarm(null, alarm)
+
+        then: "no alarm should have been created"
+        WebApplicationException ex = thrown()
+        ex.response.status == 403
+
+        when: "the anonymous user creates an alarm"
+        testuser1Resource.createAlarm(null, alarm)
+
+        then: "no alarm should have been created"
+        ex = thrown()
+        ex.response.status == 403
+
         when: "the admin user creates an alarm"
-        mockAlarmService.sendAlarm(alarm);
+        adminResource.createAlarm(null, alarm1)
 
         then: "an alarm should have been created"
-        conditions.eventually {
-            assert alarms.size() == 1
-        }
-
-        when: "the admin user marks a Building console notification as delivered and requests the notifications for Building consoles"
-        adminResource.createAlarm(null, alarm)
-
-        then: "the notification should have been updated"
         conditions.eventually {
             alarms = adminResource.getAlarms(null)
             assert alarms.count {n -> n.content != null} == 1
         }
+
+
     }
 }
