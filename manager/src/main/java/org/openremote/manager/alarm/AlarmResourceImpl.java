@@ -71,7 +71,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 
     @Override
     public void createAlarm(RequestParams requestParams, Alarm alarm) {
-        LOG.fine("Create alarm method called!");
         boolean success = alarmService.sendAlarm(alarm);
 
         if (!success) {
@@ -103,7 +102,35 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         alarmService.updateAlarmStatus(alarmId, status);
     }
 
-    protected void verifyAccess(SentAlarm sentAlarm, String targetId) {
+    @Override
+    public void assignUser(RequestParams requestParams, String alarmId, String userId, String realm) {
+        if (alarmId == null) {
+            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
+        }
+        if (userId == null) {
+            throw new WebApplicationException("Missing user ID", Status.BAD_REQUEST);
+        }
+        if (realm == null) {
+            throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
+        }
+        alarmService.assignUser(alarmId, userId, realm);
+    }
+
+    @Override
+    public void setAssetLink(RequestParams requestParams, String alarmId, String assetId, String realm) {
+        if (alarmId == null) {
+            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
+        }
+        if (assetId == null) {
+            throw new WebApplicationException("Missing asset ID", Status.BAD_REQUEST);
+        }
+        if (realm == null) {
+            throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
+        }
+        //alarmService.setAssetLink(alarmId, assetId, realm);
+    }
+
+    protected void verifyAccess(SentAlarm sentAlarm) {
         if (sentAlarm == null) {
             LOG.fine("DENIED: Alarm not found");
             throw new WebApplicationException(Status.NOT_FOUND);
