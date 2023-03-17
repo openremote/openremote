@@ -11,6 +11,7 @@ import java.util.List;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Tag(name = "Alarm")
 @Path("alarm")
+@Consumes(APPLICATION_JSON)
 public interface AlarmResource {
     /**
      * @param requestParams
@@ -19,6 +20,7 @@ public interface AlarmResource {
     @Path("all")
     @GET
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
 //    /**
@@ -51,17 +53,21 @@ public interface AlarmResource {
      */
     @POST
     @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void createAlarm(@BeanParam RequestParams requestParams,
                      Alarm alarm);
 
     @Path("{alarmId}/update")
     @PUT
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void updateAlarm(@BeanParam RequestParams requestParams,
                      @PathParam("alarmId") Long alarmId,
                      Alarm alarm);
 
     @Path("{alarmId}/setStatus")
     @PUT
+    @Consumes(APPLICATION_JSON)
     void setAlarmStatus(@BeanParam RequestParams requestParams,
                         @QueryParam("status") String status,
                         @PathParam("alarmId") String alarmId);
@@ -70,4 +76,18 @@ public interface AlarmResource {
     @PUT
     void setAlarmAcknowledged(@BeanParam RequestParams requestParams,
                               @PathParam("alarmId") String alarmId);
+
+    @Path("{alarmId}/assign")
+    @PUT
+    void assignUser(@BeanParam RequestParams requestParams,
+                    @PathParam("alarmId") String alarmId,
+                    String userId,
+                    String realm);
+
+    @Path("{alarmId}/assetLink")
+    @PUT
+    void setAssetLink(@BeanParam RequestParams requestParams,
+                      @PathParam("alarmId") String alarmId,
+                      String assetId,
+                      String realm);
 }

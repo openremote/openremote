@@ -276,10 +276,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
-        // const alarm = {title: "Alarm page alarm", content: "alarm page trigger", severity: AlarmSeverity.MEDIUM} as Alarm;
-        // await manager.rest.api.AlarmResource.createAlarm(alarm);
         const alarmResponse = await manager.rest.api.AlarmResource.getAlarms(null);
-        // console.log(alarmResponse);
+
         if (!this.responseAndStateOK(stateChecker, alarmResponse, i18next.t("TODO"))) {
             return;
         }
@@ -317,9 +315,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 console.error(("save alarm failed") + ": response = " + e.response.statusText);
 
                 if (e.response.status === 400) {
-                    showSnackbar(undefined, i18next.t("saveAlarmFailed"), i18next.t("dismiss"));
-                } else if (e.response.status === 403) {
-                    showSnackbar(undefined, i18next.t('alarmAlreadyExists'))
+                    showSnackbar(undefined, i18next.t("alarm.saveAlarmFailed"), i18next.t("dismiss"));
                 }
             }
             throw e; // Throw exception anyhow to handle individual cases
@@ -795,7 +791,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                             let error: { status?: number, text: string };
                                             this._saveAlarmPromise = this.updateAlarm(alarm).then(() => {
-                                            showSnackbar(undefined, i18next.t("saveAlarmSucceeded"));
+                                            showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
                                             this.reset();
                                             }).catch((ex) => {
                                         if (isAxiosError(ex)) {
