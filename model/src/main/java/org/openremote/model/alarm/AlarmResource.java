@@ -62,6 +62,8 @@ public interface AlarmResource {
 
     @Path("{alarmId}/update")
     @PUT
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void updateAlarm(@BeanParam RequestParams requestParams,
                      @PathParam("alarmId") Long alarmId,
                      Alarm alarm);
@@ -70,8 +72,8 @@ public interface AlarmResource {
     @PUT
     @Consumes(APPLICATION_JSON)
     void setAlarmStatus(@BeanParam RequestParams requestParams,
-            @QueryParam("status") String status,
-            @PathParam("alarmId") String alarmId);
+                        @QueryParam("status") String status,
+                        @PathParam("alarmId") String alarmId);
 
     @Path("{alarmId}/setAcknowledged")
     @PUT
