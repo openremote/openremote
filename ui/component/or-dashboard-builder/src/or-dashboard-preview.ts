@@ -133,7 +133,6 @@ export class OrDashboardPreview extends LitElement {
         // If there is no value yet, do initial setup:
         } else if(newValue != undefined) {
             this._template = newValue;
-            console.log("setupGrid() #1");
             this.setupGrid(false, false);
         }
     }
@@ -234,22 +233,12 @@ export class OrDashboardPreview extends LitElement {
 
     // Checking whether actual changes have been made; if not, prevent updating.
     shouldUpdate(changedProperties: Map<PropertyKey, unknown>): boolean {
-        console.log(changedProperties);
         const changed = changedProperties;
-        if(changedProperties.has('latestChanges') && this.latestChanges?.changedKeys.length == 0
-            && JSON.stringify(this.latestChanges.oldValue) == JSON.stringify(this.latestChanges.newValue)) {
+        if(changedProperties.has('latestChanges')
+            && this.latestChanges?.changedKeys.length == 0
+            && (JSON.stringify((changedProperties.get('latestChanges') as any)?.oldValue)) == (JSON.stringify((changedProperties.get('latestChanges') as any)?.newValue))) {
                 changed.delete('latestChanges');
         }
-
-        // Do not update UI if the preview size has changed while being fullscreen,
-        // since it is only used when in "responsive mode".
-        if(this.fullscreen && changedProperties.has('previewWidth')) {
-            changed.delete('previewWidth');
-        }
-        if(this.fullscreen && changedProperties.has('previewHeight')) {
-            changed.delete('previewHeight');
-        }
-
         // Delete ones that not actually change anything
         changed.delete('latestDragWidgetStart');
 
@@ -258,8 +247,7 @@ export class OrDashboardPreview extends LitElement {
 
 
     // Main method for executing actions after property changes
-    willUpdate(changedProperties: Map<string, any>) {
-        console.log(changedProperties);
+    updated(changedProperties: Map<string, any>) {
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
         // Setup template (list of widgets and properties)
@@ -273,8 +261,6 @@ export class OrDashboardPreview extends LitElement {
 
         // If changes to the template have been made
         if(changedProperties.has("latestChanges")) {
-            console.log(changedProperties.get("latestChanges"));
-            console.log(this.latestChanges);
             if(this.latestChanges) {
                 this.processTemplateChanges(this.latestChanges);
                 this.latestChanges = undefined;
@@ -304,7 +290,6 @@ export class OrDashboardPreview extends LitElement {
         // Switching edit/view mode needs recreation of Grid
         if(changedProperties.has("editMode")) {
             if(changedProperties.get('editMode') != undefined) {
-                console.log("setupGrid() #2");
                 this.setupGrid(true, true);
             }
         }
@@ -326,7 +311,6 @@ export class OrDashboardPreview extends LitElement {
 
         if(changedProperties.has("rerenderPending")) {
             if(this.rerenderPending) {
-                console.log("setupGrid() #3");
                 this.setupGrid(true, true).then(() => {
                     this.rerenderPending = false;
                     this.dispatchEvent(new CustomEvent("rerenderfinished"));
@@ -347,7 +331,6 @@ export class OrDashboardPreview extends LitElement {
 
     // Main setup Grid method (often used)
     async setupGrid(recreate: boolean, force: boolean = false) {
-        console.log("Setting up Grid!");
         await this.waitUntil((_: any) => this.shadowRoot?.getElementById("gridElement") != null)
         let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
@@ -480,7 +463,6 @@ export class OrDashboardPreview extends LitElement {
 
     // Render
     protected render() {
-        console.log("Rendering or-dashboard-preview!");
 
         try { // to correct the list of gridItems each render (Hopefully temporarily since it's quite compute heavy)
             if(this.grid?.el && this.grid?.getGridItems()) {
@@ -633,7 +615,6 @@ export class OrDashboardPreview extends LitElement {
     }
 
     _onGridResize() {
-        console.log("setupGrid #4")
         this.setupGrid(true, false);
     }
 
@@ -648,13 +629,11 @@ export class OrDashboardPreview extends LitElement {
             let gridElement = this.shadowRoot?.getElementById("gridElement");
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = maingrid!.scrollHeight + 'px';
-            console.log("setupGrid #5")
             this.setupGrid(true, false);
         }
 
         // If multiple properties changed, just force rerender all of it.
         else if(changes.changedKeys.length > 1) {
-            console.log("setupGrid() #6");
             this.setupGrid(true, true);
         }
 
@@ -669,7 +648,6 @@ export class OrDashboardPreview extends LitElement {
             }
         }
         else if(changes.changedKeys.includes('screenPresets')) {
-            console.log("setupGrid() #7");
             this.setupGrid(true, true);
         }
     }

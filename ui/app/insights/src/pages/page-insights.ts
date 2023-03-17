@@ -150,7 +150,7 @@ export class PageInsights extends Page<AppStateKeyed> {
                                         </div>
                                     </div>
                                 </div>
-                                <div style="flex: 1 0 auto;">
+                                <div style="flex: 1;">
                                     <or-dashboard-preview style="background: transparent;" .rerenderPending="${this.rerenderPending}" 
                                                           .realm="${manager.displayRealm}" .template="${this.selectedDashboard.template}" .editMode="${false}" 
                                                           .fullscreen="${true}" .readonly="${true}"

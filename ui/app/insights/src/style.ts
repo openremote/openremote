@@ -45,9 +45,4 @@ export const style = css`
         align-items: center;
         float: right;
     }
-
-    .small-btn {
-        height: 36px;
-        margin-top: -12px;
-    }
 `
