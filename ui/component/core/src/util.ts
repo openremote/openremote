@@ -633,8 +633,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
                         value = !!value;
                     } else if (format.asDate) {
                         // Assume UNIX timestamp in ms
-                        const offset = (new Date()).getTimezoneOffset() * 60000;
-                        value = new Date(value - offset);
+                        value = new Date(value);
                     } 
                 } else if (typeof(value) === "boolean" && format.asNumber) {
                     value = value ? 1 : 0;

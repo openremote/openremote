@@ -306,7 +306,7 @@ export class OrAddAssetDialog extends LitElement {
     }
 
     protected async onTypeChanged(isAgent: boolean, listItem: ListItem) {
-        await this.requestUpdate();
+        await this.updateComplete;
 
         this.selectedAttributes = [];
         this.selectedType = listItem.data as AssetDescriptor | AgentDescriptor;
