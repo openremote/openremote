@@ -13,6 +13,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Alarm")
 @Path("alarm")
+@Consumes(APPLICATION_JSON)
 public interface AlarmResource {
     /**
      * @param requestParams
@@ -53,6 +54,7 @@ public interface AlarmResource {
 
     @Path("{alarmId}/update")
     @PUT
+    @Consumes(APPLICATION_JSON)
     void updateAlarm(@BeanParam RequestParams requestParams,
                      @PathParam("alarmId") Long alarmId,
                      Alarm alarm);
