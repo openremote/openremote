@@ -223,5 +223,8 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         if (eventSessionID != null) {
             clientEventService.cancelInternalSubscription(eventSessionID)
         }
+        if (asset != null) {
+            assetStorageService.delete([agent.id, asset.id])
+        }
     }
 }
