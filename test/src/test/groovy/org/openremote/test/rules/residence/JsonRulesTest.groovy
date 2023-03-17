@@ -33,7 +33,6 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -58,9 +57,7 @@ import java.util.concurrent.TimeUnit
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.rules.RulesetStatus.DEPLOYED
-import static org.openremote.model.rules.RulesetStatus.EXPIRED
-import static org.openremote.model.rules.RulesetStatus.PAUSED
+import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.model.util.ValueUtil.parse
 import static org.openremote.model.value.ValueType.TEXT
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
