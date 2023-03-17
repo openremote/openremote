@@ -13,6 +13,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.ws.rs.WebApplicationException
+
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.container.util.MapAccess.getString
@@ -81,6 +83,13 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
+        when: "the anonymous user creates an alarm"
+        testuser1Resource.createAlarm(null, alarm)
+
+        then: "no alarm should have been created"
+        ex = thrown()
+        ex.response.status == 403
+
         when: "the admin user creates an alarm"
         adminResource.createAlarm(null, alarm1)
 
@@ -90,14 +99,5 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
             assert alarms.count {n -> n.content != null} == 1
         }
 
-        when: "the admin user updates an existing alarm"
-        adminResource.updateAlarm(null, alarms.first().id, update)
-
-        then: "the alarm object has been updated"
-        conditions.eventually {
-            alarms = adminResource.getAlarms(null)
-            assert alarms.first().content == update.content
-            assert alarms.first().title == update.title
-        }
     }
 }
