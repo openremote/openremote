@@ -750,6 +750,8 @@
     "severity": "Severity",
     "status": "Status",
     "linkedAssets": "Linked asset(s)",
-    "linkedUsers": "Linked user(s)"
+    "linkedUsers": "Linked user(s)",
+    "saveAlarmSucceeded": "Saved alarm successfully!",
+    "saveAlarmFailed": "Save alarm failed"
   }
 }
