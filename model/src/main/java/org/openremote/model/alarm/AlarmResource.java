@@ -21,6 +21,7 @@ public interface AlarmResource {
     @Path("all")
     @GET
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
      /**
@@ -40,6 +41,7 @@ public interface AlarmResource {
      */
     @POST
     @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void createAlarm(@BeanParam RequestParams requestParams,
             Alarm alarm);
 
@@ -53,6 +55,8 @@ public interface AlarmResource {
 
     @Path("{alarmId}/update")
     @PUT
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void updateAlarm(@BeanParam RequestParams requestParams,
                      @PathParam("alarmId") Long alarmId,
                      Alarm alarm);
@@ -67,7 +71,7 @@ public interface AlarmResource {
     @Path("{alarmId}/setAcknowledged")
     @PUT
     void setAlarmAcknowledged(@BeanParam RequestParams requestParams,
-            @PathParam("alarmId") String alarmId);
+                              @PathParam("alarmId") String alarmId);
 
     @Path("{alarmId}/assign")
     @PUT
