@@ -54,6 +54,12 @@ public interface AlarmResource {
     void createAlarm(@BeanParam RequestParams requestParams,
                      Alarm alarm);
 
+    @Path("{alarmId}/update")
+    @PUT
+    void updateAlarm(@BeanParam RequestParams requestParams,
+                     @PathParam("alarmId") Long alarmId,
+                     Alarm alarm);
+
     @Path("{alarmId}/setStatus")
     @PUT
     void setAlarmStatus(@BeanParam RequestParams requestParams,
