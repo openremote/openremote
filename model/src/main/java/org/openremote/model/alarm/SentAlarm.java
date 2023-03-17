@@ -1,7 +1,9 @@
 package org.openremote.model.alarm;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import java.util.Date;
 
@@ -14,6 +16,10 @@ public class SentAlarm {
     @Column(name = "ID")
     @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     protected Long id;
+
+    @NotNull
+    @Column(name = "REALM", nullable = false, updatable = false)
+    protected String realm;
 
     @Column(name = "TITLE")
     protected String title;
@@ -51,6 +57,13 @@ public class SentAlarm {
 
     public SentAlarm setId(Long id) {
         this.id = id;
+        return this;
+    }
+
+    public String getRealm() { return realm; }
+
+    public SentAlarm setRealm(String realm) {
+        this.realm = realm;
         return this;
     }
 
