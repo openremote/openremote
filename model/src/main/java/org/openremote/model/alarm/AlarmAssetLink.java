@@ -20,6 +20,7 @@
 package org.openremote.model.alarm;
 
 import org.hibernate.annotations.Formula;
+import org.openremote.model.value.MetaItemType;
 
 
 import jakarta.persistence.*;
