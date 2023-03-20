@@ -102,5 +102,11 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         }
 
 
+        then: "the alarm object has been updated"
+        conditions.eventually {
+            alarms = adminResource.getAlarms(null)
+            assert alarms.first().content == update.content
+            assert alarms.first().title == update.title
+        }
     }
 }
