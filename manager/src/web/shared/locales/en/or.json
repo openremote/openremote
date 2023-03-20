@@ -698,6 +698,11 @@
     "linkedAssets": "Linked asset(s)",
     "linkedUsers": "Linked user(s)",
     "saveAlarmSucceeded": "Saved alarm successfully!",
-    "saveAlarmFailed": "Save alarm failed"
+    "saveAlarmFailed": "Save alarm failed",
+    "creatingAlarm": "Creating a new alarm",
+    "createAlarmFailed": "Create alarm failed",
+    "alarmAlreadyExists": "Error occurred! This alarm already exists.",
+    "deleteAlarmConfirm": "Are you sure you want to delete this alarm?",
+    "assignUser": "Assign user"
   }
 }
