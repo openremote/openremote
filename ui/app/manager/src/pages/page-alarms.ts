@@ -753,16 +753,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                       .label="${i18next.t(alarm.id ? "save" : "create")}"
                                       .type="${InputType.BUTTON}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                    let error: { status?: number, text: string };
-                    this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? 'update' : 'create').then(() => {
-                        showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
-                        this.reset();
-                    }).catch((ex) => {
-                        if (isAxiosError(ex)) {
-                            error = {
-                                status: ex.response.status,
-                                text: (ex.response.status == 403 ? i18next.t('alarm.alarmAlreadyExists') : i18next.t('errorOccurred'))
-                            }
+                                            let error: { status?: number, text: string };
+                                            this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? 'update' : 'create').then(() => {
+                                            showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
+                                            this.reset();
+                                            }).catch((ex) => {
+                                        if (isAxiosError(ex)) {
+                                            error = {
+                                                status: ex.response.status,
+                                                text: (ex.response.status == 403 ? i18next.t('alarm.alarmAlreadyExists') : i18next.t('errorOccurred'))
+                                    }
                         }
                     }).finally(() => {
                         this._saveAlarmPromise = undefined;
