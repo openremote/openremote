@@ -55,6 +55,7 @@ import org.openremote.model.util.TextUtil;
 
 import javax.persistence.EntityManager;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
@@ -96,7 +97,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
     protected ScheduledExecutorService executorService;
-    protected Map<String, Agent<?, ?, ?>> agentMap;
+    protected ConcurrentMap<String, Agent<?, ?, ?>> agentMap;
     protected final Map<String, Future<Void>> agentDiscoveryImportFutureMap = new HashMap<>();
     protected final Map<String, Protocol<?>> protocolInstanceMap = new HashMap<>();
     protected final Map<String, List<Consumer<PersistenceEvent<Asset<?>>>>> childAssetSubscriptions = new HashMap<>();
@@ -377,7 +378,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             LOG.fine("Agent is disabled so not starting: " + agent);
             sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
         } else {
-            this.startAgent(agent);
+            executorService.execute(() -> this.startAgent(agent));
         }
     }
 
@@ -416,8 +417,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                                 .orElse(false)
                         ).forEach((agnt, attributes) -> linkAttributes(agnt, asset.getId(), attributes))
                 );
-
-
             } catch (Exception e) {
                 if (protocol != null) {
                     try {
@@ -609,37 +608,30 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             agent = loadedAgent;
         }
 
-        Agent<?, ?, ?> finalAgent = agent;
-        withLock(getClass().getSimpleName() + "::addReplaceAgent", () -> getAgents().put(finalAgent.getId(), finalAgent));
+        getAgents().put(agent.getId(), agent);
         return agent;
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"BooleanMethodIsAlwaysInverted"})
     protected boolean removeAgent(String agentId) {
-        return withLockReturning(getClass().getSimpleName() + "::removeAgent", () -> getAgents().remove(agentId) != null);
+        return getAgents().remove(agentId) != null;
     }
 
     public Agent<?, ?, ?> getAgent(String agentId) {
         return getAgents().get(agentId);
     }
 
-    protected Map<String, Agent<?, ?, ?>> getAgents() {
+    protected synchronized Map<String, Agent<?, ?, ?>> getAgents() {
 
-        if (agentMap != null) {
-            return agentMap;
+        if (agentMap == null) {
+            agentMap = assetStorageService.findAll(
+                    new AssetQuery().types(Agent.class)
+                )
+                .stream()
+                .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)
+                .collect(Collectors.toConcurrentMap(Asset::getId, agent -> (Agent<?, ?, ?>) agent));
         }
-
-        return withLockReturning(getClass().getSimpleName() + "::getAgents", () -> {
-            if (agentMap == null) {
-                agentMap = assetStorageService.findAll(
-                        new AssetQuery().types(Agent.class)
-                    )
-                    .stream()
-                    .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)
-                    .collect(Collectors.toMap(Asset::getId, agent -> (Agent<?, ?, ?>)agent));
-            }
-            return agentMap;
-        });
+        return agentMap;
     }
 
     public Protocol<?> getProtocolInstance(Agent<?, ?, ?> agent) {

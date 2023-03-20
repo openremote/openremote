@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.firebase.messaging.Message
 import net.fortuna.ical4j.model.Recur
 import org.openremote.container.timer.TimerService
+import org.openremote.container.util.MailUtil
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -32,7 +33,6 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -40,11 +40,11 @@ import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
-import org.simplejavamail.email.Email
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.mail.internet.InternetAddress
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
 import javax.ws.rs.core.MediaType
@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.rules.RulesetStatus.DEPLOYED
+import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.model.util.ValueUtil.parse
 import static org.openremote.model.value.ValueType.TEXT
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
@@ -107,7 +107,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
     def "Turn all lights off when console exits the residence geofence"() {
 
         List<PushNotificationMessage> pushMessages = []
-        List<Email> emailMessages = []
+        List<javax.mail.Message> emailMessages = []
         List<Notification.Target> pushTargets = []
         List<Notification.Target> emailTargets = []
 
@@ -155,7 +155,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         // Assume sent to FCM
-        mockEmailNotificationHandler.sendMessage(_ as Email) >> {
+        mockEmailNotificationHandler.sendMessage(_ as javax.mail.Message) >> {
             email ->
                 emailMessages << email.get(0)
                 return NotificationSendResult.success()
@@ -164,10 +164,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "some rules"
         Ruleset ruleset = new RealmRuleset(
-            keycloakTestSetup.realmBuilding.name,
-            "Demo Apartment - All Lights Off",
-            Ruleset.Lang.JSON,
-            getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text)
+                keycloakTestSetup.realmBuilding.name,
+                "Demo Apartment - All Lights Off",
+                Ruleset.Lang.JSON,
+                getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text)
         ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running with asset states inserted and no longer tracking location rules"
@@ -192,43 +192,43 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "a user authenticates"
         def accessToken = authenticate(
-            container,
-            keycloakTestSetup.realmBuilding.name,
-            KEYCLOAK_CLIENT_ID,
-            "testuser3",
-            "testuser3"
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
         ).token
 
         and: "a console is registered by that user"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
         def consoleRegistration = new ConsoleRegistration(null,
-            "Test Console",
-            "1.0",
-            "Android 7.0",
-            new HashMap<String, ConsoleProvider>() {
-                {
-                    put("geofence", new ConsoleProvider(
-                        ORConsoleGeofenceAssetAdapter.NAME,
-                        true,
-                        false,
-                        false,
-                        false,
-                        false,
-                        null
-                    ))
-                    put("push", new ConsoleProvider(
-                        "fcm",
-                        true,
-                        true,
-                        true,
-                        true,
-                        false,
-                        ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
-                    )))
-                }
-            },
-            "",
-            ["manager"] as String[])
+                "Test Console",
+                "1.0",
+                "Android 7.0",
+                new HashMap<String, ConsoleProvider>() {
+                    {
+                        put("geofence", new ConsoleProvider(
+                                ORConsoleGeofenceAssetAdapter.NAME,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                null
+                        ))
+                        put("push", new ConsoleProvider(
+                                "fcm",
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                )))
+                    }
+                },
+                "",
+                ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
         and: "the console location is marked as RULE_STATE"
@@ -243,7 +243,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when:"an additional user is linked to this console (to help with testing)"
         assetStorageService.storeUserAssetLinks(
-            Collections.singletonList(new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.testuser2Id, consoleRegistration.id))
+                Collections.singletonList(new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.testuser2Id, consoleRegistration.id))
         )
 
         and: "the console location is set to the apartment"
@@ -297,16 +297,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "an email notification should have been sent to test@openremote.io with the triggered asset in the body"
         conditions.eventually {
-            assert emailMessages.any {it.recipients.size() == 1
-                && it.recipients[0].address == "test@openremote.io"
-                && it.HTMLText == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
+            assert emailMessages.any {it.getRecipients(javax.mail.Message.RecipientType.TO).length == 1
+                    && (it.getRecipients(javax.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
+                    && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
         }
 
         and : "an email notification should have been sent to the asset's linked user(s) (only testuser2 has email notifications enabled)"
         conditions.eventually {
-            assert emailMessages.any {it.recipients.size() == 1
-                    && it.recipients[0].address == "testuser2@openremote.local"
-                    && it.HTMLText == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
+            assert emailMessages.any {it.getRecipients(javax.mail.Message.RecipientType.TO).length == 1
+                    && (it.getRecipients(javax.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
+                    && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
         }
 
         and: "after a few seconds the rule should not have fired again"
@@ -351,7 +351,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         then: "the ruleset to be redeployed"
         conditions.eventually {
             assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
         and: "another notification should have been sent to the console when rule is redeployed"
@@ -427,16 +427,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def recur = new Recur(Recur.DAILY, 3)
         recur.setInterval(2)
         def calendarEvent = new CalendarEvent(
-            Date.from(validityStart),
-            Date.from(validityEnd),
-            recur)
+                Date.from(validityStart),
+                Date.from(validityEnd),
+                recur)
         ruleset.setValidity(calendarEvent)
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the ruleset should be redeployed and paused until 1st occurrence"
         conditions.eventually {
             assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.version == version+1
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == PAUSED
         }
 
         when: "the same AttributeEvent is sent"
@@ -458,7 +458,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (1st occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
         when: "the same AttributeEvent is sent"
@@ -482,7 +482,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should become paused again (until next occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == PAUSED
         }
 
         when: "the same AttributeEvent is sent"
@@ -504,7 +504,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (next occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
         when: "the un-pause elapses"
@@ -512,7 +512,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should become paused again (until last occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.PAUSED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == PAUSED
         }
 
         when: "the pause elapses"
@@ -520,7 +520,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "eventually the ruleset should be unpaused (last occurrence)"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.DEPLOYED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
         when: "the un-pause elapses"
@@ -528,7 +528,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the ruleset should expire"
         conditions.eventually {
-            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == RulesetStatus.EXPIRED
+            assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == EXPIRED
         }
 
         cleanup: "static variables are reset and the mock is removed"
@@ -567,14 +567,14 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "a thing asset is added to the building realm"
         def thingId = UniqueIdentifierGenerator.generateId("TestThing")
         def thingAsset = new ThingAsset("TestThing")
-            .setId(thingId)
-            .setRealm(keycloakTestSetup.realmBuilding.name)
-            .setLocation(new GeoJSONPoint(0, 0))
-            .addAttributes(
-                    new Attribute<>("sunset", ValueType.INTEGER, null),
-                    new Attribute<>("sunriseWithOffset", ValueType.INTEGER, null),
-                    new Attribute<>("twilightHorizon", ValueType.INTEGER, null),
-            )
+                .setId(thingId)
+                .setRealm(keycloakTestSetup.realmBuilding.name)
+                .setLocation(new GeoJSONPoint(0, 0))
+                .addAttributes(
+                        new Attribute<>("sunset", ValueType.INTEGER, null),
+                        new Attribute<>("sunriseWithOffset", ValueType.INTEGER, null),
+                        new Attribute<>("twilightHorizon", ValueType.INTEGER, null),
+                )
         thingAsset = assetStorageService.merge(thingAsset)
 
         and: "the pseudo clock is stopped"

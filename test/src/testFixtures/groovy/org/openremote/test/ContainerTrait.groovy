@@ -32,6 +32,7 @@ import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
+import org.openremote.container.util.LogUtil
 import org.openremote.container.util.MapAccess
 import org.openremote.container.web.DefaultWebsocketComponent
 import org.openremote.container.web.WebClient
@@ -76,6 +77,10 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
 trait ContainerTrait {
+
+    static {
+        LogUtil.initialiseJUL()
+    }
 
     Logger LOG = LoggerFactory.getLogger(ContainerTrait.class)
 
