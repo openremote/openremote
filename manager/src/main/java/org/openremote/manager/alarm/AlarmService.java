@@ -6,6 +6,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
+import org.openremote.model.alarm.Alarm.Status;
 import org.openremote.model.alarm.SentAlarm;
 import org.openremote.manager.alarm.AlarmProcessingException;
 import org.openremote.model.asset.UserAssetLink;
@@ -21,9 +22,11 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.notification.Notification;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
+import org.openremote.protocol.zwave.model.commandclasses.CCAlarmV2;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
@@ -178,154 +181,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         if(status == Status.ACKNOWLEDGED.toString()){
             this.setAlarmAcknowledged(id);
         }
-    }
-
-    public void assignUser(Long alarmId, String userId){
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET assigneeId=:assigneeId WHERE id =:id");
-            query.setParameter("id", alarmId);
-            query.setParameter("assigneeId", userId);
-            query.executeUpdate();
-        });
-    }
-
-    public void updateAlarm(Long id, SentAlarm alarm) {
-        try {
-            persistenceService.doTransaction(entityManager -> {
-                Query query = entityManager.createQuery("UPDATE SentAlarm SET title=:title, content=:content, severity=:severity, status=:status, lastModified=:lastModified, assigneeId=:assigneeId WHERE id =:id");
-                query.setParameter("id", id);
-                query.setParameter("title", alarm.getTitle());
-                query.setParameter("content", alarm.getContent());
-                query.setParameter("severity", alarm.getSeverity());
-                query.setParameter("status", alarm.getStatus());
-                query.setParameter("lastModified", new Timestamp(timerService.getCurrentTimeMillis()));
-                query.setParameter("assigneeId", alarm.getAssigneeId());
-                query.executeUpdate();
-            });    
-        } catch (Exception e) {
-            String msg = "Failed to update alarm: " + alarm.getTitle();
-            LOG.log(Level.WARNING, msg, e);
-            return;
-        }
-    }
-
-    public void assignUser(Long alarmId, String userId, String realm) {
-        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Storing user alarm link");
-            }
-            PreparedStatement st;
-
-            try {
-                st = connection.prepareStatement("INSERT INTO ALARM_USER_LINK (alarm_id, realm, user_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, user_id) DO NOTHING");
-                st.setLong(1, alarmId);
-                st.setString(2, realm);
-                st.setObject(3, userId);
-                st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
-                st.addBatch();
-
-                st.executeBatch();
-
-            } catch (Exception e) {
-                String msg = "Failed to create user alarm link";
-                LOG.log(Level.WARNING, msg, e);
-                throw new IllegalStateException(msg, e);
-            }
-        }));
-    }
-
-    public List<AlarmUserLink> getUserLinks(Long alarmId, String realm) throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting user alarm links");
-        }
-
-        try {
-            return persistenceService.doReturningTransaction(entityManager -> {
-                StringBuilder sb = new StringBuilder();
-                Map<String, Object> parameters = new HashMap<>(2);
-                sb.append("select al from AlarmUserLink al where 1=1");
-
-                if (!isNullOrEmpty(realm)) {
-                    sb.append(" and al.id.realm = :realm");
-                    parameters.put("realm", realm);
-                }
-                if (alarmId != null) {
-                    sb.append(" and al.id.alarmId = :alarmId");
-                    parameters.put("alarmId", alarmId);
-                }
-                sb.append(" order by al.createdOn desc");
-
-                TypedQuery<AlarmUserLink> query = entityManager.createQuery(sb.toString(), AlarmUserLink.class);
-                parameters.forEach(query::setParameter);
-                List<AlarmUserLink> result = query.getResultList();
-                return result;
-            });
-
-        } catch (Exception e) {
-            String msg = "Failed to get user alarm links";
-            LOG.log(Level.WARNING, msg, e);
-            throw new IllegalStateException(msg, e);
-        }
-}
-
-    public void linkAssets(ArrayList<String> assetIds, String realm, Long alarmId) {
-        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Storing asset alarm link");
-            }
-
-            try {
-                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (alarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, asset_id) DO NOTHING");;
-                for (String assetId : assetIds) {
-                    st.setLong(1, alarmId);
-                    st.setString(2, realm);
-                    st.setString(3, assetId);
-                    st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
-                    st.addBatch();
-                }
-                st.executeBatch();
-
-            } catch (Exception e) {
-                String msg = "Failed to create asset alarm link";
-                LOG.log(Level.WARNING, msg, e);
-                throw new IllegalStateException(msg, e);
-            }
-        }));
-    }
-
-    public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Getting asset alarm links");
-            }
-
-            try {
-                return persistenceService.doReturningTransaction(entityManager -> {
-                    StringBuilder sb = new StringBuilder();
-                    Map<String, Object> parameters = new HashMap<>(2);
-                    sb.append("select al from AlarmAssetLink al where 1=1");
-
-                    if (!isNullOrEmpty(realm)) {
-                        sb.append(" and al.id.realm = :realm");
-                        parameters.put("realm", realm);
-                    }
-                    if (alarmId != null) {
-                        sb.append(" and al.id.alarmId = :alarmId");
-                        parameters.put("alarmId", alarmId);
-                    }
-                    sb.append(" order by al.createdOn desc");
-
-                    TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
-                    parameters.forEach(query::setParameter);
-
-                    return query.getResultList();
-
-                });
-
-            } catch (Exception e) {
-                String msg = "Failed to get asset alarm links";
-                LOG.log(Level.WARNING, msg, e);
-                throw new IllegalStateException(msg, e);
-            }
     }
 
 
