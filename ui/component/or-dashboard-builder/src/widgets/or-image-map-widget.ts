@@ -34,7 +34,11 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     // General values
     displayName: string,
     attributeRefs: AttributeRef[];
-    // Map related values
+    // Image related values
+
+    // imageUploaded: boolean,
+    // imageWidth?: number,
+    // imageLength?: number,
     zoom?: number,
     center?: LngLatLike,
     lat?: number,
