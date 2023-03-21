@@ -84,7 +84,8 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
                 executor,
                 "pop3",
                 "localhost",
-                greenMail.getPop3().getServerSetup().getPort(), "or", "secret")
+                greenMail.getPop3().getServerSetup().getPort())
+            .setBasicAuth("or", "secret")
             .setCheckIntervalMillis(2000)
             .setPersistenceDir(Paths.get("tmp"))
             .build()
@@ -158,7 +159,8 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
             executor,
             "pop3",
             "localhost",
-            greenMail.getPop3().getServerSetup().getPort(), "or", "secret")
+            greenMail.getPop3().getServerSetup().getPort())
+            .setBasicAuth("or", "secret")
             .setCheckIntervalMillis(2000)
             .setPersistenceDir(Paths.get("tmp"))
             .setPreferHTML(true)
@@ -212,7 +214,8 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
                 executor,
                 "imap",
                 "localhost",
-                greenMail.getImap().getServerSetup().getPort(), "or", "secret")
+                greenMail.getImap().getServerSetup().getPort())
+                .setBasicAuth("or", "secret")
                 .setCheckIntervalMillis(2000)
                 .build()
         mailClient.addConnectionListener{ connectionEvents.add(it)}
