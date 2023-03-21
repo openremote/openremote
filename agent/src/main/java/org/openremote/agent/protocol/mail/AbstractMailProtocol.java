@@ -69,8 +69,8 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
             getAgent().getHost().orElseThrow(),
             getAgent().getPort().orElseThrow()
         )
-            .setCheckIntervalMillis(
-                getAgent().getCheckIntervalSeconds().orElse(MailClientBuilder.DEFAULT_CHECK_INTERVAL_MILLIS)
+            .setCheckIntervalSeconds(
+                getAgent().getCheckIntervalSeconds().orElse(MailClientBuilder.DEFAULT_CHECK_INTERVAL_SECONDS)
             )
             .setDeleteMessageOnceProcessed(
                 getAgent().getDeleteProcessedMail().orElse(false)
@@ -78,7 +78,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
             .setFolder(getAgent().getMailFolderName().orElse(null))
             .setPersistenceDir(persistenceDir)
             // Set an initial delay to allow attributes to be linked before we read messages - not perfect but it should do
-            .setCheckInitialDelayMillis(INITIAL_CHECK_DELAY_MILLIS)
+            .setCheckInitialDelaySeconds(INITIAL_CHECK_DELAY_MILLIS)
             .setPreferHTML(getAgent().getPreferHTML().orElse(false))
             .setEarliestMessageDate(agent.getCreatedOn());
 

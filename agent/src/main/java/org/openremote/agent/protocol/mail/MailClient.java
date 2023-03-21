@@ -93,7 +93,7 @@ public class MailClient {
         try {
             withFolder((folder) -> {
                 connected.set(true);
-                mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, config.getCheckInitialDelayMillis(), config.getCheckIntervalMillis(), TimeUnit.MILLISECONDS);
+                mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, config.getCheckInitialDelaySeconds(), config.getCheckIntervalSeconds(), TimeUnit.SECONDS);
             });
 
             updateConnectionStatus(ConnectionStatus.CONNECTED);

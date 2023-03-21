@@ -35,12 +35,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class MailClientBuilder {
     public static final String DEFAULT_FOLDER_NAME = "INBOX";
-    public static final int DEFAULT_CHECK_INTERVAL_MILLIS = 5 * 60000;
-    protected static int MIN_CHECK_INTERVAL_MILLIS = 10000;
+    public static final int DEFAULT_CHECK_INTERVAL_SECONDS = 5 * 60;
+    protected static int MIN_CHECK_INTERVAL_SECONDS = 10;
     protected static final AtomicReference<Client> jaxrsClient = new AtomicReference<>();
     protected ScheduledExecutorService scheduledExecutorService;
-    protected int checkInitialDelayMillis = 0;
-    protected int checkIntervalMillis = DEFAULT_CHECK_INTERVAL_MILLIS;
+    protected int checkInitialDelaySeconds = 0;
+    protected int checkIntervalSeconds = DEFAULT_CHECK_INTERVAL_SECONDS;
     protected String folder;
     protected boolean preferHTML;
     protected Date earliestMessageDate;
@@ -82,13 +82,13 @@ public class MailClientBuilder {
         return this;
     }
 
-    public MailClientBuilder setCheckIntervalMillis(int checkIntervalMillis) {
-        this.checkIntervalMillis = Math.max(checkIntervalMillis, MIN_CHECK_INTERVAL_MILLIS);
+    public MailClientBuilder setCheckIntervalSeconds(int checkIntervalMillis) {
+        this.checkIntervalSeconds = Math.max(checkIntervalMillis, MIN_CHECK_INTERVAL_SECONDS);
         return this;
     }
 
-    public MailClientBuilder setCheckInitialDelayMillis(int checkInitialDelayMillis) {
-        this.checkInitialDelayMillis = Math.max(checkInitialDelayMillis, 0);
+    public MailClientBuilder setCheckInitialDelaySeconds(int checkInitialDelaySeconds) {
+        this.checkInitialDelaySeconds = Math.max(checkInitialDelaySeconds, 0);
         return this;
     }
 
@@ -136,12 +136,12 @@ public class MailClientBuilder {
         return scheduledExecutorService;
     }
 
-    public int getCheckIntervalMillis() {
-        return checkIntervalMillis;
+    public int getCheckIntervalSeconds() {
+        return checkIntervalSeconds;
     }
 
-    public int getCheckInitialDelayMillis() {
-        return checkInitialDelayMillis;
+    public int getCheckInitialDelaySeconds() {
+        return checkInitialDelaySeconds;
     }
 
     public Date getEarliestMessageDate() {

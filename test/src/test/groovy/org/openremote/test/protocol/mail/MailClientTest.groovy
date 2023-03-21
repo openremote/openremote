@@ -53,7 +53,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
 
 
     def setupSpec() {
-        MailClientBuilder.MIN_CHECK_INTERVAL_MILLIS = 2000
+        MailClientBuilder.MIN_CHECK_INTERVAL_SECONDS = 2
         greenMail = new GreenMail(ServerSetupTest.ALL)
         greenMail.start()
         user = greenMail.setUser("or@localhost", "or", "secret")
@@ -86,7 +86,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
                 "localhost",
                 greenMail.getPop3().getServerSetup().getPort())
             .setBasicAuth("or", "secret")
-            .setCheckIntervalMillis(2000)
+            .setCheckIntervalSeconds(2)
             .setPersistenceDir(Paths.get("tmp"))
             .build()
         mailClient.addConnectionListener{ connectionEvents.add(it)}
@@ -161,7 +161,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
             "localhost",
             greenMail.getPop3().getServerSetup().getPort())
             .setBasicAuth("or", "secret")
-            .setCheckIntervalMillis(2000)
+            .setCheckIntervalSeconds(2)
             .setPersistenceDir(Paths.get("tmp"))
             .setPreferHTML(true)
             .build()
@@ -216,7 +216,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
                 "localhost",
                 greenMail.getImap().getServerSetup().getPort())
                 .setBasicAuth("or", "secret")
-                .setCheckIntervalMillis(2000)
+                .setCheckIntervalSeconds(2)
                 .build()
         mailClient.addConnectionListener{ connectionEvents.add(it)}
         mailClient.addMessageListener{messages.add(it)}
