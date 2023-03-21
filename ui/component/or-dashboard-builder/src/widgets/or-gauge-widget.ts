@@ -190,7 +190,7 @@ export class OrGaugeWidgetSettings extends LitElement {
                             ></or-mwc-input>
                         </div>
                         <div>
-                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
+                            <or-mwc-input type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}" .min="${0}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
                                               config.decimals = event.detail.value;
                                               this.updateConfig(this.widget!, config);

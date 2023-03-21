@@ -37,7 +37,7 @@ public class MQTTAgentLink extends AgentLink<MQTTAgentLink> {
     // For Hydrators
     protected MQTTAgentLink() {}
 
-    protected MQTTAgentLink(String id) {
+    public MQTTAgentLink(String id) {
         super(id);
     }
 
