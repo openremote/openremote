@@ -2,9 +2,6 @@ apply plugin: "java-library"
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
-compileJava.options.compilerArgs.add '-parameters'
-compileTestJava.options.compilerArgs.add '-parameters'
-
 dependencies {
     api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
