@@ -28,11 +28,13 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -46,7 +48,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
     protected MailClient mailClient;
     protected ConcurrentMap<AttributeRef, Function<MailMessage, String>> attributeMessageProcessorMap = new ConcurrentHashMap<>();
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMailProtocol.class);
-    protected static int INITIAL_CHECK_DELAY_MILLIS = 10000;
+    protected static int INITIAL_CHECK_DELAY_SECONDS = 10;
 
     public AbstractMailProtocol(T agent) {
         super(agent);
@@ -55,21 +57,20 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
     @Override
     protected void doStart(Container container) throws Exception {
 
-        UsernamePassword usernamePassword = getAgent().getUsernamePassword().orElseThrow();
         Path storageDir = container.getService(PersistenceService.class).getStorageDir();
 
         Path persistenceDir = storageDir.resolve("protocol").resolve("mail");
+        Optional<OAuthGrant> oAuthGrant = getAgent().getOAuthGrant();
+        UsernamePassword userPassword = getAgent().getUsernamePassword().orElseThrow();
 
-        mailClient = new MailClientBuilder(
+        MailClientBuilder clientBuilder = new MailClientBuilder(
             container.getExecutorService(),
             getAgent().getProtocol().orElseThrow(),
             getAgent().getHost().orElseThrow(),
-            getAgent().getPort().orElseThrow(),
-            usernamePassword.getUsername(),
-            usernamePassword.getPassword()
+            getAgent().getPort().orElseThrow()
         )
-            .setCheckIntervalMillis(
-                getAgent().getCheckIntervalSeconds().orElse(MailClientBuilder.DEFAULT_CHECK_INTERVAL_MILLIS)
+            .setCheckIntervalSeconds(
+                getAgent().getCheckIntervalSeconds().orElse(MailClientBuilder.DEFAULT_CHECK_INTERVAL_SECONDS)
             )
             .setDeleteMessageOnceProcessed(
                 getAgent().getDeleteProcessedMail().orElse(false)
@@ -77,11 +78,14 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
             .setFolder(getAgent().getMailFolderName().orElse(null))
             .setPersistenceDir(persistenceDir)
             // Set an initial delay to allow attributes to be linked before we read messages - not perfect but it should do
-            .setCheckInitialDelayMillis(INITIAL_CHECK_DELAY_MILLIS)
+            .setCheckInitialDelaySeconds(INITIAL_CHECK_DELAY_SECONDS)
             .setPreferHTML(getAgent().getPreferHTML().orElse(false))
-            .setEarliestMessageDate(agent.getCreatedOn())
-            .build();
+            .setEarliestMessageDate(agent.getCreatedOn());
 
+        oAuthGrant.map(oAuth -> clientBuilder.setOAuth(userPassword.getUsername(), oAuth)).orElseGet(() ->
+            clientBuilder.setBasicAuth(userPassword.getUsername(), userPassword.getPassword()));
+
+        mailClient = clientBuilder.build();
         mailClient.addConnectionListener(this::onConnectionEvent);
         mailClient.addMessageListener(this::onMailMessage);
         mailClient.connect();
