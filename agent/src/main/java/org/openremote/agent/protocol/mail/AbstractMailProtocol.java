@@ -48,7 +48,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
     protected MailClient mailClient;
     protected ConcurrentMap<AttributeRef, Function<MailMessage, String>> attributeMessageProcessorMap = new ConcurrentHashMap<>();
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMailProtocol.class);
-    protected static int INITIAL_CHECK_DELAY_MILLIS = 10000;
+    protected static int INITIAL_CHECK_DELAY_SECONDS = 10000;
 
     public AbstractMailProtocol(T agent) {
         super(agent);
@@ -78,7 +78,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
             .setFolder(getAgent().getMailFolderName().orElse(null))
             .setPersistenceDir(persistenceDir)
             // Set an initial delay to allow attributes to be linked before we read messages - not perfect but it should do
-            .setCheckInitialDelaySeconds(INITIAL_CHECK_DELAY_MILLIS)
+            .setCheckInitialDelaySeconds(INITIAL_CHECK_DELAY_SECONDS)
             .setPreferHTML(getAgent().getPreferHTML().orElse(false))
             .setEarliestMessageDate(agent.getCreatedOn());
 

@@ -63,7 +63,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
     def setupSpec() {
         MailClientBuilder.MIN_CHECK_INTERVAL_SECONDS = 2
-        AbstractMailProtocol.INITIAL_CHECK_DELAY_MILLIS = 2
+        AbstractMailProtocol.INITIAL_CHECK_DELAY_SECONDS = 2
         greenMail = new GreenMail(ServerSetupTest.ALL)
         greenMail.start()
         user = greenMail.setUser("or@localhost", "or", "secret")
