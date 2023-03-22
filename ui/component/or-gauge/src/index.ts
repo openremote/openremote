@@ -150,13 +150,13 @@ export class OrGauge extends LitElement {
 
     updated(changedProperties: Map<string, any>) {
         if(changedProperties.has('value')) {
-            this.gauge?.set(this.value ? this.value : NaN);
+            this.gauge?.set(this.value != null ? this.value : NaN);
         }
         if(changedProperties.has('assetAttribute')) {
             const attr = this.assetAttribute![1];
             const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.asset!.type!);
             this.unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.asset!.type));
-            this.value = attr.value ? attr.value : NaN;
+            this.value = attr.value != null ? attr.value : NaN;
         }
         if(changedProperties.has('attrRef')) {
             if(this.attrRef) {
@@ -168,13 +168,13 @@ export class OrGauge extends LitElement {
         }
 
         // Render gauge again if..
-        if(changedProperties.has('min') && this.min) {
-            this.gauge?.setMinValue(this.min);
-            this.gauge?.set(this.value ? this.value : NaN);
+        if(changedProperties.has('min') && this.min != null && this.gauge) {
+            this.gauge.setMinValue(this.min);
+            this.gauge.set(this.value != null ? this.value : NaN);
         }
-        if(changedProperties.has('max') && this.max && this.gauge) {
+        if(changedProperties.has('max') && this.max != null && this.gauge) {
             this.gauge.maxValue = this.max;
-            this.gauge?.set(this.value ? this.value : NaN);
+            this.gauge.set(this.value != null ? this.value : NaN);
         }
         if(changedProperties.has('thresholds') && this.thresholds) {
 
@@ -210,8 +210,8 @@ export class OrGauge extends LitElement {
         this.gauge.maxValue = (this.max ? this.max : 100)
         this.gauge.setMinValue(this.min ? this.min : 0);
         this.gauge.animationSpeed = 1;
-        this.gauge.set(this.value ? this.value : NaN);
-        if(!this.value && this.attrRef) {
+        this.gauge.set(this.value != null ? this.value : NaN);
+        if(this.value == null && this.attrRef) {
             this.loadData(this.attrRef);
         }
     }
@@ -229,7 +229,7 @@ export class OrGauge extends LitElement {
     }
 
     render() {
-        const formattedVal = (this.value ? +this.value.toFixed(this.decimals) : NaN); // + operator prevents str return
+        const formattedVal = (this.value != null ? +this.value.toFixed(this.decimals) : NaN); // + operator prevents str return
         return html`
             <div style="position: relative; height: 100%; width: 100%;">
                 <div class="chart-wrapper" style="display: ${this.loading ? 'none' : 'flex'}; flex-direction: column; justify-content: center; height: 100%;">

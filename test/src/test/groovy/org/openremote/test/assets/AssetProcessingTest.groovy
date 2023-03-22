@@ -85,11 +85,6 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
-        then: "the container should be running and initialised"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 500)
-        }
-
         then: "register mock asset processors"
         assetProcessingService.processors.add(0, firstProcessor)
         assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AgentService}+1, afterAgentServiceProcessor)

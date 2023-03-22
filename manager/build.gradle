@@ -57,6 +57,11 @@ jar {
     archivesBaseName = "openremote-${project.name}"
 }
 
+afterEvaluate {
+    // Change the working directory for the run task
+    tasks.run.workingDir = isCustomProject() ? project(":openremote").projectDir : rootProject.projectDir
+}
+
 distributions {
     main {
         contents {

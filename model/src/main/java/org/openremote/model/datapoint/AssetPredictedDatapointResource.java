@@ -21,6 +21,7 @@ package org.openremote.model.datapoint;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
@@ -37,16 +38,14 @@ public interface AssetPredictedDatapointResource {
      * restricted and the asset is not linked to the user. A 400 status is returned if the asset attribute does
      * not have datapoint storage enabled.
      */
-    @GET
+    @POST
     @Path("{assetId}/attribute/{attributeName}")
+    @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
     ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
                                                @PathParam("assetId") String assetId,
                                                @PathParam("attributeName") String attributeName,
-                                               @QueryParam("interval") DatapointInterval datapointInterval,
-                                               @QueryParam("step") Integer stepSize,
-                                               @QueryParam("fromTimestamp") long fromTimestamp,
-                                               @QueryParam("toTimestamp") long toTimestamp);
+                                               AssetDatapointQuery query);
 
 }

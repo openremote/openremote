@@ -19,72 +19,94 @@
  */
 package org.openremote.container.util;
 
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.Multipart;
-import jakarta.mail.Part;
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
+import org.openremote.model.mail.MailMessage;
 
 import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class MailUtil {
 
     public static class MessageContent {
 
+        protected List<Header> headers;
         protected String mimeType;
         protected String content;
 
-        protected MessageContent(String mimeType, String content) {
+        protected MessageContent(String mimeType, String content, List<Header> headers) {
             this.mimeType = mimeType;
             this.content = content;
-        }
-
-        public String getMimeType() {
-            return mimeType;
-        }
-
-        public String getContent() {
-            return content;
+            this.headers = headers;
         }
     }
 
     protected MailUtil() {
     }
 
-    public static MessageContent getMessageContent(Part p) throws MessagingException, IOException {
+    public static MailMessage toMailMessage(Message message, boolean preferHTML) throws MessagingException, IOException {
+        MessageContent messageContent = getMessageContent(message, new ArrayList<>(), true, preferHTML);
+        if (messageContent == null) {
+            return null;
+        }
+
+        List<Header> headers = messageContent.headers;
+        Map<String, List<String>> headerStrings = headers.stream()
+            .collect(Collectors.groupingBy(
+                Header::getName,
+                Collectors.mapping(Header::getValue, Collectors.toList())));
+
+        return new MailMessage(
+            messageContent.content,
+            messageContent.mimeType,
+            headerStrings,
+            message.getSubject(),
+            message.getSentDate(),
+            Arrays.stream(message.getFrom()).map(a -> ((InternetAddress)a).getAddress()).toArray(String[]::new));
+    }
+
+    protected static MessageContent getMessageContent(Part p, List<Header> headers, boolean isTopLevel, boolean preferHTML) throws MessagingException, IOException {
+
+        if (isTopLevel) {
+            headers.addAll(Collections.list(p.getAllHeaders()));
+        }
+
         if (p.isMimeType("text/*")) {
             String s = (String)p.getContent();
             String mimeType = p.getContentType();
-            return new MessageContent(mimeType, s);
+            if (!isTopLevel) {
+                headers.addAll(Collections.list(p.getAllHeaders()));
+            }
+            return new MessageContent(mimeType, s, headers);
         }
 
-        if (p.isMimeType("multipart/alternative")) {
+        if (p.isMimeType("multipart/*")) {
+
             // This mimetype means user agent should pick the most favourable message part
-            // prefer html text over plain text
-            Multipart mp = (Multipart)p.getContent();
-            String text = null;
+            // use preferHTML option to determine which part the return if any
+            boolean isAlternative = p.isMimeType("multipart/alternative");
+
+            Multipart mp = (Multipart) p.getContent();
+            MessageContent nonPreferredContent = null;
+
             for (int i = 0; i < mp.getCount(); i++) {
                 Part bp = mp.getBodyPart(i);
-                if (bp.isMimeType("text/plain")) {
-                    if (text == null)
-                        text = (String)bp.getContent();
-                } else if (bp.isMimeType("text/html")) {
-                    MessageContent content = getMessageContent(bp);
-                    if (content != null) {
-                        return content;
+                List<Header> partHeaders = new ArrayList<>();
+                MessageContent partContent = getMessageContent(bp, partHeaders, false, preferHTML);
+                boolean returnPart;
+
+                if (partContent != null) {
+                    returnPart = !isAlternative || (preferHTML && partContent.mimeType.startsWith("text/html")) || (!preferHTML && partContent.mimeType.startsWith("text/plain"));
+
+                    if (returnPart) {
+                        // Add any top level headers
+                        partContent.headers.addAll(headers);
+                        return partContent;
+                    } else if (nonPreferredContent == null) {
+                        nonPreferredContent = partContent;
                     }
-                } else {
-                    return getMessageContent(bp);
                 }
-            }
-            if (text != null) {
-                return new MessageContent("text/plain", text);
-            }
-        } else if (p.isMimeType("multipart/*")) {
-            Multipart mp = (Multipart)p.getContent();
-            for (int i = 0; i < mp.getCount(); i++) {
-                MessageContent content = getMessageContent(mp.getBodyPart(i));
-                if (content != null)
-                    return content;
             }
         }
 

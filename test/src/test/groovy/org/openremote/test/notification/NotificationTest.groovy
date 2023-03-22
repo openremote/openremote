@@ -62,35 +62,35 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
         mockPushNotificationHandler.isValid() >> true
         mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, target, message ->
-                    notificationIds << id
-                    notificationTargetTypes << target.type
-                    notificationTargetIds << target.id
-                    notificationMessages << message
-                    callRealMethod()
-            }
+            id, source, sourceId, target, message ->
+                notificationIds << id
+                notificationTargetTypes << target.type
+                notificationTargetIds << target.id
+                notificationMessages << message
+                callRealMethod()
+        }
         // Assume sent to FCM
         mockPushNotificationHandler.sendMessage(_ as com.google.firebase.messaging.Message) >> {
-                message -> return NotificationSendResult.success()
-            }
+            message -> return NotificationSendResult.success()
+        }
 
         notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), mockPushNotificationHandler)
 
         and: "an authenticated test user"
         def realm = keycloakTestSetup.realmBuilding.name
         def testuser1AccessToken = authenticate(
-            container,
-            MASTER_REALM,
-            KEYCLOAK_CLIENT_ID,
-            "testuser1",
-            "testuser1"
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                "testuser1",
+                "testuser1"
         ).token
         def testuser2AccessToken = authenticate(
-            container,
-            realm,
-            KEYCLOAK_CLIENT_ID,
-            "testuser2",
-            "testuser2"
+                container,
+                realm,
+                KEYCLOAK_CLIENT_ID,
+                "testuser2",
+                "testuser2"
         ).token
         def testuser3AccessToken = authenticate(
                 container,
@@ -457,8 +457,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "a repeat frequency is set and a notification is sent"
         // Move clock to beginning of next hour
         def advancement = Instant.ofEpochMilli(getClockTimeOf(container))
-                                       .truncatedTo(ChronoUnit.HOURS)
-                                       .plus(59, ChronoUnit.MINUTES)
+                .truncatedTo(ChronoUnit.HOURS)
+                .plus(59, ChronoUnit.MINUTES)
 
         advancePseudoClock(ChronoUnit.MILLIS.between(Instant.ofEpochMilli(getClockTimeOf(container)), advancement), TimeUnit.MILLISECONDS, container)
         notification.setRepeatFrequency(RepeatFrequency.HOURLY)

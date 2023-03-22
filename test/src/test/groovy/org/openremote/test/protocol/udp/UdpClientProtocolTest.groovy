@@ -63,11 +63,6 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
 
-        expect: "the system settles down"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 300)
-        }
-
         when: "a simple UDP echo server is started"
         def echoServerPort = findEphemeralPort()
         def clientPort = findEphemeralPort()

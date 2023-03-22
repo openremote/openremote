@@ -709,10 +709,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             assetId,
             attributeName,
             {
-                interval: interval,
+                type: "all",
                 fromTimestamp: this._startOfPeriod,
                 toTimestamp: this._endOfPeriod
-            }
+            } // TODO: maybe optimize this?
         );
 
         this._loading = false;

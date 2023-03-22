@@ -32,7 +32,9 @@ dependencies {
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
-    testImplementation "com.icegreen:greenmail:$greenmailVersion"
+    testImplementation ("com.icegreen:greenmail:$greenmailVersion") {
+        exclude group: "com.sun.mail"
+    }
 }
 
 tasks.withType(Test) {
