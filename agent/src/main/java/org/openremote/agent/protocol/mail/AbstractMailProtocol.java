@@ -48,7 +48,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
     protected MailClient mailClient;
     protected ConcurrentMap<AttributeRef, Function<MailMessage, String>> attributeMessageProcessorMap = new ConcurrentHashMap<>();
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMailProtocol.class);
-    protected static int INITIAL_CHECK_DELAY_SECONDS = 10000;
+    protected static int INITIAL_CHECK_DELAY_SECONDS = 10;
 
     public AbstractMailProtocol(T agent) {
         super(agent);
