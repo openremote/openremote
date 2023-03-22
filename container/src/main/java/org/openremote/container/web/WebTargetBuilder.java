@@ -53,7 +53,8 @@ import java.util.stream.Collectors;
  * <li>{@link org.openremote.container.json.JacksonConfig}.</li>
  * </ul>
  */
-// TODO: This should probably be amalgamated with WebClient somehow to provide a unified JAX-RS Client API
+// TODO: This should probably be amalgamated with WebClient somehow to provide a unified JAX-RS Client API and a default
+//  client should be made available on the Container
 public class WebTargetBuilder {
 
     public static final int CONNECTION_POOL_SIZE = 10;

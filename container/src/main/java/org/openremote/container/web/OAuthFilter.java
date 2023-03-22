@@ -19,7 +19,6 @@
  */
 package org.openremote.container.web;
 
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthRefreshTokenGrant;
@@ -47,11 +46,11 @@ public class OAuthFilter implements ClientRequestFilter {
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OAuthFilter.class);
     public static final String BEARER_AUTH = "Bearer";
     protected OAuthServerResponse authServerResponse;
-    protected ResteasyClient client;
+    protected Client client;
     protected WebTarget authTarget;
     protected OAuthGrant oAuthGrant;
 
-    public OAuthFilter(ResteasyClient client, OAuthGrant oAuthGrant) {
+    public OAuthFilter(Client client, OAuthGrant oAuthGrant) {
         Objects.requireNonNull(client);
         Objects.requireNonNull(oAuthGrant);
         this.client = client;

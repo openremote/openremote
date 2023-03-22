@@ -57,8 +57,8 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
 
     def setupSpec() {
-        MailClientBuilder.MIN_CHECK_INTERVAL_MILLIS = 2000
-        AbstractMailProtocol.INITIAL_CHECK_DELAY_MILLIS = 2000
+        MailClientBuilder.MIN_CHECK_INTERVAL_SECONDS = 2
+        AbstractMailProtocol.INITIAL_CHECK_DELAY_SECONDS = 2
         greenMail = new GreenMail(ServerSetupTest.ALL)
         greenMail.start()
         user = greenMail.setUser("or@localhost", "or", "secret")
@@ -110,7 +110,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
             .setHost("127.0.0.1")
             .setPort(greenMail.getPop3().getServerSetup().getPort())
             .setUsernamePassword(new UsernamePassword("or", "secret"))
-            .setCheckIntervalSeconds(2000)
+            .setCheckIntervalSeconds(2)
             .setDisabled(true)
 
         and: "the agent is added to the asset service"

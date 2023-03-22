@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.mail;
 import io.undertow.util.Headers;
 import org.openremote.container.util.MailUtil;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -92,7 +93,7 @@ public class MailClient {
         try {
             withFolder((folder) -> {
                 connected.set(true);
-                mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, config.getCheckInitialDelayMillis(), config.getCheckIntervalMillis(), TimeUnit.MILLISECONDS);
+                mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, config.getCheckInitialDelaySeconds(), config.getCheckIntervalSeconds(), TimeUnit.SECONDS);
             });
 
             updateConnectionStatus(ConnectionStatus.CONNECTED);
@@ -139,7 +140,8 @@ public class MailClient {
             LOG.log(System.Logger.Level.INFO, "Connecting to mail server: " + config.getHost());
 
             try (Store mailStore = session.getStore()) {
-                mailStore.connect(config.getUser(), config.getPassword());
+                UsernamePassword usernamePassword = config.getAuth();
+                mailStore.connect(usernamePassword.getUsername(), usernamePassword.getPassword());
                 Folder mailFolder = mailStore.getFolder(config.getFolder());
 
                 try {

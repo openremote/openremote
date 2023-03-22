@@ -19,50 +19,76 @@
  */
 package org.openremote.agent.protocol.mail;
 
+import org.openremote.container.web.OAuthFilter;
+import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.auth.UsernamePassword;
+
+import javax.ws.rs.client.Client;
+import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MailClientBuilder {
     public static final String DEFAULT_FOLDER_NAME = "INBOX";
-    public static final int DEFAULT_CHECK_INTERVAL_MILLIS = 5 * 60000;
-    protected static int MIN_CHECK_INTERVAL_MILLIS = 10000;
+    public static final int DEFAULT_CHECK_INTERVAL_SECONDS = 5 * 60;
+    protected static int MIN_CHECK_INTERVAL_SECONDS = 10;
+    protected static final AtomicReference<Client> jaxrsClient = new AtomicReference<>();
     protected ScheduledExecutorService scheduledExecutorService;
-    protected int checkInitialDelayMillis = 0;
-    protected int checkIntervalMillis = DEFAULT_CHECK_INTERVAL_MILLIS;
+    protected int checkInitialDelaySeconds = 0;
+    protected int checkIntervalSeconds = DEFAULT_CHECK_INTERVAL_SECONDS;
     protected String folder;
     protected boolean preferHTML;
     protected Date earliestMessageDate;
     protected Path persistenceDir;
     protected String protocol;
     protected String host;
+    protected OAuthGrant oAuthGrant;
+    protected OAuthFilter oAuthFilter;
     protected int port;
     protected String user;
     protected String password;
     protected boolean deleteMessageOnceProcessed;
     protected Properties properties = new Properties();
 
-    public MailClientBuilder(ScheduledExecutorService scheduledExecutorService, String protocol, String host, int port, String user, String password) {
+    public MailClientBuilder(ScheduledExecutorService scheduledExecutorService, String protocol, String host, int port) {
         this.scheduledExecutorService = scheduledExecutorService;
         this.protocol = protocol;
         this.host = host;
         this.port = port;
-        this.user = user;
-        this.password = password;
 
         properties.put("mail.store.protocol", protocol);
         properties.put("mail." + protocol + ".host", host);
         properties.put("mail." + protocol + ".port", port);
     }
 
-    public MailClientBuilder setCheckIntervalMillis(int checkIntervalMillis) {
-        this.checkIntervalMillis = Math.max(checkIntervalMillis, MIN_CHECK_INTERVAL_MILLIS);
+    public MailClientBuilder setBasicAuth(String user, String password) {
+        this.user = user;
+        this.password = password;
         return this;
     }
 
-    public MailClientBuilder setCheckInitialDelayMillis(int checkInitialDelayMillis) {
-        this.checkInitialDelayMillis = Math.max(checkInitialDelayMillis, 0);
+    public MailClientBuilder setOAuth(String user, OAuthGrant oAuthGrant) {
+        this.user = user;
+        this.oAuthGrant = oAuthGrant;
+        setProperty("auth.mechanisms", "XOAUTH2");
+        setProperty("mail.imap.sasl.enable", "true");
+        setProperty("auth.login.disable", "true");
+        setProperty("auth.plain.disable", "true");
+        return this;
+    }
+
+    public MailClientBuilder setCheckIntervalSeconds(int checkIntervalSeconds) {
+        this.checkIntervalSeconds = Math.max(checkIntervalSeconds, MIN_CHECK_INTERVAL_SECONDS);
+        return this;
+    }
+
+    public MailClientBuilder setCheckInitialDelaySeconds(int checkInitialDelaySeconds) {
+        this.checkInitialDelaySeconds = Math.max(checkInitialDelaySeconds, 0);
         return this;
     }
 
@@ -90,6 +116,9 @@ public class MailClientBuilder {
     }
 
     public MailClientBuilder setProperty(String property, Object value) {
+        if (!property.startsWith("mail." + protocol + ".")) {
+            property = "mail." + protocol + "." + property;
+        }
         properties.put(property, value);
         return this;
     }
@@ -107,12 +136,12 @@ public class MailClientBuilder {
         return scheduledExecutorService;
     }
 
-    public int getCheckIntervalMillis() {
-        return checkIntervalMillis;
+    public int getCheckIntervalSeconds() {
+        return checkIntervalSeconds;
     }
 
-    public int getCheckInitialDelayMillis() {
-        return checkInitialDelayMillis;
+    public int getCheckInitialDelaySeconds() {
+        return checkInitialDelaySeconds;
     }
 
     public Date getEarliestMessageDate() {
@@ -143,6 +172,10 @@ public class MailClientBuilder {
         return password;
     }
 
+    public OAuthGrant getOAuthGrant() {
+        return oAuthGrant;
+    }
+
     public boolean isDeleteMessageOnceProcessed() {
         return deleteMessageOnceProcessed;
     }
@@ -157,5 +190,27 @@ public class MailClientBuilder {
 
     public MailClient build() {
         return new MailClient(this);
+    }
+
+    UsernamePassword getAuth() throws SocketException, NullPointerException {
+        Objects.requireNonNull(user, "User must be supplied");
+
+        if (oAuthGrant != null) {
+            synchronized (jaxrsClient) {
+                if (jaxrsClient.get() == null) {
+                    jaxrsClient.set(WebTargetBuilder.createClient(scheduledExecutorService));
+                }
+            }
+            synchronized (this) {
+                if (oAuthFilter == null) {
+                    oAuthFilter = new OAuthFilter(jaxrsClient.get(), oAuthGrant);
+                }
+            }
+            return new UsernamePassword(user, oAuthFilter.getAccessToken());
+        }
+
+        Objects.requireNonNull(password, "Password must be supplied");
+
+        return new UsernamePassword(user, password);
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.mail;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
@@ -34,7 +35,6 @@ public class MailProtocol extends AbstractMailProtocol<MailAgent, MailProtocol, 
     public MailProtocol(MailAgent agent) {
         super(agent);
     }
-
 
     @Override
     public String getProtocolName() {
@@ -54,7 +54,10 @@ public class MailProtocol extends AbstractMailProtocol<MailAgent, MailProtocol, 
 
     @Override
     protected Predicate<MailMessage> getAttributeMailMessageFilter(String assetId, Attribute<?> attribute, MailAgentLink agentLink) {
+        return getAttributeMailMessageFilter(timerService, agentLink);
+    }
 
+    public static <T extends MailAgentLink> Predicate<MailMessage> getAttributeMailMessageFilter(TimerService timerService, T agentLink) {
         StringPredicate fromPredicate = agentLink.getFromMatchPredicate();
         StringPredicate subjectPredicate = agentLink.getSubjectMatchPredicate();
 
