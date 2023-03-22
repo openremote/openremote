@@ -82,8 +82,8 @@ public class MailClientBuilder {
         return this;
     }
 
-    public MailClientBuilder setCheckIntervalSeconds(int checkIntervalMillis) {
-        this.checkIntervalSeconds = Math.max(checkIntervalMillis, MIN_CHECK_INTERVAL_SECONDS);
+    public MailClientBuilder setCheckIntervalSeconds(int checkIntervalSeconds) {
+        this.checkIntervalSeconds = Math.max(checkIntervalSeconds, MIN_CHECK_INTERVAL_SECONDS);
         return this;
     }
 
