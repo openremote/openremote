@@ -123,13 +123,23 @@ export class OrChartWidgetContent extends LitElement {
 
     render() {
         return html`
-            <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .realm="${this.realm}"
-                      .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}"
-                      .attributeControls="${false}" .timestampControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" .algorithm="${this.widget?.widgetConfig?.algorithm}"
-                      .timePresetOptions="${timePresetOptions}" .timePresetKey="${this.widget?.widgetConfig?.defaultTimePresetKey}"
-                      .datapointQuery="${this.widget?.widgetConfig?.datapointQuery}" .chartOptions="${this.widget?.widgetConfig?.chartOptions}"
-                      style="height: 100%"
-            ></or-chart>
+            ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => {
+                return html`
+                    <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .realm="${this.realm}" 
+                              .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}" 
+                              .attributeControls="${false}" .timestampControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" .algorithm="${this.widget?.widgetConfig?.algorithm}" 
+                              .timePresetOptions="${timePresetOptions}" .timePresetKey="${this.widget?.widgetConfig?.defaultTimePresetKey}" 
+                              .datapointQuery="${this.widget?.widgetConfig?.datapointQuery}" .chartOptions="${this.widget?.widgetConfig?.chartOptions}" 
+                              style="height: 100%"
+                    ></or-chart>
+                `;
+            }, () => {
+                return html`
+                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                        <span>${i18next.t('noAttributesConnected')}</span>
+                    </div>
+                `
+            })}
         `
     }
 
@@ -183,8 +193,6 @@ export class OrChartWidgetContent extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else if(!config.attributeRefs) {
-            console.error("Error: attributeRefs are not present in widget config!");
         }
     }
 
@@ -381,7 +389,7 @@ class OrChartWidgetSettings extends LitElement {
                 ${this.generateExpandableHeader(i18next.t('algorithm'))}
             </div>
             <div>
-                ${this.expandedPanels.includes('algorithm') ? html`
+                ${this.expandedPanels.includes(i18next.t('algorithm')) ? html`
                     ${when(config.datapointQuery, () => {
                         const typeOptions = new Map<string, string>([["Default", 'lttb'], ["With interval", 'interval']]);
                         const typeValue = Array.from(typeOptions.entries()).find((entry => entry[1] == config.datapointQuery.type))![0]

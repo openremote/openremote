@@ -11,7 +11,6 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.datapoint.DatapointInterval
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait

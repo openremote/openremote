@@ -86,7 +86,9 @@ export class OrGaugeWidgetContent extends LitElement {
                 `;
             }, () => {
                 return html`
-                    <span>No attributes selected.</span>
+                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                        <span>${i18next.t('noAttributesConnected')}</span>
+                    </div>
                 `
             })}
             <!--<or-gauge .attrRef="${this.widget?.widgetConfig.attributeRefs[0]}"></or-gauge>-->
@@ -123,8 +125,6 @@ export class OrGaugeWidgetContent extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else {
-            console.error("Error: attributeRefs are not present in widget config!");
         }
     }
 }
@@ -190,7 +190,7 @@ export class OrGaugeWidgetSettings extends LitElement {
                             ></or-mwc-input>
                         </div>
                         <div>
-                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
+                            <or-mwc-input type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}" .min="${0}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
                                               config.decimals = event.detail.value;
                                               this.updateConfig(this.widget!, config);

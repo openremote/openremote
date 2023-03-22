@@ -271,7 +271,7 @@ export class PageRoles extends Page<AppStateKeyed> {
   }
 
   private _deleteRole(role, rowIndex) {
-    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm"), i18next.t("delete"))
+    showOkCancelDialog(i18next.t("deleteRole"), i18next.t("deleteRoleConfirm", { roleName: role.name }), i18next.t("delete"))
     .then((ok) => {
         if (ok) {
           this.doDelete(role, rowIndex);
@@ -370,10 +370,10 @@ export class PageRoles extends Page<AppStateKeyed> {
 
                                     <div class="row">
                                         <div class="column">
-                                            <or-mwc-input .label="${i18next.t(" role ")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-mwc-input>
+                                            <or-mwc-input .label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-mwc-input>
                                         </div>
                                         <div class="column">
-                                            <or-mwc-input .label="${i18next.t(" description ")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-mwc-input>
+                                            <or-mwc-input .label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-mwc-input>
                                         </div>
                                     </div>
 
@@ -381,14 +381,14 @@ export class PageRoles extends Page<AppStateKeyed> {
                                         <div class="column">
                                             <strong class="column-title">${i18next.t("readPermissions")}</strong> ${readRoles.map(r => {
                                             return html`
-                                              <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(" : ")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
+                                              <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}
 
                                         </div>
                                         <div class="column">
                                             <strong class="column-title">${i18next.t("writePermissions")}</strong> ${writeRoles.map(r => {
                                             return html`
-                                              <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(" : ")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
+                                              <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}
                                         </div>
                                     </div>
@@ -419,7 +419,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                         ` })} ${this._compositeRoles.length > 0 && !!this._compositeRoles[this._compositeRoles.length - 1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                             <td colspan="100%">
-                                <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, { composite: true, name: " ", compositeRoleIds: [] }]}">
+                                <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, { composite: true, name: "", compositeRoleIds: [] }]}">
                                     <or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("role")}</a>
                             </td>
                         </tr>

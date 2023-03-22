@@ -38,7 +38,7 @@ import {
     Title,
     Tooltip
 } from "chart.js";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -48,8 +48,8 @@ import {GenericAxiosResponse} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
-import {debounce, throttle} from "lodash";
-import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import {throttle} from "lodash";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
@@ -538,8 +538,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     millisecond: 'HH:mm:ss.SSS',
                                     second: 'HH:mm:ss',
                                     minute: "HH:mm",
-                                    hour: "HH:mm",
-                                    day: "MMM D",
+                                    hour: (this._endOfPeriod && this._startOfPeriod && this._endOfPeriod - this._startOfPeriod > 86400000) ? "MMM DD, HH:mm" : "HH:mm",
+                                    day: "MMM DD",
                                     week: "w"
                                 },
                                 unit: this._timeUnits,
@@ -977,9 +977,11 @@ export class OrChart extends translate(i18next)(LitElement) {
             return [30, DatapointInterval.MINUTE];
         } else if(diffInHours <= 24) { // one day
             return [1, DatapointInterval.HOUR];
-        } else if(diffInHours <= 168) { // one week
-            return [6, DatapointInterval.HOUR];
-        } else if(diffInHours <= 720) { // one month
+        } else if(diffInHours <= 48) { // two days
+            return [3, DatapointInterval.HOUR];
+        } else if(diffInHours <= 96) {
+            return [12, DatapointInterval.HOUR];
+        } else if(diffInHours <= 744) { // one month
             return [1, DatapointInterval.DAY];
         } else {
             return [1, DatapointInterval.MONTH];
