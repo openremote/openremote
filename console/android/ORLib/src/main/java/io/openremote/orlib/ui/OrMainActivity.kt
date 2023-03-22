@@ -741,6 +741,14 @@ open class OrMainActivity : Activity() {
                         }
                     })
                 }
+                action.equals("CONNECT_TO_DEVICE", ignoreCase = true) -> {
+                    val address = data.getString("address")
+                    bleProvider?.connectToDevice(address, object : BleProvider.BleCallback {
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
+                }
             }
         }
     }

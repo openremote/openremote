@@ -34,6 +34,7 @@ open class ORViewcontroller : UIViewController {
     public var pushProvider: PushNotificationProvider?
     public var storageProvider: StorageProvider?
     public var qrProvider: QrScannerProvider?
+    public var bleProvider: BleProvider?
     
     public var baseUrl: String?
     
@@ -278,6 +279,36 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                 case Actions.scanQr:
                                     qrProvider?.startScanner(currentViewController: self) { scannedData in
                                         self.sendData(data: scannedData)
+                                    }
+                                default:
+                                    print("Wrong action \(action) for \(provider)")
+                                }
+                            case Providers.ble:
+                                switch (action) {
+                                case Actions.providerInit:
+                                    bleProvider = BleProvider()
+                                    bleProvider!.alertBluetoothCallback = {
+                                        let alertController = UIAlertController(title: "Bluetooth disabled", message: "Please turn on bluetooth to scan for devices", preferredStyle: .alert)
+                                        alertController.addAction(UIAlertAction(title: "OK", style: .default) { alertAction in
+                                            let url = URL(string: UIApplication.openSettingsURLString)
+                                            let app = UIApplication.shared
+                                            app.open(url!, options: [:])
+                                        })
+                                        alertController.addAction(UIAlertAction(title: "Not now", style: .cancel))
+                                        self.present(alertController, animated: true)
+                                    }
+                                    self.sendData(data: bleProvider!.initialize())
+                                case Actions.providerEnable:
+                                    bleProvider?.enable(callback: { enableData in
+                                        self.sendData(data: enableData)
+                                    })
+                                case Actions.providerDisable:
+                                    if let disableData = bleProvider?.disable() {
+                                        sendData(data: disableData)
+                                    }
+                                case Actions.scanBleDevices:
+                                    bleProvider?.scanForDevices { scanData in
+                                        self.sendData(data: scanData)
                                     }
                                 default:
                                     print("Wrong action \(action) for \(provider)")
