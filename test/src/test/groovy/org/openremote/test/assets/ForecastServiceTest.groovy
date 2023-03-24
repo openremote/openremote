@@ -178,7 +178,7 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
             List<AssetPredictedDatapoint> predictedDatapoints = assetPredictedDatapointService
                 .getDatapoints(attributeRef)
                 .sort {it.timestamp}
-            assert predictedDatapoints.size() == config.forecastCount + 1
+            assert predictedDatapoints.size() == config.forecastCount
             for (int i = 1; i < predictedDatapoints.size(); i++) {
                 assert predictedDatapoints[i].value == calculateForecast(managerTestSetup.forecastTestHistoryData[i][0..config.pastCount - 1]).get()
                 assert predictedDatapoints[i].timestamp == timerService.currentTimeMillis + i * config.forecastPeriod.toMillis()

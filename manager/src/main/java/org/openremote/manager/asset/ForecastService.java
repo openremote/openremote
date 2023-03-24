@@ -82,7 +82,7 @@ import static org.openremote.model.value.MetaItemType.FORECAST;
 public class ForecastService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(ForecastService.class.getName());
-    private static long STOP_TIMEOUT = 5000;
+    private static long STOP_TIMEOUT = Duration.ofSeconds(5).toMillis();
 
     protected TimerService timerService;
     protected GatewayService gatewayService;
@@ -285,7 +285,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
     private class ForecastTaskManager {
 
-        private static long DELAY_MIN = 2000;
+        private static long DELAY_MIN_TO_CANCEL_SAFELY = Duration.ofSeconds(2).toMillis();
+        private static long DEFAULT_SCHEDULE_DELAY = Duration.ofMinutes(15).toMillis();
 
         protected ScheduledFuture<?> scheduledFuture;
         protected Map<AttributeRef, Long> nextForecastCalculationMap = new HashMap<>();
@@ -312,7 +313,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             });
             long now = timerService.getCurrentTimeMillis();
             if (scheduledFuture != null) {
-                if (scheduledFuture.getDelay(TimeUnit.MILLISECONDS) > DELAY_MIN) {
+                if (scheduledFuture.getDelay(TimeUnit.MILLISECONDS) > DELAY_MIN_TO_CANCEL_SAFELY) {
                     scheduledFuture.cancel(false);
                     scheduledFuture = null;
                     start(now);
@@ -328,9 +329,12 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
         public synchronized void delete(AttributeRef attributeRef) {
             LOG.fine("Removing asset attribute from forecast calculation service: " + attributeRef);
+
             nextForecastCalculationMap.remove(attributeRef);
             forecastTimestampMap.remove(attributeRef);
             configMap.remove(attributeRef);
+
+            assetPredictedDatapointService.purgeValues(attributeRef.getId(), attributeRef.getName());
         }
 
         public synchronized boolean containsAttribute(AttributeRef attributeRef) {
@@ -343,7 +347,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 synchronized (ForecastTaskManager.this) {
                     if (scheduledFuture == null) {
                         return true;
-                    } else if (scheduledFuture != null && scheduledFuture.getDelay(TimeUnit.MILLISECONDS) > DELAY_MIN) {
+                    } else if (scheduledFuture != null && scheduledFuture.getDelay(TimeUnit.MILLISECONDS) > DELAY_MIN_TO_CANCEL_SAFELY) {
                         scheduledFuture.cancel(false);
                         scheduledFuture = null;
                         return true;
@@ -451,9 +455,12 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                             return;
                         }
 
-                        LOG.fine("Updating forecast values for attribute: " + attributeRef);
+                        assetPredictedDatapointService.purgeValues(attributeRef.getId(), attributeRef.getName());
 
-                        assetPredictedDatapointService.updateValues(attributeRef.getId(), attributeRef.getName(), datapoints);
+                        if (datapoints.size() > 0) {
+                            LOG.fine("Updating forecast values for attribute: " + attributeRef);
+                            assetPredictedDatapointService.updateValues(attributeRef.getId(), attributeRef.getName(), datapoints);
+                        }
                     }
                 });
 
@@ -469,19 +476,27 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
                 scheduleForecastCalculation(
                     timerService.getCurrentTimeMillis(),
-                    Optional.of(Duration.ofMinutes(15).toMillis())
+                    Optional.of(DEFAULT_SCHEDULE_DELAY)
                 );
             }
         }
 
         private synchronized void scheduleForecastCalculation(long now, Optional<Long> fixedDelay) {
             Optional<Long> delay = fixedDelay;
+
             if (delay.isEmpty()) {
                 delay = calculateScheduleDelay(now);
             }
+
             if (delay.isPresent()) {
                 LOG.fine("Scheduling next forecast calculation in '" + delay.get() + " [ms]'.");
                 scheduledFuture = executorService.schedule(() -> calculateForecasts(), delay.get(), TimeUnit.MILLISECONDS);
+            } else {
+                scheduledFuture = null;
+                if (configMap.size() > 0) {
+                    LOG.fine("Scheduling next forecast calculation in '" + DEFAULT_SCHEDULE_DELAY + " [ms]'.");
+                    scheduleForecastCalculation(now, Optional.of(DEFAULT_SCHEDULE_DELAY));
+                }
             }
         }
 
