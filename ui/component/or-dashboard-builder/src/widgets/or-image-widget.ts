@@ -9,17 +9,19 @@ import {style} from "../style";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
 import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
-export interface KpiWidgetConfig extends OrWidgetConfig {
+export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
     period?: 'year' | 'month' | 'week' | 'day' | 'hour';
     decimals: number;
     deltaFormat: "absolute" | "percentage";
     showTimestampControls: boolean;
-    cheeseBurgers: "so fucking many" | "lol im vegetarian" | "maybe you learned something bout fiddling" | "hope this has been instructive";
+    imageUploaded: boolean;
 }
 
-export class OrKpiWidget implements OrWidgetEntity {
+const deltaOptions = new Array<string>('absolute', 'percentage')
+
+export class OrImageWidget implements OrWidgetEntity {
 
     readonly DISPLAY_MDI_ICON: string = "file-image-marker"; // https://materialdesignicons.com;
     readonly DISPLAY_NAME: string = "Image";
@@ -35,29 +37,29 @@ export class OrKpiWidget implements OrWidgetEntity {
             decimals: 0,
             deltaFormat: "absolute",
             showTimestampControls: false,
-            cheeseBurgers: "so fucking many"
-        } as KpiWidgetConfig;
+            imageUploaded: false,
+        } as ImageWidgetConfig;
     }
 
     // Triggered every update to double check if the specification.
     // It will merge missing values, or you can add custom logic to process here.
-    verifyConfigSpec(widget: DashboardWidget): KpiWidgetConfig {
-        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as KpiWidgetConfig;
+    verifyConfigSpec(widget: DashboardWidget): ImageWidgetConfig {
+        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as ImageWidgetConfig;
     }
 
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
-        return html`<or-kpi-widgetsettings .widget="${widget}" realm="${realm}"></or-kpi-widgetsettings>`;
+        return html`<or-image-widgetsettings .widget="${widget}" realm="${realm}"></or-image-widgetsettings>`;
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
-        return html`<or-kpi-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-kpi-widget>`;
+        return html`<or-image-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-image-widget>`;
     }
 
 }
 
-@customElement("or-kpi-widget")
-export class OrKpiWidgetContent extends LitElement {
+@customElement("or-image-widget")
+export class OrImageWidgetContent extends LitElement {
 
     @property()
     public readonly widget?: DashboardWidget;
@@ -77,7 +79,7 @@ export class OrKpiWidgetContent extends LitElement {
     render() {
         return html`
             <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig.period}"
-                               .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}" .cheeseBurgers="${this.widget?.widgetConfig.cheeseBurgers}"
+                               .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}" .imageUploaded="${this.widget?.widgetConfig.imageUploaded}"
                                showControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
             </or-attribute-card>
         `
@@ -119,14 +121,14 @@ export class OrKpiWidgetContent extends LitElement {
 
 
 
-@customElement("or-kpi-widgetsettings")
-export class OrKpiWidgetSettings extends LitElement {
+@customElement("or-image-widgetsettings")
+export class OrImageWidgetSettings extends LitElement {
 
     @property()
     public readonly widget?: DashboardWidget;
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display'), i18next.t('values')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display'), i18next.t('values'), i18next.t('image settings')];
     private loadedAsset?: Asset;
 
 
@@ -136,7 +138,7 @@ export class OrKpiWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
-        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as KpiWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
+        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
         
         return html`
             <div>
@@ -187,7 +189,7 @@ export class OrKpiWidgetSettings extends LitElement {
                 ${this.expandedPanels.includes(i18next.t('values')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${config.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
+                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${deltaOptions}" .value="${config.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               config.deltaFormat = event.detail.value;
                                               this.updateConfig(this.widget!, config);
@@ -206,15 +208,19 @@ export class OrKpiWidgetSettings extends LitElement {
                 ` : null}
             </div>
             <div>
-                ${this.generateExpandableHeader(i18next.t('cheeseBurgers'))}
+                ${this.generateExpandableHeader(i18next.t('image settings'))}
             </div>
             <div>
-                ${this.expandedPanels.includes(i18next.t('cheeseBurgers')) ? html`
+                ${this.expandedPanels.includes(i18next.t('image settings')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
                         <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['hehe', 'huhu']}" .value="${config.cheeseBurgers}" label="${i18next.t('dashboard.showValueAs')}"
+                            <or-mwc-input .type="${InputType.BUTTON}" style="width: 100%;"" .value="${config.imageUploaded}" label="${i18next.t('Upload Image')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              config.cheeseBurgers = event.detail.value;
+                                            if (event.detail.value) {
+                                                console.log("we in it champ");
+                                                console.log(event.detail.value);
+                                            }
+                                              config.imageUploaded = event.detail.value;
                                               this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
@@ -237,7 +243,7 @@ export class OrKpiWidgetSettings extends LitElement {
             this.loadedAsset = changes.get('loadedAssets')[0];
         }
         if(changes.has('config')) {
-            const config = changes.get('config') as KpiWidgetConfig;
+            const config = changes.get('config') as ImageWidgetConfig;
             if(config.attributeRefs.length > 0) {
                 this.widget!.displayName = this.loadedAsset?.name + " - " + this.loadedAsset?.attributes![config.attributeRefs[0].name!].name;
             }
