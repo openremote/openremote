@@ -8,18 +8,21 @@ import {OrWidgetConfig, OrWidgetEntity} from "./or-base-widget";
 import {style} from "../style";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
 import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {OrFileUploader} from "@openremote/or-components/or-file-uploader";
 
 export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour';
+    displayMode?: 'icons' | 'icons with values' | 'values';
+    image?: string;
     decimals: number;
     deltaFormat: "absolute" | "percentage";
     showTimestampControls: boolean;
     imageUploaded: boolean;
 }
 
-const deltaOptions = new Array<string>('absolute', 'percentage')
+const deltaOptions = new Array<string>('absolute', 'percentage');
+const displayOptions = new Array<string>('icons', 'icons with values', 'values');
 
 export class OrImageWidget implements OrWidgetEntity {
 
@@ -33,7 +36,7 @@ export class OrImageWidget implements OrWidgetEntity {
         return {
             displayName: widget.displayName,
             attributeRefs: [],
-            period: "day",
+            displayMode: "icons",
             decimals: 0,
             deltaFormat: "absolute",
             showTimestampControls: false,
@@ -74,12 +77,16 @@ export class OrImageWidgetContent extends LitElement {
     private loadedAssets: Asset[] = [];
 
     @state()
+    private image?: string;
+
+    @state()
     private assetAttributes: [number, Attribute<any>][] = [];
 
     render() {
         return html`
-            <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig.period}"
-                               .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}" .imageUploaded="${this.widget?.widgetConfig.imageUploaded}"
+            <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .displayMode="${this.widget?.widgetConfig.displayMode}"
+                               .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}" .imageUploaded="${this.widget?.widgetConfig.imageUploaded}" 
+                               ."image" = "${this.image}"
                                showControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
             </or-attribute-card>
         `
@@ -162,11 +169,11 @@ export class OrImageWidgetSettings extends LitElement {
                     <div style="padding: 24px 24px 48px 24px;">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" 
-                                          .options="${['year', 'month', 'week', 'day', 'hour']}" 
-                                          .value="${config.period}" label="${i18next.t('timeframe')}" 
+                                          .options="${displayOptions}" 
+                                          .value="${config.displayMode}" label="${i18next.t('Display options')}" 
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              config.period = event.detail.value;
-                                              this.updateConfig(this.widget!, config);
+                                            config.displayMode = event.detail.value;
+                                            this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
                         </div>
@@ -217,10 +224,12 @@ export class OrImageWidgetSettings extends LitElement {
                             <or-mwc-input .type="${InputType.BUTTON}" style="width: 100%;"" .value="${config.imageUploaded}" label="${i18next.t('Upload Image')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                             if (event.detail.value) {
-                                                console.log("we in it champ");
-                                                console.log(event.detail.value);
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.click();
                                             }
                                               config.imageUploaded = event.detail.value;
+                                              console.log(config.imageUploaded);
                                               this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
@@ -229,6 +238,22 @@ export class OrImageWidgetSettings extends LitElement {
                 ` : null}
             </div>
         `
+    }
+
+    fileUpload() {
+        const fileSelector = document.createElement('input');
+        fileSelector.setAttribute('type', 'file');
+
+        var selectDialogueLink = document.createElement('a');
+        selectDialogueLink.setAttribute('href', '');
+        selectDialogueLink.innerText = "Select file";
+
+        selectDialogueLink.onclick = function() {
+            fileSelector.click();
+            return false;
+        };
+
+        document.body.appendChild(selectDialogueLink);
     }
 
     updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
