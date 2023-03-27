@@ -40,9 +40,6 @@ dom4j:dom4j: DOM4J BSD LICENSE
 io.netty:netty: APACHE LICENSE, VERSION 2.0
 io.undertow:*: APACHE LICENSE, VERSION 2.0
 javax.jmdns:jmdns: APACHE LICENSE, VERSION 2.0
-javax.validation:validation-api: APACHE LICENSE, VERSION 2.0
-javax.activation:activation: COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
-javax.mail:mail: COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
 jdom:jdom: APACHE LICENSE, VERSION 2.0
 net.jcip:jcip-annotations: Creative Commons Attribution License (http://creativecommons.org/licenses/by/2.5), see http://www.jcip.net
 org.apache.camel:*: APACHE LICENSE, VERSION 2.0

@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.mail;
 
 import org.openremote.model.asset.agent.AgentDescriptor;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class MailAgent extends AbstractMailAgent<MailAgent, MailProtocol, MailAgentLink>  {

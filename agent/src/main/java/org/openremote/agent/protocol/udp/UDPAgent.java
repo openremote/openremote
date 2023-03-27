@@ -24,7 +24,7 @@ import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.value.AttributeDescriptor;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class UDPAgent extends IOAgent<UDPAgent, UDPProtocol, DefaultAgentLink> {

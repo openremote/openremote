@@ -28,8 +28,8 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.util.ValueUtil;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;

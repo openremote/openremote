@@ -20,6 +20,7 @@ dependencies {
 
     implementation "org.geotools:gt-main:$geotoolsVersion"
     implementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
+    implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
     implementation "io.swagger.core.v3:swagger-jaxrs2:$swaggerVersion"
     implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
 

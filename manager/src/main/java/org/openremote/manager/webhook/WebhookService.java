@@ -22,6 +22,7 @@ package org.openremote.manager.webhook;
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.Container;
@@ -29,11 +30,11 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.webhook.Webhook;
 
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -52,7 +53,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        this.clientBuilder = new ResteasyClientBuilder()
+        this.clientBuilder = new ResteasyClientBuilderImpl()
                 .connectTimeout(
                         getInteger(container.getConfig(), WEBHOOK_CONNECT_TIMEOUT, WEBHOOK_CONNECT_TIMEOUT_DEFAULT),
                         TimeUnit.MILLISECONDS

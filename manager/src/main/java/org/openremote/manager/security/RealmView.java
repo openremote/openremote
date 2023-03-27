@@ -22,9 +22,9 @@ package org.openremote.manager.security;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 /**
  * Use this to query the Keycloak REALM table in JPA queries.

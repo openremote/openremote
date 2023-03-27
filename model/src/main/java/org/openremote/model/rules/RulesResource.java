@@ -24,13 +24,13 @@ import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
-import javax.annotation.security.RolesAllowed;
-import javax.validation.Valid;
-import javax.ws.rs.*;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.*;
 
 import java.util.List;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Rule")
 @Path("rules")

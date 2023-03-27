@@ -22,10 +22,10 @@ package org.openremote.setup.integration.protocol.http;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.*;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.*;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("resource1")
 public interface TestResource {

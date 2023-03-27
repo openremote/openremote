@@ -21,6 +21,8 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.*;
 import org.openremote.model.Constants;
 import org.openremote.model.IdentifiableEntity;
@@ -30,6 +32,7 @@ import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
+import org.openremote.model.persistence.LTreeType;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AssetValid;
@@ -37,15 +40,13 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.*;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import jakarta.persistence.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static javax.persistence.DiscriminatorType.STRING;
+import static jakarta.persistence.DiscriminatorType.STRING;
 import static org.openremote.model.Constants.*;
 
 // @formatter:off
@@ -268,13 +269,13 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Column(name = "TYPE", nullable = false, updatable = false, insertable = false)
     protected String type = getClass().getSimpleName();
 
-    @Column(name = "PATH", updatable = false, insertable = false, columnDefinition = PERSISTENCE_LTREE_TYPE)
-    @Type(type = PERSISTENCE_LTREE_TYPE)
+    @Column(name = "PATH", updatable = false, insertable = false, columnDefinition = LTreeType.TYPE)
+    @Type(LTreeType.class)
     @Generated(GenerationTime.ALWAYS)
     protected String[] path;
 
     @Column(name = "ATTRIBUTES", columnDefinition = PERSISTENCE_JSON_VALUE_TYPE)
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    @org.hibernate.annotations.Type(JsonBinaryType.class)
     @Valid
     protected AttributeMap attributes;
 

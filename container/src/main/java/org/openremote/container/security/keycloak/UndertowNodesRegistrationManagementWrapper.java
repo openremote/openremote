@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, OpenRemote Inc.
+ * Copyright 2023, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,16 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container;
+package org.openremote.container.security.keycloak;
 
-import org.hibernate.dialect.PostgreSQL10Dialect;
-import org.openremote.container.persistence.LTreeType;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import org.keycloak.adapters.NodesRegistrationManagement;
 
-import java.sql.Types;
+/**
+ * This is a copy of the same class from the now obsolete keycloak-undertow-adapter but for jakarta EE.
+ *
+ */
+// TODO: Move to a standard OIDC adapter
+public class UndertowNodesRegistrationManagementWrapper implements ServletContextListener {
 
-public class PostgreSQL10LTreeDialect extends PostgreSQL10Dialect {
-    public PostgreSQL10LTreeDialect() {
-        super();
-        registerHibernateType(Types.OTHER, LTreeType.class.getName());
+    private final NodesRegistrationManagement delegate;
+
+    public UndertowNodesRegistrationManagementWrapper(NodesRegistrationManagement delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+        delegate.stop();
     }
 }

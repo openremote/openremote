@@ -23,11 +23,8 @@ import com.icegreen.greenmail.user.GreenMailUser
 import com.icegreen.greenmail.util.GreenMail
 import com.icegreen.greenmail.util.GreenMailUtil
 import com.icegreen.greenmail.util.ServerSetupTest
-import org.openremote.agent.protocol.mail.AbstractMailProtocol
-import org.openremote.agent.protocol.mail.MailAgent
-import org.openremote.agent.protocol.mail.MailAgentLink
-import org.openremote.agent.protocol.mail.MailClientBuilder
-import org.openremote.agent.protocol.mail.MailProtocol
+import jakarta.mail.internet.MimeMessage
+import org.openremote.agent.protocol.mail.*
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -45,8 +42,6 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
-import javax.mail.internet.MimeMessage
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.TEXT

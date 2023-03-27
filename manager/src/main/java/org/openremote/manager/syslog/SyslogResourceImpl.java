@@ -24,9 +24,9 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.syslog.*;
 import org.openremote.model.util.Pair;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collections;

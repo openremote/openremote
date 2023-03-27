@@ -22,7 +22,9 @@ package org.openremote.model.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import javax.persistence.*;
+import com.vladmihalcea.hibernate.type.array.StringArrayType;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,7 +80,7 @@ public class Node extends FlowObject {
     public String properties;
 
     @Column(name = "PERSISTENT_PROPERTY_PATHS", nullable = true, columnDefinition = "text[]")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_STRING_ARRAY_TYPE)
+    @org.hibernate.annotations.Type(StringArrayType.class)
     public String[] persistentPropertyPaths;
 
 

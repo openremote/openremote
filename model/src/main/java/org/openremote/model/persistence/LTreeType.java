@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.persistence;
+package org.openremote.model.persistence;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
-import org.openremote.model.Constants;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -31,45 +30,43 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
 
-public class LTreeType implements UserType {
+public class LTreeType implements UserType<String[]> {
 
-    public static final String TYPE = Constants.PERSISTENCE_LTREE_TYPE;
+    public static final String TYPE = "ltree";
 
     @Override
-    public int[] sqlTypes() {
-        return  new int[] {Types.OTHER};
+    public int getSqlType() {
+        return Types.OTHER;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public Class returnedClass() {
+    public Class<String[]> returnedClass() {
         return String[].class;
     }
 
     @Override
-    public boolean equals(Object x, Object y) throws HibernateException {
-        return x.equals(y);
+    public boolean equals(String[] x, String[] y) throws HibernateException {
+        return Arrays.equals(x, y);
     }
 
     @Override
-    public int hashCode(Object x) throws HibernateException {
-        return x.hashCode();
+    public int hashCode(String[] x) throws HibernateException {
+        return Arrays.hashCode(x);
     }
 
     @Override
-    public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner) throws HibernateException, SQLException {
-        String ltreeStr = rs.getString(names[0]);
+    public String[] nullSafeGet(ResultSet rs, int position, SharedSessionContractImplementor session, Object owner) throws SQLException {
+        String ltreeStr = rs.getString(position);
         return ltreeStr != null ? ltreeStr.split("\\.") : null;
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
-        st.setObject(index, value != null ? String.join(".", (String[])value) : null, Types.OTHER);
+    public void nullSafeSet(PreparedStatement st, String[] value, int index, SharedSessionContractImplementor session) throws HibernateException, SQLException {
+        st.setObject(index, value != null ? String.join(".", value) : null, Types.OTHER);
     }
 
     @Override
-    public Object deepCopy(Object value) throws HibernateException {
-        String[] v = (String[])value;
+    public String[] deepCopy(String[] v) throws HibernateException {
         return v == null ? null : Arrays.copyOf(v, v.length);
     }
 
@@ -79,17 +76,17 @@ public class LTreeType implements UserType {
     }
 
     @Override
-    public Serializable disassemble(Object value) throws HibernateException {
-        return (String[])value;
+    public Serializable disassemble(String[] value) throws HibernateException {
+        return value;
     }
 
     @Override
-    public Object assemble(Serializable cached, Object owner) throws HibernateException {
-        return cached;
+    public String[] assemble(Serializable cached, Object owner) throws HibernateException {
+        return deepCopy((String[])cached);
     }
 
     @Override
-    public Object replace(Object original, Object target, Object owner)
+    public String[] replace(String[] original, String[] target, Object owner)
         throws HibernateException {
         // TODO Auto-generated method stub
         return deepCopy(original);

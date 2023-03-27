@@ -24,7 +24,7 @@ import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.Date;
