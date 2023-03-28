@@ -1,6 +1,6 @@
 import {html, TemplateResult} from "lit";
 import {customElement, query, state} from "lit/decorators.js";
-import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
+import {AppStateKeyed, Page, router, PageProvider} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import "@openremote/or-dashboard-builder"
 import {Dashboard} from "@openremote/model";
@@ -22,8 +22,8 @@ export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>): PageP
     return {
         name: "insights",
         routes: [
-            "insights",
-            "insights/:id"
+            "",
+            ":id"
         ],
         pageCreator: () => {
             const page = new PageInsights(store);
@@ -93,10 +93,34 @@ export class PageInsights extends Page<AppStateKeyed> {
         console.log(changedProps);
     }
 
-    // If URL has an dashboard ID, select it immediately.
+    // If URL has a dashboard ID when loading, select it immediately.
     stateChanged(state: AppStateKeyed): void {
-        if(state.app.params && state.app.params.id) {
-            this.selectDashboard(state.app.params.id);
+        if(state.app.params.id != this.selectedDashboard?.id) {
+            this.updateComplete.then(async () => {
+                await Promise.all(this.activePromises); // await for dashboard fetches
+                if(this.dashboards) {
+                    this.selectDashboard(state.app.params.id, false);
+                } else {
+                    console.error("No dashboards found!");
+                }
+            });
+        }
+    }
+
+    // Update URL if another dashboard is selected.
+    updated(changedProperties: Map<string, any>) {
+        if(changedProperties.has("_dashboardId") || changedProperties.has("selectedDashboard")) {
+            this._updateRoute();
+        }
+    }
+
+    // Util method for updating URL
+    protected _updateRoute(silent: boolean = true) {
+        if(this.selectedDashboard) {
+            router.navigate(this.selectedDashboard.id, {
+                callHooks: !silent,
+                callHandler: !silent
+            });
         }
     }
 
@@ -122,13 +146,17 @@ export class PageInsights extends Page<AppStateKeyed> {
         })
     }
 
-    selectDashboard(dashboardId?: string) {
+    selectDashboard(dashboardId?: string, toggleDrawer: boolean = true) {
         const dashboard = this.dashboards.find((dashboard) => dashboard.id == dashboardId);
         if(dashboard) {
-            this.toggleDrawer().then(() => {
+            if(toggleDrawer) {
+                this.toggleDrawer().then(() => {
+                    this.selectedDashboard = dashboard;
+                    this.requestUpdate();
+                });
+            } else {
                 this.selectedDashboard = dashboard;
-                this.requestUpdate();
-            });
+            }
         }
     }
 
