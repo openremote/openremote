@@ -13,6 +13,9 @@ import android.os.Handler
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import io.openremote.orlib.R
+import java.io.ByteArrayOutputStream
+import java.io.ObjectOutputStream
+import java.util.*
 
 
 class BleProvider(val context: Context) {
@@ -24,6 +27,18 @@ class BleProvider(val context: Context) {
         private const val bluetoothPermissionAskedKey = "BluetoothPermissionAsked"
         private const val bleDisabledKey = "bleDisabled"
         private const val version = "ble"
+
+        private val SERVICE_GENERIC_ACCESS = UUID.fromString("00001800-0000-1000-8000-00805f9b34fb")
+        private val SERVICE_GENERIC_ATTRIBUTE =
+            UUID.fromString("00001801-0000-1000-8000-00805f9b34fb")
+        private val CHARACTERISTIC_SERVICE_CHANGED =
+            UUID.fromString("00002a05-0000-1000-8000-00805f9b34fb");
+        private val CHARACTERISTIC_DEVICE_NAME =
+            UUID.fromString("00002a00-0000-1000-8000-00805f9b34fb");
+        private val CHARACTERISTIC_APPEARANCE =
+            UUID.fromString("00002a01-0000-1000-8000-00805f9b34fb");
+        private val CHARACTERISTIC_CENTRAL_ADDRESS_RESOLUTION =
+            UUID.fromString("00002aa6-0000-1000-8000-00805f9b34fb");
 
         // This is the max MTU size supported by Android
         private const val GATT_MAX_MTU_SIZE = 517
@@ -41,12 +56,14 @@ class BleProvider(val context: Context) {
     private var scanning = false
     private val handler = Handler(context.mainLooper)
     private val devices = mutableSetOf<BluetoothDevice>()
-    private val readableDeviceCharacteristics = mutableListOf<BluetoothGattCharacteristic>()
+    private var currentGatt: BluetoothGatt? = null
+    private val deviceCharacteristics = mutableListOf<BleAttribute>()
     private var readableDeviceIndex = 0
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: android.bluetooth.le.ScanResult) {
             super.onScanResult(callbackType, result)
+            Log.i("BleProvider", "onScanResult: ${result.device.name} - ${result.device.address}")
             if (result.device != null && result.device.name != null) {
                 devices.add(result.device)
             }
@@ -129,8 +146,8 @@ class BleProvider(val context: Context) {
     @SuppressLint("MissingPermission")
     fun startBLEScan(activity: Activity, bleCallback: BleCallback) {
         if (!bluetoothAdapter.isEnabled) {
-                val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                activity.startActivityForResult(enableBtIntent, ENABLE_BLUETOOTH_REQUEST_CODE)
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            activity.startActivityForResult(enableBtIntent, ENABLE_BLUETOOTH_REQUEST_CODE)
         } else if (!hasPermission()) {
             requestPermissions(activity)
         } else {
@@ -140,6 +157,7 @@ class BleProvider(val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun connectToDevice(address: String, bleCallback: BleCallback) {
+        currentGatt?.disconnect()
         devices.find { it.address == address }?.let { device ->
             device.connectGatt(context, false, object : BluetoothGattCallback() {
                 override fun onConnectionStateChange(
@@ -150,14 +168,9 @@ class BleProvider(val context: Context) {
                     val deviceAddress = gatt.device.address
 
                     if (status == BluetoothGatt.GATT_SUCCESS) {
+                        currentGatt = gatt
                         readableDeviceIndex = 0
-                        bleCallback.accept(
-                            hashMapOf(
-                                "action" to "CONNECT_TO_DEVICE",
-                                "provider" to "ble",
-                                "success" to true,
-                            )
-                        )
+                        deviceCharacteristics.clear()
                         if (newState == BluetoothProfile.STATE_CONNECTED) {
                             Log.i(
                                 "BluetoothGattCallback",
@@ -198,11 +211,22 @@ class BleProvider(val context: Context) {
                                     "Characteristic: ${characteristic.uuid}"
                                 )
                                 if (characteristic.isReadable()) {
-                                    readableDeviceCharacteristics.add(characteristic)
+                                    deviceCharacteristics.add(
+                                        BleAttribute(
+                                            characteristic,
+                                            isReadable = true,
+                                            isWritable = false,
+                                            value = null
+                                        )
+                                    )
+                                }
+                                if (characteristic.isWritable()) {
+                                    deviceCharacteristics.find { it.characteristic.uuid == characteristic.uuid }?.isWritable =
+                                        true
                                 }
                             }
-                            if (readableDeviceCharacteristics.isNotEmpty()) {
-                                readCharacteristic(readableDeviceCharacteristics[readableDeviceIndex])
+                            if (deviceCharacteristics.isNotEmpty()) {
+                                readCharacteristic(deviceCharacteristics[readableDeviceIndex].characteristic)
                             }
                         }
                     }
@@ -217,6 +241,17 @@ class BleProvider(val context: Context) {
                     with(characteristic) {
                         when (status) {
                             BluetoothGatt.GATT_SUCCESS -> {
+                                val deviceCharacteristic = deviceCharacteristics.find { it.characteristic.uuid == uuid }
+                                if (deviceCharacteristic != null) {
+                                    when (characteristic.uuid) {
+                                        CHARACTERISTIC_DEVICE_NAME -> {
+                                            deviceCharacteristic.value = String(value)
+                                        }
+                                        else -> {
+                                            deviceCharacteristic.value = value.toHexString()
+                                        }
+                                    }
+                                }
                                 Log.i(
                                     "BluetoothGattCallback",
                                     "Read characteristic $uuid:\n${String(value)} - ${value.contentToString()} - ${value.toHexString()}"
@@ -233,8 +268,26 @@ class BleProvider(val context: Context) {
                             }
                         }
                     }
-                    if (readableDeviceIndex < readableDeviceCharacteristics.size - 1) {
-                        gatt.readCharacteristic(readableDeviceCharacteristics[++readableDeviceIndex])
+                    if (readableDeviceIndex < deviceCharacteristics.size - 1) {
+                        gatt.readCharacteristic(deviceCharacteristics[++readableDeviceIndex].characteristic)
+                    } else {
+                        bleCallback.accept(
+                            hashMapOf(
+                                "action" to "CONNECT_TO_DEVICE",
+                                "provider" to "ble",
+                                "success" to true,
+                                "data" to hashMapOf(
+                                    "attributes" to deviceCharacteristics.map {
+                                        hashMapOf(
+                                            "attributeId" to it.characteristic.uuid,
+                                            "isReadable" to it.isReadable,
+                                            "isWritable" to it.isWritable,
+                                            "value" to it.value
+                                        )
+                                    }
+                                )
+                            )
+                        )
                     }
                 }
 
@@ -246,6 +299,56 @@ class BleProvider(val context: Context) {
                 }
 
             }, BluetoothDevice.TRANSPORT_LE)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun <T: java.io.Serializable> sendToDevice(characteristicID: String, value: T, callback: BleCallback) {
+        val characteristic = deviceCharacteristics.find { it.characteristic.uuid.toString() == characteristicID }?.characteristic
+        if (characteristic == null) {
+            callback.accept(
+                hashMapOf(
+                    "action" to "SEND_TO_DEVICE",
+                    "provider" to "ble",
+                    "success" to false,
+                    "error" to "Characteristic $characteristicID not found"
+                )
+            )
+            return
+        }
+        val writeType = when {
+            characteristic.isWritable() -> BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            characteristic.isWritableWithoutResponse() -> {
+                BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+            }
+            else -> {
+                callback.accept(
+                    hashMapOf(
+                        "action" to "SEND_TO_DEVICE",
+                        "provider" to "ble",
+                        "success" to false,
+                        "error" to "Characteristic $characteristicID not found"
+                    )
+                )
+                return
+            }
+        }
+
+        val payload = ByteArrayOutputStream().use { bos ->
+            ObjectOutputStream(bos).use { out ->
+                out.writeObject(value)
+                bos.toByteArray()
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            currentGatt?.writeCharacteristic(characteristic, payload, writeType) ?: error("Not connected to a BLE device!")
+        } else {
+            currentGatt?.let { gatt ->
+                characteristic.writeType = writeType
+                characteristic.value = payload
+                gatt.writeCharacteristic(characteristic)
+            } ?: error("Not connected to a BLE device!")
         }
     }
 
@@ -313,6 +416,35 @@ class BleProvider(val context: Context) {
                     )
                 )
             }
+        }
+    }
+
+    private data class BleAttribute(
+        var characteristic: BluetoothGattCharacteristic,
+        var isReadable: Boolean,
+        var isWritable: Boolean,
+        var value: Any?,
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as BleAttribute
+
+            if (characteristic != other.characteristic) return false
+            if (isReadable != other.isReadable) return false
+            if (isWritable != other.isWritable) return false
+            if (value?.equals(other.value) == false) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = characteristic.hashCode()
+            result = 31 * result + isReadable.hashCode()
+            result = 31 * result + isWritable.hashCode()
+            result = 31 * result + value.hashCode()
+            return result
         }
     }
 }

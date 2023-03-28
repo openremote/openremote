@@ -100,6 +100,7 @@ open class ORViewcontroller : UIViewController {
         myWebView?.navigationDelegate = self;
         //add observer to get estimated progress value
         myWebView?.addObserver(self, forKeyPath: "estimatedProgress", options: .new, context: nil);
+        myWebView?.allowsBackForwardNavigationGestures = true
 
         webProgressBar = UIProgressView(progressViewStyle: .bar)
         webProgressBar?.progressTintColor = UIColor(named: "or_green")
@@ -307,6 +308,10 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                         sendData(data: disableData)
                                     }
                                 case Actions.scanBleDevices:
+                                    bleProvider?.scanForDevices { scanData in
+                                        self.sendData(data: scanData)
+                                    }
+                                case Actions.connectToBleDevice:
                                     bleProvider?.scanForDevices { scanData in
                                         self.sendData(data: scanData)
                                     }

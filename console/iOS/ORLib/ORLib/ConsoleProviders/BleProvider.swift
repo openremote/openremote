@@ -15,9 +15,10 @@ public class BleProvider: NSObject {
     let version = "ble"
     
     private var centralManager: CBCentralManager?
-    private var devices = [CBPeripheral]()
+    private var devices: Set<CBPeripheral> = []
     private var scanDevicesCallback: (([String: Any]) -> (Void))?
     private var scanTimer: Timer?
+    private var connectedDevice: CBPeripheral?
     
     var alertBluetoothCallback : (() -> (Void))?
     
@@ -78,6 +79,12 @@ public class BleProvider: NSObject {
         }
     }
     
+    public func connectoToDevice(deviceId: UUID, callback:@escaping ([String: Any]) -> (Void)) {
+        if let device = devices.first(where: {$0.identifier == deviceId}) {
+            centralManager?.connect(device)
+        }
+    }
+    
     private func startScan() {
         self.centralManager!.scanForPeripherals(withServices: nil)
         scanTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: false, block: { timer in
@@ -129,7 +136,51 @@ extension BleProvider : CBCentralManagerDelegate {
     }
     
     public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+        print(advertisementData)
         print("\(peripheral.name ?? "Unknown")")
-        devices.append(peripheral)
+        devices.insert(peripheral)
+    }
+    
+    public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        self.connectedDevice = peripheral
+        peripheral.delegate = self
+        peripheral.discoverServices(nil)
+    }
+    
+    public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+        
+    }
+    
+    public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+        
+    }
+}
+
+extension BleProvider: CBPeripheralDelegate {
+    
+    public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        guard let services = peripheral.services else {
+            return
+        }
+        for service in services {
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
+    }
+    
+    public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        guard let characteristics = service.characteristics else {
+                return
+            }
+        for characteristic in characteristics {
+            print(characteristic.uuid)
+            characteristic.properties
+            peripheral.discoverDescriptors(for: characteristic)
+        }
+    }
+    
+    public func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
+        guard let descriptors = characteristic.descriptors else { return }
+         
+        
     }
 }

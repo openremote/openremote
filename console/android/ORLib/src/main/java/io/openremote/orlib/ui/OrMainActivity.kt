@@ -749,6 +749,15 @@ open class OrMainActivity : Activity() {
                         }
                     })
                 }
+                action.equals("SEND_TO_DEVICE", ignoreCase = true) -> {
+                    val attributeId = data.getString("attributeId")
+                    val value = data.getString("value")
+                    bleProvider?.sendToDevice(attributeId, value,  object : BleProvider.BleCallback {
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
+                }
             }
         }
     }
