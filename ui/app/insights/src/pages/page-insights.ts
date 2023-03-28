@@ -1,17 +1,22 @@
 import {html, TemplateResult} from "lit";
-import {customElement, state} from "lit/decorators.js";
+import {customElement, query, state} from "lit/decorators.js";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import "@openremote/or-dashboard-builder"
-import {Dashboard } from "@openremote/model";
+import {Dashboard} from "@openremote/model";
 import manager from "@openremote/core";
 import "@openremote/or-chart";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { i18next } from "@openremote/or-translate";
-import {when} from 'lit/directives/when.js';
-import { registerWidgetTypes } from "@openremote/or-dashboard-builder";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {i18next} from "@openremote/or-translate";
+import {registerWidgetTypes} from "@openremote/or-dashboard-builder";
+import "@openremote/or-components/or-loading-indicator";
+import {when} from "lit/directives/when.js";
+import {guard} from "lit/directives/guard.js";
 import {style} from "../style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
+import { styleMap } from 'lit/directives/style-map.js';
+import {DrawerConfig, getDashboardMenuTemplate} from "../components/dashboard-list";
 
 export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -43,13 +48,13 @@ export class PageInsights extends Page<AppStateKeyed> {
     private _userId?: string;
 
     @state()
-    protected _fullscreen: boolean = true;
-
-    @state()
     private rerenderPending: boolean = false;
 
-    @state()
-    private showDashboardTree: boolean = true;
+    @query("#drawer")
+    private drawer: OrMwcDrawer;
+
+    @query("#drawer-custom-scrim")
+    private drawerScrim: HTMLElement;
 
 
     get name(): string {
@@ -75,19 +80,32 @@ export class PageInsights extends Page<AppStateKeyed> {
         registerWidgetTypes();
     }
 
+    // Before updating, check whether there are dashboards loaded.
+    // If not, fetch them from our backend
     shouldUpdate(changedProps): boolean | any {
-        console.log(changedProps);
         if(!this.dashboards && !this.isLoading()) {
             this.fetchAllDashboards();
         }
         return super.shouldUpdate(changedProps);
     }
 
-    /* -------------------- */
+    willUpdate(changedProps) {
+        console.log(changedProps);
+    }
+
+    // If URL has an dashboard ID, select it immediately.
+    stateChanged(state: AppStateKeyed): void {
+        if(state.app.params && state.app.params.id) {
+            this.selectDashboard(state.app.params.id);
+        }
+    }
 
     isLoading(): boolean {
         return this.activePromises.length > 0;
     }
+
+
+    /* -------------------- */
 
     fetchAllDashboards() {
         const realm = manager.displayRealm;
@@ -105,72 +123,92 @@ export class PageInsights extends Page<AppStateKeyed> {
     }
 
     selectDashboard(dashboardId?: string) {
-        this.selectedDashboard = this.dashboards.find((dashboard) => dashboard.id == dashboardId);
+        const dashboard = this.dashboards.find((dashboard) => dashboard.id == dashboardId);
+        if(dashboard) {
+            this.toggleDrawer().then(() => {
+                this.selectedDashboard = dashboard;
+                this.requestUpdate();
+            });
+        }
     }
 
-
-    stateChanged(state: AppStateKeyed): void {
-        if(state.app.params && state.app.params.id) {
-            this.selectDashboard(state.app.params.id);
+    async toggleDrawer(): Promise<void> {
+        if(this.drawer.open) {
+            this.drawerScrim?.classList.add("drawer-scrim-fadeout");
+            this.drawer.toggle();
+            await new Promise(r => setTimeout(r, 250)); // one-liner for waiting until fadeout animation is done
+        } else {
+            this.drawer.toggle();
         }
     }
 
     protected render(): TemplateResult {
+        console.log("Rendering page-insights!");
+        const pageStyles = {
+            display: 'flex',
+            flexDirection: 'column',
+            pointerEvents: this.drawer?.open ? 'none' : 'auto'
+        }
+        const drawerConfig: DrawerConfig = {
+            enabled: true,
+            opened: this.drawer?.open,
+            onToggle: () => this.toggleDrawer().then(() => this.requestUpdate())
+        }
         return html`
-            <div style="flex: 1;">
-                <div style="display: flex; flex-direction: row; height: 100%;">
-                    ${when(this.showDashboardTree, () => html`
-                        <div class="${this.selectedDashboard ? 'hideMobile' : 'fullWidthOnMobile'}" style="flex: 0 0 300px; display: flex; justify-content: center; align-items: center;">
-                            ${when(this.dashboards && !this.isLoading(), () => html`
-                            <or-dashboard-tree id="tree" .realm="${manager.displayRealm}"
-                                               .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .showControls="${true}" .userId="${this._userId}" .readonly="${true}"
-                                               @select="${(event: CustomEvent) => { this.selectDashboard((event.detail as Dashboard)?.id); }}"
-                            ></or-dashboard-tree>
+            ${getDashboardMenuTemplate(
+                    this.dashboards,
+                    this.selectedDashboard,
+                    (ev) => this.selectDashboard(ev.detail[0].value),
+                    this._userId,
+                    manager.displayRealm,
+                    this.isLoading(), 
+                    drawerConfig
+            )}
+            <div style="flex: 1; ${styleMap(pageStyles)}">
+                ${this.getDashboardHeaderTemplate(() => this.toggleDrawer().then(() => this.requestUpdate()))}
+                <div style="flex: 1;">
+                    ${guard([this.selectedDashboard, this.rerenderPending], () => html`
+                        ${when(this.selectedDashboard, () => html`
+                            <or-dashboard-preview style="background: transparent;" .rerenderPending="${this.rerenderPending}" 
+                                                  .realm="${manager.displayRealm}" .template="${this.selectedDashboard.template}" .editMode="${false}" 
+                                                  .fullscreen="${true}" .readonly="${true}"
+                                                  @rerenderfinished="${() => this.rerenderPending = false}"
+                            ></or-dashboard-preview>
                         `, () => html`
-                            <div>
-                                <span>Loading...</span>
+                            <div style="display: flex; height: 100%; justify-content: center; align-items: center;">
+                                <span>${i18next.t('noDashboardSelected')}</span>
                             </div>
                         `)}
-                        </div>
                     `)}
-                    <div class="${!this.selectedDashboard ? 'hideMobile' : ''}" style="flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column;">
-                        ${when(this.selectedDashboard != null && !this.isLoading(), () => html`
-                            <div style="width: 100%; flex: 1; display: flex; flex-direction: column;">
-                                <div id="fullscreen-header">
-                                    <div id="fullscreen-header-wrapper">
-                                        <div id="fullscreen-header-title" style="display: flex; align-items: center;">
-                                            <or-icon class="showMobile" style="margin-right: 10px;" icon="chevron-left" @click="${() => { this.selectedDashboard = undefined; }}"></or-icon>
-                                            <or-icon class="hideMobile" style="margin-right: 10px;" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-icon>
-                                            <span>${this.selectedDashboard?.displayName}</span>
-                                        </div>
-                                        <div id="fullscreen-header-actions">
-                                            <div id="fullscreen-header-actions-content">
-                                                <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh" @or-mwc-input-changed="${() => { this.rerenderPending = true; }}"></or-mwc-input>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div style="flex: 1;">
-                                    <or-dashboard-preview style="background: transparent;" .rerenderPending="${this.rerenderPending}" 
-                                                          .realm="${manager.displayRealm}" .template="${this.selectedDashboard.template}" .editMode="${false}" 
-                                                          .fullscreen="${true}" .readonly="${true}"
-                                                          @rerenderfinished="${() => { this.rerenderPending = false; }}"
-                                    ></or-dashboard-preview>
-                                </div>
-                            </div>
-                        `, () => {
-                            if (this.isLoading()) {
-                                return html`
-                                    <or-loading-indicator .overlay="${true}"></or-loading-indicator>
-                                `
-                            } else {
-                                return html`<span>No dashboard selected.</span>`
-                            }
-                        })}
+                </div>
+            </div>
+        `;
+    }
+
+
+
+    /* ------------------------------------------------------------ */
+
+
+    protected getDashboardHeaderTemplate(onopen: (ev: Event) => void): TemplateResult {
+        return html`
+            <div id="fullscreen-header">
+                <div id="fullscreen-header-wrapper">
+                    <div>
+                        <or-mwc-input type="${InputType.BUTTON}" icon="menu" @or-mwc-input-changed="${onopen}"></or-mwc-input>
+                    </div>
+                    <div id="fullscreen-header-title">
+                        <span>${this.selectedDashboard?.displayName}</span>
+                    </div>
+                    <div>
+                        <div>
+                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
+                                          @or-mwc-input-changed="${() => { this.rerenderPending = true; }}"
+                            ></or-mwc-input>
+                        </div>
                     </div>
                 </div>
             </div>
         `
     }
-
 }

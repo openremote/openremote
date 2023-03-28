@@ -122,6 +122,7 @@ export class OrChartWidgetContent extends LitElement {
     /* ---------- */
 
     render() {
+        console.log("Rendering or-chart-widget!");
         return html`
             ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => {
                 return html`
@@ -144,6 +145,7 @@ export class OrChartWidgetContent extends LitElement {
     }
 
     willUpdate(changedProperties: Map<string, any>) {
+        console.log(changedProperties);
 
         // Add datapointQuery if not set yet (due to migration)
         if(this.widget && this.widget.widgetConfig.datapointQuery == undefined) {

@@ -330,7 +330,6 @@ const style = css`
         }
 
         #container {
-            background-color: black;
             flex-direction: column;
         }
 
@@ -444,6 +443,10 @@ export class OrChart extends translate(i18next)(LitElement) {
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._cleanup();
+    }
+
+    willUpdate(changedProps: any) {
+        console.log(changedProps);
     }
 
     firstUpdated() {
@@ -614,6 +617,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     render() {
+        console.log("Rendering or-chart!");
         const disabled = this._loading;
         return html`
             <div id="container">
@@ -989,6 +993,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
+        console.warn("Loading chart data...");
         if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }
@@ -1064,7 +1069,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             query.toTimestamp = this._endOfPeriod;
 
             if(query.type == 'lttb') {
-                query.amountOfPoints = Math.round(this._chartElem.clientWidth / 10); // set amount of datapoints based on current chart width.
+                if(this._chartElem.clientWidth == 0) {
+                    console.error("Could not grab width of the Chart for estimating amount of datapoints. Using 10 points instead.")
+                }
+                query.amountOfPoints = (this._chartElem.clientWidth == 0) ? 10 : Math.round(this._chartElem.clientWidth / 10); // set amount of datapoints based on current chart width.
             } else if(query.type == 'interval') {
                 const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
                 const intervalArr = this._getInterval(diffInHours);

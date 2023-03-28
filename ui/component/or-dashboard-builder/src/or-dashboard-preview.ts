@@ -137,6 +137,7 @@ export class OrDashboardPreview extends LitElement {
         // If there is no value yet, do initial setup:
         } else if(newValue != undefined) {
             this._template = newValue;
+            console.warn("setupGrid() #1");
             this.setupGrid(false, false);
         }
     }
@@ -256,10 +257,25 @@ export class OrDashboardPreview extends LitElement {
             changed.delete('previewHeight');
         }
 
+        if(changedProperties.has("rerenderPending")) {
+            if(this.rerenderPending) {
+                console.warn("setupGrid() #3");
+                this.setupGrid(true, true).then(() => {
+                    this.rerenderPending = false;
+                    this.dispatchEvent(new CustomEvent("rerenderfinished"));
+                });
+                return false;
+            }
+        }
+
         // Delete ones that not actually change anything
         changed.delete('latestDragWidgetStart');
 
         return (changed.size == 0 ? false : super.shouldUpdate(changedProperties));
+    }
+
+    willUpdate(changedProps: any) {
+        console.log(changedProps);
     }
 
 
@@ -307,6 +323,7 @@ export class OrDashboardPreview extends LitElement {
         // Switching edit/view mode needs recreation of Grid
         if(changedProperties.has("editMode")) {
             if(changedProperties.get('editMode') != undefined) {
+                console.warn("setupGrid() #2");
                 this.setupGrid(true, true);
             }
         }
@@ -323,15 +340,6 @@ export class OrDashboardPreview extends LitElement {
             if(this.previewSize) {
                 this.previewWidth = this.previewSize.width + "px";
                 this.previewHeight = this.previewSize.height + "px";
-            }
-        }
-
-        if(changedProperties.has("rerenderPending")) {
-            if(this.rerenderPending) {
-                this.setupGrid(true, true).then(() => {
-                    this.rerenderPending = false;
-                    this.dispatchEvent(new CustomEvent("rerenderfinished"));
-                });
             }
         }
 
@@ -486,6 +494,7 @@ export class OrDashboardPreview extends LitElement {
 
     // Render
     protected render() {
+        console.log("Rendering or-dashboard-preview!");
 
         try { // to correct the list of gridItems each render (Hopefully temporarily since it's quite compute heavy)
             if(this.grid?.el && this.grid?.getGridItems()) {
@@ -644,6 +653,7 @@ export class OrDashboardPreview extends LitElement {
     }
 
     _onGridResize() {
+        console.warn("setupGrid() #4");
         this.setupGrid(true, false);
     }
 
@@ -658,11 +668,13 @@ export class OrDashboardPreview extends LitElement {
             let gridElement = this.shadowRoot?.getElementById("gridElement");
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = maingrid!.scrollHeight + 'px';
+            console.warn("setupGrid() #5");
             this.setupGrid(true, false);
         }
 
         // If multiple properties changed, just force rerender all of it.
         else if(changes.changedKeys.length > 1) {
+            console.warn("setupGrid() #6");
             this.setupGrid(true, true);
         }
 
@@ -677,6 +689,7 @@ export class OrDashboardPreview extends LitElement {
             }
         }
         else if(changes.changedKeys.includes('screenPresets')) {
+            console.warn("setupGrid() #7");
             this.setupGrid(true, true);
         }
     }
