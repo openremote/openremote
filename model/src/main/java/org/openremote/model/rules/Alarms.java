@@ -19,6 +19,8 @@
  */
 package org.openremote.model.rules;
 
+import java.util.ArrayList;
+
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.util.TsIgnore;
 
@@ -27,5 +29,6 @@ import org.openremote.model.util.TsIgnore;
  */
 @TsIgnore
 public abstract class Alarms {
-    public abstract void create(Alarm alarm);
+    public abstract Long create(Alarm alarm);
+    public abstract void linkAssets(ArrayList<String> assetIds, Long alarmId);
 }
