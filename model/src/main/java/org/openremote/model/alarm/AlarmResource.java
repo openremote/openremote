@@ -105,5 +105,4 @@ public interface AlarmResource {
     @GET
     @Produces(APPLICATION_JSON)
     List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
-    
 }
