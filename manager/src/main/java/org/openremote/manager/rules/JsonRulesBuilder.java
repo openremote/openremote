@@ -1000,6 +1000,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         if (ruleAction instanceof  RuleActionAlarm alarmAction) {
             if (alarmAction.alarm != null) {
                 Alarm alarm = alarmAction.alarm;
+                ArrayList<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
                 if(alarm.getContent() != null) {
                     String content = alarm.getContent();
                     if (!TextUtil.isNullOrEmpty(content)) {
@@ -1041,6 +1042,9 @@ public class JsonRulesBuilder extends RulesBuilder {
                     return null;
                 }
                 Alarm finalAlarm = alarm;
+                if(assetIds.size() > 0){
+                    return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm)), 0);
+                }
                 return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm), 0);
             }
         }
