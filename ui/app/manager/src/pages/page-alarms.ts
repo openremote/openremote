@@ -5,10 +5,10 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {AlarmSeverity, AlarmStatus, ClientRole, Role, SentAlarm, UserQuery, Asset, User} from "@openremote/model";
+import {AlarmSeverity, AlarmStatus, ClientRole, Role, SentAlarm, UserQuery, Asset, User, AlarmAssetLink} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showOkCancelDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {getAlarmsRoute} from "../routes";
@@ -34,7 +34,7 @@ export function pageAlarmsProvider(store: Store<AppStateKeyed>): PageProvider<Ap
 interface AlarmModel extends SentAlarm {
     loaded?: boolean;
     loading?: boolean;
-    alarmAssetLinks?: string[]; // To change data type
+    alarmAssetLinks?: AlarmAssetLink[];
     alarmUserLinks?: string[]; // To change data type
 }
 
@@ -555,90 +555,58 @@ export class PageAlarms extends Page<AppStateKeyed> {
         //     return;
         // }
         //
-        // const userAssetLinksResponse = await manager.rest.api.AssetResource.getUserAssetLinks({
-        //     realm: manager.displayRealm,
-        //     userId: user.id
-        // });
-        // if (!this.responseAndStateOK(() => true, userAssetLinksResponse, i18next.t("loadFailedUserInfo"))) {
-        //     return;
-        // }
-        //
-        // user.roles = userRolesResponse.data.filter(r => r.assigned);
-        // user.realmRoles = userRealmRolesResponse.data.filter(r => r.assigned);
-        // this._realmRoles = [...userRealmRolesResponse.data];
-        // user.previousRealmRoles = [...user.realmRoles];
-        // user.previousRoles = [...user.roles];
-        // user.userAssetLinks = userAssetLinksResponse.data;
-        // user.loaded = true;
-        // user.loading = false;
+        const alarmAssetLinksResponse = await manager.rest.api.AlarmResource.getAssetLinks(alarm.id, manager.displayRealm);
+        if (!this.responseAndStateOK(() => true, alarmAssetLinksResponse, i18next.t("loadFailedUserInfo"))) {
+            return;
+        }
+        
+        alarm.alarmAssetLinks = alarmAssetLinksResponse.data;
 
         // Update the dom
         this.requestUpdate();
     }
 
-    protected _openAssetSelector(ev: MouseEvent, user: AlarmModel, readonly: boolean) {
-        // const openBtn = ev.target as OrMwcInput;
-        // openBtn.disabled = true;
-        // user.previousAssetLinks = [...user.userAssetLinks];
-        //
+    protected _openAssetSelector(ev: MouseEvent, alarm: AlarmModel, readonly: boolean) {
+        const openBtn = ev.target as OrMwcInput;
+        openBtn.disabled = true;
+        // alarm.alarmAssetLinks = [...alarm.alarmAssetLinks];
+        
         // const onAssetSelectionChanged = (e: OrAssetTreeSelectionEvent) => {
-        //     user.userAssetLinks = e.detail.newNodes.map(node => {
-        //         const userAssetLink: UserAssetLink = {
+        //     alarm.alarmAssetLinks = e.detail.newNodes.map(node => {
+        //         const alarmAssetLink: AlarmAssetLink = {
         //             id: {
-        //                 userId: user.id,
-        //                 realm: user.realm,
+        //                 alarmId: alarm.id,
+        //                 realm: alarm.realm,
         //                 assetId: node.asset.id
         //             }
         //         };
-        //         return userAssetLink;
+        //         return alarmAssetLink;
         //     })
         // };
-        //
-        // const dialog = showDialog(new OrMwcDialog()
-        //     .setHeading(i18next.t("linkedAssets"))
-        //     .setContent(html`
-        //         <or-asset-tree
-        //                 id="chart-asset-tree" readonly .selectedIds="${user.userAssetLinks.map(ual => ual.id.assetId)}"
-        //                 .showSortBtn="${false}" expandNodes checkboxes
-        //                 @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
-        //         if (readonly) {
-        //             e.detail.allow = false;
-        //         }
-        //     }}"
-        //                 @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => {
-        //         if (!readonly) {
-        //             onAssetSelectionChanged(e);
-        //         }
-        //     }}"></or-asset-tree>
-        //     `)
-        //     .setActions([
-        //         {
-        //             default: true,
-        //             actionName: "cancel",
-        //             content: i18next.t("cancel"),
-        //             action: () => {
-        //                 user.userAssetLinks = user.previousAssetLinks;
-        //                 user.previousAssetLinks = undefined;
-        //                 openBtn.disabled = false;
-        //             }
-        //         },
-        //         {
-        //             actionName: "ok",
-        //             content: i18next.t("ok"),
-        //             action: () => {
-        //                 openBtn.disabled = false;
-        //                 this.requestUpdate();
-        //             }
-        //         }
-        //     ])
-        //     .setDismissAction({
-        //         actionName: "cancel",
-        //         action: () => {
-        //             user.userAssetLinks = user.previousAssetLinks;
-        //             user.previousAssetLinks = undefined;
-        //             openBtn.disabled = false;
-        //         }
-        //     }));
+        
+        const dialog = showDialog(new OrMwcDialog()
+            .setHeading(i18next.t("linkedAssets"))
+            .setContent(html`
+                <or-asset-tree
+                        id="chart-asset-tree" readonly .selectedIds="${alarm.alarmAssetLinks?.map(al => al.id.assetId)}"
+                        .showSortBtn="${false}" expandNodes checkboxes></or-asset-tree>
+            `)
+            .setActions([
+                {
+                    default: true,
+                    actionName: "cancel",
+                    content: i18next.t("cancel"),
+                    action: () => {
+                        openBtn.disabled = false;
+                    }
+                }
+            ])
+            .setDismissAction({
+                actionName: "cancel",
+                action: () => {
+                    openBtn.disabled = false;
+                }
+            }));
     }
 
     protected onAlarmChanged(e: OrInputChangedEvent | OrMwcInput) {
@@ -821,13 +789,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         }, "user"), html`${i18next.t('loading')}`)}
                     </div>
 
-                    <div id="content" class="panel">
-                        <div class="panel-title" style="justify-content: space-between;">
-                            <p>${i18next.t("alarm.linkedAssets")}</p>
-                        </div>
-                        ${until(this.getAlarmsTable(assetTableColumns, linkedAssetTableRows, tableConfig, (ev) => {
-                            this.alarmId = this._activeAlarms[ev.detail.index].id.toString();
-                        }, "asset"), html`${i18next.t('loading')}`)}
+                    <div>
+                        <span>${i18next.t("linkedAssets")}:</span>
+                        <or-mwc-input outlined ?disabled="${readonly}" style="margin-left: 4px;"
+                                      .type="${InputType.BUTTON}"
+                                      .label="${i18next.t("selectRestrictedAssets", {number: alarm.alarmAssetLinks?.length})}"
+                                      @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, alarm, readonly)}"></or-mwc-input>
                     </div>
                 </div>
 

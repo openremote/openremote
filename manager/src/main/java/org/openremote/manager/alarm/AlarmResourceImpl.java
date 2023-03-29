@@ -9,6 +9,7 @@ import org.openremote.model.alarm.Alarm;
 import org.openremote.model.alarm.AlarmResource;
 import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.alarm.Alarm.Source;
+import org.openremote.model.alarm.AlarmAssetLink;
 import org.openremote.model.http.RequestParams;
 
 import javax.ws.rs.POST;
@@ -71,9 +72,9 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 
     @Override
     public void createAlarm(RequestParams requestParams, Alarm alarm) {
-        boolean success = alarmService.sendAlarm(alarm);
+        SentAlarm success = alarmService.sendAlarm(alarm);
 
-        if (!success) {
+        if (success.getId() == null) {
             throw new WebApplicationException(Status.BAD_REQUEST);
         }
     }
@@ -129,7 +130,18 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         }
         //alarmService.setAssetLink(alarmId, assetId, realm);
     }
-
+    
+    @Override
+    public AlarmAssetLink[] getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
+        if (alarmId == null) {
+            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
+        }
+        if (realm == null) {
+            throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
+        }
+        return alarmService.getAssetLinks(alarmId, realm).toArray(new AlarmAssetLink[0]);
+    }
+    
     protected void verifyAccess(SentAlarm sentAlarm) {
         if (sentAlarm == null) {
             LOG.fine("DENIED: Alarm not found");
@@ -146,4 +158,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
             throw new WebApplicationException(Status.FORBIDDEN);
         }
     }
+
+    
 }

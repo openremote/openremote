@@ -26,7 +26,7 @@ create table ALARM (
 );
 
 create table ALARM_USER_LINK (
-  ALARM_ID   varchar(22)              not null,
+  ALARM_ID   int8                     not null,
   REALM      varchar(255)             not null,
   USER_ID    varchar(36)              not null,
   CREATED_ON timestamp with time zone not null,
@@ -34,9 +34,9 @@ create table ALARM_USER_LINK (
 );
 
 create table ALARM_ASSET_LINK (
-  ASSET_ID   varchar(22)              not null,
+  ALARM_ID   int8                     not null,
   REALM      varchar(255)             not null,
-  ALARM_ID   varchar(36)              not null,
+  ASSET_ID   varchar(22)              not null,
   CREATED_ON timestamp with time zone not null,
   primary key (ASSET_ID, REALM, ALARM_ID)
 );
