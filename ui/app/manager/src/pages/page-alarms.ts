@@ -449,7 +449,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
 
         const isUpdate = !!alarm.id;
-        if (!isUpdate) {
+        if(!isUpdate){
             alarm.realm = manager.getRealm();
         }
 
