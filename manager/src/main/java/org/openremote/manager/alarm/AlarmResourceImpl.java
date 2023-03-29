@@ -152,7 +152,18 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
         return result;
     }
-
+    
+    @Override
+    public AlarmAssetLink[] getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
+        if (alarmId == null) {
+            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
+        }
+        if (realm == null) {
+            throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
+        }
+        return alarmService.getAssetLinks(alarmId, realm).toArray(new AlarmAssetLink[0]);
+    }
+    
     protected void verifyAccess(SentAlarm sentAlarm) {
         if (sentAlarm == null) {
             LOG.fine("DENIED: Alarm not found");
@@ -169,4 +180,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
             throw new WebApplicationException(Status.FORBIDDEN);
         }
     }
+
+    
 }
