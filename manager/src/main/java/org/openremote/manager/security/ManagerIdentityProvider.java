@@ -28,8 +28,8 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.Tuple;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.Tuple;
+import jakarta.persistence.TypedQuery;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -211,7 +211,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
         List<User> users = persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<User> sqlQuery = entityManager.createQuery(sb.toString(), User.class);
-            IntStream.range(0, parameters.size()).forEach(i -> sqlQuery.setParameter(i + 1, parameters.get(i)));
+            IntStream.rangeClosed(1, parameters.size()).forEach(i -> sqlQuery.setParameter(i, parameters.get(i-1)));
 
             if (userQuery.limit != null && userQuery.limit > 0) {
                 sqlQuery.setMaxResults(userQuery.limit);
@@ -283,10 +283,11 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         });
     }
 
+    @SuppressWarnings("unchecked")
     static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
-            List<Realm> realms = entityManager.createQuery(
-                "select r from Realm r where r.notBefore is null or r.notBefore = 0 or to_timestamp(r.notBefore) <= now()"
+            List<Realm> realms = (List<Realm>)entityManager.createNativeQuery(
+                "select *, (select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = r.ID and ra.name = 'displayName') as displayName from public.realm r  where r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now())"
                 , Realm.class).getResultList();
 
             // Make sure the master realm is always on top
@@ -314,8 +315,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static boolean realmExistsFromDb(PersistenceService persistenceService, String realm) {
         return persistenceService.doReturningTransaction(em -> {
 
-            long count = em.createQuery(
-                "select count(r) from Realm r where r.name = :realm and r.enabled = true and (r.notBefore is null or r.notBefore = 0 or to_timestamp(r.notBefore) <= now())",
+            long count = (long)em.createNativeQuery(
+                "select count(*) from public.realm r where r.name = :realm and r.enabled = true and (r.not_before is null or r.not_before = 0 or r.not_before <= extract('epoch' from now()))",
                 Long.class).setParameter("realm", realm).getSingleResult();
 
             return count > 0;

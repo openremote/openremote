@@ -26,7 +26,7 @@ import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.mail.*;
+import jakarta.mail.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

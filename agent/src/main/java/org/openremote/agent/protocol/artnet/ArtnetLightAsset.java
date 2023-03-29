@@ -6,8 +6,8 @@ import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.Entity;
-import javax.persistence.Transient;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
 import java.util.Map;
 import java.util.Optional;
 

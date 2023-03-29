@@ -21,8 +21,8 @@ package org.openremote.agent.protocol.knx;
 
 import org.openremote.model.asset.agent.AgentLink;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.util.Optional;
 
 public class KNXAgentLink extends AgentLink<KNXAgentLink> {

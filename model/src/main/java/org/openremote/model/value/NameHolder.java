@@ -21,7 +21,7 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.validation.constraints.Pattern;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * Identifies an item that holds a named property, the name should be very simple, as we use them in SQL path

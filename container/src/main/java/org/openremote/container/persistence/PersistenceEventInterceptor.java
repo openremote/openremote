@@ -19,17 +19,15 @@
  */
 package org.openremote.container.persistence;
 
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
 import org.apache.camel.CamelExecutionException;
-import org.apache.camel.ExchangePattern;
 import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
-import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.PersistenceEvent;
 
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;

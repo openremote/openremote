@@ -7,7 +7,7 @@ import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.attribute.AttributeEvent;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.function.Consumer;
 
 @Entity

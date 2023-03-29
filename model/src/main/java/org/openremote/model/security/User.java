@@ -26,13 +26,13 @@ import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 import org.openremote.model.persistence.EpochMillisInstantType;
 
-import javax.persistence.*;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public class User {
     protected Boolean enabled;
 
     @Column(name = "CREATED_TIMESTAMP")
-    @org.hibernate.annotations.Type(type = EpochMillisInstantType.TYPE_NAME)
+    @org.hibernate.annotations.Type(EpochMillisInstantType.class)
     protected Instant createdOn;
 
     @Formula("(SELECT C.SECRET FROM PUBLIC.CLIENT C WHERE C.ID = SERVICE_ACCOUNT_CLIENT_LINK)")

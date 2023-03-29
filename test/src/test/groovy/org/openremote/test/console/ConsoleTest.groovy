@@ -36,7 +36,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.WebApplicationException
+import jakarta.ws.rs.WebApplicationException
 import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
 
