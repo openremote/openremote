@@ -130,7 +130,6 @@ public class SentAlarm {
         return this;
     }
 
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
