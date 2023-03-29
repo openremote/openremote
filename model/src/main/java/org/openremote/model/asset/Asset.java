@@ -34,6 +34,7 @@ import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
 import org.openremote.model.persistence.LTreeType;
 import org.openremote.model.util.TsIgnore;
+import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AssetValid;
 import org.openremote.model.value.AttributeDescriptor;
@@ -212,6 +213,7 @@ import static org.openremote.model.Constants.*;
 @JsonTypeIdResolver(AssetTypeIdResolver.class)
 @AssetValid(groups = Asset.AssetSave.class)
 @DynamicUpdate
+@TsIgnoreTypeParams
 @SuppressWarnings("unchecked")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T> {
 

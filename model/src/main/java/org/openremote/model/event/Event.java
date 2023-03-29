@@ -19,6 +19,7 @@
  */
 package org.openremote.model.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.util.TextUtil;
 
 import jakarta.persistence.Column;
@@ -59,6 +60,7 @@ public abstract class Event {
         return getEventType(eventClass.getSimpleName());
     }
 
+    @JsonIgnore
     final public String getEventType() {
         return getEventType(getClass());
     }
