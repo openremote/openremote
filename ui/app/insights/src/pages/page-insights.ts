@@ -1,6 +1,6 @@
 import {html, TemplateResult} from "lit";
-import {customElement, query, state} from "lit/decorators.js";
-import {AppStateKeyed, Page, router, PageProvider} from "@openremote/or-app";
+import {customElement, query, property, state} from "lit/decorators.js";
+import {AppStateKeyed, Page, router, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import "@openremote/or-dashboard-builder"
 import {Dashboard} from "@openremote/model";
@@ -14,11 +14,11 @@ import {when} from "lit/directives/when.js";
 import {guard} from "lit/directives/guard.js";
 import {style} from "../style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
 import { styleMap } from 'lit/directives/style-map.js';
-import {DrawerConfig, getDashboardMenuTemplate} from "../components/dashboard-list";
+import "../components/dashboard-menu";
+import {DashboardMenu} from "../components/dashboard-menu";
 
-export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
+export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>, realmConfigs: {[p: string]: RealmAppConfig}): PageProvider<AppStateKeyed> {
     return {
         name: "insights",
         routes: [
@@ -27,6 +27,7 @@ export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>): PageP
         ],
         pageCreator: () => {
             const page = new PageInsights(store);
+            page.realmConfig = realmConfigs[manager.displayRealm];
             return page;
         }
     };
@@ -34,6 +35,9 @@ export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>): PageP
 
 @customElement("page-insights")
 export class PageInsights extends Page<AppStateKeyed> {
+
+    @property()
+    public realmConfig?: RealmAppConfig;
 
     @state()
     private dashboards?: Dashboard[];
@@ -50,11 +54,8 @@ export class PageInsights extends Page<AppStateKeyed> {
     @state()
     private rerenderPending: boolean = false;
 
-    @query("#drawer")
-    private drawer: OrMwcDrawer;
-
-    @query("#drawer-custom-scrim")
-    private drawerScrim: HTMLElement;
+    @query('#dashboard-menu')
+    private dashboardMenu: DashboardMenu;
 
 
     get name(): string {
@@ -146,11 +147,11 @@ export class PageInsights extends Page<AppStateKeyed> {
         })
     }
 
-    selectDashboard(dashboardId?: string, toggleDrawer: boolean = true) {
+    protected selectDashboard(dashboardId?: string, toggleDrawer: boolean = true) {
         const dashboard = this.dashboards.find((dashboard) => dashboard.id == dashboardId);
-        if(dashboard) {
-            if(toggleDrawer) {
-                this.toggleDrawer().then(() => {
+        if (dashboard) {
+            if (toggleDrawer) {
+                this.dashboardMenu?.toggleDrawer(false).then(() => {
                     this.selectedDashboard = dashboard;
                     this.requestUpdate();
                 });
@@ -160,40 +161,20 @@ export class PageInsights extends Page<AppStateKeyed> {
         }
     }
 
-    async toggleDrawer(): Promise<void> {
-        if(this.drawer.open) {
-            this.drawerScrim?.classList.add("drawer-scrim-fadeout");
-            this.drawer.toggle();
-            await new Promise(r => setTimeout(r, 250)); // one-liner for waiting until fadeout animation is done
-        } else {
-            this.drawer.toggle();
-        }
-    }
-
     protected render(): TemplateResult {
         console.log("Rendering page-insights!");
         const pageStyles = {
             display: 'flex',
             flexDirection: 'column',
-            pointerEvents: this.drawer?.open ? 'none' : 'auto'
-        }
-        const drawerConfig: DrawerConfig = {
-            enabled: true,
-            opened: this.drawer?.open,
-            onToggle: () => this.toggleDrawer().then(() => this.requestUpdate())
+            pointerEvents: this.dashboardMenu?.isDrawerOpen() ? 'none' : 'auto'
         }
         return html`
-            ${getDashboardMenuTemplate(
-                    this.dashboards,
-                    this.selectedDashboard,
-                    (ev) => this.selectDashboard(ev.detail[0].value),
-                    this._userId,
-                    manager.displayRealm,
-                    this.isLoading(), 
-                    drawerConfig
-            )}
+            <dashboard-menu id="dashboard-menu" .dashboards="${this.dashboards}" .selectedId="${this.selectedDashboard?.id}" 
+                            .realm="${manager.displayRealm}" .realmConfig="${this.realmConfig}" .userId="${this._userId}" .loading="${this.isLoading()}"
+                            @change="${(ev: CustomEvent) => this.selectDashboard(ev.detail.value)}"
+            ></dashboard-menu>
             <div style="flex: 1; ${styleMap(pageStyles)}">
-                ${this.getDashboardHeaderTemplate(() => this.toggleDrawer().then(() => this.requestUpdate()))}
+                ${this.getDashboardHeaderTemplate(() => this.dashboardMenu?.toggleDrawer())}
                 <div style="flex: 1;">
                     ${guard([this.selectedDashboard, this.rerenderPending], () => html`
                         ${when(this.selectedDashboard, () => html`

@@ -1,4 +1,5 @@
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
+import "@openremote/or-app";
 import {AppConfig, appReducer, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {pageInsightsProvider} from "./pages/page-insights";
 import {ManagerAppConfig} from "@openremote/model";
@@ -17,16 +18,12 @@ export const store = configureStore({
 
 const orApp = new OrApp(store);
 
-export const DefaultPagesConfig: PageProvider<any>[] = [
-    pageInsightsProvider(store)
-];
-
 export const DefaultRealmConfig: RealmAppConfig = {
-    appTitle: "OpenRemote Manager",
+    appTitle: "OpenRemote Insights",
 };
 
 export const DefaultAppConfig: AppConfig<RootState> = {
-    pages: DefaultPagesConfig,
+    pages: [],
     realms: {
         default: DefaultRealmConfig
     }
@@ -69,7 +66,7 @@ fetch(configURL).then(async (result) => {
     orApp.appConfigProvider = (manager) => {
 
         // Configure app config
-        let pages: PageProvider<any>[] = [...DefaultPagesConfig];
+        let pages: PageProvider<any>[] = [];
         const orAppConfig: AppConfig<RootState> = {
             pages: pages,
         };
@@ -113,6 +110,9 @@ fetch(configURL).then(async (result) => {
                 }
             });
         }
+
+        // Add insights page with correct parameters
+        orAppConfig.pages.push(pageInsightsProvider(store, orAppConfig.realms))
 
         return orAppConfig;
     }
