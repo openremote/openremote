@@ -19,6 +19,8 @@
  */
 package org.openremote.model.rules;
 
+import java.util.ArrayList;
+
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.util.TsIgnore;
 
