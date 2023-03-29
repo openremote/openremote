@@ -7,10 +7,9 @@ import org.hibernate.Session;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
+import org.openremote.model.alarm.AlarmAssetLink;
 import org.openremote.model.alarm.Alarm.Status;
 import org.openremote.model.alarm.SentAlarm;
-import org.openremote.manager.alarm.AlarmProcessingException;
-import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -36,7 +35,6 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
-
 
 import static java.util.logging.Level.FINE;
 import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
@@ -139,11 +137,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     }
 
-    public boolean sendAlarm(Alarm alarm) {
+    public SentAlarm sendAlarm(Alarm alarm) {
         return sendAlarm(alarm, INTERNAL, "", "master");
     }
 
-    public boolean sendAlarm(Alarm alarm, Alarm.Source source, String sourceId, String realm) {
+    public SentAlarm sendAlarm(Alarm alarm, Alarm.Source source, String sourceId, String realm) {
         try {
             long timestamp = timerService.getCurrentTimeMillis();
             return persistenceService.doReturningTransaction(entityManager -> {
@@ -460,6 +458,66 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 throw new IllegalStateException(msg, e);
             }
         }));
+    }
+
+    public void linkAssets(ArrayList<String> assetIds, String realm, Long alarmId) {
+        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Storing asset alarm link");
+            }
+
+            try {
+                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (alarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, asset_id) DO NOTHING");;
+                for (String assetId : assetIds) {
+                    st.setLong(1, alarmId);
+                    st.setString(2, realm);
+                    st.setString(3, assetId);
+                    st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
+                    st.addBatch();
+                }
+                st.executeBatch();
+
+            } catch (Exception e) {
+                String msg = "Failed to create asset alarm link";
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
+        }));
+    }
+
+    public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Getting asset alarm links");
+            }
+
+            try {
+                return persistenceService.doReturningTransaction(entityManager -> {
+                    StringBuilder sb = new StringBuilder();
+                    Map<String, Object> parameters = new HashMap<>(2);
+                    sb.append("select al from AlarmAssetLink al where 1=1");
+
+                    if (!isNullOrEmpty(realm)) {
+                        sb.append(" and al.id.realm in :realm");
+                        parameters.put("realm", realm);
+                    }
+                    if (alarmId != null) {
+                        sb.append(" and al.id.alarmId in :alarmId");
+                        parameters.put("alarmId", alarmId);
+                    }
+                    sb.append(" order by al.createdOn desc");
+
+                    TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
+                    parameters.forEach(query::setParameter);
+        
+                    return query.getResultList();
+        
+                });
+
+            } catch (Exception e) {
+                String msg = "Failed to get asset alarm links";
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
     }
 
     public SentAlarm getSentAlarm(String alarmId) {
