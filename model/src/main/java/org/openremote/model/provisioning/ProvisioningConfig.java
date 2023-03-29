@@ -24,14 +24,12 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.vladmihalcea.hibernate.type.array.StringArrayType;
-import org.openremote.model.Constants;
-import org.openremote.model.security.ClientRole;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.Arrays;
+import org.openremote.model.security.ClientRole;
+
 import java.util.Date;
 
 import static jakarta.persistence.DiscriminatorType.STRING;

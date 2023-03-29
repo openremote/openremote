@@ -24,10 +24,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.openremote.model.util.TsIgnoreTypeParams;
 
 import java.util.Arrays;
 import java.util.Objects;
 
+@TsIgnoreTypeParams
 public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescriptorHolder<T>, NameHolder {
 
     @JsonIgnore

@@ -57,11 +57,6 @@ public class JsonSerializeExtension extends cz.habarta.typescript.generator.Exte
         return Arrays.asList(
             new cz.habarta.typescript.generator.Extension.TransformerDefinition(ModelCompiler.TransformationPhase.BeforeTsModel, new ModelTransformer() {
                 @Override
-                public TsModel transformModel(SymbolTable symbolTable, TsModel model) {
-                    return model;
-                }
-
-                @Override
                 public Model transformModel(SymbolTable symbolTable, Model model) {
                     // Look for @JsonSerialize annotation and modify the property type accordingly
                     List<BeanModel> beans = model.getBeans();
