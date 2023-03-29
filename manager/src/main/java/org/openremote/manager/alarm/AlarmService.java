@@ -4,51 +4,34 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
+import org.openremote.model.alarm.AlarmAssetLink;
 import org.openremote.model.alarm.Alarm.Status;
 import org.openremote.model.alarm.SentAlarm;
-import org.openremote.manager.alarm.AlarmProcessingException;
-import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.notification.Notification;
-import org.openremote.model.query.UserQuery;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
-import org.openremote.protocol.zwave.model.commandclasses.CCAlarmV2;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
-import javax.ws.rs.WebApplicationException;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.time.temporal.ChronoUnit.*;
 import static java.util.logging.Level.FINE;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.openremote.manager.alarm.AlarmProcessingException.Reason.*;
 import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
 import static org.openremote.model.alarm.Alarm.Source.*;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AlarmService extends RouteBuilder implements ContainerService {
 
@@ -125,89 +108,17 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
-//        from(ALARM_QUEUE)
-//                .routeId("AlarmQueueProcessor")
-//                .doTry()
-//                .process(exchange -> {
-//                    Alarm alarm = exchange.getIn().getBody(Alarm.class);
-//
-//                    if (alarm == null) {
-//                        throw new AlarmProcessingException(MISSING_ALARM, "Alarm must be set");
-//                    }
-//
-//                    LOG.finest("Processing: " + alarm.getTitle());
-//
-//                    if (alarm.getContent() == null) {
-//                        throw new AlarmProcessingException(MISSING_CONTENT, "Alarm content must be set");
-//                    }
-//
-//                    Alarm.Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Alarm.Source.class);
-//
-//                    if (source == null) {
-//                        throw new AlarmProcessingException(MISSING_SOURCE);
-//                    }
-//
-//                    // Validate access and map targets to handler compatible targets
-//                    String realm = null;
-//                    String userId = null;
-//                    String assetId = null;
-//                    AtomicReference<String> sourceId = new AtomicReference<>("");
-//                    boolean isSuperUser = false;
-//                    boolean isRestrictedUser = false;
-//
-//                    switch (source) {
-//                        case INTERNAL:
-//                            isSuperUser = true;
-//                            break;
-//
-//                        case CLIENT:
-//
-//                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-////                            if (authContext == null) {
-////                                // Anonymous clients cannot send notifications
-////                                throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
-////                            }
-//
-//                            realm = authContext.getAuthenticatedRealmName();
-//                            userId = authContext.getUserId();
-//                            sourceId.set(userId);
-//                            isSuperUser = authContext.isSuperUser();
-//                            isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
-//                            break;
-//
-//                        case GLOBAL_RULESET:
-//                            isSuperUser = true;
-//                            break;
-//
-//                        case REALM_RULESET:
-//                            realm = exchange.getIn().getHeader(Alarm.HEADER_SOURCE_ID, String.class);
-//                            sourceId.set(realm);
-//                            break;
-//
-//                        case ASSET_RULESET:
-//                            assetId = exchange.getIn().getHeader(Alarm.HEADER_SOURCE_ID, String.class);
-//                            sourceId.set(assetId);
-//                            Asset<?> asset = assetStorageService.find(assetId, false);
-//                            realm = asset.getRealm();
-//                            break;
-//                    }
-//
-//                    LOG.fine("Creating " + alarm.getContent() + " alarm '" + alarm.getTitle() + "': '" + source + ":" + sourceId.get() + "'");
-//
-//                })
-//                .endDoTry()
-//                .doCatch(AlarmProcessingException.class)
-//                .process(handleAlarmProcessingException(LOG));
+
     }
 
-    public boolean sendAlarm(Alarm alarm) {
+    public SentAlarm sendAlarm(Alarm alarm) {
         return sendAlarm(alarm, INTERNAL, "", "master");
     }
 
-    public boolean sendAlarm(Alarm alarm, Alarm.Source source, String sourceId, String realm) {
+    public SentAlarm sendAlarm(Alarm alarm, Alarm.Source source, String sourceId, String realm) {
         try {
             Long timestamp = timerService.getCurrentTimeMillis();
-            persistenceService.doTransaction(entityManager -> {
+            return persistenceService.doReturningTransaction(entityManager -> {
                 SentAlarm sentAlarm = new SentAlarm()
                         .setRealm(realm)
                         .setTitle(alarm.getTitle())
@@ -219,13 +130,15 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                         .setCreatedOn(new Date(timestamp));
 
                 entityManager.merge(sentAlarm);
+                TypedQuery<Long> query = entityManager.createQuery("select max(id) from SentAlarm", Long.class);
+                sentAlarm.setId(query.getSingleResult());
+                return sentAlarm;
             });
-            return true;
         } catch (Exception e) {
             String msg = "Failed to create alarm: " + alarm.getTitle();
             LOG.log(Level.WARNING, msg, e);
-            return false;
-        }
+            return new SentAlarm();
+        } 
     }
 
     public void setAlarmAcknowledged(String id) {
@@ -290,6 +203,66 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 throw new IllegalStateException(msg, e);
             }
         }));
+    }
+
+    public void linkAssets(ArrayList<String> assetIds, String realm, Long alarmId) {
+        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Storing asset alarm link");
+            }
+
+            try {
+                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (alarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, asset_id) DO NOTHING");;
+                for (String assetId : assetIds) {
+                    st.setLong(1, alarmId);
+                    st.setString(2, realm);
+                    st.setString(3, assetId);
+                    st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
+                    st.addBatch();
+                }
+                st.executeBatch();
+
+            } catch (Exception e) {
+                String msg = "Failed to create asset alarm link";
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
+        }));
+    }
+
+    public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Getting asset alarm links");
+            }
+
+            try {
+                return persistenceService.doReturningTransaction(entityManager -> {
+                    StringBuilder sb = new StringBuilder();
+                    Map<String, Object> parameters = new HashMap<>(2);
+                    sb.append("select al from AlarmAssetLink al where 1=1");
+
+                    if (!isNullOrEmpty(realm)) {
+                        sb.append(" and al.id.realm in :realm");
+                        parameters.put("realm", realm);
+                    }
+                    if (alarmId != null) {
+                        sb.append(" and al.id.alarmId in :alarmId");
+                        parameters.put("alarmId", alarmId);
+                    }
+                    sb.append(" order by al.createdOn desc");
+
+                    TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
+                    parameters.forEach(query::setParameter);
+        
+                    return query.getResultList();
+        
+                });
+
+            } catch (Exception e) {
+                String msg = "Failed to get asset alarm links";
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
     }
 
     public SentAlarm getSentAlarm(String alarmId) {
