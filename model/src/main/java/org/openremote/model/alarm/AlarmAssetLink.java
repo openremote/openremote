@@ -55,7 +55,6 @@ import java.util.Objects;
 @Entity
 @Table(name = "ALARM_ASSET_LINK")
 public class AlarmAssetLink {
-
     public static class Id implements Serializable {
         @Column(name = "REALM", length = 36)
         protected String realm;
