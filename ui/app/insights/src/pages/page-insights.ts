@@ -6,6 +6,7 @@ import "@openremote/or-dashboard-builder"
 import {Dashboard} from "@openremote/model";
 import manager from "@openremote/core";
 import "@openremote/or-chart";
+import "@openremote/or-attribute-card";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {i18next} from "@openremote/or-translate";
 import {registerWidgetTypes} from "@openremote/or-dashboard-builder";
