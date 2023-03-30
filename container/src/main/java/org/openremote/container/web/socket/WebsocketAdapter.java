@@ -26,10 +26,10 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.model.Constants;
 
-import javax.websocket.CloseReason;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.Session;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Session;
 import java.io.IOException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Level;

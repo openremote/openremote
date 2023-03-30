@@ -13,12 +13,12 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.mail.Message
-import javax.mail.Multipart
-import javax.mail.internet.InternetAddress
-import javax.mail.internet.MimeBodyPart
-import javax.mail.internet.MimeMessage
-import javax.mail.internet.MimeMultipart
+import jakarta.mail.Message
+import jakarta.mail.Multipart
+import jakarta.mail.internet.InternetAddress
+import jakarta.mail.internet.MimeBodyPart
+import jakarta.mail.internet.MimeMessage
+import jakarta.mail.internet.MimeMultipart
 import java.nio.file.Paths
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -53,7 +53,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
 
 
     def setupSpec() {
-        MailClientBuilder.MIN_CHECK_INTERVAL_MILLIS = 2000
+        MailClientBuilder.MIN_CHECK_INTERVAL_SECONDS = 2
         greenMail = new GreenMail(ServerSetupTest.ALL)
         greenMail.start()
         user = greenMail.setUser("or@localhost", "or", "secret")
@@ -84,8 +84,9 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
                 executor,
                 "pop3",
                 "localhost",
-                greenMail.getPop3().getServerSetup().getPort(), "or", "secret")
-            .setCheckIntervalMillis(2000)
+                greenMail.getPop3().getServerSetup().getPort())
+            .setBasicAuth("or", "secret")
+            .setCheckIntervalSeconds(2)
             .setPersistenceDir(Paths.get("tmp"))
             .build()
         mailClient.addConnectionListener{ connectionEvents.add(it)}
@@ -158,8 +159,9 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
             executor,
             "pop3",
             "localhost",
-            greenMail.getPop3().getServerSetup().getPort(), "or", "secret")
-            .setCheckIntervalMillis(2000)
+            greenMail.getPop3().getServerSetup().getPort())
+            .setBasicAuth("or", "secret")
+            .setCheckIntervalSeconds(2)
             .setPersistenceDir(Paths.get("tmp"))
             .setPreferHTML(true)
             .build()
@@ -212,8 +214,9 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
                 executor,
                 "imap",
                 "localhost",
-                greenMail.getImap().getServerSetup().getPort(), "or", "secret")
-                .setCheckIntervalMillis(2000)
+                greenMail.getImap().getServerSetup().getPort())
+                .setBasicAuth("or", "secret")
+                .setCheckIntervalSeconds(2)
                 .build()
         mailClient.addConnectionListener{ connectionEvents.add(it)}
         mailClient.addMessageListener{messages.add(it)}

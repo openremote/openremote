@@ -39,7 +39,7 @@ import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import javax.ws.rs.ProcessingException;
+import jakarta.ws.rs.ProcessingException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.URI;

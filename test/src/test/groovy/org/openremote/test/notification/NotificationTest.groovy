@@ -2,6 +2,9 @@ package org.openremote.test.notification
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
+import jakarta.mail.Message
+import jakarta.mail.internet.InternetAddress
+import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.console.ConsoleResourceImpl
@@ -26,9 +29,6 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.mail.Message
-import javax.mail.internet.InternetAddress
-import javax.ws.rs.WebApplicationException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit

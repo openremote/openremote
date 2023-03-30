@@ -18,7 +18,7 @@ import org.openremote.setup.integration.protocol.MockProtocol
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.persistence.EntityManager
+import jakarta.persistence.EntityManager
 
 import static org.openremote.model.value.ValueType.*
 import static org.openremote.model.value.MetaItemType.*

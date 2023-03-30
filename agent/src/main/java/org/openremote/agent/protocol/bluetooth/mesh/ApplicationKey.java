@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.bluetooth.mesh;
 
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Wrapper class for application key

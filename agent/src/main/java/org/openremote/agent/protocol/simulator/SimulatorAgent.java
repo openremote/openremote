@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.simulator;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class SimulatorAgent extends Agent<SimulatorAgent, SimulatorProtocol, SimulatorAgentLink> {

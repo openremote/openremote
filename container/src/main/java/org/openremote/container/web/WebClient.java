@@ -21,11 +21,12 @@ package org.openremote.container.web;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.BearerAuthClientRequestFilter;
 import org.openremote.container.security.ClientSecretRequestFilter;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 import java.net.URI;
 
 public interface WebClient {
@@ -38,7 +39,7 @@ public interface WebClient {
     String REQUEST_PROPERTY_X_FORWARDED_PROTO = WebClient.class.getName() + ".xForwardedProto";
     String REQUEST_PROPERTY_X_FORWARDED_PORT = WebClient.class.getName() + ".xForwardedPort";
 
-    static ResteasyClientBuilder registerDefaults(ResteasyClientBuilder builder) {
+    static ResteasyClientBuilderImpl registerDefaults(ResteasyClientBuilderImpl builder) {
         return builder
             .register(new JacksonConfig())
             .register(new ProxyClientRequestFilter())

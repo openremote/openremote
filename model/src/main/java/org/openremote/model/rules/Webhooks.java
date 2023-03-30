@@ -22,8 +22,8 @@ package org.openremote.model.rules;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.webhook.Webhook;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
 
 @TsIgnore
 public abstract class Webhooks {

@@ -57,12 +57,12 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
 
-import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1117,11 +1117,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             StringBuilder sb = new StringBuilder("DELETE FROM user_asset_link WHERE (1=0");
 
             IntStream.range(0, userAssetLinks.size()).forEach(i -> sb.append(" OR (asset_id=?")
-                .append(3*i)
-                .append(" AND user_id=?")
                 .append((3*i)+1)
-                .append(" AND realm=?")
+                .append(" AND user_id=?")
                 .append((3*i)+2)
+                .append(" AND realm=?")
+                .append((3*i)+3)
                 .append(")"));
             sb.append(")");
 
@@ -1129,9 +1129,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             IntStream.range(0, userAssetLinks.size()).forEach(i -> {
                 UserAssetLink userAssetLink = userAssetLinks.get(i);
-                query.setParameter((3*i), userAssetLink.getId().getAssetId());
-                query.setParameter((3*i)+1, userAssetLink.getId().getUserId());
-                query.setParameter((3*i)+2, userAssetLink.getId().getRealm());
+                query.setParameter((3*i)+1, userAssetLink.getId().getAssetId());
+                query.setParameter((3*i)+2, userAssetLink.getId().getUserId());
+                query.setParameter((3*i)+3, userAssetLink.getId().getRealm());
             });
 
             int deleteCount = query.executeUpdate();
@@ -1160,8 +1160,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      */
     public void deleteUserAssetLinks(String userId) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?0");
-            query.setParameter(0, userId);
+            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?1");
+            query.setParameter(1, userId);
             int deleteCount = query.executeUpdate();
             LOG.fine("Deleted all user asset links for user: user ID=" + userId + ", count=" + deleteCount);
         });

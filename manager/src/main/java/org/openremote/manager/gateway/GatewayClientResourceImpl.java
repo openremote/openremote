@@ -27,12 +27,12 @@ import org.openremote.model.gateway.GatewayClientResource;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.http.RequestParams;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 import java.util.Collections;
 import java.util.List;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 
 public class GatewayClientResourceImpl extends ManagerWebResource implements GatewayClientResource {
 

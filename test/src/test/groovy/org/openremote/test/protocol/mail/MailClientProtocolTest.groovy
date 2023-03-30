@@ -23,11 +23,8 @@ import com.icegreen.greenmail.user.GreenMailUser
 import com.icegreen.greenmail.util.GreenMail
 import com.icegreen.greenmail.util.GreenMailUtil
 import com.icegreen.greenmail.util.ServerSetupTest
-import org.openremote.agent.protocol.mail.AbstractMailProtocol
-import org.openremote.agent.protocol.mail.MailAgent
-import org.openremote.agent.protocol.mail.MailAgentLink
-import org.openremote.agent.protocol.mail.MailClientBuilder
-import org.openremote.agent.protocol.mail.MailProtocol
+import jakarta.mail.internet.MimeMessage
+import org.openremote.agent.protocol.mail.*
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -35,26 +32,18 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.model.Constants
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.agent.DefaultAgentLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
-import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.StringPredicate
-import org.openremote.model.query.filter.ValueAnyPredicate
-import org.openremote.model.value.SubStringValueFilter
-import org.openremote.model.value.ValueFilter
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.mail.internet.MimeMessage
-
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
-import static org.openremote.model.value.ValueType.EXECUTION_STATUS
 import static org.openremote.model.value.ValueType.TEXT
 
 class MailClientProtocolTest extends Specification implements ManagerContainerTrait {
@@ -68,8 +57,8 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
 
     def setupSpec() {
-        MailClientBuilder.MIN_CHECK_INTERVAL_MILLIS = 2000
-        AbstractMailProtocol.INITIAL_CHECK_DELAY_MILLIS = 2000
+        MailClientBuilder.MIN_CHECK_INTERVAL_SECONDS = 2
+        AbstractMailProtocol.INITIAL_CHECK_DELAY_SECONDS = 2
         greenMail = new GreenMail(ServerSetupTest.ALL)
         greenMail.start()
         user = greenMail.setUser("or@localhost", "or", "secret")
@@ -121,7 +110,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
             .setHost("127.0.0.1")
             .setPort(greenMail.getPop3().getServerSetup().getPort())
             .setUsernamePassword(new UsernamePassword("or", "secret"))
-            .setCheckIntervalSeconds(2000)
+            .setCheckIntervalSeconds(2)
             .setDisabled(true)
 
         and: "the agent is added to the asset service"

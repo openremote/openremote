@@ -21,22 +21,23 @@
 import com.fasterxml.jackson.databind.JsonNode;
 import cz.habarta.typescript.generator.TsType;
 import cz.habarta.typescript.generator.TypeProcessor;
+import cz.habarta.typescript.generator.util.GenericsResolver;
 import cz.habarta.typescript.generator.util.Utils;
 import org.openremote.model.util.TsIgnore;
-import org.openremote.model.value.MetaItemDescriptor;
-import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.util.TsIgnoreTypeParams;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.*;
 
 /**
- * Will ignore types/super types annotated with {@link TsIgnore} as well as types that extend/implement the following
- * super types:
+ * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:
  * <ul>
- * <li>Any type with a super type in the "com.fasterxml.jackson" package excluding those implementing {@link com.fasterxml.jackson.databind.JsonNode}</li>
+ * <li>Ignore types/super types annotated with {@link TsIgnore}
+ * <li>Will ignore types with a super type in the "com.fasterxml.jackson" package excluding those implementing {@link com.fasterxml.jackson.databind.JsonNode}</li>
+ * <li>Removes some or all type params from classes annotated with {@link TsIgnoreTypeParams}
+ * <li>Special processing for AssetModelInfo meta item value descriptors as JsonSerialize extension doesn't support @JsonSerialize(contentConverter=...)
  * </ul>
- * <p>
- * Also removes type parameters from field types listed in {@link Constants#IGNORE_TYPE_PARAMS_ON_CLASSES}
  */
 public class CustomTypeProcessor implements TypeProcessor {
 
@@ -69,9 +70,36 @@ public class CustomTypeProcessor implements TypeProcessor {
 
         rawClass = Utils.getRawClassOrNull(javaType);
 
-        if (Constants.IGNORE_TYPE_PARAMS_ON_CLASSES.contains(rawClass)) {
-            if (javaType instanceof ParameterizedType) {
-                return new Result(new TsType.BasicType(rawClass.getSimpleName()));
+        if (javaType instanceof ParameterizedType) {
+
+            // Exclude type params
+            TsIgnoreTypeParams ignoreTypeParams = rawClass.getAnnotation(TsIgnoreTypeParams.class);
+
+            if (ignoreTypeParams != null) {
+
+                if (ignoreTypeParams.paramIndexes().length == 0) {
+                    // Ignore all
+                    return new Result(new TsType.BasicType(rawClass.getSimpleName()));
+                }
+
+                // Ignore specified
+                final ParameterizedType parameterizedType = (ParameterizedType) javaType;
+                List<Integer> removeIndexes = Arrays.stream(ignoreTypeParams.paramIndexes()).boxed().toList();
+
+                if (parameterizedType.getRawType() instanceof final Class<?> javaClass) {
+                    final List<Class<?>> discoveredClasses = new ArrayList<>();
+                    discoveredClasses.add(javaClass);
+                    final Type[] typeArguments = parameterizedType.getActualTypeArguments();
+                    final List<TsType> tsTypeArguments = new ArrayList<>();
+                    for (int i=0; i<typeArguments.length; i++) {
+                        if (!removeIndexes.contains(i)) {
+                            final TypeProcessor.Result typeArgumentResult = context.processType(typeArguments[i]);
+                            tsTypeArguments.add(typeArgumentResult.getTsType());
+                            discoveredClasses.addAll(typeArgumentResult.getDiscoveredClasses());
+                        }
+                    }
+                    return new Result(new TsType.GenericReferenceType(context.getSymbol(javaClass), tsTypeArguments), discoveredClasses);
+                }
             }
         }
 

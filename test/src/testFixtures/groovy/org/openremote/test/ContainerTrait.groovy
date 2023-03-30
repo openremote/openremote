@@ -24,6 +24,7 @@ import org.apache.camel.builder.RouteBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl
 import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
@@ -60,12 +61,12 @@ import org.openremote.model.security.User
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import javax.persistence.TypedQuery
-import javax.websocket.ClientEndpointConfig
-import javax.websocket.Endpoint
-import javax.websocket.Session
-import javax.websocket.WebSocketContainer
-import javax.ws.rs.core.UriBuilder
+import jakarta.persistence.TypedQuery
+import jakarta.websocket.ClientEndpointConfig
+import jakarta.websocket.Endpoint
+import jakarta.websocket.Session
+import jakarta.websocket.WebSocketContainer
+import jakarta.ws.rs.core.UriBuilder
 import java.util.concurrent.TimeUnit
 import java.util.logging.Handler
 import java.util.stream.Collectors
@@ -460,9 +461,9 @@ trait ContainerTrait {
 
     ResteasyClientBuilder createClient() {
         ResteasyClientBuilder clientBuilder =
-                new ResteasyClientBuilder()
-                        .establishConnectionTimeout(2, SECONDS)
-                        .socketTimeout(15, SECONDS)
+                new ResteasyClientBuilderImpl()
+                        .connectTimeout(2, SECONDS)
+                        .readTimeout(15, SECONDS)
                         .connectionPoolSize(10)
         return WebClient.registerDefaults(clientBuilder)
     }

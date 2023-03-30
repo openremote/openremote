@@ -26,14 +26,18 @@ import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
 import cz.habarta.typescript.generator.emitter.TsBeanModel;
 import cz.habarta.typescript.generator.emitter.TsPropertyModel;
 import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.provisioning.X509ProvisioningConfig;
+import org.openremote.model.util.TsIgnoreTypeParams;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Does some custom processing for our specific model:
+ * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:
  * <ul>
- * <li>Removes type params from classes in {@link Constants#IGNORE_TYPE_PARAMS_ON_CLASSES}</li>
+ * <li>Removes some or all type params from classes annotated with {@link TsIgnoreTypeParams}
+ * <li>Special processing for AssetModelInfo meta item value descriptors as JsonSerialize extension doesn't support @JsonSerialize(contentConverter=...)
  * </ul>
  */
 public class CustomExtension extends Extension {
@@ -46,24 +50,41 @@ public class CustomExtension extends Extension {
     @Override
     public List<TransformerDefinition> getTransformers() {
         return Arrays.asList(
+            // This is a hack to fix breaking change with latest version of this plugin
+            new TransformerDefinition(ModelCompiler.TransformationPhase.AfterDeclarationSorting, (TsModelTransformer) (context, model) -> {
+                TsBeanModel provBean = model.getBean(X509ProvisioningConfig.class);
+                if (provBean != null) {
+                    provBean.getExtendsList().remove(0);
+                    provBean.getExtendsList().add(provBean.getParent());
+                }
+                return model;
+            }),
             new TransformerDefinition(ModelCompiler.TransformationPhase.BeforeEnums, (TsModelTransformer) (context, model) -> {
 
-                // Special processing for AssetModelInfo meta item value descriptors as JsonSerialize extension doesn't support
-                // @JsonSerialize(contentConverter=...)
                 TsBeanModel assetTypeInfoBean = model.getBean(AssetTypeInfo.class);
-
                 if (assetTypeInfoBean != null) {
                     assetTypeInfoBean.getProperties().replaceAll(p -> p.getName().equals("metaItemDescriptors") || p.getName().equals("valueDescriptors") ? new TsPropertyModel(p.getName(), new TsType.BasicArrayType(TsType.String), p.modifiers, p.ownProperty, p.comments) : p);
                 }
 
-                Constants.IGNORE_TYPE_PARAMS_ON_CLASSES.forEach(beanClass -> {
-                    TsBeanModel bean = model.getBean(beanClass);
+                // Remove the type parameter - this works in conjunction with the CustomTypeProcessor which replaces
+                // field references
+                model.getBeans().replaceAll(bean -> {
 
-                    if (bean != null && bean.getTypeParameters() != null) {
-                        // Remove the type parameter - this works in conjunction with the CustomTypeProcessor which replaces
-                        // field references
-                        bean.getTypeParameters().clear();
+                    if (bean.getOrigin() != null && bean.getOrigin().getAnnotation(TsIgnoreTypeParams.class) != null) {
+                        if (bean.getTypeParameters() != null) {
+                            TsIgnoreTypeParams ignoreTypeParams = bean.getOrigin().getAnnotation(TsIgnoreTypeParams.class);
+                            if (ignoreTypeParams.paramIndexes().length == 0) {
+                                bean.getTypeParameters().clear();
+                            } else {
+                                Arrays.stream(ignoreTypeParams.paramIndexes())
+                                    .boxed()
+                                    .sorted(Collections.reverseOrder())
+                                    .forEach(index -> bean.getTypeParameters().remove(index.intValue()));
+                            }
+                        }
                     }
+
+                    return bean;
                 });
 
                 return model;

@@ -24,9 +24,9 @@ import org.hibernate.annotations.Formula;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.calendar.CalendarEvent;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import java.util.Date;
 
 /**

@@ -29,6 +29,7 @@ import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 import java.util.Collections;
 import java.util.List;
 
+@SuppressWarnings("deprecation")
 public class IntegratorProvider implements org.hibernate.jpa.boot.spi.IntegratorProvider, Integrator {
 
     @Override
@@ -37,7 +38,7 @@ public class IntegratorProvider implements org.hibernate.jpa.boot.spi.Integrator
     }
 
     @Override
-    public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
+        public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
         final EventListenerRegistry eventListenerRegistry = serviceRegistry.getService(EventListenerRegistry.class);
 
         // Replace the flush entity listeners which removes the standard DefaultFlushEntityEventListener

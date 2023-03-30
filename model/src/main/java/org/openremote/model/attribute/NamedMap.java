@@ -25,7 +25,7 @@ import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.NameHolder;
 import org.openremote.model.value.ValueHolder;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.*;
 import java.util.function.Consumer;
