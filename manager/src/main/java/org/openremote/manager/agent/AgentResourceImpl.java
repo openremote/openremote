@@ -34,7 +34,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.ws.rs.*;
+import jakarta.ws.rs.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;

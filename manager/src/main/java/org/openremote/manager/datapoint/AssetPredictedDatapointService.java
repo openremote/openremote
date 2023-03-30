@@ -84,6 +84,12 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         persistenceService.doTransaction(em -> upsertValues(assetId, attributeName, valuesAndTimestamps));
     }
 
+    public void purgeValues(String assetId, String attributeName) {
+        persistenceService.doTransaction(em -> em.createQuery(
+            "delete from " + getDatapointClass().getSimpleName() + " dp where dp.assetId=?1 and dp.attributeName=?2"
+        ).setParameter(1, assetId).setParameter(2, attributeName).executeUpdate());
+    }
+
     @Override
     protected Class<AssetPredictedDatapoint> getDatapointClass() {
         return AssetPredictedDatapoint.class;

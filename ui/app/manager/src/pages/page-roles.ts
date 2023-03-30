@@ -381,14 +381,14 @@ export class PageRoles extends Page<AppStateKeyed> {
                                         <div class="column">
                                             <strong class="column-title">${i18next.t("readPermissions")}</strong> ${readRoles.map(r => {
                                             return html`
-                                              <or-mwc-input ?readonly="${readonly}" .label="${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
+                                              <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}
 
                                         </div>
                                         <div class="column">
                                             <strong class="column-title">${i18next.t("writePermissions")}</strong> ${writeRoles.map(r => {
                                             return html`
-                                              <or-mwc-input ?readonly="${readonly}" .label="${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
+                                              <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}
                                         </div>
                                     </div>

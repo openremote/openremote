@@ -168,13 +168,13 @@ export class OrGauge extends LitElement {
         }
 
         // Render gauge again if..
-        if(changedProperties.has('min') && this.min) {
-            this.gauge?.setMinValue(this.min);
-            this.gauge?.set(this.value != null ? this.value : NaN);
+        if(changedProperties.has('min') && this.min != null && this.gauge) {
+            this.gauge.setMinValue(this.min);
+            this.gauge.set(this.value != null ? this.value : NaN);
         }
-        if(changedProperties.has('max') && this.max && this.gauge) {
+        if(changedProperties.has('max') && this.max != null && this.gauge) {
             this.gauge.maxValue = this.max;
-            this.gauge?.set(this.value != null ? this.value : NaN);
+            this.gauge.set(this.value != null ? this.value : NaN);
         }
         if(changedProperties.has('thresholds') && this.thresholds) {
 

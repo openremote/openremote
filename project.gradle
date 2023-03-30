@@ -307,7 +307,7 @@ plugins.withType(JavaPlugin).whenPluginAdded {
                 warnLogFile << output
             }
         })
-        options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation"]
+        options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation", "-parameters"]
         options.encoding = 'UTF-8'
     }
 

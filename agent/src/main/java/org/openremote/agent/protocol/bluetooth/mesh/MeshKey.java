@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.bluetooth.mesh;
 
 import org.openremote.model.util.TextUtil;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.Arrays;
 import java.util.Objects;
 

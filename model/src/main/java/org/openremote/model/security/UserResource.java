@@ -24,11 +24,11 @@ import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.UserQuery;
 
-import javax.annotation.security.RolesAllowed;
-import javax.validation.Valid;
-import javax.ws.rs.*;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.*;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * Manage users in realms and get info of current user.

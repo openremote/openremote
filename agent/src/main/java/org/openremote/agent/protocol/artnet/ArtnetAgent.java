@@ -24,7 +24,7 @@ import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.util.ModelIgnore;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 
 @ModelIgnore

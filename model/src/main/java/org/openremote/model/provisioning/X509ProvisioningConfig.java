@@ -20,12 +20,13 @@
 package org.openremote.model.provisioning;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
@@ -44,7 +45,7 @@ public class X509ProvisioningConfig extends ProvisioningConfig<X509ProvisioningD
     boolean valid = true;
 
     @Column(name = DATA_PROPERTY_NAME, columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    @org.hibernate.annotations.Type(JsonBinaryType.class)
     protected X509ProvisioningData data;
 
     protected X509ProvisioningConfig() {}

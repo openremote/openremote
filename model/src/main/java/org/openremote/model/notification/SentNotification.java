@@ -19,8 +19,9 @@
  */
 package org.openremote.model.notification;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import java.util.Date;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
@@ -32,7 +33,8 @@ public class SentNotification {
 
     @Id
     @Column(name = "ID")
-    @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
     @Column(name = "NAME")
@@ -60,7 +62,7 @@ public class SentNotification {
     protected String sourceId;
 
     @Column(name = "MESSAGE", columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    @org.hibernate.annotations.Type(JsonBinaryType.class)
     protected AbstractNotificationMessage message;
 
     @Column(name = "ERROR", length = 4096)

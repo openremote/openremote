@@ -28,10 +28,10 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.protocol.ProtocolInstanceDiscovery;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.*;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.*;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * This resource is for Agent specific tasks like import and discovery; normal asset/attribute CRUD operations should

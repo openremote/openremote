@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, OpenRemote Inc.
+ * Copyright 2021, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container;
+package org.openremote.model.util;
 
-import org.hibernate.dialect.PostgreSQL10Dialect;
-import org.openremote.container.persistence.LTreeType;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.sql.Types;
-
-public class PostgreSQL10LTreeDialect extends PostgreSQL10Dialect {
-    public PostgreSQL10LTreeDialect() {
-        super();
-        registerHibernateType(Types.OTHER, LTreeType.class.getName());
-    }
+/**
+ * Annotation for telling the typescript generator to ignore type parameters of the annotated class; if no
+ * {@link #paramIndexes} are specified then all type parameters are ignored.
+ */
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface TsIgnoreTypeParams {
+    int[] paramIndexes() default {};
 }

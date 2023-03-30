@@ -10,11 +10,11 @@ import org.openremote.model.dashboard.DashboardAccess;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.ValueUtil;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import java.util.List;
 
-import static javax.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.*;
 
 public class DashboardResourceImpl extends ManagerWebResource implements DashboardResource {
 

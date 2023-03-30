@@ -183,7 +183,8 @@ public final class ProtocolUtil {
 
             if (valRef.get() == null) {
                 Protocol.LOG.warning("Failed to convert value: " + fromType + " -> " + toType);
-                Protocol.LOG.warning("Cannot send linked attribute update");
+                Protocol.LOG.warning("Cannot send linked attribute update: assetId=" + assetId + ", attribute=" + attribute.getName());
+                return new Pair<>(true, null);
             }
         }
 

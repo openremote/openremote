@@ -19,6 +19,8 @@
  */
 package org.openremote.model.provisioning;
 
+import org.openremote.model.util.TsIgnore;
+
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -33,6 +35,7 @@ import java.security.cert.X509Certificate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@TsIgnore
 public class ProvisioningUtil {
 
     protected static final Logger LOG = Logger.getLogger(ProvisioningUtil.class.getName());

@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.velbus;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class VelbusSerialAgent extends VelbusAgent<VelbusSerialAgent, VelbusSerialProtocol> {
