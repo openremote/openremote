@@ -3,7 +3,7 @@ import {customElement, query, property, state} from "lit/decorators.js";
 import {AppStateKeyed, Page, router, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import "@openremote/or-dashboard-builder"
-import {Dashboard} from "@openremote/model";
+import {Dashboard, Realm} from "@openremote/model";
 import manager from "@openremote/core";
 import "@openremote/or-chart";
 import "@openremote/or-attribute-card";
@@ -53,6 +53,9 @@ export class PageInsights extends Page<AppStateKeyed> {
     private _userId?: string;
 
     @state()
+    private realm?: Realm;
+
+    @state()
     private rerenderPending: boolean = false;
 
     @query('#dashboard-menu')
@@ -76,6 +79,11 @@ export class PageInsights extends Page<AppStateKeyed> {
         }).catch((ex) => {
             console.error(ex);
             showSnackbar(undefined, i18next.t('errorOccurred'));
+        });
+
+        // Load realm data
+        manager.rest.api.RealmResource.get(manager.displayRealm).then((response: any) => {
+            this.realm = response.data;
         })
 
         // Register dashboard related utils
@@ -171,7 +179,7 @@ export class PageInsights extends Page<AppStateKeyed> {
         }
         return html`
             <dashboard-menu id="dashboard-menu" .dashboards="${this.dashboards}" .selectedId="${this.selectedDashboard?.id}" 
-                            .realm="${manager.displayRealm}" .realmConfig="${this.realmConfig}" .userId="${this._userId}" .loading="${this.isLoading()}"
+                            .realmName="${this.realm?.displayName}" .realmConfig="${this.realmConfig}" .userId="${this._userId}" .loading="${this.isLoading()}"
                             @change="${(ev: CustomEvent) => this.selectDashboard(ev.detail.value)}"
             ></dashboard-menu>
             <div style="flex: 1; ${styleMap(pageStyles)}">

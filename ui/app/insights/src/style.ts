@@ -21,7 +21,7 @@ export const style = css`
     /* Header related styling */
     #fullscreen-header-wrapper {
         min-height: 36px;
-        padding: 20px;
+        padding: 6px;
         display: flex;
         align-items: center;
         justify-content: space-between;

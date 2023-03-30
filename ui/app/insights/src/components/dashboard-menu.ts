@@ -27,7 +27,7 @@ export class DashboardMenu extends LitElement {
     protected userId!: string;
 
     @property()
-    protected realm!: string;
+    protected realmName?: string;
 
     @property()
     protected realmConfig?: RealmAppConfig;
@@ -102,9 +102,9 @@ export class DashboardMenu extends LitElement {
         let headerTemplate;
         if(this.drawerConfig?.showHeader) {
             headerTemplate = html`
-                <div style="display: flex; padding: 16px; border-bottom: 1px solid #E0E0E0; align-items: center; gap: 16px;">
-                    <img id="logo-mobile" width="48" height="48" src="${this.realmConfig?.logoMobile}" />
-                    <h2>${this.realm}</h2>
+                <div style="display: flex; padding: 13px 16px; border-bottom: 1px solid #E0E0E0; align-items: center; gap: 16px;">
+                    <img id="logo-mobile" width="34" height="34" src="${this.realmConfig?.logoMobile}" />
+                    <span style="font-size: 18px; font-weight: bold;">${this.realmName}</span>
                 </div>
             `;
         }
@@ -136,14 +136,14 @@ export function getDashboardListTemplate(dashboards: Dashboard[], selectedId: st
         `, () => {
             const menuItems = getDashboardMenuItems(dashboards, userId);
             return html`
-                <div style="padding: 32px 16px;">
+                <div style="padding: 16px 0;">
                     <div style="display: flex; flex-direction: column; gap: 16px;">
                         ${when(menuItems[0] == undefined, () => html`
                             <span style="width: 100%; text-align: center;">${i18next.t('noDashboardFound')}</span>
                         `, () => html`
                             ${when(menuItems[0].length > 0, () => html`
                                 <div>
-                                    <span>${i18next.t('dashboard.myDashboards')}</span>
+                                    <span style="margin-left: 16px;">${i18next.t('dashboard.myDashboards')}</span>
                                     <or-mwc-list .listItems="${menuItems[0]}" .values="${selectedId}"
                                                  @or-mwc-list-changed="${(ev: CustomEvent) => onSelect(ev.detail[0].value)}"
                                     ></or-mwc-list>
@@ -151,7 +151,7 @@ export function getDashboardListTemplate(dashboards: Dashboard[], selectedId: st
                             `)}
                             ${when(menuItems[1].length > 0, () => html`
                                 <div>
-                                    <span>${i18next.t('dashboard.createdByOthers')}</span>
+                                    <span style="margin-left: 16px;">${i18next.t('dashboard.createdByOthers')}</span>
                                     <or-mwc-list .listItems="${menuItems[1]}" .values="${selectedId}"
                                                  @or-mwc-list-changed="${(ev: CustomEvent) => onSelect(ev.detail[0].value)}"
                                     ></or-mwc-list>
