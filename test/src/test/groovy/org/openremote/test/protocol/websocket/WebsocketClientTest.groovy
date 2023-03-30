@@ -59,9 +59,9 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
     protected static <T> T messageFromString(String message) {
         try {
             def isSubscription = message.startsWith(EventSubscription.SUBSCRIBED_MESSAGE_PREFIX)
-            def isTirggered = !isSubscription && message.startsWith(TriggeredEventSubscription.MESSAGE_PREFIX)
+            def isTriggered = !isSubscription && message.startsWith(TriggeredEventSubscription.MESSAGE_PREFIX)
             message = message.substring(message.indexOf(":")+1)
-            return ValueUtil.JSON.readValue(message, isSubscription ? EventSubscription.class : isTirggered ? TriggeredEventSubscription.class : SharedEvent.class)
+            return ValueUtil.JSON.readValue(message, isSubscription ? EventSubscription.class : isTriggered ? TriggeredEventSubscription.class : SharedEvent.class)
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse message")
         }
@@ -118,7 +118,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         and: "we add callback consumers to the clients"
         def connectionStatus = client.getConnectionStatus()
-        def connectionStatus2 = client.getConnectionStatus()
+        def connectionStatus2 = client2.getConnectionStatus()
         List<Object> receivedMessages = []
         List<Object> receivedMessages2 = []
         client.addMessageConsumer({
