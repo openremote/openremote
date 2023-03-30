@@ -515,6 +515,7 @@ public class ManagerTestSetup extends ManagerSetup {
                                 new MetaItem<>(RULE_STATE, true)
                         )
         );
+        addDemoApartmentTemperatureControl(apartment2Livingroom, false, null);
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
 
