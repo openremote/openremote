@@ -579,6 +579,7 @@
   "thresholds": "Thresholds",
   "threshold": "Threshold",
   "noDashboardSelected": "Please select a dashboard on the left",
+  "noDashboardSelected-mobile": "Please select a dashboard in the top left menu",
   "noDashboardFound": "No dashboard could be found.",
   "noDashboardWriteAccess": "You don't have access to edit this dashboard.",
   "confirmContinueDashboardModified": "Dashboard has been edited, do you want to discard the changes?",

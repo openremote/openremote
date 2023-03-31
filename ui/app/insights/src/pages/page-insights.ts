@@ -188,7 +188,7 @@ export class PageInsights extends Page<AppStateKeyed> {
                             ></or-dashboard-preview>
                         `, () => html`
                             <div id="dashboard-error-text">
-                                <span>${i18next.t('noDashboardSelected')}</span>
+                                <span>${i18next.t('noDashboardSelected-mobile')}</span>
                             </div>
                         `)}
                     `)}
