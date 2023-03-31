@@ -19,6 +19,7 @@
  */
 package org.openremote.model.alarm;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import org.hibernate.annotations.Formula;
 
 
