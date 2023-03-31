@@ -99,10 +99,6 @@ export class PageInsights extends Page<AppStateKeyed> {
         return super.shouldUpdate(changedProps);
     }
 
-    willUpdate(changedProps) {
-        console.log(changedProps);
-    }
-
     // If URL has a dashboard ID when loading, select it immediately.
     stateChanged(state: AppStateKeyed): void {
         if(state.app.params.id != this.selectedDashboard?.id) {
@@ -119,7 +115,7 @@ export class PageInsights extends Page<AppStateKeyed> {
 
     // Update URL if another dashboard is selected.
     updated(changedProperties: Map<string, any>) {
-        if(changedProperties.has("_dashboardId") || changedProperties.has("selectedDashboard")) {
+        if(changedProperties.has("selectedDashboard")) {
             this._updateRoute();
         }
     }
@@ -146,7 +142,7 @@ export class PageInsights extends Page<AppStateKeyed> {
         const promise = manager.rest.api.DashboardResource.getAllRealmDashboards(realm);
         this.activePromises.push(promise);
         promise.then((response) => {
-            this.dashboards = (response.data as Dashboard[]);
+            this.dashboards = response.data;
         }).finally(() => {
             const index = this.activePromises.indexOf(promise, 0);
             if(index > -1) {
@@ -162,7 +158,6 @@ export class PageInsights extends Page<AppStateKeyed> {
             if (toggleDrawer) {
                 this.dashboardMenu?.toggleDrawer(false).then(() => {
                     this.selectedDashboard = dashboard;
-                    this.requestUpdate();
                 });
             } else {
                 this.selectedDashboard = dashboard;
@@ -171,7 +166,6 @@ export class PageInsights extends Page<AppStateKeyed> {
     }
 
     protected render(): TemplateResult {
-        console.log("Rendering page-insights!");
         const pageStyles = {
             display: 'flex',
             flexDirection: 'column',
@@ -193,7 +187,7 @@ export class PageInsights extends Page<AppStateKeyed> {
                                                   @rerenderfinished="${() => this.rerenderPending = false}"
                             ></or-dashboard-preview>
                         `, () => html`
-                            <div style="display: flex; height: 100%; justify-content: center; align-items: center;">
+                            <div id="dashboard-error-text">
                                 <span>${i18next.t('noDashboardSelected')}</span>
                             </div>
                         `)}

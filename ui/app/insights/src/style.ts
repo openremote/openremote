@@ -45,6 +45,12 @@ export const style = css`
         align-items: center;
         float: right;
     }
+    #dashboard-error-text {
+        display: flex;
+        height: 100%;
+        justify-content: center;
+        align-items: center;
+    }
     
     
     /* Drawer related styling */

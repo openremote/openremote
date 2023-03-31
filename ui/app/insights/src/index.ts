@@ -4,7 +4,7 @@ import {AppConfig, appReducer, OrApp, PageProvider, RealmAppConfig} from "@openr
 import {pageInsightsProvider} from "./pages/page-insights";
 import {ManagerAppConfig} from "@openremote/model";
 
-declare var CONFIG_URL_PREFIX: string;
+declare const CONFIG_URL_PREFIX: string;
 
 const rootReducer = combineReducers({
     app: appReducer

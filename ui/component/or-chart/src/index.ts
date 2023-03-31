@@ -445,10 +445,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         this._cleanup();
     }
 
-    willUpdate(changedProps: any) {
-        console.log(changedProps);
-    }
-
     firstUpdated() {
         this.loadSettings(false);
     }
@@ -617,7 +613,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     render() {
-        console.log("Rendering or-chart!");
         const disabled = this._loading;
         return html`
             <div id="container">
@@ -993,7 +988,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        console.warn("Loading chart data...");
         if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }

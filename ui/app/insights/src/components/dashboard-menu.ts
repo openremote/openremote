@@ -1,4 +1,4 @@
-import { html, LitElement, TemplateResult } from "lit";
+import { html, css, LitElement, TemplateResult } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-drawer";
@@ -9,6 +9,14 @@ import { RealmAppConfig } from "@openremote/or-app";
 import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
 import {style} from "../style"
 
+//language=css
+const styling = css`
+    #list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+`
 export interface DrawerConfig {
     enabled: boolean,
     showHeader: boolean
@@ -21,22 +29,22 @@ export class DashboardMenu extends LitElement {
     protected readonly dashboards!: Dashboard[];
 
     @property() // id of the selected dashboard
-    protected selectedId?: string;
+    protected readonly selectedId?: string;
 
     @property()
-    protected userId!: string;
+    protected readonly userId!: string;
 
     @property()
-    protected realmName?: string;
+    protected readonly realmName?: string;
 
     @property()
-    protected realmConfig?: RealmAppConfig;
+    protected readonly realmConfig?: RealmAppConfig;
 
     @property()
     protected drawerConfig?: DrawerConfig;
 
     @property()
-    protected loading: boolean = false;
+    protected readonly loading: boolean = false;
 
     @query("#drawer")
     protected drawer: OrMwcDrawer;
@@ -45,7 +53,7 @@ export class DashboardMenu extends LitElement {
     protected drawerScrim: HTMLElement;
 
     static get styles() {
-        return [style];
+        return [style, styling];
     }
 
     // Set defaults if not set yet
@@ -56,10 +64,6 @@ export class DashboardMenu extends LitElement {
                 showHeader: true
             }
         }
-    }
-
-    willUpdate(changedProps) {
-        console.log(changedProps);
     }
 
     /* ------------------------------------------ */
@@ -79,7 +83,7 @@ export class DashboardMenu extends LitElement {
         } else {
             this.drawer.toggle();
         }
-        this.requestUpdate();
+        this.requestUpdate(); // to reload the component, which removes the drawerScrim we added earlier from the DOM
         this.dispatchEvent(new CustomEvent('toggle', { detail: { value: this.drawer.open }}))
         return this.drawer.open;
     }
@@ -98,9 +102,9 @@ export class DashboardMenu extends LitElement {
 
 
     protected render() {
-        console.log("Rendering dashboard-menu!")
         let headerTemplate;
         if(this.drawerConfig?.showHeader) {
+            // header template with inline styling; limitation of injecting html like this.
             headerTemplate = html`
                 <div style="display: flex; padding: 13px 16px; border-bottom: 1px solid #E0E0E0; align-items: center; gap: 16px;">
                     <img id="logo-mobile" width="34" height="34" src="${this.realmConfig?.logoMobile}" />
@@ -137,7 +141,7 @@ export function getDashboardListTemplate(dashboards: Dashboard[], selectedId: st
             const menuItems = getDashboardMenuItems(dashboards, userId);
             return html`
                 <div style="padding: 16px 0;">
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div id="list-container">
                         ${when(menuItems[0] == undefined, () => html`
                             <span style="width: 100%; text-align: center;">${i18next.t('noDashboardFound')}</span>
                         `, () => html`
