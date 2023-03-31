@@ -19,7 +19,9 @@
  */
 package org.openremote.model.alarm;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import org.hibernate.annotations.Formula;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.value.MetaItemType;
 
 import javax.persistence.*;
@@ -59,10 +61,11 @@ public class AlarmAssetLink {
         @Column(name = "REALM", length = 36)
         protected String realm;
 
-        @Column(name = "ALARM_ID", length = 36)
+        @Column(name = "ALARM_ID")
         protected Long alarmId;
 
-        @Column(name = "ASSET_ID", length = 22, columnDefinition = "char(22)")
+
+        @Column(name = "ASSET_ID")
         protected String assetId;
 
         protected Id() {
@@ -129,9 +132,6 @@ public class AlarmAssetLink {
     @Formula("(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID where a.ID = ASSET_ID)")
     protected String parentAssetName;
 
-    @Formula("(select u.USERNAME || CASE WHEN COALESCE(NULLIF(u.FIRST_NAME, ''), NULLIF(u.LAST_NAME, '')) IS NULL THEN '' ELSE ' (' END || COALESCE(u.FIRST_NAME, '') || CASE WHEN NULLIF(u.FIRST_NAME, '') IS NOT NULL AND NULLIF(u.LAST_NAME, '') IS NOT NULL THEN ' ' ELSE '' END || COALESCE(u.LAST_NAME, '') || CASE WHEN COALESCE(NULLIF(u.FIRST_NAME, ''), NULLIF(u.LAST_NAME, '')) IS NULL THEN '' ELSE ')' END from PUBLIC.USER_ENTITY u where u.ID = USER_ID)")
-    protected String userFullName;
-
     protected AlarmAssetLink() {
     }
 
@@ -153,10 +153,6 @@ public class AlarmAssetLink {
 
     public String getParentAssetName() {
         return parentAssetName;
-    }
-
-    public String getUserFullName() {
-        return userFullName;
     }
 
     public Date getCreatedOn() {
@@ -187,7 +183,6 @@ public class AlarmAssetLink {
             ", createdOn=" + createdOn +
             ", assetName='" + assetName + '\'' +
             ", parentAssetName='" + parentAssetName + '\'' +
-            ", userFullName='" + userFullName + '\'' +
             '}';
     }
 }

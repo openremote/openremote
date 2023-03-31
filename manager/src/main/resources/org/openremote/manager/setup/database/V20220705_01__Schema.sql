@@ -40,3 +40,12 @@ create table ALARM_ASSET_LINK (
   CREATED_ON timestamp with time zone not null,
   primary key (ASSET_ID, REALM, ALARM_ID)
 );
+
+alter table ALARM_ASSET_LINK
+    add foreign key (ALARM_ID) references ALARM (ID) on delete cascade;
+
+alter table ALARM_ASSET_LINK
+    add foreign key (ASSET_ID) references ASSET (ID) on delete cascade;
+
+alter table ALARM_ASSET_LINK
+    add foreign key (REALM) references PUBLIC.REALM (NAME) on delete cascade;
