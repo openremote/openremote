@@ -592,11 +592,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                     sb.append("select al from AlarmAssetLink al where 1=1");
 
                     if (!isNullOrEmpty(realm)) {
-                        sb.append(" and al.id.realm in :realm");
+                        sb.append(" and al.id.realm = :realm");
                         parameters.put("realm", realm);
                     }
                     if (alarmId != null) {
-                        sb.append(" and al.id.alarmId in :alarmId");
+                        sb.append(" and al.id.alarmId = :alarmId");
                         parameters.put("alarmId", alarmId);
                     }
                     sb.append(" order by al.createdOn desc");
