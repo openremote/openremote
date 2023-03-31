@@ -171,7 +171,6 @@ public class SentAlarm {
         return getClass().getSimpleName() + "{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                
                 ", content='" + content + '\'' +
                 ", severity=" + severity + '\'' +
                 ", status='" + status + '\'' +
