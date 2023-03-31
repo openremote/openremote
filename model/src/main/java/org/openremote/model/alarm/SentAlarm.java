@@ -1,9 +1,14 @@
 package org.openremote.model.alarm;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import org.openremote.model.asset.Asset;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
@@ -125,12 +130,12 @@ public class SentAlarm {
         return this;
     }
 
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                
                 ", content='" + content + '\'' +
                 ", severity=" + severity + '\'' +
                 ", status='" + status + '\'' +
