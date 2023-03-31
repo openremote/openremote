@@ -535,32 +535,21 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected getNewAlarmModel(): AlarmModel {
         return {
             alarmAssetLinks: [],
-            alarmUserLinks: []
+            alarmUserLinks: [],
+            loaded: true
         }
     }
 
     protected async loadAlarm(alarm: AlarmModel) {
-        // if (user.roles || user.realmRoles) {
-        //     return;
-        // }
-
-        // Load users assigned roles
-        // const userRolesResponse = await (manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
-        // if (!this.responseAndStateOK(() => true, userRolesResponse, i18next.t("loadFailedUserInfo"))) {
-        //     return;
-        // }
-        //
-        // const userRealmRolesResponse = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, user.id);
-        // if (!this.responseAndStateOK(() => true, userRolesResponse, i18next.t("loadFailedUserInfo"))) {
-        //     return;
-        // }
-        //
-        const alarmAssetLinksResponse = await manager.rest.api.AlarmResource.getAssetLinks(alarm.id, manager.displayRealm);
-        if (!this.responseAndStateOK(() => true, alarmAssetLinksResponse, i18next.t("loadFailedUserInfo"))) {
+        if(alarm.loaded){
             return;
         }
-        
-        alarm.alarmAssetLinks = alarmAssetLinksResponse.data;
+
+        // const alarmAssetLinksResponse = await manager.rest.api.AlarmResource.getAssetLinks(alarm.id, manager.displayRealm);
+        //
+        // console.log(alarmAssetLinksResponse);
+        //
+        // alarm.alarmAssetLinks = alarmAssetLinksResponse.data;
 
         // Update the dom
         this.requestUpdate();
@@ -668,11 +657,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected getSingleAlarmView(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
+        console.log("Get view");
         return html`
-            ${when((alarm.loaded), () => {
+            ${when((alarm.loaded || alarm.alarmAssetLinks), () => {
             return this.getSingleAlarmTemplate(alarm, readonly);
         }, () => {
             const getTemplate = async () => {
+                console.log("HI");
                 await this.loadAlarm(alarm);
                 return this.getSingleAlarmTemplate(alarm, readonly);
             }
