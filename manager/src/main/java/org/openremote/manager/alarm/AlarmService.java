@@ -497,20 +497,19 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                     sb.append("select al from AlarmAssetLink al where 1=1");
 
                     if (!isNullOrEmpty(realm)) {
-                        sb.append(" and al.id.realm in :realm");
+                        sb.append(" and al.id.realm = :realm");
                         parameters.put("realm", realm);
                     }
                     if (alarmId != null) {
-                        sb.append(" and al.id.alarmId in :alarmId");
+                        sb.append(" and al.id.alarmId = :alarmId");
                         parameters.put("alarmId", alarmId);
                     }
                     sb.append(" order by al.createdOn desc");
 
                     TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
                     parameters.forEach(query::setParameter);
-        
-                    return query.getResultList();
-        
+                    List<AlarmAssetLink> result = query.getResultList();
+                    return result;
                 });
 
             } catch (Exception e) {
