@@ -646,7 +646,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
         // Content of User Table
         const userTableColumns: TableColumn[] = [
-            { title: i18next.t('username') }
+            {title: i18next.t('username')}
         ];
 
         const linkedUserTableRows: TableRow[] = this._linkedUsers.map((user) => {
@@ -673,18 +673,18 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .type="${InputType.TEXT}" 
                                   .value="${alarm.title}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                alarm.title = e.detail.value;
-                this.onAlarmChanged(e);
-            }}"></or-mwc-input>
+                                    alarm.title = e.detail.value;
+                                    this.onAlarmChanged(e);
+                                  }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.content")}"
                                   .type="${InputType.TEXTAREA}" 
                                   .value="${alarm.content}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                alarm.content = e.detail.value;
-                this.onAlarmChanged(e);
-            }}"></or-mwc-input>
+                                    alarm.content = e.detail.value;
+                                    this.onAlarmChanged(e);
+                                  }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.severity")}"
@@ -692,9 +692,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}"
                                   .value="${alarm.severity}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                alarm.severity = e.detail.value;
-                this.onAlarmChanged(e);
-            }}"></or-mwc-input>
+                                    alarm.severity = e.detail.value;
+                                    this.onAlarmChanged(e);
+                                  }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.status")}"
@@ -702,9 +702,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .options="${[AlarmStatus.ACTIVE, AlarmStatus.ACKNOWLEDGED, AlarmStatus.INACTIVE, AlarmStatus.RESOLVED]}"
                                   .value="${alarm.status}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                alarm.status = e.detail.value;
-                this.onAlarmChanged(e);
-            }}"></or-mwc-input>
+                                    alarm.status = e.detail.value;
+                                    this.onAlarmChanged(e);
+                                  }}"></or-mwc-input>
                 </div>
                 
                 <div class="column">
