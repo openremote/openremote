@@ -6,6 +6,8 @@ import org.openremote.model.http.RequestParams;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 
+import java.util.List;
+
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Tag(name = "Alarm")
 @Path("alarm")
@@ -92,7 +94,7 @@ public interface AlarmResource {
     @Path("{alarmId}/assetLinks/get")
     @GET
     @Produces(APPLICATION_JSON)
-    AlarmAssetLink[] getAssetLinks(@BeanParam RequestParams requestParams,
-                                    @PathParam("alarmId") Long alarmId,
-                                    String realm);
+    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams,
+                       @PathParam("alarmId") Long alarmId,
+                       String realm);
 }
