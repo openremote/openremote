@@ -47,22 +47,6 @@ public interface AlarmResource {
     @Path("{alarmId}/update")
     @PUT
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
-    void updateAlarm(@BeanParam RequestParams requestParams,
-            @PathParam("alarmId") Long alarmId,
-            SentAlarm alarm);
-
-    @Path("{alarmId}/update")
-    @PUT
-    @Consumes(APPLICATION_JSON)
-    @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
-    void updateAlarm(@BeanParam RequestParams requestParams,
-            @PathParam("alarmId") Long alarmId,
-            Alarm alarm);
-
-    @Path("{alarmId}/update")
-    @PUT
-    @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void updateAlarm(@BeanParam RequestParams requestParams,
                      @PathParam("alarmId") Long alarmId,
