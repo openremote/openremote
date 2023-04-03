@@ -4,21 +4,16 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.Constants;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.alarm.AlarmResource;
+import org.openremote.model.alarm.AlarmUserLink;
 import org.openremote.model.alarm.SentAlarm;
-import org.openremote.model.alarm.Alarm.Source;
 import org.openremote.model.alarm.AlarmAssetLink;
 import org.openremote.model.http.RequestParams;
 
-import javax.ws.rs.POST;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 public class AlarmResourceImpl extends WebResource implements AlarmResource {
@@ -104,7 +99,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     }
 
     @Override
-    public void assignUser(RequestParams requestParams, String alarmId, String userId, String realm) {
+    public void assignUser(RequestParams requestParams, Long alarmId, String userId, String realm) {
         if (alarmId == null) {
             throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
         }
@@ -118,17 +113,15 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     }
 
     @Override
-    public void setAssetLink(RequestParams requestParams, String alarmId, String assetId, String realm) {
+    public List<AlarmUserLink> getUserLinks(RequestParams requestParams, Long alarmId, String realm) {
         if (alarmId == null) {
             throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
-        }
-        if (assetId == null) {
-            throw new WebApplicationException("Missing asset ID", Status.BAD_REQUEST);
         }
         if (realm == null) {
             throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
         }
-        //alarmService.setAssetLink(alarmId, assetId, realm);
+        List<AlarmUserLink> result = alarmService.getUserLinks(alarmId, realm);
+        return result;
     }
     
     @Override
@@ -140,7 +133,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
             throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
         }
         List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
-        System.out.println(result);
         return result;
     }
     
