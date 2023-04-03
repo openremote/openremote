@@ -174,7 +174,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
             throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
         }
         List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
-        System.out.println(result);
         return result;
     }
     
