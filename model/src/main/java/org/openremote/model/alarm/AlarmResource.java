@@ -1,4 +1,5 @@
 package org.openremote.model.alarm;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
@@ -56,10 +57,10 @@ public interface AlarmResource {
     @Path("{alarmId}/update")
     @PUT
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
+    @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
     void updateAlarm(@BeanParam RequestParams requestParams,
-                     @PathParam("alarmId") Long alarmId,
-                     Alarm alarm);
+            @PathParam("alarmId") Long alarmId,
+            Alarm alarm);
 
     @Path("{alarmId}/setStatus")
     @PUT
@@ -71,7 +72,7 @@ public interface AlarmResource {
     @Path("{alarmId}/setAcknowledged")
     @PUT
     void setAlarmAcknowledged(@BeanParam RequestParams requestParams,
-                              @PathParam("alarmId") String alarmId);
+            @PathParam("alarmId") String alarmId);
 
     @Path("{alarmId}/assign")
     @PUT
