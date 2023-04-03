@@ -319,7 +319,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
 
         const isUpdate = !!alarm.id;
-        if(!isUpdate){
+        if (!isUpdate) {
             alarm.realm = manager.getRealm();
         }
 
@@ -673,18 +673,18 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .type="${InputType.TEXT}" 
                                   .value="${alarm.title}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    alarm.title = e.detail.value;
-                                    this.onAlarmChanged(e);
-                                  }}"></or-mwc-input>
+                alarm.title = e.detail.value;
+                this.onAlarmChanged(e);
+            }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.content")}"
                                   .type="${InputType.TEXTAREA}" 
                                   .value="${alarm.content}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    alarm.content = e.detail.value;
-                                    this.onAlarmChanged(e);
-                                  }}"></or-mwc-input>
+                alarm.content = e.detail.value;
+                this.onAlarmChanged(e);
+            }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.severity")}"
@@ -692,9 +692,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}"
                                   .value="${alarm.severity}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    alarm.severity = e.detail.value;
-                                    this.onAlarmChanged(e);
-                                  }}"></or-mwc-input>
+                alarm.severity = e.detail.value;
+                this.onAlarmChanged(e);
+            }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.status")}"
@@ -702,9 +702,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .options="${[AlarmStatus.ACTIVE, AlarmStatus.ACKNOWLEDGED, AlarmStatus.INACTIVE, AlarmStatus.RESOLVED]}"
                                   .value="${alarm.status}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    alarm.status = e.detail.value;
-                                    this.onAlarmChanged(e);
-                                  }}"></or-mwc-input>
+                alarm.status = e.detail.value;
+                this.onAlarmChanged(e);
+            }}"></or-mwc-input>
                 </div>
                 
                 <div class="column">
@@ -753,16 +753,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                       .label="${i18next.t(alarm.id ? "save" : "create")}"
                                       .type="${InputType.BUTTON}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                            let error: { status?: number, text: string };
-                                            this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? 'update' : 'create').then(() => {
-                                            showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
-                                            this.reset();
-                                            }).catch((ex) => {
-                                        if (isAxiosError(ex)) {
-                                            error = {
-                                                status: ex.response.status,
-                                                text: (ex.response.status == 403 ? i18next.t('alarm.alarmAlreadyExists') : i18next.t('errorOccurred'))
-                                    }
+                    let error: { status?: number, text: string };
+                    this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? 'update' : 'create').then(() => {
+                        showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
+                        this.reset();
+                    }).catch((ex) => {
+                        if (isAxiosError(ex)) {
+                            error = {
+                                status: ex.response.status,
+                                text: (ex.response.status == 403 ? i18next.t('alarm.alarmAlreadyExists') : i18next.t('errorOccurred'))
+                            }
                         }
                     }).finally(() => {
                         this._saveAlarmPromise = undefined;
