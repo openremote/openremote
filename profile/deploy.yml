@@ -164,6 +164,7 @@ services:
       OR_EMAIL_PORT: ${OR_EMAIL_PORT}
       OR_EMAIL_TLS: ${OR_EMAIL_TLS}
       OR_EMAIL_X_HEADERS: ${OR_EMAIL_X_HEADERS:-} # Headers to set on all outbound emails
+      OR_EMAIL_PROTOCOL: ${OR_EMAIL_PROTOCOL} # smtp or smtps for SSL (if TLS not set or is true then smtp is assumed)
 
       # Where to send admin emails to
       OR_EMAIL_ADMIN: ${OR_EMAIL_ADMIN}
