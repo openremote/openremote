@@ -140,10 +140,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "only one asset should be retrieved"
         assets.size() == 1
         assets.get(0).id == managerTestSetup.apartment2LivingroomId
-        assets.get(0).getAttributes().size() == 1
+        assets.get(0).getAttributes().size() == 2
         assets.get(0).getAttribute("windowOpen").isPresent()
         !assets.get(0).getAttribute("windowOpen").flatMap{it.value}.orElse(false)
         !assets.get(0).getAttribute("windowOpen").get().getMeta().isEmpty()
+        assets.get(0).getAttribute("targetTemperature").isPresent()
 
         when: "a recursive query is executed for apartment 1 assets"
         assets = assetStorageService.findAll(

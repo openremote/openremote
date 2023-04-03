@@ -3,6 +3,11 @@ package org.openremote.test.rules.residence
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.firebase.messaging.Message
+import jakarta.mail.internet.InternetAddress
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
 import net.fortuna.ical4j.model.Recur
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.MailUtil
@@ -44,11 +49,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.mail.internet.InternetAddress
-import javax.ws.rs.client.ClientRequestContext
-import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.Response
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -107,7 +107,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
     def "Turn all lights off when console exits the residence geofence"() {
 
         List<PushNotificationMessage> pushMessages = []
-        List<javax.mail.Message> emailMessages = []
+        List<jakarta.mail.Message> emailMessages = []
         List<Notification.Target> pushTargets = []
         List<Notification.Target> emailTargets = []
 
@@ -155,7 +155,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         // Assume sent to FCM
-        mockEmailNotificationHandler.sendMessage(_ as javax.mail.Message) >> {
+        mockEmailNotificationHandler.sendMessage(_ as jakarta.mail.Message) >> {
             email ->
                 emailMessages << email.get(0)
                 return NotificationSendResult.success()
@@ -297,15 +297,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "an email notification should have been sent to test@openremote.io with the triggered asset in the body"
         conditions.eventually {
-            assert emailMessages.any {it.getRecipients(javax.mail.Message.RecipientType.TO).length == 1
-                    && (it.getRecipients(javax.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
-                    && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
+            assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
+                && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
+                && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
         }
 
         and : "an email notification should have been sent to the asset's linked user(s) (only testuser2 has email notifications enabled)"
         conditions.eventually {
-            assert emailMessages.any {it.getRecipients(javax.mail.Message.RecipientType.TO).length == 1
-                    && (it.getRecipients(javax.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
+            assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
+                    && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
                     && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
         }
 

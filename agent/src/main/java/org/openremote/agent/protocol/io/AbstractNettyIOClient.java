@@ -30,7 +30,7 @@ import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;

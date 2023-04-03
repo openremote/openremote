@@ -28,6 +28,7 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.JSONSchemaUtil;
+import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
@@ -40,6 +41,7 @@ import java.util.Optional;
  * item and standard JSR-380 annotations should be used to provide validation logic.
  */
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, defaultImpl = DefaultAgentLink.class)
+@TsIgnoreTypeParams
 public abstract class AgentLink<T extends AgentLink<?>> implements Serializable {
 
     @JsonSchemaFormat("or-agent-id")

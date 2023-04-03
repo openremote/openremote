@@ -22,8 +22,6 @@ package org.openremote.container.persistence;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.dialect.PostgreSQL10Dialect;
-import org.openremote.container.PostgreSQL10LTreeDialect;
 import org.openremote.container.concurrent.ContainerThreadFactory;
 
 import java.util.Properties;
@@ -55,7 +53,6 @@ public interface Database {
         @Override
         public Properties createProperties() {
             Properties properties = new Properties();
-            properties.put(AvailableSettings.DIALECT, PostgreSQL10LTreeDialect.class.getName());
             return properties;
         }
 

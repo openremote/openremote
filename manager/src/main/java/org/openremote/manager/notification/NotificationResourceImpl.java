@@ -33,13 +33,13 @@ import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.ValueUtil;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.*;
 import static org.openremote.model.notification.Notification.Source.CLIENT;
 
 public class NotificationResourceImpl extends WebResource implements NotificationResource {

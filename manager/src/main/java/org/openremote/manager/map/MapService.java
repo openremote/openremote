@@ -39,7 +39,7 @@ import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -27,7 +27,7 @@ import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.util.TsIgnore;
 
-import javax.validation.constraints.Pattern;
+import jakarta.validation.constraints.Pattern;
 import java.util.Date;
 
 @TsIgnore

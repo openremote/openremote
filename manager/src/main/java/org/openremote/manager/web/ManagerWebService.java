@@ -45,7 +45,7 @@ import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,8 +60,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.undertow.util.RedirectBuilder.redirect;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.UriBuilder.fromUri;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+import static jakarta.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;

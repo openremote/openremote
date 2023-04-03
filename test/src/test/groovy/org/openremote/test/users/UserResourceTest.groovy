@@ -32,7 +32,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 
-import javax.ws.rs.ForbiddenException
+import jakarta.ws.rs.ForbiddenException
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT

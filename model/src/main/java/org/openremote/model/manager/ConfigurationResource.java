@@ -24,11 +24,11 @@ import org.openremote.model.Constants;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.*;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.*;
 import java.io.IOException;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Configuration")
 @Path("configuration")

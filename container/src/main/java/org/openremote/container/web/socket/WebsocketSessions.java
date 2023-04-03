@@ -21,7 +21,7 @@ package org.openremote.container.web.socket;
 
 import org.apache.camel.Service;
 
-import javax.websocket.Session;
+import jakarta.websocket.Session;
 import java.util.Collection;
 
 public interface WebsocketSessions extends Service {

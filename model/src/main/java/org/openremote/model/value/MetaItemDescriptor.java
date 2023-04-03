@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 
 /**
@@ -34,6 +35,7 @@ import org.openremote.model.util.ValueUtil;
  * <p>
  * {@link MetaItemDescriptor#getName} must be globally unique within the context of the manager it is registered with.
  */
+@TsIgnoreTypeParams
 public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> {
 
     /**

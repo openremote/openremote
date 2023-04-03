@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.notification;
 
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
@@ -33,17 +36,13 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.util.TextUtil;
 
-import javax.mail.*;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED;
 import static org.openremote.model.Constants.*;
 
@@ -87,12 +86,12 @@ public class EmailNotificationHandler implements NotificationHandler {
 
         if (!TextUtil.isNullOrEmpty(host) && !TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)) {
             boolean startTls = getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT);
-
+            String protocol = startTls ? "smtp" : getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT);
             Properties props = new Properties();
-            props.put("mail.smtp.auth", true);
-            props.put("mail.smtp.starttls.enable", startTls);
-            props.put("mail.smtp.host", host);
-            props.put("mail.smtp.port", port);
+            props.put("mail." + protocol + ".auth", true);
+            props.put("mail." + protocol + ".starttls", startTls);
+            props.put("mail." + protocol + ".host", host);
+            props.put("mail." + protocol + ".port", port);
 
             mailSession = Session.getInstance(props, new Authenticator() {
                 @Override
@@ -102,7 +101,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             });
 
             boolean valid;
-            try (Transport transport = mailSession.getTransport(startTls ? "smtps" : "smtp")) {
+            try (Transport transport = mailSession.getTransport(protocol)) {
                 transport.connect();
                 valid = transport.isConnected();
             } catch (Exception e) {

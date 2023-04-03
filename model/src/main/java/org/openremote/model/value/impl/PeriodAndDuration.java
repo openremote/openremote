@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import net.fortuna.ical4j.model.Dur;
 import org.openremote.model.util.TextUtil;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Period;

@@ -20,6 +20,11 @@
 package org.openremote.manager.security;
 
 import io.undertow.util.Headers;
+import jakarta.persistence.Query;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -56,11 +61,6 @@ import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.persistence.Query;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -983,22 +983,22 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                 // Delete gateway connections
                 Query query = entityManager.createQuery("delete from " + GatewayConnection.class.getSimpleName() + " gc " +
-                    "where gc.localRealm = ?0");
+                    "where gc.localRealm = ?1");
 
-                query.setParameter(0, realmName);
+                query.setParameter(1, realmName);
                 query.executeUpdate();
 
                 // Delete provisioning configs
                 query = entityManager.createQuery("delete from " + ProvisioningConfig.class.getSimpleName() + " pc " +
-                    "where pc.realm = ?0");
+                    "where pc.realm = ?1");
 
-                query.setParameter(0, realmName);
+                query.setParameter(1, realmName);
                 query.executeUpdate();
 
                 // Delete Rules
                 query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
-                    "where rs.realm = ?0");
-                query.setParameter(0, realmName);
+                    "where rs.realm = ?1");
+                query.setParameter(1, realmName);
                 query.executeUpdate();
 
                 // Delete Assets
@@ -1216,6 +1216,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             emailConfig.put("password", container.getConfig().getOrDefault(OR_EMAIL_PASSWORD, null));
             emailConfig.put("auth", container.getConfig().containsKey(OR_EMAIL_USER) ? "true" : "false");
             emailConfig.put("tls", Boolean.toString(getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT)));
+            emailConfig.put("ssl", Boolean.toString(!getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT) && getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT).equals("smtps")));
             emailConfig.put("from", getString(container.getConfig(), OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT));
             realmRepresentation.setSmtpServer(emailConfig);
         }
