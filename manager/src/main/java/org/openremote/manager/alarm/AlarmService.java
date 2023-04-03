@@ -200,7 +200,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         });
     }
 
-    public void assignUser(String alarmId, String userId, String realm) {
+    public void assignUser(Long alarmId, String userId, String realm) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
             if (LOG.isLoggable(FINE)) {
                 LOG.fine("Storing user alarm link");
@@ -209,7 +209,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             try {
                 st = connection.prepareStatement("INSERT INTO ALARM_USER_LINK (alarm_id, realm, user_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, user_id) DO NOTHING");
-                st.setString(1, alarmId);
+                st.setLong(1, alarmId);
                 st.setString(2, realm);
                 st.setObject(3, userId);
                 st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
@@ -224,6 +224,40 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             }
         }));
     }
+
+    public List<AlarmUserLink> getUserLinks(Long alarmId, String realm) throws IllegalArgumentException {
+        if (LOG.isLoggable(FINE)) {
+            LOG.fine("Getting user alarm links");
+        }
+
+        try {
+            return persistenceService.doReturningTransaction(entityManager -> {
+                StringBuilder sb = new StringBuilder();
+                Map<String, Object> parameters = new HashMap<>(2);
+                sb.append("select al from AlarmUserLink al where 1=1");
+
+                if (!isNullOrEmpty(realm)) {
+                    sb.append(" and al.id.realm = :realm");
+                    parameters.put("realm", realm);
+                }
+                if (alarmId != null) {
+                    sb.append(" and al.id.alarmId = :alarmId");
+                    parameters.put("alarmId", alarmId);
+                }
+                sb.append(" order by al.createdOn desc");
+
+                TypedQuery<AlarmUserLink> query = entityManager.createQuery(sb.toString(), AlarmUserLink.class);
+                parameters.forEach(query::setParameter);
+                List<AlarmUserLink> result = query.getResultList();
+                return result;
+            });
+
+        } catch (Exception e) {
+            String msg = "Failed to get user alarm links";
+            LOG.log(Level.WARNING, msg, e);
+            throw new IllegalStateException(msg, e);
+        }
+}
 
     public void linkAssets(ArrayList<String> assetIds, String realm, Long alarmId) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
