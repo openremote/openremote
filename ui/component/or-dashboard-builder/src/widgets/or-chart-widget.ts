@@ -53,7 +53,7 @@ export class OrChartWidget implements OrWidgetEntity {
     readonly MIN_PIXEL_HEIGHT: number = 0;
 
     getDefaultConfig(widget: DashboardWidget): ChartWidgetConfig {
-        const preset = "lastHour"
+        const preset = "last24Hours"
         const dateFunc = timePresetOptions.get(preset);
         const dates = dateFunc!(new Date());
         return {
