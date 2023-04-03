@@ -8,7 +8,6 @@ import org.openremote.model.alarm.Alarm;
 import org.openremote.model.alarm.AlarmResource;
 import org.openremote.model.alarm.AlarmUserLink;
 import org.openremote.model.alarm.SentAlarm;
-import org.openremote.model.alarm.Alarm.Source;
 import org.openremote.model.alarm.AlarmAssetLink;
 import org.openremote.model.http.RequestParams;
 
@@ -124,18 +123,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         List<AlarmUserLink> result = alarmService.getUserLinks(alarmId, realm);
         return result;
     }
-
-    @Override
-    public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
-        if (alarmId == null) {
-            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
-        }
-        if (realm == null) {
-            throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
-        }
-        List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
-        return result;
-    }
     
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
@@ -146,7 +133,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
             throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
         }
         List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
-        System.out.println(result);
         return result;
     }
     
