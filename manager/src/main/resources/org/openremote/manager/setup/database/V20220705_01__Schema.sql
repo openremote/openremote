@@ -49,3 +49,12 @@ alter table ALARM_ASSET_LINK
 
 alter table ALARM_ASSET_LINK
     add foreign key (REALM) references PUBLIC.REALM (NAME) on delete cascade;
+
+alter table ALARM_USER_LINK
+    add foreign key (ALARM_ID) references ALARM (ID) on delete cascade;
+
+alter table ALARM_USER_LINK
+    add foreign key (USER_ID) references PUBLIC.USER_ENTITY (ID) on delete cascade;
+
+alter table ALARM_USER_LINK
+    add foreign key (REALM) references PUBLIC.REALM (NAME) on delete cascade;

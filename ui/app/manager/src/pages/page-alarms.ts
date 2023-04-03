@@ -1,20 +1,22 @@
-import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
+
+import { css, html, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import manager, { DefaultColor3, DefaultColor4 } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {Store} from "@reduxjs/toolkit";
-import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {AlarmSeverity, AlarmStatus, ClientRole, Role, SentAlarm, UserQuery, Asset, User, AlarmAssetLink} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {OrMwcDialog, showOkCancelDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
-import {getAlarmsRoute} from "../routes";
-import {when} from 'lit/directives/when.js';
-import {until} from 'lit/directives/until.js';
-import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
+import { Store } from "@reduxjs/toolkit";
+import { AppStateKeyed, Page, PageProvider, router } from "@openremote/or-app";
+import { AlarmSeverity, AlarmStatus, ClientRole, Role, SentAlarm, UserQuery, Asset, User, AlarmAssetLink, AlarmUserLink } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { OrMwcDialog, showOkCancelDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { GenericAxiosResponse, isAxiosError } from "@openremote/rest";
+import { getAlarmsRoute } from "../routes";
+import { when } from 'lit/directives/when.js';
+import { until } from 'lit/directives/until.js';
+import { OrMwcTableRowClickEvent, TableColumn, TableRow } from "@openremote/or-mwc-components/or-mwc-table";
+import { OrAssetTreeRequestSelectionEvent } from "@openremote/or-asset-tree";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -35,7 +37,7 @@ interface AlarmModel extends SentAlarm {
     loaded?: boolean;
     loading?: boolean;
     alarmAssetLinks?: AlarmAssetLink[];
-    alarmUserLinks?: string[]; // To change data type
+    alarmUserLinks?: AlarmUserLink[]; // To change data type
 }
 
 @customElement("page-alarms")
@@ -186,6 +188,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected _linkedAssets: Asset[] = [];
     @state()
     protected _linkedUsers: User[] = [];
+    @state()
+    protected _loadedUsers: User[] = [];
 
     protected _realmRolesFilter = (role: Role) => {
         return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name) && !role.name.startsWith("default-roles"))
@@ -193,12 +197,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     protected _loading: boolean = false;
     protected _assign: boolean = false;
+    protected _userId?: string;
 
     @state()
     protected _loadAlarmsPromise?: Promise<any>;
 
     @state()
     protected _saveAlarmPromise?: Promise<any>;
+
+    @state()
+    protected _loadUsersPromise?: Promise<any>;
 
 
     get name(): string {
@@ -259,6 +267,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         this._inactiveAlarms = [];
         this._linkedUsers = [];
         this._linkedAssets = [];
+        this._loadedUsers = [];
 
         if (!manager.authenticated || !manager.hasRole(ClientRole.READ_ALARMS)) {
             console.warn("Not authenticated or insufficient access");
@@ -270,8 +279,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return this.getState().app.realm === this.realm && this.isConnected;
         }
 
-        const roleResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
+        const usersResponse = await manager.rest.api.UserResource.query({ realmPredicate: { name: manager.displayRealm } } as UserQuery);
 
+        if (!this.responseAndStateOK(stateChecker, usersResponse, i18next.t("loadFailedUsers"))) {
+            return;
+        }
+
+        const roleResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
 
         if (!this.responseAndStateOK(stateChecker, roleResponse, i18next.t("loadFailedRoles"))) {
             return;
@@ -283,14 +297,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
-        const usersResponse = await manager.rest.api.UserResource.query({realmPredicate: {name: manager.displayRealm}} as UserQuery);
-
-        if (!this.responseAndStateOK(stateChecker, usersResponse, i18next.t("loadFailedUsers"))) {
-            return;
-        }
-
         this._activeAlarms = alarmResponse.data.filter(alarm => alarm.status == AlarmStatus.ACTIVE || alarm.status == AlarmStatus.ACKNOWLEDGED);
         this._inactiveAlarms = alarmResponse.data.filter(alarm => alarm.status == AlarmStatus.INACTIVE || alarm.status == AlarmStatus.RESOLVED);
+        this._loadedUsers = usersResponse.data.filter(user => !user.serviceAccount);
         // this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         // this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
         // this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
@@ -310,7 +319,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
 
         const isUpdate = !!alarm.id;
-        if(!isUpdate){
+        if (!isUpdate) {
             alarm.realm = manager.getRealm();
         }
 
@@ -334,27 +343,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         } finally {
             await this.loadAlarms();
         }
-    }
-
-    /**
-     * Backend only uses name of role not the ID so although service client roles are not the same as composite roles
-     * the names will match so that's ok
-     */
-    private async _updateRoles(realmRoles: boolean) {
-        // const roles = realmRoles ? user.realmRoles.filter(role => role.assigned) : user.roles.filter(role => role.assigned);
-        // const previousRoles = realmRoles ? user.previousRealmRoles : user.previousRoles;
-        // const removedRoles = previousRoles.filter(previousRole => !roles.some(role => role.name === previousRole.name));
-        // const addedRoles = roles.filter(role => !previousRoles.some(previousRole => previousRole.name === role.name));
-        //
-        // if (removedRoles.length === 0 && addedRoles.length === 0) {
-        //     return;
-        // }
-        //
-        // if (realmRoles) {
-        //     await manager.rest.api.UserResource.updateUserRealmRoles(manager.displayRealm, user.id, roles);
-        // } else {
-        //     await manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, roles);
-        // }
     }
 
     private async _updateUserAssetLinks() {
@@ -409,11 +397,11 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
         // Content of Alarm Table
         const alarmTableColumns: TableColumn[] = [
-            {title: i18next.t('createdOn')},
-            {title: i18next.t('alarm.title')},
-            {title: i18next.t('alarm.content')},
-            {title: i18next.t('alarm.severity')},
-            {title: i18next.t('status')}
+            { title: i18next.t('createdOn') },
+            { title: i18next.t('alarm.title') },
+            { title: i18next.t('alarm.content') },
+            { title: i18next.t('alarm.severity') },
+            { title: i18next.t('status') }
         ];
 
         const activeAlarmTableRows: TableRow[] = this._activeAlarms.map((alarm) => {
@@ -480,7 +468,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             <p>${i18next.t("alarm.active_plural")}</p>
                             <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus"
                                           label="${i18next.t('add')} ${i18next.t("alarm.")}"
-                                          @or-mwc-input-changed="${() => this.creationState = {alarmModel: this.getNewAlarmModel()}}"></or-mwc-input>
+                                          @or-mwc-input-changed="${() => this.creationState = { alarmModel: this.getNewAlarmModel() }}"></or-mwc-input>
                         </div>
                         ${until(this.getAlarmsTable(alarmTableColumns, activeAlarmTableRows, tableConfig, (ev) => {
             this.alarmId = this._activeAlarms[ev.detail.index].id.toString();
@@ -508,14 +496,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 }
                 break;
             case "user":
-                // if (this._loadUsersPromise) {
-                //     await this._loadUsersPromise;
-                // }
-                break;
-            case "asset":
-                // if (this._loadAssetsPromise) {
-                //     await this._loadAssetsPromise;
-                // }
+                if (this._loadUsersPromise) {
+                    await this._loadUsersPromise;
+                }
                 break;
             default:
                 break;
@@ -541,15 +524,27 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected async loadAlarm(alarm: AlarmModel) {
-        if(alarm.loaded){
+        if (alarm.loaded) {
+            return;
+        }
+        const stateChecker = () => {
+            return this.getState().app.realm === this.realm && this.isConnected;
+        }
+
+        const alarmAssetLinksResponse = await manager.rest.api.AlarmResource.getAssetLinks(alarm.id, alarm.realm);
+        if (!this.responseAndStateOK(stateChecker, alarmAssetLinksResponse, i18next.t("loadFailedUsers"))) {
             return;
         }
 
-        // const alarmAssetLinksResponse = await manager.rest.api.AlarmResource.getAssetLinks(alarm.id, manager.displayRealm);
-        //
-        // console.log(alarmAssetLinksResponse);
-        //
-        // alarm.alarmAssetLinks = alarmAssetLinksResponse.data;
+        const alarmUserLinksResponse = await manager.rest.api.AlarmResource.getUserLinks(alarm.id, alarm.realm);
+        if (!this.responseAndStateOK(stateChecker, alarmUserLinksResponse, i18next.t("loadFailedUsers"))) {
+            return;
+        }
+
+        alarm.alarmUserLinks = alarmUserLinksResponse.data;
+        alarm.alarmAssetLinks = alarmAssetLinksResponse.data;
+        alarm.loaded = true;
+        alarm.loading = false;
 
         // Update the dom
         this.requestUpdate();
@@ -558,27 +553,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected _openAssetSelector(ev: MouseEvent, alarm: AlarmModel, readonly: boolean) {
         const openBtn = ev.target as OrMwcInput;
         openBtn.disabled = true;
-        // alarm.alarmAssetLinks = [...alarm.alarmAssetLinks];
-        
-        // const onAssetSelectionChanged = (e: OrAssetTreeSelectionEvent) => {
-        //     alarm.alarmAssetLinks = e.detail.newNodes.map(node => {
-        //         const alarmAssetLink: AlarmAssetLink = {
-        //             id: {
-        //                 alarmId: alarm.id,
-        //                 realm: alarm.realm,
-        //                 assetId: node.asset.id
-        //             }
-        //         };
-        //         return alarmAssetLink;
-        //     })
-        // };
-        
+
         const dialog = showDialog(new OrMwcDialog()
             .setHeading(i18next.t("linkedAssets"))
             .setContent(html`
                 <or-asset-tree
-                        id="chart-asset-tree" readonly .selectedIds="${alarm.alarmAssetLinks?.map(al => al.id.assetId)}"
-                        .showSortBtn="${false}" expandNodes checkboxes></or-asset-tree>
+                        id="chart-asset-tree" readonly="true" .selectedIds="${alarm.alarmAssetLinks?.map(al => al.id.assetId)}"
+                        .showSortBtn="${false}" expandNodes checkboxes
+                        @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
+                    e.detail.allow = false;
+                }}"></or-asset-tree>
             `)
             .setActions([
                 {
@@ -609,37 +593,17 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
     }
 
-    protected _onPasswordChanged(user: AlarmModel, suffix: string) {
-        // const passwordComponent = this.shadowRoot.getElementById("password-" + suffix) as OrMwcInput;
-        // const repeatPasswordComponent = this.shadowRoot.getElementById("repeatPassword-" + suffix) as OrMwcInput;
-        //
-        // if (repeatPasswordComponent.value !== passwordComponent.value) {
-        //     const error = i18next.t("passwordMismatch");
-        //     repeatPasswordComponent.setCustomValidity(error);
-        //     user.password = "";
-        // } else {
-        //     repeatPasswordComponent.setCustomValidity(undefined);
-        //     user.password = passwordComponent.value;
-        // }
+    protected _assignClick() {
+        this._assign = !this._assign;
+        this.requestUpdate();
     }
 
-    protected _updateUserSelectedRoles(user: AlarmModel, suffix: string) {
-        // const roleCheckboxes = [...((this.shadowRoot.getElementById("role-list-" + suffix) as HTMLDivElement).children as any)] as OrMwcInput[];
-        // const implicitRoleNames = this.getImplicitUserRoles(user);
-        // roleCheckboxes.forEach((checkbox) => {
-        //     const roleName = checkbox.label;
-        //     const r = this._roles.find(role => roleName === role.name);
-        //     checkbox.disabled = !!implicitRoleNames.find(name => r.name === name);
-        //     checkbox.value = !!user.roles.find(userRole => userRole.name === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name);
-        // });
-    }
-
-    protected async _assignUser(userId: string) {
-        if(!userId || !this.alarmId){
+    protected async _assignUser(alarm: AlarmModel) {
+        if (!this._userId || !this.alarmId) {
             return;
         }
         try {
-            await manager.rest.api.AlarmResource.assignUser(this.alarmId, userId);
+            await manager.rest.api.AlarmResource.assignUser(alarm.id, this._userId);
 
         } catch (e) {
             if (isAxiosError(e)) {
@@ -652,18 +616,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
             throw e; // Throw exception anyhow to handle individual cases
 
         } finally {
-            await this.loadAlarms();
+            await this.loadAlarm(alarm);
         }
     }
 
     protected getSingleAlarmView(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
-        console.log("Get view");
         return html`
-            ${when((alarm.loaded || alarm.alarmAssetLinks), () => {
+            ${when((alarm.loaded), () => {
             return this.getSingleAlarmTemplate(alarm, readonly);
         }, () => {
             const getTemplate = async () => {
-                console.log("HI");
                 await this.loadAlarm(alarm);
                 return this.getSingleAlarmTemplate(alarm, readonly);
             }
@@ -681,23 +643,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
             columnFilter: [],
             stickyFirstColumn: false,
         }
-        // Content of Asset Table
-        const assetTableColumns: TableColumn[] = [
-            {title: i18next.t('ID')},
-            {title: i18next.t('assetType')},
-            {title: i18next.t('assetName')}
-        ];
-
-        const linkedAssetTableRows: TableRow[] = this._linkedAssets.map((asset) => {
-            return {
-                content: [asset.id, asset.type, asset.name],
-                clickable: true
-            }
-        });
 
         // Content of User Table
         const userTableColumns: TableColumn[] = [
-            {title: i18next.t('username')}
+            { title: i18next.t('username') }
         ];
 
         const linkedUserTableRows: TableRow[] = this._linkedUsers.map((user) => {
@@ -724,18 +673,18 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .type="${InputType.TEXT}" 
                                   .value="${alarm.title}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    alarm.title = e.detail.value;
-                                    this.onAlarmChanged(e);
-                                  }}"></or-mwc-input>
+                alarm.title = e.detail.value;
+                this.onAlarmChanged(e);
+            }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.content")}"
                                   .type="${InputType.TEXTAREA}" 
                                   .value="${alarm.content}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    alarm.content = e.detail.value;
-                                    this.onAlarmChanged(e);
-                                  }}"></or-mwc-input>
+                alarm.content = e.detail.value;
+                this.onAlarmChanged(e);
+            }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.severity")}"
@@ -743,9 +692,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}"
                                   .value="${alarm.severity}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    alarm.severity = e.detail.value;
-                                    this.onAlarmChanged(e);
-                                  }}"></or-mwc-input>
+                alarm.severity = e.detail.value;
+                this.onAlarmChanged(e);
+            }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.status")}"
@@ -753,38 +702,43 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .options="${[AlarmStatus.ACTIVE, AlarmStatus.ACKNOWLEDGED, AlarmStatus.INACTIVE, AlarmStatus.RESOLVED]}"
                                   .value="${alarm.status}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                    alarm.status = e.detail.value;
-                                    this.onAlarmChanged(e);
-                                  }}"></or-mwc-input>
+                alarm.status = e.detail.value;
+                this.onAlarmChanged(e);
+            }}"></or-mwc-input>
                 </div>
                 
                 <div class="column">
+                    <div class="${!this._assign ? "hidden" : ""}">
+                        <or-mwc-input type="${InputType.SELECT}" 
+                                    .options="${this._loadedUsers ? this._loadedUsers.map(user => user.username) : undefined}"
+                                    .label="${i18next.t("user_plural")}"
+                                    .value="${this._loadedUsers.map(user => user.username)[0]}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._userId = this._loadedUsers.find(user => user.username == e.detail.value).id; this.requestUpdate; }}" 
+                                    ?hidden="${!this._assign}">
+                        </or-mwc-input>
+                        <or-mwc-input raised outlined style="margin-left: 4px;"
+                                    .type="${InputType.BUTTON}"
+                                    .label="${i18next.t("confirm")}"
+                                    @or-mwc-input-changed="${(ev: MouseEvent) => this._assignUser(alarm)}">
+                        </or-mwc-input>
+                    </div>
                     <div id="content" class="panel">
                         <div class="panel-title" style="justify-content: space-between;">
                             <p>${i18next.t("alarm.linkedUsers")}</p>
                             <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus"
                                           label="${i18next.t('alarm.assignUser')}"
-                                          @or-mwc-input-changed="${() => this._assign = true }"></or-mwc-input>
-                            ${when(this._assign, () => html`
-                                <or-mwc-input type="${InputType.SELECT}" 
-                                              class="min-width"
-                                              .options="${["TestUser", "TestUser1"]}"
-                                              .label="${i18next.t("user_plural")}"
-                                              .value="${""}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._assignUser(e.detail.value)}" 
-                                                    ?readonly="${readonly}"></or-mwc-input>
-                            `)}
+                                          @or-mwc-input-changed="${() => this._assignClick()}"></or-mwc-input>
                         </div>
                         ${until(this.getAlarmsTable(userTableColumns, linkedUserTableRows, tableConfig, (ev) => {
-                            this.alarmId = this._activeAlarms[ev.detail.index].id.toString();
-                        }, "user"), html`${i18next.t('loading')}`)}
+                this.alarmId = this._activeAlarms[ev.detail.index].id.toString();
+            }, "user"), html`${i18next.t('loading')}`)}
                     </div>
 
                     <div>
-                        <span>${i18next.t("linkedAssets")}:</span>
+                        <span style="margin: 0px auto 10px;">${i18next.t("linkedAssets")}:</span>
                         <or-mwc-input outlined ?disabled="${readonly}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
-                                      .label="${i18next.t("selectRestrictedAssets", {number: alarm.alarmAssetLinks?.length})}"
+                                      .label="${i18next.t("selectRestrictedAssets", { number: alarm.alarmAssetLinks?.length })}"
                                       @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, alarm, readonly)}"></or-mwc-input>
                     </div>
                 </div>
@@ -799,30 +753,19 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                       .label="${i18next.t(alarm.id ? "save" : "create")}"
                                       .type="${InputType.BUTTON}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                            let error: { status?: number, text: string };
-                                            this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? 'update' : 'create').then(() => {
-                                            showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
-                                            this.reset();
-                                            }).catch((ex) => {
-                                        if (isAxiosError(ex)) {
-                                            error = {
-                                                status: ex.response.status,
-                                                text: (ex.response.status == 403 ? i18next.t('alarm.alarmAlreadyExists') : i18next.t('errorOccurred'))
-                                    }
+                    let error: { status?: number, text: string };
+                    this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? 'update' : 'create').then(() => {
+                        showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
+                        this.reset();
+                    }).catch((ex) => {
+                        if (isAxiosError(ex)) {
+                            error = {
+                                status: ex.response.status,
+                                text: (ex.response.status == 403 ? i18next.t('alarm.alarmAlreadyExists') : i18next.t('errorOccurred'))
+                            }
                         }
                     }).finally(() => {
                         this._saveAlarmPromise = undefined;
-                        // if (error) {
-                        //     this.updateComplete.then(() => {
-                        //         showSnackbar(undefined, error.text);
-                        //         if (error.status == 403) {
-                        //             const elem = this.shadowRoot.getElementById('username-' + suffix) as OrMwcInput;
-                        //             elem.setCustomValidity(error.text);
-                        //             (elem.shadowRoot.getElementById("elem") as HTMLInputElement).reportValidity(); // manually reporting was required since we're not editing the username at all.
-                        //             this.onUserChanged(elem, suffix); // onUserChanged to trigger validation of all fields again.
-                        //         }
-                        //     })
-                        // }
                     })
                 }}">
                         </or-mwc-input>
