@@ -35,6 +35,7 @@ import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.*;
 import org.openremote.model.alarm.AlarmAssetLink;
+import org.openremote.model.alarm.AlarmUserLink;
 import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
@@ -317,6 +318,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(X509ProvisioningConfig.class.getName());
         entityClasses.add(SentAlarm.class.getName());
         entityClasses.add(AlarmAssetLink.class.getName());
+        entityClasses.add(AlarmUserLink.class.getName());
 
         // Add packages with package-info (don't think this is JPA spec but hibernate specific)
         entityClasses.add("org.openremote.container.persistence");
