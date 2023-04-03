@@ -22,7 +22,6 @@ package org.openremote.model.alarm;
 import org.hibernate.annotations.Formula;
 
 
-
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
