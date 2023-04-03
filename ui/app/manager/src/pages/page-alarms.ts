@@ -481,7 +481,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
 
-
     protected render() {
         if (!manager.authenticated) {
             return html`
