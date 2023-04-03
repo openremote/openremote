@@ -83,22 +83,22 @@ public interface AlarmResource {
     @Path("{alarmId}/setAcknowledged")
     @PUT
     void setAlarmAcknowledged(@BeanParam RequestParams requestParams,
-            @PathParam("alarmId") String alarmId);
+                              @PathParam("alarmId") String alarmId);
 
     @Path("{alarmId}/assign")
     @PUT
     void assignUser(@BeanParam RequestParams requestParams,
-            @PathParam("alarmId") Long alarmId,
-            String userId,
-            String realm);
+                    @PathParam("alarmId") String alarmId,
+                    String userId,
+                    String realm);
 
-    // @Path("{alarmId}/assetLink")
-    // @PUT
-    // void setAssetLink(@BeanParam RequestParams requestParams,
-    // @PathParam("alarmId") String alarmId,
-    // String assetId,
-    // String realm);
-
+    @Path("{alarmId}/assetLink")
+    @PUT
+    void setAssetLink(@BeanParam RequestParams requestParams,
+                      @PathParam("alarmId") String alarmId,
+                      String assetId,
+                      String realm);
+    
     @Path("{alarmId}/assetLinks/get")
     @GET
     @Produces(APPLICATION_JSON)
