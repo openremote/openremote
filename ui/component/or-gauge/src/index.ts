@@ -163,7 +163,9 @@ export class OrGauge extends LitElement {
                     width: size.inlineSize,
                     height: size.blockSize
                 }
-                this.setupGauge(); // recreate gauge since the library is not 100% responsive.
+                this.updateComplete.then(() => {
+                    this.setupGauge(); // recreate gauge since the library is not 100% responsive.
+                });
             }, 200))
             this.resizeObserver.observe(this._wrapperElem);
         })
