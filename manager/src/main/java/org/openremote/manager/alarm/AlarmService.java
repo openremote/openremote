@@ -358,8 +358,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
                     TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
                     parameters.forEach(query::setParameter);
-                    List<AlarmAssetLink> result = query.getResultList();
-                    return result;
+
+                    return query.getResultList();
+
                 });
 
             } catch (Exception e) {
