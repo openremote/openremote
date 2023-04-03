@@ -56,8 +56,8 @@ public interface AlarmResource {
     @PUT
     @Consumes(APPLICATION_JSON)
     void updateAlarm(@BeanParam RequestParams requestParams,
-                     @PathParam("alarmId") Long alarmId,
-                     Alarm alarm);
+            @PathParam("alarmId") Long alarmId,
+            Alarm alarm);
 
     @Path("{alarmId}/setStatus")
     @PUT
