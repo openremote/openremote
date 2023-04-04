@@ -1,5 +1,4 @@
 import {DashboardWidget } from "@openremote/model";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
@@ -52,7 +51,7 @@ export class OrDashboardWidget extends LitElement {
         // Update config if some values in the spec are not set.
         // Useful for when migrations have taken place.
         if(this.widget) {
-            const widgetType = widgetTypes.get(this.widget!.widgetTypeId!);
+            const widgetType = widgetTypes.get(this.widget.widgetTypeId);
             if(widgetType) {
                 this.widget.widgetConfig = widgetType.verifyConfigSpec(this.widget);
             }
@@ -108,7 +107,7 @@ export class OrDashboardWidget extends LitElement {
         const _widget = Object.assign({}, widget);
         if(_widget.gridItem) {
 
-            const widgetEntity = widgetTypes.get(widget.widgetTypeId!);
+            const widgetEntity = widgetTypes.get(widget.widgetTypeId);
             return widgetEntity!.getWidgetHTML(this.widget!, this.editMode!, this.realm!);
 
         }
