@@ -22,23 +22,20 @@ package org.openremote.model.security;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import org.hibernate.annotations.Formula;
-import org.hibernate.annotations.Subselect;
-import org.openremote.model.persistence.EpochMillisInstantType;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
+import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.Subselect;
+import org.openremote.model.persistence.EpochMillisInstantType;
+
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
@@ -49,6 +46,8 @@ import java.util.Map;
 public class User {
     public static final String SERVICE_ACCOUNT_PREFIX = "service-account-";
     public static final String SYSTEM_ACCOUNT_ATTRIBUTE = "systemAccount";
+    public static final String EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE = "emailNotificationsDisabled";
+    public static final String PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE = "pushNotificationsDisabled";
     protected static Field[] propertyFields;
 
     @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
@@ -147,37 +146,27 @@ public class User {
     }
 
     @JsonProperty
-    public Map<String, List<String>> getAttributes() {
-        if (this.attributes == null) {
-            return null;
-        }
-        MultivaluedMap<String, String> attrs = new MultivaluedHashMap<>();
-        this.attributes.forEach(attribute -> attrs.add(attribute.getName(), attribute.getValue()));
-        return attrs;
+    public List<UserAttribute> getAttributes() {
+        return attributes;
     }
 
-    public User setAttributes(Map<String, List<String>> attributes) {
-        if (attributes == null) {
-            this.attributes = null;
-            return this;
-        }
-        List<UserAttribute> attrs = new ArrayList<>();
-        attributes.forEach((k, v) -> v.forEach(val -> attrs.add(new UserAttribute(k, val))));
-        this.attributes = attrs;
+    public User setAttributes(UserAttribute...attributes) {
+        this.attributes = attributes == null ? null : Arrays.asList(attributes);
         return this;
     }
 
-    public User setAttribute(String key, String...values) {
+    public User setAttribute(String key, String value) {
         if (attributes == null) {
             attributes = new ArrayList<>();
         } else {
             attributes.removeIf(attr -> attr.getName().equals(key));
         }
-
-        if (values != null && values.length > 0) {
-            Arrays.stream(values).forEach((value) -> attributes.add(new UserAttribute(key, value)));
-        }
+        attributes.add(new UserAttribute(key, value));
         return this;
+    }
+
+    public boolean hasAttribute(String key) {
+        return attributes != null && attributes.stream().anyMatch(attr -> attr.getName().equals(key));
     }
 
     public User removeAttribute(String key) {
@@ -197,8 +186,7 @@ public class User {
     }
 
     public boolean isSystemAccount() {
-        Map<String, List<String>> attributes = getAttributes();
-        return attributes != null && attributes.containsKey(SYSTEM_ACCOUNT_ATTRIBUTE);
+        return hasAttribute(SYSTEM_ACCOUNT_ATTRIBUTE);
     }
 
     /**
@@ -209,7 +197,7 @@ public class User {
         if (systemAccount) {
             setAttribute(SYSTEM_ACCOUNT_ATTRIBUTE, "true");
         } else {
-            setAttribute(SYSTEM_ACCOUNT_ATTRIBUTE);
+            removeAttribute(SYSTEM_ACCOUNT_ATTRIBUTE);
         }
         return this;
     }

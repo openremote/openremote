@@ -161,7 +161,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
             .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))
             .toArray(Role[]::new);
     }
-    public void updateUserAttributes(String realm, String userId, Map<String, List<String>> attributes) {
+    public void updateUserAttributes(String realm, String userId, List<UserAttribute> attributes) {
         throw new UnsupportedOperationException("This provider does not support attributes");
     }
 

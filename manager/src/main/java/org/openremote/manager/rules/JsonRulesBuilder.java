@@ -22,9 +22,10 @@ package org.openremote.manager.rules;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.model.PersistenceEvent;
+import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -35,7 +36,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.EnumUtil;
@@ -47,7 +47,6 @@ import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
-import jakarta.ws.rs.core.MediaType;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -1126,7 +1125,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Find linked users
                 return compareAssetIds.stream().flatMap(assetId ->
-                    usersFacade.getResults(new UserQuery().asset(new UserAssetPredicate(assetId)))).collect(Collectors.toList());
+                    usersFacade.getResults(new UserQuery().assets(assetId))).collect(Collectors.toList());
             }
 
             if (target.assets != null) {

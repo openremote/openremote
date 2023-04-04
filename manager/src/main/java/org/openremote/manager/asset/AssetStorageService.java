@@ -1707,7 +1707,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 isFirst = false;
                 final int pos = binders.size() + 1;
                 sb.append(pred.caseSensitive ? "A.NAME " : "upper(A.NAME)");
-                sb.append(buildMatchFilter(pred, pos));
+                sb.append(StringPredicate.toSQLParameter(pred, pos, false));
                 binders.add((em, st) -> st.setParameter(pos, pred.prepareValue()));
             }
             sb.append(")");
@@ -1901,7 +1901,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             );
 
             final int pos = binders.size() + 1;
-            attributeBuilder.append(buildMatchFilter(nameValuePredicate.name, pos));
+            attributeBuilder.append(StringPredicate.toSQLParameter(nameValuePredicate.name, pos, false));
             binders.add((em, st) -> st.setParameter(pos, nameValuePredicate.name.prepareValue()));
 
         }
@@ -1948,7 +1948,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     attributeBuilder.append(")");
                 }
                 final int pos = binders.size() + 1;
-                attributeBuilder.append(buildMatchFilter(stringPredicate, pos));
+                attributeBuilder.append(StringPredicate.toSQLParameter(stringPredicate, pos, false));
                 binders.add((em, st) -> st.setParameter(pos, stringPredicate.prepareValue()));
             } else if (nameValuePredicate.value instanceof BooleanPredicate) {
                 BooleanPredicate booleanPredicate = (BooleanPredicate) nameValuePredicate.value;
@@ -2151,22 +2151,5 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         throw new IllegalArgumentException("Unsupported operator: " + operator);
-    }
-
-    public static String buildMatchFilter(StringPredicate predicate, int pos) {
-        switch (predicate.match) {
-            case BEGIN:
-            case END:
-            case CONTAINS:
-                if (predicate.negate) {
-                    return " not like ?" + pos + " ";
-                }
-                return " like ?" + pos + " ";
-            default:
-                if (predicate.negate) {
-                    return " <> ?" + pos + " ";
-                }
-                return " = ?" + pos + " ";
-        }
     }
 }

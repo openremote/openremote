@@ -146,7 +146,7 @@ rules.add()
 
             // Get users linked to this residence
             UserQuery query = new UserQuery()
-                    .asset(new UserAssetPredicate(alarmTrigger.residenceId))
+                    .assets(alarmTrigger.residenceId)
 
             Collection<String> userIds = users.getResults(query).collect(Collectors.toList())
 

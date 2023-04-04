@@ -33,7 +33,8 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.query.filter.UserAssetPredicate;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 
 import java.io.UnsupportedEncodingException;
@@ -43,7 +44,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.container.util.MapAccess.*;
-import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED;
+import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
 import static org.openremote.model.Constants.*;
 
 public class EmailNotificationHandler implements NotificationHandler {
@@ -192,17 +193,22 @@ public class EmailNotificationHandler implements NotificationHandler {
                             ).ifPresent(mappedTargets::add);
                         }
 
-                        userQuery = new UserQuery().asset(new UserAssetPredicate(targetId));
+                        userQuery = new UserQuery().assets(targetId);
                         break;
                 }
 
                 // Filter users that don't have disabled email notifications attribute
                 if (userQuery != null) {
+                    // Exclude service accounts, system accounts and accounts with disabled email notifications
+                    userQuery.serviceUsers(false).attributes(
+                        new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                        new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
+                    );
                     List<Notification.Target> userTargets = Arrays.stream(managerIdentityService
                             .getIdentityProvider()
                             .queryUsers(userQuery))
-                        .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
-                        .filter(user -> !TextUtil.isNullOrEmpty(user.getEmail()))
+                        // Exclude system accounts and accounts without emails
+                        .filter(user -> !user.isSystemAccount() && !TextUtil.isNullOrEmpty(user.getEmail()))
                         .map(user -> {
                             Notification.Target emailTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
                             emailTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));

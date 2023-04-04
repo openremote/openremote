@@ -24,6 +24,8 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.query.filter.StringPredicate
+import org.openremote.model.security.User
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.model.security.ClientRole
 import org.openremote.model.security.Role
@@ -40,6 +42,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE
 
 class UserResourceTest extends Specification implements ManagerContainerTrait {
 
@@ -124,8 +127,8 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users[0].username == keycloakTestSetup.serviceUser.username
         users[1].username == "building"
 
-        when: "a request is made for only service users"
-        users = adminUserResource.query(null, new UserQuery().select(new UserQuery.Select().excludeRegularUsers(true)).realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
+        when: "a request is made for only service users (users with a secret)"
+        users = adminUserResource.query(null, new UserQuery().serviceUsers(true).realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)))
 
         then: "only service users of the requested realm should be returned"
         users.size() == 2
@@ -133,6 +136,46 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id} != null
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser.id}.secret != null
         users.find {it.isServiceAccount() && it.id == keycloakTestSetup.serviceUser2.id}.secret != null
+
+        when: "a request is made for only restricted users"
+        users = regularUserResource.query(null,
+                new UserQuery()
+                        .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+                        .realmRoles(new StringPredicate(Constants.RESTRICTED_USER_REALM_ROLE))
+                        .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+
+        then: "only restricted users of this realm should be returned"
+        users.size() == 3
+        users[0].username == "building"
+        users[1].username == keycloakTestSetup.serviceUser2.username
+        users[2].username == "testuser3"
+
+        when: "a request is made for non restricted users"
+        users = regularUserResource.query(null,
+                new UserQuery()
+                        .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+                        .realmRoles(new StringPredicate(Constants.RESTRICTED_USER_REALM_ROLE).negate(true))
+                        .orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+
+        then: "only non restricted users of this realm should be returned"
+        users.size() == 2
+        users[0].username == keycloakTestSetup.serviceUser.username
+        users[1].username == "testuser2"
+
+        when: "a request is made based on user attributes"
+        users = regularUserResource.query(null,
+                new UserQuery()
+                        .realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+                        .serviceUsers(false).attributes(
+                            new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                            new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
+                ).orderBy(new UserQuery.OrderBy(UserQuery.OrderBy.Property.USERNAME, false)))
+
+        then: "only matching users of this realm should be returned"
+        users.size() == 3
+        users[0].username == "building"
+        users[1].username == keycloakTestSetup.serviceUser2.username
+        users[2].username == "testuser3"
     }
 
     def "Get and update roles"() {

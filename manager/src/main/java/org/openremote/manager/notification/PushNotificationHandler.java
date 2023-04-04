@@ -47,6 +47,7 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -62,8 +63,9 @@ import java.util.stream.StreamSupport;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
+import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
+import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
 
 @SuppressWarnings("deprecation")
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
@@ -250,14 +252,14 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 if (!consoleAssetIds.isEmpty()) {
                     // Special handling if target type is user (don't need to find all linked users)
                     if (targetType == Notification.TargetType.USER) {
-                        User[] matchedUsers = managerIdentityService.getIdentityProvider().queryUsers(new UserQuery().ids(targetId));
-                        if (matchedUsers.length != 1) {
+                        if (Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
+                            // Exclude service accounts, system accounts and accounts with disabled email notifications
+                            new UserQuery().ids(targetId).serviceUsers(false).attributes(
+                                new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
+                            )))
+                            .allMatch(User::isSystemAccount)) {
                             consoleAssetIds = Collections.emptyList();
-                        } else {
-                            boolean disabled = Boolean.parseBoolean(matchedUsers[0].getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0));
-                            if (disabled) {
-                                consoleAssetIds = Collections.emptyList();
-                            }
                         }
                     } else {
                         // Any consoles linked to users; the user should not have push notification disabled attribute
@@ -273,9 +275,14 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                 }
 
                                 long count = Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
-                                        new UserQuery().ids(consoleUserIdsMap.get(consoleId).toArray(new String[0]))))
-                                    .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
-                                    .count();
+                                        // Exclude service accounts, system accounts and accounts with disabled email notifications
+                                        new UserQuery()
+                                            .ids(consoleUserIdsMap.get(consoleId).toArray(new String[0]))
+                                            .serviceUsers(false).attributes(
+                                                new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
+                                            )
+                                    )).count();
                                 return count > 0;
                             }).collect(Collectors.toList());
                     }
