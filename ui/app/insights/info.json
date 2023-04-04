@@ -1,6 +1,0 @@
-{
-  "consoleAppIncompatible": false,
-  "realms": ["master", "smartcity"],
-  "providers": ["geofence"],
-  "description": "The insights standalone app for viewing OpenRemote dashboards."
-}
