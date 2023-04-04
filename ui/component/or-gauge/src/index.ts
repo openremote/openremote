@@ -158,10 +158,10 @@ export class OrGauge extends LitElement {
         // Register observer when gauge size changes
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-                const size = entries[0].devicePixelContentBoxSize[0];
+                const size = entries[0].contentRect;
                 this.gaugeSize = {
-                    width: size.inlineSize,
-                    height: size.blockSize
+                    width: size.width,
+                    height: size.height
                 }
                 this.updateComplete.then(() => {
                     this.setupGauge(); // recreate gauge since the library is not 100% responsive.
