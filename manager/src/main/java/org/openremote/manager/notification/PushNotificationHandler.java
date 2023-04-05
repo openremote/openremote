@@ -253,37 +253,31 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     // Special handling if target type is user (don't need to find all linked users)
                     if (targetType == Notification.TargetType.USER) {
                         if (Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
-                            // Exclude service accounts, system accounts and accounts with disabled email notifications
+                            // Exclude service accounts, system accounts and accounts with disabled push notifications
                             new UserQuery().ids(targetId).serviceUsers(false).attributes(
-                                new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
                                 new UserQuery.AttributeValuePredicate(true, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
                             )))
                             .allMatch(User::isSystemAccount)) {
                             consoleAssetIds = Collections.emptyList();
                         }
                     } else {
-                        // Any consoles linked to users; the user should not have push notification disabled attribute
-                        Map<String, List<String>> consoleUserIdsMap = assetStorageService.findUserAssetLinks(null, null, consoleAssetIds)
-                            .stream()
-                            .map(UserAssetLink::getId)
-                            .collect(Collectors.groupingBy(UserAssetLink.Id::getAssetId, Collectors.mapping(UserAssetLink.Id::getUserId, Collectors.toList())));
 
                         consoleAssetIds = consoleAssetIds.stream()
                             .filter(consoleId -> {
-                                if (!consoleUserIdsMap.containsKey(consoleId)) {
-                                    return true;
-                                }
 
+                                //  Check there are no regular users with disabled push notifications linked to this console
+                                // TODO: This should be handled by the console provider on the console itself
                                 long count = Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
                                         // Exclude service accounts, system accounts and accounts with disabled email notifications
                                         new UserQuery()
-                                            .ids(consoleUserIdsMap.get(consoleId).toArray(new String[0]))
+                                            .assets(consoleId)
                                             .serviceUsers(false).attributes(
-                                                new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
-                                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
+                                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                                                new UserQuery.AttributeValuePredicate(false, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
                                             )
                                     )).count();
-                                return count > 0;
+                                return count == 0;
                             }).collect(Collectors.toList());
                     }
                 }

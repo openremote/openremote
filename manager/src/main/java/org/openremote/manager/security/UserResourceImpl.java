@@ -77,10 +77,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
             // Hide system accounts from non super users
             if (query.attributes == null) {
-                query.attributes(new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
+                query.attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
             } else {
                 List<UserQuery.AttributeValuePredicate> attributeValuePredicates = new ArrayList<>(Arrays.asList(query.attributes));
-                attributeValuePredicates.add(new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
+                attributeValuePredicates.add(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
                 query.attributes(attributeValuePredicates.toArray(UserQuery.AttributeValuePredicate[]::new));
             }
         }

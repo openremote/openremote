@@ -529,7 +529,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     if (target.getType() == Notification.TargetType.USER) {
                         realmMatch = Arrays.stream(identityService.getIdentityProvider().queryUsers(
                             // Exclude service accounts and system accounts
-                            new UserQuery().ids(target.getId()).serviceUsers(false).attributes(new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)))
+                            new UserQuery().ids(target.getId()).serviceUsers(false).attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)))
                             )).allMatch(user -> realm.equals(user.getRealm()));
                     } else {
                         // Can only send to the same realm as the requester realm

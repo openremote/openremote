@@ -201,7 +201,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                 if (userQuery != null) {
                     // Exclude service accounts, system accounts and accounts with disabled email notifications
                     userQuery.serviceUsers(false).attributes(
-                        new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                        new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
                         new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
                     );
                     List<Notification.Target> userTargets = Arrays.stream(managerIdentityService

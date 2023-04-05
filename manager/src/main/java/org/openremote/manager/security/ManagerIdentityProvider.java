@@ -147,61 +147,6 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         if (userQuery.assets != null || userQuery.pathPredicate != null) {
             sb.append(" join user_asset_link ua on ua.user_id = u.id");
         }
-        if (userQuery.realmRoles != null && userQuery.realmRoles.length > 0) {
-            sb.append(" join (select urm.user_id from public.user_role_mapping urm join public.keycloak_role kr on urm.role_id = kr.id where not kr.client_role");
-            sb.append(" and (FALSE");
-
-            Arrays.stream(userQuery.realmRoles).forEach(realmPredicate -> {
-                String tableSuffix = realmPredicate.negate ? "2" : "";
-                sb.append(" OR ");
-                if (realmPredicate.negate) {
-                    // Negation implies does not contain this match so use a sub query in the where clause with not
-                    // exists otherwise it will just match any other row
-                    sb.append("NOT EXISTS (SELECT urm2.user_id from public.user_role_mapping urm2 join public.keycloak_role kr2 on urm2.role_id = kr2.id where urm2.user_id = urm.user_id and not kr2.client_role and ");
-                }
-
-                sb.append(realmPredicate.caseSensitive ? "kr" + tableSuffix + ".name" : "upper(kr" + tableSuffix + ".name)");
-                sb.append(StringPredicate.toSQLParameter(realmPredicate, parameters.size() + 1, realmPredicate.negate));
-                parameters.add(realmPredicate.prepareValue());
-
-                if (realmPredicate.negate) {
-                    sb.append(")");
-                }
-            });
-
-            sb.append(") group by urm.user_id) urm ON urm.user_id = u.id");
-        }
-        if (userQuery.attributes != null && userQuery.attributes.length > 0) {
-            sb.append(" join (select att.user_id from public.user_attribute att where (TRUE");
-
-            Arrays.stream(userQuery.attributes).forEach(attributePredicate -> {
-                String tableSuffix = attributePredicate.negated ? "2" : "";
-                sb.append(" AND (");
-                if (attributePredicate.negated) {
-                    // Negation implies does not contain this match so use a sub query in the where clause with not
-                    // exists otherwise it will just match any other row
-                    sb.append("NOT EXISTS (SELECT att2.user_id from public.user_attribute att2 where att2.id = att.id and ");
-                }
-
-                sb.append(attributePredicate.name.caseSensitive ? "att" + tableSuffix + ".name " : "upper(att" + tableSuffix + ".name)");
-                sb.append(StringPredicate.toSQLParameter(attributePredicate.name, parameters.size() + 1, attributePredicate.negated));
-                parameters.add(attributePredicate.name.prepareValue());
-
-                if (attributePredicate.value != null) {
-                    sb.append(attributePredicate.name.caseSensitive ? "att" + tableSuffix + ".name " : "upper(att" + tableSuffix + ".name)");
-                    sb.append(StringPredicate.toSQLParameter(attributePredicate.name, parameters.size() + 1, attributePredicate.negated));
-                    parameters.add(attributePredicate.name.prepareValue());
-                }
-
-                sb.append(")");
-
-                if (attributePredicate.negated) {
-                    sb.append(")");
-                }
-            });
-
-            sb.append(") group by att.user_id) att ON att.user_id = u.id");
-        }
 
         // BUILD WHERE
         sb.append(" WHERE TRUE");
@@ -232,6 +177,55 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                 sb.append(toSQLParameter(pred, pos, false));
                 parameters.add(pred.prepareValue());
             }
+            sb.append(")");
+        }
+        if (userQuery.realmRoles != null && userQuery.realmRoles.length > 0) {
+            sb.append(" and (FALSE");
+
+            Arrays.stream(userQuery.realmRoles).forEach(realmPredicate -> {
+                sb.append(" OR ");
+                if (realmPredicate.negate) {
+                    // Negation implies does not contain this match so use a sub query in the where clause with not
+                    // exists otherwise it will just match any other row
+                    sb.append("NOT ");
+                }
+                sb.append("EXISTS (SELECT urm.user_id from public.user_role_mapping urm join public.keycloak_role kr on urm.role_id = kr.id where urm.user_id = u.id and not kr.client_role and");
+
+                sb.append(realmPredicate.caseSensitive ? " kr.name" : " upper(kr.name)");
+                sb.append(StringPredicate.toSQLParameter(realmPredicate, parameters.size() + 1, realmPredicate.negate));
+                parameters.add(realmPredicate.prepareValue());
+
+                sb.append(")");
+            });
+
+            sb.append(")");
+        }
+        if (userQuery.attributes != null && userQuery.attributes.length > 0) {
+            sb.append(" AND (TRUE");
+
+            Arrays.stream(userQuery.attributes).forEach(attributePredicate -> {
+                sb.append(" AND ");
+                if (attributePredicate.negated) {
+                    // Negation implies does not contain this match so use a sub query in the where clause with not
+                    // exists otherwise it will just match any other row
+                    sb.append("NOT ");
+                }
+                sb.append("EXISTS (SELECT att.user_id from public.user_attribute att where att.user_id = u.id and");
+
+                sb.append(attributePredicate.name.caseSensitive ? " att.name" : " upper(att.name)");
+                sb.append(StringPredicate.toSQLParameter(attributePredicate.name, parameters.size() + 1, attributePredicate.negated));
+                parameters.add(attributePredicate.name.prepareValue());
+
+                if (attributePredicate.value != null) {
+                    sb.append(" and ");
+                    sb.append(attributePredicate.name.caseSensitive ? "att.value" : "upper(att.value)");
+                    sb.append(StringPredicate.toSQLParameter(attributePredicate.value, parameters.size() + 1, attributePredicate.negated));
+                    parameters.add(attributePredicate.value.prepareValue());
+                }
+
+                sb.append(")");
+            });
+
             sb.append(")");
         }
 

@@ -11,7 +11,6 @@ import org.openremote.model.notification.PushNotificationButton
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.query.UserQuery
-import org.openremote.model.query.filter.UserAssetPredicate
 import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users
 
