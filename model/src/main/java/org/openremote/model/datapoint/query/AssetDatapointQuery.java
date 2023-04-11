@@ -44,7 +44,7 @@ public abstract class AssetDatapointQuery implements Serializable {
     public LocalDateTime fromTime;
     public LocalDateTime toTime;
 
-    public String getSQLQuery(String tableName, Class<?> attributeType) {
+    public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {
         return null;
     }
 

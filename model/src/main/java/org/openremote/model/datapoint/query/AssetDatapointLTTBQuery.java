@@ -24,12 +24,15 @@ public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
     }
 
     @Override
-    public String getSQLQuery(String tableName, Class<?> attributeType) {
+    public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
+        boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         if (isNumber) {
             return "select * from public.unnest((select public.lttb(timestamp::timestamptz, value::double precision, ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
-        } else {
+        } else if (isBoolean) {
             return "select * from public.unnest((select public.lttb(timestamp::timestamptz, (case when VALUE::text::boolean is true then 1 else 0 end), ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
+        } else {
+            throw new IllegalStateException("Query of type LTTB requires either a number or a boolean attribute.");
         }
     }
 
