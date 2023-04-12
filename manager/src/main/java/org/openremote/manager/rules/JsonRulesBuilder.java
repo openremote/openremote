@@ -1123,9 +1123,17 @@ public class JsonRulesBuilder extends RulesBuilder {
                         .collect(Collectors.toList());
                 }
 
-                // Find linked users
-                return compareAssetIds.stream().flatMap(assetId ->
-                    usersFacade.getResults(new UserQuery().assets(assetId))).collect(Collectors.toList());
+                // Find linked users - apply any user query if it is present or create a new one
+                UserQuery userQuery = target.users != null ? target.users : new UserQuery();
+                if (userQuery.assets == null) {
+                    userQuery.assets = compareAssetIds.toArray(String[]::new);
+                } else {
+                    List<String> assetIds = new ArrayList<>(Arrays.asList(userQuery.assets));
+                    assetIds.addAll(compareAssetIds);
+                    userQuery.assets = assetIds.toArray(String[]::new);
+                }
+
+                return usersFacade.getResults(userQuery).collect(Collectors.toList());
             }
 
             if (target.assets != null) {
