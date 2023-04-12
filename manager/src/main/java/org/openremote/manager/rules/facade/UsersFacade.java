@@ -78,7 +78,7 @@ public class UsersFacade<T extends Ruleset> extends Users {
         }
 
         // Prevent system users being retrieved
-        userQuery.attributes(new UserQuery.AttributeValuePredicate(false, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
+        userQuery.attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
 
         // Prevent service users being retrieved
         userQuery.serviceUsers(false);
