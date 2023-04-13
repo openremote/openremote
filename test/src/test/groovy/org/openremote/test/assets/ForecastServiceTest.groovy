@@ -223,8 +223,9 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
 
         then: "forecast service should contain updated forecast configuration"
         conditions.eventually {
-            assert forecastService.forecastTaskManager.containsAttribute(newAttributeRef)
-            assert updatedPastCount == forecastService.forecastTaskManager.configMap.get(newAttributeRef).pastCount
+            ForecastService.ForecastAttribute forecastAttribute = forecastService.forecastTaskManager.getAttribute(newAttributeRef)
+            assert forecastAttribute != null
+            assert updatedPastCount == forecastAttribute.config.pastCount
         }
 
         when: "forecast configuration is deleted"

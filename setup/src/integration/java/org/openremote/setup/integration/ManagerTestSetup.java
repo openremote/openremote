@@ -747,16 +747,13 @@ public class ManagerTestSetup extends ManagerSetup {
         long nowInMillis = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         List<Pair<?, LocalDateTime>> history = new ArrayList<>();
         for (int forecastPeriodIndex = 0; forecastPeriodIndex < values.size(); forecastPeriodIndex++) {
+            long timespan = config.getPastPeriod().toMillis() * pastPeriodIndex -
+                            config.getForecastPeriod().toMillis() * (forecastPeriodIndex + 1) +
+                            Duration.ofMinutes(2).toMillis() - offset;
             history.add(
                 new Pair<>(
                     Double.valueOf(values.get(forecastPeriodIndex)),
-                    now.minus(
-                        config.getPastPeriod().toMillis() * pastPeriodIndex -
-                            config.getForecastPeriod().toMillis() * (forecastPeriodIndex + 1) +
-                            Duration.ofMinutes(2).toMillis() -
-                            offset,
-                        ChronoUnit.MILLIS
-                    )
+                    LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis() - timespan), ZoneId.systemDefault())
                 )
             );
         }

@@ -44,7 +44,7 @@ import org.openremote.model.value.ForecastConfiguration;
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
 import org.openremote.model.value.MetaItemType;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
@@ -55,10 +55,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -73,6 +75,7 @@ import static org.openremote.container.persistence.PersistenceService.PERSISTENC
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 import static org.openremote.model.value.MetaItemType.FORECAST;
 
 /**
@@ -112,7 +115,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
         List<Asset<?>> assets = getForecastAssets();
 
-        Map<AttributeRef, ForecastConfiguration> configMap = assets
+        Set<ForecastAttribute> forecastAttributes = assets
             .stream()
             .flatMap(asset -> asset.getAttributes()
                 .stream()
@@ -124,22 +127,12 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     }
                     return false;
                 })
-               .map(attr -> new Pair<Asset<?>, Attribute<?>>(asset, attr))
-               .toList()
-               .stream())
-            .collect(
-                Collectors.toMap(
-                    assetAndAttr -> new AttributeRef(
-                        assetAndAttr.getKey().getId(),
-                        assetAndAttr.getValue().getName()
-                    ),
-                    assetAndAttr -> assetAndAttr.getValue().getMetaValue(FORECAST).get()
-                )
-            );
+               .map(attr -> new ForecastAttribute(asset, attr)))
+            .collect(Collectors.toSet());
 
-        LOG.fine("Found forecast asset attributes count  = " + configMap.size());
+        LOG.fine("Found forecast asset attributes count  = " + forecastAttributes.size());
 
-        forecastTaskManager.init(configMap);
+        forecastTaskManager.init(forecastAttributes);
     }
 
     @Override
@@ -178,10 +171,11 @@ public class ForecastService extends RouteBuilder implements ContainerService {
     protected void processAssetChange(PersistenceEvent<Asset<?>> persistenceEvent) {
 
         Asset<?> asset = persistenceEvent.getEntity();
+        Set<ForecastAttribute> forecastAttributes = null;
 
         switch (persistenceEvent.getCause()) {
             case CREATE:
-                Map<AttributeRef, ForecastConfiguration> configMap = asset.getAttributes()
+                forecastAttributes = asset.getAttributes()
                     .stream()
                     .filter(attr -> {
                         if (attr.hasMeta(FORECAST)) {
@@ -191,20 +185,10 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                         }
                         return false;
                     })
-                    .map(attr -> new Pair<Asset<?>, Attribute<?>>(asset, attr))
-                    .collect(
-                        Collectors.toMap(
-                            assetAndAttr -> new AttributeRef(
-                                assetAndAttr.getKey().getId(),
-                                assetAndAttr.getValue().getName()
-                            ),
-                            assetAndAttr -> assetAndAttr.getValue().getMetaValue(FORECAST).get()
-                        )
-                    );
+                    .map(attr -> new ForecastAttribute(asset, attr))
+                    .collect(Collectors.toSet());
 
-                if (configMap.size() > 0) {
-                    forecastTaskManager.add(configMap);
-                }
+                forecastTaskManager.add(forecastAttributes);
 
                 break;
             case UPDATE:
@@ -223,28 +207,27 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
                 List<Attribute<?>> newOrModifiedAttributes = getAddedOrModifiedAttributes(oldAttributes, newAttributes).collect(toList());
 
-                List<AttributeRef> attributesToDelete = newOrModifiedAttributes
+                Set<ForecastAttribute> attributesToDelete = newOrModifiedAttributes
                     .stream()
-                    .filter(attr -> forecastTaskManager.containsAttribute(new AttributeRef(asset.getId(), attr.getName())))
-                    .map(attr -> new AttributeRef(asset.getId(), attr.getName()))
-                    .collect(Collectors.toList());
+                    .map(attr -> new ForecastAttribute(asset, attr))
+                    .filter(attr -> forecastTaskManager.containsAttribute(attr))
+                    .collect(Collectors.toSet());
 
                 attributesToDelete.addAll(oldAttributes
                     .stream()
-                    .filter(oldAttribute -> {
-                            return newAttributes
-                                .stream()
-                                .filter(newAttribute -> newAttribute.getName().equals(oldAttribute.getName()))
-                                .count() == 0;
-                        })
-                    .map(attribute -> new AttributeRef(asset.getId(), attribute.getName()))
-                    .filter(attributeRef -> !attributesToDelete.contains(attributeRef))
+                    .filter(oldAttr -> {
+                        return newAttributes
+                            .stream()
+                            .filter(newAttr -> newAttr.getName().equals(oldAttr.getName()))
+                            .count() == 0;
+                    })
+                    .map(attr -> new ForecastAttribute(asset, attr))
                     .collect(Collectors.toList())
                 );
 
                 forecastTaskManager.delete(attributesToDelete);
 
-                configMap = newOrModifiedAttributes
+                forecastAttributes = newOrModifiedAttributes
                     .stream()
                     .filter(attr -> {
                         if (attr.hasMeta(FORECAST)) {
@@ -254,30 +237,20 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                         }
                         return false;
                     })
-                    .map(attr -> new Pair<Asset<?>, Attribute<?>>(asset, attr))
-                    .collect(
-                        Collectors.toMap(
-                            assetAndAttr -> new AttributeRef(
-                                assetAndAttr.getKey().getId(),
-                                assetAndAttr.getValue().getName()
-                            ),
-                            assetAndAttr -> assetAndAttr.getValue().getMetaValue(FORECAST).get()
-                        )
-                    );
+                    .map(attr -> new ForecastAttribute(asset, attr))
+                    .collect(Collectors.toSet());
 
-                if (configMap.size() > 0) {
-                    forecastTaskManager.add(configMap);
-                }
+                forecastTaskManager.add(forecastAttributes);
 
                 break;
             case DELETE:
-                List<AttributeRef> attributeRefs = asset.getAttributes()
+                forecastAttributes = asset.getAttributes()
                     .stream()
                     .filter(attr -> attr.hasMeta(FORECAST))
-                    .map(attr -> new AttributeRef(asset.getId(), attr.getName()))
-                    .collect(Collectors.toList());
+                    .map(attr -> new ForecastAttribute(asset, attr))
+                    .collect(Collectors.toSet());
 
-                forecastTaskManager.delete(attributeRefs);
+                forecastTaskManager.delete(forecastAttributes);
 
                 break;
         }
@@ -289,26 +262,31 @@ public class ForecastService extends RouteBuilder implements ContainerService {
         private static long DEFAULT_SCHEDULE_DELAY = Duration.ofMinutes(15).toMillis();
 
         protected ScheduledFuture<?> scheduledFuture;
-        protected Map<AttributeRef, Long> nextForecastCalculationMap = new HashMap<>();
-        protected Map<AttributeRef, List<Long>> forecastTimestampMap = new HashMap<>();
-        protected Map<AttributeRef, ForecastConfiguration> configMap = new HashMap<>();
+        protected Map<ForecastAttribute, Long> nextForecastCalculationMap = new HashMap<>();
+        protected Set<ForecastAttribute> forecastAttributes = new HashSet<>();
 
-        public synchronized void init(Map<AttributeRef, ForecastConfiguration> configMap) {
+        public synchronized void init(Set<ForecastAttribute> attributes) {
+            if (attributes == null || attributes.size() == 0) {
+                return;
+            }
             long now = timerService.getCurrentTimeMillis();
-            configMap.forEach((attributeRef, config) -> {
-                if (config.isValid()) {
-                    this.configMap.put(attributeRef, config);
-                    loadForecastTimestampsFromDb(attributeRef, now);
+            attributes.forEach(attr -> {
+                if (attr.isValidConfig()) {
+                    attr.setForecastTimestamps(loadForecastTimestampsFromDb(attr.getAttributeRef(), now));
+                    forecastAttributes.add(attr);
                 }
             });
             start(now, true);
         }
 
-        public synchronized void add(Map<AttributeRef, ForecastConfiguration> configMap) {
-            configMap.forEach((attributeRef, config) -> {
-                if (config.isValid()) {
-                    LOG.fine("Adding asset attribute to forecast calculation service: " + attributeRef);
-                    this.configMap.put(attributeRef, config);
+        public synchronized void add(Set<ForecastAttribute> attributes) {
+            if (attributes == null || attributes.size() == 0) {
+                return;
+            }
+            attributes.forEach(attr -> {
+                if (attr.isValidConfig()) {
+                    LOG.fine("Adding asset attribute to forecast calculation service: " + attr.getAttributeRef());
+                    forecastAttributes.add(attr);
                 }
             });
             long now = timerService.getCurrentTimeMillis();
@@ -323,22 +301,37 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             }
         }
 
-        public synchronized void delete(List<AttributeRef> attributeRefs) {
-            attributeRefs.forEach(attributeRef -> delete(attributeRef));
+        public synchronized void delete(Set<ForecastAttribute> attributes) {
+            attributes.forEach(attr -> delete(attr));
         }
 
-        public synchronized void delete(AttributeRef attributeRef) {
-            LOG.fine("Removing asset attribute from forecast calculation service: " + attributeRef);
+        public synchronized void delete(ForecastAttribute attribute) {
+            LOG.fine("Removing asset attribute from forecast calculation service: " + attribute.getAttributeRef());
 
-            nextForecastCalculationMap.remove(attributeRef);
-            forecastTimestampMap.remove(attributeRef);
-            configMap.remove(attributeRef);
+            nextForecastCalculationMap.remove(attribute);
+            forecastAttributes.remove(attribute);
 
-            assetPredictedDatapointService.purgeValues(attributeRef.getId(), attributeRef.getName());
+            assetPredictedDatapointService.purgeValues(attribute.getAttributeRef().getId(), attribute.getAttributeRef().getName());
+        }
+
+        public synchronized boolean containsAttribute(ForecastAttribute attribute) {
+            return forecastAttributes.contains(attribute);
         }
 
         public synchronized boolean containsAttribute(AttributeRef attributeRef) {
-            return configMap.containsKey(attributeRef);
+            return forecastAttributes
+                .stream()
+                .filter(attr -> attr.getAttributeRef().equals(attributeRef))
+                .findFirst()
+                .isPresent();
+        }
+
+        public synchronized ForecastAttribute getAttribute(AttributeRef attributeRef) {
+            return forecastAttributes
+                .stream()
+                .filter(attr -> attr.getAttributeRef().equals(attributeRef))
+                .findFirst()
+                .orElse(null);
         }
 
         private boolean stop(long timeout) {
@@ -382,7 +375,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
         private void calculateForecasts() {
             final long now = timerService.getCurrentTimeMillis();
-            Map<AttributeRef, Pair<ForecastConfiguration, List<Long>>> configAndTimestampMap = new HashMap<>();
+            List<ForecastAttribute> attributesToCalculate = new ArrayList<>();
 
             try {
                 synchronized (ForecastTaskManager.this) {
@@ -393,49 +386,37 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     addForecastTimestamps(now, false);
                     purgeForecastTimestamps(now);
 
-                    nextForecastCalculationMap.forEach((attributeRef, nextForecastCalculationTimestamp) -> {
-                        if (nextForecastCalculationTimestamp <= now && forecastTimestampMap.containsKey(attributeRef) && configMap.containsKey(attributeRef)) {
-                            configAndTimestampMap.put(
-                                attributeRef,
-                                new Pair<>(configMap.get(attributeRef), forecastTimestampMap.get(attributeRef))
-                            );
+                    nextForecastCalculationMap.forEach((attribute, nextForecastCalculationTimestamp) -> {
+                        if (nextForecastCalculationTimestamp <= now) {
+                            attributesToCalculate.add(attribute);
                         }
                     });
                 }
 
-                configAndTimestampMap.forEach((attributeRef, configAndTimestamps) -> {
-                    Optional<Attribute<?>> attribute = Optional.empty();
-                    Asset<?> asset = withLockReturning(getClass().getSimpleName() + "::calculateForecasts", () ->
-                        assetStorageService.find(attributeRef.getId())
-                    );
-                    if (asset != null) {
-                        attribute = asset.getAttribute(attributeRef.getName());
-                    }
-                    if (attribute.isEmpty()) {
+                attributesToCalculate.forEach(attr -> {
+                    if (Thread.currentThread().isInterrupted()) {
                         return;
                     }
-
-                    List<Long> forecastTimestamps = configAndTimestamps.getValue();
-                    if (forecastTimestamps.size() == 0) {
+                    List<Long> forecastTimestamps = attr.getForecastTimestamps();
+                    if (forecastTimestamps == null || forecastTimestamps.size() == 0) {
                         return;
                     }
-                    if (!(configAndTimestamps.getKey() instanceof ForecastConfigurationWeightedExponentialAverage)) {
+                    if (!(attr.getConfig() instanceof ForecastConfigurationWeightedExponentialAverage)) {
                         return;
                     }
-                    ForecastConfigurationWeightedExponentialAverage config = (ForecastConfigurationWeightedExponentialAverage) configAndTimestamps.getKey();
+                    ForecastConfigurationWeightedExponentialAverage weaConfig = (ForecastConfigurationWeightedExponentialAverage)attr.getConfig();
 
-                    LOG.fine("Calculating forecast values for attribute: " + attributeRef);
+                    LOG.fine("Calculating forecast values for attribute: " + attr.getAttributeRef());
 
-                    Long offset = forecastTimestamps.get(0) - (now + config.getForecastPeriod().toMillis());
-                    List<List<Long>> allSampleTimestamps = calculateSampleTimestamps(config, offset);
-                    List<DatapointBucket> historyDatapointBuckets = getHistoryDataFromDb(attributeRef, config, offset);
-                    Attribute<?> finalAttribute = attribute.get();
+                    Long offset = forecastTimestamps.get(0) - (now + weaConfig.getForecastPeriod().toMillis());
+                    List<List<Long>> allSampleTimestamps = calculateSampleTimestamps(weaConfig, offset);
+                    List<DatapointBucket> historyDatapointBuckets = getHistoryDataFromDb(attr.getAttributeRef(), weaConfig, offset);
 
                     List<Optional<Number>> forecastValues = allSampleTimestamps.stream().map(sampleTimestamps -> {
                         List<AssetDatapoint> sampleDatapoints = findSampleDatapoints(historyDatapointBuckets, sampleTimestamps);
 
-                        if (sampleDatapoints.size() == config.getPastCount()) {
-                            return calculateWeightedExponentialAverage(finalAttribute, sampleDatapoints);
+                        if (sampleDatapoints.size() == weaConfig.getPastCount()) {
+                            return calculateWeightedExponentialAverage(attr.getAttribute(), sampleDatapoints);
                         } else {
                             return Optional.<Number>empty();
                         }
@@ -451,15 +432,11 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                             )
                             .collect(Collectors.toList());
 
-                        if (Thread.currentThread().isInterrupted()) {
-                            return;
-                        }
-
-                        assetPredictedDatapointService.purgeValues(attributeRef.getId(), attributeRef.getName());
+                        assetPredictedDatapointService.purgeValues(attr.getId(), attr.getName());
 
                         if (datapoints.size() > 0) {
-                            LOG.fine("Updating forecast values for attribute: " + attributeRef);
-                            assetPredictedDatapointService.updateValues(attributeRef.getId(), attributeRef.getName(), datapoints);
+                            LOG.fine("Updating forecast values for attribute: " + attr.getAttributeRef());
+                            assetPredictedDatapointService.updateValues(attr.getId(), attr.getName(), datapoints);
                         }
                     }
                 });
@@ -471,7 +448,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     updateNextForecastCalculationMap();
                     scheduleForecastCalculation(timerService.getCurrentTimeMillis(), Optional.empty());
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception while calculating and updating forecast values", e);
 
                 scheduleForecastCalculation(
@@ -493,7 +470,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 scheduledFuture = executorService.schedule(() -> calculateForecasts(), delay.get(), TimeUnit.MILLISECONDS);
             } else {
                 scheduledFuture = null;
-                if (configMap.size() > 0) {
+                if (forecastAttributes.size() > 0) {
                     LOG.fine("Scheduling next forecast calculation in '" + DEFAULT_SCHEDULE_DELAY + " [ms]'.");
                     scheduleForecastCalculation(now, Optional.of(DEFAULT_SCHEDULE_DELAY));
                 }
@@ -632,9 +609,10 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
         private void updateNextForecastCalculationMap() {
             nextForecastCalculationMap.clear();
-            forecastTimestampMap.forEach((attributeRef, timestamps)-> {
-                if (timestamps.size() > 0) {
-                    nextForecastCalculationMap.put(attributeRef, timestamps.get(0));
+            forecastAttributes.forEach(attr -> {
+                List<Long> timestamps = attr.getForecastTimestamps();
+                if (timestamps != null && timestamps.size() > 0) {
+                    nextForecastCalculationMap.put(attr, timestamps.get(0));
                 }
             });
         }
@@ -650,18 +628,22 @@ public class ForecastService extends RouteBuilder implements ContainerService {
         }
 
         private void addForecastTimestamps(long now, boolean isServerRestart) {
-            configMap.forEach((attributeRef, config) -> {
-                if (!(config instanceof ForecastConfigurationWeightedExponentialAverage)) {
+            forecastAttributes.forEach(attr -> {
+                ForecastConfiguration config = attr.getConfig();
+                ForecastConfigurationWeightedExponentialAverage weaConfig = null;
+                if (config instanceof ForecastConfigurationWeightedExponentialAverage) {
+                    weaConfig = (ForecastConfigurationWeightedExponentialAverage)config;
+                } else {
                     return;
                 }
-                List<Long> newTimestamps = calculateForecastTimestamps(now, (ForecastConfigurationWeightedExponentialAverage)config);
-                List<Long> oldTimestamps = forecastTimestampMap.get(attributeRef);
+                List<Long> newTimestamps = calculateForecastTimestamps(now, weaConfig);
+                List<Long> oldTimestamps = attr.getForecastTimestamps();
                 if (oldTimestamps == null || oldTimestamps.size() == 0) {
                     if (newTimestamps.size() > 0) {
                         // force immediate forecast calculation
                         newTimestamps.add(0, now);
                     }
-                    forecastTimestampMap.put(attributeRef, newTimestamps);
+                    attr.setForecastTimestamps(newTimestamps);
                 } else if (newTimestamps.size() > 0 && oldTimestamps.size() > 0) {
                     long offset = oldTimestamps.get(0) - newTimestamps.get(0);
                     List<Long> newShiftedTimestamps = newTimestamps.stream().map(timestamp -> timestamp + offset).collect(Collectors.toList());
@@ -679,13 +661,17 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                         // force immediate forecast calculation
                         newShiftedTimestamps.add(0, now);
                     }
-                    forecastTimestampMap.put(attributeRef, newShiftedTimestamps);
+                    attr.setForecastTimestamps(newShiftedTimestamps);
                 }
             });
         }
 
         public void purgeForecastTimestamps(long now) {
-            forecastTimestampMap.values().stream().forEach(timestamps -> {
+            forecastAttributes.forEach(attr -> {
+                List<Long> timestamps = attr.getForecastTimestamps();
+                if (timestamps == null) {
+                    return;
+                }
                 int clearCount = 0;
                 int index = Collections.binarySearch(timestamps, now);
                 if (index >= 0) {
@@ -756,7 +742,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             return datapointBuckets;
         }
 
-        private void loadForecastTimestampsFromDb(AttributeRef attributeRef, long now) {
+        private List<Long> loadForecastTimestampsFromDb(AttributeRef attributeRef, long now) {
             List<AssetPredictedDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef);
             List<Long> timestamps = datapoints
                 .stream()
@@ -764,7 +750,78 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 .filter(timestamp -> timestamp >= now)
                 .sorted()
                 .collect(Collectors.toList());;
-            forecastTimestampMap.put(attributeRef, timestamps);
+            return timestamps;
+        }
+    }
+
+    public static class ForecastAttribute {
+
+        private String assetId;
+        private AttributeRef attributeRef;
+        private Attribute<?> attribute;
+        private ForecastConfiguration config;
+        private List<Long> forecastTimestamps = new ArrayList<>();
+
+        public ForecastAttribute(Asset<?> asset, Attribute<?> attribute) {
+            this(asset.getId(), attribute);
+        }
+
+        public ForecastAttribute(String assetId, Attribute<?> attribute) {
+            requireNonNullAndNonEmpty(assetId);
+            if (attribute == null) {
+                throw new IllegalArgumentException("Attribute cannot be null");
+            }
+            this.assetId = assetId;
+            this.attribute = attribute;
+            this.attributeRef = new AttributeRef(assetId, attribute.getName());
+            this.config = attribute.getMetaValue(FORECAST).orElse(null);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ForecastAttribute that = (ForecastAttribute) o;
+            return assetId.equals(that.assetId) && attribute.getName().equals(that.attribute.getName());
+        }
+
+        @Override
+        public int hashCode() {
+            int result = assetId.hashCode();
+            result = 31 * result + attribute.getName().hashCode();
+            return result;
+        }
+
+        public String getId() {
+            return assetId;
+        }
+
+        public String getName() {
+            return attribute.getName();
+        }
+
+        public AttributeRef getAttributeRef() {
+            return attributeRef;
+        }
+
+        public Attribute<?> getAttribute() {
+            return attribute;
+        }
+
+        public ForecastConfiguration getConfig() {
+            return config;
+        }
+
+        public boolean isValidConfig() {
+            return (config != null && config.isValid());
+        }
+
+        public void setForecastTimestamps(List<Long> timestamps) {
+            this.forecastTimestamps = timestamps;
+        }
+
+        public List<Long> getForecastTimestamps() {
+            return forecastTimestamps;
         }
     }
 

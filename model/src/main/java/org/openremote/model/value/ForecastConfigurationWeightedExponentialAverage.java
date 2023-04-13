@@ -30,8 +30,8 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.Constants;
 import org.openremote.model.value.impl.PeriodAndDuration;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
