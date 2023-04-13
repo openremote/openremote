@@ -45,6 +45,8 @@ export class MapWidget {
     protected _loaded: boolean = false;
     protected _markersJs: Map<OrMapMarker, L.Marker> = new Map();
     protected _markersGl: Map<OrMapMarker, MarkerGL> = new Map();
+    protected _geoJsonSources: string[] = [];
+    protected _geoJsonLayers: string[] = [];
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLatLike;
     protected _zoom?: number;
@@ -198,6 +200,31 @@ export class MapWidget {
                 this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
                 if (this._viewSettings.bounds){
                     this._mapGl.setMaxBounds(this._viewSettings.bounds);
+                }
+
+                // GeoJson specific
+                if(this._geoJsonLayers.length > 0) {
+                    this._geoJsonLayers.forEach((layerId) => this._mapGl!.removeLayer(layerId));
+                    this._geoJsonLayers = [];
+                }
+                if(this._geoJsonSources.length > 0) {
+                    this._geoJsonSources.forEach((sourceId) => this._mapGl!.removeSource(sourceId));
+                    this._geoJsonSources = [];
+                }
+                if (this._viewSettings.geoJson) {
+                    this._viewSettings.geoJson.sources?.forEach((source) => {
+                        console.log(source);
+                        this._mapGl!.addSource(source.id, {
+                            type: 'geojson',
+                            data: source.data
+                        });
+                        this._geoJsonSources.push(source.id);
+                    })
+                    this._viewSettings.geoJson.layers?.forEach((layer) => {
+                        console.log(layer);
+                        this._mapGl!.addLayer(layer);
+                        this._geoJsonLayers.push(layer.id);
+                    })
                 }
             }
             if (!this._center) {

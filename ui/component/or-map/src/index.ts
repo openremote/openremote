@@ -19,7 +19,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import { debounce } from "lodash";
-import { MapType } from "@openremote/model";
+import {GeoJsonConfig, MapType } from "@openremote/model";
 
 // Re-exports
 export {Util, LngLatLike};
@@ -36,6 +36,7 @@ export interface ViewSettings {
     minZoom: number;
     boxZoom: boolean;
     geocodeUrl: String;
+    geoJson?: GeoJsonConfig
 }
 
 export interface MapEventDetail {

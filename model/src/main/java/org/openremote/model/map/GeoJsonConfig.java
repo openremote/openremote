@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, OpenRemote Inc.
+ * Copyright 2023, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,17 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.manager;
+package org.openremote.model.map;
 
-import org.openremote.model.map.GeoJsonConfig;
-
-public class MapRealmConfig {
-    protected float[] center;
-    protected float[] bounds;
-    protected int zoom;
-    protected int minZoom;
-    protected int maxZoom;
-    protected boolean boxZoom;
-    protected String geocodeUrl;
-    protected GeoJsonConfig geoJson;
+public class GeoJsonConfig {
+    protected GeoJsonSource[] sources;
+    protected Object[] layers;
 }
