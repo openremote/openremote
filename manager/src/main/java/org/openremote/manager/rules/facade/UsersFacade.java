@@ -26,8 +26,11 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.query.filter.UserAssetPredicate;
-import org.openremote.model.rules.*;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.RealmRuleset;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.Users;
 import org.openremote.model.security.User;
 
 import java.util.ArrayList;
@@ -65,28 +68,20 @@ public class UsersFacade<T extends Ruleset> extends Users {
             userQuery.realmPredicate = null;
             String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalArgumentException("Asset ID missing: " + rulesEngineId));
 
-            // Asset<?> must be this engines asset or a child
-            if (userQuery.assetPredicate != null) {
-                if (assetId.equals(userQuery.assetPredicate.id)) {
-                    userQuery.pathPredicate = null;
-                } else {
-                    userQuery.pathPredicate = new PathPredicate(rulesEngineId.getAssetId().orElseThrow(IllegalArgumentException::new));
-                }
-            } else if (userQuery.pathPredicate != null) {
-                // Path must contain this engines asset ID
-                List<String> path = new ArrayList<>(Arrays.asList(userQuery.pathPredicate.path));
-                if (!path.contains(assetId)) {
-                    path.add(assetId);
-                    userQuery.pathPredicate.path = path.toArray(new String[userQuery.pathPredicate.path.length + 1]);
-                }
+            if (userQuery.pathPredicate == null || userQuery.pathPredicate.path == null) {
+                userQuery.pathPredicate = new PathPredicate(assetId);
             } else {
-                // Force scope to this asset
-                userQuery.assetPredicate = new UserAssetPredicate(assetId);
+                List<String> path = new ArrayList<>(Arrays.asList(userQuery.pathPredicate.path));
+                path.add(assetId);
+                userQuery.pathPredicate.path = path.toArray(new String[0]);
             }
         }
 
         // Prevent system users being retrieved
-        userQuery.select(new UserQuery.Select().excludeSystemUsers(true));
+        userQuery.attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
+
+        // Prevent service users being retrieved
+        userQuery.serviceUsers(false);
 
         return Arrays.stream(identityService.getIdentityProvider().queryUsers(userQuery))
             .map(User::getId);

@@ -28,10 +28,14 @@ import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 
 import jakarta.ws.rs.*;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
@@ -71,12 +75,17 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             // Force realm to match users
             query.realm(new RealmPredicate(authContext.getAuthenticatedRealmName()));
 
-            // Hide system service accounts from non super users
-            if (query.select == null) {
-                query.select = new UserQuery.Select();
+            // Hide system accounts from non super users
+            if (query.attributes == null) {
+                query.attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
+            } else {
+                List<UserQuery.AttributeValuePredicate> attributeValuePredicates = new ArrayList<>(Arrays.asList(query.attributes));
+                attributeValuePredicates.add(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
+                query.attributes(attributeValuePredicates.toArray(UserQuery.AttributeValuePredicate[]::new));
             }
-            query.select.excludeSystemUsers = true;
         }
+
+        // Prevent service
 
         try {
             return identityService.getIdentityProvider().queryUsers(query);

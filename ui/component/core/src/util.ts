@@ -22,6 +22,7 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
+    Role,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
@@ -1069,4 +1070,8 @@ export function blobToBase64(blob:Blob) {
             reject(error);
         };
     });
+}
+
+export function realmRoleFilter(role: Role) {
+    return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name!) && !role.name!.startsWith("default-roles"));
 }

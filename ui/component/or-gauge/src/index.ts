@@ -175,7 +175,7 @@ export class OrGauge extends LitElement {
     willUpdate(changedProps: Map<string, any>) {
         if(changedProps.has('assetAttribute')) {
             const attr = this.assetAttribute![1];
-            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name, this.asset!.type);
+            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.asset!.type!);
             this.unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.asset!.type));
             this.value = attr.value != null ? attr.value : NaN;
         }
@@ -299,12 +299,12 @@ export class OrGauge extends LitElement {
     }
 
     async loadData(attrRef: AttributeRef) {
-        const response = await manager.rest.api.AssetResource.queryAssets({ ids: [attrRef.id] });
+        const response = await manager.rest.api.AssetResource.queryAssets({ ids: [attrRef.id!] });
         const assets = response.data;
         const assetAttributes = [attrRef].map((attrRef) => {
             const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
             const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-            return asset && asset.attributes ? [assetIndex, asset.attributes[attrRef.name]] : undefined;
+            return asset && asset.attributes ? [assetIndex, asset.attributes[attrRef.name!]] : undefined;
         }).filter((indexAndAttr) => !!indexAndAttr) as [number, Attribute<any>][];
 
         this.asset = assets[0];
