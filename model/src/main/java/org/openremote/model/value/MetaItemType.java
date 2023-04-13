@@ -98,6 +98,10 @@ public final class MetaItemType {
     // TODO: Re-evaluate this can this info be retrieved automatically using prediction service
     public static final MetaItemDescriptor<Boolean> HAS_PREDICTED_DATA_POINTS = new MetaItemDescriptor<>("hasPredictedDataPoints", ValueType.BOOLEAN);
 
+    /**
+     * The forecast service calculates predicted data points based on the forecast configuration.
+     */
+    public static final MetaItemDescriptor<ForecastConfiguration> FORECAST = new MetaItemDescriptor<>("forecast", ValueType.FORECAST_CONFIGURATION);
 
 
     /* RULE META */

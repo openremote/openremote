@@ -19,12 +19,9 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaString;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -207,6 +204,8 @@ public final class ValueType {
     );
 
     public static final ValueDescriptor<AssetQuery> ASSET_QUERY = new ValueDescriptor<>("assetQuery", AssetQuery.class);
+
+    public static final ValueDescriptor<ForecastConfiguration> FORECAST_CONFIGURATION = new ValueDescriptor<>("forecastConfiguration", ForecastConfiguration.class);
 
     protected ValueType() {
     }
