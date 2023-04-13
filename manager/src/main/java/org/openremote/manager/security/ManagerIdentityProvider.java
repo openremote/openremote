@@ -123,7 +123,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         List<Object> parameters = new ArrayList<>();
         final UserQuery userQuery = query != null ? query : new UserQuery();
 
-        // Limit to regualr/service users
+        // Limit to regular/service users
         if (userQuery.serviceUsers != null) {
             // Not ideal mutating the query but seems excessive cloning it
             if (userQuery.usernames == null) {

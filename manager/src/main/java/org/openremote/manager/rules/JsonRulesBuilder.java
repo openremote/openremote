@@ -51,6 +51,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -620,7 +621,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         RuleState ruleState = new RuleState(rule);
         ruleStateMap.put(rule.name, ruleState);
-        addRuleConditionStates(rule.when, rule.otherwise != null, 0, ruleState.conditionStateMap);
+        addRuleConditionStates(rule.when, rule.otherwise != null, new AtomicInteger(0), ruleState.conditionStateMap);
 
         Condition condition = buildLhsCondition(rule, ruleState);
         Action action = buildRhsAction(rule, ruleState);
@@ -638,16 +639,16 @@ public class JsonRulesBuilder extends RulesBuilder {
         return this;
     }
 
-    protected void addRuleConditionStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, int index, Map<String, RuleConditionState> triggerStateMap) throws Exception {
+    protected void addRuleConditionStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, AtomicInteger index, Map<String, RuleConditionState> triggerStateMap) throws Exception {
         if (ruleConditionGroup != null) {
             if (ruleConditionGroup.getItems().size() > 0) {
                 for (RuleCondition ruleCondition : ruleConditionGroup.getItems()) {
                     if (TextUtil.isNullOrEmpty(ruleCondition.tag)) {
-                        ruleCondition.tag = Integer.toString(index);
+                        ruleCondition.tag = index.toString();
                     }
 
                     triggerStateMap.put(ruleCondition.tag, new RuleConditionState(ruleCondition, trackUnmatched, timerService));
-                    index++;
+                    index.incrementAndGet();
                 }
             }
             if (ruleConditionGroup.groups != null && ruleConditionGroup.groups.size() > 0) {
