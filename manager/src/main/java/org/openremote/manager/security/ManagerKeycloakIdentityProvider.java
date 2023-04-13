@@ -23,6 +23,8 @@ import io.undertow.util.Headers;
 import jakarta.persistence.Query;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.apache.commons.io.IOUtils;
@@ -55,7 +57,6 @@ import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
@@ -92,8 +93,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_GRANT_FILE = "OR_KEYCLOAK_GRANT_FILE";
     public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
-    public static final String KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED = "emailNotificationsDisabled";
-    public static final String KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED = "pushNotificationsDisabled";
     public static final String KC_HOSTNAME = "KC_HOSTNAME";
     public static final String KC_HOSTNAME_PATH = "KC_HOSTNAME_PATH";
     public static final String KC_HOSTNAME_PORT = "KC_HOSTNAME_PORT";
@@ -248,18 +247,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public User[] queryUsers(UserQuery userQuery) {
-        if (userQuery == null) {
-            userQuery = new UserQuery();
-        }
-
-        if (userQuery.usernames == null) {
-            userQuery.usernames = new StringPredicate[1];
-            userQuery.usernames(new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(true));
-        } else {
-            userQuery.usernames = Arrays.copyOf(userQuery.usernames, userQuery.usernames.length+1);
-            userQuery.usernames[userQuery.usernames.length-1] = new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(true);
-        }
-
         return ManagerIdentityProvider.getUsersFromDb(persistenceService, userQuery);
     }
 
@@ -344,6 +331,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 userRepresentation.setLastName(user.getLastName());
                 userRepresentation.setEmail(user.getEmail());
                 userRepresentation.setEnabled(user.getEnabled());
+                userRepresentation.setAttributes(user.getAttributeMap());
                 userResource.update(userRepresentation);
 
             } else {
@@ -389,14 +377,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     Credential credential = new Credential(passwordSecret, false);
                     resetPassword(realm, userRepresentation.getId(), credential);
                 }
-            }
-
-            if (user.getAttributes() != null) {
-                if (existingUser != null) {
-                    // Populate attributes for persistence event
-                    existingUser.setAttributes(getUserAttributes(realm, existingUser.getId()));
-                }
-                updateUserAttributes(realm, userRepresentation.getId(), user.getAttributes());
             }
 
             User updatedUser = convert(userRepresentation, User.class);
@@ -498,25 +478,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 },
                 null
             );
-        });
-    }
-
-    @Override
-    public void updateUserAttributes(String realm, String userId, Map<String, List<String>> attributes) {
-        getRealms(realmsResource -> {
-            UserResource userResource = realmsResource.realm(realm).users().get(userId);
-            UserRepresentation userRepresentation = realmsResource.realm(realm).users().get(userId).toRepresentation();
-            userRepresentation.setAttributes(attributes);
-            userResource.update(userRepresentation);
-            return null;
-        });
-    }
-
-    @Override
-    public Map<String, List<String>> getUserAttributes(String realm, String userId) {
-        return getRealms(realmsResource -> {
-            UserRepresentation userRepresentation = realmsResource.realm(realm).users().get(userId).toRepresentation();
-            return userRepresentation.getAttributes();
         });
     }
 
