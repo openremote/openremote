@@ -263,4 +263,28 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         writeRole.compositeRoleIds.length == 1
         writeRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_ASSETS.value}.id)
     }
+
+    def "Get and update users"() {
+        when: "a user is retrieved"
+        def user = adminUserResource.get(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+
+        then: "all data should be available"
+        user != null
+        user.attributes != null
+        user.attributes.size() == 1
+        user.attributes.get(0).getName() == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE
+        user.attributes.get(0).getValue() == "true"
+        user.id == keycloakTestSetup.testuser3Id
+        user.realm == keycloakTestSetup.realmBuilding.name
+        user.username == "testuser3"
+
+        when: "a new attribute is added to the user"
+        user.setAttribute("test", "testvalue")
+        user = adminUserResource.update(null, keycloakTestSetup.realmBuilding.name, user)
+
+        then: "the update should have succeeded"
+        user.attributes.size() == 2
+        user.attributes.any {it.name == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE && it.value == "true"}
+        user.attributes.any {it.name == "test" && it.value == "testvalue"}
+    }
 }

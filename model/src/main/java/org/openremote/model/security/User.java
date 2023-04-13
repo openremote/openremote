@@ -36,6 +36,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
@@ -145,14 +147,33 @@ public class User {
         return username != null && username.startsWith(SERVICE_ACCOUNT_PREFIX);
     }
 
-    @JsonProperty
+    @JsonIgnore
     public List<UserAttribute> getAttributes() {
         return attributes;
     }
 
+    @JsonIgnore
     public User setAttributes(UserAttribute...attributes) {
         this.attributes = attributes == null ? null : Arrays.asList(attributes);
         return this;
+    }
+
+    @JsonProperty
+    protected User setAttributes(Map<String, List<String>> attributes) {
+        if (attributes == null) {
+            this.attributes = new ArrayList<>();
+        } else {
+            this.attributes = new ArrayList<>(attributes.entrySet().stream().flatMap(entry -> entry.getValue().stream().map(v -> new UserAttribute(entry.getKey(), v))).toList());
+        }
+        return this;
+    }
+
+    @JsonProperty("attributes")
+    public Map<String, List<String>> getAttributeMap() {
+        if (attributes == null) {
+            return null;
+        }
+        return attributes.stream().collect(Collectors.groupingBy(UserAttribute::getName, Collectors.mapping(UserAttribute::getValue, Collectors.toList())));
     }
 
     public User setAttribute(String key, String value) {

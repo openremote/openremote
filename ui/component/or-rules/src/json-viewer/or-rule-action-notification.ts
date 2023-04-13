@@ -144,8 +144,12 @@ export class OrRuleActionNotification extends LitElement {
                 const userQuery = action.target!.users!;
 
                 if (action.target!.linkedUsers) {
-                    if (userQuery && userQuery.realmPredicate) {
-                        value = "linked-" + userQuery.realmPredicate.name;
+                    if (userQuery && userQuery.realmRoles) {
+                        if (userQuery.realmRoles.length > 1) {
+                            console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
+                            return;
+                        }
+                        value = "linked-" + userQuery.realmRoles[0].value;
                     } else {
                         value = "linkedUsers";
                     }
@@ -341,9 +345,12 @@ export class OrRuleActionNotification extends LitElement {
                 } else if (value?.startsWith("linked-")) {
                     this.action.target = {
                         users: {
-                            realmPredicate: {
-                                name: value?.substring(7)
-                            }
+                            realmRoles: [
+                                {
+                                    predicateType: "string",
+                                    value: value?.substring(7)
+                                }
+                            ]
                         },
                         linkedUsers: true
                     }

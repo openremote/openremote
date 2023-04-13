@@ -331,6 +331,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 userRepresentation.setLastName(user.getLastName());
                 userRepresentation.setEmail(user.getEmail());
                 userRepresentation.setEnabled(user.getEnabled());
+                userRepresentation.setAttributes(user.getAttributeMap());
                 userResource.update(userRepresentation);
 
             } else {
@@ -376,10 +377,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     Credential credential = new Credential(passwordSecret, false);
                     resetPassword(realm, userRepresentation.getId(), credential);
                 }
-            }
-
-            if (user.getAttributes() != null) {
-                updateUserAttributes(realm, userRepresentation.getId(), user.getAttributes());
             }
 
             User updatedUser = convert(userRepresentation, User.class);
@@ -481,31 +478,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 },
                 null
             );
-        });
-    }
-
-    @Override
-    public void updateUserAttributes(String realm, String userId, List<UserAttribute> attributes) {
-        getRealms(realmsResource -> {
-            UserResource userResource = realmsResource.realm(realm).users().get(userId);
-            UserRepresentation userRepresentation = realmsResource.realm(realm).users().get(userId).toRepresentation();
-            if (attributes == null) {
-                userRepresentation.setAttributes(null);
-            } else {
-                MultivaluedMap<String, String> attrs = new MultivaluedHashMap<>();
-                attributes.forEach(attribute -> attrs.add(attribute.getName(), attribute.getValue()));
-                userRepresentation.setAttributes(attrs);
-            }
-            userResource.update(userRepresentation);
-            return null;
-        });
-    }
-
-    @Override
-    public Map<String, List<String>> getUserAttributes(String realm, String userId) {
-        return getRealms(realmsResource -> {
-            UserRepresentation userRepresentation = realmsResource.realm(realm).users().get(userId).toRepresentation();
-            return userRepresentation.getAttributes();
         });
     }
 
