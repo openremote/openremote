@@ -69,11 +69,11 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         when: "datapoints are added to the asset"
         assetDatapointService.upsertValues(asset.getId(), attributeName,
                 [
-                        new Pair<>(10d, dateTime.minusMinutes(35)),
-                        new Pair<>(20d, dateTime.minusMinutes(40)),
-                        new Pair<>(30d, dateTime.minusMinutes(45)),
-                        new Pair<>(40d, dateTime.minusMinutes(50)),
-                        new Pair<>(50d, dateTime.minusMinutes(55))
+                        new Pair<>(50d, dateTime.minusMinutes(25)),
+                        new Pair<>(40d, dateTime.minusMinutes(20)),
+                        new Pair<>(30d, dateTime.minusMinutes(15)),
+                        new Pair<>(20d, dateTime.minusMinutes(10)),
+                        new Pair<>(10d, dateTime.minusMinutes(5)),
                 ]
         )
 
@@ -90,7 +90,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         def lttbDatapoints1 = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
-                new AssetDatapointLTTBQuery(dateTime.minusMinutes(60), dateTime, 50)
+                new AssetDatapointLTTBQuery(dateTime.minusMinutes(30), dateTime, 5)
         )
         assert lttbDatapoints1.size() == 5
 
@@ -103,13 +103,11 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
             index++
         }}
 
-        /* ------------------------- */
-
-        and: "requesting 3 datapoints using the LTTB algorithm should return 10, 30 and 50"
+        and: "requesting 3 datapoints using LTTB should return 50, 40 and 10 to reflect the algorithm spec."
         def lttbDatapoints2 = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
-                new AssetDatapointLTTBQuery(dateTime.minusMinutes(60), dateTime, 3)
+                new AssetDatapointLTTBQuery(dateTime.minusMinutes(30), dateTime, 3)
         )
         assert lttbDatapoints2.size() == 3
         assert lttbDatapoints2[0].value == 50d
@@ -117,7 +115,12 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         assert lttbDatapoints2[2].value == 10d
 
 
-        when: "adding a spike datapoint, it should be included in any downsample"
+        /* ------------------------- */
+
+        when: "the datapoints are cleared"
+        assetDatapointService.purgeDataPoints()
+
+        and: "datapoints are added that have a spike in value, it should be included in any downsample"
         assetDatapointService.upsertValues(asset.getId(), attributeName,
                 [
                         // placing them in a random order to verify order that is returned with the query
@@ -130,14 +133,17 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
                 ]
         )
 
-        then: "the spike should be present as the 3nd value"
+        then: "the spike should be present as the 2nd value"
         def lttbDatapoints3 = assetDatapointService.queryDatapoints(
                 asset.getId(),
                 asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
                 new AssetDatapointLTTBQuery(dateTime.minusMinutes(60), dateTime, 4)
         )
         assert lttbDatapoints3.size() == 4
-        assert lttbDatapoints3[2].value == 90d
+        assert lttbDatapoints3[0].value == 10d
+        assert lttbDatapoints3[1].value == 90d
+        assert lttbDatapoints3[2].value == 20d
+        assert lttbDatapoints3[3].value == 30d
 
         and: "returned datapoints should be in chronological order" // so from earliest to most recent
         def index2 = 0
