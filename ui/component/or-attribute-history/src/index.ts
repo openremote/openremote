@@ -705,15 +705,30 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
 
-        const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-            assetId,
-            attributeName,
-            {
-                type: "all",
-                fromTimestamp: this._startOfPeriod,
-                toTimestamp: this._endOfPeriod
-            } // TODO: maybe optimize this?
-        );
+        const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
+        let response;
+        if(isChart) {
+            response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                assetId,
+                attributeName,
+                {
+                    type: "lttb",
+                    fromTimestamp: this._startOfPeriod,
+                    toTimestamp: this._endOfPeriod,
+                    amountOfPoints: 100
+                }
+            )
+        } else {
+            response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                assetId,
+                attributeName,
+                {
+                    type: "all",
+                    fromTimestamp: this._startOfPeriod,
+                    toTimestamp: this._endOfPeriod
+                }
+            );
+        }
 
         this._loading = false;
 
