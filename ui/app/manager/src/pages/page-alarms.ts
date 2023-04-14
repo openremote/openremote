@@ -1063,6 +1063,38 @@ export class PageAlarms extends Page<AppStateKeyed> {
         );
     }
 
+    protected _getTable(): TemplateResult {
+        const mergedAlarmList: AlarmModel[] = [...this._activeAlarms, ...this._inactiveAlarms];
+        return html`
+            <div id="table" class="mdc-data-table">
+                <table class="mdc-data-table__table" aria-label="logs list">
+                    <thead>
+                        <tr class="mdc-data-table__header-row">
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("createdOn")}</th>
+                            <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.severity")}</th>
+                            <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.status")}</th>
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.title")}</th>
+                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.content")}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="mdc-data-table__content">
+                        ${mergedAlarmList.map((ev) => {
+            return html`
+                                <tr class="mdc-data-table__row">
+                                    <td class="mdc-data-table__cell">${new Date(ev.createdOn).toLocaleString()}</td>
+                                    <td class="mdc-data-table__cell">${ev.severity}</td>
+                                    <td class="mdc-data-table__cell">${ev.status}</td>                                    
+                                    <td class="mdc-data-table__cell">${ev.title}</td>
+                                    <td class="mdc-data-table__cell">${ev.content}</td>
+                                </tr>
+                            `;
+        })}
+                    </tbody>
+                </table>
+            </div>
+            `;
+    }
+
     // Reset selected alarm and go back to the alarm overview
     protected reset() {
         this.alarm = undefined;
