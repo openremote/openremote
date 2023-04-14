@@ -26,6 +26,7 @@ import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-compon
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { OrMapLongPressEvent } from "@openremote/or-map";
 import { LngLat } from "maplibre-gl";
+import "./or-conf-map-geojson";
 
 @customElement("or-conf-map-card")
 export class OrConfMapCard extends LitElement {
@@ -237,6 +238,11 @@ export class OrConfMapCard extends LitElement {
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCenter(e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
+              <div class="subheader">${i18next.t("configuration.geojson")}</div>
+              <span>${i18next.t("configuration.geojsonDescription")}</span>
+              <div class="input" style="height: 56px; display: flex; align-items: center;">
+                <or-conf-map-geojson .geoJson="${this.map.geoJson}" @update="${(e: CustomEvent) => { console.log(e.detail.value); this.map.geoJson = e.detail.value; this.requestUpdate(); console.log(this.map); }}"></or-conf-map-geojson>
+              </div>
             </div>
 
             <div class="zoom-group">
@@ -271,9 +277,11 @@ export class OrConfMapCard extends LitElement {
                               .step="${1}"></or-mwc-input>
               </div>
 
-              <or-mwc-input .value="${this.map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.boxZoom = e.detail.value}"
-                            .step="${1}"></or-mwc-input>
+              <div class="input" style="height: 56px;">
+                <or-mwc-input .value="${this.map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
+                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.map.boxZoom = e.detail.value}"
+                              .step="${1}"></or-mwc-input>
+              </div>
             </div>
           </div>
 
