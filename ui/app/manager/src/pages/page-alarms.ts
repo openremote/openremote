@@ -47,6 +47,25 @@ export class PageAlarms extends Page<AppStateKeyed> {
         return [
             unsafeCSS(tableStyle),
             css`
+                #table-container {
+                    height: 100%;
+                    overflow: auto;
+                }
+
+                #table {
+                    width: 100%;
+                    margin-bottom: 10px;
+                }
+
+                #table > table {
+                    width: 100%;
+                    table-layout: fixed;
+                }
+
+                #table th, #table td {
+                    word-wrap: break-word;
+                    white-space: pre-wrap;
+                }
                 #wrapper {
                     height: 100%;
                     width: 100%;
@@ -399,21 +418,20 @@ export class PageAlarms extends Page<AppStateKeyed> {
         const alarmTableColumns: TableColumn[] = [
             { title: i18next.t('createdOn') },
             { title: i18next.t('alarm.title') },
-            { title: i18next.t('alarm.content') },
             { title: i18next.t('alarm.severity') },
             { title: i18next.t('status') }
         ];
 
         const activeAlarmTableRows: TableRow[] = this._activeAlarms.map((alarm) => {
             return {
-                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.content, alarm.severity, alarm.status],
+                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.severity, alarm.status],
                 clickable: true
             }
         });
 
         const inactiveAlarmTableRows: TableRow[] = this._inactiveAlarms.map((alarm) => {
             return {
-                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.content, alarm.severity, alarm.status],
+                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.severity, alarm.status],
                 clickable: true
             }
         })
@@ -431,7 +449,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         const index: number | undefined = (this.alarmId ? mergedAlarmList.findIndex((alarm) => alarm.id.toString() == this.alarmId) : undefined);
 
         return html`
-            <div id="wrapper" style="max-width: 70%; margin: auto;">
+            <div id="table-container" style="max-width: 90%; margin: auto;">
                 <!-- Breadcrumb on top of the page-->
                 ${when((this.alarmId && index != undefined), () => html`
                     <div class="breadcrumb-container">
@@ -446,6 +464,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     <or-icon icon="alert-outline"></or-icon>
                     <span>${this.alarmId && index != undefined ? mergedAlarmList[index]?.title : i18next.t('alarm.alarm_plural')}</span>
                 </div>
+                
+                
 
                 <!-- Alarm Specific page -->
                 ${when((this.alarmId && index != undefined) || this.creationState, () => html`
@@ -463,7 +483,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
                     <!-- List of Alarms page -->
                 `, () => html`
-                    <div id="content" class="panel">
+                    <!-- <div id="content" class="panel">
                         <div class="panel-title" style="justify-content: space-between;">
                             <p>${i18next.t("alarm.active_plural")}</p>
                             <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus"
@@ -482,7 +502,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         ${until(this.getAlarmsTable(alarmTableColumns, inactiveAlarmTableRows, tableConfig, (ev) => {
             this.alarmId = this._inactiveAlarms[ev.detail.index].id.toString();
         }, "alarm"), html`${i18next.t('loading')}`)}
-                    </div>
+                    </div> -->
+                    
+                    ${this._getTable()}
                 `)}
             </div>
         `;
@@ -773,6 +795,38 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 </div>
             `)}
         `;
+    }
+
+    protected _getTable(): TemplateResult {
+        const mergedAlarmList: AlarmModel[] = [...this._activeAlarms, ...this._inactiveAlarms];
+        return html`
+            <div id="table" class="mdc-data-table">
+                <table class="mdc-data-table__table" aria-label="logs list">
+                    <thead>
+                        <tr class="mdc-data-table__header-row">
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("createdOn")}</th>
+                            <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.severity")}</th>
+                            <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.status")}</th>
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.title")}</th>
+                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.content")}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="mdc-data-table__content">
+                        ${mergedAlarmList.map((ev) => {
+            return html`
+                                <tr class="mdc-data-table__row">
+                                    <td class="mdc-data-table__cell">${new Date(ev.createdOn).toLocaleString()}</td>
+                                    <td class="mdc-data-table__cell">${ev.severity}</td>
+                                    <td class="mdc-data-table__cell">${ev.status}</td>                                    
+                                    <td class="mdc-data-table__cell">${ev.title}</td>
+                                    <td class="mdc-data-table__cell">${ev.content}</td>
+                                </tr>
+                            `;
+        })}
+                    </tbody>
+                </table>
+            </div>
+            `;
     }
 
     // Reset selected alarm and go back to the alarm overview
