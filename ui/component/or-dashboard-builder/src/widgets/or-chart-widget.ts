@@ -170,7 +170,7 @@ export class OrChartWidgetContent extends LitElement {
                     this.assetAttributes = this.widget?.widgetConfig.attributeRefs.map((attrRef: AttributeRef) => {
                         const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
                         const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
-                        return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name]] : undefined;
+                        return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
                     }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
                 });
             }
@@ -212,9 +212,9 @@ export class OrChartWidgetContent extends LitElement {
 
         // Generating random coordinates on the chart
         let data: any[] = [];
-        const cached: { period: any, data: any[] } | undefined = this.cachedMockData?.get(widget.id);
+        const cached: { period: any, data: any[] } | undefined = this.cachedMockData?.get(widget.id!);
         if(cached && (cached.data.length == widget.widgetConfig?.attributeRefs?.length) && (cached.period == widget.widgetConfig?.period)) {
-            data = this.cachedMockData?.get(widget.id)!.data!;
+            data = this.cachedMockData?.get(widget.id!)!.data!;
         } else {
             widget.widgetConfig?.attributeRefs?.forEach((_attrRef: AttributeRef) => {
                 let valueEntries: any[] = [];
@@ -229,7 +229,7 @@ export class OrChartWidgetContent extends LitElement {
                 }
                 data.push(valueEntries);
             });
-            this.cachedMockData?.set(widget.id, { period: widget.widgetConfig?.period, data: data });
+            this.cachedMockData?.set(widget.id!, { period: widget.widgetConfig?.period, data: data });
         }
 
         // Making a line for each attribute

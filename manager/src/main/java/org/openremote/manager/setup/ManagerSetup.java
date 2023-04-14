@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.setup;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
@@ -61,6 +62,7 @@ public class ManagerSetup implements Setup {
     protected static final Logger LOG = LoggerFactory.getLogger(ManagerSetup.class);
     protected Path provisionDocRoot;
 
+    final protected TimerService timerService;
     final protected ScheduledExecutorService executorService;
     final protected ManagerPersistenceService persistenceService;
     final protected ManagerIdentityService identityService;
@@ -73,6 +75,7 @@ public class ManagerSetup implements Setup {
     final protected MetaItem<?>[] EMPTY_META = new MetaItem<?>[0];
 
     public ManagerSetup(Container container) {
+        this.timerService = container.getService(TimerService.class);
         this.executorService = container.getExecutorService();
         this.persistenceService = container.getService(ManagerPersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
