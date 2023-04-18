@@ -1,6 +1,8 @@
-import manager from "@openremote/core";
+import manager, { DefaultColor4 } from "@openremote/core";
 import maplibregl,{
+    AnyLayer,
     Control,
+    GeoJSONSource,
     GeolocateControl,
     IControl,
     LngLat,
@@ -26,6 +28,7 @@ import {
 import { OrMapMarker } from "./markers/or-map-marker";
 import { getLatLngBounds, getLngLat } from "./util";
 import { MapType } from "@openremote/model";
+import { Feature, FeatureCollection } from "geojson";
 
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
@@ -46,7 +49,7 @@ export class MapWidget {
     protected _markersJs: Map<OrMapMarker, L.Marker> = new Map();
     protected _markersGl: Map<OrMapMarker, MarkerGL> = new Map();
     protected _geoJsonSources: string[] = [];
-    protected _geoJsonLayers: string[] = [];
+    protected _geoJsonLayers: Map<string, any> = new Map();
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLatLike;
     protected _zoom?: number;
@@ -203,28 +206,43 @@ export class MapWidget {
                 }
 
                 // GeoJson specific
-                if(this._geoJsonLayers.length > 0) {
-                    this._geoJsonLayers.forEach((layerId) => this._mapGl!.removeLayer(layerId));
-                    this._geoJsonLayers = [];
+                if(this._geoJsonLayers.size > 0) {
+                    this._geoJsonLayers.forEach((layer, layerId) => this._mapGl!.removeLayer(layerId));
+                    this._geoJsonLayers = new Map();
                 }
                 if(this._geoJsonSources.length > 0) {
                     this._geoJsonSources.forEach((sourceId) => this._mapGl!.removeSource(sourceId));
                     this._geoJsonSources = [];
                 }
                 if (this._viewSettings.geoJson) {
-                    this._viewSettings.geoJson.sources?.forEach((source) => {
-                        console.log(source);
-                        this._mapGl!.addSource(source.id, {
-                            type: 'geojson',
-                            data: source.data
-                        });
-                        this._geoJsonSources.push(source.id);
-                    })
-                    this._viewSettings.geoJson.layers?.forEach((layer) => {
-                        console.log(layer);
-                        this._mapGl!.addLayer(layer);
-                        this._geoJsonLayers.push(layer.id);
-                    })
+                    const geoJson = this._viewSettings.geoJson;
+
+                    // If array of features (most of the GeoJSONs use this)
+                    if(geoJson.source.type == "FeatureCollection") {
+                        const groupedSources = this.groupSourcesByGeometryType(geoJson.source);
+                        groupedSources?.forEach((features, type) => {
+                            const newSource = {
+                                type: "geojson",
+                                data: {
+                                    type: "FeatureCollection",
+                                    features: features
+                                }
+                            } as any as GeoJSONSource;
+                            const sourceInfo = this.addGeoJSONSource(newSource);
+                            if(sourceInfo) {
+                                this.addGeoJSONLayer(type, sourceInfo.sourceId);
+                            }
+                        })
+
+                    // Or only 1 feature is added
+                    } else if(geoJson.source.type == "Feature") {
+                        const sourceInfo = this.addGeoJSONSource(geoJson.source);
+                        if(sourceInfo) {
+                            this.addGeoJSONLayer(sourceInfo.source.type, sourceInfo.sourceId);
+                        }
+                    } else {
+                        console.error("Could not create layer since source type is neither 'FeatureCollection' nor 'Feature'.")
+                    }
                 }
             }
             if (!this._center) {
@@ -460,6 +478,110 @@ export class MapWidget {
 
     protected _onMapClick(lngLat: LngLat, doubleClicked: boolean = false) {
         this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat, doubleClicked));
+    }
+
+    public groupSourcesByGeometryType(sources: FeatureCollection): Map<string, Feature[]> | undefined {
+        const groupedSources: Map<string, Feature[]> = new Map();
+        sources.features.forEach((feature) => {
+            let sources: Feature[] | undefined = groupedSources.get(feature.geometry.type);
+            if(sources == undefined) { sources = []; }
+            sources.push(feature);
+            groupedSources.set(feature.geometry.type, sources);
+        })
+        return groupedSources;
+    }
+
+    public addGeoJSONSource(source: GeoJSONSource): { source: GeoJSONSource, sourceId: string } | undefined {
+        if(!this._mapGl) {
+            console.error("mapGl instance not found!"); return;
+        }
+        const id = Date.now() + "-" + (this._geoJsonSources.length + 1);
+        this._mapGl.addSource(id, source)
+        this._geoJsonSources.push(id);
+        return {
+            source: source,
+            sourceId: id
+        }
+    }
+
+    public addGeoJSONLayer(typeString: string, sourceId: string) {
+        if(!this._mapGl) {
+            console.error("mapGl instance not found!"); return;
+        }
+
+        const type = typeString as "Point" | "MultiPoint" | "LineString" | "MultiLineString" | "Polygon" | "MultiPolygon" | "GeometryCollection"
+        const layerId = sourceId + "-" + type;
+
+        // If layer is not added yet
+        if( this._geoJsonLayers.get(layerId) == undefined) {
+
+            // Get realm color by getting value from CSS
+            let realmColor: string = getComputedStyle(this._mapContainer).getPropertyValue('--or-app-color4');
+            console.log(realmColor);
+            if(realmColor == undefined || realmColor.length == 0) {
+                realmColor = DefaultColor4;
+            }
+
+            let layer = {
+                id: layerId,
+                source: sourceId
+            } as any;
+
+            // Set styling based on type
+            switch (type) {
+                case "Point":
+                case "MultiPoint": {
+                    layer.type = "circle";
+                    layer.paint = {
+                        'circle-radius': 12,
+                        'circle-color': realmColor
+                    }
+                    this._geoJsonLayers.set(layerId, layer);
+                    this._mapGl.addLayer(layer);
+                    break;
+                }
+                case "LineString":
+                case "MultiLineString": {
+                    layer.type = "line";
+                    layer.paint = {
+                        'line-color': realmColor,
+                        'line-width': 4
+                    };
+                    this._geoJsonLayers.set(layerId, layer);
+                    this._mapGl.addLayer(layer);
+                    break;
+                }
+                case "Polygon":
+                case "MultiPolygon": {
+                    layer.type = "fill";
+                    layer.paint = {
+                        'fill-color': realmColor,
+                        'fill-opacity': 0.3
+                    };
+                    this._geoJsonLayers.set(layerId, layer);
+                    this._mapGl.addLayer(layer);
+
+                    // Add extra layer with outline
+                    const outlineId = layerId + "-outline";
+                    const outlineLayer = {
+                        id: outlineId,
+                        source: sourceId,
+                        type: "line",
+                        paint: {
+                            'line-color': realmColor,
+                            'line-width': 2
+                        },
+                    } as AnyLayer
+                    this._geoJsonLayers.set(outlineId, outlineLayer);
+                    this._mapGl.addLayer(outlineLayer);
+                    break;
+                }
+                case "GeometryCollection": {
+                    console.error("GeometryCollection GeoJSON is not implemented yet!");
+                    return;
+                }
+            }
+        }
     }
 
     public addMarker(marker: OrMapMarker) {

@@ -20,6 +20,6 @@
 package org.openremote.model.map;
 
 public class GeoJsonConfig {
-    protected GeoJsonSource[] sources;
+    protected Object source;
     protected Object[] layers;
 }
