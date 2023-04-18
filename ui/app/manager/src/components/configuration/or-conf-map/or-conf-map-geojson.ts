@@ -39,7 +39,7 @@ export class OrConfMapGeoJson extends LitElement {
             .setActions(dialogActions)
             .setHeading("GeoJSON editor")
             .setContent(html`
-                <or-ace-editor .value="${this.geoJson}" @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
+                <or-ace-editor .value="${this.geoJson.source}" @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
                 try {
                     this.geoJson = {
                         source: JSON.parse(ev.detail.value),

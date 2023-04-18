@@ -204,46 +204,7 @@ export class MapWidget {
                 if (this._viewSettings.bounds){
                     this._mapGl.setMaxBounds(this._viewSettings.bounds);
                 }
-
-                // GeoJson specific
-                if(this._geoJsonLayers.size > 0) {
-                    this._geoJsonLayers.forEach((layer, layerId) => this._mapGl!.removeLayer(layerId));
-                    this._geoJsonLayers = new Map();
-                }
-                if(this._geoJsonSources.length > 0) {
-                    this._geoJsonSources.forEach((sourceId) => this._mapGl!.removeSource(sourceId));
-                    this._geoJsonSources = [];
-                }
-                if (this._viewSettings.geoJson) {
-                    const geoJson = this._viewSettings.geoJson;
-
-                    // If array of features (most of the GeoJSONs use this)
-                    if(geoJson.source.type == "FeatureCollection") {
-                        const groupedSources = this.groupSourcesByGeometryType(geoJson.source);
-                        groupedSources?.forEach((features, type) => {
-                            const newSource = {
-                                type: "geojson",
-                                data: {
-                                    type: "FeatureCollection",
-                                    features: features
-                                }
-                            } as any as GeoJSONSource;
-                            const sourceInfo = this.addGeoJSONSource(newSource);
-                            if(sourceInfo) {
-                                this.addGeoJSONLayer(type, sourceInfo.sourceId);
-                            }
-                        })
-
-                    // Or only 1 feature is added
-                    } else if(geoJson.source.type == "Feature") {
-                        const sourceInfo = this.addGeoJSONSource(geoJson.source);
-                        if(sourceInfo) {
-                            this.addGeoJSONLayer(sourceInfo.source.type, sourceInfo.sourceId);
-                        }
-                    } else {
-                        console.error("Could not create layer since source type is neither 'FeatureCollection' nor 'Feature'.")
-                    }
-                }
+                await this.loadGeoJSON();
             }
             if (!this._center) {
                 this.setCenter(this._viewSettings.center);
@@ -457,6 +418,8 @@ export class MapWidget {
                 }));
             }
 
+            await this.loadGeoJSON();
+
             this._initLongPressEvent();
         }
 
@@ -478,6 +441,54 @@ export class MapWidget {
 
     protected _onMapClick(lngLat: LngLat, doubleClicked: boolean = false) {
         this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat, doubleClicked));
+    }
+
+    public async loadGeoJSON() {
+
+        console.log("Loading GeoJSON!");
+
+        // Remove old layers
+        if(this._geoJsonLayers.size > 0) {
+            this._geoJsonLayers.forEach((layer, layerId) => this._mapGl!.removeLayer(layerId));
+            this._geoJsonLayers = new Map();
+        }
+        // Remove old sources
+        if(this._geoJsonSources.length > 0) {
+            this._geoJsonSources.forEach((sourceId) => this._mapGl!.removeSource(sourceId));
+            this._geoJsonSources = [];
+        }
+
+        // Add new ones if present
+        if (this._viewSettings?.geoJson) {
+            const geoJson = this._viewSettings.geoJson;
+
+            // If array of features (most of the GeoJSONs use this)
+            if(geoJson.source.type == "FeatureCollection") {
+                const groupedSources = this.groupSourcesByGeometryType(geoJson.source);
+                groupedSources?.forEach((features, type) => {
+                    const newSource = {
+                        type: "geojson",
+                        data: {
+                            type: "FeatureCollection",
+                            features: features
+                        }
+                    } as any as GeoJSONSource;
+                    const sourceInfo = this.addGeoJSONSource(newSource);
+                    if(sourceInfo) {
+                        this.addGeoJSONLayer(type, sourceInfo.sourceId);
+                    }
+                })
+
+                // Or only 1 feature is added
+            } else if(geoJson.source.type == "Feature") {
+                const sourceInfo = this.addGeoJSONSource(geoJson.source);
+                if(sourceInfo) {
+                    this.addGeoJSONLayer(sourceInfo.source.type, sourceInfo.sourceId);
+                }
+            } else {
+                console.error("Could not create layer since source type is neither 'FeatureCollection' nor 'Feature'.")
+            }
+        }
     }
 
     public groupSourcesByGeometryType(sources: FeatureCollection): Map<string, Feature[]> | undefined {
@@ -517,7 +528,6 @@ export class MapWidget {
 
             // Get realm color by getting value from CSS
             let realmColor: string = getComputedStyle(this._mapContainer).getPropertyValue('--or-app-color4');
-            console.log(realmColor);
             if(realmColor == undefined || realmColor.length == 0) {
                 realmColor = DefaultColor4;
             }
