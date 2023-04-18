@@ -238,8 +238,8 @@ export class OrConfMapCard extends LitElement {
                             class="boundary-item"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setCenter(e.detail.value)}"
                             .step="${.01}"></or-mwc-input>
-              <div class="subheader">${i18next.t("configuration.geojson")}</div>
-              <span>${i18next.t("configuration.geojsonDescription")}</span>
+              <div class="subheader">${i18next.t("configuration.geoJson")}</div>
+              <span>${i18next.t("configuration.geoJsonDescription")}</span>
               <div class="input" style="height: 56px; display: flex; align-items: center;">
                 <or-conf-map-geojson .geoJson="${this.map.geoJson}" @update="${(e: CustomEvent) => { console.log(e.detail.value); this.map.geoJson = e.detail.value; this.requestUpdate(); console.log(this.map); }}"></or-conf-map-geojson>
               </div>

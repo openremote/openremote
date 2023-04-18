@@ -672,6 +672,8 @@
     "mapSettings": "Kaartinstelling",
     "maxZoom": "Maximale zoom",
     "minZoom": "Minimale zoom",
+    "geoJson": "GeoJSON",
+    "geoJsonDescription": "Bewerk de GeoJSON; voeg punten, lijnen, en andere vormen toe aan de kaart.",
     "deleteMapCustomization": "Kaartinstelling verwijderen",
     "deleteMapCustomizationConfirm":"Weet je zeker dat je deze kaart wilt verwijderen",
     "addMapCustomization" : "Voeg een Kaartinstelling toe",
