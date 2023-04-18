@@ -202,6 +202,7 @@ export class OrConfMapCard extends LitElement {
                     @or-map-long-press="${(ev: OrMapLongPressEvent) => {
                       this.setCenter(ev.detail.lngLat);
                     }}" .showGeoCodingControl="${true}"
+                    .showGeoJson="${false}"
                     .useZoomControl="${false}"
                     style="height: 500px; width: 100%;">
               ${this.map.center ? html`
@@ -241,7 +242,7 @@ export class OrConfMapCard extends LitElement {
               <div class="subheader">${i18next.t("configuration.geoJson")}</div>
               <span>${i18next.t("configuration.geoJsonDescription")}</span>
               <div class="input" style="height: 56px; display: flex; align-items: center;">
-                <or-conf-map-geojson .geoJson="${this.map.geoJson}" @update="${(e: CustomEvent) => { console.log(e.detail.value); this.map.geoJson = e.detail.value; this.requestUpdate(); console.log(this.map); }}"></or-conf-map-geojson>
+                <or-conf-map-geojson .geoJson="${this.map.geoJson}" @update="${(e: CustomEvent) => { this.map.geoJson = e.detail.value; this.requestUpdate(); }}"></or-conf-map-geojson>
               </div>
             </div>
 

@@ -21,5 +21,5 @@ package org.openremote.model.map;
 
 public class GeoJsonConfig {
     protected Object source;
-    protected Object[] layers;
+    protected Object[] layers; // currently unused; meant for styling customization in the future
 }

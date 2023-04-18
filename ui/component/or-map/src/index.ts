@@ -437,6 +437,9 @@ export class OrMap extends LitElement {
     @property({type: Boolean})
     public useZoomControl: boolean = true;
 
+    @property({type: Boolean})
+    public showGeoJson: boolean = true;
+
     @property({type: Array})
     public boundary: string[] = [];
 
@@ -525,7 +528,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer, this.showBoundaryBoxControl, this.useZoomControl)
+            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls);

@@ -56,17 +56,19 @@ export class MapWidget {
     protected _showGeoCodingControl: boolean = false;
     protected _showBoundaryBox: boolean = false;
     protected _useZoomControls: boolean = true;
+    protected _showGeoJson: boolean = true;
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
 
-    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement, showBoundaryBox = false, useZoomControls = true) {
+    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
         this._showGeoCodingControl = showGeoCodingControl;
         this._showBoundaryBox = showBoundaryBox;
-        this._useZoomControls= useZoomControls;
+        this._useZoomControls = useZoomControls;
+        this._showGeoJson = showGeoJson;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -445,8 +447,6 @@ export class MapWidget {
 
     public async loadGeoJSON() {
 
-        console.log("Loading GeoJSON!");
-
         // Remove old layers
         if(this._geoJsonLayers.size > 0) {
             this._geoJsonLayers.forEach((layer, layerId) => this._mapGl!.removeLayer(layerId));
@@ -459,7 +459,7 @@ export class MapWidget {
         }
 
         // Add new ones if present
-        if (this._viewSettings?.geoJson) {
+        if (this._showGeoJson && this._viewSettings?.geoJson) {
             const geoJson = this._viewSettings.geoJson;
 
             // If array of features (most of the GeoJSONs use this)
