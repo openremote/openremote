@@ -443,6 +443,17 @@ export class MapWidget {
         });
     }
 
+    // Clean up of internal resources associated with the map.
+    // Normally used during disconnectedCallback
+    public unload() {
+        if(this._mapGl) {
+            this._mapGl.remove();
+            this._mapGl = undefined;
+        } else {
+            console.warn("Tried unloading Map, but it was not present.");
+        }
+    }
+
     protected _onMapClick(lngLat: LngLat, doubleClicked: boolean = false) {
         this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat, doubleClicked));
     }
