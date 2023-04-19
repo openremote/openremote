@@ -50,6 +50,7 @@ export class MapWidget {
     protected _markersGl: Map<OrMapMarker, MarkerGL> = new Map();
     protected _geoJsonSources: string[] = [];
     protected _geoJsonLayers: Map<string, any> = new Map();
+    protected _realm?: string;
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLatLike;
     protected _zoom?: number;
@@ -61,10 +62,11 @@ export class MapWidget {
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
 
-    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
+    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, realm?: string, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
+        this._realm = realm;
         this._showGeoCodingControl = showGeoCodingControl;
         this._showBoundaryBox = showBoundaryBox;
         this._useZoomControls = useZoomControls;
@@ -196,7 +198,7 @@ export class MapWidget {
         const settings = settingsResponse.data as any;
 
         // Load options for current realm or fallback to default if exist
-        const realmName = manager.displayRealm || "default";
+        const realmName = this._realm || manager.displayRealm || "default";
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
 
         if (this._viewSettings) {

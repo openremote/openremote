@@ -18,7 +18,6 @@ import {style} from "../style";
 import manager, {Util} from "@openremote/core";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import "@openremote/or-map";
-import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import {
     OrMap,
     MapMarkerAssetConfig,
@@ -42,6 +41,7 @@ export interface MapWidgetConfig extends OrWidgetConfig {
     // Map marker related values
     showLabels: boolean,
     showUnits: boolean,
+    showGeoJson: boolean,
     boolColors: MapMarkerColours,
     textColors: [string, string][],
     // Threshold related values
@@ -73,6 +73,7 @@ export class OrMapWidget implements OrWidgetEntity {
             attributeRefs: [],
             showLabels: false,
             showUnits: false,
+            showGeoJson: true,
             boolColors: {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'},
             textColors: [['example', '4caf50'], ['example2', 'ef5350']],
             thresholds: [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]],
@@ -129,7 +130,7 @@ export class OrMapWidgetContent extends LitElement {
         return html`
             <div style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
                 <or-map id="miniMap" class="or-map" .zoom="${this.widget?.widgetConfig?.zoom}"
-                        .center="${this.widget?.widgetConfig?.center}"
+                        .center="${this.widget?.widgetConfig?.center}" .showGeoJson="${this.widget?.widgetConfig?.showGeoJson}"
                         style="flex: 1;">
                     ${(this.assets) ?
                             this.assets.filter((asset: Asset) => {
@@ -271,8 +272,16 @@ class OrMapWidgetSettings extends LitElement {
                                               }
                                           }}"
                             ></or-mwc-input>
-
-
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 12px 10px;">
+                            <span>${i18next.t('dashboard.showGeoJson')}</span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                          .value="${config.showGeoJson}"
+                                          @or-mwc-input-changed="${(event: CustomEvent) => {
+                                              config.showGeoJson = event.detail.value;
+                                              this.updateConfig(this.widget!, config, true);
+                                          }}"
+                            ></or-mwc-input>
                         </div>
                     </div>
                 ` : null}

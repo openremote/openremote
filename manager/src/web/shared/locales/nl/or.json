@@ -623,6 +623,7 @@
     "widgetTooSmall": "Widget is te klein.",
     "allowTimerangeSelect": "Sta tijdselectie toe",
     "showLegend": "Toon legenda",
+    "showGeoJson": "Toon GeoJSON overlay",
     "showValueAs": "Laat waarde zien als",
     "deleteWidget": "Verwijder widget",
     "myDashboards": "Mijn dashboards",

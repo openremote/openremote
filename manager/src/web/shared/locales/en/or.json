@@ -623,6 +623,7 @@
     "widgetTooSmall": "Widget is too small.",
     "allowTimerangeSelect": "Allow time range selection",
     "showLegend": "Show legend",
+    "showGeoJson": "Show GeoJSON overlay",
     "showValueAs": "Show value as",
     "deleteWidget": "Delete widget",
     "myDashboards": "My dashboards",

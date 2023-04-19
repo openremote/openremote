@@ -123,6 +123,7 @@ export class OrConfMap extends LitElement {
 
   render() {
     const app = this;
+    console.log(this.config);
     return html`
       <div class="panels">
         ${Object.entries(this.config === undefined ? {} : this.config).map(([key , value]) => {

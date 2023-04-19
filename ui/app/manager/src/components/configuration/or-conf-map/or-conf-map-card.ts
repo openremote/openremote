@@ -198,11 +198,11 @@ export class OrConfMapCard extends LitElement {
           <div class="map-container">
             <div class="subheader">${i18next.t("map")}</div>
             <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .zoom="${this.zoom}"
-                    .boundary="${this.map.bounds}"
+                    .boundary="${this.map.bounds}" .realm="${this.name}"
                     @or-map-long-press="${(ev: OrMapLongPressEvent) => {
                       this.setCenter(ev.detail.lngLat);
                     }}" .showGeoCodingControl="${true}"
-                    .showGeoJson="${false}"
+                    .showGeoJson="${true}"
                     .useZoomControl="${false}"
                     style="height: 500px; width: 100%;">
               ${this.map.center ? html`
