@@ -37,13 +37,16 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
     }
 
     @Override
-    public String getSQLQuery(String tableName, Class<?> attributeType) {
+    public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
+        boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         String function = (gapFill ? "public.time_bucket_gapfill" : "public.time_bucket");
         if (isNumber) {
             return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(value::text::numeric) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x;";
-        } else {
+        } else if (isBoolean) {
             return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when VALUE::text::boolean is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x;";
+        } else {
+            throw new IllegalStateException("Query of type Interval requires either a number or a boolean attribute.");
         }
     }
 

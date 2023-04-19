@@ -53,7 +53,12 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
         });
 
         LOG.info("Deleting all non-master admin users");
-        Arrays.stream(keycloakProvider.queryUsers(new UserQuery().realm(new RealmPredicate(MASTER_REALM)))).forEach(user -> {
+        Arrays.stream(keycloakProvider.queryUsers(
+            // Exclude service accounts (client deletion will remove the user)
+            new UserQuery()
+                .realm(new RealmPredicate(MASTER_REALM))
+                .serviceUsers(false)
+        )).forEach(user -> {
             if (!user.getUsername().equals(MASTER_REALM_ADMIN_USER) && !user.getUsername().equals(MANAGER_CLIENT_ID)) {
                 LOG.info("Deleting user: " + user);
                 keycloakProvider.deleteUser(MASTER_REALM, user.getId());

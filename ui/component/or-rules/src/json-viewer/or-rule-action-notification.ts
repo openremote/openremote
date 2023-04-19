@@ -122,17 +122,41 @@ export class OrRuleActionNotification extends LitElement {
             let value: string | undefined;
 
             if (targetType === NotificationTargetType.USER) {
-                targetValuesGenerator = manager.rest.api.UserResource.query({realm: manager.displayRealm} as UserQuery).then(
-                    (usersResponse) => usersResponse.data.map((user) => [user.id!, user.username!])
+                // Get users excluding system accounts and service users
+                const query: UserQuery = {
+                    realmPredicate: {name: manager.displayRealm},
+                    select: {basic: true},
+                    serviceUsers: false,
+                    attributes: [{name: {value: "systemAccount", predicateType: "string"}, negated: true}]
+                }
+                targetValuesGenerator = manager.rest.api.UserResource.query(query).then(
+                    async (usersResponse) => {
+                        const linkedLabel = i18next.t("linked");
+
+                        // Get realm roles and add as options
+                        const realm = await manager.rest.api.RealmResource.get(manager.displayRealm);
+                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.filter(r => Util.realmRoleFilter(r)).map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
+                        let values: [string, string][] = usersResponse.data.map((user) => [user.id!, user.username!]);
+                        return [["linkedUsers", linkedLabel], ...realmRoleOpts, ...values];
+                    }
                 );
                 label = i18next.t("user_plural");
+                const userQuery = action.target!.users!;
 
-                if (action.target!.users) {
-                    const userQuery = action.target!.users!;
-
+                if (action.target!.linkedUsers) {
+                    if (userQuery && userQuery.realmRoles) {
+                        if (userQuery.realmRoles.length > 1) {
+                            console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
+                            return;
+                        }
+                        value = "linked-" + userQuery.realmRoles[0].value;
+                    } else {
+                        value = "linkedUsers";
+                    }
+                } else if (userQuery) {
                     if ((userQuery.ids && userQuery.ids.length > 1)
                         || userQuery.usernames
-                        || userQuery.assetPredicate
+                        || userQuery.assets
                         || userQuery.limit
                         || userQuery.pathPredicate
                         || userQuery.realmPredicate) {
@@ -143,8 +167,9 @@ export class OrRuleActionNotification extends LitElement {
                     if (userQuery.ids && userQuery.ids.length === 1) {
                         value = userQuery.ids[0];
                     }
-                } else if (action.target!.linkedUsers) {
-                    value = "linkedUsers";
+                } else {
+                    console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
+                    return;
                 }
 
             } else {
@@ -154,7 +179,20 @@ export class OrRuleActionNotification extends LitElement {
                 };
 
                 targetValuesGenerator = manager.rest.api.AssetResource.queryAssets(assetQuery).then(
-                    (response) => response.data.map((asset) => [asset.id!, asset.name! + " (" + asset.id! + ")"])
+                    (response) => {
+                        let values: [string, string][] = response.data.map((asset) => [asset.id!, asset.name! + " (" + asset.id! + ")"]);
+
+                        // Add additional options for assets
+                        const additionalValues: [string, string][] = [["allMatched", i18next.t("matched")]];
+                        if (targetTypeMap && targetTypeMap.length > 1) {
+                            targetTypeMap.forEach((typeAndTag) => {
+                                if (!additionalValues.find((av) => av[0] === typeAndTag[0])) {
+                                    additionalValues.push([typeAndTag[0], i18next.t("matchedOfType", {type: Util.getAssetTypeLabel(typeAndTag[0])})]);
+                                }
+                            });
+                        }
+                        return [...additionalValues, ...values];
+                    }
                 );
                 label = i18next.t("asset_plural");
                 if (!action.target) {
@@ -185,22 +223,6 @@ export class OrRuleActionNotification extends LitElement {
             }
 
             targetValueTemplate = targetValuesGenerator.then((values) => {
-
-                // Add additional options for assets
-                if (targetType === NotificationTargetType.ASSET) {
-                    const additionalValues: [string, string][] = [["allMatched", i18next.t("matched")]];
-                    if (targetTypeMap && targetTypeMap.length > 1) {
-                        targetTypeMap.forEach((typeAndTag) => {
-                            if (!additionalValues.find((av) => av[0] === typeAndTag[0])) {
-                                additionalValues.push([typeAndTag[0], i18next.t("matchedOfType", {type: Util.getAssetTypeLabel(typeAndTag[0])})]);
-                            }
-                        });
-                    }
-                    values = [...additionalValues, ...values];
-                } else if (targetType === NotificationTargetType.USER) {
-                    // Add additional option for linked users
-                    values = [["linkedUsers", i18next.t("linked")], ...values];
-                }
 
                 return html`
                     <or-mwc-input type="${InputType.SELECT}" 
@@ -318,6 +340,18 @@ export class OrRuleActionNotification extends LitElement {
             case NotificationTargetType.USER:
                 if (value === "linkedUsers") {
                     this.action.target = {
+                        linkedUsers: true
+                    }
+                } else if (value?.startsWith("linked-")) {
+                    this.action.target = {
+                        users: {
+                            realmRoles: [
+                                {
+                                    predicateType: "string",
+                                    value: value?.substring(7)
+                                }
+                            ]
+                        },
                         linkedUsers: true
                     }
                 } else if (value) {

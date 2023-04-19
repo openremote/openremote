@@ -39,6 +39,8 @@ import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.RepeatFrequency;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
@@ -522,18 +524,20 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     }
 
                     // Requester must be in the same realm as all target users
-                    boolean realmMatch = false;
+                    boolean realmMatch;
 
                     if (target.getType() == Notification.TargetType.USER) {
-                        realmMatch = Arrays.stream(identityService.getIdentityProvider().queryUsers(new UserQuery().ids(target.getId())))
-                                .allMatch(user -> realm.equals(user.getRealm()));
+                        realmMatch = Arrays.stream(identityService.getIdentityProvider().queryUsers(
+                            // Exclude service accounts and system accounts
+                            new UserQuery().ids(target.getId()).serviceUsers(false).attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)))
+                            )).allMatch(user -> realm.equals(user.getRealm()));
                     } else {
-                        // Can only send to the same realm as the requestor realm
+                        // Can only send to the same realm as the requester realm
                         realmMatch = realm.equals(target.getId());
                     }
 
                     if (!realmMatch) {
-                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requester");
                     }
                     break;
 

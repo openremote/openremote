@@ -11,7 +11,6 @@ import org.openremote.model.notification.PushNotificationButton
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.query.UserQuery
-import org.openremote.model.query.filter.UserAssetPredicate
 import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users
 
@@ -146,7 +145,7 @@ rules.add()
 
             // Get users linked to this residence
             UserQuery query = new UserQuery()
-                    .asset(new UserAssetPredicate(alarmTrigger.residenceId))
+                    .assets(alarmTrigger.residenceId)
 
             Collection<String> userIds = users.getResults(query).collect(Collectors.toList())
 

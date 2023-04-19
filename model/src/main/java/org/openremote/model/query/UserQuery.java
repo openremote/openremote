@@ -1,34 +1,70 @@
 package org.openremote.model.query;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.query.filter.UserAssetPredicate;
 
 import java.util.Arrays;
 
 public class UserQuery {
 
+    public static class AttributeValuePredicate {
+        public boolean negated;
+        public StringPredicate name;
+        public StringPredicate value;
+
+        public AttributeValuePredicate(boolean negated, StringPredicate name) {
+            this.negated = negated;
+            this.name = name;
+        }
+
+        @JsonCreator
+        public AttributeValuePredicate(boolean negated, StringPredicate name, StringPredicate value) {
+            this.negated = negated;
+            this.name = name;
+            this.value = value;
+        }
+
+        public boolean isNegated() {
+            return negated;
+        }
+
+        public AttributeValuePredicate setNegated(boolean negated) {
+            this.negated = negated;
+            return this;
+        }
+
+        public StringPredicate getName() {
+            return name;
+        }
+
+        public AttributeValuePredicate setName(StringPredicate name) {
+            this.name = name;
+            return this;
+        }
+
+        public StringPredicate getValue() {
+            return value;
+        }
+
+        public AttributeValuePredicate setValue(StringPredicate value) {
+            this.value = value;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "negated=" + negated +
+                ", name=" + name +
+                ", value=" + value +
+                '}';
+        }
+    }
+
     public static class Select {
         public boolean basic;
-        public boolean excludeServiceUsers;
-        public boolean excludeRegularUsers;
-        public boolean excludeSystemUsers;
-
-        public Select excludeServiceUsers(boolean excludeServiceUsers) {
-            this.excludeServiceUsers = excludeServiceUsers;
-            return this;
-        }
-
-        public Select excludeRegularUsers(boolean excludeRegularUsers) {
-            this.excludeRegularUsers = excludeRegularUsers;
-            return this;
-        }
-
-        public Select excludeSystemUsers(boolean excludeSystemUsers) {
-            this.excludeSystemUsers = excludeSystemUsers;
-            return this;
-        }
 
         public Select basic(boolean basic) {
             this.basic = basic;
@@ -38,10 +74,7 @@ public class UserQuery {
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
-                "excludeServiceUsers=" + excludeServiceUsers +
-                ", excludeRegularUsers=" + excludeRegularUsers +
-                ", excludeSystemUsers=" + excludeSystemUsers +
-                ", basic=" + basic +
+               ", basic=" + basic +
                 '}';
         }
     }
@@ -92,11 +125,20 @@ public class UserQuery {
 
     // Restriction predicates
     public RealmPredicate realmPredicate;
-    public UserAssetPredicate assetPredicate;
+    public String[] assets;
     public PathPredicate pathPredicate;
     public String[] ids;
     public Select select;
     public StringPredicate[] usernames;
+    /**
+     * AND condition is assumed between values
+     */
+    public AttributeValuePredicate[] attributes;
+    /**
+     * OR condition is assumed between values (AND filtering can be applied by the caller on the results)
+     */
+    public StringPredicate[] realmRoles;
+    public Boolean serviceUsers;
     public Integer limit;
     public Integer offset;
     public OrderBy orderBy;
@@ -109,8 +151,8 @@ public class UserQuery {
         return this;
     }
 
-    public UserQuery asset(UserAssetPredicate assetPredicate) {
-        this.assetPredicate = assetPredicate;
+    public UserQuery assets(String...assetIds) {
+        this.assets = assetIds;
         return this;
     }
 
@@ -126,6 +168,21 @@ public class UserQuery {
 
     public UserQuery usernames(StringPredicate...usernames) {
         this.usernames = usernames;
+        return this;
+    }
+
+    public UserQuery attributes(AttributeValuePredicate...attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
+    public UserQuery realmRoles(StringPredicate...realmRoles) {
+        this.realmRoles = realmRoles;
+        return this;
+    }
+
+    public UserQuery serviceUsers(Boolean serviceUsers) {
+        this.serviceUsers = serviceUsers;
         return this;
     }
 
@@ -153,10 +210,13 @@ public class UserQuery {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "realmPredicate=" + realmPredicate +
-            ", assetPredicate=" + assetPredicate +
+            ", assets=" + assets +
             ", pathPredicate=" + pathPredicate +
             ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +
             ", usernames=" + (usernames != null ? Arrays.toString(usernames) : "null") +
+            ", serviceUsers=" + serviceUsers +
+            ", attributes=" + (attributes != null ? Arrays.toString(attributes) : "null") +
+            ", realmRoles=" + (realmRoles != null ? Arrays.toString(realmRoles) : "null") +
             ", limit=" + limit +
             ", offset=" + offset +
             ", orderBy=" + orderBy +

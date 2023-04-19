@@ -197,7 +197,14 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                         boolean isNumber = Number.class.isAssignableFrom(attributeType);
                         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
 
-                        try (PreparedStatement st = connection.prepareStatement(datapointQuery.getSQLQuery(getDatapointTableName(), attributeType))) {
+                        String query;
+                        try {
+                            query = datapointQuery.getSQLQuery(getDatapointTableName(), attributeType);
+                        } catch (IllegalStateException ise) {
+                            getLogger().log(Level.WARNING, ise.getMessage());
+                            throw ise;
+                        }
+                        try (PreparedStatement st = connection.prepareStatement(query)) {
 
                             if(parameters.size() > 0) {
                                 for(Map.Entry<Integer, Object> param : parameters.entrySet()) {
