@@ -9,6 +9,7 @@ import {style} from "../style";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
 import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrFileUploader} from "@openremote/or-components/or-file-uploader";
+// import "@openremote/or-image-map";
 
 export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
@@ -77,20 +78,80 @@ export class OrImageWidgetContent extends LitElement {
     private loadedAssets: Asset[] = [];
 
     @state()
+    public imageUploaded?: boolean;
+
+    @state()
     private image?: string;
 
     @state()
     private assetAttributes: [number, Attribute<any>][] = [];
 
+    
+
+    // render() {
+    //     return html`
+    //         <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .displayMode="${this.widget?.widgetConfig.displayMode}"
+    //                            .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}" .imageUploaded="${this.widget?.widgetConfig.imageUploaded}" 
+    //                            ."image" = "${this.image}"
+    //                            showControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
+    //         </or-attribute-card>
+    //     `
+    // }
+
     render() {
-        return html`
-            <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .displayMode="${this.widget?.widgetConfig.displayMode}"
-                               .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}" .imageUploaded="${this.widget?.widgetConfig.imageUploaded}" 
-                               ."image" = "${this.image}"
-                               showControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
-            </or-attribute-card>
+
+        const css = 
         `
+            .img-content {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                width: 100%;
+                object-fit: contain;
+                flex: 1;
+            }
+        `
+
+        return html
+            `
+                <style>
+                    ${css}
+                </style>
+            <div style="height: 100%; display: flex; justify-content: center; align-items: center; position: relative;">
+            <span></span>
+            <img class="img-content" src="https://home3ds.com/wp-content/uploads/2018/11/PNG.png" alt="">
+            </div>
+            `;
+
+        
+        //general logic for rendering changes in widget from settings interaction
+        // if (!this.widget?.widgetConfig.imageUploaded) {
+        //     return html
+        //     `<div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+        //     <span>${i18next.t('noAttributesConnected')}</span>
+        //     </div>`;
+        // } else {
+        //     // doesnt necessarily need a request update??? tho thats pretty strange imo
+        //     // this.requestUpdate();
+        //     console.log("Inside render for image widget");
+        //     console.log(this.widget?.widgetConfig.image);
+        //     return html
+        //     `<div style="height: 100%; display: flex; justify-content: center; align-items: center; position: relative;">
+        //     <span></span>
+        //     <img class="img" src="https://scontent.xx.fbcdn.net/v/t1.15752-9/336973731_198428016250982_2588607385324835429_n.jpg?stp=dst-jpg_s403x403&_nc_cat=111&ccb=1-7&_nc_sid=aee45a&_nc_ohc=MHIkM7wrLoUAX_86ZpQ&_nc_ad=z-m&_nc_cid=0&_nc_ht=scontent.xx&oh=03_AdQxNZAtLZiQT-r_c6EzxWUFLWwykEY7Tgmk0VZo6i0qfA&oe=645237EC" alt="">
+        //     </div>`;
+            
+        // }
+
+        //tested html progress for rendering image from local url
+        // `<div style="height: 100%; display: flex; justify-content: center; align-items: center; position: relative;">
+            // <span></span>
+            // <img class="img" src="${URL.createObjectURL(this.widget?.widgetConfig.image)}" alt="">
+            // </div>`;
+        
+        
     }
+
 
     updated(changedProperties: Map<string, any>) {
         if(changedProperties.has("widget") || changedProperties.has("editMode")) {
@@ -223,13 +284,23 @@ export class OrImageWidgetSettings extends LitElement {
                         <div>
                             <or-mwc-input .type="${InputType.BUTTON}" style="width: 100%;"" .value="${config.imageUploaded}" label="${i18next.t('Upload Image')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                            console.log(config);
                                             if (event.detail.value) {
                                                 const input = document.createElement('input');
                                                 input.type = 'file';
                                                 input.click();
+                                                console.log(input);
+                                                console.log(event);
+                                                input.addEventListener("change", function() {
+                                                    if (input.files != null){
+                                                        config.image = input.files[0].name;
+                                                    }
+                                                })
+                                                
                                             }
+                                            
                                               config.imageUploaded = event.detail.value;
-                                              console.log(config.imageUploaded);
+
                                               this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
