@@ -319,7 +319,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     @Override
     public String toString() {
-        String valStr = value.toString();
+        String valStr = value != null ? value.toString() : null;
         valStr = valStr != null && valStr.length() > 100 ? valStr.substring(0, 100) : valStr;
         return getClass().getSimpleName() + "{" +
             "name='" + name + '\'' +
