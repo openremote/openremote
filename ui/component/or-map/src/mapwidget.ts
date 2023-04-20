@@ -449,8 +449,10 @@ export class MapWidget {
         if(this._mapGl) {
             this._mapGl.remove();
             this._mapGl = undefined;
-        } else {
-            console.warn("Tried unloading Map, but it was not present.");
+        }
+        if(this._mapJs) {
+            this._mapJs.remove();
+            this._mapJs = undefined;
         }
     }
 
