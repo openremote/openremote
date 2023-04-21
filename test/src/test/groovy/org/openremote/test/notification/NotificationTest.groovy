@@ -574,7 +574,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         expect: "the demo users to be created"
         conditions.eventually {
-            def users = identityService.getIdentityProvider().queryUsers(new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)).select(new UserQuery.Select().excludeServiceUsers(true)))
+            def users = identityService.getIdentityProvider().queryUsers(new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)).serviceUsers(false))
             assert users.size() == 3
             assert users.count { !TextUtil.isNullOrEmpty(it.email)} == 3
         }

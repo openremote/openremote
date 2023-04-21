@@ -306,23 +306,19 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         if (!Files.exists(storageDir)) {
             Files.createDirectories(storageDir);
-            if (!storageDir.toFile().setWritable(true, false)) {
-                String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' doesn't exist and cannot be created";
-                LOG.log(Level.SEVERE, msg);
-                throw new FileSystemNotFoundException(msg);
-            }
-        } else {
-            if (!Files.isDirectory(storageDir)) {
-                String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' is not a folder";
-                LOG.log(Level.SEVERE, msg);
-                throw new FileSystemNotFoundException(msg);
-            }
-            File testFile = storageDir.toFile();
-            if (!testFile.canRead() || !testFile.canWrite()) {
-                String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' is not writable";
-                LOG.log(Level.SEVERE, msg);
-                throw new FileSystemNotFoundException(msg);
-            }
+        }
+
+        if (!Files.isDirectory(storageDir)) {
+            String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' is not a folder";
+            LOG.log(Level.SEVERE, msg);
+            throw new FileSystemNotFoundException(msg);
+        }
+
+        File testFile = storageDir.toFile();
+        if (!testFile.canRead() || !testFile.canWrite()) {
+            String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' is not writable";
+            LOG.log(Level.SEVERE, msg);
+            throw new FileSystemNotFoundException(msg);
         }
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);

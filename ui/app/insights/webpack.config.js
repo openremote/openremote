@@ -47,7 +47,7 @@ module.exports = (env, argv) => {
   // Add a custom base URL to resolve the config dir to the path of the dev server not root
   config.plugins.push(
     new webpack.DefinePlugin({
-      CONFIG_URL_PREFIX: JSON.stringify(IS_DEV_SERVER && customConfigDir ? "/dashboard" : "")
+      CONFIG_URL_PREFIX: JSON.stringify(IS_DEV_SERVER && customConfigDir ? "/insights" : "")
     })
   );
 

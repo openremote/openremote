@@ -58,9 +58,10 @@ export class OrMwcDrawer extends LitElement {
   }
 
   protected render() {
-
+    const isModal = !this.dismissible;
     const classes = {
       "mdc-drawer--dismissible": this.dismissible,
+      "mdc-drawer--modal": isModal,
       "transparent": this.transparent
     };
 

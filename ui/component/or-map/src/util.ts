@@ -115,7 +115,7 @@ export function getMarkerIconAndColorFromAssetType(
             if (colourConfig.type === "range" && colourConfig.ranges && typeof attrVal === "number") {
                 const ranges = colourConfig.ranges;
                 // see in what range the attrVal fits and if not, what the setting for the highest range is
-                const colourFromRange = ranges.find(r => attrVal > r.min) || ranges.reduce((a, b) => (b.min > a.min) ? a : b);
+                const colourFromRange = ranges.sort((a, b) => b.min - a.min).find(r => attrVal >= r.min) || ranges.reduce((a, b) => (b.min > a.min) ? a : b);
                 colour = colourFromRange.colour || undefined;
             } else if (colourConfig.type === "boolean") {
                 const value = !!attrVal + "";

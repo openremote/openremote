@@ -210,6 +210,12 @@ export function getActivePreset(gridWidth: number, presets: DashboardScreenPrese
 }
 export const widgetTypes: Map<string, OrWidgetEntity> = new Map<string, OrWidgetEntity>();
 
+export function registerWidgetTypes() {
+    widgetTypes.set("linechart", new OrChartWidget());
+    widgetTypes.set("kpi", new OrKpiWidget());
+    widgetTypes.set("gauge", new OrGaugeWidget());
+    widgetTypes.set("map", new OrMapWidget());
+}
 
 @customElement("or-dashboard-builder")
 export class OrDashboardBuilder extends LitElement {
@@ -285,11 +291,7 @@ export class OrDashboardBuilder extends LitElement {
         this.hasChanged = false;
         this.rerenderPending = false;
 
-        this.registerWidgetType("linechart", new OrChartWidget());
-        this.registerWidgetType("kpi", new OrKpiWidget());
-        this.registerWidgetType("gauge", new OrGaugeWidget());
-        this.registerWidgetType("map", new OrMapWidget());
-        this.registerWidgetType("image", new OrImageWidget());
+        registerWidgetTypes();
 
         this.updateComplete.then(async () => {
             await this.updateDashboards(this.realm!);
@@ -661,10 +663,6 @@ export class OrDashboardBuilder extends LitElement {
                 `}
             </div>
         `
-    }
-
-    registerWidgetType(name: string, widget: OrWidgetEntity) {
-        widgetTypes.set(name, widget);
     }
 
     /* ======================== */

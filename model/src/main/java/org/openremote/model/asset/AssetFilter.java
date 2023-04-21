@@ -177,17 +177,18 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
             }
         }
 
-        if (attributeNames != null && attributeNames.length > 0) {
-            if (filterAttributesBy != null) {
-                // Filter attributes before doing name match
-                AssetEvent assetEvent = (AssetEvent) event;
-                if (assetEvent.getAsset() != null) {
-                    Asset<?> asset = ValueUtil.clone(assetEvent.getAsset());
-                    MetaItemDescriptor<?> finalFilterAttributesBy = filterAttributesBy;
-                    asset.setAttributes(asset.getAttributes().values().stream().filter(attribute -> attribute.hasMeta(finalFilterAttributesBy)).collect(Collectors.toList()));
-                    event = (T) new AssetEvent(assetEvent.getCause(), asset, assetEvent.getUpdatedProperties());
-                }
+        if (filterAttributesBy != null) {
+            // Filter attributes before doing name match
+            AssetEvent assetEvent = (AssetEvent) event;
+            if (assetEvent.getAsset() != null) {
+                Asset<?> asset = ValueUtil.clone(assetEvent.getAsset());
+                MetaItemDescriptor<?> finalFilterAttributesBy = filterAttributesBy;
+                asset.setAttributes(asset.getAttributes().values().stream().filter(attribute -> attribute.hasMeta(finalFilterAttributesBy)).collect(Collectors.toList()));
+                event = (T) new AssetEvent(assetEvent.getCause(), asset, assetEvent.getUpdatedProperties());
             }
+        }
+
+        if (attributeNames != null && attributeNames.length > 0) {
             List<String> eventAttributeNames = Arrays.asList(event.getAttributeNames());
             if (Arrays.stream(attributeNames).noneMatch(eventAttributeNames::contains)) {
                 return null;

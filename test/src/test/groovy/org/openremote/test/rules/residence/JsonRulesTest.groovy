@@ -106,9 +106,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
     def "Turn all lights off when console exits the residence geofence"() {
 
-        List<PushNotificationMessage> pushMessages = []
+        List<Tuple2<Notification.Target, PushNotificationMessage>> pushTargetsAndMessages = []
         List<jakarta.mail.Message> emailMessages = []
-        List<Notification.Target> pushTargets = []
         List<Notification.Target> emailTargets = []
 
         given: "the geofence notifier debounce is set to a small value for testing"
@@ -135,8 +134,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         mockPushNotificationHandler.isValid() >> true
         mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
             id, source, sourceId, target, message ->
-                pushMessages << message
-                pushTargets << target
+                pushTargetsAndMessages << new Tuple2<>(target, message)
                 callRealMethod()
         }
         // Assume sent to FCM
@@ -154,7 +152,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 callRealMethod()
         }
 
-        // Assume sent to FCM
+        // Assume sent to server
         mockEmailNotificationHandler.sendMessage(_ as jakarta.mail.Message) >> {
             email ->
                 emailMessages << email.get(0)
@@ -199,7 +197,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 "testuser3"
         ).token
 
-        and: "a console is registered by that user"
+        and: "another user authenticates"
+        def accessToken2 = authenticate(
+                container,
+                keycloakTestSetup.realmBuilding.name,
+                KEYCLOAK_CLIENT_ID,
+                "building",
+                "building"
+        ).token
+
+        and: "a console is registered by the first user"
         def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken).proxy(ConsoleResource.class)
         def consoleRegistration = new ConsoleRegistration(null,
                 "Test Console",
@@ -231,6 +238,38 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
+        and: "a console is registered by the second user"
+        def authenticatedConsoleResource2 = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name, accessToken2).proxy(ConsoleResource.class)
+        def consoleRegistration2 = new ConsoleRegistration(null,
+                "Test Console",
+                "1.0",
+                "Android 7.0",
+                new HashMap<String, ConsoleProvider>() {
+                    {
+                        put("geofence", new ConsoleProvider(
+                                ORConsoleGeofenceAssetAdapter.NAME,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                null
+                        ))
+                        put("push", new ConsoleProvider(
+                                "fcm",
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                )))
+                    }
+                },
+                "",
+                ["manager"] as String[])
+        consoleRegistration2 = authenticatedConsoleResource2.register(null, consoleRegistration2)
+
         and: "the console location is marked as RULE_STATE"
         def asset = assetStorageService.find(consoleRegistration.id)
         asset.getAttribute(Asset.LOCATION).ifPresent { it.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}
@@ -238,12 +277,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "a geofence refresh notification should have been sent to the console"
         conditions.eventually {
-            assert pushMessages.size() == 1
+            assert pushTargetsAndMessages.size() == 1
         }
 
-        when:"an additional user is linked to this console (to help with testing)"
+        when:"additional users are linked to this console (to help with testing)"
         assetStorageService.storeUserAssetLinks(
-                Collections.singletonList(new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.testuser2Id, consoleRegistration.id))
+            [
+                new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.testuser2Id, consoleRegistration.id),
+                new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.buildingUserId, consoleRegistration.id)
+            ]
         )
 
         and: "the console location is set to the apartment"
@@ -285,14 +327,19 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "a push notification should have been sent to the console via the asset target with the title 'Test title'"
         conditions.eventually {
-            assert pushMessages.findAll {it.title == "Test title"}.size() == 1
-            assert pushTargets.any {it.type == Notification.TargetType.ASSET && it.id == consoleRegistration.id}
+            assert pushTargetsAndMessages.count {it.v2.title == "Test title" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration.id} == 1
         }
 
-        and: "a push notification should have been sent to the console via the user target with the title 'Linked user test'"
+        and: "two push notifications should have been sent to the consoles via the linked user targets with test-realm-role% realm attribute with the title 'Linked user test'"
         conditions.eventually {
-            assert pushMessages.findAll {it.title == "Linked user test"}.size() == 1
-            assert pushTargets.any {it.type == Notification.TargetType.ASSET && it.id == consoleRegistration.id}
+            assert pushTargetsAndMessages.count {it.v2.title == "Linked user test" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration.id} == 1
+            assert pushTargetsAndMessages.count {it.v2.title == "Linked user test" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration2.id} == 1
+        }
+
+        and: "a push notifications should have been sent to the consoles of the linked user target with test-realm-role-2 realm attribute with the title 'Linked user test 2'"
+        conditions.eventually {
+            assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 2" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration.id} == 1
+            assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 2" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration2.id} == 1
         }
 
         and: "an email notification should have been sent to test@openremote.io with the triggered asset in the body"
@@ -311,7 +358,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "after a few seconds the rule should not have fired again"
         new PollingConditions(timeout: 5, initialDelay: 1).eventually {
-            assert pushMessages.findAll {it.title == "Test title"}.size() == 1
+            assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 1
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
@@ -328,7 +375,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
-            assert pushMessages.findAll {it.title == "Test title"}.size() == 2
+            assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 2
         }
 
         when: "the console sends a location update with a new location but still outside the geofence"
@@ -338,7 +385,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "after a few seconds the rule should not have fired again"
         new PollingConditions(timeout: 5, initialDelay: 1).eventually {
-            assert pushMessages.findAll {it.title == "Test title"}.size() == 2
+            assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 2
         }
 
         when: "the ruleset is modified to add a 4hr recurrence per asset"
@@ -356,7 +403,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "another notification should have been sent to the console when rule is redeployed"
         conditions.eventually {
-            assert pushMessages.findAll {it.title == "Test title"}.size() == 3
+            assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 3
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
@@ -374,7 +421,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "after a few seconds the rule should not have fired again"
         new PollingConditions(timeout: 5, initialDelay: 1).eventually {
-            assert pushMessages.findAll {it.title == "Test title"}.size() == 3
+            assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 3
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
@@ -395,8 +442,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
-            assert pushMessages.findAll {it.title == "Test title"}.size() == 4
-            assert pushTargets[3].id == consoleRegistration.id
+            assert pushTargetsAndMessages.findAll {it.v2.title == "Test title" && it.v1.id == consoleRegistration.id}.size() == 4
         }
 
         when: "the Rules PAUSE_SCHEDULER is overridden to facilitate testing"
@@ -451,7 +497,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "no notification should have been sent as outside the validity period"
-        assert pushMessages.findAll {it.title == "Test title"}.size() == 4
+        assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 4
 
         when: "the pause elapses"
         engine.unPauseRuleset(deployment)
@@ -474,7 +520,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "another notification should have been sent as inside the validity period"
         conditions.eventually {
-            assert pushMessages.findAll {it.title == "Test title"}.size() == 5
+            assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 5
         }
 
         when: "the un-pause elapses"
@@ -497,7 +543,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         and: "no notification should have been sent as outside the validity period"
-        assert pushMessages.findAll {it.title == "Test title"}.size() == 5
+        assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 5
 
         when: "the pause elapses"
         engine.unPauseRuleset(deployment)

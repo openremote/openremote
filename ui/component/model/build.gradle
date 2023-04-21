@@ -39,7 +39,6 @@ generateTypeScript {
         "org.openremote.model.util.**",
         "org.openremote.model.flow.**",
         "java.io.**",
-        "java.lang.**",
         "org.hibernate.**",
         "com.vladmihalcea.**",
         "jakarta.**"
