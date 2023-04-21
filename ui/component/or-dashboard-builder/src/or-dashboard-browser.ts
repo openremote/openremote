@@ -93,7 +93,6 @@ export class OrDashboardBrowser extends LitElement {
                 sidebarHeight = (item.y + item.h);
             }
         });
-        console.log(sidebarHeight)
 
         let newSidebarHeight = 0;
         if (sidebarItems.length % 2 != 0) {
@@ -102,8 +101,6 @@ export class OrDashboardBrowser extends LitElement {
         } else {
             newSidebarHeight = sidebarItems.length
         };
-        console.log("with change new sidebar height is: " + newSidebarHeight)
-
         // Creation of the sidebarGrid. Only loads items if already existing
         if(this.sidebarGrid != undefined) {
             this.sidebarGrid.removeAll();

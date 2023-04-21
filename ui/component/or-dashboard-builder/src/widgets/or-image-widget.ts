@@ -81,7 +81,7 @@ export class OrImageWidgetContent extends LitElement {
     public imageUploaded?: boolean;
 
     @state()
-    private image?: string;
+    private image?: HTMLInputElement;
 
     @state()
     private assetAttributes: [number, Attribute<any>][] = [];
@@ -282,23 +282,46 @@ export class OrImageWidgetSettings extends LitElement {
                 ${this.expandedPanels.includes(i18next.t('image settings')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
                         <div>
-                            <or-mwc-input .type="${InputType.BUTTON}" style="width: 100%;"" .value="${config.imageUploaded}" label="${i18next.t('Upload Image')}"
+                            <or-mwc-input .type="${InputType.BUTTON}" id="file-input" style="width: 100%;" .value="${config.imageUploaded}" label="${i18next.t('Upload Image')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                             console.log(config);
                                             if (event.detail.value) {
-                                                const input = document.createElement('input');
-                                                input.type = 'file';
-                                                input.click();
-                                                console.log(input);
-                                                console.log(event);
-                                                input.addEventListener("change", function() {
-                                                    if (input.files != null){
-                                                        config.image = input.files[0].name;
+
+                                                const fileInput = document.getElementById('file-input') as HTMLInputElement;
+                                                console.log(fileInput);
+                                                fileInput?.addEventListener('change', function(event){
+                                                    
+                                                    if (event.target instanceof HTMLInputElement && event.target.files) {
+                                                        const file = event.target.files[0];
+                                                        console.log(file);
+                                                        const reader = new FileReader();
+                                                        reader.onload = function(event) {
+                                                            const img = new Image();
+                                                            img.src = event.target!.result as string;
+                                                            document.body.appendChild(img);
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                        console.log(file);
                                                     }
+                                                    
                                                 })
+
+                                                // const input = document.createElement('input');
+                                                // input.type = 'file';
+                                                // input.click();
+                                                // console.log("Reading input");
+                                                // console.log(input);
+                                                // // config.image = input;
+                                                // // this.readFile(input);
+                                                // console.log(event);
+                                                // input.addEventListener("change", function() {
+                                                //     if (input.files != null){
+                                                //         config.image = input.files[0].name;
+                                                //     }
+                                                // })
+                                                
                                                 
                                             }
-                                            
                                               config.imageUploaded = event.detail.value;
 
                                               this.updateConfig(this.widget!, config);
@@ -311,20 +334,20 @@ export class OrImageWidgetSettings extends LitElement {
         `
     }
 
-    fileUpload() {
-        const fileSelector = document.createElement('input');
-        fileSelector.setAttribute('type', 'file');
+    readFile(input: Blob) {
+        // @ts-ignore: Object is possibly 'null'.
+        let file = input;
 
-        var selectDialogueLink = document.createElement('a');
-        selectDialogueLink.setAttribute('href', '');
-        selectDialogueLink.innerText = "Select file";
+        let reader = new FileReader();
 
-        selectDialogueLink.onclick = function() {
-            fileSelector.click();
-            return false;
+        reader.readAsText(file);
+        reader.onload = function() {
+            console.log(reader.result);
         };
 
-        document.body.appendChild(selectDialogueLink);
+        reader.onerror = function() {
+            console.log(reader.error);
+        }
     }
 
     updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
