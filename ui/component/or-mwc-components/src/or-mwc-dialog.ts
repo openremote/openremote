@@ -305,7 +305,7 @@ export class OrMwcDialog extends LitElement {
                             <footer class="mdc-dialog__actions">
                                 ${this.actions ? this.actions.map((action) => {
                                     return html`
-                                    <div class="mdc-button mdc-dialog__button" ?data-mdc-dialog-button-default="${action.default}" data-mdc-dialog-action="${action.actionName}">
+                                    <div class="mdc-button mdc-dialog__button" ?data-mdc-dialog-button-default="${action.default}" data-mdc-dialog-action="${action.disabled ? undefined : action.actionName}">
                                         ${typeof(action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" @or-mwc-input-changed="${(ev: Event) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
                                     </div>`;
                                 }) : ``}
