@@ -22,13 +22,9 @@ package org.openremote.manager.rules;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.api.client.json.Json;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minidev.json.JSONObject;
-import org.openjdk.nashorn.internal.parser.JSONParser;
 import org.openremote.model.PersistenceEvent;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
@@ -889,8 +885,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                             // Need to clone the alarm
                             alarm = ValueUtil.clone(alarm);
                             String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
-                            JsonParser parser = new JsonParser();
-                            JsonObject json = parser.parse(triggeredAssetInfo).getAsJsonObject();
+                            JsonObject json = JsonParser.parseString(triggeredAssetInfo).getAsJsonObject();
                             Object[] key = json.keySet().toArray();
                             StringBuilder builder = new StringBuilder();
                             builder.append("Triggered asset(s):").append("\n");
