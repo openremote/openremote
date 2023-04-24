@@ -135,6 +135,8 @@ export interface ValueInputProviderOptions {
     readonly?: boolean;
     disabled?: boolean;
     compact?: boolean;
+    rounded?: boolean;
+    outlined?: boolean;
     comfortable?: boolean;
     resizeVertical?: boolean;
     inputType?: InputType;
@@ -398,6 +400,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
+            .rounded="${options.rounded}"
+            .outlined="${options.outlined}"
             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                 e.stopPropagation();
                 e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
@@ -507,8 +511,11 @@ const style = css`
         color: var(--or-app-color2);
         background-color: var(--mdc-theme-primary);
     }
+    
+    .mdc-button--rounded,
     .or-mwc-input--rounded {
-        border-radius: 50% !important;
+      border-radius: 24px !important;
+      --mdc-shape-small: 32px;
     }
 
     #select-searchable {
@@ -589,8 +596,10 @@ const style = css`
     .mdc-switch--full-width {
         margin-left: auto;
     }
-    
-        #field {
+    .mdc-button--fullwidth {
+      width: 100%;
+    }
+    #field {
         height: 100%;
     }
 
@@ -965,7 +974,9 @@ export class OrMwcInput extends LitElement {
                         "mdc-select--dense": false, // this.dense,
                         "dense-comfortable": this.comfortable,
                         "mdc-select--no-label": !this.label,
-                        "mdc-select--with-leading-icon": !!this.icon
+                        "mdc-select--with-leading-icon": !!this.icon,
+                        "or-mwc-input--rounded": this.rounded
+
                     };
 
                     let opts: [any, string][] | Promise<[any, string][]>;
@@ -1156,7 +1167,8 @@ export class OrMwcInput extends LitElement {
                         "mdc-button--raised": !isIconButton && !this.action && this.raised,
                         "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
                         "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
-                        "or-mwc-input--rounded": !isIconButton && !this.action && this.rounded
+                        "mdc-button--rounded": !isIconButton && !this.action && this.rounded,                        
+                        "mdc-button--fullwidth": this.fullWidth,
                     };
                     return html`
                         <button id="component" class="${classMap(classes)}"
@@ -1348,7 +1360,8 @@ export class OrMwcInput extends LitElement {
                             "mdc-text-field--label-floating": hasValue,
                             "mdc-text-field--no-label": !this.label,
                             "mdc-text-field--with-leading-icon": !!this.icon,
-                            "mdc-text-field--with-trailing-icon": !!this.iconTrailing
+                            "mdc-text-field--with-trailing-icon": !!this.iconTrailing,
+                            "or-mwc-input--rounded": this.rounded
                         };
 
                         inputElem = type === InputType.TEXTAREA || type === InputType.JSON
