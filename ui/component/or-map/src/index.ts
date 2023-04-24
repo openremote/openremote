@@ -425,9 +425,6 @@ export class OrMap extends LitElement {
         }})
     public center?: LngLatLike;
 
-    @property({type: String})
-    public realm?: string;
-
     @property({type: Number})
     public zoom?: number;
 
@@ -439,6 +436,9 @@ export class OrMap extends LitElement {
 
     @property({type: Boolean})
     public useZoomControl: boolean = true;
+
+    @property({type: Object})
+    public geoJson?: Object;
 
     @property({type: Boolean})
     public showGeoJson: boolean = true;
@@ -533,10 +533,11 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.realm, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson)
+            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
-                .setControls(this.controls);
+                .setControls(this.controls)
+                .setGeoJson(this.geoJson);
             this._map.load().then(() => {
                 // Get markers from slot
                 this._observer = new FlattenedNodesObserver(this._slotElement!, (info: any) => {

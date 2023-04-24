@@ -27,7 +27,7 @@ import {
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
 import { getLatLngBounds, getLngLat } from "./util";
-import { MapType } from "@openremote/model";
+import {GeoJsonConfig, MapType } from "@openremote/model";
 import { Feature, FeatureCollection } from "geojson";
 
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
@@ -48,6 +48,7 @@ export class MapWidget {
     protected _loaded: boolean = false;
     protected _markersJs: Map<OrMapMarker, L.Marker> = new Map();
     protected _markersGl: Map<OrMapMarker, MarkerGL> = new Map();
+    protected _geoJsonConfig?: GeoJsonConfig;
     protected _geoJsonSources: string[] = [];
     protected _geoJsonLayers: Map<string, any> = new Map();
     protected _realm?: string;
@@ -62,11 +63,10 @@ export class MapWidget {
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
 
-    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, realm?: string, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
+    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
-        this._realm = realm;
         this._showGeoCodingControl = showGeoCodingControl;
         this._showBoundaryBox = showBoundaryBox;
         this._useZoomControls = useZoomControls;
@@ -187,6 +187,14 @@ export class MapWidget {
         return this;
     }
 
+    public setGeoJson(geoJsonConfig?: GeoJsonConfig): this {
+        this._geoJsonConfig = geoJsonConfig;
+        if(this._mapGl) {
+            this.loadGeoJSON(this._geoJsonConfig);
+        }
+        return this;
+    }
+
     public async loadViewSettings() {
 
         let settingsResponse;
@@ -202,18 +210,24 @@ export class MapWidget {
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
 
         if (this._viewSettings) {
+
+            // If Map was already present, so only ran during updates such as realm switches
             if (this._mapGl) {
                 this._mapGl.setMinZoom(this._viewSettings.minZoom);
                 this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
                 if (this._viewSettings.bounds){
                     this._mapGl.setMaxBounds(this._viewSettings.bounds);
                 }
-                await this.loadGeoJSON();
+                // Unload all GeoJSON that is present, and load new layers if present
+                if(this._geoJsonConfig) {
+                    await this.loadGeoJSON(this._geoJsonConfig)
+                } else {
+                    await this.loadGeoJSON(this._viewSettings?.geoJson)
+                }
             }
             if (!this._center) {
                 this.setCenter(this._viewSettings.center);
-            }
-            else {
+            } else {
                 this.setCenter(this._center);
             }
         }
@@ -222,6 +236,7 @@ export class MapWidget {
     }
 
     public async load(): Promise<void> {
+        console.log("load()");
         if (this._loaded) {
             return;
         }
@@ -422,7 +437,12 @@ export class MapWidget {
                 }));
             }
 
-            await this.loadGeoJSON();
+            // Unload all GeoJSON that is present, and load new layers if present
+            if(this._geoJsonConfig) {
+                await this.loadGeoJSON(this._geoJsonConfig)
+            } else {
+                await this.loadGeoJSON(this._viewSettings?.geoJson)
+            }
 
             this._initLongPressEvent();
         }
@@ -460,7 +480,7 @@ export class MapWidget {
         this._mapContainer.dispatchEvent(new OrMapClickedEvent(lngLat, doubleClicked));
     }
 
-    public async loadGeoJSON() {
+    protected async loadGeoJSON(geoJsonConfig?: GeoJsonConfig) {
 
         // Remove old layers
         if(this._geoJsonLayers.size > 0) {
@@ -474,12 +494,11 @@ export class MapWidget {
         }
 
         // Add new ones if present
-        if (this._showGeoJson && this._viewSettings?.geoJson) {
-            const geoJson = this._viewSettings.geoJson;
+        if (this._showGeoJson && geoJsonConfig) {
 
             // If array of features (most of the GeoJSONs use this)
-            if(geoJson.source.type == "FeatureCollection") {
-                const groupedSources = this.groupSourcesByGeometryType(geoJson.source);
+            if(geoJsonConfig.source.type == "FeatureCollection") {
+                const groupedSources = this.groupSourcesByGeometryType(geoJsonConfig.source);
                 groupedSources?.forEach((features, type) => {
                     const newSource = {
                         type: "geojson",
@@ -495,8 +514,8 @@ export class MapWidget {
                 })
 
                 // Or only 1 feature is added
-            } else if(geoJson.source.type == "Feature") {
-                const sourceInfo = this.addGeoJSONSource(geoJson.source);
+            } else if(geoJsonConfig.source.type == "Feature") {
+                const sourceInfo = this.addGeoJSONSource(geoJsonConfig.source);
                 if(sourceInfo) {
                     this.addGeoJSONLayer(sourceInfo.source.type, sourceInfo.sourceId);
                 }
