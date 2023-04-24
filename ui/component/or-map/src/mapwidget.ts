@@ -51,7 +51,6 @@ export class MapWidget {
     protected _geoJsonConfig?: GeoJsonConfig;
     protected _geoJsonSources: string[] = [];
     protected _geoJsonLayers: Map<string, any> = new Map();
-    protected _realm?: string;
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLatLike;
     protected _zoom?: number;
@@ -206,7 +205,7 @@ export class MapWidget {
         const settings = settingsResponse.data as any;
 
         // Load options for current realm or fallback to default if exist
-        const realmName = this._realm || manager.displayRealm || "default";
+        const realmName = manager.displayRealm || "default";
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
 
         if (this._viewSettings) {
@@ -236,7 +235,6 @@ export class MapWidget {
     }
 
     public async load(): Promise<void> {
-        console.log("load()");
         if (this._loaded) {
             return;
         }

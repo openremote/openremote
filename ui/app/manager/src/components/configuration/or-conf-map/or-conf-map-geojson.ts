@@ -12,11 +12,11 @@ export class OrConfMapGeoJson extends LitElement {
     @property()
     protected geoJson?: GeoJsonConfig;
 
-    @query("#geojson-modal")
-    protected _dialog: OrMwcDialog
-
     @state()
     protected _jsonValid: boolean = true;
+
+    @query("#geojson-modal")
+    protected _dialog: OrMwcDialog
 
     // Value of or-ace-editor without state to prevent UI update
     protected _aceEditorValue: string;
@@ -29,7 +29,6 @@ export class OrConfMapGeoJson extends LitElement {
         const content = html`
             <or-ace-editor .value="${this.geoJson?.source}"
                            @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
-                               console.log("Change in or-ace-editor!");
                                this._jsonValid = ev.detail.valid;
                                if(this._jsonValid) {
                                    this._aceEditorValue = ev.detail.value;

@@ -438,7 +438,7 @@ export class OrMap extends LitElement {
     public useZoomControl: boolean = true;
 
     @property({type: Object})
-    public geoJson?: Object;
+    public geoJson?: GeoJsonConfig;
 
     @property({type: Boolean})
     public showGeoJson: boolean = true;
