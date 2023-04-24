@@ -415,6 +415,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property({type: Boolean})
     public fullWidth?: boolean;
 
+    @property({type: Boolean})
+    public rounded?: boolean;
+
+    @property({type: Boolean})
+    public outlined?: boolean;
+
     @property()
     protected _attributeEvent?: AttributeEvent;
 
@@ -560,6 +566,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             required: this.required,
             disabled: this.disabled,
             compact: this.compact,
+            rounded: this.rounded,
+            outlined: this.outlined,
             label: this.getLabel(),
             comfortable: this.comfortable,
             resizeVertical: this.resizeVertical,
