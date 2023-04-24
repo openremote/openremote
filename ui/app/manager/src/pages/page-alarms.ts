@@ -1,4 +1,3 @@
-
 import { css, html, PropertyValues, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import manager, { DefaultColor3, DefaultColor4 } from "@openremote/core";
@@ -50,6 +49,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 #table-container {
                     height: 100%;
                     overflow: auto;
+                    width: 70vw;
                 }
 
                 #table {
@@ -66,6 +66,19 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     word-wrap: break-word;
                     white-space: pre-wrap;
                 }
+
+                .mdc-data-table__cell[title="HIGH"] {
+                    color: red;
+                }
+                  
+                td.mdc-data-table__cell.mdc-data-table__cell--clickable span[value="LOW"] {
+                    color: green; !important
+                }
+                  
+                .mdc-data-table__cell[title="MEDIUM"] {
+                    color: orange;
+                }
+
                 #wrapper {
                     height: 100%;
                     width: 100%;
@@ -75,7 +88,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 }
 
                 #title {
-                    padding: 0 20px;
+                    padding: 0;
                     font-size: 18px;
                     font-weight: bold;
                     width: calc(100% - 40px);
@@ -89,6 +102,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 #title or-icon {
                     margin-right: 10px;
                     margin-left: 14px;
+                }
+
+                #content {
+                    width: 100%;
                 }
 
                 .panel {
@@ -200,19 +217,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     @state()
-    protected _activeAlarms: AlarmModel[] = [];
-    @state()
-    protected _inactiveAlarms: AlarmModel[] = [];
+    protected _alarms: AlarmModel[] = [];
     @state()
     protected _linkedAssets: Asset[] = [];
     @state()
     protected _linkedUsers: User[] = [];
     @state()
     protected _loadedUsers: User[] = [];
-
-    protected _realmRolesFilter = (role: Role) => {
-        return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name) && !role.name.startsWith("default-roles"))
-    };
 
     protected _loading: boolean = false;
     protected _assign: boolean = false;
@@ -247,6 +258,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
     public connectedCallback() {
         super.connectedCallback();
         this.loadAlarms();
+        var cells = document.getElementById("mdc-data-table__table").getElementsByTagName("td");
+        for (var i = 0; i < cells.length; i++) {
+            if (cells[i].innerHTML == "LOW") {
+                cells[i].style.backgroundColor = "green";
+            }
+        }
     }
 
     public disconnectedCallback() {
@@ -282,8 +299,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
         this._loading = true;
 
-        this._activeAlarms = [];
-        this._inactiveAlarms = [];
+        this._alarms = [];
         this._linkedUsers = [];
         this._linkedAssets = [];
         this._loadedUsers = [];
@@ -316,14 +332,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
-        this._activeAlarms = alarmResponse.data.filter(alarm => alarm.status == AlarmStatus.ACTIVE || alarm.status == AlarmStatus.ACKNOWLEDGED);
-        this._inactiveAlarms = alarmResponse.data.filter(alarm => alarm.status == AlarmStatus.INACTIVE || alarm.status == AlarmStatus.RESOLVED);
+        this._alarms = alarmResponse.data;
         this._loadedUsers = usersResponse.data.filter(user => !user.serviceAccount);
-        // this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
-        // this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
-        // this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
-        // this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
-        // this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._loading = false;
     }
 
@@ -364,26 +374,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
     }
 
-    private async _updateUserAssetLinks() {
-        // if (!user.previousAssetLinks) {
-        //     return;
-        // }
-        //
-        // const removedLinks = user.previousAssetLinks.filter(assetLink => !user.userAssetLinks.some(newLink => assetLink.id.assetId === newLink.id.assetId));
-        // const addedLinks = user.userAssetLinks.filter(assetLink => !user.previousAssetLinks.some(oldLink => assetLink.id.assetId === oldLink.id.assetId)).map(link => {
-        //     // Ensure user ID is added as new users wouldn't have had an ID at the time the links were created in the UI
-        //     link.id.userId = user.id;
-        //     return link;
-        // });
-        //
-        // if (removedLinks.length > 0) {
-        //     await manager.rest.api.AssetResource.deleteUserAssetLinks(removedLinks);
-        // }
-        // if (addedLinks.length > 0) {
-        //     await manager.rest.api.AssetResource.createUserAssetLinks(addedLinks);
-        // }
-    }
-
     private _deleteAlarm(alarm) {
         showOkCancelDialog(i18next.t("delete"), i18next.t("alarm.deleteAlarmConfirm"), i18next.t("delete"))
             .then((ok) => {
@@ -418,23 +408,17 @@ export class PageAlarms extends Page<AppStateKeyed> {
         const alarmTableColumns: TableColumn[] = [
             { title: i18next.t('createdOn') },
             { title: i18next.t('alarm.title') },
+            { title: i18next.t('alarm.content') },
             { title: i18next.t('alarm.severity') },
             { title: i18next.t('status') }
         ];
 
-        const activeAlarmTableRows: TableRow[] = this._activeAlarms.map((alarm) => {
+        const activeAlarmTableRows: TableRow[] = this._alarms.map((alarm) => {
             return {
-                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.severity, alarm.status],
+                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.content, alarm.severity, alarm.status],
                 clickable: true
             }
         });
-
-        const inactiveAlarmTableRows: TableRow[] = this._inactiveAlarms.map((alarm) => {
-            return {
-                content: [new Date(alarm.createdOn).toLocaleString(), alarm.title, alarm.severity, alarm.status],
-                clickable: true
-            }
-        })
 
         // Configuration
         const tableConfig = {
@@ -445,8 +429,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             }
         }
 
-        const mergedAlarmList: AlarmModel[] = [...this._activeAlarms, ...this._inactiveAlarms];
-        const index: number | undefined = (this.alarmId ? mergedAlarmList.findIndex((alarm) => alarm.id.toString() == this.alarmId) : undefined);
+        const index: number | undefined = (this.alarmId ? this._alarms.findIndex((alarm) => alarm.id.toString() == this.alarmId) : undefined);
 
         return html`
             <div id="table-container" style="max-width: 90%; margin: auto;">
@@ -456,21 +439,21 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         <span class="breadcrumb-clickable"
                               @click="${() => this.reset()}">${i18next.t("alarm.alarm_plural")}</span>
                         <or-icon class="breadcrumb-arrow" icon="chevron-right"></or-icon>
-                        <span style="margin-left: 2px;">${index != undefined ? mergedAlarmList[index]?.title : i18next.t('alarm.creatingAlarm')}</span>
+                        <span style="margin-left: 2px;">${index != undefined ? this._alarms[index]?.title : i18next.t('alarm.creatingAlarm')}</span>
                     </div>
                 `)}
                 
                 <div id="title">
                     <or-icon icon="alert-outline"></or-icon>
-                    <span>${this.alarmId && index != undefined ? mergedAlarmList[index]?.title : i18next.t('alarm.alarm_plural')}</span>
+                    <span>${this.alarmId && index != undefined ? this._alarms[index]?.title : i18next.t('alarm.alarm_plural')}</span>
                 </div>
                 
                 
 
                 <!-- Alarm Specific page -->
                 ${when((this.alarmId && index != undefined) || this.creationState, () => html`
-                    ${when(mergedAlarmList[index] != undefined || this.creationState, () => {
-            const alarm: AlarmModel = (index != undefined ? mergedAlarmList[index] : this.creationState.alarmModel);
+                    ${when(this._alarms[index] != undefined || this.creationState, () => {
+            const alarm: AlarmModel = (index != undefined ? this._alarms[index] : this.creationState.alarmModel);
             return html`
                             <div id="content" class="panel">
                                 <p class="panel-title">
@@ -483,28 +466,18 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
                     <!-- List of Alarms page -->
                 `, () => html`
-                    <!-- <div id="content" class="panel">
-                        <div class="panel-title" style="justify-content: space-between;">
-                            <p>${i18next.t("alarm.active_plural")}</p>
+                    
+                    <div id="content" >
+                        <div class="panel-title" style="justify-content: flex-end;">
                             <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus"
                                           label="${i18next.t('add')} ${i18next.t("alarm.")}"
                                           @or-mwc-input-changed="${() => this.creationState = { alarmModel: this.getNewAlarmModel() }}"></or-mwc-input>
                         </div>
                         ${until(this.getAlarmsTable(alarmTableColumns, activeAlarmTableRows, tableConfig, (ev) => {
-            this.alarmId = this._activeAlarms[ev.detail.index].id.toString();
+            this.alarmId = this._alarms[ev.detail.index].id.toString();
         }, "alarm"), html`${i18next.t('loading')}`)}
                     </div>
-
-                    <div id="content" class="panel">
-                        <div class="panel-title" style="justify-content: space-between;">
-                            <p>${i18next.t("alarm.inactive_plural")}</p>
-                        </div>
-                        ${until(this.getAlarmsTable(alarmTableColumns, inactiveAlarmTableRows, tableConfig, (ev) => {
-            this.alarmId = this._inactiveAlarms[ev.detail.index].id.toString();
-        }, "alarm"), html`${i18next.t('loading')}`)}
-                    </div> -->
-                    
-                    ${this._getTable()}
+                    <!-- ${this._getTable()} -->
                 `)}
             </div>
         `;
@@ -752,7 +725,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                           @or-mwc-input-changed="${() => this._assignClick()}"></or-mwc-input>
                         </div>
                         ${until(this.getAlarmsTable(userTableColumns, linkedUserTableRows, tableConfig, (ev) => {
-                this.alarmId = this._activeAlarms[ev.detail.index].id.toString();
+                this.alarmId = this._alarms[ev.detail.index].id.toString();
             }, "user"), html`${i18next.t('loading')}`)}
                     </div>
 
@@ -798,7 +771,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _getTable(): TemplateResult {
-        const mergedAlarmList: AlarmModel[] = [...this._activeAlarms, ...this._inactiveAlarms];
         return html`
             <div id="table" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="logs list">
@@ -812,9 +784,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
-                        ${mergedAlarmList.map((ev) => {
+                        ${this._alarms.map((ev) => {
             return html`
-                                <tr class="mdc-data-table__row">
+                                <tr class="mdc-data-table__row" @click="${(ev) => { this.alarmId = this._alarms[ev.detail.index].id.toString() }}" >
                                     <td class="mdc-data-table__cell">${new Date(ev.createdOn).toLocaleString()}</td>
                                     <td class="mdc-data-table__cell">${ev.severity}</td>
                                     <td class="mdc-data-table__cell">${ev.status}</td>                                    
