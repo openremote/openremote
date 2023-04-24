@@ -1112,8 +1112,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                             // Need to clone the alarm
                             alarm = ValueUtil.clone(alarm);
                             String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
-                            JsonParser parser = new JsonParser();
-                            JsonObject json = parser.parse(triggeredAssetInfo).getAsJsonObject();
+                            JsonObject json = JsonParser.parseString(triggeredAssetInfo).getAsJsonObject();
                             Object[] key = json.keySet().toArray();
                             StringBuilder builder = new StringBuilder();
                             builder.append("Triggered asset(s):").append("\n");
