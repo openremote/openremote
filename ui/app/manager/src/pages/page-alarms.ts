@@ -90,6 +90,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     margin-left: 14px;
                 }
 
+                #content {
+                    width: 100%;
+                }
+
                 .panel {
                     width: calc(100% - 100px);
                     max-width: 1000px;
@@ -1064,7 +1068,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _getTable(): TemplateResult {
-        const mergedAlarmList: AlarmModel[] = [...this._activeAlarms, ...this._inactiveAlarms];
         return html`
             <div id="table" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="logs list">
@@ -1078,9 +1081,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
-                        ${mergedAlarmList.map((ev) => {
+                        ${this._alarms.map((ev) => {
             return html`
-                                <tr class="mdc-data-table__row">
+                                <tr class="mdc-data-table__row" @click="${(ev) => { this.alarmId = this._alarms[ev.detail.index].id.toString() }}" >
                                     <td class="mdc-data-table__cell">${new Date(ev.createdOn).toLocaleString()}</td>
                                     <td class="mdc-data-table__cell">${ev.severity}</td>
                                     <td class="mdc-data-table__cell">${ev.status}</td>                                    
