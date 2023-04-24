@@ -3,13 +3,12 @@ import {Asset, Attribute, AttributeRef, DashboardWidget } from "@openremote/mode
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
 import { html, LitElement, TemplateResult } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, state, query } from "lit/decorators.js";
 import {OrWidgetConfig, OrWidgetEntity} from "./or-base-widget";
 import {style} from "../style";
 import {SettingsPanelType, widgetSettingsStyling} from "../or-dashboard-settingspanel";
 import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrFileUploader} from "@openremote/or-components/or-file-uploader";
-// import "@openremote/or-image-map";
 
 export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
@@ -20,6 +19,7 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     deltaFormat: "absolute" | "percentage";
     showTimestampControls: boolean;
     imageUploaded: boolean;
+    imagePath: string;
 }
 
 const deltaOptions = new Array<string>('absolute', 'percentage');
@@ -42,6 +42,7 @@ export class OrImageWidget implements OrWidgetEntity {
             deltaFormat: "absolute",
             showTimestampControls: false,
             imageUploaded: false,
+            imagePath: ""
         } as ImageWidgetConfig;
     }
 
@@ -195,6 +196,9 @@ export class OrImageWidgetSettings extends LitElement {
     @property()
     public readonly widget?: DashboardWidget;
 
+    @query('#file-upload')
+    protected _fileElem!: HTMLInputElement;
+
     // Default values
     private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('display'), i18next.t('values'), i18next.t('image settings')];
     private loadedAsset?: Asset;
@@ -282,29 +286,45 @@ export class OrImageWidgetSettings extends LitElement {
                 ${this.expandedPanels.includes(i18next.t('image settings')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
                         <div>
-                            <or-mwc-input .type="${InputType.BUTTON}" id="file-input" style="width: 100%;" .value="${config.imageUploaded}" label="${i18next.t('Upload Image')}"
+                        <input id="file-upload" type="file" hidden/>
+                            <or-mwc-input id="file-input"  .type="${InputType.BUTTON}"  style="width: 100%;" .value="${config.imageUploaded}" label="${i18next.t('Upload Image')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                             console.log(config);
                                             if (event.detail.value) {
-
-                                                const fileInput = document.getElementById('file-input') as HTMLInputElement;
+                                                
+                                                const fileInput = this._fileElem
+                                                
                                                 console.log(fileInput);
-                                                fileInput?.addEventListener('change', function(event){
+                                                fileInput.click();
+
+                                                // fileInput.onchange = () => {
+                                                //     let file = fileInput.target!.files[0];
+                                                // }
+                                                
+                                                // fileInput.onclick = function() {
+                                                //     fileInput.click();
                                                     
-                                                    if (event.target instanceof HTMLInputElement && event.target.files) {
-                                                        const file = event.target.files[0];
-                                                        console.log(file);
-                                                        const reader = new FileReader();
-                                                        reader.onload = function(event) {
-                                                            const img = new Image();
-                                                            img.src = event.target!.result as string;
-                                                            document.body.appendChild(img);
-                                                        };
-                                                        reader.readAsDataURL(file);
-                                                        console.log(file);
-                                                    }
-                                                    
-                                                })
+                                                //     console.log(fileInput);
+                                                //     fileInput?.addEventListener('change', function(event){
+                                                        
+                                                //         if (event.target instanceof HTMLInputElement && event.target.files) {
+                                                //             const file = event.target.files[0];
+                                                //             console.log(file);
+                                                //             const reader = new FileReader();
+                                                //             reader.onload = function(event) {
+                                                //                 const img = new Image();
+                                                //                 img.src = event.target!.result as string;
+                                                //                 config.imagePath = img.src;
+                                                //                 console.log(config.imagePath);
+                                                //                 // document.body.appendChild(img);
+                                                //             };
+                                                //             reader.readAsDataURL(file);
+                                                //             console.log(file);
+                                                //         }
+                                                        
+                                                //     })
+                                                // }
+                                                
 
                                                 // const input = document.createElement('input');
                                                 // input.type = 'file';
@@ -332,22 +352,6 @@ export class OrImageWidgetSettings extends LitElement {
                 ` : null}
             </div>
         `
-    }
-
-    readFile(input: Blob) {
-        // @ts-ignore: Object is possibly 'null'.
-        let file = input;
-
-        let reader = new FileReader();
-
-        reader.readAsText(file);
-        reader.onload = function() {
-            console.log(reader.result);
-        };
-
-        reader.onerror = function() {
-            console.log(reader.error);
-        }
     }
 
     updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
