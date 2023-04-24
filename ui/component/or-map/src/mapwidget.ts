@@ -189,7 +189,11 @@ export class MapWidget {
     public setGeoJson(geoJsonConfig?: GeoJsonConfig): this {
         this._geoJsonConfig = geoJsonConfig;
         if(this._mapGl) {
-            this.loadGeoJSON(this._geoJsonConfig);
+            if(this._geoJsonConfig) {
+                this.loadGeoJSON(this._geoJsonConfig);
+            } else {
+                this.loadGeoJSON(this._viewSettings?.geoJson);
+            }
         }
         return this;
     }
@@ -219,9 +223,9 @@ export class MapWidget {
                 }
                 // Unload all GeoJSON that is present, and load new layers if present
                 if(this._geoJsonConfig) {
-                    await this.loadGeoJSON(this._geoJsonConfig)
+                    await this.loadGeoJSON(this._geoJsonConfig);
                 } else {
-                    await this.loadGeoJSON(this._viewSettings?.geoJson)
+                    await this.loadGeoJSON(this._viewSettings?.geoJson);
                 }
             }
             if (!this._center) {
@@ -437,9 +441,9 @@ export class MapWidget {
 
             // Unload all GeoJSON that is present, and load new layers if present
             if(this._geoJsonConfig) {
-                await this.loadGeoJSON(this._geoJsonConfig)
+                await this.loadGeoJSON(this._geoJsonConfig);
             } else {
-                await this.loadGeoJSON(this._viewSettings?.geoJson)
+                await this.loadGeoJSON(this._viewSettings?.geoJson);
             }
 
             this._initLongPressEvent();
