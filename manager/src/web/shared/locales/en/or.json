@@ -623,6 +623,7 @@
     "widgetTooSmall": "Widget is too small.",
     "allowTimerangeSelect": "Allow time range selection",
     "showLegend": "Show legend",
+    "showGeoJson": "Show GeoJSON overlay",
     "showValueAs": "Show value as",
     "deleteWidget": "Delete widget",
     "myDashboards": "My dashboards",
@@ -672,6 +673,8 @@
     "mapSettings": "Map settings",
     "maxZoom": "Maximal zoom",
     "minZoom": "Minimal zoom",
+    "geoJson": "GeoJSON",
+    "geoJsonDescription": "Customize the GeoJSON; add points, lines and polygons to be drawn on the map.",
     "deleteMapCustomization": "Delete map settings",
     "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
     "addMapCustomization" : "Add map settings"
