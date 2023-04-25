@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
 import org.openremote.container.util.UniqueIdentifierGenerator;
-import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -36,22 +35,13 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
-import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
 import static org.openremote.model.Constants.*;
@@ -111,16 +101,7 @@ public class ManagerTestSetup extends ManagerSetup {
     public String electricityBatteryAssetId;
     public String light1Id;
     public String light2Id;
-    public String forecastThing1Id;
-    public String forecastThing2Id;
-    public String forecastAttributeName = "forecastAttribute";
-    public ForecastConfigurationWeightedExponentialAverage forecastConfig = new ForecastConfigurationWeightedExponentialAverage(
-        new ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration("P7D"),
-        3,
-        new ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration("PT1H"),
-        4
-    );
-    public List<List<Double>> forecastTestHistoryData = new ArrayList<>();
+
 
     public ManagerTestSetup(Container container) {
         super(container);
@@ -306,27 +287,6 @@ public class ManagerTestSetup extends ManagerSetup {
         );
         electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
         electricitySupplierAssetId = electricitySupplierAsset.getId();
-
-
-        forecastTestHistoryData.add(Arrays.asList(new Double[] {4.0, 3.0, 2.0}));
-        forecastTestHistoryData.add(Arrays.asList(new Double[] {4.1, 3.1, 2.1}));
-        forecastTestHistoryData.add(Arrays.asList(new Double[] {4.2, 3.2, 2.2}));
-        forecastTestHistoryData.add(Arrays.asList(new Double[] {4.3, 3.3, 2.3}));
-        forecastTestHistoryData.add(Arrays.asList(new Double[] {4.4, 3.4, 2.4}));
-
-        forecastThing1Id = addForecastTestAsset(assetStorageService, realmEnergyName, forecastAttributeName, forecastConfig);
-        forecastThing2Id = addForecastTestAsset(assetStorageService, realmEnergyName, forecastAttributeName, forecastConfig);
-
-        Long offset = ((forecastConfig.getForecastPeriod().toMillis() * 2) / 3) * (-1);
-        insertHistoryTestDataToDb(new AttributeRef(forecastThing1Id, forecastAttributeName), forecastTestHistoryData, 0, forecastConfig);
-        insertHistoryTestDataToDb(new AttributeRef(forecastThing2Id, forecastAttributeName), forecastTestHistoryData, offset ,forecastConfig);
-
-        List<Pair<Double, Long>> forecastTestData = new ArrayList<>();
-        forecastTestData.add(new Pair<>(1.0, timerService.getCurrentTimeMillis() + forecastConfig.getForecastPeriod().toMillis() + offset));
-        forecastTestData.add(new Pair<>(2.0, timerService.getCurrentTimeMillis() + forecastConfig.getForecastPeriod().toMillis() * 2 + offset));
-
-        insertForecastTestDataToDb(new AttributeRef(forecastThing2Id, forecastAttributeName), forecastTestData);
-
 
         // ################################ Assets for 'building' realm ###################################
 
@@ -730,60 +690,5 @@ public class ManagerTestSetup extends ManagerSetup {
 
         LightAsset lightController_3Asset = createDemoLightControllerAsset("LightController 3", assetArea3, new GeoJSONPoint(5.487478, 51.446979));
         lightController_3Asset = assetStorageService.merge(lightController_3Asset);
-    }
-
-    public void insertHistoryTestDataToDb(AttributeRef attributeRef, List<List<Double>> data, long offset, ForecastConfigurationWeightedExponentialAverage config) {
-        for (int pastPeriodIndex = config.getPastCount(); pastPeriodIndex > 0; pastPeriodIndex--) {
-            List<Double> values = new ArrayList<>(data.size());
-            for (int forecastPeriodIndex = 0; forecastPeriodIndex < data.size(); forecastPeriodIndex++) {
-                values.add(data.get(forecastPeriodIndex).get(config.getPastCount() - pastPeriodIndex));
-            }
-            insertHistoryTestDataToDb(attributeRef, pastPeriodIndex, values, offset, config);
-        }
-    }
-
-    public void insertHistoryTestDataToDb(AttributeRef attributeRef, int pastPeriodIndex, List<Double> values, long offset, ForecastConfigurationWeightedExponentialAverage config) {
-        LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault());
-        long nowInMillis = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        List<Pair<?, LocalDateTime>> history = new ArrayList<>();
-        for (int forecastPeriodIndex = 0; forecastPeriodIndex < values.size(); forecastPeriodIndex++) {
-            long timespan = config.getPastPeriod().toMillis() * pastPeriodIndex -
-                            config.getForecastPeriod().toMillis() * (forecastPeriodIndex + 1) +
-                            Duration.ofMinutes(2).toMillis() - offset;
-            history.add(
-                new Pair<>(
-                    Double.valueOf(values.get(forecastPeriodIndex)),
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis() - timespan), ZoneId.systemDefault())
-                )
-            );
-        }
-        assetDatapointService.upsertValues(attributeRef.getId(), attributeRef.getName(), history);
-    }
-
-    @SuppressWarnings("unchecked")
-    public void insertForecastTestDataToDb(AttributeRef attributeRef, List<Pair<Double, Long>> data) {
-        List<Pair<Double, LocalDateTime>> valuesAndTimestamps = data
-            .stream()
-            .map(p -> new Pair<Double,LocalDateTime>(
-                p.getKey(),
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(p.getValue()), ZoneId.systemDefault())))
-            .collect(Collectors.toList());
-        assetPredictedDatapointService.updateValues(attributeRef.getId(), attributeRef.getName(), (List)valuesAndTimestamps);
-    }
-
-    public String addForecastTestAsset(AssetStorageService assetStorageService, String realm, String attributeName, ForecastConfigurationWeightedExponentialAverage config) {
-        Asset<?> thing = new ThingAsset("Forecast Test Thing");
-        thing.setRealm(realm);
-        thing.getAttributes().addOrReplace(
-            new Attribute<>(attributeName, NUMBER)
-                .addOrReplaceMeta(
-                    new MetaItem<>(
-                        FORECAST,
-                        config
-                    )
-                )
-        );
-        thing = assetStorageService.merge(thing);
-        return thing.getId();
     }
 }
