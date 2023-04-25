@@ -1,10 +1,12 @@
 package org.openremote.model.datapoint.query;
 
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.DatapointInterval;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
@@ -22,14 +24,14 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
     public AssetDatapointIntervalQuery(long fromTimestamp, long toTimestamp, String interval, Formula formula, boolean gapFill) {
         this.fromTimestamp = fromTimestamp;
         this.toTimestamp = toTimestamp;
-        this.interval = interval;
+        this.interval = formatInterval(interval);
         this.gapFill = gapFill;
         this.formula = formula;
     }
     public AssetDatapointIntervalQuery(LocalDateTime fromTime, LocalDateTime toTime, String interval, Formula formula, boolean gapFill) {
         this.fromTime = fromTime;
         this.toTime = toTime;
-        this.interval = interval;
+        this.interval = formatInterval(interval);
         this.gapFill = gapFill;
         this.formula = formula;
     }
@@ -59,5 +61,17 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         parameters.put(4, fromTimestamp);
         parameters.put(5, toTimestamp);
         return parameters;
+    }
+
+    // Method that makes sure the interval is correctly formatted.
+    // The AssetDatapointIntervalQuery requires to specify an amount such as "1 day" or "5 hours",
+    // so adding an amount automatically if only a DatapointInterval such as "MINUTE" or "YEAR" is specified.
+    protected String formatInterval(String interval) {
+        boolean hasAmountSpecified = Arrays.stream(DatapointInterval.values()).noneMatch((dpInterval) -> dpInterval.toString().equalsIgnoreCase(interval));
+        if(hasAmountSpecified) {
+            return interval;
+        } else {
+            return "1 " + interval;
+        }
     }
 }

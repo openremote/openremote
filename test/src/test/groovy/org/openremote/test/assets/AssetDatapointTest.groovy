@@ -144,7 +144,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     new AssetDatapointIntervalQuery(
                             LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
                             LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
-                            "1 minute",
+                            "minute",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
                     )
@@ -240,7 +240,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                     new AssetDatapointIntervalQuery(
                             LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
                             LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
-                            "1 minute",
+                            "MINUTE",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
                     )
