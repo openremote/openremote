@@ -19,18 +19,17 @@
  */
 package org.openremote.container.web;
 
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthRefreshTokenGrant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import javax.ws.rs.client.*;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.*;
+import jakarta.ws.rs.core.Form;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.SocketException;
 import java.time.LocalDateTime;
@@ -47,11 +46,11 @@ public class OAuthFilter implements ClientRequestFilter {
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OAuthFilter.class);
     public static final String BEARER_AUTH = "Bearer";
     protected OAuthServerResponse authServerResponse;
-    protected ResteasyClient client;
+    protected Client client;
     protected WebTarget authTarget;
     protected OAuthGrant oAuthGrant;
 
-    public OAuthFilter(ResteasyClient client, OAuthGrant oAuthGrant) {
+    public OAuthFilter(Client client, OAuthGrant oAuthGrant) {
         Objects.requireNonNull(client);
         Objects.requireNonNull(oAuthGrant);
         this.client = client;

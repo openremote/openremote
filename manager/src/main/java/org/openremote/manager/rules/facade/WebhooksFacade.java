@@ -25,8 +25,8 @@ import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Webhooks;
 import org.openremote.model.webhook.Webhook;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
 
 public class WebhooksFacade<T extends Ruleset> extends Webhooks {
 

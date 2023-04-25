@@ -34,8 +34,8 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Predicate;
@@ -319,9 +319,11 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     @Override
     public String toString() {
+        String valStr = value != null ? value.toString() : null;
+        valStr = valStr != null && valStr.length() > 100 ? valStr.substring(0, 100) : valStr;
         return getClass().getSimpleName() + "{" +
             "name='" + name + '\'' +
-            ", value='" + value + '\'' +
+            ", value='" + valStr + '\'' +
             ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
             "} ";
     }

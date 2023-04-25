@@ -21,8 +21,8 @@ package org.openremote.model.rules.json;
 
 import org.openremote.model.webhook.Webhook;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
 
 public class RuleActionWebhook extends RuleAction {
     public Webhook webhook;

@@ -2096,10 +2096,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mdi/font@npm:^6.5.95":
-  version: 6.6.96
-  resolution: "@mdi/font@npm:6.6.96"
-  checksum: d305fa4a9e572cfebc148676d80f4d193dfc423850c8172c0585ceda6e0e041ea0eed26b2aed444d0e51bba419b7085452484cfaa5463de0ee58666982e1c5b9
+"@mdi/font@npm:latest":
+  version: 7.2.96
+  resolution: "@mdi/font@npm:7.2.96"
+  checksum: f193bb99175e723864a7fd4010594637395a77c8011668f65856aa65abd70848239ab8642fe8aabb0f57f0ffe513a32687fddcd1a927f5aa6c7329b8d8c13e75
   languageName: node
   linkType: hard
 
@@ -2176,15 +2176,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/dashboard@workspace:ui/app/dashboard":
-  version: 0.0.0-use.local
-  resolution: "@openremote/dashboard@workspace:ui/app/dashboard"
-  dependencies:
-    "@openremote/or-app": ^1.1.0
-    "@openremote/util": "workspace:*"
-  languageName: unknown
-  linkType: soft
-
 "@openremote/demo-core@^1.0.4, @openremote/demo-core@workspace:ui/demo/demo-core":
   version: 0.0.0-use.local
   resolution: "@openremote/demo-core@workspace:ui/demo/demo-core"
@@ -2255,6 +2246,15 @@ __metadata:
     webpack: ^5.76.0
     webpack-cli: ^4.9.1
     webpack-dev-server: ^4.5.0
+  languageName: unknown
+  linkType: soft
+
+"@openremote/insights@workspace:ui/app/insights":
+  version: 0.0.0-use.local
+  resolution: "@openremote/insights@workspace:ui/app/insights"
+  dependencies:
+    "@openremote/or-app": ^1.1.0
+    "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -2502,7 +2502,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-icon@workspace:ui/component/or-icon"
   dependencies:
-    "@mdi/font": ^6.5.95
+    "@mdi/font": latest
     lit: ^2.0.2
     terser-webpack-plugin: ^5.2.5
     typescript: ">=4.5.2"

@@ -30,13 +30,13 @@ dependencies {
     testImplementation "com.github.calimero:calimero-server:$calimeroVersion"
 
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
-    testImplementation "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
+    testImplementation "com.icegreen:greenmail:$greenmailVersion"
 }
-//
-//tasks.withType(Test) {
-//    logging.captureStandardError LogLevel.LIFECYCLE
-//}
+
+tasks.withType(Test) {
+    environment("OR_LOGGING_CONFIG_FILE", "test/src/logging-test.properties")
+}
 
 test {
     outputs.upToDateWhen { false }
@@ -121,6 +121,7 @@ publishing {
     }
 
     repositories {
+        mavenCentral()
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {

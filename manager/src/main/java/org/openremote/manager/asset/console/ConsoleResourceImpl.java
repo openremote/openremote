@@ -43,7 +43,7 @@ import org.openremote.model.security.Realm;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.ws.rs.BadRequestException;
+import jakarta.ws.rs.BadRequestException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

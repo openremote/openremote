@@ -22,7 +22,7 @@ package org.openremote.test.protocol.http
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.undertow.servlet.Servlets
 import io.undertow.servlet.api.DeploymentManager
-import org.jboss.resteasy.spi.ResteasyUriInfo
+import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol
 import org.openremote.container.util.UniqueIdentifierGenerator
@@ -46,11 +46,11 @@ import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
 import org.openremote.setup.integration.protocol.http.TestHTTPServerProtocol
 import org.openremote.setup.integration.protocol.http.TestResource
 
-import javax.ws.rs.ForbiddenException
-import javax.ws.rs.HttpMethod
-import javax.ws.rs.client.ClientRequestContext
-import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.*
+import jakarta.ws.rs.ForbiddenException
+import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.*
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD

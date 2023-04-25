@@ -19,7 +19,7 @@
  */
 package org.openremote.container.security;
 
-import javax.ws.rs.FormParam;
+import jakarta.ws.rs.FormParam;
 
 public class ClientCredentialsAuthForm extends AuthForm {
 

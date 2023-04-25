@@ -34,7 +34,7 @@ public class RealmPredicate {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            ", name='" + name + '\'' +
+            "name='" + name + '\'' +
             '}';
     }
 }

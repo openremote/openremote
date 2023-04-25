@@ -186,7 +186,6 @@ public class GatewayConnector {
             this.gatewayMessageConsumer = null;
         }
 
-        LOG.fine("Gateway connector disconnected: Gateway ID=" + gatewayId);
         Runnable disconnectRunnable = this.disconnectRunnable;
         this.disconnectRunnable = null;
         initialSyncInProgress = false;
@@ -197,7 +196,9 @@ public class GatewayConnector {
             syncProcessorFuture.cancel(true);
         }
 
-        disconnectRunnable.run();
+        // Wait a short while to disconnect to allow disconnect message to be delivered
+        LOG.fine("Gateway connector disconnected: Gateway ID=" + gatewayId);
+        executorService.schedule(disconnectRunnable, 1, TimeUnit.SECONDS);
         assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED), AttributeEvent.Source.GATEWAY);
     }
 

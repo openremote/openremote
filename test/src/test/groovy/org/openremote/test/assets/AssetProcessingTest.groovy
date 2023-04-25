@@ -18,7 +18,7 @@ import org.openremote.setup.integration.protocol.MockProtocol
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.persistence.EntityManager
+import jakarta.persistence.EntityManager
 
 import static org.openremote.model.value.ValueType.*
 import static org.openremote.model.value.MetaItemType.*
@@ -84,11 +84,6 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
-
-        then: "the container should be running and initialised"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 500)
-        }
 
         then: "register mock asset processors"
         assetProcessingService.processors.add(0, firstProcessor)

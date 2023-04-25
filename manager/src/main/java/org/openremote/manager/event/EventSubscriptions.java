@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.event;
 
+import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.support.DefaultMessage;
@@ -45,7 +46,7 @@ public class EventSubscriptions {
     final protected TimerService timerService;
     final protected ConcurrentMap<String, SessionSubscriptions> sessionSubscriptionIdMap = new ConcurrentHashMap<>();
 
-    class SessionSubscriptions extends HashSet<SessionSubscription<?>> {
+    class SessionSubscriptions extends ConcurrentHashSet<SessionSubscription<?>> {
         protected void createOrUpdate(EventSubscription<?> eventSubscription) {
 
             if (TextUtil.isNullOrEmpty(eventSubscription.getSubscriptionId())) {
@@ -140,8 +141,8 @@ public class EventSubscriptions {
                 T filteredEvent = sessionSub.subscription.getFilter() == null ? event : sessionSub.subscription.getFilter().apply(event);
 
                 if (filteredEvent != null) {
-                    LOG.finest("Creating message for subscribed session '" + sessionKey + "': " + event);
-                    List<T> events = Collections.singletonList(event);
+                    LOG.finest("Creating message for subscribed session '" + sessionKey + "': " + filteredEvent);
+                    List<T> events = Collections.singletonList(filteredEvent);
                     TriggeredEventSubscription<T> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSub.subscriptionId);
 
                     if (sessionSub.subscription.getInternalConsumer() == null) {

@@ -39,6 +39,7 @@ import {
     Tooltip
 } from "chart.js";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -330,7 +331,6 @@ const style = css`
         }
 
         #container {
-            background-color: black;
             flex-direction: column;
         }
 
@@ -618,7 +618,12 @@ export class OrChart extends translate(i18next)(LitElement) {
         return html`
             <div id="container">
                 <div id="chart-container">
-                    <canvas id="chart"></canvas>
+                    ${disabled ? html`
+                        <div style="position: absolute; height: 100%; width: 100%;">
+                            <or-loading-indicator ?overlay="false"></or-loading-indicator>
+                        </div>
+                    ` : undefined}
+                    <canvas id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></canvas>
                 </div>
                 
                 ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
@@ -1037,10 +1042,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
         }
 
-        this._loading = false;
         if(promises) {
             await Promise.all(promises);
         }
+        this._loading = false;
         this._data = data;
     }
 
@@ -1064,7 +1069,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             query.toTimestamp = this._endOfPeriod;
 
             if(query.type == 'lttb') {
-                query.amountOfPoints = Math.round(this._chartElem.clientWidth / 10); // set amount of datapoints based on current chart width.
+                if(this._chartElem.clientWidth == 0) {
+                    console.error("Could not grab width of the Chart for estimating amount of datapoints. Using 10 points instead.")
+                }
+                query.amountOfPoints = (this._chartElem.clientWidth == 0) ? 10 : Math.round(this._chartElem.clientWidth / 10); // set amount of datapoints based on current chart width.
             } else if(query.type == 'interval') {
                 const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
                 const intervalArr = this._getInterval(diffInHours);

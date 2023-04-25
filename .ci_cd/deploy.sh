@@ -143,7 +143,8 @@ PLATFORM="linux/$PLATFORM"
 
 # Verify manager tag and create docker image tarballs as required
 if [ "$MANAGER_TAG" != '#ref' ]; then
-  docker buildx imagetools inspect --raw openremote/manager:$MANAGER_TAG > /dev/null 2> /dev/null
+  echo "Checking existence of manager docker image with tag: $MANAGER_TAG"
+  docker buildx imagetools inspect --raw openremote/manager:$MANAGER_TAG
   if [ $? -ne 0 ]; then
     echo "Specified manager tag does not exist in docker hub"
     revoke_ssh

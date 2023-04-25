@@ -22,9 +22,10 @@ package org.openremote.manager.rules;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.model.PersistenceEvent;
+import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -35,7 +36,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.EnumUtil;
@@ -47,11 +47,11 @@ import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
-import javax.ws.rs.core.MediaType;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -621,7 +621,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         RuleState ruleState = new RuleState(rule);
         ruleStateMap.put(rule.name, ruleState);
-        addRuleConditionStates(rule.when, rule.otherwise != null, 0, ruleState.conditionStateMap);
+        addRuleConditionStates(rule.when, rule.otherwise != null, new AtomicInteger(0), ruleState.conditionStateMap);
 
         Condition condition = buildLhsCondition(rule, ruleState);
         Action action = buildRhsAction(rule, ruleState);
@@ -639,16 +639,16 @@ public class JsonRulesBuilder extends RulesBuilder {
         return this;
     }
 
-    protected void addRuleConditionStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, int index, Map<String, RuleConditionState> triggerStateMap) throws Exception {
+    protected void addRuleConditionStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, AtomicInteger index, Map<String, RuleConditionState> triggerStateMap) throws Exception {
         if (ruleConditionGroup != null) {
             if (ruleConditionGroup.getItems().size() > 0) {
                 for (RuleCondition ruleCondition : ruleConditionGroup.getItems()) {
                     if (TextUtil.isNullOrEmpty(ruleCondition.tag)) {
-                        ruleCondition.tag = Integer.toString(index);
+                        ruleCondition.tag = index.toString();
                     }
 
                     triggerStateMap.put(ruleCondition.tag, new RuleConditionState(ruleCondition, trackUnmatched, timerService));
-                    index++;
+                    index.incrementAndGet();
                 }
             }
             if (ruleConditionGroup.groups != null && ruleConditionGroup.groups.size() > 0) {
@@ -1124,9 +1124,17 @@ public class JsonRulesBuilder extends RulesBuilder {
                         .collect(Collectors.toList());
                 }
 
-                // Find linked users
-                return compareAssetIds.stream().flatMap(assetId ->
-                    usersFacade.getResults(new UserQuery().asset(new UserAssetPredicate(assetId)))).collect(Collectors.toList());
+                // Find linked users - apply any user query if it is present or create a new one
+                UserQuery userQuery = target.users != null ? target.users : new UserQuery();
+                if (userQuery.assets == null) {
+                    userQuery.assets = compareAssetIds.toArray(String[]::new);
+                } else {
+                    List<String> assetIds = new ArrayList<>(Arrays.asList(userQuery.assets));
+                    assetIds.addAll(compareAssetIds);
+                    userQuery.assets = assetIds.toArray(String[]::new);
+                }
+
+                return usersFacade.getResults(userQuery).collect(Collectors.toList());
             }
 
             if (target.assets != null) {

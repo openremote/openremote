@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.snmp;
 
 import org.openremote.model.asset.agent.AgentLink;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.Optional;
 
 public class SNMPAgentLink extends AgentLink<SNMPAgentLink> {

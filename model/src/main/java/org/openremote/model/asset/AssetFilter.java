@@ -24,6 +24,7 @@ import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.MetaItemType;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 // TODO: Merge this with AssetQuery and use AssetQueryPredicate to resolve
+@TsIgnoreTypeParams
 public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<T> {
 
     public static final String FILTER_TYPE = "asset";
@@ -175,17 +177,18 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
             }
         }
 
-        if (attributeNames != null && attributeNames.length > 0) {
-            if (filterAttributesBy != null) {
-                // Filter attributes before doing name match
-                AssetEvent assetEvent = (AssetEvent) event;
-                if (assetEvent.getAsset() != null) {
-                    Asset<?> asset = ValueUtil.clone(assetEvent.getAsset());
-                    MetaItemDescriptor<?> finalFilterAttributesBy = filterAttributesBy;
-                    asset.setAttributes(asset.getAttributes().values().stream().filter(attribute -> attribute.hasMeta(finalFilterAttributesBy)).collect(Collectors.toList()));
-                    event = (T) new AssetEvent(assetEvent.getCause(), asset, assetEvent.getUpdatedProperties());
-                }
+        if (filterAttributesBy != null) {
+            // Filter attributes before doing name match
+            AssetEvent assetEvent = (AssetEvent) event;
+            if (assetEvent.getAsset() != null) {
+                Asset<?> asset = ValueUtil.clone(assetEvent.getAsset());
+                MetaItemDescriptor<?> finalFilterAttributesBy = filterAttributesBy;
+                asset.setAttributes(asset.getAttributes().values().stream().filter(attribute -> attribute.hasMeta(finalFilterAttributesBy)).collect(Collectors.toList()));
+                event = (T) new AssetEvent(assetEvent.getCause(), asset, assetEvent.getUpdatedProperties());
             }
+        }
+
+        if (attributeNames != null && attributeNames.length > 0) {
             List<String> eventAttributeNames = Arrays.asList(event.getAttributeNames());
             if (Arrays.stream(attributeNames).noneMatch(eventAttributeNames::contains)) {
                 return null;

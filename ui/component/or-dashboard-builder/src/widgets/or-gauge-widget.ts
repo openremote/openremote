@@ -87,7 +87,7 @@ export class OrGaugeWidgetContent extends LitElement {
             }, () => {
                 return html`
                     <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span>${i18next.t('noAttributesConnected')}</span>
+                        <span>${i18next.t('noAttributeConnected')}</span>
                     </div>
                 `
             })}
@@ -190,7 +190,7 @@ export class OrGaugeWidgetSettings extends LitElement {
                             ></or-mwc-input>
                         </div>
                         <div>
-                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
+                            <or-mwc-input type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}" .min="${0}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
                                               config.decimals = event.detail.value;
                                               this.updateConfig(this.widget!, config);

@@ -19,14 +19,18 @@ public class AssetDatapointAllQuery extends AssetDatapointQuery {
         this.toTime = toTime;
     }
 
-    public String getSQLQuery(String tableName, Class<?> attributeType) {
+    public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
+        boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         if (isNumber) {
-            return "select timestamp, value::text::numeric from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
+            return "select timestamp as X, value::text::numeric as Y from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
+        } else if (isBoolean) {
+            return "select timestamp as X, (case when VALUE::text::boolean is true then 1 else 0 end) as Y from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
         } else {
-            return "select timestamp, (case when VALUE::text::boolean is true then 1 else 0 end) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
+            return "select distinct timestamp as X, value as Y from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
         }
     }
+
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
         HashMap<Integer, Object> parameters = new HashMap<>();
         LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(this.fromTimestamp), ZoneId.systemDefault());
