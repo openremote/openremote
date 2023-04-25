@@ -769,6 +769,9 @@ export class PageUsers extends Page<AppStateKeyed> {
         const rows = userSessionsResponse.data.map((session) => {
             return [session.remoteAddress, new Date(session.startTimeMillis), html`<or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t("disconnect")}" @or-mwc-input-changed="${() => {this.disconnectSession(user, session)}}"></or-mwc-input>`]
         });
+        if (rows.length < 1){
+            return html`<or-mwc-table .rows="${[['This user has no active MQTT sessions',null]]}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
+        }
 
         return html`<or-mwc-table id="session-table" .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
     }
