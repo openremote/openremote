@@ -446,6 +446,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 }
             }
         } else {
+            // Updating the table template before render, if necessary, to prevent additional update
             if (!this._tableTemplate || changedProperties.has("_data")) {
                 this._tableTemplate = this._getTableTemplate();
             }
