@@ -335,7 +335,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     // Method that is executed during an update, to compute (additional) values before rendering.
-    // Used instead of updated() to prevent a second update.
+    // Used instead of updated() to prevent a second render when properties get changed.
     willUpdate(changedProperties: PropertyValues) {
         super.willUpdate(changedProperties);
 
