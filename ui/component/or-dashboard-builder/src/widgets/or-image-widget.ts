@@ -110,7 +110,7 @@ export class OrImageWidgetContent extends LitElement {
                 </style>
             <div style="height: 100%; display: flex; justify-content: center; align-items: center; position: relative;">
             <span></span>
-            <img class="img-content" src="${imagePath}" alt="">
+            <img class="img-content" src="${imagePath}" alt=""/>
             </div>
             `;
     }
@@ -199,7 +199,6 @@ export class OrImageWidgetSettings extends LitElement {
                     <div style="padding: 24px 24px 48px 24px;">
                         <div>
                         <input type="file" @change="${this.handleFileInputChange}" /> 
-
                         </div>
                     </div>
                 ` : null}
@@ -236,13 +235,22 @@ export class OrImageWidgetSettings extends LitElement {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
         const input = event.target as HTMLInputElement;
         if (input.files && input.files[0]) {
-            console.log("Successfully in the if of handleFileInputChange");
-            console.log(input);
+            
             this._fileElem = input;
             config.imagePath = URL.createObjectURL(input.files[0]);
             this.updateConfig(this.widget!, config);
             this.requestUpdate();
         }
+    }
+
+    isImage(file: File): boolean {
+        const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
+        const fileName = file.name;
+
+        if (allowedExtensions.exec(fileName) !== null) {
+            return true;
+        }
+        return false;
     }
 
     updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
