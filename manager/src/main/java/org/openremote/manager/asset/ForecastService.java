@@ -420,7 +420,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                         } else {
                             return Optional.<Number>empty();
                         }
-                    }).collect(Collectors.toList());
+                    }).toList();
 
                     if (forecastTimestamps.size() >= forecastValues.size()) {
                         List<Pair<?, LocalDateTime>> datapoints = IntStream

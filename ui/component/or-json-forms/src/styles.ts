@@ -125,10 +125,10 @@ export const addItemOrParameterDialogStyle = html`
             border-bottom-width: 1px;
             border-bottom-style: solid;
             padding: 0;
-            overflow: visible;
         }
         form {
             display: flex;
+            height: 100%;
         }
         #type-list {
             overflow: auto;
@@ -152,6 +152,7 @@ export const addItemOrParameterDialogStyle = html`
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
+            overflow: auto;
         }
     </style>
 `;

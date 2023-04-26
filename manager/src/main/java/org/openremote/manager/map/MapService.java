@@ -19,12 +19,7 @@
  */
 package org.openremote.manager.map;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
@@ -87,16 +82,18 @@ public class MapService implements ContainerService {
         LOG.log(Level.INFO, "Saving mapsettings.json..");
         this.mapConfig.putNull("options");
         this.mapSettings.clear();
-        ObjectNode mapSettings = loadMapSettingsJson(mapSettingsPath);
+        ObjectNode mapSettingsJson = loadMapSettingsJson(mapSettingsPath);
+        if(mapSettingsJson == null) {
+            mapSettingsJson = ValueUtil.JSON.createObjectNode();
+        }
         try(OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()))){
-            mapSettings.putPOJO("options", mapConfiguration);
-            out.write(ValueUtil.JSON.writeValueAsString(mapSettings).getBytes());
+            mapSettingsJson.putPOJO("options", mapConfiguration);
+            out.write(ValueUtil.JSON.writeValueAsString(mapSettingsJson).getBytes());
             this.setData();
-        } catch (Exception exception) {
+        } catch (ClassNotFoundException | IOException | NullPointerException | SQLException exception) {
             LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
         }
-
-        return mapSettings;
+        return mapSettingsJson;
     }
 
     protected static Metadata getMetadata(Connection connection) {
@@ -247,7 +244,7 @@ public class MapService implements ContainerService {
         this.setData();
     }
 
-    public void setData() throws Exception{
+    public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
         if (mapTilesPath == null || mapSettingsPath == null) {
             return;
         }

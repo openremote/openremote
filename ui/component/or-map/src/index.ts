@@ -19,7 +19,7 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import { debounce } from "lodash";
-import { MapType } from "@openremote/model";
+import {GeoJsonConfig, MapType } from "@openremote/model";
 
 // Re-exports
 export {Util, LngLatLike};
@@ -36,6 +36,7 @@ export interface ViewSettings {
     minZoom: number;
     boxZoom: boolean;
     geocodeUrl: String;
+    geoJson?: GeoJsonConfig
 }
 
 export interface MapEventDetail {
@@ -436,6 +437,12 @@ export class OrMap extends LitElement {
     @property({type: Boolean})
     public useZoomControl: boolean = true;
 
+    @property({type: Object})
+    public geoJson?: GeoJsonConfig;
+
+    @property({type: Boolean})
+    public showGeoJson: boolean = true;
+
     @property({type: Array})
     public boundary: string[] = [];
 
@@ -483,6 +490,8 @@ export class OrMap extends LitElement {
         if(this._resizeObserver) {
             this._resizeObserver.disconnect();
         }
+        // Clean up of internal resources associated with the map
+        this._map?.unload();
     }
 
     protected render() {
@@ -524,10 +533,11 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer, this.showBoundaryBoxControl, this.useZoomControl)
+            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
-                .setControls(this.controls);
+                .setControls(this.controls)
+                .setGeoJson(this.geoJson);
             this._map.load().then(() => {
                 // Get markers from slot
                 this._observer = new FlattenedNodesObserver(this._slotElement!, (info: any) => {
