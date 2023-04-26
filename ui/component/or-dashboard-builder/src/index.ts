@@ -215,6 +215,7 @@ export function registerWidgetTypes() {
     widgetTypes.set("kpi", new OrKpiWidget());
     widgetTypes.set("gauge", new OrGaugeWidget());
     widgetTypes.set("map", new OrMapWidget());
+    widgetTypes.set("image", new OrImageWidget());
 }
 
 @customElement("or-dashboard-builder")
