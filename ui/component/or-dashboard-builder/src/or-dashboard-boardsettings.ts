@@ -93,7 +93,7 @@ export class OrDashboardBoardsettings extends LitElement {
         if(this.dashboard.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
             const accessOptions: {key: DashboardAccess, value: string}[] = [];
-            [DashboardAccess.PRIVATE, DashboardAccess.SHARED, /*DashboardAccess.PUBLIC*/].forEach((access) => {
+            [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].forEach((access) => {
                 accessOptions.push({key: access, value: dashboardAccessToString(access)})
             })
             const scalingPresets: {key: DashboardScalingPreset, value: string}[] = [];

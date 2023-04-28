@@ -35,7 +35,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             if(!isRealmActiveAndAccessible(realm)) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            return this.dashboardStorageService.findAllOfRealm(realm, getUserId());
+            return this.dashboardStorageService.query(null, realm, getUserId(), false);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
@@ -44,7 +44,16 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
     @Override
     public Dashboard get(RequestParams requestParams, String dashboardId) {
-        return this.dashboardStorageService.get(dashboardId);
+        try {
+            Dashboard[] dashboards = this.dashboardStorageService.query(dashboardId, null, getUserId(), false);
+            if(dashboards.length == 0) {
+                throw new WebApplicationException(NOT_FOUND);
+            }
+            return dashboards[0];
+
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
+        }
     }
 
     @Override

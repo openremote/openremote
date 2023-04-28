@@ -19,13 +19,13 @@ public interface DashboardResource {
     @GET
     @Path("all/{realm}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_INSIGHTS_ROLE})
+    /*@RolesAllowed({Constants.READ_INSIGHTS_ROLE})*/
     Dashboard[] getAllRealmDashboards(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @GET
     @Path("{dashboardId}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_INSIGHTS_ROLE})
+    /*@RolesAllowed({Constants.READ_INSIGHTS_ROLE})*/
     Dashboard get(@BeanParam RequestParams requestParams, @PathParam("dashboardId") String dashboardId);
 
     @POST
