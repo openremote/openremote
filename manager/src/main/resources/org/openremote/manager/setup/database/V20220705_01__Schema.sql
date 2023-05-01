@@ -22,6 +22,7 @@ create table ALARM (
   SOURCE_ID          varchar(43)              not null,
   CREATED_ON         timestamp with time zone not null,
   ACKNOWLEDGED_ON    timestamp with time zone,
+  LAST_MODIFIED         timestamp with time zone not null,
   primary key (ID)
 );
 

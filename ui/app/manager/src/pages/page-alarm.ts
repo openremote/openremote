@@ -631,6 +631,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
     );
   }
 
+  
+
   protected onAlarmChanged(e: OrInputChangedEvent | OrMwcInput) {
     // Don't have form-associated custom element support in lit at time of writing which would be the way to go here
     const formElement = e instanceof OrInputChangedEvent ? (e.target as HTMLElement).parentElement : e.parentElement;
@@ -938,6 +940,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
       tableBody.appendChild(row);
     });
   }
+
+  
 
   // Reset selected alarm and go back to the alarm overview
   protected reset() {

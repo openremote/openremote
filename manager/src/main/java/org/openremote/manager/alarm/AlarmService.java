@@ -129,7 +129,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                         .setStatus(alarm.getStatus())
                         .setSource(source)
                         .setSourceId(sourceId)
-                        .setCreatedOn(new Date(timestamp));
+                        .setCreatedOn(new Date(timestamp))
+                        .setLastModified(new Date(timestamp));
 
                 entityManager.merge(sentAlarm);
                 TypedQuery<Long> query = entityManager.createQuery("select max(id) from SentAlarm", Long.class);
@@ -302,12 +303,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     public void updateAlarm(Long id, Alarm alarm) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET title=:title, content=:content, severity=:severity, status=:status WHERE id =:id");
+            Query query = entityManager.createQuery("UPDATE SentAlarm SET title=:title, content=:content, severity=:severity, status=:status, lastModified=:lastModified WHERE id =:id");
             query.setParameter("id", id);
             query.setParameter("title", alarm.getTitle());
             query.setParameter("content", alarm.getContent());
             query.setParameter("severity", alarm.getSeverity());
             query.setParameter("status", alarm.getStatus());
+            query.setParameter("lastModified", new Timestamp(timerService.getCurrentTimeMillis()));
             query.executeUpdate();
         });
     }
