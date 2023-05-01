@@ -1,14 +1,13 @@
-import manager, { Util } from "@openremote/core";
+import manager, {DefaultColor5, DefaultColor4, Util } from "@openremote/core";
 import { Asset, Attribute, AttributeRef, DashboardWidget } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
-import { html, LitElement, TemplateResult } from "lit";
+import { html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import { OrWidgetConfig, OrWidgetEntity } from "./or-base-widget";
 import { style } from "../style";
 import { SettingsPanelType, widgetSettingsStyling } from "../or-dashboard-settingspanel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { OrFileUploader } from "@openremote/or-components/or-file-uploader";
 
 export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
@@ -78,13 +77,16 @@ export class OrImageWidgetContent extends LitElement {
     public realm?: string;
 
     @state()
-    private loadedAssets: Asset[] = [];
+    private attributeCoordinates: [number, number][] = [];
 
     @state()
     public imageUploaded?: boolean;
 
     @state()
     private image?: HTMLInputElement;
+
+    @state()
+    private loadedAssets: Asset[] = [];
 
     @state()
     private assetAttributes: [number, Attribute<any>][] = [];
@@ -96,10 +98,24 @@ export class OrImageWidgetContent extends LitElement {
             .img-content {
                 display: flex;
                 flex-direction: column;
+                position: absolute;    /*added to check if elements can stack*/
                 height: 100%;
                 width: 100%;
                 object-fit: contain;
                 flex: 1;
+                z-index: 2;
+            }
+
+            /*overlay element doesnt have to have be span, div works too, OG try was with span and it worked*/
+            #overlay {
+                position: relative;
+                z-index: 3;
+
+                /*additional marker styling*/
+                color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                background-color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+                border-radius: 15px;
+                object-fit: contain;
             }
         `
         var imagePath = this.widget?.widgetConfig.imagePath;
@@ -108,11 +124,25 @@ export class OrImageWidgetContent extends LitElement {
                 <style>
                     ${css}
                 </style>
-            <div style="height: 100%; display: flex; justify-content: center; align-items: center; position: relative;">
-            <span></span>
-            <img class="img-content" src="${imagePath}" alt=""/>
+            <div style="height: 100%; display: flex; justify-content: center; align-items: center; position: relative; z-index: 1;">
+                <img class="img-content" src="${imagePath}" alt=""/>
+                
+                <div>
+                    ${this.handleMarkerPlacement(this.widget?.widgetConfig)}
+                </div>
             </div>
             `;
+    }
+
+    handleMarkerPlacement(config: ImageWidgetConfig) {
+        if (config.attributeRefs && config.attributeRefs.length > 0) {
+            return config.attributeRefs.map((attribute) => 
+            (
+                html`
+                <span id="overlay" style="top: ${this.widget?.widgetConfig.yCoordinates}%; left: ${this.widget?.widgetConfig.xCoordinates}%">${attribute.name}</span>
+                `
+            ))
+        }
     }
 
     updated(changedProperties: Map<string, any>) {
@@ -211,7 +241,7 @@ export class OrImageWidgetSettings extends LitElement {
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             return config.attributeRefs.map((name) => 
             (html`<div>
-            <or-mwc-input .type="${InputType.NUMBER}" style="width: 50%; float: left;" .value="${config.xCoordinates}" label="${i18next.t('xCoordinates')}"
+            <or-mwc-input .type="${InputType.NUMBER}" style="width: 40%; float: left; padding: 24px 24px 24px 24px;" .value="${config.xCoordinates}" label="${i18next.t('xCoordinates')}"
                 @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                 config.xCoordinates = event.detail.value;
                 this.updateConfig(this.widget!, config);
@@ -219,10 +249,11 @@ export class OrImageWidgetSettings extends LitElement {
             ></or-mwc-input>
         </div>
         <div>
-            <or-mwc-input .type="${InputType.NUMBER}" style="width: 50%; float: left;" .value="${config.yCoordinates}" label="${i18next.t('yCoordinates')}"
+            <or-mwc-input .type="${InputType.NUMBER}" style="width: 40%; float: left; padding: 24px 24px 24px 24px;" .value="${config.yCoordinates}" label="${i18next.t('yCoordinates')}"
                 @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                 config.yCoordinates = event.detail.value;
                 this.updateConfig(this.widget!, config);
+                console.log(this.widget!, config);
             }}"
             ></or-mwc-input>
         </div>`))
