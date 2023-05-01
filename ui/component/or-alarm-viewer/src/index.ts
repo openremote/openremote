@@ -419,7 +419,7 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                                     <td class="mdc-data-table__cell">${ev.status}</td> 
                                     <td class="mdc-data-table__cell">${ev.assigneeUsername}</td>                                   
                                     <td class="mdc-data-table__cell">${ev.title}</td>                                    
-                                    <td class="mdc-data-table__cell">${ev.content}</td> 
+       s                             <td class="mdc-data-table__cell">${ev.content}</td> 
                                     <td class="mdc-data-table__cell">${new Date(ev.lastModified!).toLocaleString()}</td>                                   
                                 </tr>
                             `;            
