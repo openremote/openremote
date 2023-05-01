@@ -705,6 +705,10 @@
     "createAlarmFailed": "Create alarm failed",
     "alarmAlreadyExists": "Error occurred! This alarm already exists.",
     "deleteAlarmConfirm": "Are you sure you want to delete this alarm?",
-    "assignUser": "Assign user"
+    "assignUser": "Assign user",
+    "hideControls": "Hide controls",
+    "filter": "Content filter",
+    "lastModified": "Last modified",
+    "sort": "Sort"
   }
 }

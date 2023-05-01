@@ -56,6 +56,10 @@ public class SentAlarm {
     @Column(name = "ACKNOWLEDGED_ON", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Date acknowledgedOn;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "LAST_MODIFIED", updatable = true, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    protected Date lastModified;
+
     public Long getId() { return id; }
 
     public SentAlarm setId(Long id) {
@@ -130,6 +134,15 @@ public class SentAlarm {
         return this;
     }
 
+    public Date getLastModified() {
+        return lastModified;
+    }
+
+    public SentAlarm setLastModified(Date lastModified) {
+        this.lastModified = lastModified;
+        return this;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -142,6 +155,7 @@ public class SentAlarm {
                 ", sourceId='" + sourceId + '\'' +
                 ", createdOn=" + createdOn + '\'' +
                 ", acknowledgedOn=" + acknowledgedOn + '\'' +
+                ", lastModified=" + lastModified + '\'' +
                 '}';
     }
 }
