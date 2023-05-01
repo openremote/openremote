@@ -6,7 +6,7 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, query, state} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import * as Model from "@openremote/model";
@@ -28,13 +28,9 @@ const linkParser = require("parse-link-header");
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export interface ViewerConfig {
-    allowedCategories?: Model.SyslogCategory[];
-    initialCategories?: Model.SyslogCategory[];
     initialFilter?: string;
-    initialLevel?: Model.SyslogLevel;
-    hideCategories?: boolean;
-    hideFilter?: boolean;
-    hideLevel?: boolean;
+    initialSeverity?: AlarmSeverity;
+    hideControls?: boolean;
 }
 
 // language=CSS
@@ -70,6 +66,11 @@ const style = css`
     #msg:not([hidden]) {
         display: flex;    
     }
+
+    #status-select, #severity-select, #sort-select {
+        width: 180px;
+        padding: 0 10px;
+    }
     
     #controls {
         flex: 0;
@@ -77,62 +78,27 @@ const style = css`
         flex-wrap: wrap;
         justify-content: space-between;
         margin: var(--internal-or-log-viewer-controls-margin);
-        padding: 0 20px 20px 20px;
+        padding: 0 10px 10px 10px;
+    }
+
+    #controls-left {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
     }
     
     #controls > * {
-        margin-top: 20px;
+        margin-top: 0px;
     }
     
-    #time-controls {
-        display: flex;
-        align-items: center;
-    }
-    
-    #live-button {
-        margin-right: 40px;
-    }
-    
-/*  min-width of selects is 200px somehow
-    #period-select {
-        width: 90px;
-    }
-    
-    #level-select {
-        width: 120px;
-    }
-    
-    #limit-select {
-        width: 80px;
-    }
-*/
-    
-    #log-controls, #ending-controls, #page-controls {
-        display: flex;
-        max-width: 100%;
-        align-items: center;
-    }
-    
-    #ending-controls {
-        float: right;
-        margin: 0 10px;
-    }
-    
-    #log-controls > *, #ending-controls > *, #page-controls > * {
-        padding: 0 5px;
-    }
-        
-    #page-controls[hidden] {
-        visibility: hidden;
-    }
-    
-    #ending-date {
-        min-width: 0;
+    .hidden {
+        display: none !important;
     }
     
     #table-container {
         height: 100%;
         overflow: auto;
+        margin-top: 10px;
     }
     
     #table {
@@ -149,7 +115,64 @@ const style = css`
         word-wrap: break-word;
         white-space: pre-wrap;
     }
+
+    th.mdc-data-table__header-cell {
+        text-weight: var(--mdc-typography-body2-font-weight, 700);
+    }
+
+    td.mdc-data-table__cell:nth-child(2)[data-severity="LOW"] {
+        color: green; /* change color to green for "low" severity */
+        text-weight: var(--mdc-typography-body2-font-weight, 500);
+      }
+      
+      td.mdc-data-table__cell:nth-child(2)[data-severity="MEDIUM"] {
+        color: orange; /* change color to orange for "medium" severity */
+        text-weight: var(--mdc-typography-body2-font-weight, 500);
+      }
+      
+      td.mdc-data-table__cell:nth-child(2)[data-severity="HIGH"] {
+        color: red; /* change color to red for "high" severity */
+        text-weight: var(--mdc-typography-body2-font-weight, 500);
+      }
 `;
+
+export interface OrAlarmTableRowClickDetail {
+    alarm: SentAlarm | undefined;
+}
+
+export class OrAlarmTableRowClickEvent extends CustomEvent<OrAlarmTableRowClickDetail> {
+
+    public static readonly NAME = "or-alarm-table-row-click";
+
+    constructor(alarm: SentAlarm | undefined) {
+        super(OrAlarmTableRowClickEvent.NAME, {
+            detail: {
+                alarm: alarm
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+enum Sort {
+    CREATED_ASC = "Created on asc",
+    CREATED_DESC = "Created on desc",
+    MODIFIED_ASC = "Last modified asc",
+    MODIFIED_DESC = "Last modified desc"
+}
+
+// export class OrAddAlarmClickEvent extends CustomEvent<void>{
+
+//     public static readonly NAME = "or-add-alarm-click";
+
+//     constructor() {
+//         super(OrAddAlarmClickEvent.NAME, {
+//             bubbles: true,
+//             composed: true
+//         });
+//     }
+// }
 
 @customElement("or-alarm-viewer")
 export class OrAlarmViewer extends translate(i18next)(LitElement) {
@@ -176,11 +199,17 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
     @property({type: Array})
     public statuses?: AlarmStatus[];
 
-    @property({type: String})
-    public filter?: string;
+    @state()
+    public severity?: AlarmSeverity;
 
-    @property({type: Boolean})
-    public live: boolean = false;
+    @state()
+    public status?: AlarmStatus;
+
+    @state()
+    public sort?: Sort;
+
+    @state()
+    public hide: boolean = false;
 
     @property({type: Object})
     public config?: ViewerConfig;
@@ -188,99 +217,58 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
     @property()
     protected _loading: boolean = false;
 
-    @property()
+    @state()
     protected _data?: SentAlarm[];
 
     @query("#table")
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
-    protected _eventSubscriptionId?: string;
     protected _refresh?: number;
     protected _pageCount?: number;
     protected _currentPage: number = 1;
-    protected _pendingCategories?: Model.SyslogCategory[];
 
     connectedCallback() {
+        this._loadData();
         super.connectedCallback();
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._cleanup();
-        this._unsubscribeEvents();
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
 
-        if (_changedProperties.has("level")
-            || _changedProperties.has("interval")
-            || _changedProperties.has("timestamp")
-            || _changedProperties.has("limit")
-            || _changedProperties.has("categories")
+        if (_changedProperties.has("severity")
+            || _changedProperties.has("status")
             || _changedProperties.has("filter")
-            || _changedProperties.has("live")) {
-            if (!this.live) {
+            || _changedProperties.has("sort")
+            || _changedProperties.has("hide")) {
                 this._pageCount = undefined;
                 this._currentPage = 1;
                 this._data = undefined;
-            }
         }
 
-        // if (!this.interval) {
-        //     this.interval = OrLogViewer.DEFAULT_INTERVAL;
-        // }
-
-        // if (!this.categories) {
-        //     if (this.config && this.config.initialCategories) {
-        //         this.categories = [...this.config.initialCategories];
-        //     } else {
-        //         this.categories = Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
-        //     }
-        // }
-
-        // if (this.filter === undefined && this.config && this.config.initialFilter) {
-        //     this.filter = this.config.initialFilter;
-        // }
-
-        // if (!this.level) {
-        //     if (this.config && this.config.initialLevel) {
-        //         this.level = this.config.initialLevel;
-        //     } else {
-        //         this.level = OrLogViewer.DEFAULT_LEVEL;
-        //     }
-        // }
-
-        // if (!this.live && !this.timestamp) {
-        //     this.timestamp = new Date();
-        // }
-
-        // if (!this._data && !this.live) {
-        //     this._loadData();
-        // }
-
-        // if (_changedProperties.has("live")) {
-        //     if (this.live) {
-        //         this._subscribeEvents();
-        //     } else {
-        //         this._unsubscribeEvents();
-        //     }
-        // }
+        if (!this._data) {
+            this._loadData();
+        }
 
         return super.shouldUpdate(_changedProperties);
     }
 
     render() {
-
         const disabled = this._loading;
-        const isLive = this.live;
-
-        const hideCategories = this.config && this.config.hideCategories;
-        const hideFilter = this.config && this.config.hideFilter;
-        const hideLevel = this.config && this.config.hideLevel;
-
+        
         return html`
             <div id="container">
-                
+                <div id="controls">
+                    <div id="controls-left" class="${this.hide ? "hidden" : ""}">
+                        <or-mwc-input .type="${InputType.SELECT}" id="severity-select" ?disabled="${disabled}" .label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSeverityChanged(evt.detail.value)}" .value="${this.severity}" .options="${this._getSeverityOptions()}"></or-mwc-input>
+                        <or-mwc-input .type="${ InputType.SELECT}" id="status-select" ?disabled="${disabled}" .label="${i18next.t("alarm.status")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}" .value="${this.status}" .options="${this._getStatusOptions()}"></or-mwc-input>
+                        <or-mwc-input .type="${ InputType.SELECT}" id="sort-select" ?disabled="${disabled}" .label="${i18next.t("alarm.sort")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSortChanged(evt.detail.value)}" .value="${this.sort}" .options="${this._getSortOptions()}"></or-mwc-input>
+                    </div>
+                    <or-mwc-input .type="${ InputType.CHECKBOX}" id="hide-check" ?disabled="${disabled}" .label="${i18next.t("alarm.hideControls")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onHideChanged(evt.detail.value)}" .value="${this.hide}"></or-mwc-input>
+                </div>
                 ${disabled ? html`<div id="msg">${i18next.t("loading")}</div>` :
                     html`<div id="table-container">
                         ${this._data ? this._getTable() : ``}
@@ -289,117 +277,107 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected _getLimitOptions() {
-        return ["25", "50", "100", "200"];
+    protected _getStatusOptions() {
+        return  [AlarmStatus.ACTIVE, AlarmStatus.ACKNOWLEDGED, AlarmStatus.INACTIVE, AlarmStatus.RESOLVED];
     }
 
-    protected _getLevelOptions() {
-        return Object.keys((Model as any)["SyslogLevel"]).map((key) => [key, i18next.t(key.toLocaleLowerCase())]);
+    protected _getSeverityOptions() {
+        return [AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH];
     }
 
-    protected _getCategoryMenuItems(): ListItem[] {
-        const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
-        return categories.map((cat) => {
-            return {
-                text: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))}),
-                value: cat
-            } as ListItem;
-        });
+    protected _getSortOptions() {
+        return [Sort.CREATED_ASC, Sort.CREATED_DESC, Sort.MODIFIED_ASC, Sort.MODIFIED_DESC];
     }
 
-    protected getLimit() {
-        return this.limit || OrAlarmViewer.DEFAULT_LIMIT;
-    }
+    protected _onSortChanged(sort: Sort) {
+        this.sort = sort;
 
-    protected _onCategoriesChanged(values: Model.SyslogCategory[]) {
-        this._pendingCategories = values;
-    }
-
-    protected _onCategoriesClosed() {
-        // if (!this._pendingCategories) {
-        //     return;
-        // }
-
-        // this.categories = [...this._pendingCategories];
-
-        // if (this.categories && this.live) {
-        //     this._data = this._data!.filter((e) => this.categories!.find((c) => c === e.category));
-        // }
-
-        // this._pendingCategories = undefined;
-    }
-
-    protected _onLiveChanged(live: boolean) {
-        this.live = live;
-        if (live) {
-            this._data = [];
-            this._pageCount = undefined;
-            this._currentPage = 1;
-        }
-    }
-
-    protected _onLimitChanged(limit: string) {
-        if (!limit) {
-            this.limit = undefined;
+        if (!this.sort) {
             return;
         }
-
-        this.limit = parseInt(limit);
-        const newLimit = this.getLimit();
-
-        if (this.live && this._data!.length > newLimit) {
-            this._data!.splice(newLimit - 1);
-        }
+        switch (this.sort) {
+            case Sort.CREATED_ASC:
+                this._data = this._data!.sort((a, b) => {
+                    const createdOnA = new Date(a.createdOn!).getTime();
+                    const createdOnB = new Date(b.createdOn!).getTime();
+                    return createdOnA - createdOnB;
+                  });
+                break;
+            case Sort.CREATED_DESC:
+                this._data = this._data!.sort((a, b) => {
+                    const createdOnA = new Date(a.createdOn!).getTime();
+                    const createdOnB = new Date(b.createdOn!).getTime();
+                    return createdOnB - createdOnA;
+                  });
+                break;
+            case Sort.MODIFIED_ASC:
+                this._data = this._data!.sort((a, b) => {
+                    const lastModifiedA = new Date(a.lastModified!).getTime();
+                    const lastModifiedB = new Date(b.lastModified!).getTime();
+                    return lastModifiedA - lastModifiedB;
+                  });
+                break;
+            case Sort.MODIFIED_DESC:
+                this._data = this._data!.sort((a, b) => {
+                    const lastModifiedA = new Date(a.lastModified!).getTime();
+                    const lastModifiedB = new Date(b.lastModified!).getTime();
+                    return lastModifiedB - lastModifiedA;
+                  });
+                break;
+       }
     }
 
-    protected _onFilterChanged(filter: string) {
-        this.filter = filter;
 
-        if (!this.filter) {
+    protected _onSeverityChanged(severity: AlarmSeverity) {
+        this.severity = severity;
+
+        if (!this.severity) {
             return;
         }
-
-        if (this.live) {
-            const filters = this.filter.split(";");
-            //this._data = this._data!.filter((e) => filters.find((f) => f === e.subCategory));
-        }
+        this._data = this._data!.filter((e) => e.severity === this.severity);
     }
 
-    protected _onLevelChanged(level: Model.SyslogLevel) {
-        // this.level = level;
+    protected _onHideChanged(hide: boolean) {
+        this.hide = hide;
+        this.severity = undefined;
+        this.status = undefined;
+        this.sort = undefined;
+    }
 
-        // if (!this.level) {
-        //     return;
-        // }
+    protected _onStatusChanged(status: AlarmStatus) {
+        this.status = status;
 
-        if (this.live) {
-           // this._data = this._data!.filter((e) => this._eventMatchesLevel(n));
+        if (!this.status) {
+            return;
         }
+        this._data = this._data!.filter((e) => e.status === this.status);
     }
 
     protected _getTable(): TemplateResult {
 
         return html`
             <div id="table" class="mdc-data-table">
-                <table class="mdc-data-table__table" aria-label="logs list">
+                <table class="mdc-data-table__table" aria-label="alarms list">
                     <thead>
                         <tr class="mdc-data-table__header-row">
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("createdOn")}</th>
-                            <th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.severity")}</th>
-                            <th style="width: 130px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.status")}</th>
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("title")}</th>
-                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.content")}</th>                            
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.severity")}</th>
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.status")}</th>
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.title")}</th>
+                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.content")}</th>    
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.lastModified")}</th>                        
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
                         ${this._data!.map((ev) => {
                             return html`
-                                <tr class="mdc-data-table__row">
+                                <tr class="mdc-data-table__row" @click="${(e: MouseEvent) => this.dispatchEvent(new OrAlarmTableRowClickEvent(ev))}">
                                     <td class="mdc-data-table__cell">${new Date(ev.createdOn!).toLocaleString()}</td>
-                                    <td class="mdc-data-table__cell">${ev.severity}</td>
+                                    <td class="mdc-data-table__cell" data-severity="${ev.severity}">${ev.severity}</td>
                                     <td class="mdc-data-table__cell">${ev.status}</td>                                    
                                     <td class="mdc-data-table__cell">${ev.title}</td>                                    
-                                    <td class="mdc-data-table__cell">${ev.content}</td>                                    
+                                    <td class="mdc-data-table__cell">${ev.content}</td> 
+                                    <td class="mdc-data-table__cell">${new Date(ev.lastModified!).toLocaleString()}</td>                                   
                                 </tr>
                             `;            
                         })}
@@ -409,34 +387,30 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
             `;
     }
 
-    protected _getIntervalOptions(): [string, string][] {
-        return [
-            Model.DatapointInterval.HOUR,
-            Model.DatapointInterval.DAY,
-            Model.DatapointInterval.WEEK,
-            Model.DatapointInterval.MONTH,
-            Model.DatapointInterval.YEAR
-        ].map((interval) => {
-            return [interval, i18next.t(interval.toLowerCase())];
-        });
-    }
-
     protected async _loadData() {
         if (this._loading) {
             return;
         }
 
         this._loading = true;
-
         const response = await manager.rest.api.AlarmResource.getAlarms();
-
-        this._loading = false;
+        
 
         if (response.status === 200) {
             // Get page count
-            this._pageCount = this._getPageCount(response);
             this._data = response.data;
+            if(this.severity) {
+                this._data = this._data.filter((e) => e.severity === this.severity);
+            }
+            if(this.status) {
+                this._data = this._data.filter((e) => e.status === this.status);
+            }
+            if(this.sort) {
+                this._onSortChanged(this.sort);
+            }
+            this._pageCount = this._data?.length;
         }
+        this._loading = false;
     }
 
     protected _getPageCount(response: GenericAxiosResponse<any>): number | undefined {
@@ -466,107 +440,6 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                 this._currentPage--;
             }
         }
-    }
-
-    protected async _subscribeEvents() {
-        if (manager.events) {
-            this._eventSubscriptionId = await manager.events.subscribe<Model.SyslogEvent>({
-                eventType: "syslog"
-            }, (ev) => this._onEvent(ev));
-        }
-    }
-
-    protected _unsubscribeEvents() {
-        if (this._eventSubscriptionId) {
-            manager.events!.unsubscribe(this._eventSubscriptionId);
-            this._eventSubscriptionId = undefined;
-        }
-    }
-
-    protected _getFrom(): number | undefined {
-        if (!this.timestamp) {
-            return;
-        }
-
-        return this._calculateTimestamp(this.timestamp, false)!.getTime();
-    }
-
-    protected _calculateTimestamp(timestamp: Date, forward?: boolean): Date | undefined {
-        if (!this.timestamp) {
-            return;
-        }
-
-    //     const newMoment = moment(timestamp);
-
-    //     if (forward !== undefined) {
-    //         switch (this.interval) {
-    //             case Model.DatapointInterval.HOUR:
-    //                 newMoment.add(forward ? 1 : -1, "hour");
-    //                 break;
-    //             case Model.DatapointInterval.DAY:
-    //                 newMoment.add(forward ? 1 : -1, "day");
-    //                 break;
-    //             case Model.DatapointInterval.WEEK:
-    //                 newMoment.add(forward ? 1 : -1, "week");
-    //                 break;
-    //             case Model.DatapointInterval.MONTH:
-    //                 newMoment.add(forward ? 1 : -1, "month");
-    //                 break;
-    //             case Model.DatapointInterval.YEAR:
-    //                 newMoment.add(forward ? 1 : -1, "year");
-    //                 break;
-    //         }
-    //     }
-
-    //     return newMoment.toDate();
-    }
-
-    protected _onEvent(event: Model.SyslogEvent) {
-
-        // TODO: Move filtering to server side
-        // if (this.categories && !this.categories.find((c) => c === event.category)) {
-        //     return;
-        // }
-
-        if (this.filter) {
-            const filters = this.filter.split(";");
-            if (!filters.find((f) => f === event.subCategory)) {
-                return;
-            }
-        }
-
-        if (!this._eventMatchesLevel(event)) {
-            return;
-        }
-
-        const limit = this.getLimit();
-        if (this._data!.length === limit - 1) {
-            this._data!.pop();
-        }
-        this._data!.splice(0, 0, event);
-
-        if (this._refresh) {
-            window.clearTimeout(this._refresh);
-        }
-
-        // Buffer updates to prevent excessive re-renders
-        this._refresh = window.setTimeout(() => this.requestUpdate("_data"), 2000);
-    }
-
-    protected _eventMatchesLevel(event: Model.SyslogEvent): boolean {
-        // if (!this.level || this.level === Model.SyslogLevel.INFO) {
-        //     return true;
-        // }
-
-        // if (this.level === Model.SyslogLevel.WARN && (event.level === Model.SyslogLevel.WARN || event.level === Model.SyslogLevel.ERROR)) {
-        //     return true;
-        // }
-
-        // if (this.level === Model.SyslogLevel.ERROR && event.level === Model.SyslogLevel.ERROR) {
-        //     return true;
-        // }
-
-        return false;
     }
 
     protected _cleanup() {
