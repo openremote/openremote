@@ -12,6 +12,7 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
+    attributeCoordinates: [number, number][];
     displayMode?: 'icons' | 'icons with values' | 'values';
     image?: string;
     xCoordinates: number;
@@ -40,6 +41,7 @@ export class OrImageWidget implements OrWidgetEntity {
             displayMode: "icons",
             xCoordinates: 0,
             yCoordinates: 0,
+            attributeCoordinates: [],
             deltaFormat: "absolute",
             showTimestampControls: false,
             imageUploaded: false,
@@ -115,7 +117,9 @@ export class OrImageWidgetContent extends LitElement {
                 color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
                 background-color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
                 border-radius: 15px;
+                padding: 3px 8px 5px 8px;
                 object-fit: contain;
+                text-overflow: ellipsis;
             }
         `
         var imagePath = this.widget?.widgetConfig.imagePath;
@@ -144,6 +148,8 @@ export class OrImageWidgetContent extends LitElement {
             ))
         }
     }
+
+
 
     updated(changedProperties: Map<string, any>) {
         if (changedProperties.has("widget") || changedProperties.has("editMode")) {
@@ -201,6 +207,7 @@ export class OrImageWidgetSettings extends LitElement {
     render() {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
 
+
         var output = html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
@@ -219,7 +226,7 @@ export class OrImageWidgetSettings extends LitElement {
             ${this.generateExpandableHeader(i18next.t('values'))}
         </div>
         <div>
-            ${this.prepareCoordinateEntries(config, i18next.t('values'))}
+            ${ this.expandedPanels.includes(i18next.t('values')) ? this.prepareCoordinateEntries(config, i18next.t('values')): null}
         </div>
             <div>
                 ${this.generateExpandableHeader(i18next.t('image settings'))}
@@ -239,24 +246,22 @@ export class OrImageWidgetSettings extends LitElement {
 
     prepareCoordinateEntries(config: ImageWidgetConfig, name: string){
         if (config.attributeRefs && config.attributeRefs.length > 0) {
-            return config.attributeRefs.map((name) => 
-            (html`<div>
-            <or-mwc-input .type="${InputType.NUMBER}" style="width: 40%; float: left; padding: 24px 24px 24px 24px;" .value="${config.xCoordinates}" label="${i18next.t('xCoordinates')}"
+            return config.attributeRefs.map((attr) => 
+            (html`
+            <div  style="margin-left: 15px; height: 25px; line-height: 25px;">${attr.name}</div>
+            <or-mwc-input .type="${InputType.NUMBER}" style="width: 48%; float: left;" .value="${config.xCoordinates}" label="${i18next.t('x Coordinates')}"
                 @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                 config.xCoordinates = event.detail.value;
                 this.updateConfig(this.widget!, config);
             }}"
             ></or-mwc-input>
-        </div>
-        <div>
-            <or-mwc-input .type="${InputType.NUMBER}" style="width: 40%; float: left; padding: 24px 24px 24px 24px;" .value="${config.yCoordinates}" label="${i18next.t('yCoordinates')}"
+            <or-mwc-input .type="${InputType.NUMBER}" style="width: 48%; float: left; " .value="${config.yCoordinates}" label="${i18next.t('y Coordinates')}"
                 @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                 config.yCoordinates = event.detail.value;
                 this.updateConfig(this.widget!, config);
                 console.log(this.widget!, config);
             }}"
-            ></or-mwc-input>
-        </div>`))
+            ></or-mwc-input>`))
 
         }
        
