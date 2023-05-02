@@ -1,6 +1,6 @@
 import {html, TemplateResult} from "lit";
 import {customElement, query, property, state} from "lit/decorators.js";
-import {AppStateKeyed, Page, router, PageProvider, RealmAppConfig} from "@openremote/or-app";
+import {AppStateKeyed, Page, router, PageProvider, RealmAppConfig, updateRealm, DefaultMobileLogo} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import "@openremote/or-dashboard-builder"
 import {Dashboard, Realm} from "@openremote/model";
@@ -28,7 +28,7 @@ export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>, realmC
         ],
         pageCreator: () => {
             const page = new PageInsights(store);
-            page.realmConfig = realmConfigs[manager.displayRealm];
+            page.realmConfigs = realmConfigs;
             return page;
         }
     };
@@ -38,7 +38,7 @@ export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>, realmC
 export class PageInsights extends Page<AppStateKeyed> {
 
     @property()
-    public realmConfig?: RealmAppConfig;
+    public realmConfigs?: {[p: string]: RealmAppConfig};
 
     @state()
     private dashboards?: Dashboard[];
@@ -47,13 +47,16 @@ export class PageInsights extends Page<AppStateKeyed> {
     private selectedDashboard?: Dashboard;
 
     @state()
+    private realms?: Realm[];
+
+    @state()
+    private currentRealm?: Realm;
+
+    @state()
     private activePromises: Promise<any>[] = [];
 
     @state()
     private _userId?: string;
-
-    @state()
-    private realm?: Realm;
 
     @state()
     private rerenderPending: boolean = false;
@@ -81,9 +84,10 @@ export class PageInsights extends Page<AppStateKeyed> {
             showSnackbar(undefined, i18next.t('errorOccurred'));
         });
 
-        // Load realm data
-        manager.rest.api.RealmResource.get(manager.displayRealm).then((response: any) => {
-            this.realm = response.data;
+        // Load available realms
+        manager.rest.api.RealmResource.getAccessible().then((response: any) => {
+            this.realms = response.data;
+            this.currentRealm = this.realms.find((r) => r.name == manager.displayRealm);
         })
 
         // Register dashboard related utils
@@ -92,15 +96,22 @@ export class PageInsights extends Page<AppStateKeyed> {
 
     // Before updating, check whether there are dashboards loaded.
     // If not, fetch them from our backend
-    shouldUpdate(changedProps): boolean | any {
+    willUpdate(changedProps: Map<string, any>): boolean | any {
+        console.log(changedProps);
+        if(changedProps.has("currentRealm")) {
+            this.dashboards = null;
+        }
         if(!this.dashboards && !this.isLoading()) {
             this.fetchAllDashboards();
         }
-        return super.shouldUpdate(changedProps);
     }
 
     // If URL has a dashboard ID when loading, select it immediately.
     stateChanged(state: AppStateKeyed): void {
+        console.log("stateChanged()");
+        console.log(state.app.realm);
+        this.currentRealm = this.realms.find(r => r.name == state.app.realm);
+
         if(state.app.params.id != this.selectedDashboard?.id) {
             this.updateComplete.then(async () => {
                 await Promise.all(this.activePromises); // await for dashboard fetches
@@ -166,14 +177,22 @@ export class PageInsights extends Page<AppStateKeyed> {
     }
 
     protected render(): TemplateResult {
+        console.log("render()");
+        console.log(this.realmConfigs);
+        const realmConfig = this.realmConfigs ? this.realmConfigs[this.currentRealm?.name] : undefined;
+        let logoMobile = realmConfig?.logoMobile;
+        if(logoMobile == undefined) {
+            logoMobile = DefaultMobileLogo;
+        }
         const pageStyles = {
             display: 'flex',
             flexDirection: 'column',
             pointerEvents: this.dashboardMenu?.isDrawerOpen() ? 'none' : 'auto'
         }
         return html`
-            <dashboard-menu id="dashboard-menu" .dashboards="${this.dashboards}" .selectedId="${this.selectedDashboard?.id}" 
-                            .realmName="${this.realm?.displayName}" .realmConfig="${this.realmConfig}" .userId="${this._userId}" .loading="${this.isLoading()}"
+            <dashboard-menu id="dashboard-menu" .dashboards="${this.dashboards}" .realms="${this.realms}" .selectedId="${this.selectedDashboard?.id}"
+                            .realmName="${this.currentRealm?.displayName}" .logoMobile="${logoMobile}" .userId="${this._userId}" .loading="${this.isLoading()}"
+                            @realm="${(ev: CustomEvent) => this._store.dispatch(updateRealm(ev.detail.value))}"
                             @change="${(ev: CustomEvent) => this.selectDashboard(ev.detail.value)}"
             ></dashboard-menu>
             <div style="flex: 1; ${styleMap(pageStyles)}">

@@ -1,6 +1,11 @@
 package org.openremote.manager.dashboard;
 
-import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.ws.rs.WebApplicationException;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -12,17 +17,9 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.dashboard.DashboardAccess;
 
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import jakarta.ws.rs.WebApplicationException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
@@ -89,7 +86,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 }
                 // Apply EDIT ACCESS filters; return PUBLIC dashboards, SHARED dashboards if access to the realm,
                 // and PRIVATE if you are the creator (ownerId) of the dashboard.
-                if(canEdit) {
+                if(Boolean.TRUE.equals(canEdit)) {
                     predicates.add(cb.or(
                             root.get("editAccess").in(DashboardAccess.PUBLIC, (userId != null ? DashboardAccess.SHARED : null)),
                             cb.and(root.get("editAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId))
@@ -131,10 +128,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         return persistenceService.doReturningTransaction(em -> {
             Dashboard d = em.find(Dashboard.class, dashboard.getId());
             if(d != null) {
-                if(d.getEditAccess() == DashboardAccess.PRIVATE) {
-                    if(!(d.getOwnerId().equals(userId))) {
+                if(d.getEditAccess() == DashboardAccess.PRIVATE && !(d.getOwnerId().equals(userId))) {
                         throw new WebApplicationException("You are not allowed to edit this dashboard!", FORBIDDEN);
-                    }
+
                 }
                 dashboard.setVersion(d.getVersion()); // Always forcing to the correct version, no matter what.
                 return em.merge(dashboard);

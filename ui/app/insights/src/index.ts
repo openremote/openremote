@@ -61,6 +61,9 @@ fetch(configURL).then(async (result) => {
         }
     }
 
+    // Overrides specific for Insights app
+    appConfig.manager.autoLogin = false;
+
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {

@@ -4,10 +4,12 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.Constants;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.dashboard.DashboardResource;
 import org.openremote.model.dashboard.DashboardAccess;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -32,8 +34,13 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     public Dashboard[] getAllRealmDashboards(RequestParams requestParams, String realm) {
 
         try {
-            if(!isRealmActiveAndAccessible(realm)) {
-                throw new WebApplicationException(FORBIDDEN);
+            if(isAuthenticated()) {
+                if(!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                    throw new WebApplicationException(FORBIDDEN);
+                }
+                if(!isRealmActiveAndAccessible(realm)) {
+                    throw new WebApplicationException(FORBIDDEN);
+                }
             }
             return this.dashboardStorageService.query(null, realm, getUserId(), false);
 
@@ -45,11 +52,19 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     @Override
     public Dashboard get(RequestParams requestParams, String dashboardId) {
         try {
+            if(isAuthenticated() && !hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
             Dashboard[] dashboards = this.dashboardStorageService.query(dashboardId, null, getUserId(), false);
             if(dashboards.length == 0) {
                 throw new WebApplicationException(NOT_FOUND);
             }
-            return dashboards[0];
+            Dashboard d = dashboards[0]; // only return first entry
+            if(isAuthenticated() && !isRealmActiveAndAccessible(d.getRealm())) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+            return d;
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
