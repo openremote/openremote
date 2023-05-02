@@ -51,7 +51,6 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     private static final Logger LOG = Logger.getLogger(EmailNotificationHandler.class.getName());
     protected String defaultFrom;
-    protected String protocol;
     protected Session mailSession;
     protected Transport mailTransport;
     protected Map<String, String> headers;
