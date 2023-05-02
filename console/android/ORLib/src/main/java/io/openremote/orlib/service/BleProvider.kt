@@ -13,9 +13,11 @@ import android.os.Handler
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import io.openremote.orlib.R
+import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.ObjectOutputStream
 import java.util.*
+import kotlin.reflect.typeOf
 
 
 class BleProvider(val context: Context) {
@@ -329,7 +331,7 @@ class BleProvider(val context: Context) {
     }
 
     @SuppressLint("MissingPermission")
-    fun sendToDevice(characteristicID: String, value: String, callback: BleCallback) {
+    fun sendToDevice(characteristicID: String, value: Any, callback: BleCallback) {
         val characteristic =
             deviceCharacteristics.find { it.characteristic.uuid.toString() == characteristicID }?.characteristic
         if (characteristic == null) {
@@ -362,13 +364,23 @@ class BleProvider(val context: Context) {
                 return
             }
         }
+
+        val jsonObject = value as? JSONObject
+
+        val payload = ByteArrayOutputStream().use { bos ->
+            ObjectOutputStream(bos).use { out ->
+                out.writeObject(jsonObject?.toString() ?: value)
+                bos.toByteArray()
+            }
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            currentGatt?.writeCharacteristic(characteristic, value.encodeToByteArray(), writeType)
+            currentGatt?.writeCharacteristic(characteristic, payload, writeType)
                 ?: error("Not connected to a BLE device!")
         } else {
             currentGatt?.let { gatt ->
                 characteristic.writeType = writeType
-                characteristic.value = value.encodeToByteArray()
+                characteristic.value = payload
                 gatt.writeCharacteristic(characteristic)
             } ?: error("Not connected to a BLE device!")
         }
