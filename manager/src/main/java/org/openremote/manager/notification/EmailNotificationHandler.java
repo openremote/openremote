@@ -51,7 +51,9 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     private static final Logger LOG = Logger.getLogger(EmailNotificationHandler.class.getName());
     protected String defaultFrom;
+    protected String protocol;
     protected Session mailSession;
+    protected Transport mailTransport;
     protected Map<String, String> headers;
     protected ManagerIdentityService managerIdentityService;
     protected AssetStorageService assetStorageService;
@@ -90,7 +92,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             String protocol = startTls ? "smtp" : getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT);
             Properties props = new Properties();
             props.put("mail." + protocol + ".auth", true);
-            props.put("mail." + protocol + ".starttls", startTls);
+            props.put("mail." + protocol + ".starttls.enable", startTls);
             props.put("mail." + protocol + ".host", host);
             props.put("mail." + protocol + ".port", port);
 
@@ -102,15 +104,22 @@ public class EmailNotificationHandler implements NotificationHandler {
             });
 
             boolean valid;
-            try (Transport transport = mailSession.getTransport(protocol)) {
-                transport.connect();
-                valid = transport.isConnected();
+
+            try {
+                mailTransport = mailSession.getTransport(protocol);
+                mailTransport.connect();
+                valid = mailTransport.isConnected();
             } catch (Exception e) {
                 valid = false;
+                try {
+                    mailTransport.close();
+                } catch (Exception ignored) {
+                }
                 LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications", e);
             }
 
             if (!valid) {
+                mailTransport = null;
                 mailSession = null;
                 LOG.log(Level.INFO, "SMTP credentials are not valid so email notifications will not function");
             }
@@ -124,12 +133,18 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     @Override
     public void stop(Container container) throws Exception {
-
+        if (mailTransport != null) {
+            try {
+                mailTransport.close();
+            } catch (Exception ignored) {
+            }
+        }
+        mailSession = null;
     }
 
     @Override
     public boolean isValid() {
-        return mailSession != null;
+        return mailTransport != null;
     }
 
     @Override
@@ -320,6 +335,7 @@ public class EmailNotificationHandler implements NotificationHandler {
         }
 
         try {
+
             MimeMessage email = new MimeMessage(mailSession);
 
             if (!toRecipients.isEmpty()) {
@@ -365,7 +381,7 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     protected NotificationSendResult sendMessage(Message email) {
         try {
-            Transport.send(email);
+            mailTransport.sendMessage(email, email.getAllRecipients());
             return NotificationSendResult.success();
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Email send failed: " + e.getMessage(), e);
