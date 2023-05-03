@@ -734,6 +734,8 @@
     "hideControls": "Hide controls",
     "filter": "Content filter",
     "lastModified": "Last modified",
-    "sort": "Sort"
+    "sort": "Sort",
+    "assignee": "Assignee",
+    "assignedToMe": "Assigned to me"
   }
 }
