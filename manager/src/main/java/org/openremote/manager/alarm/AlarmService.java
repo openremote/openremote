@@ -518,15 +518,16 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             }
     }
 
-    public void updateAlarm(Long id, Alarm alarm) {
+    public void updateAlarm(Long id, SentAlarm alarm) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET title=:title, content=:content, severity=:severity, status=:status, lastModified=:lastModified WHERE id =:id");
+            Query query = entityManager.createQuery("UPDATE SentAlarm SET title=:title, content=:content, severity=:severity, status=:status, lastModified=:lastModified, assigneeId=:assigneeId WHERE id =:id");
             query.setParameter("id", id);
             query.setParameter("title", alarm.getTitle());
             query.setParameter("content", alarm.getContent());
             query.setParameter("severity", alarm.getSeverity());
             query.setParameter("status", alarm.getStatus());
             query.setParameter("lastModified", new Timestamp(timerService.getCurrentTimeMillis()));
+            query.setParameter("assigneeId", alarm.getAssigneeId());
             query.executeUpdate();
         });
     }
