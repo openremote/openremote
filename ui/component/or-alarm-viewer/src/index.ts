@@ -22,7 +22,8 @@ import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
-import { SentAlarm, Alarm, AlarmSeverity, AlarmStatus } from "@openremote/model";
+import { SentAlarm, AlarmSeverity, AlarmStatus } from "@openremote/model";
+
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const linkParser = require("parse-link-header");
@@ -163,18 +164,6 @@ enum Sort {
     MODIFIED_DESC = "Last modified desc"
 }
 
-// export class OrAddAlarmClickEvent extends CustomEvent<void>{
-
-//     public static readonly NAME = "or-add-alarm-click";
-
-//     constructor() {
-//         super(OrAddAlarmClickEvent.NAME, {
-//             bubbles: true,
-//             composed: true
-//         });
-//     }
-// }
-
 @customElement("or-alarm-viewer")
 export class OrAlarmViewer extends translate(i18next)(LitElement) {
 
@@ -211,6 +200,9 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
 
     @state()
     public hide: boolean = false;
+
+    @state()
+    public assign: boolean = false;
 
     @property({type: Object})
     public config?: ViewerConfig;
@@ -267,6 +259,7 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                         <or-mwc-input .type="${InputType.SELECT}" id="severity-select" ?disabled="${disabled}" .label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSeverityChanged(evt.detail.value)}" .value="${this.severity}" .options="${this._getSeverityOptions()}"></or-mwc-input>
                         <or-mwc-input .type="${ InputType.SELECT}" id="status-select" ?disabled="${disabled}" .label="${i18next.t("alarm.status")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}" .value="${this.status}" .options="${this._getStatusOptions()}"></or-mwc-input>
                         <or-mwc-input .type="${ InputType.SELECT}" id="sort-select" ?disabled="${disabled}" .label="${i18next.t("alarm.sort")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSortChanged(evt.detail.value)}" .value="${this.sort}" .options="${this._getSortOptions()}"></or-mwc-input>
+                        <or-mwc-input .type="${ InputType.CHECKBOX}" id="assign-check" ?disabled="${disabled}" .label="${i18next.t("alarm.assignedToMe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onAssignCheckChanged(evt.detail.value)}" .value="${this.assign}"></or-mwc-input>
                     </div>
                     <or-mwc-input .type="${ InputType.CHECKBOX}" id="hide-check" ?disabled="${disabled}" .label="${i18next.t("alarm.hideControls")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onHideChanged(evt.detail.value)}" .value="${this.hide}"></or-mwc-input>
                 </div>
@@ -338,11 +331,27 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         this._data = this._data!.filter((e) => e.severity === this.severity);
     }
 
+    protected async _onAssignCheckChanged(assign: boolean) {
+        this.assign = assign;
+
+        if (this.assign === undefined) {
+            return;
+        }
+        const response = await manager.rest.api.UserResource.getCurrent();
+        if(response.status === 200 && this.assign) {
+            this._data = this._data!.filter((e) => e.assigneeId === response.data.id);
+        }
+        else if (!this.assign) {
+            this._loadData();
+        }
+    }
+
     protected _onHideChanged(hide: boolean) {
         this.hide = hide;
         this.severity = undefined;
         this.status = undefined;
         this.sort = undefined;
+        this.assign = false;
     }
 
     protected _onStatusChanged(status: AlarmStatus) {
@@ -364,8 +373,9 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("createdOn")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.severity")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.status")}</th>
+                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.assignee")}</th>  
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.title")}</th>
-                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.content")}</th>    
+                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.content")}</th>  
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.lastModified")}</th>                        
                         </tr>
                     </thead>
@@ -375,7 +385,8 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                                 <tr class="mdc-data-table__row" @click="${(e: MouseEvent) => this.dispatchEvent(new OrAlarmTableRowClickEvent(ev))}">
                                     <td class="mdc-data-table__cell">${new Date(ev.createdOn!).toLocaleString()}</td>
                                     <td class="mdc-data-table__cell" data-severity="${ev.severity}">${ev.severity}</td>
-                                    <td class="mdc-data-table__cell">${ev.status}</td>                                    
+                                    <td class="mdc-data-table__cell">${ev.status}</td> 
+                                    <td class="mdc-data-table__cell">${ev.assigneeUsername}</td>                                   
                                     <td class="mdc-data-table__cell">${ev.title}</td>                                    
                                     <td class="mdc-data-table__cell">${ev.content}</td> 
                                     <td class="mdc-data-table__cell">${new Date(ev.lastModified!).toLocaleString()}</td>                                   
