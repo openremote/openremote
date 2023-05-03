@@ -23,6 +23,7 @@ create table ALARM (
   CREATED_ON         timestamp with time zone not null,
   ACKNOWLEDGED_ON    timestamp with time zone,
   LAST_MODIFIED         timestamp with time zone not null,
+  ASSIGNEE_ID        varchar(255),  
   primary key (ID)
 );
 
@@ -41,6 +42,9 @@ create table ALARM_ASSET_LINK (
   CREATED_ON timestamp with time zone not null,
   primary key (ASSET_ID, REALM, ALARM_ID)
 );
+
+alter table ALARM
+    add foreign key (ASSIGNEE_ID) references PUBLIC.USER_ENTITY (ID) on delete cascade;
 
 alter table ALARM_ASSET_LINK
     add foreign key (ALARM_ID) references ALARM (ID) on delete cascade;
