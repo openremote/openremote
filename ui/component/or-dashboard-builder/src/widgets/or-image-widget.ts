@@ -1,4 +1,4 @@
-import manager, {DefaultColor5, DefaultColor4, Util } from "@openremote/core";
+import manager, {DefaultColor5, DefaultColor4, DefaultColor2, Util } from "@openremote/core";
 import { Asset, Attribute, AttributeRef, DashboardWidget } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
@@ -12,7 +12,7 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
-    attributeCoordinates: [number, number][];
+    attributeCoordinates: Map<string, [number, number]>;
     displayMode?: 'icons' | 'icons with values' | 'values';
     image?: string;
     xCoordinates: number;
@@ -20,6 +20,7 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     deltaFormat: "absolute" | "percentage";
     showTimestampControls: boolean;
     imageUploaded: boolean;
+    //currently uses this --> needs to use the image variabe on ln 17
     imagePath: string;
 }
 
@@ -41,7 +42,7 @@ export class OrImageWidget implements OrWidgetEntity {
             displayMode: "icons",
             xCoordinates: 0,
             yCoordinates: 0,
-            attributeCoordinates: [],
+            attributeCoordinates: new Map<string, [number, number]>(),
             deltaFormat: "absolute",
             showTimestampControls: false,
             imageUploaded: false,
@@ -114,7 +115,7 @@ export class OrImageWidgetContent extends LitElement {
                 z-index: 3;
 
                 /*additional marker styling*/
-                color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
                 background-color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
                 border-radius: 15px;
                 padding: 3px 8px 5px 8px;
@@ -225,7 +226,7 @@ export class OrImageWidgetSettings extends LitElement {
         <div>
             ${this.generateExpandableHeader(i18next.t('values'))}
         </div>
-        <div>
+        <div style="display: flex; justify-content: start; flex-direction: row; flex: 0.8; flex-wrap: wrap; align-items: flex-start;">
             ${ this.expandedPanels.includes(i18next.t('values')) ? this.prepareCoordinateEntries(config, i18next.t('values')): null}
         </div>
             <div>
@@ -248,20 +249,21 @@ export class OrImageWidgetSettings extends LitElement {
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             return config.attributeRefs.map((attr) => 
             (html`
-            <div  style="margin-left: 15px; height: 25px; line-height: 25px;">${attr.name}</div>
-            <or-mwc-input .type="${InputType.NUMBER}" style="width: 48%; float: left;" .value="${config.xCoordinates}" label="${i18next.t('x Coordinates')}"
-                @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                config.xCoordinates = event.detail.value;
-                this.updateConfig(this.widget!, config);
-            }}"
-            ></or-mwc-input>
-            <or-mwc-input .type="${InputType.NUMBER}" style="width: 48%; float: left; " .value="${config.yCoordinates}" label="${i18next.t('y Coordinates')}"
-                @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                config.yCoordinates = event.detail.value;
-                this.updateConfig(this.widget!, config);
-                console.log(this.widget!, config);
-            }}"
-            ></or-mwc-input>`))
+
+                    <div  style="margin-left: 10%; font-family: inherit; width: 100%;">${attr.name}</div>
+
+                    <or-mwc-input .type="${InputType.NUMBER}" style="width: 48%; float: left;" .value="${config.xCoordinates}" label="${i18next.t('x Coordinates')}"
+                        @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                        config.xCoordinates = event.detail.value;
+                        this.updateConfig(this.widget!, config);
+                    }}"
+                    ></or-mwc-input>
+                    <or-mwc-input .type="${InputType.NUMBER}" style="width: 48%; float: left;" .value="${config.yCoordinates}" label="${i18next.t('y Coordinates')}"
+                        @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                        config.yCoordinates = event.detail.value;
+                        this.updateConfig(this.widget!, config);
+                        console.log(this.widget!, config);
+                    }}"></or-mwc-input>`))
 
         }
        
