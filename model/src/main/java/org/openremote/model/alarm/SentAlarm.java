@@ -5,8 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.Formula;
 
 import java.util.Date;
-import java.util.List;
-import java.util.Set;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
