@@ -20,13 +20,14 @@ import {
 import { i18next } from "@openremote/or-translate";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import { OrMwcDialog, showOkCancelDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrAssetTreeRequestSelectionEvent } from "@openremote/or-asset-tree";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { GenericAxiosResponse, isAxiosError } from "@openremote/rest";
 import { getAlarmsRoute } from "../routes";
 import { when } from "lit/directives/when.js";
 import { until } from "lit/directives/until.js";
 import { OrMwcTableRowClickEvent, TableColumn, TableRow } from "@openremote/or-mwc-components/or-mwc-table";
-import { OrAssetTreeRequestSelectionEvent } from "@openremote/or-asset-tree";
+
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
