@@ -1,3 +1,4 @@
+
 import {
     css,
     html,
@@ -122,17 +123,17 @@ const style = css`
 
     td.mdc-data-table__cell:nth-child(2)[data-severity="LOW"] {
         color: green; /* change color to green for "low" severity */
-        text-weight: var(--mdc-typography-body2-font-weight, 500);
+        font-weight: 700;
       }
       
       td.mdc-data-table__cell:nth-child(2)[data-severity="MEDIUM"] {
         color: orange; /* change color to orange for "medium" severity */
-        text-weight: var(--mdc-typography-body2-font-weight, 500);
+        font-weight: 700;
       }
       
       td.mdc-data-table__cell:nth-child(2)[data-severity="HIGH"] {
         color: red; /* change color to red for "high" severity */
-        text-weight: var(--mdc-typography-body2-font-weight, 500);
+        font-weight: 700;
       }
 `;
 
@@ -399,6 +400,9 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         if (response.status === 200) {
             // Get page count
             this._data = response.data;
+            if(manager.getRealm() != "master") {
+                this._data = this._data.filter((e) => e.realm === manager.getRealm());
+            }
             if(this.severity) {
                 this._data = this._data.filter((e) => e.severity === this.severity);
             }
