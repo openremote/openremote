@@ -1,14 +1,10 @@
 package org.openremote.model.alarm;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import org.openremote.model.asset.Asset;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.annotations.Formula;
 
 import java.util.Date;
-import java.util.List;
-import java.util.Set;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
@@ -59,6 +55,12 @@ public class SentAlarm {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "LAST_MODIFIED", updatable = true, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Date lastModified;
+
+    @Column(name= "ASSIGNEE_ID")
+    protected String assigneeId;
+
+    @Formula("(select u.USERNAME from PUBLIC.USER_ENTITY u where u.ID = ASSIGNEE_ID)")
+    protected String assigneeUsername;
 
     public Long getId() { return id; }
 
@@ -143,6 +145,19 @@ public class SentAlarm {
         return this;
     }
 
+    public String getAssigneeId() {
+        return assigneeId;
+    }
+
+    public SentAlarm setAssigneeId(String assigneeId) {
+        this.assigneeId = assigneeId;
+        return this;
+    }
+
+    public String getAssigneeUsername() {
+        return assigneeUsername;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -156,6 +171,7 @@ public class SentAlarm {
                 ", createdOn=" + createdOn + '\'' +
                 ", acknowledgedOn=" + acknowledgedOn + '\'' +
                 ", lastModified=" + lastModified + '\'' +
+                ", assigneeId=" + assigneeId + '\'' +
                 '}';
     }
 }

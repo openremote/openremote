@@ -63,7 +63,7 @@ public interface AlarmResource {
     @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
     void updateAlarm(@BeanParam RequestParams requestParams,
             @PathParam("alarmId") Long alarmId,
-            Alarm alarm);
+            SentAlarm alarm);
 
     @Path("{alarmId}/setStatus")
     @PUT
