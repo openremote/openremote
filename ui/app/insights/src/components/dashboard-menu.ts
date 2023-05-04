@@ -126,7 +126,7 @@ export class DashboardMenu extends LitElement {
                         </div>
                         <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
                             ${this.realms != undefined && this.realms.length > 1 ? getContentWithMenuTemplate(
-                                    html`<or-mwc-input type="${InputType.BUTTON}" outlined comfortable fullWidth label="Change realm" style="width: 100%;"></or-mwc-input>`,
+                                    html`<or-mwc-input type="${InputType.BUTTON}" outlined comfortable fullWidth label="${i18next.t('changeRealm')}" style="width: 100%;"></or-mwc-input>`,
                                     this.realms?.map((r) => { return {value: r.name, text: i18next.t(r.displayName)} as ListItem; }),
                                     this.realmName,
                                     (v) => this.dispatchEvent(new CustomEvent("realm", { detail: { value: v }})),
@@ -137,9 +137,9 @@ export class DashboardMenu extends LitElement {
                                     true
                             ) : undefined}
                             ${this.userId != undefined ? html`
-                                <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="Logout" @click="${() => manager.logout()}"></or-mwc-input>
+                                <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('logout')}" @click="${() => manager.logout()}"></or-mwc-input>
                             ` : html`
-                                <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="Login" @click="${() => manager.login()}"></or-mwc-input>
+                                <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('login')}" @click="${() => manager.login()}"></or-mwc-input>
                             `}
                         </div>
                     </div>

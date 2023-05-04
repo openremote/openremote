@@ -97,7 +97,6 @@ export class PageInsights extends Page<AppStateKeyed> {
     // Before updating, check whether there are dashboards loaded.
     // If not, fetch them from our backend
     willUpdate(changedProps: Map<string, any>): boolean | any {
-        console.log(changedProps);
         if(changedProps.has("currentRealm")) {
             this.dashboards = null;
         }
@@ -108,8 +107,6 @@ export class PageInsights extends Page<AppStateKeyed> {
 
     // If URL has a dashboard ID when loading, select it immediately.
     stateChanged(state: AppStateKeyed): void {
-        console.log("stateChanged()");
-        console.log(state.app.realm);
         this.currentRealm = this.realms.find(r => r.name == state.app.realm);
 
         if(state.app.params.id != this.selectedDashboard?.id) {
@@ -177,8 +174,6 @@ export class PageInsights extends Page<AppStateKeyed> {
     }
 
     protected render(): TemplateResult {
-        console.log("render()");
-        console.log(this.realmConfigs);
         const realmConfig = this.realmConfigs ? this.realmConfigs[this.currentRealm?.name] : undefined;
         let logoMobile = realmConfig?.logoMobile;
         if(logoMobile == undefined) {

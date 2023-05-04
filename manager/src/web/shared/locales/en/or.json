@@ -274,6 +274,7 @@
   "custom": "Custom attribute",
   "realm": "Realm",
   "realm_plural": "Realms",
+  "changeRealm": "Change realm",
   "displayName":"Friendly name",
   "loginTheme": "Login theme",
   "emailTheme": "Email theme",
