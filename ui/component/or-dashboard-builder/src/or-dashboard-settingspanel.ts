@@ -1,8 +1,6 @@
 import manager, {DefaultColor5, Util} from "@openremote/core";
 import {
-    Asset, AssetModelUtil, AttributeRef, AssetQuery, WellknownAssets,
-    AssetDescriptor, WellknownMetaItems, GeoJSONPoint, WellknownAttributes,
-    Attribute, AssetQueryOrderBy$Property, AssetTypeInfo,
+    Asset, AssetModelUtil, AttributeRef, AssetDescriptor, AssetTypeInfo,
 } from "@openremote/model";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -136,7 +134,7 @@ export class OrDashboardSettingsPanel extends LitElement {
     // and fetching assets if any of the AttributeRefs are not pulled yet.
     willUpdate(changedProperties: Map<string, any>) {
         if (changedProperties.has("widgetConfig")) {
-            if (!this._config || (changedProperties.get("widgetConfig") != this._config) && this.widgetConfig.attributeRefs) {
+            if (this.widgetConfig.attributeRefs != undefined && (!this._config || (changedProperties.get("widgetConfig") != this._config))) {
                 const loadedRefs: AttributeRef[] = this.widgetConfig.attributeRefs.filter((attrRef: AttributeRef) => this.isAttributeRefLoaded(attrRef));
                 if (loadedRefs.length != this.widgetConfig.attributeRefs.length) {
                     this.fetchAssets(this.widgetConfig).then(assets => {
@@ -448,19 +446,8 @@ export class OrDashboardSettingsPanel extends LitElement {
 
     /* ---------------------------------------------------- */
 
-    async getAssetTypes(config: OrWidgetConfig | any) {
-        const response = await manager.rest.api.AssetResource.queryAssets({
-            realm: {
-                name: manager.displayRealm
-            },
-            select: {
-                attributes: []
-            },
-        });
-        if (response && response.data) {
-            const types: string[] = response.data.map(asset => asset.type!).filter((type, index, asset) => asset.indexOf(type) === index).sort();
-            return types.map((type) => AssetModelUtil.getAssetDescriptor(type)!).filter((t) => t.descriptorType === "asset");
-        }
+    async getAssetTypes() {
+        return AssetModelUtil.getAssetDescriptors().filter((t) => t.descriptorType == "asset");
     }
 
     getAttributesByType(type: string) {
@@ -528,7 +515,7 @@ export class OrDashboardSettingsPanel extends LitElement {
     protected handleTypeSelect(value: string) {
         if (this._config.assetType !== value) {
             this._config.attributeName = undefined;
-            this._config.assets = [];
+            this._config.assetIds = [];
             this._config.showLabels = false;
             this._config.showUnits = false;
             this._config.boolColors = {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'};
@@ -551,7 +538,7 @@ export class OrDashboardSettingsPanel extends LitElement {
             },
             types: [this._config.assetType],
         }).then(response => {
-            this._config.assets = response.data;
+            this._config.assetIds = response.data.map((a) => a.id);
             this._config.valueType = response.data[0].attributes![value].type;
         }).catch((reason) => {
             console.error(reason);
@@ -564,7 +551,7 @@ export class OrDashboardSettingsPanel extends LitElement {
     async getAssettypesHTML(config: OrWidgetConfig | any) {
         if (config.assetTypes) {
             if (this._loadedAssetTypes.length === 0) {
-                this._loadedAssetTypes = await this.getAssetTypes(config) as AssetDescriptor[]
+                this._loadedAssetTypes = await this.getAssetTypes() as AssetDescriptor[]
             }
             return html`
                 <div style="padding: 12px 24px 24px 24px; display: flex; flex-direction: column; gap: 16px;">
@@ -582,6 +569,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                                 },
                                 undefined,
                                 false,
+                                true,
                                 true,
                                 true) : html``
                         }

@@ -325,7 +325,7 @@ export class OrDashboardBuilder extends LitElement {
 
         // Setting dashboard if selectedId is given by parent component
         if(this.selectedId != undefined) {
-            this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == this.selectedId; }));
+            this.selectedDashboard = this.dashboards?.find(x => { return x.id == this.selectedId; });
         }
     }
 
@@ -442,6 +442,13 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
 
+    openDashboardInInsights() {
+        if(this.selectedDashboard != null) {
+            const insightsUrl: string = (window.location.origin + "/insights/" + this.selectedDashboard.id); // Just using relative URL to origin, as its enough for now.
+            window.open(insightsUrl)?.focus();
+        }
+    }
+
     shareUrl(method: string) {
         let url = window.location.href.replace("true", "false");
         if(method == 'copy') {
@@ -545,6 +552,9 @@ export class OrDashboardBuilder extends LitElement {
                                         </or-mwc-input>
                                         <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
+                                        </or-mwc-input>
+                                        <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
+                                                      @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}">
                                         </or-mwc-input>
                                         <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
                                                       @or-mwc-input-changed="${() => { this.saveDashboard(); }}">

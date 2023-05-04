@@ -91,7 +91,7 @@ const style = css`
     }
      
     .mdc-menu-surface-mid-height {
-        max-height: calc(50vh - 32px) !important;
+        max-height: calc(45vh - 32px) !important;
     }
     .mdc-menu-surface-full-width {
         width: 100%;
