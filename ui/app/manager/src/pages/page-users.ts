@@ -560,6 +560,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         return {
             enabled: true,
             password: undefined,
+            realm: manager.displayRealm,
             roles: [],
             previousRoles: [],
             realmRoles: [],
