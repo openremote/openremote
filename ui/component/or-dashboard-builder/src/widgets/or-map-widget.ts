@@ -78,7 +78,7 @@ export class OrMapWidget implements OrWidgetEntity {
             textColors: [['example', '4caf50'], ['example2', 'ef5350']],
             thresholds: [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]],
             assetTypes: [],
-            assetType: " ",
+            assetType: undefined,
             assetIds: [],
             attributes: [],
         } as MapWidgetConfig;

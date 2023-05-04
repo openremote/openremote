@@ -452,15 +452,16 @@ export class OrDashboardSettingsPanel extends LitElement {
 
     getAttributesByType(type: string) {
         const descriptor: AssetDescriptor = (AssetModelUtil.getAssetDescriptor(type) as AssetDescriptor);
-        const typeInfo: AssetTypeInfo = (AssetModelUtil.getAssetTypeInfo(descriptor) as AssetTypeInfo);
-
-        if (typeInfo.attributeDescriptors) {
-            return typeInfo.attributeDescriptors.filter((ad) => {
-                return this._allowedValueTypes.indexOf(ad.type!) > -1;
-            }).map((ad) => {
-                const label = Util.getAttributeLabel(ad, undefined, type, false);
-                return [ad.name!, label];
-            }).sort(Util.sortByString((attr) => attr[1]));
+        if(descriptor) {
+            const typeInfo: AssetTypeInfo = (AssetModelUtil.getAssetTypeInfo(descriptor) as AssetTypeInfo);
+            if (typeInfo?.attributeDescriptors) {
+                return typeInfo.attributeDescriptors.filter((ad) => {
+                    return this._allowedValueTypes.indexOf(ad.type!) > -1;
+                }).map((ad) => {
+                    const label = Util.getAttributeLabel(ad, undefined, type, false);
+                    return [ad.name!, label];
+                }).sort(Util.sortByString((attr) => attr[1]));
+            }
         }
     }
 
@@ -539,7 +540,7 @@ export class OrDashboardSettingsPanel extends LitElement {
             types: [this._config.assetType],
         }).then(response => {
             this._config.assetIds = response.data.map((a) => a.id);
-            this._config.valueType = response.data[0].attributes![value].type;
+            this._config.valueType = (response.data.length > 0) ? response.data[0].attributes![value].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
         }).catch((reason) => {
             console.error(reason);
             showSnackbar(undefined, i18next.t('errorOccurred'));
@@ -549,68 +550,61 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     async getAssettypesHTML(config: OrWidgetConfig | any) {
-        if (config.assetTypes) {
-            if (this._loadedAssetTypes.length === 0) {
-                this._loadedAssetTypes = await this.getAssetTypes() as AssetDescriptor[]
-            }
-            return html`
-                <div style="padding: 12px 24px 24px 24px; display: flex; flex-direction: column; gap: 16px;">
-                    ${(config.assetType) ? html`
-                        ${this._loadedAssetTypes.length > 0 ? getContentWithMenuTemplate(
-                                this.assetTypeSelect(),
-                                this.mapDescriptors(this._loadedAssetTypes, {
-                                    text: i18next.t("filter.assetTypeMenuNone"),
-                                    value: "",
-                                    icon: "selection-ellipse"
-                                }) as ListItem[],
-                                undefined,
-                                (v: string[] | string) => {
-                                    this.handleTypeSelect(v as string);
-                                },
-                                undefined,
-                                false,
-                                true,
-                                true,
-                                true) : html``
-                        }
-
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;"
-                                          .options="${this._config.attributes}"
-                                          .value="${config.attributeName}" label="${i18next.t('filter.attributeLabel')}"
-                                          @or-mwc-input-changed="${(event: CustomEvent) => {
-                                              this.handleAttributeSelect(event.detail.value);
-                                          }}"
-                            ></or-mwc-input>
-                        </div>
-                        <div style="padding: 0 10px 12px 10px;">
-                            <div class="switchMwcInputContainer">
-                                <span>${i18next.t('dashboard.showLabels')}</span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
-                                              .value="${config.showLabels}"
-                                              @or-mwc-input-changed="${(event: CustomEvent) => {
-                                                  this._config.showLabels = event.detail.value;
-                                                  this.updateParent(new Map<string, any>([["config", this._config]]));
-                                              }}"
-                                ></or-mwc-input>
-                            </div>
-                            <div class="switchMwcInputContainer">
-                                <span>${i18next.t('dashboard.showUnits')}</span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
-                                              .value="${config.showUnits}"
-                                              .disabled="${!config.showLabels}"
-                                              @or-mwc-input-changed="${(event: CustomEvent) => {
-                                                  this._config.showUnits = event.detail.value;
-                                                  this.updateParent(new Map<string, any>([["config", this._config]]));
-                                              }}"
-                                ></or-mwc-input>
-                            </div>
-
-                        </div>
-
-                    ` : undefined}
-                </div>
-            `
+        if (this._loadedAssetTypes.length === 0) {
+            this._loadedAssetTypes = await this.getAssetTypes() as AssetDescriptor[]
         }
+        return html`
+            <div style="padding: 12px 24px 24px 24px; display: flex; flex-direction: column; gap: 16px;">
+                ${this._loadedAssetTypes.length > 0 ? getContentWithMenuTemplate(
+                        this.assetTypeSelect(),
+                        this.mapDescriptors(this._loadedAssetTypes, {
+                            text: i18next.t("filter.assetTypeMenuNone"),
+                            value: "",
+                            icon: "selection-ellipse"
+                        }) as ListItem[],
+                        undefined,
+                        (v: string[] | string) => {
+                            this.handleTypeSelect(v as string);
+                        },
+                        undefined,
+                        false,
+                        true,
+                        true,
+                        true) : html``
+                }
+                <div>
+                    <or-mwc-input .type="${InputType.SELECT}" .disabled="${config.assetType == undefined || config.assetType == ''}" style="width: 100%;"
+                                  .options="${this._config.attributes}"
+                                  .value="${config.attributeName}" label="${i18next.t('filter.attributeLabel')}"
+                                  @or-mwc-input-changed="${(event: CustomEvent) => {
+                                      this.handleAttributeSelect(event.detail.value);
+                                  }}"
+                    ></or-mwc-input>
+                </div>
+                <div style="padding: 0 10px 12px 10px;">
+                    <div class="switchMwcInputContainer">
+                        <span>${i18next.t('dashboard.showLabels')}</span>
+                        <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                      .value="${config.showLabels}" .disabled="${config.assetType == undefined || config.assetType == ''}"
+                                      @or-mwc-input-changed="${(event: CustomEvent) => {
+                                          this._config.showLabels = event.detail.value;
+                                          this.updateParent(new Map<string, any>([["config", this._config]]));
+                                      }}"
+                        ></or-mwc-input>
+                    </div>
+                    <div class="switchMwcInputContainer">
+                        <span>${i18next.t('dashboard.showUnits')}</span>
+                        <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                      .value="${config.showUnits}" .disabled="${!config.showLabels || config.assetType == undefined || config.assetType == ''}"
+                                      @or-mwc-input-changed="${(event: CustomEvent) => {
+                                          this._config.showUnits = event.detail.value;
+                                          this.updateParent(new Map<string, any>([["config", this._config]]));
+                                      }}"
+                        ></or-mwc-input>
+                    </div>
+
+                </div>
+            </div>
+        `
     }
 }
