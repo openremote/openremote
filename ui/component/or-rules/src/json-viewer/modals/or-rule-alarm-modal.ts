@@ -20,7 +20,11 @@ const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
 
         const valid = elements.every((element) => {
             if(element.shadowRoot) {
-                const input  = element.shadowRoot.querySelector('input, textarea, select') as any
+                const input  = element.shadowRoot.querySelector('input, textarea') as any
+                
+                if(element.type === InputType.SELECT) {
+                    return true;
+                }
 
                 if(input && input.checkValidity()) {
                     return true
