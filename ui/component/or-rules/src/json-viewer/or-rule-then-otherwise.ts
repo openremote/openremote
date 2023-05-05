@@ -494,6 +494,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 break;
             case "alarm":
                 action.alarm = undefined;
+                action.assigneeId = undefined;
                 break;
             case "update-attribute":
                 action.value = undefined;
@@ -515,6 +516,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 severity: AlarmSeverity.LOW,
                 status: AlarmStatus.ACTIVE
             };
+            action.assigneeId = undefined;
         } else if (value == ActionType.WEBHOOK) {
             action = action as RuleActionWebhook;
             action.action = "webhook";

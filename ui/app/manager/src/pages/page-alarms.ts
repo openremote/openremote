@@ -30,13 +30,15 @@ export interface PageAlarmsConfig {
   viewer?: ViewerConfig;
 }
 
-export function pageAlarmsProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
+export function pageAlarmsProvider(store: Store<AppStateKeyed>, config?: PageAlarmsConfig): PageProvider<AppStateKeyed> {
   return {
     name: "alarms",
     routes: ["alarms", "alarms/:id"],
     pageCreator: () => {
-      return new PageAlarms(store);
-    },
+      const page = new PageAlarms(store);
+      if(config) page.config = config;
+      return page;
+  }
   };
 }
 
@@ -344,7 +346,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
       return html` <or-translate value="notAuthenticated"></or-translate> `;
     }
 
-    const readonly = !manager.hasRole(ClientRole.WRITE_ALARMS);
+    const readAlarms = manager.rest.api.UserResource.getCurrentUserRoles().then((res) => res.data.filter((r) => r.name == "read:alarms").length > 0);
+    const writeAlarms = manager.rest.api.UserResource.getCurrentUserRoles().then((res) => res.data.filter((r) => r.name == "write:alarms").length > 0);
+    
+    const readonly = readAlarms && !writeAlarms;
 
     return html`
       <div id="wrapper">
@@ -435,7 +440,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
     
     this._loadedUsers = usersResponse.data.filter((user) => user.enabled && !user.serviceAccount);
-    console.log("Loaded users: ", this._loadedUsers);
     this.alarm.alarmAssetLinks = alarmAssetLinksResponse.data;
     this.alarm.loaded = true;
     this.alarm.loading = false;
@@ -486,7 +490,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     <h5>${i18next.t("details")}</h5>
                     <!-- alarm details -->
                     <or-mwc-input ?readonly="${readonly}"
-                                  class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.title")}"
                                   .type="${InputType.TEXT}" 
                                   .value="${alarm.title}"
@@ -495,7 +498,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         this.onAlarmChanged(e);
       }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
-                                  class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.content")}"
                                   .type="${InputType.TEXTAREA}" 
                                   .value="${alarm.content}"
@@ -507,7 +509,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("properties")}</h5>
                     <or-mwc-input ?readonly="${readonly}"
-                                  class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.severity")}"
                                   .type="${InputType.SELECT}"
                                   .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}"
@@ -517,7 +518,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         this.onAlarmChanged(e);
       }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
-                                  class="${false ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.status")}"
                                   .type="${InputType.SELECT}"
                                   .options="${[
