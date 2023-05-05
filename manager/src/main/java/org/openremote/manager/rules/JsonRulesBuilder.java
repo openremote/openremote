@@ -933,10 +933,11 @@ public class JsonRulesBuilder extends RulesBuilder {
                     return null;
                 }
                 Alarm finalAlarm = alarm;
+                String userId = alarmAction.assigneeId;
                 if(assetIds.size() > 0){
-                    return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm)), 0);
+                    return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
                 }
-                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm), 0);
+                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);
             }
         }
 

@@ -21,7 +21,7 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         this.alarmService = alarmService;
     }
 
-    public Long create(Alarm alarm) {
+    public Long create(Alarm alarm, String userId) {
         Alarm.Source source;
         String sourceId = null;
 
@@ -36,8 +36,12 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         }
         String realm = rulesEngineId.getRealm().orElseThrow();
         SentAlarm result = alarmService.sendAlarm(alarm, source, sourceId, realm);
-        if(result.getId() != null){
-            return result.getId();
+        Long id = result.getId();
+        if(id != null){
+            if(userId != null && !userId.isEmpty()){
+                alarmService.assignUser(id, userId);
+            }
+            return id;
         }
         return null;
     }
@@ -46,6 +50,12 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         if(assetIds != null && assetIds.size() > 0){
             String realmId = rulesEngineId.getRealm().orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
             alarmService.linkAssets(assetIds, realmId, alarmId);
+        }
+    }
+
+    public void assignUser(String userId, Long alarmId){
+        if(userId != null && !userId.isEmpty()){
+            alarmService.assignUser(alarmId, userId);
         }
     }
 }
