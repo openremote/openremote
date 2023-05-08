@@ -108,12 +108,12 @@ public class EmailNotificationHandler implements NotificationHandler {
                 mailTransport = mailSession.getTransport(protocol);
                 mailTransport.connect();
                 valid = mailTransport.isConnected();
-            } catch (Exception e) {
-                valid = false;
                 try {
                     mailTransport.close();
                 } catch (Exception ignored) {
                 }
+            } catch (Exception e) {
+                valid = false;
                 LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications", e);
             }
 
@@ -380,6 +380,9 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     protected NotificationSendResult sendMessage(Message email) {
         try {
+            if (!mailTransport.isConnected()) {
+                mailTransport.connect();
+            }
             mailTransport.sendMessage(email, email.getAllRecipients());
             return NotificationSendResult.success();
         } catch (Exception e) {
