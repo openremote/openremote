@@ -17,10 +17,13 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     image?: string;
     xCoordinates: number;
     yCoordinates: number;
+    imgSize: [number, number];
+    imgWidth: number;
+    imgHeight: number;
     deltaFormat: "absolute" | "percentage";
     showTimestampControls: boolean;
     imageUploaded: boolean;
-    //currently uses this --> needs to use the image variabe on ln 17
+    //currently uses this --> needs to use the image variable on ln 17
     imagePath: string;
 }
 
@@ -42,6 +45,10 @@ export class OrImageWidget implements OrWidgetEntity {
             displayMode: "icons",
             xCoordinates: 0,
             yCoordinates: 0,
+            // set to 100 to avoid min and max both being 0
+            imgSize: [100,100],
+            imgWidth: 100,
+            imgHeight: 100,
             attributeCoordinates: new Map<string, [number, number]>(),
             deltaFormat: "absolute",
             showTimestampControls: false,
@@ -79,6 +86,9 @@ export class OrImageWidgetContent extends LitElement {
     @property()
     public realm?: string;
 
+    @query("#img-container")
+    private _imgSize!: HTMLElement;
+
     @state()
     private attributeCoordinates: [number, number][] = [];
 
@@ -98,6 +108,15 @@ export class OrImageWidgetContent extends LitElement {
 
         const css =
             `
+            #img-container {
+                height: 100%;
+                display: flex;
+                justify-content: center; 
+                align-items: center;
+                position: relative;
+                z-index: 1;
+            }
+
             .img-content {
                 display: flex;
                 flex-direction: column;
@@ -111,7 +130,7 @@ export class OrImageWidgetContent extends LitElement {
 
             /*overlay element doesnt have to have be span, div works too, OG try was with span and it worked*/
             #overlay {
-                position: relative;
+                position: absolute;     /*prevously relative*/
                 z-index: 3;
 
                 /*additional marker styling*/
@@ -129,9 +148,9 @@ export class OrImageWidgetContent extends LitElement {
                 <style>
                     ${css}
                 </style>
-            <div style="height: 100%; display: flex; justify-content: center; align-items: center; position: relative; z-index: 1;">
+            <div id="img-container">
                 <img class="img-content" src="${imagePath}" alt=""/>
-                
+
                 <div>
                     ${this.handleMarkerPlacement(this.widget?.widgetConfig)}
                 </div>
@@ -144,10 +163,20 @@ export class OrImageWidgetContent extends LitElement {
             return config.attributeRefs.map((attribute) => 
             (
                 html`
-                <span id="overlay" style="top: ${this.widget?.widgetConfig.yCoordinates}%; left: ${this.widget?.widgetConfig.xCoordinates}%">${attribute.name}</span>
+                <span id="overlay" style="top: ${this.widget?.widgetConfig.yCoordinates}px; left: ${this.widget?.widgetConfig.xCoordinates}px;">${attribute.name}</span>
                 `
             ))
         }
+    }
+
+    handleContainerSizing(config: ImageWidgetConfig){
+        //first value of the array is x, second is y
+        this.widget!.widgetConfig.imgSize[0] = this._imgSize.clientWidth;
+        this.widget!.widgetConfig.imgSize[1] = this._imgSize.clientHeight;
+        config.imgHeight = this._imgSize.clientHeight;
+        config.imgWidth = this._imgSize.clientWidth;
+        console.log(config.imgHeight);
+        console.log(config.imgWidth);
     }
 
 
@@ -161,6 +190,7 @@ export class OrImageWidgetContent extends LitElement {
                     const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
                     return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
                 }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                this.handleContainerSizing(this.widget?.widgetConfig);
                 this.requestUpdate();
             });
         }
@@ -191,6 +221,15 @@ export class OrImageWidgetSettings extends LitElement {
 
     @property()
     public readonly widget?: DashboardWidget;
+
+    @property({ attribute: false })
+    public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
+
+    @property({type: Number})
+    imgWidth = 100;
+
+    @property({type: Number})
+    imgHeight = 100;
 
 
     private _fileElem!: HTMLInputElement;
@@ -226,7 +265,7 @@ export class OrImageWidgetSettings extends LitElement {
         <div>
             ${this.generateExpandableHeader(i18next.t('values'))}
         </div>
-        <div style="display: flex; justify-content: start; flex-direction: row; flex: 0.8; flex-wrap: wrap; align-items: flex-start;">
+        <div style="display: flex; justify-content: start; flex-direction: row; flex-wrap: wrap; align-items: flex-start;">
             ${ this.expandedPanels.includes(i18next.t('values')) ? this.prepareCoordinateEntries(config, i18next.t('values')): null}
         </div>
             <div>
@@ -236,7 +275,7 @@ export class OrImageWidgetSettings extends LitElement {
                 ${this.expandedPanels.includes(i18next.t('image settings')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
                         <div>
-                        <input type="file" @change="${this.handleFileInputChange}" /> 
+                        <input type="file" @change="${this.handleFileInputChange}" accept="${this.accept}"/> 
                         </div>
                     </div>
                 ` : null}
@@ -246,28 +285,37 @@ export class OrImageWidgetSettings extends LitElement {
     }
 
     prepareCoordinateEntries(config: ImageWidgetConfig, name: string){
+        var min = 0;
+
         if (config.attributeRefs && config.attributeRefs.length > 0) {
+            this.updateConfig(this.widget!, config);
             return config.attributeRefs.map((attr) => 
             (html`
 
-                    <div  style="margin-left: 10%; font-family: inherit; width: 100%;">${attr.name}</div>
-
-                    <or-mwc-input .type="${InputType.NUMBER}" style="width: 48%; float: left;" .value="${config.xCoordinates}" label="${i18next.t('x Coordinates')}"
-                        @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                    <div style="margin: 5%; font-family: inherit; width: 100%;">${attr.name}</div>
+                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${config.imgWidth}" style="margin: 1%;" .value="${config.xCoordinates}" aria-label="${i18next.t('x Coordinates')}"
+                    @updated="${(event: CustomEvent) => {
+                        //never gets called
+                        this.updateConfig(this.widget!, config);
+                        console.log("Log from prepareCoordinate entires custom event @updated");
+                        console.log(config);
+                    }}"    
+                    @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                         config.xCoordinates = event.detail.value;
+
                         this.updateConfig(this.widget!, config);
                     }}"
                     ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.NUMBER}" style="width: 48%; float: left;" .value="${config.yCoordinates}" label="${i18next.t('y Coordinates')}"
+                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${config.imgHeight}" style="margin: 1%;" .value="${config.yCoordinates}" aria-label="${i18next.t('y Coordinates')}"
                         @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                         config.yCoordinates = event.detail.value;
                         this.updateConfig(this.widget!, config);
-                        console.log(this.widget!, config);
-                    }}"></or-mwc-input>`))
-
+                    }}"></or-mwc-input>`));
+            
         }
        
     }
+
 
     handleFileInputChange(event: Event) {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
@@ -279,16 +327,6 @@ export class OrImageWidgetSettings extends LitElement {
             this.updateConfig(this.widget!, config);
             this.requestUpdate();
         }
-    }
-
-    isImage(file: File): boolean {
-        const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
-        const fileName = file.name;
-
-        if (allowedExtensions.exec(fileName) !== null) {
-            return true;
-        }
-        return false;
     }
 
     updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
