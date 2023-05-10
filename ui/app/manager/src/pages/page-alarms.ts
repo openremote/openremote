@@ -207,7 +207,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
   }
 
   public connectedCallback() {
-    this.loadAlarms();
     super.connectedCallback();
   }
 
@@ -242,62 +241,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     return true;
-  }
-
-  protected async loadAlarms(): Promise<void> {
-    this._loadAlarmsPromise = this.fetchAlarms();
-    this._loadAlarmsPromise.then(() => {
-      this._loadAlarmsPromise = undefined;
-    });
-    return this._loadAlarmsPromise;
-  }
-
-  protected async fetchAlarms(): Promise<void> {
-    if (!this.realm || this._loading || !this.isConnected) {
-      return;
-    }
-
-    this._loading = true;
-
-    this._alarms = [];
-    this._linkedUsers = [];
-    this._linkedAssets = [];
-    this._loadedUsers = [];
-
-    if (!manager.authenticated || !manager.hasRole(ClientRole.READ_ALARMS)) {
-      console.warn("Not authenticated or insufficient access");
-      return;
-    }
-
-    // After async op check that the response still matches current state and that the component is still loaded in the UI
-    const stateChecker = () => {
-      return this.getState().app.realm === this.realm && this.isConnected;
-    };
-
-    const usersResponse = await manager.rest.api.UserResource.query({
-      realmPredicate: { name: manager.displayRealm },
-    } as UserQuery);
-
-    if (!this.responseAndStateOK(stateChecker, usersResponse, i18next.t("loadFailedUsers"))) {
-      return;
-    }
-
-    const roleResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
-
-    if (!this.responseAndStateOK(stateChecker, roleResponse, i18next.t("loadFailedRoles"))) {
-      return;
-    }
-
-    const alarmResponse = await manager.rest.api.AlarmResource.getAlarms();
-
-    if (!this.responseAndStateOK(stateChecker, alarmResponse, i18next.t("TODO"))) {
-      return;
-    }
-
-    this._alarms = alarmResponse.data;
-    this._loadedUsers = usersResponse.data.filter((user) => !user.serviceAccount);
-    console.log("Loaded users: ", this._loadedUsers);
-    this._loading = false;
   }
 
   protected async _createUpdateAlarm(alarm: AlarmModel, action: "update" | "create") {
@@ -337,7 +280,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
       }
       throw e; // Throw exception anyhow to handle individual cases
     } finally {
-      await this.loadAlarms();
+      this.reset();
     }
   }
 
@@ -346,18 +289,17 @@ export class PageAlarms extends Page<AppStateKeyed> {
       return html` <or-translate value="notAuthenticated"></or-translate> `;
     }
 
-    const readAlarms = manager.rest.api.UserResource.getCurrentUserRoles().then((res) => res.data.filter((r) => r.name == "read:alarms").length > 0);
-    const writeAlarms = manager.rest.api.UserResource.getCurrentUserRoles().then((res) => res.data.filter((r) => r.name == "write:alarms").length > 0);
+    const readAlarms = manager.hasRole("read:alarms");
+    const writeAlarms = manager.hasRole("write:alarms");
     
     const readonly = readAlarms && !writeAlarms;
-
+    const assignOnly = !readAlarms && !writeAlarms;
+    this.config = { viewer: {assignOnly: assignOnly }};
     return html`
       <div id="wrapper">
         <!-- Alarm Specific page -->
-        ${when(
-      this.alarm || this.creationState,
-      () =>
-        html`
+        ${when(this.alarm || this.creationState, () =>
+            html`
               <!-- Breadcrumb on top of the page-->
               <div class="breadcrumb-container">
                 <span class="breadcrumb-clickable" @click="${() => this.reset()}"
@@ -367,9 +309,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 <span style="margin-left: 2px;"
                   >${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.creatingAlarm")}</span
                 >
-              </div>
-            `
-    )}
+              </div>  
+        `)}
 
         <div id="title" style="justify-content: space-between;">
           <div>
@@ -385,26 +326,24 @@ export class PageAlarms extends Page<AppStateKeyed> {
             label="${i18next.t("add")} ${i18next.t("alarm.")}"
             @or-mwc-input-changed="${() => (this.creationState = { alarmModel: this.getNewAlarmModel() })}"
           ></or-mwc-input>
+          </div>
         </div>
-      </div>
-      ${when(
-      this.alarm || this.creationState,
-      () => {
-        const alarm: AlarmModel = this.alarm != undefined ? this.alarm : this.creationState.alarmModel;
-        return html`
-              <div id="content" class="panel">
-                <p class="panel-title">${i18next.t("alarm.")} ${i18next.t("settings")}</p>
-                ${this.getSingleAlarmView(alarm, false)}
-              </div>
-            </div> `;
-      },
-      () =>
-        html`<!-- List of Alarms page -->
+        ${when(this.alarm || this.creationState, () => {
+          const alarm: AlarmModel = this.alarm != undefined ? this.alarm : this.creationState.alarmModel;
+          return html`
+            <div id="content" class="panel">
+              <p class="panel-title">${i18next.t("alarm.")} ${i18next.t("settings")}</p>
+              ${this.getSingleAlarmView(alarm, readonly)}
+            </div>
+          </div> `;
+        }, () =>
+          html`
+          <!-- List of Alarms page -->
             <or-alarm-viewer
               .config="${this.config?.viewer}"
               @or-alarm-table-row-click="${this._onRowClick}"
             ></or-alarm-viewer> `
-    )}
+        )}
     `;
   }
 
@@ -418,7 +357,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
   protected async loadAlarm(alarm: AlarmModel) {
     if (alarm.loaded) {
-      console.log("Alarm already loaded");
       return;
     }
     const stateChecker = () => {
@@ -431,15 +369,17 @@ export class PageAlarms extends Page<AppStateKeyed> {
       return;
     }
 
-    const usersResponse = await manager.rest.api.UserResource.query({
-      realmPredicate: { name: manager.displayRealm },
-    } as UserQuery);
+    if(manager.hasRole("read:admin")) {
+      const usersResponse = await manager.rest.api.UserResource.query({
+        realmPredicate: { name: manager.displayRealm },
+      } as UserQuery);
 
-    if (!this.responseAndStateOK(stateChecker, usersResponse, i18next.t("loadFailedUsers"))) {
-      return;
-    }
+      if (!this.responseAndStateOK(stateChecker, usersResponse, i18next.t("loadFailedUsers"))) {
+        return;
+      }
     
-    this._loadedUsers = usersResponse.data.filter((user) => user.enabled && !user.serviceAccount);
+      this._loadedUsers = usersResponse.data.filter((user) => user.enabled && !user.serviceAccount);
+    }
     this.alarm.alarmAssetLinks = alarmAssetLinksResponse.data;
     this.alarm.loaded = true;
     this.alarm.loading = false;
@@ -533,12 +473,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
       }}"></or-mwc-input>
                                   
                                   
-                     <or-mwc-input ?readonly="${readonly}"
-                                  class="${this.creationState ? "hidden" : ""}"
+                     <or-mwc-input ?readonly="${!manager.hasRole("read:admin")}"
+                                  class="${this.creationState || readonly ? "hidden" : ""}"
                                   .label="${i18next.t("alarm.assignee")}"
                                   .type="${InputType.SELECT}"
                                   .options="${this._getUsers().map((obj) => obj.label)}"
-                                  .value="${this._getUsers().filter((obj) => obj.value === alarm.assigneeId).map((obj) => obj.label)[0]}"
+                                  .value="${alarm.assigneeUsername}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                     console.log("Assignee changed: ", e.detail.value);
         alarm.assigneeId = this._getUsers().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];

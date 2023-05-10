@@ -153,6 +153,7 @@ export function headerItemAlarms<S extends AppStateKeyed, A extends AnyAction>(o
         value: "alarms",
         href: "alarms",
         text: "alarm.alarm_plural",
-        roles: ["read:alarms", "write:alarms"]
+        //roles: ["read:alarms", "write:alarms"]
+        //roles: () => manager.isSuperUser()
     };
 }
