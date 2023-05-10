@@ -543,6 +543,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
   }
 
   protected _onRowClick(ev: OrAlarmTableRowClickEvent) {
+    console.log("row click", ev);
     if (!ev.detail.alarm) {
       return;
     }

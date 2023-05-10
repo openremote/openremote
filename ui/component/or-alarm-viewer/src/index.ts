@@ -15,7 +15,7 @@ import manager, {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent, OrInputChangedEventDetail, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";
 import moment from "moment";
 import "@openremote/or-mwc-components/or-mwc-menu";
@@ -123,17 +123,17 @@ const style = css`
         text-weight: var(--mdc-typography-body2-font-weight, 700);
     }
 
-    td.mdc-data-table__cell:nth-child(2)[data-severity="LOW"] {
+    td.mdc-data-table__cell:nth-child(3)[data-severity="LOW"] {
         color: green; /* change color to green for "low" severity */
         font-weight: 700;
       }
       
-      td.mdc-data-table__cell:nth-child(2)[data-severity="MEDIUM"] {
+      td.mdc-data-table__cell:nth-child(3)[data-severity="MEDIUM"] {
         color: orange; /* change color to orange for "medium" severity */
         font-weight: 700;
       }
       
-      td.mdc-data-table__cell:nth-child(2)[data-severity="HIGH"] {
+      td.mdc-data-table__cell:nth-child(3)[data-severity="HIGH"] {
         color: red; /* change color to red for "high" severity */
         font-weight: 700;
       }
@@ -189,6 +189,9 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
 
     @property({type: Array})
     public statuses?: AlarmStatus[];
+
+    @property({type: Array})
+    public selected?: SentAlarm[];
 
     @state()
     public severity?: AlarmSeverity;
@@ -364,13 +367,38 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         this._data = this._data!.filter((e) => e.status === this.status);
     }
 
-    protected _getTable(): TemplateResult {
+    protected _onCheckChanged(checked: boolean, type: any) {
+        if (type === "all") {
+            if(checked) {
+                this.selected = this._data!;
+            }
+            else {
+                this.selected = [];
+            }
+        }
+        else {
+            if(checked) {
+                this.selected?.push(type);
+            }
+            else {
+                this.selected = this.selected?.filter((e) => e !== type);
+            }
+        }
+        this.requestUpdate();
+    }
 
+    protected _getTable(): TemplateResult {
+        if(!this.selected) {
+            this.selected = [];
+        }
         return html`
             <div id="table" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="alarms list">
                     <thead>
                         <tr class="mdc-data-table__header-row">
+                            <th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader">
+                                <or-mwc-input id="check-all" .type="${InputType.CHECKBOX}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCheckChanged(ev.detail.value, "all")}"></or-mwc-input>
+                            </th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("createdOn")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.severity")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.status")}</th>
@@ -384,6 +412,9 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                         ${this._data!.map((ev) => {
                             return html`
                                 <tr class="mdc-data-table__row" @click="${(e: MouseEvent) => this.dispatchEvent(new OrAlarmTableRowClickEvent(ev))}">
+                                    <td class="mdc-data-table__cell">
+                                    <or-mwc-input name="row-check" .value="${this.selected!.includes(ev)}" .type="${InputType.CHECKBOX}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCheckChanged(ev.detail.value, ev)}"></or-mwc-input>   
+                                    </td>
                                     <td class="mdc-data-table__cell">${new Date(ev.createdOn!).toLocaleString()}</td>
                                     <td class="mdc-data-table__cell" data-severity="${ev.severity}">${ev.severity}</td>
                                     <td class="mdc-data-table__cell">${ev.status}</td> 
