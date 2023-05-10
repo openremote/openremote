@@ -764,6 +764,7 @@
     "lastModified": "Last modified",
     "sort": "Sort",
     "assignee": "Assignee",
-    "assignedToMe": "Assigned to me"
+    "assignedToMe": "Assigned to me",
+    "noData": "No alarms found."
   }
 }
