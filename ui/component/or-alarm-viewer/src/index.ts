@@ -33,6 +33,7 @@ export interface ViewerConfig {
     initialFilter?: string;
     initialSeverity?: AlarmSeverity;
     hideControls?: boolean;
+    assignOnly?: boolean;
 }
 
 // language=CSS
@@ -414,6 +415,12 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
             if(manager.getRealm() != "master") {
                 this._data = this._data.filter((e) => e.realm === manager.getRealm());
             }
+            if(this.config?.assignOnly) {
+                const userResponse = await manager.rest.api.UserResource.getCurrent();
+                if(userResponse.status === 200) {
+                    this._data = this._data.filter((e) => e.assigneeId === userResponse.data.id);
+                }
+            }
             if(this.severity) {
                 this._data = this._data.filter((e) => e.severity === this.severity);
             }
@@ -426,35 +433,6 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
             this._pageCount = this._data?.length;
         }
         this._loading = false;
-    }
-
-    protected _getPageCount(response: GenericAxiosResponse<any>): number | undefined {
-        const linkHeaders = response.headers["link"] as string;
-        if (linkHeaders) {
-            const links = linkParser(linkHeaders);
-            const lastLink = links["last"];
-            if (lastLink) {
-                return lastLink["page"] as number;
-            }
-        }
-    }
-
-    protected _updatePage(forward: boolean) {
-        if (!this._pageCount) {
-            return;
-        }
-
-        if (forward) {
-            if (this._currentPage < this._pageCount) {
-                this._data = undefined;
-                this._currentPage++;
-            }
-        } else {
-            if (this._currentPage > 1) {
-                this._data = undefined;
-                this._currentPage--;
-            }
-        }
     }
 
     protected _cleanup() {
