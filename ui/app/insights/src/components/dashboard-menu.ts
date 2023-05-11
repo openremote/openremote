@@ -1,15 +1,14 @@
 import { html, css, LitElement, TemplateResult } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-drawer";
-import {Dashboard, Realm} from "@openremote/model";
 import {when} from "lit/directives/when.js";
-import {i18next} from "@openremote/or-translate";
-import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
-import {style} from "../style"
-import manager from "@openremote/core";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { Dashboard } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
+import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
+import {style} from "../style";
 
 //language=css
 const styling = css`
@@ -18,38 +17,43 @@ const styling = css`
         flex-direction: column;
         gap: 16px;
     }
+    #drawer-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    #drawer-actions-container {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
 `
-export interface DrawerConfig {
-    enabled: boolean,
-    showHeader: boolean
-}
 
 @customElement("dashboard-menu")
 export class DashboardMenu extends LitElement {
 
-    @property()
-    protected readonly dashboards!: Dashboard[];
+    @property() // list of dashboards: if set to 'undefined', it will pull new dashboards automatically.
+    protected readonly dashboards?: Dashboard[];
 
     @property()
-    protected readonly realms?: Realm[];
+    protected readonly realms?: { name: string, displayName: string }[];
 
     @property() // id of the selected dashboard
     protected readonly selectedId?: string;
 
-    @property()
+    @property() // id of the current user
     protected readonly userId?: string;
 
     @property()
-    protected readonly realmName?: string;
-
-    @property()
-    protected readonly logoMobile?: string;
-
-    @property()
-    protected drawerConfig?: DrawerConfig;
+    protected readonly realm?: string;
 
     @property()
     protected readonly loading: boolean = false;
+
+    @property()
+    protected readonly logoMobileSrc?: string;
 
     @query("#drawer")
     protected drawer: OrMwcDrawer;
@@ -61,36 +65,31 @@ export class DashboardMenu extends LitElement {
         return [style, styling];
     }
 
-    // Set defaults if not set yet
-    firstUpdated() {
-        if(!this.drawerConfig) {
-            this.drawerConfig = {
-                enabled: true,
-                showHeader: true
-            }
-        }
+    // TODO: Remove this since it's only for testing purposes.
+    willUpdate(changedProps: Map<string, any>) {
+        console.log(changedProps);
     }
 
-    /* ------------------------------------------ */
+    /* ------------------------------------------------- */
 
     // PUBLIC METHODS FOR EXTERNAL CONTROL
 
     // For toggling drawer elsewhere, such as page-insights.ts
     // Returned value is the new status of the Drawer
     public async toggleDrawer(state?: boolean): Promise<boolean> {
-        if(state && state == this.drawer.open) {
+        if(state != undefined && state == this.drawer.open) {
             return this.drawer.open;
         }
-        if(this.drawer.open) {
+        if(this.drawer?.open) {
             this.drawerScrim?.classList.add("drawer-scrim-fadeout");
             this.drawer.toggle();
             await new Promise(r => setTimeout(r, 250)); // one-liner for waiting until fadeout animation is done
         } else {
-            this.drawer.toggle();
+            this.drawer?.toggle();
         }
-        this.requestUpdate(); // to reload the component, which removes the drawerScrim we added earlier from the DOM
+        this.requestUpdate(); // to reload the component, since we need to remove the drawerScrim we added earlier
         this.dispatchEvent(new CustomEvent('toggle', { detail: { value: this.drawer.open }}))
-        return this.drawer.open;
+        return this.drawer?.open;
     }
 
     public isDrawerOpen(): boolean {
@@ -98,57 +97,71 @@ export class DashboardMenu extends LitElement {
     }
 
 
+    /* ---------------------------- */
 
-    /* -------------------------------------------------------- */
+    // METHODS OF THE UI, THAT MOSTLY DISPATCH EVENTS TO PARENT COMPONENTS
 
     protected selectDashboard(id: string) {
-        this.dispatchEvent(new CustomEvent('change', { detail: { value: id }}));
+        const dashboard = this.dashboards.find((d) => d.id == id);
+        this.dispatchEvent(new CustomEvent('change', { detail: { value: dashboard }}));
+    }
+    protected changeRealm(realm: string) {
+        if(realm != this.realm) {
+            this.dispatchEvent(new CustomEvent("realm", { detail: { value: realm }}));
+        }
+    }
+    protected logout() {
+        this.dispatchEvent(new CustomEvent("logout"));
+    }
+    protected login() {
+        this.dispatchEvent(new CustomEvent("login"))
     }
 
 
-    protected render() {
-        let headerTemplate;
-        if(this.drawerConfig?.showHeader) {
-            // header template with inline styling; limitation of injecting html like this.
-            headerTemplate = html`
-                <div style="display: flex; padding: 13px 16px; border-bottom: 1px solid #E0E0E0; align-items: center; gap: 16px;">
-                    <img id="logo-mobile" width="34" height="34" src="${this.logoMobile}" />
-                    <span style="font-size: 18px; font-weight: bold;">${this.realmName}</span>
-                </div>
-            `;
-        }
-        return html`
-            ${when(this.drawerConfig?.enabled, () => html`
-                <or-mwc-drawer id="drawer" .header="${headerTemplate}" .dismissible="${true}">
-                    <div style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
-                        <div>
-                            ${getDashboardListTemplate(this.dashboards, this.selectedId, (id: string) => this.selectDashboard(id), this.userId, this.loading)}
-                        </div>
-                        <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
-                            ${this.realms != undefined && this.realms.length > 1 ? getContentWithMenuTemplate(
-                                    html`<or-mwc-input type="${InputType.BUTTON}" outlined comfortable fullWidth label="${i18next.t('changeRealm')}" style="width: 100%;"></or-mwc-input>`,
-                                    this.realms?.map((r) => { return {value: r.name, text: i18next.t(r.displayName)} as ListItem; }),
-                                    this.realmName,
-                                    (v) => this.dispatchEvent(new CustomEvent("realm", { detail: { value: v }})),
-                                    undefined,
-                                    false,
-                                    false,
-                                    false,
-                                    true
-                            ) : undefined}
-                            ${this.userId != undefined ? html`
-                                <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('logout')}" @click="${() => manager.logout()}"></or-mwc-input>
-                            ` : html`
-                                <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('login')}" @click="${() => manager.login()}"></or-mwc-input>
-                            `}
-                        </div>
+    /* ------------------------------------------- */
+
+    protected render(): TemplateResult {
+        const curRealm = this.realms?.find((r) => r.name == this.realm);
+        const headerTemplate = html`
+            <div style="display: flex; padding: 13px 16px; border-bottom: 1px solid #E0E0E0; align-items: center; gap: 16px;">
+                ${this.loading ? html`
+                    <div style="height: 34px;">
+                        <!-- Placeholder height to prevent changes during the realm fetch -->
                     </div>
-                </or-mwc-drawer>
-                ${when(this.isDrawerOpen(), () => html`
-                    <div id="drawer-custom-scrim" @click="${() => this.toggleDrawer(false)}"></div>
-                `)}
-            `, () => html`
-                ${getDashboardListTemplate(this.dashboards, this.selectedId, (id: string) => this.selectDashboard(id), this.userId, this.loading)}
+                ` : html`
+                    <img id="logo-mobile" width="34" height="34" alt="${curRealm.displayName} Logo" src="${this.logoMobileSrc}" />
+                    <span style="font-size: 18px; font-weight: bold;">${curRealm.displayName}</span>
+                `}
+            </div>
+        `;
+        return html`
+            <or-mwc-drawer id="drawer" .header="${headerTemplate}" .dismissible="${true}">
+                <div id="drawer-wrapper">
+                    <div>
+                        ${getDashboardListTemplate(this.dashboards, this.selectedId, (id: string) => this.selectDashboard(id), this.userId, this.loading)}
+                    </div>
+                    <div id="drawer-actions-container">
+                        ${this.realms != undefined && this.realms.length > 1 ? getContentWithMenuTemplate(
+                                html`<or-mwc-input type="${InputType.BUTTON}" outlined comfortable fullWidth label="${i18next.t('changeRealm')}" style="width: 100%;"></or-mwc-input>`,
+                                this.realms?.map((r) => { return {value: r.name, text: i18next.t(r.displayName)} as ListItem; }),
+                                curRealm.displayName,
+                                (v) => this.changeRealm(v as string),
+                                undefined,
+                                false,
+                                false,
+                                false,
+                                true
+                        ) : undefined}
+                        ${this.userId != undefined ? html`
+                            <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('logout')}" @click="${() => this.logout()}"></or-mwc-input>
+                        ` : html`
+                            <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('login')}" @click="${() => this.login()}"></or-mwc-input>
+                        `}
+                    </div>
+                </div>
+            </or-mwc-drawer>
+            ${when(this.isDrawerOpen(), () => html`
+                <div id="drawer-custom-scrim" @click="${() => this.toggleDrawer(false)}"></div>
             `)}
         `
     }
@@ -160,7 +173,7 @@ export class DashboardMenu extends LitElement {
 // TEMPLATE RENDERING FUNCTIONS
 // Wrote standalone from the component, to allow external use if needed.
 
-export function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, onSelect: (id: string) => void, userId?: string, loading: boolean = false): TemplateResult {
+function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, onSelect: (id: string) => void, userId?: string, loading: boolean = false): TemplateResult {
     return html`
         ${when(loading, () => html`
             <or-loading-indicator></or-loading-indicator>
@@ -192,13 +205,13 @@ export function getDashboardListTemplate(dashboards: Dashboard[], selectedId: st
                     </div>
                 </div>
             `
-        })}
+    })}
     `
 }
 
-export function getDashboardMenuItems(dashboards: Dashboard[], userId?: string): ListItem[][] {
+function getDashboardMenuItems(dashboards: Dashboard[], userId?: string): ListItem[][] {
     const dashboardItems: ListItem[][] = [];
-    if(dashboards.length > 0) {
+    if(dashboards?.length > 0) {
         const myDashboards: Dashboard[] = [];
         const otherDashboards: Dashboard[] = [];
         dashboards?.forEach((d) => {

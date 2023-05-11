@@ -1,7 +1,7 @@
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import "@openremote/or-app";
 import {AppConfig, appReducer, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
-import {pageInsightsProvider} from "./pages/page-insights";
+import {pageViewProvider} from "./pages/page-view";
 import {ManagerAppConfig} from "@openremote/model";
 
 declare const CONFIG_URL_PREFIX: string;
@@ -115,7 +115,7 @@ fetch(configURL).then(async (result) => {
         }
 
         // Add insights page with correct parameters
-        orAppConfig.pages.push(pageInsightsProvider(store, orAppConfig.realms))
+        orAppConfig.pages.push(pageViewProvider(store, orAppConfig.realms))
 
         return orAppConfig;
     }

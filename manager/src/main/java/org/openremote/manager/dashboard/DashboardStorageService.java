@@ -109,6 +109,10 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         });
     }
 
+    protected boolean exists(String dashboardId) {
+        return persistenceService.doReturningTransaction(em -> em.find(Dashboard.class, dashboardId)) != null;
+    }
+
 
     // Creation of initial dashboard (so no updating!)
     protected <T extends Dashboard> T createNew(T dashboard) {

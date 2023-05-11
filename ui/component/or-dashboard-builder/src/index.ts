@@ -444,7 +444,7 @@ export class OrDashboardBuilder extends LitElement {
 
     openDashboardInInsights() {
         if(this.selectedDashboard != null) {
-            const insightsUrl: string = (window.location.origin + "/insights/#/" + this.selectedDashboard.id); // Just using relative URL to origin, as its enough for now.
+            const insightsUrl: string = (window.location.origin + "/insights/?realm=" + manager.displayRealm + "#/view/" + this.selectedDashboard.id + "/true/"); // Just using relative URL to origin, as its enough for now.
             window.open(insightsUrl)?.focus();
         }
     }

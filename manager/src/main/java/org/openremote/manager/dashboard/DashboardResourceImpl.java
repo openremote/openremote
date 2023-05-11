@@ -58,7 +58,11 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
             Dashboard[] dashboards = this.dashboardStorageService.query(dashboardId, null, getUserId(), false);
             if(dashboards.length == 0) {
-                throw new WebApplicationException(NOT_FOUND);
+                if(this.dashboardStorageService.exists(dashboardId)) {
+                    throw new WebApplicationException(FORBIDDEN);
+                } else {
+                    throw new WebApplicationException(NOT_FOUND);
+                }
             }
             Dashboard d = dashboards[0]; // only return first entry
             if(isAuthenticated() && !isRealmActiveAndAccessible(d.getRealm())) {
