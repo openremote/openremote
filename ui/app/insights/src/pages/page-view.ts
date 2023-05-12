@@ -132,7 +132,7 @@ export class PageView extends Page<AppStateKeyed> {
                     this._loadedDashboards = (dashboard ? [dashboard] : undefined);
                 })
             }
-            // When visiting '/{id}/true' without being logged in
+            // When visiting '/{id}/true'
             else if(!this.viewDashboardOnly && this._selectedId) {
                 console.error("Fetch method #2");
                 this.fetchDashboard(this._selectedId).then((dashboard) => {
@@ -162,11 +162,15 @@ export class PageView extends Page<AppStateKeyed> {
                     }
                 })
             }
-            // When visiting '/' (or '/{id}/true' but the user is authenticated).
+            // When visiting '/'
             else {
                 console.error("Fetch method #3");
                 this.fetchAllDashboards().then((dashboards) => {
-                    this._loadedDashboards = dashboards;
+                    if(!manager.authenticated && dashboards.length == 0) {
+                        manager.login();
+                    } else {
+                        this._loadedDashboards = dashboards;
+                    }
                 })
             }
         }
