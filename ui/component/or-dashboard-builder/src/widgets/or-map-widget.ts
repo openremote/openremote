@@ -138,7 +138,7 @@ export class OrMapWidgetContent extends LitElement {
                                     return false;
                                 }
                                 const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                                return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+                                return !attr || !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
                             }).map(asset => {
                                 if (this.markers) {
                                     // Configure map marker asset settings
