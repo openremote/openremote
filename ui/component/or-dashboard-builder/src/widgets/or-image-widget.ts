@@ -1,11 +1,12 @@
-import manager, {DefaultColor5, DefaultColor4, DefaultColor2, Util } from "@openremote/core";
+import manager, {DefaultColor5, DefaultColor4, DefaultColor2, DefaultColor3, Util } from "@openremote/core";
 import { Asset, Attribute, AttributeRef, DashboardWidget } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
-import { html, LitElement, TemplateResult, unsafeCSS } from "lit";
+import { css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import { OrWidgetConfig, OrWidgetEntity } from "./or-base-widget";
 import { style } from "../style";
+import {debounce} from "lodash";
 import { SettingsPanelType, widgetSettingsStyling } from "../or-dashboard-settingspanel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
@@ -13,7 +14,6 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
     attributeCoordinates: Map<string, [number, number]>;
-    displayMode?: 'icons' | 'icons with values' | 'values';
     image?: string;
     xCoordinates: number;
     yCoordinates: number;
@@ -27,8 +27,6 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     imagePath: string;
 }
 
-const deltaOptions = new Array<string>('absolute', 'percentage');
-const displayOptions = new Array<string>('icons', 'icons with values', 'values');
 
 export class OrImageWidget implements OrWidgetEntity {
 
@@ -63,15 +61,13 @@ export class OrImageWidget implements OrWidgetEntity {
         return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as ImageWidgetConfig;
     }
 
-
-    getSettingsHTML(widget: DashboardWidget, realm: string) {
-        return html`<or-image-widgetsettings .widget="${widget}" realm="${realm}"></or-image-widgetsettings>`;
-    }
-
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
         return html`<or-image-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-image-widget>`;
     }
 
+    getSettingsHTML(widget: DashboardWidget, realm: string) {
+        return html`<or-image-widgetsettings .widget="${widget}" realm="${realm}"></or-image-widgetsettings>`;
+    }
 }
 
 @customElement("or-image-widget")
@@ -85,9 +81,6 @@ export class OrImageWidgetContent extends LitElement {
 
     @property()
     public realm?: string;
-
-    @query("#img-container")
-    private _imgSize!: HTMLElement;
 
     @state()
     private attributeCoordinates: [number, number][] = [];
@@ -103,6 +96,14 @@ export class OrImageWidgetContent extends LitElement {
 
     @state()
     private assetAttributes: [number, Attribute<any>][] = [];
+
+    @query("#img-container")
+    private _imgSize!: HTMLElement;
+
+    @state()
+    private imageSize?: { width: number, height: number }
+
+    private resizeObserver?: ResizeObserver;
 
     render() {
 
@@ -135,7 +136,7 @@ export class OrImageWidgetContent extends LitElement {
 
                 /*additional marker styling*/
                 color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
-                background-color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+                background-color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
                 border-radius: 15px;
                 padding: 3px 8px 5px 8px;
                 object-fit: contain;
@@ -159,27 +160,45 @@ export class OrImageWidgetContent extends LitElement {
     }
 
     handleMarkerPlacement(config: ImageWidgetConfig) {
+        var xCoordinate = this.widget?.widgetConfig.xCoordinates;
+        var yCoordinate = this.widget?.widgetConfig.xCoordinates;
+        var xMaxSize = this.imageSize?.width;
+        var yMaxSize = this.imageSize?.height;
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             return config.attributeRefs.map((attribute) => 
             (
                 html`
-                <span id="overlay" style="top: ${this.widget?.widgetConfig.yCoordinates}px; left: ${this.widget?.widgetConfig.xCoordinates}px;">${attribute.name}</span>
+                <span id="overlay" style="top: ${yCoordinate}px; left: ${xCoordinate}px;">${attribute.name}</span>
                 `
             ))
         }
     }
 
     handleContainerSizing(config: ImageWidgetConfig){
-        //first value of the array is x, second is y
-        this.widget!.widgetConfig.imgSize[0] = this._imgSize.clientWidth;
-        this.widget!.widgetConfig.imgSize[1] = this._imgSize.clientHeight;
-        config.imgHeight = this._imgSize.clientHeight;
-        config.imgWidth = this._imgSize.clientWidth;
-        console.log(config.imgHeight);
-        console.log(config.imgWidth);
+        this.updateComplete.then(() => {
+            this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
+                const size = entries[0].contentRect;
+                this.imageSize = {
+                    width: size.width,
+                    height: size.height
+                }
+                this.updateComplete.then(() => {
+                    console.log("update complete yay");
+                    console.log(this.imageSize);
+                });
+            }, 200))
+            this.resizeObserver.observe(this._imgSize);
+        })
     }
 
+    // no clue how to make it work lmao 
+    calculateMarkerPosition(markerValue: Number, maxValue: Number) {
+        var percentage: Number = 0;
+        // .valueOf() is added to avoid TS2362 error
+        percentage = (markerValue.valueOf() / maxValue.valueOf()) * 100;
 
+        return percentage;
+    }
 
     updated(changedProperties: Map<string, any>) {
         if (changedProperties.has("widget") || changedProperties.has("editMode")) {
@@ -222,20 +241,14 @@ export class OrImageWidgetSettings extends LitElement {
     @property()
     public readonly widget?: DashboardWidget;
 
+    // same implementation as /or-components/src/or-file-uploader.ts
+    // file explorer dialogue opens with supported file types
     @property({ attribute: false })
     public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
 
-    @property({type: Number})
-    imgWidth = 100;
-
-    @property({type: Number})
-    imgHeight = 100;
-
-
     private _fileElem!: HTMLInputElement;
 
-    // Default values
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('values'), i18next.t('image settings')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings')];
     private loadedAssets?: Asset[];
 
 
@@ -245,6 +258,9 @@ export class OrImageWidgetSettings extends LitElement {
 
     // UI Rendering
     render() {
+        
+        //why do some methods use the config variable and other refernce the widget directly??????
+        //what is the reason to do it one way or the other --> unclear
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
 
 
@@ -255,18 +271,22 @@ export class OrImageWidgetSettings extends LitElement {
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.MULTI_ATTRIBUTE}" .widgetConfig="${this.widget!.widgetConfig}"
-                                                @updated="${(event: CustomEvent) => {
-                    this.onAttributesUpdate(event.detail.changes);
-                    this.updateConfig(this.widget!, event.detail.changes.get('config'));
+                    @updated="${(event: CustomEvent) => {
+                        console.log("Log from main settings render method");
+                        console.log(config);
+                        console.log(this.widget!.widgetConfig);
+                        console.log(event.detail.changes.get('config'));
+                        this.onAttributesUpdate(event.detail.changes);
+                        this.updateConfig(this.widget!, event.detail.changes.get('config'));
                 }}"
                     ></or-dashboard-settingspanel>
                 ` : null}
         </div>
         <div>
-            ${this.generateExpandableHeader(i18next.t('values'))}
+            ${this.generateExpandableHeader(i18next.t('marker coordinates'))}
         </div>
         <div style="display: flex; justify-content: start; flex-direction: row; flex-wrap: wrap; align-items: flex-start;">
-            ${ this.expandedPanels.includes(i18next.t('values')) ? this.prepareCoordinateEntries(config, i18next.t('values')): null}
+            ${ this.expandedPanels.includes(i18next.t('marker coordinates')) ? this.prepareCoordinateEntries(config, i18next.t('marker coordinates')): null}
         </div>
             <div>
                 ${this.generateExpandableHeader(i18next.t('image settings'))}
@@ -291,26 +311,25 @@ export class OrImageWidgetSettings extends LitElement {
             this.updateConfig(this.widget!, config);
             return config.attributeRefs.map((attr) => 
             (html`
-
                     <div style="margin: 5%; font-family: inherit; width: 100%;">${attr.name}</div>
-                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${config.imgWidth}" style="margin: 1%;" .value="${config.xCoordinates}" aria-label="${i18next.t('x Coordinates')}"
-                    @updated="${(event: CustomEvent) => {
-                        //never gets called
-                        this.updateConfig(this.widget!, config);
-                        console.log("Log from prepareCoordinate entires custom event @updated");
-                        console.log(config);
-                    }}"    
+                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${this.widget!.widgetConfig.imgWidth}" .style="margin: 1%; min-width: 150px;" .value="${config.xCoordinates}"
                     @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                        console.log("Log from prepareCoordinateEntries OrInputChangedEvent");
+                        console.log(config);
                         config.xCoordinates = event.detail.value;
-
                         this.updateConfig(this.widget!, config);
                     }}"
                     ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${config.imgHeight}" style="margin: 1%;" .value="${config.yCoordinates}" aria-label="${i18next.t('y Coordinates')}"
-                        @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${this.widget!.widgetConfig.imgHeight}" .style="margin: 1%; min-width: 150px;" .value="${config.yCoordinates}"
+                    @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                         config.yCoordinates = event.detail.value;
                         this.updateConfig(this.widget!, config);
-                    }}"></or-mwc-input>`));
+                    }}"
+                    ></or-mwc-input>
+                    <mini-collapsible label="${attr.name}"></mini-collapsible>
+                    <dynamic-slider label="x coord: ${config.xCoordinates}" min="${min}" max="${this.widget!.widgetConfig.imgWidth}" value="${config.xCoordinates}"></dynamic-slider>
+                    <dynamic-slider label="y-coord: ${config.yCoordinates}" min="${min}" max="${this.widget!.widgetConfig.imgHeight}" value="${config.yCoordinates}"></dynamic-slider>
+                    `));
             
         }
        
@@ -367,5 +386,85 @@ export class OrImageWidgetSettings extends LitElement {
             this.expandedPanels.push(panelName);
         }
         this.requestUpdate();
+    }
+}
+
+@customElement('dynamic-slider')
+class DynamicSlider extends LitElement {
+
+    @property() 
+    public min?: number;
+
+    @property() 
+    public max?: number;
+
+    @property()
+    public label?: string;
+    
+    @property()
+    public value?: number;
+    
+    // TO-DO: 
+    // include logic to handle min < max 
+        //just add default values??? (jackhammer approach but mb faster?)
+    // logic to update
+    // logic to add number input???
+    render() {
+        const css = `
+        
+        `;
+        return html`
+        <style>
+            ${css}
+        </style>
+        <label for="dynamic-slider">${this.label ? this.label : ""}</label>
+        <input type="range" id="range" name="dynamic-slider" min="${this.min ? this.min : 0}" max="${this.max ? this.max : 100}" value="${this.value ? this.value : 0}">
+        `;
+    }
+    
+}
+
+@customElement('mini-collapsible')
+class MiniCollapsible extends LitElement {
+
+    @property()
+    public label?: string;
+
+    @query("#collapsible")
+    private _content!: HTMLElement;
+
+
+    render() {
+        const css = `
+            #collapsible {
+                background-color: transparent;
+                color: #444;
+                cursor: pointer; 
+                padding: 18px;
+                width: 100%;
+                border: none;
+                text-align: left;
+                outline: none;
+                font-size: 15px;
+            }
+
+            #content-collapsible {
+                padding: 0 5px;
+                display: none;
+                overflow: hidden; 
+            }
+        `;
+
+        return html`
+        <style>
+        ${css}
+        </style>
+        <button type="button" id="collapsible">${this.label ? this.label : ""}</button>
+        <div id="content-collapsible">This is the content</div>
+        `;
+    }
+
+    toggle() {
+
     }
 }
