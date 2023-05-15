@@ -23,6 +23,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
@@ -71,7 +72,13 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
-            if (!isRealmActiveAndAccessible(asset.getRealm())) {
+            // If not logged in, asset should be PUBLIC READ
+            if(!isAuthenticated() && !asset.isAccessPublicRead()) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            // Realm should be accessible with correct permissions when logged in
+            if(isAuthenticated() &&  (!isRealmActiveAndAccessible(asset.getRealm()) || !hasRealmRole(Constants.READ_ASSETS_ROLE))) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
