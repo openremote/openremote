@@ -34,6 +34,8 @@ import org.openremote.model.http.RequestParams;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import org.openremote.model.security.ClientRole;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -78,7 +80,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
             }
 
             // Realm should be accessible with correct permissions when logged in
-            if(isAuthenticated() &&  (!isRealmActiveAndAccessible(asset.getRealm()) || !hasRealmRole(Constants.READ_ASSETS_ROLE))) {
+            if(isAuthenticated() &&  (!isRealmActiveAndAccessible(asset.getRealm()) || !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID))) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }

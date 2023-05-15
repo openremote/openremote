@@ -34,6 +34,7 @@ import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
 
 import jakarta.ws.rs.BadRequestException;
@@ -94,7 +95,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             // Realm should be accessible with correct permissions when logged in
-            if(isAuthenticated() && (!isRealmActiveAndAccessible(asset.getRealm()) || !hasRealmRole(Constants.READ_ASSETS_ROLE))) {
+            if(isAuthenticated() && (!isRealmActiveAndAccessible(asset.getRealm()) || !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID))) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
