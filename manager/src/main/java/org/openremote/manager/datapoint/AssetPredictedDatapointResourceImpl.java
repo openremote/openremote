@@ -35,6 +35,7 @@ import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.value.MetaItemType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -80,7 +81,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
             }
 
             // Realm should be accessible with correct permissions when logged in
-            if(isAuthenticated() &&  (!isRealmActiveAndAccessible(asset.getRealm()) || !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID))) {
+            if(isAuthenticated() && (!isRealmActiveAndAccessible(asset.getRealm()) || !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID))) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
@@ -89,7 +90,16 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
+            // If not logged in, attribute should be PUBLIC READ
+            if(!isAuthenticated()) {
+                attribute.getMeta().getValue(MetaItemType.ACCESS_PUBLIC_READ).ifPresentOrElse((v) -> {
+                    if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
+                }, () -> {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                });
+            }
             return assetPredictedDatapointService.queryDatapoints(assetId, attribute, query);
+
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }

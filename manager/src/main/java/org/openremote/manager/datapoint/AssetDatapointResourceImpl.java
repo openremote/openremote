@@ -45,6 +45,8 @@ import jakarta.ws.rs.container.AsyncResponse;
 import jakarta.ws.rs.container.ConnectionCallback;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
+import org.openremote.model.value.MetaItemType;
+
 import java.io.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
@@ -104,6 +106,14 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
+            // If not logged in, attribute should be PUBLIC READ
+            if(!isAuthenticated()) {
+                attribute.getMeta().getValue(MetaItemType.ACCESS_PUBLIC_READ).ifPresentOrElse((v) -> {
+                    if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
+                }, () -> {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                });
+            }
             return assetDatapointService.queryDatapoints(assetId, attribute, query);
 
         } catch (IllegalStateException ex) {
