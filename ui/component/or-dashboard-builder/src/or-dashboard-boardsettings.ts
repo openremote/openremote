@@ -71,9 +71,7 @@ export class OrDashboardBoardsettings extends LitElement {
     private setViewAccess(access: DashboardAccess) {
         this.dashboard.viewAccess = access;
         if(access == DashboardAccess.PRIVATE) {
-            this.dashboard.editAccess = DashboardAccess.PRIVATE;
-        } else if(this.dashboard.editAccess == DashboardAccess.PRIVATE) {
-            this.dashboard.editAccess = access;
+            this.dashboard.editAccess = DashboardAccess.PRIVATE; // if viewAccess changed to PRIVATE, make editAccess private as well.
         }
         this.requestUpdate();
         this.forceParentUpdate(false);

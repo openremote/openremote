@@ -34,6 +34,7 @@ import {OrChartWidget} from "./widgets/or-chart-widget";
 import { OrKpiWidget } from "./widgets/or-kpi-widget";
 import { OrGaugeWidget } from "./widgets/or-gauge-widget";
 import {OrMapWidget} from "./widgets/or-map-widget";
+import { isEqual } from "lodash";
 
 // language=CSS
 const styling = css`
@@ -339,7 +340,14 @@ export class OrDashboardBuilder extends LitElement {
 
         // On any update (except widget selection), check whether hasChanged should be updated.
         if(!(changedProperties.size == 1 && changedProperties.has('selectedWidget'))) {
+            /*const itis = isEqual(this.selectedDashboard, this.initialDashboardJSON);*/
             this.hasChanged = (JSON.stringify(this.selectedDashboard) != this.initialDashboardJSON || JSON.stringify(this.currentTemplate) != this.initialTemplateJSON);
+            if(this.hasChanged) {
+                // Temporary logging for testing purposes.
+                console.warn("Dashboard has been changed! The following changes have been made:");
+                console.log(this.selectedDashboard);
+                console.warn(this.initialDashboardJSON);
+            }
         }
 
         // Support for realm switching
