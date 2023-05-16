@@ -112,7 +112,7 @@ export class PageView extends Page<AppStateKeyed> {
 
         // Update url if properties have changed that are present in the URL
         if(changedProps.has("_selectedId") || changedProps.has("viewDashboardOnly")) {
-            this._updateRoute(this._selectedId, !this.viewDashboardOnly);
+            this._updateRoute(this._selectedId, !this.viewDashboardOnly, false);
         }
 
         // Clear loadedDashboards when people switch between 'view this dashboard only' and 'view all dashboards' modes.
@@ -123,7 +123,7 @@ export class PageView extends Page<AppStateKeyed> {
         }
 
         // Fetch dashboard(s) if none exist
-        if(this._loadedDashboards == undefined) {
+        if(this._loadedDashboards == undefined && !this.getPromise('dashboard/all') && !this.getPromise('dashboard/' + this._selectedId)) {
 
             // When visiting '/{id}/false'
             if(this.viewDashboardOnly && this._selectedId) {
@@ -136,7 +136,7 @@ export class PageView extends Page<AppStateKeyed> {
             else if(!this.viewDashboardOnly && this._selectedId) {
                 console.error("Fetch method #2");
                 this.fetchDashboard(this._selectedId).then((dashboard) => {
-                    console.log("dashboard: [" + dashboard.realm + "] vs current: [" + this._realm + "]");
+                    this._loadedDashboards = [dashboard];
 
                     // If dashboard does not exist, but meny should be shown, then just deselect the dashboard.
                     if(dashboard == undefined) {
@@ -157,6 +157,7 @@ export class PageView extends Page<AppStateKeyed> {
                     else {
                         console.log("Done with fetch, now loading ALL dashboards!")
                         this.fetchAllDashboards().then((dashboards) => {
+                            console.log("Done with fetching all dashboards!")
                             this._loadedDashboards = dashboards;
                         });
                     }
