@@ -37,9 +37,6 @@ import jakarta.ws.rs.core.Response;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.MetaItemType;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.logging.Logger;
 
 public class AssetPredictedDatapointResourceImpl extends ManagerWebResource implements AssetPredictedDatapointResource {
