@@ -17,8 +17,6 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.ObjectOutputStream
 import java.util.*
-import kotlin.reflect.typeOf
-
 
 class BleProvider(val context: Context) {
     interface BleCallback {
@@ -178,7 +176,6 @@ class BleProvider(val context: Context) {
                                 "BluetoothGattCallback",
                                 "Successfully connected to $deviceAddress"
                             )
-                            gatt.discoverServices()
                             gatt.requestMtu(GATT_MAX_MTU_SIZE)
                         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                             Log.w(
@@ -260,7 +257,9 @@ class BleProvider(val context: Context) {
                                 val deviceCharacteristic =
                                     deviceCharacteristics.find { it.characteristic.uuid == uuid }
                                 if (deviceCharacteristic != null) {
-                                    deviceCharacteristic.value = String(value)
+                                    deviceCharacteristic.value = String(value).substringBefore(
+                                        '\u0000'
+                                    )
                                 }
                                 Log.i(
                                     "BluetoothGattCallback",
@@ -324,6 +323,7 @@ class BleProvider(val context: Context) {
                         "BluetoothGattCallback",
                         "ATT MTU changed to $mtu, success: ${status == BluetoothGatt.GATT_SUCCESS}"
                     )
+                    gatt?.discoverServices()
                 }
 
             }, BluetoothDevice.TRANSPORT_LE)
