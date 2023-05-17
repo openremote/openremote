@@ -14,17 +14,14 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
     attributeCoordinates: Map<string, [number, number]>;
-    image?: string;
     xCoordinates: number;
     yCoordinates: number;
     imgSize: [number, number];
-    imgWidth: number;
-    imgHeight: number;
-    deltaFormat: "absolute" | "percentage";
     showTimestampControls: boolean;
     imageUploaded: boolean;
     //currently uses this --> needs to use the image variable on ln 17
     imagePath: string;
+    assets: Asset[];
 }
 
 
@@ -38,20 +35,17 @@ export class OrImageWidget implements OrWidgetEntity {
 
     getDefaultConfig(widget: DashboardWidget): OrWidgetConfig {
         return {
-            displayName: widget.displayName,
+            displayName: widget?.displayName,
             attributeRefs: [],
-            displayMode: "icons",
             xCoordinates: 0,
             yCoordinates: 0,
             // set to 100 to avoid min and max both being 0
             imgSize: [100,100],
-            imgWidth: 100,
-            imgHeight: 100,
             attributeCoordinates: new Map<string, [number, number]>(),
-            deltaFormat: "absolute",
             showTimestampControls: false,
             imageUploaded: false,
-            imagePath: "https://home3ds.com/wp-content/uploads/2018/11/PNG.png"
+            imagePath: "https://home3ds.com/wp-content/uploads/2018/11/PNG.png",
+            assets: []
         } as ImageWidgetConfig;
     }
 
@@ -83,7 +77,7 @@ export class OrImageWidgetContent extends LitElement {
     public realm?: string;
 
     @state()
-    private attributeCoordinates: [number, number][] = [];
+    private attributeCoordinates: Record<string, [number, number]> = {};
 
     @state()
     public imageUploaded?: boolean;
@@ -96,6 +90,8 @@ export class OrImageWidgetContent extends LitElement {
 
     @state()
     private assetAttributes: [number, Attribute<any>][] = [];
+
+
 
     @query("#img-container")
     private _imgSize!: HTMLElement;
@@ -161,18 +157,32 @@ export class OrImageWidgetContent extends LitElement {
 
     handleMarkerPlacement(config: ImageWidgetConfig) {
         var xCoordinate = this.widget?.widgetConfig.xCoordinates;
-        var yCoordinate = this.widget?.widgetConfig.xCoordinates;
-        var xMaxSize = this.imageSize?.width;
-        var yMaxSize = this.imageSize?.height;
-        if (config.attributeRefs && config.attributeRefs.length > 0) {
-            return config.attributeRefs.map((attribute) => 
+        var yCoordinate = this.widget?.widgetConfig.yCoordinates;
+
+        if (this.assetAttributes && config.attributeRefs.length > 0) {
+
+            return this.assetAttributes.map((attribute) => 
             (
                 html`
-                <span id="overlay" style="top: ${yCoordinate}px; left: ${xCoordinate}px;">${attribute.name}</span>
+                <span id="overlay" style="top: ${yCoordinate}%; left: ${xCoordinate}%;">${attribute[1].value}</span>
+                ${console.log(attribute[1])}
                 `
-            ))
+            ));
         }
     }
+
+    // handleMarkerAttributeMapping(config: ImageWidgetConfig) {
+    //     if (this.assetAttributes && config.attributeRefs.length > 0) {
+    //         this.assetAttributes.map((attribute) => 
+    //         (
+    //             this.attributeCoordinates.attribute[1].value = {
+    //                 x: 0,
+    //                 y: 0
+    //             }
+
+    //         ));
+    //     }
+    // }
 
     handleContainerSizing(config: ImageWidgetConfig){
         this.updateComplete.then(() => {
@@ -183,15 +193,16 @@ export class OrImageWidgetContent extends LitElement {
                     height: size.height
                 }
                 this.updateComplete.then(() => {
-                    console.log("update complete yay");
-                    console.log(this.imageSize);
+                    //not ideal at all --> this shouldn't be in the config
+                    //exponentially slows down the entire dashboard
+                    // this.widget!.widgetConfig.imgSize[0] = size.width;
+                    // this.widget!.widgetConfig.imgSize[0] = size.height;
                 });
             }, 200))
             this.resizeObserver.observe(this._imgSize);
         })
     }
 
-    // no clue how to make it work lmao 
     calculateMarkerPosition(markerValue: Number, maxValue: Number) {
         var percentage: Number = 0;
         // .valueOf() is added to avoid TS2362 error
@@ -221,6 +232,9 @@ export class OrImageWidgetContent extends LitElement {
             let assets: Asset[] = [];
             await manager.rest.api.AssetResource.queryAssets({
                 ids: config.attributeRefs?.map((x: AttributeRef) => x.id) as string[],
+                realm: {
+                    name: this.realm
+                },
                 select: {
                     attributes: config.attributeRefs?.map((x: AttributeRef) => x.name) as string[]
                 }
@@ -272,10 +286,6 @@ export class OrImageWidgetSettings extends LitElement {
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.MULTI_ATTRIBUTE}" .widgetConfig="${this.widget!.widgetConfig}"
                     @updated="${(event: CustomEvent) => {
-                        console.log("Log from main settings render method");
-                        console.log(config);
-                        console.log(this.widget!.widgetConfig);
-                        console.log(event.detail.changes.get('config'));
                         this.onAttributesUpdate(event.detail.changes);
                         this.updateConfig(this.widget!, event.detail.changes.get('config'));
                 }}"
@@ -285,7 +295,7 @@ export class OrImageWidgetSettings extends LitElement {
         <div>
             ${this.generateExpandableHeader(i18next.t('marker coordinates'))}
         </div>
-        <div style="display: flex; justify-content: start; flex-direction: row; flex-wrap: wrap; align-items: flex-start;">
+        <div style="display: flex; justify-content: start; flex-direction: row; flex-wrap: wrap; align-items: flex-start; min-width: 150px;">
             ${ this.expandedPanels.includes(i18next.t('marker coordinates')) ? this.prepareCoordinateEntries(config, i18next.t('marker coordinates')): null}
         </div>
             <div>
@@ -304,15 +314,16 @@ export class OrImageWidgetSettings extends LitElement {
         return output;
     }
 
+
     prepareCoordinateEntries(config: ImageWidgetConfig, name: string){
         var min = 0;
-
+        var max = 100;
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             this.updateConfig(this.widget!, config);
             return config.attributeRefs.map((attr) => 
             (html`
                     <div style="margin: 5%; font-family: inherit; width: 100%;">${attr.name}</div>
-                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${this.widget!.widgetConfig.imgWidth}" .style="margin: 1%; min-width: 150px;" .value="${config.xCoordinates}"
+                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.xCoordinates}"
                     @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                         console.log("Log from prepareCoordinateEntries OrInputChangedEvent");
                         console.log(config);
@@ -320,21 +331,15 @@ export class OrImageWidgetSettings extends LitElement {
                         this.updateConfig(this.widget!, config);
                     }}"
                     ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${this.widget!.widgetConfig.imgHeight}" .style="margin: 1%; min-width: 150px;" .value="${config.yCoordinates}"
+                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.yCoordinates}"
                     @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                         config.yCoordinates = event.detail.value;
                         this.updateConfig(this.widget!, config);
                     }}"
-                    ></or-mwc-input>
-                    <mini-collapsible label="${attr.name}"></mini-collapsible>
-                    <dynamic-slider label="x coord: ${config.xCoordinates}" min="${min}" max="${this.widget!.widgetConfig.imgWidth}" value="${config.xCoordinates}"></dynamic-slider>
-                    <dynamic-slider label="y-coord: ${config.yCoordinates}" min="${min}" max="${this.widget!.widgetConfig.imgHeight}" value="${config.yCoordinates}"></dynamic-slider>
-                    `));
-            
-        }
-       
-    }
+                    ></or-mwc-input>`));
 
+        }
+    }
 
     handleFileInputChange(event: Event) {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
@@ -404,11 +409,6 @@ class DynamicSlider extends LitElement {
     @property()
     public value?: number;
     
-    // TO-DO: 
-    // include logic to handle min < max 
-        //just add default values??? (jackhammer approach but mb faster?)
-    // logic to update
-    // logic to add number input???
     render() {
         const css = `
         
@@ -421,50 +421,8 @@ class DynamicSlider extends LitElement {
         <input type="range" id="range" name="dynamic-slider" min="${this.min ? this.min : 0}" max="${this.max ? this.max : 100}" value="${this.value ? this.value : 0}">
         `;
     }
+
+
     
 }
 
-@customElement('mini-collapsible')
-class MiniCollapsible extends LitElement {
-
-    @property()
-    public label?: string;
-
-    @query("#collapsible")
-    private _content!: HTMLElement;
-
-
-    render() {
-        const css = `
-            #collapsible {
-                background-color: transparent;
-                color: #444;
-                cursor: pointer; 
-                padding: 18px;
-                width: 100%;
-                border: none;
-                text-align: left;
-                outline: none;
-                font-size: 15px;
-            }
-
-            #content-collapsible {
-                padding: 0 5px;
-                display: none;
-                overflow: hidden; 
-            }
-        `;
-
-        return html`
-        <style>
-        ${css}
-        </style>
-        <button type="button" id="collapsible">${this.label ? this.label : ""}</button>
-        <div id="content-collapsible">This is the content</div>
-        `;
-    }
-
-    toggle() {
-
-    }
-}
