@@ -1064,7 +1064,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
-            const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart.
+            const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
             query.fromTimestamp = this._startOfPeriod;
             query.toTimestamp = this._endOfPeriod;
 

@@ -12,6 +12,13 @@ import {style} from "../style";
 
 //language=css
 const styling = css`
+    #header-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 13px 16px;
+        border-bottom: 1px solid #E0E0E0;
+    }
     #list-container {
         display: flex;
         flex-direction: column;
@@ -37,7 +44,7 @@ export class DashboardMenu extends LitElement {
     @property() // list of dashboards: if set to 'undefined', it will pull new dashboards automatically.
     protected readonly dashboards?: Dashboard[];
 
-    @property()
+    @property() // Custom realm object that only requires name and displayName.
     protected readonly realms?: { name: string, displayName: string }[];
 
     @property() // id of the selected dashboard
@@ -65,12 +72,7 @@ export class DashboardMenu extends LitElement {
         return [style, styling];
     }
 
-    // TODO: Remove this since it's only for testing purposes.
-    willUpdate(changedProps: Map<string, any>) {
-        console.log(changedProps);
-    }
-
-    /* ------------------------------------------------- */
+    /* ------------------------------------------ */
 
     // PUBLIC METHODS FOR EXTERNAL CONTROL
 
@@ -123,7 +125,7 @@ export class DashboardMenu extends LitElement {
     protected render(): TemplateResult {
         const curRealm = this.realms?.find((r) => r.name == this.realm);
         const headerTemplate = html`
-            <div style="display: flex; padding: 13px 16px; border-bottom: 1px solid #E0E0E0; align-items: center; gap: 16px;">
+            <div id="header-container">
                 ${this.loading ? html`
                     <div style="height: 34px;">
                         <!-- Placeholder height to prevent changes during the realm fetch -->
@@ -205,7 +207,7 @@ function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, o
                     </div>
                 </div>
             `
-    })}
+        })}
     `
 }
 

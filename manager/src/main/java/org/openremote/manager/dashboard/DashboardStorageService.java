@@ -84,7 +84,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 if(realm != null) {
                     predicates.add(cb.like(root.get("realm"), realm));
                 }
-                // Apply EDIT ACCESS filters; return PUBLIC dashboards, SHARED dashboards if access to the realm,
+                // Apply EDIT ACCESS filters; always return PUBLIC dashboards, SHARED dashboards if access to the realm,
                 // and PRIVATE if you are the creator (ownerId) of the dashboard.
                 if(Boolean.TRUE.equals(canEdit)) {
                     predicates.add(cb.or(
@@ -92,7 +92,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                             cb.and(root.get("editAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId))
                     ));
                 }
-                // Apply VIEW ACCESS filters; return PUBLIC dashboards, SHARED dashboards if access to the realm,
+                // Apply VIEW ACCESS filters; always return PUBLIC dashboards, SHARED dashboards if access to the realm,
                 // and PRIVATE if you are the creator (ownerId) of the dashboard.
                 predicates.add(cb.or(
                         root.get("viewAccess").in(DashboardAccess.PUBLIC, (userId != null ? DashboardAccess.SHARED : null)),
@@ -109,6 +109,8 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         });
     }
 
+    // Method to check if a dashboardId actually exists in the database
+    // Useful for when query() does not return any accessible dashboard for that user, and check if it does however exist.
     protected boolean exists(String dashboardId) {
         return persistenceService.doReturningTransaction(em -> em.find(Dashboard.class, dashboardId)) != null;
     }

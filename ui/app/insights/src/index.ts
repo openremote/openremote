@@ -61,7 +61,8 @@ fetch(configURL).then(async (result) => {
         }
     }
 
-    // Overrides specific for Insights app
+    // Override specific for Insights app, since it doesn't require login.
+    // Login and logout buttons can be found in the sidebar menu of the app.
     appConfig.manager.autoLogin = false;
 
     orApp.managerConfig = appConfig.manager;

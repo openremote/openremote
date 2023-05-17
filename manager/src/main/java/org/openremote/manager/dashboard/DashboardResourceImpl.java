@@ -59,9 +59,9 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             Dashboard[] dashboards = this.dashboardStorageService.query(dashboardId, null, getUserId(), false);
             if(dashboards.length == 0) {
                 if(this.dashboardStorageService.exists(dashboardId)) {
-                    throw new WebApplicationException(FORBIDDEN);
+                    throw new WebApplicationException(FORBIDDEN); // when no dashboard returned from query, but it does exist.
                 } else {
-                    throw new WebApplicationException(NOT_FOUND);
+                    throw new WebApplicationException(NOT_FOUND); // aka it does not exist
                 }
             }
             Dashboard d = dashboards[0]; // only return first entry

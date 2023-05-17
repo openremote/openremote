@@ -99,8 +99,6 @@ export class PageView extends Page<AppStateKeyed> {
 
     // When state / url properties change
     stateChanged(state: AppStateKeyed): void {
-        console.log("stateChanged()");
-        console.log(state.app.params);
         this._realm = state.app.realm;
         this.viewDashboardOnly = (state.app.params?.showMenu != undefined ? (state.app.params?.showMenu.toLowerCase() != 'true') : false);
         this.selectDashboard(state.app.params?.id, false);
@@ -108,56 +106,51 @@ export class PageView extends Page<AppStateKeyed> {
 
     // On every update, but before rendering anything
     willUpdate(changedProps: Map<string, any>) {
-        console.log(changedProps);
 
         // Update url if properties have changed that are present in the URL
         if(changedProps.has("_selectedId") || changedProps.has("viewDashboardOnly")) {
             this._updateRoute(this._selectedId, !this.viewDashboardOnly, false);
         }
 
-        // Clear loadedDashboards when people switch between 'view this dashboard only' and 'view all dashboards' modes.
-        // Because, if 'view this dashboard only' is active, we only fetch that specific dashboard.
-        // When switched to 'view all dashboards', or the other way around, we should fetch the dashboard(s) again.
+        // Clear loadedDashboards when people switch between realms or viewing modes.
+        // For example, if 'view this dashboard only' is active, we only fetch that specific dashboard.
+        // When switched to 'view all dashboards', or the other way around, we should fetch all dashboard(s) of that realm again.
         if(changedProps.has("_realm") || changedProps.has("viewDashboardOnly")) {
             this._loadedDashboards = undefined;
         }
 
-        // Fetch dashboard(s) if none exist
+        // Fetch dashboard(s) if none exist, and no related fetch calls are active.
         if(this._loadedDashboards == undefined && !this.getPromise('dashboard/all') && !this.getPromise('dashboard/' + this._selectedId)) {
 
-            // When visiting '/{id}/false'
+            // When visiting '/{id}/false', only fetch dashboard with that ID.
             if(this.viewDashboardOnly && this._selectedId) {
-                console.error("Fetch method #1");
                 this.fetchDashboard(this._selectedId).then((dashboard) => {
                     this._loadedDashboards = (dashboard ? [dashboard] : undefined);
                 })
             }
-            // When visiting '/{id}/true'
+            // When visiting '/{id}/true', fetch dashboard with that ID first...
             else if(!this.viewDashboardOnly && this._selectedId) {
-                console.error("Fetch method #2");
                 this.fetchDashboard(this._selectedId).then((dashboard) => {
                     this._loadedDashboards = [dashboard];
 
-                    // If dashboard does not exist, but meny should be shown, then just deselect the dashboard.
+                    // If dashboard does not exist, but menu should be shown, then just deselect the dashboard.
                     if(dashboard == undefined) {
-                        console.log("Setting selectedId to undefined..");
-                        this._selectedId = undefined; // aka redirect to '/' without any dashboard selected
+                        this._selectedId = undefined; // aka redirect to '/'
                     }
                     // If superuser, and dashboard is in a different realm than the current one, switch to that realm.
+                    // Otherwise, just deselect the dashboard since it doesn't exist for that realm.
                     else if(dashboard.realm != this._realm) {
-                        console.log("Realm is not the same as the selectedId");
                         if(manager.isSuperUser()) {
                             if (this._loadedRealms.find(r => r.name == dashboard.realm) != undefined) {
                                 this.changeRealm(dashboard.realm, dashboard.id);
                             }
                         } else {
-                            this._selectedId = undefined;
+                            this._selectedId = undefined; // aka redirect to '/'
                         }
                     }
+                    // If dashboard fetched with success, fetch all other dashboards of that realm as well.
                     else {
-                        console.log("Done with fetch, now loading ALL dashboards!")
                         this.fetchAllDashboards().then((dashboards) => {
-                            console.log("Done with fetching all dashboards!")
                             this._loadedDashboards = dashboards;
                         });
                     }
@@ -165,10 +158,9 @@ export class PageView extends Page<AppStateKeyed> {
             }
             // When visiting '/'
             else {
-                console.error("Fetch method #3");
                 this.fetchAllDashboards().then((dashboards) => {
                     if(!manager.authenticated && dashboards.length == 0) {
-                        manager.login();
+                        manager.login(); // if not logged in, auto login if no public dashboards are available
                     } else {
                         this._loadedDashboards = dashboards;
                     }
@@ -223,7 +215,6 @@ export class PageView extends Page<AppStateKeyed> {
     protected render(): TemplateResult {
         const realmConfig = this.realmConfigs ? this.realmConfigs[this._realm] : undefined;
         const selected: Dashboard | undefined = this._loadedDashboards?.find((d) => d.id == this._selectedId);
-        const errorMsg = this.getErrorMsg(true);
         let logoMobile = realmConfig?.logoMobile;
         if(logoMobile == undefined) {
             logoMobile = DefaultMobileLogo;
@@ -247,7 +238,7 @@ export class PageView extends Page<AppStateKeyed> {
                 `
             })}
             <div style="flex: 1; ${styleMap(pageStyles)}">
-                ${getDashboardHeaderTemplate(!this.viewDashboardOnly, selected,() => this.dashboardMenu?.toggleDrawer(), () => this.rerenderPending = true)}
+                ${getDashboardHeaderTemplate(!this.viewDashboardOnly, selected, () => this.dashboardMenu?.toggleDrawer(), () => this.rerenderPending = true)}
                 <div style="flex: 1;">
                     ${guard([this._selectedId, this._loadedDashboards, this.rerenderPending], () => html`
                         ${when(this._selectedId && selected != undefined, () => html`
@@ -258,7 +249,7 @@ export class PageView extends Page<AppStateKeyed> {
                             ></or-dashboard-preview>
                         `, () => html`
                             <div id="dashboard-error-text">
-                                <span>${errorMsg}</span>
+                                <span>${this.getErrorMsg(true)}</span>
                             </div>
                         `)}
                     `)}
@@ -289,14 +280,10 @@ export class PageView extends Page<AppStateKeyed> {
     }
 
     // Method to switch realms.
-    // If dashboardId is not set, it will navigate to '/' since the old selectedId is not present in the new realm.
+    // If dashboardId is not set, it will navigate to '/' since the current selectedId is not present in the new realm.
     changeRealm(realm: string, dashboardId?: string) {
-        console.log("changeRealm() to [" + realm + "] and id: [" + dashboardId + "]")
-        console.log("old id was [" + this._selectedId + "]")
         this._selectedId = dashboardId;
-        console.log("Waiting for updateComplete..");
         this.updateComplete.then(() => {
-            console.log("Done! Now updating realm..");
             this._store.dispatch(updateRealm(realm));
         })
     }
@@ -308,11 +295,10 @@ export class PageView extends Page<AppStateKeyed> {
 
     // PROMISE HANDLING UTILITY FUNCTIONS
 
-    // It uses _activePromises to keep track of active processes.
+    // It uses _activePromises to keep track of active processes / fetches.
     // This list is used for checking 'loading' state, or do an "await Promise.all()" to wait until everything is loaded.
 
     isLoading(): boolean {
-        console.warn(this._activePromises);
         return (this._activePromises.size > 0);
     }
     async afterLoaded(): Promise<void> {
@@ -342,7 +328,6 @@ export class PageView extends Page<AppStateKeyed> {
 
     // Util method for updating URL
     protected _updateRoute(id?: string, showMenu?: boolean, silent: boolean = true) {
-        console.log("_updateRoute() to [" + id + "]");
         let path = "view";
         if(id) {
             path += "/" + id + (showMenu != undefined ? ('/' + showMenu) : undefined)
