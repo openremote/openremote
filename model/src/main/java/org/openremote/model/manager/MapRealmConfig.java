@@ -19,7 +19,7 @@
  */
 package org.openremote.model.manager;
 
-import java.lang.reflect.Array;
+import org.openremote.model.map.GeoJsonConfig;
 
 public class MapRealmConfig {
     protected float[] center;
@@ -29,4 +29,5 @@ public class MapRealmConfig {
     protected int maxZoom;
     protected boolean boxZoom;
     protected String geocodeUrl;
+    protected GeoJsonConfig geoJson;
 }

@@ -46,7 +46,7 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.logging.Level;

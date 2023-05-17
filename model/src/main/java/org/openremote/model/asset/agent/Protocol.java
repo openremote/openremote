@@ -27,6 +27,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
 import org.openremote.model.util.ValueUtil;
@@ -149,6 +150,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <li>{@link #unlinkAttribute}</li>
  * </ol>
  */
+@TsIgnoreTypeParams
 public interface Protocol<T extends Agent<T, ?, ?>> {
 
     Logger LOG = SyslogCategory.getLogger(PROTOCOL, Protocol.class);

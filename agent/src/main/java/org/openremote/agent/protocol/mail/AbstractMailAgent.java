@@ -25,7 +25,7 @@ import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.Optional;
 
 public abstract class AbstractMailAgent<T extends AbstractMailAgent<T, U, V>, U extends AbstractMailProtocol<T, U, V>, V extends AgentLink<V>> extends Agent<T, U, V> {

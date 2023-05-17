@@ -21,7 +21,7 @@ package org.openremote.model.syslog;
 
 import org.hibernate.validator.constraints.Range;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.Arrays;
 
 public class SyslogConfig {

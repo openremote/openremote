@@ -54,13 +54,43 @@
         {
           "action": "notification",
           "target": {
-            "linkedUsers": true
+            "linkedUsers": true,
+            "users": {
+              "realmRoles": [
+                {
+                  "predicateType": "string",
+                  "match": "BEGIN",
+                  "value": "test-realm-role"
+                }
+              ]
+            }
           },
           "notification": {
             "name": "linkedPushTest",
             "message": {
               "type": "push",
               "title": "Linked user test"
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
+            "linkedUsers": true,
+            "users": {
+              "realmRoles": [
+                {
+                  "predicateType": "string",
+                  "value": "test-realm-role-2"
+                }
+              ]
+            }
+          },
+          "notification": {
+            "name": "linkedPushTest",
+            "message": {
+              "type": "push",
+              "title": "Linked user test 2"
             }
           }
         },

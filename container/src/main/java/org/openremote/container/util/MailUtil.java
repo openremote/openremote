@@ -19,19 +19,17 @@
  */
 package org.openremote.container.util;
 
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
 import org.openremote.model.mail.MailMessage;
-
-import javax.mail.*;
-import javax.mail.internet.InternetAddress;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class MailUtil {
 
-    protected static class MessageContent {
+    public static class MessageContent {
 
         protected List<Header> headers;
         protected String mimeType;

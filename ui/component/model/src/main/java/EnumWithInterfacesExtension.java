@@ -13,6 +13,7 @@ import cz.habarta.typescript.generator.*;
 import cz.habarta.typescript.generator.compiler.ModelCompiler;
 import cz.habarta.typescript.generator.compiler.ModelTransformer;
 import cz.habarta.typescript.generator.compiler.SymbolTable;
+import cz.habarta.typescript.generator.compiler.TsModelTransformer;
 import cz.habarta.typescript.generator.emitter.*;
 import cz.habarta.typescript.generator.util.Pair;
 import cz.habarta.typescript.generator.util.Utils;
@@ -202,9 +203,9 @@ public class EnumWithInterfacesExtension extends Extension {
 
     @Override
     public List<TransformerDefinition> getTransformers() {
-        return Arrays.asList(new TransformerDefinition(ModelCompiler.TransformationPhase.BeforeEnums, new ModelTransformer() {
+        return Arrays.asList(new TransformerDefinition(ModelCompiler.TransformationPhase.BeforeEnums, new TsModelTransformer() {
             @Override
-            public TsModel transformModel(SymbolTable symbolTable, TsModel model) {
+            public TsModel transformModel(Context context, TsModel model) {
                 List<TsEnumModel> enums = model.getEnums();
 
                 for (TsEnumModel enm : enums) {

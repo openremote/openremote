@@ -208,10 +208,6 @@ export class PageUsers extends Page<AppStateKeyed> {
     @state()
     protected _realmRoles: Role[] = [];
 
-    protected _realmRolesFilter = (role: Role) => {
-        return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name) && !role.name.startsWith("default-roles"))
-    };
-
     @state()
     protected _compositeRoles: Role[] = [];
     protected _loading: boolean = false;
@@ -439,7 +435,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const realmRoleOptions: [string, string][] = this._realmRoles ? this._realmRoles.filter(r => this._realmRolesFilter(r)).map(r => [r.name, i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name.replace("_", " ").replace("-", " ")))]) : [];
+        const realmRoleOptions: [string, string][] = this._realmRoles ? this._realmRoles.filter(r => Util.realmRoleFilter(r)).map(r => [r.name, i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name.replace("_", " ").replace("-", " ")))]) : [];
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
         // Content of User Table
@@ -564,6 +560,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         return {
             enabled: true,
             password: undefined,
+            realm: manager.displayRealm,
             roles: [],
             previousRoles: [],
             realmRoles: [],
@@ -773,6 +770,9 @@ export class PageUsers extends Page<AppStateKeyed> {
         const rows = userSessionsResponse.data.map((session) => {
             return [session.remoteAddress, new Date(session.startTimeMillis), html`<or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t("disconnect")}" @or-mwc-input-changed="${() => {this.disconnectSession(user, session)}}"></or-mwc-input>`]
         });
+        if (rows.length < 1){
+            return html`<or-mwc-table .rows="${[['This user has no active MQTT sessions',null]]}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
+        }
 
         return html`<or-mwc-table id="session-table" .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
     }
@@ -877,13 +877,13 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <or-mwc-input
                             ?readonly="${readonly}"
                             ?disabled="${isSameUser}"
-                            .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => this._realmRolesFilter(r)).map(r => r.name) : undefined}"
+                            .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => Util.realmRoleFilter(r)).map(r => r.name) : undefined}"
                             .type="${InputType.SELECT}" multiple
                             .options="${realmRoleOptions}"
                             .label="${i18next.t("realm_role_plural")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 const roleNames = e.detail.value as string[];
-                                const excludedAndCompositeRoles = user.realmRoles.filter(r => !this._realmRolesFilter(r));
+                                const excludedAndCompositeRoles = user.realmRoles.filter(r => !Util.realmRoleFilter(r));
                                 const selectedRoles = this._realmRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
                                     return {...r, assigned: true} as Role;
                                 });

@@ -87,7 +87,7 @@ export class OrGaugeWidgetContent extends LitElement {
             }, () => {
                 return html`
                     <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span>${i18next.t('noAttributesConnected')}</span>
+                        <span>${i18next.t('noAttributeConnected')}</span>
                     </div>
                 `
             })}

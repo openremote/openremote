@@ -25,8 +25,8 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.Entity;
-import javax.validation.constraints.Pattern;
+import jakarta.persistence.Entity;
+import jakarta.validation.constraints.Pattern;
 import java.util.Optional;
 
 @Entity

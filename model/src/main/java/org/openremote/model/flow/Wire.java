@@ -22,11 +22,11 @@ package org.openremote.model.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.IdClass;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 
 @IdClass(Wire.Id.class)
@@ -70,17 +70,17 @@ public class Wire {
         }
     }
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     @NotNull
     @Column(name = "SOURCE_NODE_ID")
     public String sourceId;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     @NotNull
     @Column(name = "SINK_NODE_ID")
     public String sinkId;
 
-    @javax.persistence.Id
+    @jakarta.persistence.Id
     @NotNull
     @Column(name = "FLOW_ID")
 

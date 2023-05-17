@@ -22,10 +22,11 @@ package org.openremote.agent.protocol.mail;
 import io.undertow.util.Headers;
 import org.openremote.container.util.MailUtil;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.mail.*;
+import jakarta.mail.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +39,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 
 public class MailClient {
 
@@ -93,7 +93,7 @@ public class MailClient {
         try {
             withFolder((folder) -> {
                 connected.set(true);
-                mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, config.getCheckInitialDelayMillis(), config.getCheckIntervalMillis(), TimeUnit.MILLISECONDS);
+                mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, config.getCheckInitialDelaySeconds(), config.getCheckIntervalSeconds(), TimeUnit.SECONDS);
             });
 
             updateConnectionStatus(ConnectionStatus.CONNECTED);
@@ -140,7 +140,8 @@ public class MailClient {
             LOG.log(System.Logger.Level.INFO, "Connecting to mail server: " + config.getHost());
 
             try (Store mailStore = session.getStore()) {
-                mailStore.connect(config.getUser(), config.getPassword());
+                UsernamePassword usernamePassword = config.getAuth();
+                mailStore.connect(usernamePassword.getUsername(), usernamePassword.getPassword());
                 Folder mailFolder = mailStore.getFolder(config.getFolder());
 
                 try {
