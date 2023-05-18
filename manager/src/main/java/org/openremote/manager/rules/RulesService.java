@@ -19,6 +19,10 @@
  */
 package org.openremote.manager.rules;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
+import io.prometheus.client.Summary;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -147,6 +151,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected long quickFireMillis;
     protected boolean initDone;
     protected boolean startDone;
+    protected Summary rulesFiringSummary;
+    protected Gauge rulesFactCount;
+
 
     @Override
     public int getPriority() {
@@ -174,6 +181,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         if (initDone) {
             return;
+        }
+
+        MeterRegistry meterRegistry = container.getMeterRegistry();
+
+        if (meterRegistry != null) {
+            rulesFiringSummary = Summary.build().name("or_rules_firing_seconds").labelNames("type", "id").help("Rule engine firing seconds").register();
+            rulesFactCount = Gauge.build().name("or_rules_facts").labelNames("type", "id").help("Rule engine fact count").register();
         }
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {

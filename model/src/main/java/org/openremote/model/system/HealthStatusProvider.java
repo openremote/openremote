@@ -19,10 +19,12 @@
  */
 package org.openremote.model.system;
 
+import org.openremote.model.ContainerService;
+
 /**
  * Allows implementors to provide health status data that is relevant to them.
  */
-public interface HealthStatusProvider {
+public interface HealthStatusProvider extends ContainerService {
 
     String getHealthStatusName();
 

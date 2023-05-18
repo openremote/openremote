@@ -33,6 +33,7 @@ dependencies {
     //api "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
     api "org.scala-lang:scala-library:2.12.10"
     api "io.github.classgraph:classgraph:$classgraphVersion"
+    api "io.micrometer:micrometer-core:$micrometerVersion"
 }
 
 jar {

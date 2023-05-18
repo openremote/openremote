@@ -19,6 +19,7 @@
  */
 package org.openremote.model;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.openremote.model.util.TsIgnore;
 
 import java.util.Collection;
@@ -30,6 +31,8 @@ public interface Container {
 
     String OR_DEV_MODE = "OR_DEV_MODE";
     boolean OR_DEV_MODE_DEFAULT = true;
+    String OR_METRICS_ENABLED = "OR_METRICS_ENABLED";
+    boolean OR_METRICS_ENABLED_DEFAULT = true;
 
     boolean isDevMode();
 
@@ -44,4 +47,10 @@ public interface Container {
     <T extends ContainerService> T getService(Class<T> type) throws IllegalStateException;
 
     <T extends ContainerService> boolean hasService(Class<T> type);
+
+    /**
+     * Get the {@link MeterRegistry} to use for micrometer metrics gathering
+     * @return Null if metrics has been disabled
+     */
+    MeterRegistry getMeterRegistry();
 }

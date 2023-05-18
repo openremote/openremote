@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.rules;
 
+import io.prometheus.client.Summary;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
@@ -73,8 +74,8 @@ public class RulesEngine<T extends Ruleset> {
      */
     public static final class AssetStateLocationPredicates {
 
-        protected final String assetId;
-        protected final Set<GeofencePredicate> locationPredicates;
+        final String assetId;
+        final Set<GeofencePredicate> locationPredicates;
 
         public AssetStateLocationPredicates(String assetId, Set<GeofencePredicate> locationPredicates) {
             this.assetId = assetId;
@@ -528,6 +529,13 @@ public class RulesEngine<T extends Ruleset> {
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
         long executionTotalMillis = 0L;
+        Summary.Timer timer = rulesService.rulesFiringSummary != null
+            ? rulesService.rulesFiringSummary.labels(id.getScope().getSimpleName(), getEngineId()).startTimer()
+            : null;
+
+        if (rulesService.rulesFactCount != null) {
+            rulesService.rulesFactCount.labels(id.getScope().getSimpleName(), getEngineId()).set(facts.getFactCount());
+        }
 
         for (RulesetDeployment deployment : deploymentList) {
             try {
@@ -572,11 +580,25 @@ public class RulesEngine<T extends Ruleset> {
 
         trackLocationPredicates(false);
 
+        if (timer != null) {
+            timer.observeDuration();
+        }
+
         if (executionTotalMillis > 100) {
             LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
         } else {
             LOG.fine("Rules firing took " + executionTotalMillis + "ms on: " + this);
         }
+    }
+
+    protected String getEngineId() {
+        if (id.scope == GlobalRuleset.class) {
+            return "";
+        }
+        if (id.scope == RealmRuleset.class) {
+            return id.realm;
+        }
+        return id.realm + ":" + id.assetId;
     }
 
     protected void fireAllDeployments() {

@@ -19,9 +19,11 @@
  */
 package org.openremote.container.message;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
+import org.apache.camel.component.micrometer.spi.InstrumentedThreadPoolFactory;
 import org.apache.camel.component.snmp.SnmpComponent;
 import org.apache.camel.health.HealthCheckRegistry;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -73,9 +75,9 @@ public class MessageBrokerService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
 
+        MeterRegistry meterRegistry = container.getMeterRegistry();
         final ExecutorServiceManager executorServiceManager = context.getExecutorServiceManager();
-        executorServiceManager.setThreadNamePattern("#counter# #name#");
-        executorServiceManager.setThreadPoolFactory(new ThreadPoolFactory() {
+        ThreadPoolFactory threadPoolFactory = new ThreadPoolFactory() {
             @Override
             public ExecutorService newCachedThreadPool(ThreadFactory threadFactory) {
                 // This is an unlimited pool used probably only be multicast aggregation
@@ -112,7 +114,15 @@ public class MessageBrokerService implements ContainerService {
                 }
                 return name;
             }
-        });
+        };
+
+        if (meterRegistry != null) {
+            // Add instrumentation to thread pool factory
+            threadPoolFactory = new InstrumentedThreadPoolFactory(meterRegistry, threadPoolFactory);
+        }
+
+        executorServiceManager.setThreadNamePattern("#counter# #name#");
+        executorServiceManager.setThreadPoolFactory(threadPoolFactory);
 
         // TODO might need this for errorhandler?
         context.setAllowUseOriginalMessage(false);

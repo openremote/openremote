@@ -125,6 +125,7 @@ services:
     #  - "8080:8080" # Web server port
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
+    #  - "127.0.0.1:8405:8404" # Localhost metrics access
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -285,6 +286,11 @@ services:
       # expires, the native console app can no longer contact the service in the background (e.g. when
       # processing push notifications) and will therefore fail silently until the user logs in again.
       OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: ${OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES:-2628000}
+
+      # Enable/disable Prometheus metrics collection
+      OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
+      # Web server port used to host metrics endpoint
+      OR_METRICS_PORT: ${OR_METRICS_PORT:-8404}
 
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).

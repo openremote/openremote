@@ -24,15 +24,10 @@ import java.util.concurrent.*;
 import static org.openremote.container.concurrent.ContainerThreads.DEFAULT_REJECTED_EXECUTION_HANDLER;
 import static org.openremote.container.concurrent.ContainerThreads.logExceptionCause;
 
+/**
+ * Thread pool that adds logging for tasks that throw exceptions
+ */
 public class ContainerExecutor extends ThreadPoolExecutor {
-
-    /**
-     * Creates an unbounded thread pool with {@link SynchronousQueue}, this is the same as
-     * {@link Executors#newCachedThreadPool}.
-     */
-    public ContainerExecutor(String name) {
-        this(name, 0, Integer.MAX_VALUE, 60L, -1);
-    }
 
     /**
      * @param blockingQueueCapacity Set to <code>-1</code> if a {@link SynchronousQueue} should be used.

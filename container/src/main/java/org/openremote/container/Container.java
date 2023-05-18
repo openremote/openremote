@@ -20,6 +20,11 @@
 package org.openremote.container;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.prometheus.client.CollectorRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.container.util.LogUtil;
@@ -78,6 +83,7 @@ public class Container implements org.openremote.model.Container {
     public static final int OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
+    protected MeterRegistry meterRegistry;
 
     protected Thread waitingThread;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
@@ -115,6 +121,14 @@ public class Container implements org.openremote.model.Container {
 
         if (this.devMode) {
             ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
+        }
+
+        boolean metricsEnabled = getBoolean(getConfig(), OR_METRICS_ENABLED, OR_METRICS_ENABLED_DEFAULT);
+        LOG.log(INFO, "Metrics enabled: " + metricsEnabled);
+
+        if (metricsEnabled) {
+            // TODO: Add a meter registry provider SPI to make this pluggable
+            meterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, CollectorRegistry.defaultRegistry, Clock.SYSTEM);
         }
 
         int scheduledTasksThreadsMax = getInteger(
@@ -232,6 +246,11 @@ public class Container implements org.openremote.model.Container {
     @Override
     public <T extends ContainerService> boolean hasService(Class<T> type) {
         return getServices(type).size() > 0;
+    }
+
+    @Override
+    public MeterRegistry getMeterRegistry() {
+        return meterRegistry;
     }
 
     /**

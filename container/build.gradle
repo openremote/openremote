@@ -46,8 +46,10 @@ dependencies {
     api "org.apache.camel:camel-snmp:$camelVersion"
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
-    api("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion")
+    api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
     api "com.vladmihalcea:hibernate-types-60:$hibernateTypesVersion"
+    api "org.apache.camel:camel-micrometer:$camelVersion"
+    implementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }
 
 jar {
