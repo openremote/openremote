@@ -18,10 +18,6 @@ import spock.lang.Shared
 
 import javax.ws.rs.WebApplicationException
 
-import javax.ws.rs.WebApplicationException
-
-import javax.ws.rs.WebApplicationException
-
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.container.util.MapAccess.getString
@@ -200,6 +196,77 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
 
         then:
         NullPointerException ex = thrown()
+    }
+
+    // @Unroll
+    // def "should get an alarm with id '#id'"() {
+    //     given:
+    //     def alarm = alarmResourceImp.createAlarm("Test Alarm", "Test Description")
+
+    //     when:
+    //     def retrievedAlarm = alarmResourceImp.getAlarm(id)
+
+    //     then:
+    //     retrievedAlarm != null
+    //     retrievedAlarm.id == id
+    //     retrievedAlarm.name == alarm.name
+    //     retrievedAlarm.description == alarm.description
+
+    //     where:
+    //     id << [alarm.id, "invalid-id"]
+    // }
+
+    // @Unroll
+    // def "should update an alarm with id '#id' to have name '#name' and description '#description'"() {
+    //     given:
+    //     def alarm = alarmResourceImp.createAlarm("Test Alarm", "Test Description")
+
+    //     when:
+    //     def updatedAlarm = alarmResourceImp.updateAlarm(id, name, description)
+
+    //     then:
+    //     updatedAlarm != null
+    //     updatedAlarm.id == id
+    //     updatedAlarm.name == name
+    //     updatedAlarm.description == description
+
+    //     where:
+    //     id | name | description
+    //     alarm.id | "Updated Alarm" | "Updated Description"
+    //     "invalid-id" | "Invalid Alarm" | "Invalid Description"
+    // }
+
+    // @Unroll
+    // def "should delete an alarm with id '#id'"() {
+    //     given:
+    //     def alarm = alarmResourceImp.createAlarm("Test Alarm", "Test Description")
+
+    //     when:
+    //     def isDeleted = alarmResourceImp.deleteAlarm(id)
+
+    //     then:
+    //     isDeleted == true
+
+    //     where:
+    //     id << [alarm.id, "invalid-id"]
+    // }
+}
+
+class AlarmTest extends BaseSpec implements ManagerContainerTrait{
+    @Unroll
+    def "should create an alarm with name '#name' and description '#description'"() {
+        when:
+        def alarm = adminResource.sendAlarm(name, description)
+
+        then:
+        alarm != null
+        alarm.name == name
+        alarm.content == description
+
+        where:
+        name | description
+        "Test Alarm" | "Test Description"
+        "Another Alarm" | "Another Description"
     }
 
     // @Unroll
