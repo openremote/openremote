@@ -1,4 +1,4 @@
-import {ConsoleRegistration} from "@openremote/model";
+import {ConsoleProvider, ConsoleRegistration} from "@openremote/model";
 import manager from "./index";
 import {AxiosResponse} from "axios";
 import {Deferred} from "./util";
@@ -262,6 +262,10 @@ export class Console {
         return response;
     }
 
+    public getProvider(name: string): ConsoleProvider | undefined {
+        return this._registration && this._registration.providers ? this._registration.providers[name] : undefined;
+    }
+
     public async sendProviderMessage(message: ProviderMessage, waitForResponse: boolean): Promise<any | null> {
         if (!this._registration.providers!.hasOwnProperty(message.provider)) {
             console.debug("Invalid console provider '" + message.provider + "'");
@@ -282,7 +286,7 @@ export class Console {
         const deferred = new Deferred();
         const cancel = () => {
             delete this._pendingProviderPromises[promiseName];
-            deferred.reject("No response");
+            deferred.reject("No response from provider");
         };
         this._pendingProviderPromises[promiseName] = [deferred, window.setTimeout(cancel, 5000)];
         this._doSendProviderMessage(message);
@@ -479,6 +483,8 @@ export class Console {
                             throw new Error("Unsupported provider '" + msg.provider + "' and action '" + msg.action + "'");
                     }
                     break;
+                default:
+                    throw new Error("Unsupported provider: " + msg.provider);
             }
         }
     }
@@ -526,18 +532,34 @@ export class Console {
 
     protected async _initialiseProvider(providerName: string): Promise<void> {
         console.debug("Console: initialising provider '" + providerName + "'");
-        let initResponse = await this.sendProviderMessage({
-            provider: providerName,
-            action: "PROVIDER_INIT"
-        }, true) as ProviderInitialiseResponse;
+        let initResponse: ProviderInitialiseResponse;
 
-        this._registration.providers![providerName].version = initResponse.version;
-        this._registration.providers![providerName].requiresPermission = initResponse.requiresPermission;
-        this._registration.providers![providerName].hasPermission = initResponse.hasPermission;
-        this._registration.providers![providerName].success = initResponse.success;
-        this._registration.providers![providerName].enabled = initResponse.enabled;
-        this._registration.providers![providerName].disabled = initResponse.disabled;
-        this._registration.providers![providerName].data = initResponse.data;
+        try {
+            initResponse = await this.sendProviderMessage({
+                provider: providerName,
+                action: "PROVIDER_INIT"
+            }, true) as ProviderInitialiseResponse;
+
+            this._registration.providers![providerName].version = initResponse.version;
+            this._registration.providers![providerName].requiresPermission = initResponse.requiresPermission;
+            this._registration.providers![providerName].hasPermission = initResponse.hasPermission;
+            this._registration.providers![providerName].success = initResponse.success;
+            this._registration.providers![providerName].enabled = initResponse.enabled;
+            this._registration.providers![providerName].disabled = initResponse.disabled;
+            this._registration.providers![providerName].data = initResponse.data;
+        } catch (e) {
+            console.error(e);
+            initResponse = {
+                action: "",
+                disabled: false,
+                enabled: false,
+                hasPermission: false,
+                provider: "",
+                requiresPermission: false,
+                version: "",
+                success: false
+            };
+        }
 
         if (!initResponse.success) {
             console.debug("Provider initialisation failed: '" + providerName + "'");
