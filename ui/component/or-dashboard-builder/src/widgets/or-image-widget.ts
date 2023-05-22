@@ -147,7 +147,6 @@ export class OrImageWidgetContent extends LitElement {
                 </style>
             <div id="img-container">
                 <img class="img-content" src="${imagePath}" alt=""/>
-
                 <div>
                     ${this.handleMarkerPlacement(this.widget?.widgetConfig)}
                 </div>
@@ -156,47 +155,49 @@ export class OrImageWidgetContent extends LitElement {
     }
 
     handleMarkerPlacement(config: ImageWidgetConfig) {
-        var xCoordinate = this.widget?.widgetConfig.xCoordinates;
-        var yCoordinate = this.widget?.widgetConfig.yCoordinates;
+        var xPropPos = config.xCoordinates;
+        var yPropPos = config.yCoordinates;
+        var xMax = this.imageSize?.width;
+        var yMax = this.imageSize?.height;
 
+        var xPos = this.getProportionalPosition(xPropPos, xMax!);
+        var yPos = this.getProportionalPosition(yPropPos, yMax!);
         if (this.assetAttributes && config.attributeRefs.length > 0) {
 
             return this.assetAttributes.map((attribute) => 
             (
                 html`
-                <span id="overlay" style="top: ${yCoordinate}%; left: ${xCoordinate}%;">${attribute[1].value}</span>
-                ${console.log(attribute[1])}
+                <span id="overlay" style="top: ${yPos}px; left: ${xPos}px;">${attribute[1].value}</span>
                 `
             ));
         }
     }
 
-    // handleMarkerAttributeMapping(config: ImageWidgetConfig) {
-    //     if (this.assetAttributes && config.attributeRefs.length > 0) {
-    //         this.assetAttributes.map((attribute) => 
-    //         (
-    //             this.attributeCoordinates.attribute[1].value = {
-    //                 x: 0,
-    //                 y: 0
-    //             }
+    getProportionalPosition(propPos: number, maxSize: number){
+        var pos = propPos;
+        if (typeof maxSize !== 'undefined') {
+            pos = (propPos / 100) * maxSize;
+        }
 
-    //         ));
-    //     }
-    // }
+        return pos;
+    }
 
     handleContainerSizing(config: ImageWidgetConfig){
+        
+
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
+
+                var sizeBeforeWidth = this.imageSize?.width;
                 const size = entries[0].contentRect;
+                console.log("size before width = " + sizeBeforeWidth);
+                console.log("size after width = " + size.width);
                 this.imageSize = {
                     width: size.width,
                     height: size.height
                 }
                 this.updateComplete.then(() => {
-                    //not ideal at all --> this shouldn't be in the config
-                    //exponentially slows down the entire dashboard
-                    // this.widget!.widgetConfig.imgSize[0] = size.width;
-                    // this.widget!.widgetConfig.imgSize[0] = size.height;
+                    console.log(this.imageSize);
                 });
             }, 200))
             this.resizeObserver.observe(this._imgSize);
@@ -265,7 +266,6 @@ export class OrImageWidgetSettings extends LitElement {
     private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings')];
     private loadedAssets?: Asset[];
 
-
     static get styles() {
         return [style, widgetSettingsStyling];
     }
@@ -313,7 +313,6 @@ export class OrImageWidgetSettings extends LitElement {
         `
         return output;
     }
-
 
     prepareCoordinateEntries(config: ImageWidgetConfig, name: string){
         var min = 0;
@@ -372,6 +371,7 @@ export class OrImageWidgetSettings extends LitElement {
         this.dispatchEvent(new CustomEvent('updated', { detail: { changes: changes, force: force } }));
     }
 
+
     generateExpandableHeader(name: string): TemplateResult {
         return html`
             <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
@@ -380,6 +380,7 @@ export class OrImageWidgetSettings extends LitElement {
             </span>
         `
     }
+
 
     expandPanel(panelName: string): void {
         if (this.expandedPanels.includes(panelName)) {
@@ -394,35 +395,4 @@ export class OrImageWidgetSettings extends LitElement {
     }
 }
 
-@customElement('dynamic-slider')
-class DynamicSlider extends LitElement {
-
-    @property() 
-    public min?: number;
-
-    @property() 
-    public max?: number;
-
-    @property()
-    public label?: string;
-    
-    @property()
-    public value?: number;
-    
-    render() {
-        const css = `
-        
-        `;
-        return html`
-        <style>
-            ${css}
-        </style>
-        <label for="dynamic-slider">${this.label ? this.label : ""}</label>
-        <input type="range" id="range" name="dynamic-slider" min="${this.min ? this.min : 0}" max="${this.max ? this.max : 100}" value="${this.value ? this.value : 0}">
-        `;
-    }
-
-
-    
-}
 
