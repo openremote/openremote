@@ -21,7 +21,7 @@ function getStandardModuleRules() {
                 ]
             },
             {
-                test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2)$/,
+                test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2|mp4)$/,
                 type: "asset",
                 generator: {
                     filename: 'images/[hash][ext][query]'
