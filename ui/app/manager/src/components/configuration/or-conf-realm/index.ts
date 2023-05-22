@@ -30,126 +30,133 @@ import "@openremote/or-components/or-loading-indicator";
 @customElement("or-conf-realm")
 export class OrConfRealm extends LitElement {
 
-  static styles = css`
-    #btn-add-realm {
-      margin-top: 4px;
-    }
+    static styles = css` 
+        #btn-add-realm {
+            margin-top: 4px;
+        }
     `;
 
-  @property({attribute: false})
-  public config: ManagerAppConfig = {};
+    @property({attribute: false})
+    public config: ManagerAppConfig = {};
 
-  protected _availableRealms: {name:string, displayName:string}[] = [];
-  protected _allRealms: {name:string, displayName:string}[] = [];
-  protected _addedRealm: null|string = null
+    protected _availableRealms: {name:string, displayName:string}[] = [];
+    protected _allRealms: {name:string, displayName:string}[] = [];
+    protected _addedRealm: null|string = null
 
-  protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
-    const app = this
-    manager.rest.api.RealmResource.getAccessible().then((response)=>{
-      app._allRealms = response.data as {name:string, displayName:string}[];
-      app._allRealms.push({name: 'default', displayName: 'Default'})
-      app._loadListOfAvailableRealms()
-    });
-  }
-
-  protected _removeRealm(realm:string){
-    if (this.config.realms){
-      delete this.config?.realms[realm]
-      this._loadListOfAvailableRealms()
-      this.requestUpdate()
+    willUpdate(changedProps: Map<string, any>) {
+        console.log(changedProps); // TODO: Temporary use for testing purposes
     }
-  }
 
-  protected _loadListOfAvailableRealms() {
-    const app = this;
-    this._availableRealms = this._allRealms.filter(function(realm) {
-      if (!!realm.name && !!app.config){
-        if (realm.name in app.config?.realms){
-          return null
-        }
-      }
-      return realm;
-    }).sort(function(a, b) {
-      if (a.displayName && b.displayName) {
-        return (a.displayName > b.displayName) ? 1 : -1;
-      }
-      return -1;
-    });
-  }
-
-  protected _showAddingRealmDialog(){
-    this._addedRealm = null;
-    const _AddRealmToView =  () => {
-      if (this._addedRealm){
-        if (!this.config.realms){
-          this.config.realms = {}
-        }
-        this.config.realms[this._addedRealm] = {
-          styles: ":host > * {--or-app-color1:#FFFFFF;--or-app-color2:#F9F9F9;--or-app-color3:#4c4c4c;--or-app-color4:#4d9d2a;--or-app-color5:#CCCCCC;--or-app-color6:#be0000;"
-      }
-        this._loadListOfAvailableRealms()
-        this.requestUpdate()
-        return true
-      }
-      return false
+    protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
+        const app = this
+        manager.rest.api.RealmResource.getAccessible().then((response)=>{
+            app._allRealms = response.data as {name:string, displayName:string}[];
+            app._allRealms.push({name: 'default', displayName: 'Default'})
+            app._loadListOfAvailableRealms()
+        });
     }
-    const dialogActions: DialogAction[] = [
-      {
-        actionName: "cancel",
-        content: i18next.t("cancel")
-      },
-      {
-        default: true,
-        actionName: "ok",
-        content: i18next.t("ok"),
-        action: _AddRealmToView
-      },
 
-    ];
-    const dialog = showDialog(new OrMwcDialog()
-      .setHeading(i18next.t('configuration.addRealmCustomization'))
-      .setActions(dialogActions)
-      .setContent(html `
-        <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
-      `)
-      .setStyles(html`
-                        <style>
-                            .mdc-dialog__surface {
-                              padding: 4px 8px;
-                            }
-                            #dialog-content {
-                                flex: 1;    
-                                overflow: visible;
-                                min-height: 0;
-                                padding: 0;
-                            }
-                            or-mwc-input.selector {
-                              width: 300px;
-                              display: block;
-                              padding: 10px 20px;
-                            }
-                        </style>
-                    `)
-      .setDismissAction(null));
+    protected _removeRealm(realm:string){
+        if (this.config.realms){
+            delete this.config?.realms[realm]
+            this._loadListOfAvailableRealms()
+            this.requestUpdate()
+        }
+    }
 
-  }
+    protected _loadListOfAvailableRealms() {
+        const app = this;
+        this._availableRealms = this._allRealms.filter(function(realm) {
+            if (!!realm.name && !!app.config){
+                if (realm.name in app.config?.realms){
+                    return null
+                }
+            }
+            return realm;
+        }).sort(function(a, b) {
+            if (a.displayName && b.displayName) {
+                return (a.displayName > b.displayName) ? 1 : -1;
+            }
+            return -1;
+        });
+    }
+
+    protected _showAddingRealmDialog(){
+        this._addedRealm = null;
+        const _AddRealmToView =  () => {
+            if (this._addedRealm){
+                if (!this.config.realms){
+                    this.config.realms = {}
+                }
+                this.config.realms[this._addedRealm] = {
+                    styles: ":host > * {--or-app-color1:#FFFFFF;--or-app-color2:#F9F9F9;--or-app-color3:#4c4c4c;--or-app-color4:#4d9d2a;--or-app-color5:#CCCCCC;--or-app-color6:#be0000;"
+                }
+                this._loadListOfAvailableRealms()
+                this.requestUpdate()
+                return true
+            }
+            return false
+        }
+        const dialogActions: DialogAction[] = [
+            {
+                actionName: "cancel",
+                content: i18next.t("cancel")
+            },
+            {
+                default: true,
+                actionName: "ok",
+                content: i18next.t("ok"),
+                action: _AddRealmToView
+            },
+
+        ];
+        const dialog = showDialog(new OrMwcDialog()
+            .setHeading(i18next.t('configuration.addRealmCustomization'))
+            .setActions(dialogActions)
+            .setContent(html `
+                <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}" .options="${Object.entries(this._availableRealms).map(([key, value]) => {return [value.name, value.displayName]})}"></or-mwc-input>
+            `)
+            .setStyles(html`
+                <style>
+                    .mdc-dialog__surface {
+                        padding: 4px 8px;
+                    }
+                    #dialog-content {
+                        flex: 1;
+                        overflow: visible;
+                        min-height: 0;
+                        padding: 0;
+                    }
+                    or-mwc-input.selector {
+                        width: 300px;
+                        display: block;
+                        padding: 10px 20px;
+                    }
+                </style>
+            `)
+            .setDismissAction(null));
+
+    }
 
 
 
-  updated(changedProperties: PropertyValues) {
-    super.updated(changedProperties);
-  }
+    updated(changedProperties: PropertyValues) {
+        super.updated(changedProperties);
+    }
 
-  render() {
-    const app = this;
-    return html`
-      <div class="panels">
-        ${Object.entries(this.config.realms === undefined ? {} : this.config.realms).map(function([key , value]){
-          return html`<or-conf-realm-card .expanded="${app._addedRealm === key}" .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
-        })}
-      </div>
-      
-      <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addRealmCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
-    `
-  }
+    render() {
+        const app = this;
+        return html`
+            <div class="panels">
+                ${Object.entries(this.config?.realms === undefined ? {} : this.config.realms).map(function([key , value]){
+                    return html`<or-conf-realm-card .expanded="${app._addedRealm === key}" .name="${key}" .realm="${value}" .onRemove="${() => {app._removeRealm(key)}}"></or-conf-realm-card>`
+                })}
+            </div>
+
+            <div style="display: flex; justify-content: space-between;">
+                <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addRealmCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
+                <!--<or-mwc-input .type="${InputType.BUTTON}" outlined label="JSON" icon="pencil"></or-mwc-input>-->
+            </div>
+        `
+    }
 }

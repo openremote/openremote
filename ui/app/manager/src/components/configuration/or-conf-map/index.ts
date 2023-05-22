@@ -130,7 +130,10 @@ export class OrConfMap extends LitElement {
     })}
       </div>
       
-      <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addMapCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
+      <div style="display: flex; justify-content: space-between;">
+        <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addMapCustomization')}" icon="plus" @click="${() => this._showAddingRealmDialog()}"></or-mwc-input>
+        <!--<or-mwc-input .type="${InputType.BUTTON}" outlined label="JSON" icon="pencil"></or-mwc-input>-->
+      </div>
     `
   }
 

@@ -34,13 +34,14 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 display: flex;
                 justify-content: center;
                 
+                --or-panel-heading-min-height: 0px;
                 --or-panel-heading-margin: 4px 0 0 10px;
                 --or-panel-background-color: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
                 --or-panel-heading-font-size: 14px; 
                 --or-panel-padding: 14px;
             }            
             
-            #wrapper {
+            #wrapper {  
                 height: 100%;
                 width: 100%;
                 display: flex;
