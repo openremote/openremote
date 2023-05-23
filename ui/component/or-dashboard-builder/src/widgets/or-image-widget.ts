@@ -16,7 +16,6 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     attributeCoordinates: Map<string, [number, number]>;
     xCoordinates: number;
     yCoordinates: number;
-    imgSize: [number, number];
     showTimestampControls: boolean;
     imageUploaded: boolean;
     //currently uses this --> needs to use the image variable on ln 17
@@ -49,57 +48,104 @@ export class OrImageWidget implements OrWidgetEntity {
         } as ImageWidgetConfig;
     }
 
-    // Triggered every update to double check if the specification.
-    // It will merge missing values, or you can add custom logic to process here.
-    verifyConfigSpec(widget: DashboardWidget): ImageWidgetConfig {
-        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as ImageWidgetConfig;
+    
+
+    getSettingsHTML(widget: DashboardWidget, realm: string) {
+        return html`<or-image-widgetsettings .widget="${widget}" realm="${realm}"></or-image-widgetsettings>`;
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
         return html`<or-image-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-image-widget>`;
     }
 
-    getSettingsHTML(widget: DashboardWidget, realm: string) {
-        return html`<or-image-widgetsettings .widget="${widget}" realm="${realm}"></or-image-widgetsettings>`;
+// Triggered every update to double check if the specification.
+    // It will merge missing values, or you can add custom logic to process here.
+    verifyConfigSpec(widget: DashboardWidget): ImageWidgetConfig {
+        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as ImageWidgetConfig;
     }
 }
 
 @customElement("or-image-widget")
 export class OrImageWidgetContent extends LitElement {
-
+    @query("#img-container")
+    private _imgSize!: HTMLElement;
+    @state()
+    private assetAttributes: [number, Attribute<any>][] = [];
+    @state()
+    private attributeCoordinates: Record<string, [number, number]> = {};
+    @state()
+    private image?: HTMLInputElement;
+    @state()
+    private imageSize?: { width: number, height: number }
+    @state()
+    private loadedAssets: Asset[] = [];
+    private resizeObserver?: ResizeObserver;
+    @property()
+    public editMode?: boolean;
+    @state()
+    public imageUploaded?: boolean;
+    @property()
+    public realm?: string;
     @property()
     public readonly widget?: DashboardWidget;
 
-    @property()
-    public editMode?: boolean;
+    private calculateMarkerPosition(markerValue: Number, maxValue: Number) {
+        var percentage: Number = 0;
+        // .valueOf() is added to avoid TS2362 error
+        percentage = (markerValue.valueOf() / maxValue.valueOf()) * 100;
 
-    @property()
-    public realm?: string;
+        return percentage;
+    }
 
-    @state()
-    private attributeCoordinates: Record<string, [number, number]> = {};
+    private getProportionalPosition(propPos: number, maxSize: number){
+        var pos = propPos;
+        if (typeof maxSize !== 'undefined') {
+            pos = (propPos / 100) * maxSize;
+        }
 
-    @state()
-    public imageUploaded?: boolean;
+        return pos;
+    }
 
-    @state()
-    private image?: HTMLInputElement;
+    private handleContainerSizing(config: ImageWidgetConfig){
+        
 
-    @state()
-    private loadedAssets: Asset[] = [];
+        this.updateComplete.then(() => {
+            this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
 
-    @state()
-    private assetAttributes: [number, Attribute<any>][] = [];
+                var sizeBeforeWidth = this.imageSize?.width;
+                const size = entries[0].contentRect;
+                console.log("size before width = " + sizeBeforeWidth);
+                console.log("size after width = " + size.width);
+                this.imageSize = {
+                    width: size.width,
+                    height: size.height
+                }
+                this.updateComplete.then(() => {
+                    console.log(this.imageSize);
+                });
+            }, 200))
+            this.resizeObserver.observe(this._imgSize);
+        })
+    }
 
+    private handleMarkerPlacement(config: ImageWidgetConfig) {
+        var xPropPos = config.xCoordinates;
+        var yPropPos = config.yCoordinates;
+        var xMax = this.imageSize?.width;
+        var yMax = this.imageSize?.height;
 
+        var xPos = this.getProportionalPosition(xPropPos, xMax!);
+        var yPos = this.getProportionalPosition(yPropPos, yMax!);
+        if (this.assetAttributes && config.attributeRefs.length > 0) {
 
-    @query("#img-container")
-    private _imgSize!: HTMLElement;
-
-    @state()
-    private imageSize?: { width: number, height: number }
-
-    private resizeObserver?: ResizeObserver;
+            return this.assetAttributes.map((attribute) => 
+            (
+                html`
+                <span id="overlay" style="top: ${yPos}px; left: ${xPos}px;">${attribute[1].value}</span>
+                `
+            ));
+        }
+    }
 
     render() {
 
@@ -111,6 +157,7 @@ export class OrImageWidgetContent extends LitElement {
                 justify-content: center; 
                 align-items: center;
                 position: relative;
+                overflow: hidden;
                 z-index: 1;
             }
 
@@ -154,64 +201,6 @@ export class OrImageWidgetContent extends LitElement {
             `;
     }
 
-    handleMarkerPlacement(config: ImageWidgetConfig) {
-        var xPropPos = config.xCoordinates;
-        var yPropPos = config.yCoordinates;
-        var xMax = this.imageSize?.width;
-        var yMax = this.imageSize?.height;
-
-        var xPos = this.getProportionalPosition(xPropPos, xMax!);
-        var yPos = this.getProportionalPosition(yPropPos, yMax!);
-        if (this.assetAttributes && config.attributeRefs.length > 0) {
-
-            return this.assetAttributes.map((attribute) => 
-            (
-                html`
-                <span id="overlay" style="top: ${yPos}px; left: ${xPos}px;">${attribute[1].value}</span>
-                `
-            ));
-        }
-    }
-
-    getProportionalPosition(propPos: number, maxSize: number){
-        var pos = propPos;
-        if (typeof maxSize !== 'undefined') {
-            pos = (propPos / 100) * maxSize;
-        }
-
-        return pos;
-    }
-
-    handleContainerSizing(config: ImageWidgetConfig){
-        
-
-        this.updateComplete.then(() => {
-            this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-
-                var sizeBeforeWidth = this.imageSize?.width;
-                const size = entries[0].contentRect;
-                console.log("size before width = " + sizeBeforeWidth);
-                console.log("size after width = " + size.width);
-                this.imageSize = {
-                    width: size.width,
-                    height: size.height
-                }
-                this.updateComplete.then(() => {
-                    console.log(this.imageSize);
-                });
-            }, 200))
-            this.resizeObserver.observe(this._imgSize);
-        })
-    }
-
-    calculateMarkerPosition(markerValue: Number, maxValue: Number) {
-        var percentage: Number = 0;
-        // .valueOf() is added to avoid TS2362 error
-        percentage = (markerValue.valueOf() / maxValue.valueOf()) * 100;
-
-        return percentage;
-    }
-
     updated(changedProperties: Map<string, any>) {
         if (changedProperties.has("widget") || changedProperties.has("editMode")) {
             this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
@@ -252,7 +241,13 @@ export class OrImageWidgetContent extends LitElement {
 
 @customElement("or-image-widgetsettings")
 export class OrImageWidgetSettings extends LitElement {
+    static get styles() {
+        return [style, widgetSettingsStyling];
+    }
 
+    private _fileElem!: HTMLInputElement;
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings')];
+    private loadedAssets?: Asset[];
     @property()
     public readonly widget?: DashboardWidget;
 
@@ -260,16 +255,6 @@ export class OrImageWidgetSettings extends LitElement {
     // file explorer dialogue opens with supported file types
     @property({ attribute: false })
     public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
-
-    private _fileElem!: HTMLInputElement;
-
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings')];
-    private loadedAssets?: Asset[];
-
-    static get styles() {
-        return [style, widgetSettingsStyling];
-    }
-
     // UI Rendering
     render() {
         
@@ -314,7 +299,7 @@ export class OrImageWidgetSettings extends LitElement {
         return output;
     }
 
-    prepareCoordinateEntries(config: ImageWidgetConfig, name: string){
+    private prepareCoordinateEntries(config: ImageWidgetConfig, name: string){
         var min = 0;
         var max = 100;
         if (config.attributeRefs && config.attributeRefs.length > 0) {
@@ -340,7 +325,7 @@ export class OrImageWidgetSettings extends LitElement {
         }
     }
 
-    handleFileInputChange(event: Event) {
+    private handleFileInputChange(event: Event) {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
         const input = event.target as HTMLInputElement;
         if (input.files && input.files[0]) {
@@ -352,27 +337,27 @@ export class OrImageWidgetSettings extends LitElement {
         }
     }
 
-    updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
+    private updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
         const oldWidget = JSON.parse(JSON.stringify(widget)) as DashboardWidget;
         widget.widgetConfig = config;
         this.requestUpdate("widget", oldWidget);
         this.forceParentUpdate(new Map<string, any>([["widget", widget]]), force);
     }
 
-    onAttributesUpdate(changes: Map<string, any>) {
+    private onAttributesUpdate(changes: Map<string, any>) {
         if (changes.has('loadedAssets')) {
             this.loadedAssets = changes.get('loadedAssets');
         }
     }
 
     // Method to update the Grid. For example after changing a setting.
-    forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
+    private forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
         this.requestUpdate();
         this.dispatchEvent(new CustomEvent('updated', { detail: { changes: changes, force: force } }));
     }
 
 
-    generateExpandableHeader(name: string): TemplateResult {
+    private generateExpandableHeader(name: string): TemplateResult {
         return html`
             <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
@@ -382,7 +367,7 @@ export class OrImageWidgetSettings extends LitElement {
     }
 
 
-    expandPanel(panelName: string): void {
+    private expandPanel(panelName: string): void {
         if (this.expandedPanels.includes(panelName)) {
             const indexOf = this.expandedPanels.indexOf(panelName, 0);
             if (indexOf > -1) {
