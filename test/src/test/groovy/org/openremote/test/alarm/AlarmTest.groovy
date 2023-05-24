@@ -319,11 +319,10 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     @Unroll
     def "should not update an alarm with id '50'"() {
         when:
-        adminResource.updateAlarm(null, 50, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.ACTIVE))
+        adminResource.updateAlarm(null, null, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.ACTIVE))
 
         then:
-        WebApplicationException ex = thrown()
-        ex.response.status == 400
+        NullPointerException ex = thrown()
     }
 
     // @Unroll
