@@ -16,8 +16,6 @@ import spock.util.concurrent.PollingConditions
 import spock.lang.Unroll
 import spock.lang.Shared
 
-import javax.ws.rs.WebApplicationException
-
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.container.util.MapAccess.getString
@@ -252,21 +250,80 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     // }
 }
 
-class AlarmTest extends BaseSpec implements ManagerContainerTrait{
     @Unroll
-    def "should create an alarm with name '#name' and description '#description'"() {
+    def "should create an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
         when:
-        def alarm = adminResource.sendAlarm(name, description)
+        def alarm = mockAlarmService.sendAlarm(new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
 
         then:
-        alarm != null
-        alarm.name == name
-        alarm.content == description
+        conditions.eventually {
+            alarm != null
+            alarm.title == title
+            alarm.content == content
+            alarm.severity == severity
+            alarm.status == status
+        }
 
         where:
-        name | description
-        "Test Alarm" | "Test Description"
-        "Another Alarm" | "Another Description"
+        title | content | severity | status
+        "Test Alarm" | "Test Description" | Severity.LOW | Alarm.Status.ACTIVE
+        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Status.RESOLVED
+    }
+
+    @Unroll
+    def "should not create an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
+        when:
+        def alarm = adminResource.createAlarm(null, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+
+        where:
+        title | content | severity | status
+        null | "Test Description" | Severity.LOW | Alarm.Status.ACTIVE
+        "Another Alarm" | null | Severity.MEDIUM | Alarm.Status.RESOLVED
+        "Another Test Alarm" | "Another Description" | null | Alarm.Status.RESOLVED
+    }
+
+    def "should return list of alarms"() {
+        when:
+        def output = adminResource.getAlarms()
+
+        then:
+        output != null
+        output.size() == 2
+    }
+
+    // @Unroll
+    // def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
+    //     when:
+    //     adminResource.updateAlarm(alarms[0].id, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
+    //     def updated = adminResource.getAlarms()[0]
+
+    //     then:
+    //     conditions.eventually {
+    //         updated != null
+    //         updated.title == title
+    //         updated.content == content
+    //         updated.severity == severity
+    //         updated.status == status
+    //     }
+
+    //     where:
+    //     title | content | severity | status
+    //     "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.ACTIVE
+    //     "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.INACTIVE
+    // }
+
+    @Unroll
+    def "should not update an alarm with id '50'"() {
+        when:
+        adminResource.updateAlarm(null, 50, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.ACTIVE))
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
     }
 
     // @Unroll
