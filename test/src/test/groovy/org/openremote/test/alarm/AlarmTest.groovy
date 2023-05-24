@@ -62,6 +62,10 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
             output ->
                 return alarms
         }
+        mockAlarmService.updateAlarm(_ as Long, _ as SentAlarm) >> {
+            output ->
+                return alarms[0]
+        }
 
         def adminAccessToken = authenticate(
                 container,
@@ -142,13 +146,12 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     // }
 
     @Unroll
-    def "should not update an alarm with id '50'"() {
+    def "should not update an alarm with id 'null'"() {
         when:
-        adminResource.updateAlarm(null, 50, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.ACTIVE))
+        adminResource.updateAlarm(null, null, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.ACTIVE))
 
         then:
-        WebApplicationException ex = thrown()
-        ex.response.status == 400
+        NullPointerException ex = thrown()
     }
 
     // @Unroll
