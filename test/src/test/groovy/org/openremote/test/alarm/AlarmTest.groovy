@@ -1,6 +1,7 @@
 package org.openremote.test.alarm
 
 import org.openremote.model.alarm.Alarm
+import org.openremote.model.alarm.Alarm.Severity
 import org.openremote.model.alarm.SentAlarm
 import org.openremote.model.alarm.AlarmResource
 import org.openremote.container.persistence.PersistenceService
@@ -13,6 +14,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 import spock.lang.Unroll
+import spock.lang.Shared
 
 import javax.ws.rs.WebApplicationException
 
@@ -23,76 +25,132 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import static org.openremote.model.util.ValueUtil.parse
+import jakarta.ws.rs.WebApplicationException
 
-abstract class BaseSpec extends Specification {
+class AlarmTest extends Specification implements ManagerContainerTrait{
+    @Shared
     List<SentAlarm> alarms = []
-    def conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
-    def container
-    def keycloakTestSetup
-    def managerTestSetup
-    def testuser1AccessToken
-    def adminAccessToken
-    def testuser1Resource
-    def adminResource
-    def anonymousResource
 
-    def setup() {
-        container = startContainer(defaultConfig(), defaultServices())
+    @Shared
+    static AlarmService mockAlarmService
+
+    @Shared 
+    static AlarmResource adminResource
+
+    @Shared
+    static KeycloakTestSetup keycloakTestSetup
+
+    @Shared
+    static ManagerTestSetup managerTestSetup
+
+    @Shared 
+    static PollingConditions conditions
+
+
+    def setupSpec() {
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
         keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         AlarmService alarmService = container.getService(AlarmService.class)
 
-        AlarmService mockAlarmService = Spy(alarmService)
-        mockAlarmService.sendAlarm(_ as Alarm) >> {
+        mockAlarmService = Spy(alarmService)
+        mockAlarmService.sendAlarm(_ as SentAlarm) >> {
             output ->
-                alarms << output
-                callRealMethod()
+                alarms << callRealMethod()
+                
         }
         mockAlarmService.getAlarms(_ as String, _ as String) >> {
-
+            output ->
+                return alarms
         }
 
-        testuser1AccessToken = authenticate(
-                container,
-                MASTER_REALM,
-                KEYCLOAK_CLIENT_ID,
-                "testuser1",
-                "testuser1"
-        ).token
-
-        adminAccessToken = authenticate(
+        def adminAccessToken = authenticate(
                 container,
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
-        
-        testuser1Resource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(AlarmResource.class)
+
         adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
-        anonymousResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AlarmResource.class)
     }
 
-    def cleanup() {
-        container.stop()
-    }
-}
 
-class AlarmTest extends BaseSpec implements ManagerContainerTrait{
     @Unroll
-    def "should create an alarm with name '#name' and description '#description'"() {
+    def "should create an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
         when:
-        def alarm = adminResource.sendAlarm(name, description)
+        def alarm = mockAlarmService.sendAlarm(new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
 
         then:
-        alarm != null
-        alarm.name == name
-        alarm.content == description
+        conditions.eventually {
+            alarm != null
+            alarm.title == title
+            alarm.content == content
+            alarm.severity == severity
+            alarm.status == status
+        }
 
         where:
-        name | description
-        "Test Alarm" | "Test Description"
-        "Another Alarm" | "Another Description"
+        title | content | severity | status
+        "Test Alarm" | "Test Description" | Severity.LOW | Alarm.Status.ACTIVE
+        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Status.RESOLVED
+    }
+
+    @Unroll
+    def "should not create an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
+        when:
+        def alarm = adminResource.createAlarm(null, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+
+        where:
+        title | content | severity | status
+        null | "Test Description" | Severity.LOW | Alarm.Status.ACTIVE
+        "Another Alarm" | null | Severity.MEDIUM | Alarm.Status.RESOLVED
+        "Another Test Alarm" | "Another Description" | null | Alarm.Status.RESOLVED
+    }
+
+    def "should return list of alarms"() {
+        when:
+        def output = adminResource.getAlarms()
+
+        then:
+        output != null
+        output.size() == 2
+    }
+
+    // @Unroll
+    // def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
+    //     when:
+    //     adminResource.updateAlarm(alarms[0].id, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
+    //     def updated = adminResource.getAlarms()[0]
+
+    //     then:
+    //     conditions.eventually {
+    //         updated != null
+    //         updated.title == title
+    //         updated.content == content
+    //         updated.severity == severity
+    //         updated.status == status
+    //     }
+
+    //     where:
+    //     title | content | severity | status
+    //     "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.ACTIVE
+    //     "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.INACTIVE
+    // }
+
+    @Unroll
+    def "should not update an alarm with id '50'"() {
+        when:
+        adminResource.updateAlarm(null, 50, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.ACTIVE))
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
     }
 
     // @Unroll
