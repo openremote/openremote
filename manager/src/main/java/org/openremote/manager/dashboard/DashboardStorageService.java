@@ -63,8 +63,11 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     // Querying dashboards from the database
     // userId is required for checking dashboard ownership. If userId is NULL, we assume the user is not logged in.
-    // canEdit can be used to only return editable dashboards when 'true'.
+    // editable can be used to only return dashboards where the user has edit access.
     protected Dashboard[] query(List<String> dashboardIds, String realm, String userId, Boolean publicOnly, Boolean editable) {
+        if(realm == null) {
+            throw new IllegalArgumentException("No realm is specified.");
+        }
         return persistenceService.doReturningTransaction(em -> {
             try {
                 CriteriaBuilder cb = em.getCriteriaBuilder();
@@ -72,11 +75,11 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 Root<Dashboard> root = cq.from(Dashboard.class);
 
                 List<Predicate> predicates = new ArrayList<>();
+                predicates.add(cb.like(root.get("realm"), realm));
+
                 if(dashboardIds != null) {
                     predicates.add(root.get("id").in(dashboardIds));
-                }
-                if(realm != null) {
-                    predicates.add(cb.like(root.get("realm"), realm));
+
                 }
                 // Apply EDIT ACCESS filters; always return PUBLIC dashboards, SHARED dashboards if access to the realm,
                 // and PRIVATE if you are the creator (ownerId) of the dashboard.
@@ -148,7 +151,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     protected boolean delete(String dashboardId, String realm, String userId) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(em -> {
 
-            // Get all dashboards that userId is able to EDIT, and has the same ID (which is only 1)
+            // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT
             Dashboard[] dashboards = this.query(Collections.singletonList(dashboardId), realm, userId, false, true);
             if(dashboards == null || dashboards.length == 0) {
                 throw new IllegalArgumentException("No dashboards could be found.");
