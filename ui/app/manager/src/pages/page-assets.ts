@@ -162,7 +162,6 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     protected _viewer!: OrAssetViewer;
 
     protected _addedAssetId?: string;
-    protected _currentStateJsonString?: string;
     protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
     get name(): string {
@@ -210,13 +209,12 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     // State is only utilised for initial loading, and for changes within the store.
     // On the assets page, we shouldn't change editMode nor assetIds if the URL/state hasn't changed.
     stateChanged(state: AppStateKeyed) {
-        const newStateJsonString: string = JSON.stringify(state.app);
-        if(this._currentStateJsonString != newStateJsonString) {
-            this.getRealmState(state); // Order is important here!
-            this._editMode = !!(state.app.params && state.app.params.editMode === "true");
+        // State is only utilised for initial loading
+        this.getRealmState(state); // Order is important here!
+        this._editMode = !!(state.app.params && state.app.params.editMode === "true");
+        if(!this._assetIds || this._assetIds.length === 0 && this._assetIds[0] === state.app.params.id) {
             this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
         }
-        this._currentStateJsonString = newStateJsonString;
     }
 
     protected _onAssetSelectionRequested(event: OrAssetTreeRequestSelectionEvent) {
