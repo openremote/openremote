@@ -142,7 +142,7 @@ export class OrDashboardTree extends LitElement {
 
     private deleteDashboard(dashboard: Dashboard) {
         if(dashboard.id != null) {
-            manager.rest.api.DashboardResource.delete({dashboardId: [dashboard.id]})
+            manager.rest.api.DashboardResource.delete(dashboard.id)
                 .then((response) => {
                     if(response.status == 204) {
                         this.getAllDashboards();

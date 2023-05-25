@@ -39,6 +39,7 @@ public interface DashboardResource {
     Dashboard update(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
 
     @DELETE
+    @Path("{dashboardId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_INSIGHTS_ROLE})
     void delete(@BeanParam RequestParams requestParams, @PathParam("dashboardId") String dashboardId);

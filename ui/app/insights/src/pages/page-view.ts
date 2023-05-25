@@ -301,15 +301,11 @@ export class PageView extends Page<AppStateKeyed> {
     isLoading(): boolean {
         return (this._activePromises.size > 0);
     }
-    async afterLoaded(): Promise<void> {
-        await Promise.all(this._activePromises);
-    }
-    doesPromiseExist(topic: string) {
-        return this._activePromises.has(topic);
-    }
+
     getPromise(topic: string) {
         return this._activePromises.get(topic);
     }
+
     registerPromise(topic: string, promise: Promise<any>, doUpdate: boolean = true, updateOnComplete: boolean = true): Promise<any> {
         if(this._activePromises.has(topic)) {
             promise = this._activePromises.get(topic);
@@ -320,6 +316,7 @@ export class PageView extends Page<AppStateKeyed> {
         if(doUpdate) { this.requestUpdate("_activePromises"); }
         return promise;
     }
+
     completePromise(topic: string, doUpdate: boolean = true) {
         this._activePromises.delete(topic);
         if(doUpdate) { this.requestUpdate("_activePromises"); }
