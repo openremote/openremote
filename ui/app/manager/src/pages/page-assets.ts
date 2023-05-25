@@ -209,7 +209,6 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     // State is only utilised for initial loading, and for changes within the store.
     // On the assets page, we shouldn't change editMode nor assetIds if the URL/state hasn't changed.
     stateChanged(state: AppStateKeyed) {
-        // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
         if(!this._assetIds || this._assetIds.length === 0 && this._assetIds[0] === state.app.params.id) {
