@@ -14,6 +14,8 @@ import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static jakarta.ws.rs.core.Response.Status.*;
@@ -32,46 +34,57 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
     @Override
     public Dashboard[] getAllRealmDashboards(RequestParams requestParams, String realm) {
-
+        boolean publicOnly;
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
         try {
+            // if not authenticated, or having no INSIGHTS access, only fetch public dashboards
             if(isAuthenticated()) {
-                if(!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                    throw new WebApplicationException(FORBIDDEN);
-                }
-                if(!isRealmActiveAndAccessible(realm)) {
-                    throw new WebApplicationException(FORBIDDEN);
-                }
+                publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
+            } else {
+                publicOnly = true;
             }
-            return this.dashboardStorageService.query(null, realm, getUserId(), false);
+            if(!isRealmActiveAndAccessible(realm)) {
+                publicOnly = true;
+            }
+            return this.dashboardStorageService.query(null, realm, getUserId(), publicOnly, false);
 
         } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
+            ex.printStackTrace();
+            throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
     public Dashboard get(RequestParams requestParams, String dashboardId) {
+        boolean publicOnly;
+        String realm;
         try {
-            if(isAuthenticated() && !hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                throw new WebApplicationException(FORBIDDEN);
+            // if not authenticated, or having no INSIGHTS access, only take public dashboards into count
+            if(isAuthenticated()) {
+                publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
+                realm = (isSuperUser() ? null : getAuthenticatedRealmName());
+            } else {
+                publicOnly = true;
+                realm = getRequestRealmName();
             }
-
-            Dashboard[] dashboards = this.dashboardStorageService.query(dashboardId, null, getUserId(), false);
+            if(!isRealmActiveAndAccessible(realm)) {
+                publicOnly = true;
+            }
+            Dashboard[] dashboards = this.dashboardStorageService.query(Collections.singletonList(dashboardId), realm, getUserId(), publicOnly, false);
             if(dashboards.length == 0) {
-                if(this.dashboardStorageService.exists(dashboardId)) {
+                if(!publicOnly && this.dashboardStorageService.exists(dashboardId)) {
                     throw new WebApplicationException(FORBIDDEN); // when no dashboard returned from query, but it does exist.
                 } else {
                     throw new WebApplicationException(NOT_FOUND); // aka it does not exist
                 }
             }
-            Dashboard d = dashboards[0]; // only return first entry
-            if(isAuthenticated() && !isRealmActiveAndAccessible(d.getRealm())) {
-                throw new WebApplicationException(FORBIDDEN);
-            }
-            return d;
+            return dashboards[0]; // only return first entry
 
         } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
+            ex.printStackTrace();
+            throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -79,7 +92,6 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     public Dashboard create(RequestParams requestParams, Dashboard dashboard) {
         try {
 
-            // Check if access to realm
             if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
                 throw new WebApplicationException(FORBIDDEN);
             }
@@ -96,14 +108,14 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     }
 
     @Override
-    public void update(RequestParams requestParams, Dashboard dashboard) {
+    public Dashboard update(RequestParams requestParams, Dashboard dashboard) {
         try {
-
-            // Check if access to realm
             if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            this.dashboardStorageService.update(ValueUtil.clone(dashboard), getUserId());
+            return this.dashboardStorageService.update(ValueUtil.clone(dashboard), dashboard.getRealm(), getUserId());
+        } catch (IllegalArgumentException ex) {
+            throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
@@ -111,9 +123,16 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     }
 
     @Override
-    public void delete(RequestParams requestParams, List<String> fields) {
+    public void delete(RequestParams requestParams, String dashboardId) {
+
+        if(!isRealmActiveAndAccessible(getRequestRealmName())) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
         try {
-            this.dashboardStorageService.delete(fields, getUserId());
+            String realm = (isSuperUser() ? null : getAuthenticatedRealmName());
+            this.dashboardStorageService.delete(dashboardId, realm, getUserId());
+        } catch (IllegalArgumentException ex) {
+            throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);

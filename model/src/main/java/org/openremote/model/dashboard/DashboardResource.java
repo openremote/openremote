@@ -36,10 +36,10 @@ public interface DashboardResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_INSIGHTS_ROLE})
-    void update(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
+    Dashboard update(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
 
     @DELETE
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_INSIGHTS_ROLE})
-    void delete(@BeanParam RequestParams requestParams, @QueryParam("dashboardId") List<String> fields);
+    void delete(@BeanParam RequestParams requestParams, @PathParam("dashboardId") String dashboardId);
 }

@@ -5,7 +5,6 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import jakarta.ws.rs.WebApplicationException;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -17,12 +16,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.dashboard.DashboardAccess;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+import java.util.*;
 
 public class DashboardStorageService extends RouteBuilder implements ContainerService {
 
@@ -70,7 +64,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     // Querying dashboards from the database
     // userId is required for checking dashboard ownership. If userId is NULL, we assume the user is not logged in.
     // canEdit can be used to only return editable dashboards when 'true'.
-    protected <T extends Dashboard> Dashboard[] query(String dashboardId, String realm, String userId, Boolean canEdit) {
+    protected Dashboard[] query(List<String> dashboardIds, String realm, String userId, Boolean publicOnly, Boolean editable) {
         return persistenceService.doReturningTransaction(em -> {
             try {
                 CriteriaBuilder cb = em.getCriteriaBuilder();
@@ -78,26 +72,34 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 Root<Dashboard> root = cq.from(Dashboard.class);
 
                 List<Predicate> predicates = new ArrayList<>();
-                if(dashboardId != null) {
-                    predicates.add(cb.like(root.get("id"), dashboardId));
+                if(dashboardIds != null) {
+                    predicates.add(root.get("id").in(dashboardIds));
                 }
                 if(realm != null) {
                     predicates.add(cb.like(root.get("realm"), realm));
                 }
                 // Apply EDIT ACCESS filters; always return PUBLIC dashboards, SHARED dashboards if access to the realm,
                 // and PRIVATE if you are the creator (ownerId) of the dashboard.
-                if(Boolean.TRUE.equals(canEdit)) {
-                    predicates.add(cb.or(
-                            root.get("editAccess").in(DashboardAccess.PUBLIC, (userId != null ? DashboardAccess.SHARED : null)),
-                            cb.and(root.get("editAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId))
-                    ));
+                if(Boolean.TRUE.equals(editable)) {
+                    if(publicOnly) {
+                        predicates.add(cb.equal(root.get("editAccess"), DashboardAccess.PUBLIC));
+                    } else {
+                        predicates.add(cb.or(
+                                root.get("editAccess").in(DashboardAccess.PUBLIC, (userId != null ? DashboardAccess.SHARED : null)),
+                                cb.and(root.get("editAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId))
+                        ));
+                    }
                 }
                 // Apply VIEW ACCESS filters; always return PUBLIC dashboards, SHARED dashboards if access to the realm,
                 // and PRIVATE if you are the creator (ownerId) of the dashboard.
-                predicates.add(cb.or(
-                        root.get("viewAccess").in(DashboardAccess.PUBLIC, (userId != null ? DashboardAccess.SHARED : null)),
-                        cb.and(root.get("viewAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId))
-                ));
+                if(publicOnly) {
+                    predicates.add(cb.equal(root.get("viewAccess"), DashboardAccess.PUBLIC));
+                } else {
+                    predicates.add(cb.or(
+                            root.get("viewAccess").in(DashboardAccess.PUBLIC, (userId != null ? DashboardAccess.SHARED : null)),
+                            cb.and(root.get("viewAccess").in(DashboardAccess.PRIVATE), root.get("ownerId").in(userId))
+                    ));
+                }
 
                 CriteriaQuery<Dashboard> all = cq.select(root).where(predicates.toArray(new Predicate[]{}));
                 return em.createQuery(all).getResultList().toArray(new Dashboard[0]);
@@ -117,7 +119,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
 
     // Creation of initial dashboard (so no updating!)
-    protected <T extends Dashboard> T createNew(T dashboard) {
+    protected Dashboard createNew(Dashboard dashboard) {
         return persistenceService.doReturningTransaction(em -> {
             if(dashboard.getId() != null && dashboard.getId().length() > 0) {
                 Dashboard d = em.find(Dashboard.class, dashboard.getId()); // checking whether dashboard is already in database
@@ -130,42 +132,31 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     }
 
     // Update of an existing dashboard
-    protected <T extends Dashboard> T update(T dashboard, String userId) {
-        return persistenceService.doReturningTransaction(em -> {
-            Dashboard d = em.find(Dashboard.class, dashboard.getId());
-            if(d != null) {
-                if(d.getEditAccess() == DashboardAccess.PRIVATE && !(d.getOwnerId().equals(userId))) {
-                        throw new WebApplicationException("You are not allowed to edit this dashboard!", FORBIDDEN);
-
-                }
-                dashboard.setVersion(d.getVersion()); // Always forcing to the correct version, no matter what.
+    protected Dashboard update(Dashboard dashboard, String realm, String userId) throws IllegalArgumentException {
+        Dashboard[] dashboards = this.query(Collections.singletonList(dashboard.getId()), realm, userId, false, true); // Get dashboards that userId is able to EDIT.
+        if(dashboards != null && dashboards.length > 0) {
+            Dashboard d = dashboards[0];
+            return persistenceService.doReturningTransaction(em -> {
+                dashboard.setVersion(d.getVersion());
                 return em.merge(dashboard);
-            } else {
-                throw new WebApplicationException("This dashboard does not exist!", NOT_FOUND);
-            }
-        });
+            });
+        } else {
+            throw new IllegalArgumentException("This dashboard does not exist!");
+        }
     }
 
-    protected boolean delete(List<String> dashboardIds, String userId) {
+    protected boolean delete(String dashboardId, String realm, String userId) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(em -> {
-            try {
-                Dashboard[] dashboards = this.query(null, null, userId, true); // Get dashboards that userId is able to EDIT.
-                Collection<String> toDelete = new ArrayList<>();
-                for(Dashboard d : dashboards) {
-                    if(dashboardIds.contains(d.getId())) {
-                        toDelete.add(d.getId());
-                    }
-                }
-                if(!toDelete.isEmpty()) {
-                    Query query = em.createQuery("DELETE from Dashboard d WHERE d.id in (?1)");
-                    query.setParameter(1, toDelete);
-                    query.executeUpdate();
-                }
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
+
+            // Get all dashboards that userId is able to EDIT, and has the same ID (which is only 1)
+            Dashboard[] dashboards = this.query(Collections.singletonList(dashboardId), realm, userId, false, true);
+            if(dashboards == null || dashboards.length == 0) {
+                throw new IllegalArgumentException("No dashboards could be found.");
             }
+            Query query = em.createQuery("DELETE from Dashboard d where d.id=?1");
+            query.setParameter(1, dashboardId);
+            query.executeUpdate();
+            return true;
         });
     }
 }
