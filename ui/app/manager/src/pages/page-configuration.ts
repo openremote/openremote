@@ -154,9 +154,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected mapConfig: {[id: string]: any};
 
-    @state()
-    protected promises: Map<string, Promise<any>> = new Map();
-
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
 
@@ -168,25 +165,22 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     // On every update..
     willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
-        if(this.managerConfiguration === undefined && !this.promises.has('getManagerConfig')) {
-            this.getManagerConfig(false).then((config) => {
-                this.managerConfiguration = config
-            }).catch((reason) => {
-                console.error(reason);
-                this.managerConfiguration = null;
-            }).finally(() => {
-                this.completePromise('getManagerConfig');
-            });
+
+        let managerConfigPromise;
+        if(this.managerConfiguration === undefined) {
+            managerConfigPromise = this.getManagerConfig();
         }
-        if(this.mapConfig === undefined && !this.promises.has('getMapConfig')) {
-            this.getMapConfig(false).then((config) => {
-                this.mapConfig = config;
-            }).catch((reason) => {
-                console.error(reason);
-                this.mapConfig = null;
-            }).finally(() => {
-                this.completePromise('getMapConfig');
-            });
+        let mapConfigPromise;
+        if(this.mapConfig === undefined) {
+            mapConfigPromise = this.getMapConfig();
+        }
+
+        // Wait for both promises to complete, to only update UI once.
+        if(managerConfigPromise || mapConfigPromise) {
+            Promise.all([managerConfigPromise, mapConfigPromise]).then((values) => {
+                this.managerConfiguration = values[0];
+                this.mapConfig = values[1];
+            })
         }
     }
 
@@ -197,7 +191,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         if (!manager.authenticated) {
             return html`<or-translate value="notAuthenticated"></or-translate>`;
         }
-        const loading = this.isLoading();
+        const loading = (this.managerConfiguration === undefined || this.mapConfig === undefined);
         return html`
             ${when(loading, () => html`
                 <or-loading-indicator></or-loading-indicator>
@@ -241,19 +235,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     // FETCH METHODS
 
-    protected async getManagerConfig(autoComplete = true): Promise<ManagerAppConfig | undefined> {
+    protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
         console.error("getManagerConfig()");
-        const promise = fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" });
-        this.registerPromise('getManagerConfig', promise, autoComplete);
-        const response = await promise;
+        const response = await fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" });
         return await response.json() as ManagerAppConfig;
     }
 
-    protected async getMapConfig(autoComplete = true): Promise<{[id: string]: any}> {
+    protected async getMapConfig(): Promise<{[id: string]: any}> {
         console.error("getMapConfig()");
-        const promise = manager.rest.api.MapResource.getSettings();
-        this.registerPromise('getMapConfig', promise, autoComplete);
-        const response = await promise;
+        const response = await manager.rest.api.MapResource.getSettings();
         return (response.data.options as {[id: string]: any});
     }
 
@@ -273,28 +263,5 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         })
         manager.rest.api.MapResource.saveSettings(this.mapConfig).then(() => {
         })
-    }
-
-    /* ---------------------------------------------------- */
-
-    // PROMISE HANDLING
-
-    protected registerPromise(index: string, promise: Promise<any>, autoComplete = true) {
-        this.promises.set(index, promise);
-        this.requestUpdate("promises");
-        if(autoComplete) {
-            promise.finally(() => {
-                this.completePromise(index);
-            });
-        }
-    }
-
-    protected completePromise(index: string) {
-        this.promises.delete(index);
-        this.requestUpdate("promises");
-    }
-
-    protected isLoading(): boolean {
-        return this.promises.size > 0;
     }
 }
