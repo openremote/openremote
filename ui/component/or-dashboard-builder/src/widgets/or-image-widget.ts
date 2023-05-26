@@ -13,12 +13,10 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
-    attributeCoordinates: Map<string, [number, number]>;
-    xCoordinates: number;
-    yCoordinates: number;
+    xCoordinatesMap: [number];
+    yCoordinatesMap: [number];
     showTimestampControls: boolean;
     imageUploaded: boolean;
-    //currently uses this --> needs to use the image variable on ln 17
     imagePath: string;
     assets: Asset[];
 }
@@ -36,16 +34,13 @@ export class OrImageWidget implements OrWidgetEntity {
         return {
             displayName: widget?.displayName,
             attributeRefs: [],
-            xCoordinates: 0,
-            yCoordinates: 0,
-            // set to 100 to avoid min and max both being 0
-            imgSize: [100,100],
-            attributeCoordinates: new Map<string, [number, number]>(),
+            xCoordinatesMap: [],
+            yCoordinatesMap: [],
             showTimestampControls: false,
             imageUploaded: false,
             imagePath: "https://home3ds.com/wp-content/uploads/2018/11/PNG.png",
             assets: []
-        } as ImageWidgetConfig;
+        } as unknown as ImageWidgetConfig;
     }
 
     
@@ -72,14 +67,12 @@ export class OrImageWidgetContent extends LitElement {
     @state()
     private assetAttributes: [number, Attribute<any>][] = [];
     @state()
-    private attributeCoordinates: Record<string, [number, number]> = {};
-    @state()
     private image?: HTMLInputElement;
     @state()
     private imageSize?: { width: number, height: number }
     @state()
     private loadedAssets: Asset[] = [];
-    private resizeObserver?: ResizeObserver;
+    
     @property()
     public editMode?: boolean;
     @state()
@@ -88,34 +81,20 @@ export class OrImageWidgetContent extends LitElement {
     public realm?: string;
     @property()
     public readonly widget?: DashboardWidget;
-
-    private calculateMarkerPosition(markerValue: Number, maxValue: Number) {
-        var percentage: Number = 0;
-        // .valueOf() is added to avoid TS2362 error
-        percentage = (markerValue.valueOf() / maxValue.valueOf()) * 100;
-
-        return percentage;
-    }
+    private resizeObserver?: ResizeObserver;
 
     private getProportionalPosition(propPos: number, maxSize: number){
         var pos = propPos;
         if (typeof maxSize !== 'undefined') {
             pos = (propPos / 100) * maxSize;
         }
-
         return pos;
     }
 
     private handleContainerSizing(config: ImageWidgetConfig){
-        
-
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-
-                var sizeBeforeWidth = this.imageSize?.width;
                 const size = entries[0].contentRect;
-                console.log("size before width = " + sizeBeforeWidth);
-                console.log("size after width = " + size.width);
                 this.imageSize = {
                     width: size.width,
                     height: size.height
@@ -129,19 +108,22 @@ export class OrImageWidgetContent extends LitElement {
     }
 
     private handleMarkerPlacement(config: ImageWidgetConfig) {
-        var xPropPos = config.xCoordinates;
-        var yPropPos = config.yCoordinates;
         var xMax = this.imageSize?.width;
         var yMax = this.imageSize?.height;
 
-        var xPos = this.getProportionalPosition(xPropPos, xMax!);
-        var yPos = this.getProportionalPosition(yPropPos, yMax!);
         if (this.assetAttributes && config.attributeRefs.length > 0) {
 
             return this.assetAttributes.map((attribute) => 
             (
                 html`
-                <span id="overlay" style="top: ${yPos}px; left: ${xPos}px;">${attribute[1].value}</span>
+                <span id="overlay" style="
+                left: ${
+                    this.getProportionalPosition(config.xCoordinatesMap[this.assetAttributes.indexOf(attribute)], xMax!)
+                }px;
+                top: ${
+                    this.getProportionalPosition(config.yCoordinatesMap[this.assetAttributes.indexOf(attribute)], yMax!)
+                }px;
+                ">${attribute[1].value}</span>
                 `
             ));
         }
@@ -209,6 +191,7 @@ export class OrImageWidgetContent extends LitElement {
                     const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
                     const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
                     return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
+
                 }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
                 this.handleContainerSizing(this.widget?.widgetConfig);
                 this.requestUpdate();
@@ -257,11 +240,7 @@ export class OrImageWidgetSettings extends LitElement {
     public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
     // UI Rendering
     render() {
-        
-        //why do some methods use the config variable and other refernce the widget directly??????
-        //what is the reason to do it one way or the other --> unclear
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
-
 
         var output = html`
             <div>
@@ -304,20 +283,19 @@ export class OrImageWidgetSettings extends LitElement {
         var max = 100;
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             this.updateConfig(this.widget!, config);
+            console.log("Okay so I think we need to initialize the map here by why doesn't it work when we did earlier");
             return config.attributeRefs.map((attr) => 
             (html`
                     <div style="margin: 5%; font-family: inherit; width: 100%;">${attr.name}</div>
-                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.xCoordinates}"
+                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.xCoordinatesMap[config.attributeRefs.indexOf(attr)]}"
                     @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        console.log("Log from prepareCoordinateEntries OrInputChangedEvent");
-                        console.log(config);
-                        config.xCoordinates = event.detail.value;
+                        config.xCoordinatesMap[config.attributeRefs.indexOf(attr)] = event.detail.value;
                         this.updateConfig(this.widget!, config);
                     }}"
                     ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.yCoordinates}"
+                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.yCoordinatesMap[config.attributeRefs.indexOf(attr)]}"
                     @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        config.yCoordinates = event.detail.value;
+                        config.yCoordinatesMap[config.attributeRefs.indexOf(attr)] = event.detail.value;
                         this.updateConfig(this.widget!, config);
                     }}"
                     ></or-mwc-input>`));
@@ -345,6 +323,11 @@ export class OrImageWidgetSettings extends LitElement {
     }
 
     private onAttributesUpdate(changes: Map<string, any>) {
+        // I think this is one of the places worth looking into where the attributes update is responsible for
+        // in my head then we should be initializing the xCoordinatesMap/ yCoordinatesMap at this point but I'm 
+        // not actually sure yet since this method only takes in some map of changes
+        console.log(this.widget?.widgetConfig);
+        // since it's just a key change maybe there's a "key for the xCoordinatesMap"
         if (changes.has('loadedAssets')) {
             this.loadedAssets = changes.get('loadedAssets');
         }
