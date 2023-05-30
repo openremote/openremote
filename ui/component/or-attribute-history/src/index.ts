@@ -321,8 +321,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     <div id="msg">
                         <or-translate value="invalidAttribute"></or-translate>
                     </div>
-                ` : isChart
-            ? html`
+                ` : isChart ? html`
                         <div id="chart-container">
                             <canvas id="chart"></canvas>
                         </div>
@@ -335,8 +334,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         `;
     }
 
-    updated(changedProperties: PropertyValues) {
-        super.updated(changedProperties);
+    // Method that is executed during an update, to compute (additional) values before rendering.
+    // Used instead of updated() to prevent a second render when properties get changed.
+    willUpdate(changedProperties: PropertyValues) {
+        super.willUpdate(changedProperties);
 
         if (!this._type || !this._data) {
             return;
@@ -445,6 +446,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 }
             }
         } else {
+            // Updating the table template before render, if necessary, to prevent additional update
             if (!this._tableTemplate || changedProperties.has("_data")) {
                 this._tableTemplate = this._getTableTemplate();
             }
