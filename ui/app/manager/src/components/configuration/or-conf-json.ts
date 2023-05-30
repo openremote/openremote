@@ -30,80 +30,82 @@ import { ManagerAppConfig } from "@openremote/model";
 @customElement("or-conf-json")
 export class OrConfJson extends LitElement {
 
-  @property({attribute: false})
-  public managerConfig: ManagerAppConfig = {};
+    @property({attribute: false})
+    public managerConfig: ManagerAppConfig = {};
 
-  protected _aceEditor: Ref<OrAceEditor> = createRef();
+    protected _aceEditor: Ref<OrAceEditor> = createRef();
 
-  public beforeSave():false|string|undefined {
-    if (!this._aceEditor.value) {
-      return false;
+    public beforeSave():false|string|undefined {
+        if (!this._aceEditor.value) {
+            return false;
+        }
+        const value = this._aceEditor.value.getValue()
+        try {
+            const parsedJSON = JSON.parse(value || '{}');
+            console.error(parsedJSON);
+            return parsedJSON;
+        } catch (e) {
+            return false;
+        }
     }
-    const value = this._aceEditor.value.getValue()
-    try {
-      return JSON.parse(value ? value : '{}');
-    } catch (e) {
-      return false;
+
+    protected _showManagerConfigDialog(){
+        const _saveConfig = ()=>{
+            const config = this.beforeSave()
+            if (config){
+                this.managerConfig = config as ManagerAppConfig
+                document.dispatchEvent(
+                    new CustomEvent('saveLocalManagerConfig',
+                        {detail: {value: this.managerConfig}}
+                    )
+                )
+                return true
+            }
+            return false
+        }
+        const dialogActions: DialogAction[] = [
+            {
+                actionName: "cancel",
+                content: i18next.t("cancel")
+            },
+            {
+                actionName: "ok",
+                content: i18next.t("update"),
+                action: _saveConfig
+            },
+
+        ];
+        const dialog = showDialog(new OrMwcDialog()
+            .setActions(dialogActions)
+            .setHeading("manager_config.json")
+            .setContent(html `<or-ace-editor ${ref(this._aceEditor)} .value="${this.managerConfig}" ></or-ace-editor>`)
+            .setStyles(html`
+                <style>
+                    .mdc-dialog__surface {
+                        width: 1024px;
+                        overflow-x: visible !important;
+                        overflow-y: visible !important;
+                    }
+                    #dialog-content {
+                        border-top-width: 1px;
+                        border-top-style: solid;
+                        border-bottom-width: 1px;
+                        border-bottom-style: solid;
+                        padding: 0;
+                        overflow: visible;
+                        height: 60vh;
+                    }
+                </style>
+            `)
+            .setDismissAction(null));
+
     }
-  }
 
-  protected _showManagerConfigDialog(){
-    const _saveConfig = ()=>{
-      const config = this.beforeSave()
-      if (config){
-        this.managerConfig = config as ManagerAppConfig
-        document.dispatchEvent(
-          new CustomEvent('saveLocalManagerConfig',
-            {detail: {value: this.managerConfig}}
-          )
-        )
-        return true
-      }
-      return false
+    render() {
+        return html`
+            <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => {this._showManagerConfigDialog()}}"></or-mwc-input>
+        `
     }
-    const dialogActions: DialogAction[] = [
-      {
-        actionName: "cancel",
-        content: i18next.t("cancel")
-      },
-      {
-        actionName: "ok",
-        content: i18next.t("update"),
-        action: _saveConfig
-      },
-
-    ];
-    const dialog = showDialog(new OrMwcDialog()
-      .setActions(dialogActions)
-      .setHeading("manager_config.json")
-      .setContent(html `<or-ace-editor ${ref(this._aceEditor)} .value="${this.managerConfig}" ></or-ace-editor>`)
-      .setStyles(html`
-                        <style>
-                          .mdc-dialog__surface {
-                            width: 1024px;
-                            overflow-x: visible !important;
-                            overflow-y: visible !important;
-                          }
-                          #dialog-content {
-                            border-top-width: 1px;
-                            border-top-style: solid;
-                            border-bottom-width: 1px;
-                            border-bottom-style: solid;
-                            padding: 0;
-                            overflow: visible;
-                            height: 60vh;
-                          }
-                        </style>
-                    `)
-      .setDismissAction(null));
-
-  }
-
-  render() {
-    return html`
-      <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => {this._showManagerConfigDialog()}}"></or-mwc-input>
-    `
-  }
 
 
 

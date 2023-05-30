@@ -30,7 +30,7 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "../components/configuration/or-conf-json";
 import "../components/configuration/or-conf-realm/index";
 import "../components/configuration/or-conf-map/index";
-import {ManagerAppConfig} from "@openremote/model";
+import {ManagerAppConfig, MapRealmConfig} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 
@@ -54,10 +54,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     static get styles() {
         // language=CSS
         return css`
-            .main-content {
-                display: unset !important;
-            }
-
             :host {
                 flex: 1;
                 width: 100%;
@@ -131,10 +127,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                     border-right: 0px;
                     width: 100%;
                     --or-panel-border-radius: 0;
-                }
-
-                #header-wrapper {
-                    /*width: 100%*/
                 }
 
                 .hide-mobile {
@@ -212,10 +204,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 ${i18next.t("appearance")}
                             </div>
                             <div id="header-actions">
-                                <!--<or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
-                                              @saveLocalManagerConfig="${(ev: CustomEvent) => { this.managerConfiguration = ev.detail.value as ManagerAppConfig }}"
-                                ></or-conf-json>-->
-                                <or-mwc-input id="save-btn" raised type="button" .label="${i18next.t("save")}" @click="${() => this.saveAllConfigs(this.managerConfiguration)}"></or-mwc-input>
+                                <or-mwc-input id="save-btn" raised type="button" .label="${i18next.t("save")}"
+                                              @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
+                                ></or-mwc-input>
                             </div>
                         </div>
                         <or-panel .heading="${realmHeading}">
@@ -248,7 +239,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     // TODO: Improve this code
-    protected saveAllConfigs(config: ManagerAppConfig) {
+    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: {[p: string]: MapRealmConfig}) {
+        console.error(config);
         manager.rest.api.ConfigurationResource.update(config)
             .then(() => {
                 fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
@@ -260,8 +252,14 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
             }).catch((reason) => {
                 console.error(reason);
-        })
-        manager.rest.api.MapResource.saveSettings(this.mapConfig).then(() => {
-        })
+            });
+
+        console.error(mapConfig)
+        manager.rest.api.MapResource.saveSettings(mapConfig)
+            .then(() => {
+                this.mapConfig = mapConfig;
+            }).catch((reason) => {
+                console.error(reason);
+            });
     }
 }
