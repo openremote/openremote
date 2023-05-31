@@ -19,6 +19,7 @@
  */
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { when } from 'lit/directives/when.js';
 import "@openremote/or-components/or-file-uploader";
 import { i18next } from "@openremote/or-translate";
 import { MapRealmConfig } from "@openremote/model";
@@ -102,6 +103,9 @@ export class OrConfMapCard extends LitElement {
 
     @property({ type: Boolean })
     expanded: boolean = false;
+
+    @property()
+    public canRemove: boolean = false;
 
     @property({ attribute: true })
     public onRemove: CallableFunction = () => {
@@ -288,13 +292,13 @@ export class OrConfMapCard extends LitElement {
                             </div>
                         </div>
                     </div>
-
-
-                    <or-mwc-input outlined .type="${InputType.BUTTON}" id="remove-map"
-                                  .label="${i18next.t("configuration.deleteMapCustomization")}"
-                                  @click="${() => {
-                                      this._showRemoveMapDialog();
-                                  }}"></or-mwc-input>
+                    
+                    ${when(this.canRemove, () => html`
+                        <or-mwc-input outlined .type="${InputType.BUTTON}" id="remove-map"
+                                      .label="${i18next.t("configuration.deleteMapCustomization")}"
+                                      @click="${() => { this._showRemoveMapDialog(); }}"
+                        ></or-mwc-input>
+                    `)}
                 </div>
             </or-collapsible-panel>
         `;

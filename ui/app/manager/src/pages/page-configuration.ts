@@ -243,13 +243,13 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         console.error(config);
         manager.rest.api.ConfigurationResource.update(config)
             .then(() => {
-                fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
+                /* fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
                 this.managerConfiguration = config;
                 Object.entries(this.managerConfiguration.realms).map(([name, settings]) => {
                     fetch(this.urlPrefix + settings?.favicon, {cache: "reload"});
                     fetch(this.urlPrefix + settings?.logo, {cache: "reload"});
                     fetch(this.urlPrefix + settings?.logoMobile, {cache: "reload"});
-                });
+                }); */
             }).catch((reason) => {
                 console.error(reason);
             });
