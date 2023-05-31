@@ -169,6 +169,10 @@ const style = css`
         padding: 0 24px
     }
 
+    .mdc-dialog .mdc-dialog__surface {
+        outline: none;
+    }
+    
     @media (min-width: 1280px) {
         .mdc-dialog .mdc-dialog__surface {
             max-width: 1024px;
