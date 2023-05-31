@@ -91,13 +91,18 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
+            // Realm should be accessible
+            if(!isRealmActiveAndAccessible(asset.getRealm())) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
             // If not logged in, asset should be PUBLIC READ
             if(!isAuthenticated() && !asset.isAccessPublicRead()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            // Realm should be accessible with correct permissions when logged in
-            if(isAuthenticated() && (!isRealmActiveAndAccessible(asset.getRealm()) || !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID))) {
+            // If logged in, user should have READ ASSETS role
+            if(isAuthenticated() && !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
@@ -105,6 +110,15 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
                     new WebApplicationException(Response.Status.NOT_FOUND)
             );
+
+            // If restricted, the attribute should also be restricted
+            if(isRestrictedUser()) {
+                attribute.getMeta().getValue(MetaItemType.ACCESS_RESTRICTED_READ).ifPresentOrElse((v) -> {
+                    if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
+                }, () -> {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                });
+            }
 
             // If not logged in, attribute should be PUBLIC READ
             if(!isAuthenticated()) {
