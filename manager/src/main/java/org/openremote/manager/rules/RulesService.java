@@ -152,6 +152,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected boolean initDone;
     protected boolean startDone;
     protected Summary rulesFiringSummary;
+    protected Summary rulesFiringAllSummary;
     protected Gauge rulesFactCount;
 
 
@@ -187,6 +188,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         if (meterRegistry != null) {
             rulesFiringSummary = Summary.build().name("or_rules_firing_seconds").labelNames("type", "id").help("Rule engine firing seconds").register();
+            rulesFiringAllSummary = Summary.build().name("or_rules_firing_all_seconds").help("Rule engines firing seconds").register();
             rulesFactCount = Gauge.build().name("or_rules_facts").labelNames("type", "id").help("Rule engine fact count").register();
         }
 

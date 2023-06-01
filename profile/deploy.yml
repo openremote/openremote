@@ -101,6 +101,7 @@ services:
       - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
       - "${OR_SSL_PORT:-443}:443" # HTTPS /auth directs to keycloak and other paths direct to manager
       - "8883:8883" # MQTTS
+      - "127.0.0.1:8404:8404" # Localhost metrics access
 
   # The OpenRemote Manager
   manager:

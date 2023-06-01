@@ -529,6 +529,9 @@ public class RulesEngine<T extends Ruleset> {
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
         long executionTotalMillis = 0L;
+        Summary.Timer allTimer = rulesService.rulesFiringSummary != null
+            ? rulesService.rulesFiringAllSummary.startTimer()
+            : null;
         Summary.Timer timer = rulesService.rulesFiringSummary != null
             ? rulesService.rulesFiringSummary.labels(id.getScope().getSimpleName(), getEngineId()).startTimer()
             : null;
@@ -582,6 +585,7 @@ public class RulesEngine<T extends Ruleset> {
 
         if (timer != null) {
             timer.observeDuration();
+            allTimer.observeDuration();
         }
 
         if (executionTotalMillis > 100) {

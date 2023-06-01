@@ -68,7 +68,7 @@ RUN mkdir -p /deployment/manager/extensions
 
 WORKDIR /opt/app
 
-ADD lib /opt/app/lib
+ADD lib set
 ADD web /opt/web
 ADD map /opt/map
 COPY ./extension[s]/ /deployment/manager/extensions/

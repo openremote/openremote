@@ -201,9 +201,10 @@ Resources:
       AWS::CloudFormation::Init:
         configSets:
           default:
+            - setupCfnHup
+            - create_swapfile
             - cloudwatch_config
-            - 01_setupCfnHup
-            - 02_restart_amazon-cloudwatch-agent
+            - restart_amazon-cloudwatch-agent
             - docker_setup
             - cron_setup
             - env_vars
@@ -211,6 +212,22 @@ Resources:
             - s3_backup_service
             - deployment_local_dir
             - daily_cleanup
+
+        create_swapfile:
+          commands:
+            01_swapfile:
+              command: |
+                if [ -f "/swapfile" ]; then
+                  echo "Swapfile already exists"
+                  exit 0
+                fi
+                
+                dd if=/dev/zero of=/swapfile bs=128M count=32
+                chmod 600 /swapfile
+                mkswap /swapfile
+                swapon /swapfile
+                echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+
 
         cloudwatch_config:
           files:
@@ -253,7 +270,10 @@ Resources:
                           "metric_namespace": "CWAgent-Prometheus",
                           "metric_unit": {
                             "or_rules_facts": "Count",
-                            "or_rules_firing_seconds": "Seconds",
+                            "or_rules_firing_seconds_sum": "Seconds",
+                            "or_rules_firing_seconds_count": "Count",
+                            "or_rules_firing_all_seconds_sum": "Seconds",
+                            "or_rules_firing_all_seconds_count": "Count",
                             "or_camel_route_failed_total": "Count",
                             "or_camel_route_total": "Count",
                             "or_camel_route_seconds_max": "Seconds",
@@ -270,6 +290,16 @@ Resources:
                             "haproxy_server_total_time_average_seconds": "Seconds"
                           },
                           "metric_declaration": [
+                            {
+                              "source_labels": [ "job" ],
+                              "label_matcher": "^manager$",
+                              "dimensions": [
+                                [ "instance_name" ]
+                              ],
+                              "metric_selectors": [
+                                "^or_rules_firing_all.*$"
+                              ]
+                            },
                             {
                               "source_labels": [ "job" ],
                               "label_matcher": "^manager$",
@@ -719,7 +749,7 @@ Resources:
               command: |
                 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/config.json
 
-        01_setupCfnHup:
+        setupCfnHup:
           files:
             '/etc/cfn/cfn-hup.conf':
               content: !Sub |
