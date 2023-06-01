@@ -35,6 +35,7 @@ import manager, {
 import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {when} from 'lit/directives/when.js';
 
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
@@ -121,9 +122,8 @@ export class OrConfRealmCard extends LitElement {
     @property({type: Boolean})
     expanded: boolean = false;
 
-    @property({ attribute: true })
-    public onRemove: CallableFunction = () => {
-    };
+    @property()
+    public canRemove: boolean = false;
 
     protected logo:string = this.realm.logo;
     protected logoMobile:string = this.realm.logoMobile;
@@ -231,7 +231,9 @@ export class OrConfRealmCard extends LitElement {
                 default: true,
                 actionName: "ok",
                 content: i18next.t("yes"),
-                action: () => {this.onRemove()}},
+                action: () => {
+                    this.dispatchEvent(new CustomEvent("remove"));
+                }},
 
         ];
         const dialog = showDialog(new OrMwcDialog()
@@ -350,11 +352,12 @@ export class OrConfRealmCard extends LitElement {
                         </div>
                     </div>
 
-                    <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
-                                  .label="${i18next.t("configuration.deleteRealmCustomization")}"
-                                  @click="${() => {
-                                      this._showRemoveRealmDialog();
-                                  }}"></or-mwc-input>
+                    ${when(this.canRemove, () => html`
+                        <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
+                                      .label="${i18next.t("configuration.deleteRealmCustomization")}"
+                                      @click="${() => { this._showRemoveRealmDialog(); }}"
+                        ></or-mwc-input>
+                    `)}
                 </div>
             </or-collapsible-panel>
         `;

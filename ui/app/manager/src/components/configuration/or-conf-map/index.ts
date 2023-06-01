@@ -35,22 +35,22 @@ export class OrConfMap extends LitElement {
         manager.rest.api.RealmResource.getAccessible().then((response) => {
             this._allRealms = response.data.map((r) => ({name: r.name, displayName: r.displayName, canDelete: true}));
             this._allRealms.push({name: 'default', displayName: 'Default', canDelete: false})
-            this._loadListOfAvailableRealms()
+            this._loadListOfAvailableRealms(this)
         });
     }
 
-    protected _removeRealm(realm: string) {
-        const {config, _loadListOfAvailableRealms, requestUpdate} = this;
+    protected _removeRealm(app: OrConfMap, realm: string) {
+        const {config, _loadListOfAvailableRealms, requestUpdate} = app;
         if (config) {
             delete config[realm]
-            _loadListOfAvailableRealms()
+            _loadListOfAvailableRealms(app)
             requestUpdate()
         }
     }
 
-    protected _loadListOfAvailableRealms() {
-        const {config: mapConfig} = this
-        this._availableRealms = this._allRealms.filter(function (realm) {
+    protected _loadListOfAvailableRealms(app: OrConfMap) {
+        const {config: mapConfig} = app;
+        app._availableRealms = app._allRealms.filter(function (realm) {
             if (!!realm.name && !!mapConfig) {
                 if (realm.name in mapConfig) {
                     return null
@@ -73,7 +73,7 @@ export class OrConfMap extends LitElement {
                     this.config = {}
                 }
                 this.config[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
-                this._loadListOfAvailableRealms()
+                this._loadListOfAvailableRealms(this)
                 this.requestUpdate()
                 return true
             }
@@ -134,7 +134,7 @@ export class OrConfMap extends LitElement {
                     const realmOption = this._allRealms.find((r) => r.name === key);
                     return html`
                         <or-conf-map-card .expanded="${_addedRealm === key}" .name="${key}" .map="${value}" .canRemove="${realmOption?.canDelete}"
-                                          .onRemove="${() => { _removeRealm(key); }}"
+                                          @remove="${() => _removeRealm(this, key)}"
                         ></or-conf-map-card>`
                 })}
             </div>

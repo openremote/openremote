@@ -107,10 +107,6 @@ export class OrConfMapCard extends LitElement {
     @property()
     public canRemove: boolean = false;
 
-    @property({ attribute: true })
-    public onRemove: CallableFunction = () => {
-    };
-
     willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
     }
@@ -127,7 +123,7 @@ export class OrConfMapCard extends LitElement {
                 actionName: "ok",
                 content: i18next.t("yes"),
                 action: () => {
-                    this.onRemove();
+                    this.dispatchEvent(new CustomEvent("remove"));
                 },
             },
 
