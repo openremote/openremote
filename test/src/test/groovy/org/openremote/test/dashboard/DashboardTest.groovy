@@ -1,5 +1,6 @@
 package org.openremote.test.dashboard
 
+import jakarta.ws.rs.ForbiddenException
 import jakarta.ws.rs.NotFoundException
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.dashboard.*
@@ -125,6 +126,6 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         publicUserDashboardResource.get(null, adminDashboard.id);
 
         then: "it should throw exception"
-        thrown NotFoundException
+        thrown ForbiddenException
     }
 }
