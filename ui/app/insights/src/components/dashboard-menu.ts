@@ -1,14 +1,13 @@
 import { html, css, LitElement, TemplateResult } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-drawer";
 import {when} from "lit/directives/when.js";
 import { Dashboard } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
-import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
 import {style} from "../style";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 // language=css
 const styling = css`
@@ -24,7 +23,6 @@ const styling = css`
         justify-content: space-between;
     }
     #drawer-actions-container {
-        padding: 16px;
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -54,6 +52,9 @@ export class DashboardMenu extends LitElement {
 
     @property()
     protected readonly logoMobileSrc?: string;
+
+    @state()
+    protected selectedActions: string[] = [];
 
     @query("#drawer")
     protected drawer: OrMwcDrawer;
@@ -115,6 +116,20 @@ export class DashboardMenu extends LitElement {
         this.dispatchEvent(new CustomEvent("login"))
     }
 
+    protected promptRealmSwitch() {
+        showDialog(new OrMwcDialog()
+            .setHeading(i18next.t('changeRealm'))
+            .setDismissAction(null)
+            .setActions(Object.entries(this.realms).map(([key, value]) => ({
+                content: html`<span>${value.displayName}</span>`,
+                actionName: key,
+                action: () => {
+                    this.changeRealm(value.name);
+                }
+            })))
+        );
+    }
+
 
     /* ------------------------------------------- */
 
@@ -132,6 +147,17 @@ export class DashboardMenu extends LitElement {
                 `}
             </div>
         `;
+        const actionItems: ListItem[] = [];
+        actionItems.push(null);
+        if(this.realms !== undefined && this.realms.length > 1) {
+            actionItems.push({ icon: 'domain', text: i18next.t('changeRealm'), value: 'realm' })
+        }
+        if(this.userId !== undefined) {
+            actionItems.push({ icon: 'logout', text: i18next.t('logout'), value: 'logout' });
+        } else {
+            actionItems.push({ icon: 'login', text: i18next.t('login'), value: 'login' })
+        }
+
         return html`
             <or-mwc-drawer id="drawer" .header="${headerTemplate}" .dismissible="${true}">
                 <div id="drawer-wrapper">
@@ -139,22 +165,21 @@ export class DashboardMenu extends LitElement {
                         ${getDashboardListTemplate(this.dashboards, this.selectedId, (id: string) => this.selectDashboard(id), this.userId, this.loading)}
                     </div>
                     <div id="drawer-actions-container">
-                        ${this.realms !== undefined && this.realms.length > 1 ? getContentWithMenuTemplate(
-                                html`<or-mwc-input type="${InputType.BUTTON}" outlined comfortable fullWidth label="${i18next.t('changeRealm')}" style="width: 100%;"></or-mwc-input>`,
-                                this.realms?.map((r) => { return {value: r.name, text: i18next.t(r.displayName)} as ListItem; }),
-                                curRealm.displayName,
-                                (v) => this.changeRealm(v as string),
-                                undefined,
-                                false,
-                                false,
-                                false,
-                                true
-                        ) : undefined}
-                        ${this.userId !== undefined ? html`
-                            <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('logout')}" @click="${() => this.logout()}"></or-mwc-input>
-                        ` : html`
-                            <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('login')}" @click="${() => this.login()}"></or-mwc-input>
-                        `}
+                        <or-mwc-list .listItems="${actionItems}" .values="${this.selectedActions}" @or-mwc-list-changed="${(ev: CustomEvent) => {
+                            console.log(ev);
+                            switch (ev.detail[0].value) {
+                                case 'realm': {
+                                    this.promptRealmSwitch(); break;
+                                } case 'logout': {
+                                    this.logout(); break;
+                                } case 'login': {
+                                    this.login(); break;
+                                }
+                            }
+                            // Hacky way to remove "select" status on or-mwc-list by updating selectedActions 
+                            this.selectedActions = this.selectedActions == null ? [] : null;
+                        }}"
+                        ></or-mwc-list.>
                     </div>
                 </div>
             </or-mwc-drawer>
