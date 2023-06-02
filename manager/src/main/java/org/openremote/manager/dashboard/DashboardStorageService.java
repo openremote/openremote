@@ -65,9 +65,6 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     // userId is required for checking dashboard ownership. If userId is NULL, we assume the user is not logged in.
     // editable can be used to only return dashboards where the user has edit access.
     protected Dashboard[] query(List<String> dashboardIds, String realm, String userId, Boolean publicOnly, Boolean editable) {
-        if(realm == null) {
-            throw new IllegalArgumentException("No realm is specified.");
-        }
         return persistenceService.doReturningTransaction(em -> {
             try {
                 CriteriaBuilder cb = em.getCriteriaBuilder();
@@ -75,7 +72,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 Root<Dashboard> root = cq.from(Dashboard.class);
 
                 List<Predicate> predicates = new ArrayList<>();
-                predicates.add(cb.like(root.get("realm"), realm));
+                if(realm != null) {
+                    predicates.add(cb.like(root.get("realm"), realm));
+                }
 
                 if(dashboardIds != null) {
                     predicates.add(root.get("id").in(dashboardIds));
@@ -116,13 +115,30 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     // Method to check if a dashboardId actually exists in the database
     // Useful for when query() does not return any accessible dashboard for that user, and check if it does however exist.
-    protected boolean exists(String dashboardId) {
-        return persistenceService.doReturningTransaction(em -> em.find(Dashboard.class, dashboardId)) != null;
+    protected boolean exists(String dashboardId, String realm) {
+        if(dashboardId == null) {
+            throw new IllegalArgumentException("No dashboardId is specified.");
+        }
+        if(realm == null) {
+            throw new IllegalArgumentException("No realm is specified.");
+        }
+        return persistenceService.doReturningTransaction(em -> {
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaQuery<Dashboard> cq = cb.createQuery(Dashboard.class);
+            Root<Dashboard> root = cq.from(Dashboard.class);
+            return em.createQuery(cq.select(root)
+                    .where(cb.like(root.get("realm"), realm))
+                    .where(cb.like(root.get("id"), dashboardId))
+            );
+        }) != null;
     }
 
 
     // Creation of initial dashboard (so no updating!)
     protected Dashboard createNew(Dashboard dashboard) {
+        if(dashboard == null) {
+            throw new IllegalArgumentException("No dashboard is specified.");
+        }
         return persistenceService.doReturningTransaction(em -> {
             if(dashboard.getId() != null && dashboard.getId().length() > 0) {
                 Dashboard d = em.find(Dashboard.class, dashboard.getId()); // checking whether dashboard is already in database
@@ -136,6 +152,15 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     // Update of an existing dashboard
     protected Dashboard update(Dashboard dashboard, String realm, String userId) throws IllegalArgumentException {
+        if(dashboard == null) {
+            throw new IllegalArgumentException("No dashboard is specified.");
+        }
+        if(realm == null) {
+            throw new IllegalArgumentException("No realm is specified.");
+        }
+        if(userId == null) {
+            throw new IllegalArgumentException("No userId is specified.");
+        }
         Dashboard[] dashboards = this.query(Collections.singletonList(dashboard.getId()), realm, userId, false, true); // Get dashboards that userId is able to EDIT.
         if(dashboards != null && dashboards.length > 0) {
             Dashboard d = dashboards[0];
@@ -149,6 +174,15 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     }
 
     protected boolean delete(String dashboardId, String realm, String userId) throws IllegalArgumentException {
+        if(dashboardId == null) {
+            throw new IllegalArgumentException("No dashboardId is specified.");
+        }
+        if(realm == null) {
+            throw new IllegalArgumentException("No realm is specified.");
+        }
+        if(userId == null) {
+            throw new IllegalArgumentException("No userId is specified.");
+        }
         return persistenceService.doReturningTransaction(em -> {
 
             // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT

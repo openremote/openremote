@@ -124,24 +124,24 @@ export class PageView extends Page<AppStateKeyed> {
 
             // When visiting '/{id}/false', only fetch dashboard with that ID.
             if(this.viewDashboardOnly && this._selectedId) {
-                this.fetchDashboard(this._selectedId).then((dashboard) => {
+                this.fetchDashboard(this._selectedId).then((dashboard: Dashboard) => {
                     this._loadedDashboards = (dashboard ? [dashboard] : undefined);
                 })
             }
             // When visiting '/{id}/true', fetch dashboard with that ID first...
             else if(!this.viewDashboardOnly && this._selectedId) {
-                this.fetchDashboard(this._selectedId).then((dashboard) => {
-                    this._loadedDashboards = [dashboard];
+                this.fetchDashboard(this._selectedId).then((dashboard: Dashboard) => {
+                    this._loadedDashboards = dashboard ? [dashboard] : undefined;
 
                     // If dashboard does not exist, but menu should be shown, then just deselect the dashboard.
-                    if(dashboard == undefined) {
+                    if(dashboard === undefined) {
                         this._selectedId = undefined; // aka redirect to '/'
                     }
                     // If superuser, and dashboard is in a different realm than the current one, switch to that realm.
                     // Otherwise, just deselect the dashboard since it doesn't exist for that realm.
-                    else if(dashboard.realm != this._realm) {
+                    else if(dashboard.realm !== this._realm) {
                         if(manager.isSuperUser()) {
-                            if (this._loadedRealms.find(r => r.name == dashboard.realm) != undefined) {
+                            if (this._loadedRealms.find(r => r.name === dashboard.realm) !== undefined) {
                                 this.changeRealm(dashboard.realm, dashboard.id);
                             }
                         } else {
@@ -159,7 +159,7 @@ export class PageView extends Page<AppStateKeyed> {
             // When visiting '/'
             else {
                 this.fetchAllDashboards().then((dashboards) => {
-                    if(!manager.authenticated && dashboards.length == 0) {
+                    if(!manager.authenticated && dashboards?.length === 0) {
                         manager.login(); // if not logged in, auto login if no public dashboards are available
                     } else {
                         this._loadedDashboards = dashboards;
@@ -174,22 +174,20 @@ export class PageView extends Page<AppStateKeyed> {
 
     // FETCH RELATED FUNCTIONS
 
-    protected async fetchAllDashboards(realmName?: string, loginRedirect: boolean = false): Promise<Dashboard[]> {
+    protected async fetchAllDashboards(realmName?: string): Promise<Dashboard[]> {
         if(!realmName) {
             realmName = manager.displayRealm;
         }
         let promise = this.getPromise('dashboard/all');
-        if(promise == undefined) {
+        if(promise === undefined) {
             promise = this.registerPromise('dashboard/all', manager.rest.api.DashboardResource.getAllRealmDashboards(realmName), true, false);
         }
         try {
             const response = await promise;
             return response.data;
         } catch (ex) {
-            if(isAxiosError(ex) && ex.response.status == 403 && loginRedirect) {
-                manager.login();
-            }
-            return undefined;
+            console.error(ex);
+            return [];
         }
     }
 
@@ -202,8 +200,13 @@ export class PageView extends Page<AppStateKeyed> {
             const response = await promise;
             return response.data;
         } catch (ex) {
-            if(isAxiosError(ex) && ex.response.status == 403 && loginRedirect) {
-                manager.login();
+            if(isAxiosError(ex)) {
+                if(ex.response.status === 404 && manager.isSuperUser()) {
+                    return undefined;
+                }
+                if(!manager.authenticated && ex.response.status === 403 && loginRedirect) {
+                    manager.login();
+                }
             }
             return undefined;
         }
@@ -214,7 +217,7 @@ export class PageView extends Page<AppStateKeyed> {
 
     protected render(): TemplateResult {
         const realmConfig = this.realmConfigs ? this.realmConfigs[this._realm] : undefined;
-        const selected: Dashboard | undefined = this._loadedDashboards?.find((d) => d.id == this._selectedId);
+        const selected: Dashboard | undefined = this._loadedDashboards?.find((d) => d.id === this._selectedId);
         let logoMobile = realmConfig?.logoMobile;
         if(logoMobile == undefined) {
             logoMobile = DefaultMobileLogo;
@@ -259,7 +262,7 @@ export class PageView extends Page<AppStateKeyed> {
     }
 
     getErrorMsg(translate: boolean = true): string {
-        if(this.viewDashboardOnly && this._loadedDashboards.length == 0) {
+        if(this.viewDashboardOnly && this._loadedDashboards?.length === 0) {
             return (translate ? i18next.t('dashboardNotFound') : 'dashboardNotFound');
         } else if(!this.viewDashboardOnly) {
             return (translate ? i18next.t('noDashboardSelected-mobile') : 'noDashboardSelected-mobile')
@@ -338,7 +341,7 @@ export class PageView extends Page<AppStateKeyed> {
 
 }
 
-function getDashboardHeaderTemplate(showMenu: boolean = true, selected?: Dashboard, onopen?: (ev: Event) => void, onrefresh?: (ev: Event) => void): TemplateResult {
+function getDashboardHeaderTemplate(showMenu = true, selected?: Dashboard, onopen?: (ev: Event) => void, onrefresh?: (ev: Event) => void): TemplateResult {
     return html`
         <div id="fullscreen-header">
             <div id="fullscreen-header-wrapper">

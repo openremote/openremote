@@ -1,22 +1,19 @@
 package org.openremote.manager.dashboard;
 
+import jakarta.ws.rs.WebApplicationException;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.dashboard.Dashboard;
-import org.openremote.model.dashboard.DashboardResource;
 import org.openremote.model.dashboard.DashboardAccess;
+import org.openremote.model.dashboard.DashboardResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
-import jakarta.ws.rs.WebApplicationException;
-
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import static jakarta.ws.rs.core.Response.Status.*;
 
@@ -74,7 +71,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             }
             Dashboard[] dashboards = this.dashboardStorageService.query(Collections.singletonList(dashboardId), realm, getUserId(), publicOnly, false);
             if(dashboards.length == 0) {
-                if(!publicOnly && this.dashboardStorageService.exists(dashboardId)) {
+                if(this.dashboardStorageService.exists(dashboardId, realm)) {
                     throw new WebApplicationException(FORBIDDEN); // when no dashboard returned from query, but it does exist.
                 } else {
                     throw new WebApplicationException(NOT_FOUND); // aka it does not exist
@@ -90,11 +87,14 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
     @Override
     public Dashboard create(RequestParams requestParams, Dashboard dashboard) {
+        String realm = dashboard.getRealm();
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
         try {
-
-            if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
-                throw new WebApplicationException(FORBIDDEN);
-            }
             dashboard.setOwnerId(getUserId());
             dashboard.setViewAccess(DashboardAccess.SHARED);
             dashboard.setEditAccess(DashboardAccess.SHARED);
@@ -109,11 +109,15 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
     @Override
     public Dashboard update(RequestParams requestParams, Dashboard dashboard) {
+        String realm = dashboard.getRealm();
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if(!isRealmActiveAndAccessible(realm)) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
         try {
-            if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
-                throw new WebApplicationException(FORBIDDEN);
-            }
-            return this.dashboardStorageService.update(ValueUtil.clone(dashboard), dashboard.getRealm(), getUserId());
+            return this.dashboardStorageService.update(ValueUtil.clone(dashboard), realm, getUserId());
         } catch (IllegalArgumentException ex) {
             throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
@@ -124,12 +128,14 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
     @Override
     public void delete(RequestParams requestParams, String dashboardId) {
-
-        if(!isRealmActiveAndAccessible(getRequestRealmName())) {
+        String realm = getRequestRealmName();
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if(!isRealmActiveAndAccessible(realm)) {
             throw new WebApplicationException(FORBIDDEN);
         }
         try {
-            String realm = (isSuperUser() ? null : getAuthenticatedRealmName());
             this.dashboardStorageService.delete(dashboardId, realm, getUserId());
         } catch (IllegalArgumentException ex) {
             throw new WebApplicationException(ex, NOT_FOUND);

@@ -10,15 +10,8 @@ import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
 import {style} from "../style";
 
-//language=css
+// language=css
 const styling = css`
-    #header-container {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 13px 16px;
-        border-bottom: 1px solid #E0E0E0;
-    }
     #list-container {
         display: flex;
         flex-direction: column;
@@ -107,14 +100,17 @@ export class DashboardMenu extends LitElement {
         const dashboard = this.dashboards.find((d) => d.id == id);
         this.dispatchEvent(new CustomEvent('change', { detail: { value: dashboard }}));
     }
+
     protected changeRealm(realm: string) {
         if(realm != this.realm) {
             this.dispatchEvent(new CustomEvent("realm", { detail: { value: realm }}));
         }
     }
+
     protected logout() {
         this.dispatchEvent(new CustomEvent("logout"));
     }
+
     protected login() {
         this.dispatchEvent(new CustomEvent("login"))
     }
@@ -125,7 +121,7 @@ export class DashboardMenu extends LitElement {
     protected render(): TemplateResult {
         const curRealm = this.realms?.find((r) => r.name == this.realm);
         const headerTemplate = html`
-            <div id="header-container">
+            <div style="display: flex; align-items: center; gap: 16px; padding: 13px 16px; border-bottom: 1px solid #E0E0E0;">
                 ${this.loading ? html`
                     <div style="height: 34px;">
                         <!-- Placeholder height to prevent changes during the realm fetch -->
@@ -143,7 +139,7 @@ export class DashboardMenu extends LitElement {
                         ${getDashboardListTemplate(this.dashboards, this.selectedId, (id: string) => this.selectDashboard(id), this.userId, this.loading)}
                     </div>
                     <div id="drawer-actions-container">
-                        ${this.realms != undefined && this.realms.length > 1 ? getContentWithMenuTemplate(
+                        ${this.realms !== undefined && this.realms.length > 1 ? getContentWithMenuTemplate(
                                 html`<or-mwc-input type="${InputType.BUTTON}" outlined comfortable fullWidth label="${i18next.t('changeRealm')}" style="width: 100%;"></or-mwc-input>`,
                                 this.realms?.map((r) => { return {value: r.name, text: i18next.t(r.displayName)} as ListItem; }),
                                 curRealm.displayName,
@@ -154,7 +150,7 @@ export class DashboardMenu extends LitElement {
                                 false,
                                 true
                         ) : undefined}
-                        ${this.userId != undefined ? html`
+                        ${this.userId !== undefined ? html`
                             <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('logout')}" @click="${() => this.logout()}"></or-mwc-input>
                         ` : html`
                             <or-mwc-input type="${InputType.BUTTON}" raised comfortable fullWidth label="${i18next.t('login')}" @click="${() => this.login()}"></or-mwc-input>
@@ -175,7 +171,7 @@ export class DashboardMenu extends LitElement {
 // TEMPLATE RENDERING FUNCTIONS
 // Wrote standalone from the component, to allow external use if needed.
 
-function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, onSelect: (id: string) => void, userId?: string, loading: boolean = false): TemplateResult {
+function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, onSelect: (id: string) => void, userId?: string, loading = false): TemplateResult {
     return html`
         ${when(loading, () => html`
             <or-loading-indicator></or-loading-indicator>
