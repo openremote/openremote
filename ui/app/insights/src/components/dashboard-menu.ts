@@ -1,4 +1,4 @@
-import { html, css, LitElement, TemplateResult } from "lit";
+import { html, css, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-drawer";
 import {when} from "lit/directives/when.js";
@@ -8,6 +8,7 @@ import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
 import {style} from "../style";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {DefaultColor5} from "@openremote/core";
 
 // language=css
 const styling = css`
@@ -23,6 +24,7 @@ const styling = css`
         justify-content: space-between;
     }
     #drawer-actions-container {
+        border-top: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -136,7 +138,7 @@ export class DashboardMenu extends LitElement {
     protected render(): TemplateResult {
         const curRealm = this.realms?.find((r) => r.name == this.realm);
         const headerTemplate = html`
-            <div style="display: flex; align-items: center; gap: 16px; padding: 13px 16px; border-bottom: 1px solid #E0E0E0;">
+            <div style="display: flex; align-items: center; gap: 16px; padding: 13px 16px; border-bottom: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});">
                 ${this.loading ? html`
                     <div style="height: 34px;">
                         <!-- Placeholder height to prevent changes during the realm fetch -->
@@ -148,7 +150,6 @@ export class DashboardMenu extends LitElement {
             </div>
         `;
         const actionItems: ListItem[] = [];
-        actionItems.push(null);
         if(this.realms !== undefined && this.realms.length > 1) {
             actionItems.push({ icon: 'domain', text: i18next.t('changeRealm'), value: 'realm' })
         }
@@ -166,7 +167,6 @@ export class DashboardMenu extends LitElement {
                     </div>
                     <div id="drawer-actions-container">
                         <or-mwc-list .listItems="${actionItems}" .values="${this.selectedActions}" @or-mwc-list-changed="${(ev: CustomEvent) => {
-                            console.log(ev);
                             switch (ev.detail[0].value) {
                                 case 'realm': {
                                     this.promptRealmSwitch(); break;
