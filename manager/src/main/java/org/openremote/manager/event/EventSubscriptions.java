@@ -103,6 +103,11 @@ public class EventSubscriptions {
         }
         LOG.finest("Cancel subscription for session '" + sessionKey + "': " + subscription);
         SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
+
+        if (sessionSubscriptions == null) {
+            return;
+        }
+
         if (!TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
             sessionSubscriptions.cancelById(subscription.getSubscriptionId());
         } else {

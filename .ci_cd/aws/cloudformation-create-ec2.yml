@@ -222,7 +222,7 @@ Resources:
                   exit 0
                 fi
                 
-                dd if=/dev/zero of=/swapfile bs=128M count=32
+                dd if=/dev/zero of=/swapfile bs=128M count=16
                 chmod 600 /swapfile
                 mkswap /swapfile
                 swapon /swapfile
@@ -231,7 +231,7 @@ Resources:
 
         cloudwatch_config:
           files:
-            "/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/config.json":
+            "/opt/aws/amazon-cloudwatch-agent/var/config.json":
               content: |
                 {
                   "metrics": {
@@ -741,13 +741,13 @@ Resources:
                 enabled: "true"
                 ensureRunning: "true"
 
-        02_restart_amazon-cloudwatch-agent:
+        restart_amazon-cloudwatch-agent:
           commands:
             01_stop_service:
               command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
             02_start_service:
               command: |
-                /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/config.json
+                /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/var/config.json
 
         setupCfnHup:
           files:
@@ -814,12 +814,10 @@ Resources:
           #sed -i '/download_updates/s/= .*/= no/' /etc/yum/yum-cron.conf
           
           rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
-          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/config.json
+          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/var/config.json
           
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
-          
-          # Swap file necessary?
           
           # All done so signal success
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
@@ -881,7 +879,7 @@ Resources:
       MetricName: StatusCheckFailed_Instance
       Statistic: Minimum
       Period: 60
-      EvaluationPeriods: 3
+      EvaluationPeriods: 5
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
       AlarmActions:
@@ -904,7 +902,6 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: 90
       AlarmActions:
-        - !Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"
         - !Ref SnsTopic
       OKActions:
         - !Ref SnsTopic
