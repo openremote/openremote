@@ -56,15 +56,13 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     @Override
     public Dashboard get(RequestParams requestParams, String dashboardId) {
         boolean publicOnly;
-        String realm;
+        String realm = getRequestRealmName();
         try {
             // if not authenticated, or having no INSIGHTS access, only take public dashboards into count
             if(isAuthenticated()) {
                 publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
-                realm = (isSuperUser() ? null : getAuthenticatedRealmName());
             } else {
                 publicOnly = true;
-                realm = getRequestRealmName();
             }
             if(!isRealmActiveAndAccessible(realm)) {
                 publicOnly = true;

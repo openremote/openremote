@@ -65,6 +65,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     // userId is required for checking dashboard ownership. If userId is NULL, we assume the user is not logged in.
     // editable can be used to only return dashboards where the user has edit access.
     protected Dashboard[] query(List<String> dashboardIds, String realm, String userId, Boolean publicOnly, Boolean editable) {
+        if(realm == null) {
+            throw new IllegalArgumentException("No realm is specified.");
+        }
         return persistenceService.doReturningTransaction(em -> {
             try {
                 CriteriaBuilder cb = em.getCriteriaBuilder();
@@ -72,13 +75,10 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 Root<Dashboard> root = cq.from(Dashboard.class);
 
                 List<Predicate> predicates = new ArrayList<>();
-                if(realm != null) {
-                    predicates.add(cb.like(root.get("realm"), realm));
-                }
+                predicates.add(cb.like(root.get("realm"), realm));
 
                 if(dashboardIds != null) {
                     predicates.add(root.get("id").in(dashboardIds));
-
                 }
                 // Apply EDIT ACCESS filters; always return PUBLIC dashboards, SHARED dashboards if access to the realm,
                 // and PRIVATE if you are the creator (ownerId) of the dashboard.

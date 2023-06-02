@@ -137,17 +137,6 @@ export class PageView extends Page<AppStateKeyed> {
                     if(dashboard === undefined) {
                         this._selectedId = undefined; // aka redirect to '/'
                     }
-                    // If superuser, and dashboard is in a different realm than the current one, switch to that realm.
-                    // Otherwise, just deselect the dashboard since it doesn't exist for that realm.
-                    else if(dashboard.realm !== this._realm) {
-                        if(manager.isSuperUser()) {
-                            if (this._loadedRealms.find(r => r.name === dashboard.realm) !== undefined) {
-                                this.changeRealm(dashboard.realm, dashboard.id);
-                            }
-                        } else {
-                            this._selectedId = undefined; // aka redirect to '/'
-                        }
-                    }
                     // If dashboard fetched with success, fetch all other dashboards of that realm as well.
                     else {
                         this.fetchAllDashboards().then((dashboards) => {
