@@ -60,8 +60,45 @@ export class OrImageWidget implements OrWidgetEntity {
     }
 }
 
+const content_styling = css`
+    #img-container {
+        height: 100%;
+        display: flex;
+        justify-content: center; 
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+    }
+
+    .img-content {
+        display: flex;
+        flex-direction: column;
+        position: absolute;    /*added to check if elements can stack*/
+        height: 100%;
+        width: 100%;
+        object-fit: contain;
+        flex: 1;
+        z-index: 2;
+    }
+
+    #overlay {
+        position: absolute;
+        z-index: 3;
+
+        /*additional marker styling*/
+        color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
+        background-color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+        border-radius: 15px;
+        padding: 3px 8px 5px 8px;
+        object-fit: contain;
+        text-overflow: ellipsis;
+    }
+    `
+
 @customElement("or-image-widget")
 export class OrImageWidgetContent extends LitElement {
+    public static styles = content_styling;
     @query("#img-container")
     private _imgSize!: HTMLElement;
     @state()
@@ -131,49 +168,9 @@ export class OrImageWidgetContent extends LitElement {
 
     render() {
 
-        const css =
-            `
-            #img-container {
-                height: 100%;
-                display: flex;
-                justify-content: center; 
-                align-items: center;
-                position: relative;
-                overflow: hidden;
-                z-index: 1;
-            }
-
-            .img-content {
-                display: flex;
-                flex-direction: column;
-                position: absolute;    /*added to check if elements can stack*/
-                height: 100%;
-                width: 100%;
-                object-fit: contain;
-                flex: 1;
-                z-index: 2;
-            }
-
-            /*overlay element doesnt have to have be span, div works too, OG try was with span and it worked*/
-            #overlay {
-                position: absolute;     /*prevously relative*/
-                z-index: 3;
-
-                /*additional marker styling*/
-                color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
-                background-color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                border-radius: 15px;
-                padding: 3px 8px 5px 8px;
-                object-fit: contain;
-                text-overflow: ellipsis;
-            }
-        `
         var imagePath = this.widget?.widgetConfig.imagePath;
         return html
             `
-                <style>
-                    ${css}
-                </style>
             <div id="img-container">
                 <img class="img-content" src="${imagePath}" alt=""/>
                 <div>
@@ -222,10 +219,19 @@ export class OrImageWidgetContent extends LitElement {
     }
 }
 
+// change snake case to camelcase
+const marker_container_styling = css `
+    #marker_container {
+        display: flex;
+        justify-content: flex-end; 
+        flex-direction: column; 
+    }
+`;
+
 @customElement("or-image-widgetsettings")
 export class OrImageWidgetSettings extends LitElement {
     static get styles() {
-        return [style, widgetSettingsStyling];
+        return [style, widgetSettingsStyling, marker_container_styling];
     }
 
     private _fileElem!: HTMLInputElement;
@@ -259,7 +265,7 @@ export class OrImageWidgetSettings extends LitElement {
         <div>
             ${this.generateExpandableHeader(i18next.t('marker coordinates'))}
         </div>
-        <div style="display: flex; justify-content: start; flex-direction: row; flex-wrap: wrap; align-items: flex-start; min-width: 150px;">
+        <div>
             ${ this.expandedPanels.includes(i18next.t('marker coordinates')) ? this.prepareCoordinateEntries(config, i18next.t('marker coordinates')): null}
         </div>
             <div>
@@ -283,9 +289,9 @@ export class OrImageWidgetSettings extends LitElement {
         var max = 100;
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             this.updateConfig(this.widget!, config);
-            console.log("Okay so I think we need to initialize the map here by why doesn't it work when we did earlier");
             return config.attributeRefs.map((attr) => 
             (html`
+                    <div id="marker-container">
                     <div style="margin: 5%; font-family: inherit; width: 100%;">${attr.name}</div>
                     <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.xCoordinatesMap[config.attributeRefs.indexOf(attr)]}"
                     @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
@@ -298,7 +304,8 @@ export class OrImageWidgetSettings extends LitElement {
                         config.yCoordinatesMap[config.attributeRefs.indexOf(attr)] = event.detail.value;
                         this.updateConfig(this.widget!, config);
                     }}"
-                    ></or-mwc-input>`));
+                    ></or-mwc-input>
+                    </div>`));
 
         }
     }
