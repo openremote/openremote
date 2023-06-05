@@ -11,6 +11,7 @@ import org.openremote.model.dashboard.DashboardAccess;
 import org.openremote.model.dashboard.DashboardResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.security.Realm;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Collections;
@@ -31,7 +32,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
     @Override
     public Dashboard[] getAllRealmDashboards(RequestParams requestParams, String realm) {
-        boolean publicOnly;
+        boolean publicOnly = true;
         if(realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -39,11 +40,11 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             // if not authenticated, or having no INSIGHTS access, only fetch public dashboards
             if(isAuthenticated()) {
                 publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
-            } else {
-                publicOnly = true;
             }
-            if(!isRealmActiveAndAccessible(realm)) {
-                publicOnly = true;
+            // Realm should be enabled. Bypass if superuser.
+            // (similar to isRealmActiveAndAccessible() but supports unauthenticated users)
+            if(!isSuperUser() && !getRequestRealm().getEnabled()) {
+                throw new WebApplicationException(FORBIDDEN);
             }
             return this.dashboardStorageService.query(null, realm, getUserId(), publicOnly, false);
 
@@ -55,17 +56,17 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
     @Override
     public Dashboard get(RequestParams requestParams, String dashboardId) {
-        boolean publicOnly;
+        boolean publicOnly = true;
         String realm = getRequestRealmName();
         try {
             // if not authenticated, or having no INSIGHTS access, only take public dashboards into count
             if(isAuthenticated()) {
                 publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
-            } else {
-                publicOnly = true;
             }
-            if(!isRealmActiveAndAccessible(realm)) {
-                publicOnly = true;
+            // Realm should be enabled. Bypass if superuser.
+            // (similar to isRealmActiveAndAccessible() but supports unauthenticated users)
+            if(!isSuperUser() && !getRequestRealm().getEnabled()) {
+                throw new WebApplicationException(FORBIDDEN);
             }
             Dashboard[] dashboards = this.dashboardStorageService.query(Collections.singletonList(dashboardId), realm, getUserId(), publicOnly, false);
             if(dashboards.length == 0) {
