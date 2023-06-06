@@ -140,7 +140,9 @@ export class Console {
 
     public get shellApple(): boolean {
         // @ts-ignore
-        return navigator.platform.substr(0, 2) === 'iP' && window.webkit && window.webkit.messageHandlers;
+        const platform = navigator.userAgentData && navigator.userAgentData.platform ? navigator.userAgentData.platform : navigator.platform;
+        // @ts-ignore
+        return platform && (platform.substring(0, 2) === 'iP' || platform.substring(0, 3) === 'Mac') && window.webkit && window.webkit.messageHandlers;
     }
 
     public get shellAndroid(): boolean {
