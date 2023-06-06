@@ -257,6 +257,10 @@ export class OrConfRealmCard extends LitElement {
 
     }
 
+    protected willUpdate(changedProps: Map<string, any>) {
+        console.log(changedProps); // TODO: Temporary use for testing purposes
+    }
+
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         document.addEventListener('saveManagerConfig', () => {
             Object.entries(this.files).map(async ([x, y]) => {

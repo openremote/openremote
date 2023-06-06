@@ -28,9 +28,8 @@ import {when} from "lit/directives/when.js"
 import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "../components/configuration/or-conf-json";
-import "../components/configuration/or-conf-realm/index";
-import "../components/configuration/or-conf-map/index";
-import {ManagerAppConfig, MapRealmConfig} from "@openremote/model";
+import "../components/configuration/or-conf-panel";
+import {ManagerAppConfig, MapRealmConfig, Realm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 
@@ -144,7 +143,13 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     protected managerConfiguration?: ManagerAppConfig;
 
     @state()
-    protected mapConfig: {[id: string]: any};
+    protected mapConfig?: {[id: string]: any};
+
+    @state()
+    protected realms?: Realm[];
+
+    @state()
+    protected loading: boolean = false;
 
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
@@ -158,21 +163,34 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
 
-        let managerConfigPromise;
-        if(this.managerConfiguration === undefined) {
-            managerConfigPromise = this.getManagerConfig();
-        }
-        let mapConfigPromise;
-        if(this.mapConfig === undefined) {
-            mapConfigPromise = this.getMapConfig();
-        }
+        if(!this.loading) {
+            let managerConfigPromise;
+            if(this.managerConfiguration === undefined) {
+                managerConfigPromise = this.getManagerConfig().then((value) => {
+                    this.managerConfiguration = value;
+                });
+            }
+            let mapConfigPromise;
+            if(this.mapConfig === undefined) {
+                mapConfigPromise = this.getMapConfig().then((value) => {
+                    this.mapConfig = value;
+                });
+            }
+            let realmsPromise;
+            if(this.realms === undefined) {
+                realmsPromise = this.getAccessibleRealms().then((value) => {
+                    this.realms = value;
+                });
+            }
 
-        // Wait for both promises to complete, to only update UI once.
-        if(managerConfigPromise || mapConfigPromise) {
-            Promise.all([managerConfigPromise, mapConfigPromise]).then((values) => {
-                this.managerConfiguration = values[0];
-                this.mapConfig = values[1];
-            })
+            // Wait for both promises to complete, to only update UI once.
+            if(managerConfigPromise || mapConfigPromise || realmsPromise) {
+                console.error("Starting to load stuff...");
+                this.loading = true;
+                Promise.all([managerConfigPromise, mapConfigPromise, realmsPromise]).finally(() => {
+                    this.loading = false;
+                })
+            }
         }
     }
 
@@ -183,9 +201,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         if (!manager.authenticated) {
             return html`<or-translate value="notAuthenticated"></or-translate>`;
         }
-        const loading = (this.managerConfiguration === undefined || this.mapConfig === undefined);
         return html`
-            ${when(loading, () => html`
+            ${when(this.loading, () => html`
                 <or-loading-indicator></or-loading-indicator>
             `, () => {
                 const realmHeading = html`
@@ -196,6 +213,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             ></or-conf-json>
                     </div>
                 `;
+                const realmOptions = this.realms?.map((r) => ({ name: r.name, displayName: r.displayName, canDelete: true }));
+                realmOptions.push({name: 'default', displayName: 'Default', canDelete: false});
+                console.log(realmOptions);
                 return html`
                     <div id="wrapper">
                         <div id="header-wrapper">
@@ -210,10 +230,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             </div>
                         </div>
                         <or-panel .heading="${realmHeading}">
-                            <or-conf-realm .config="${this.managerConfiguration}"></or-conf-realm>
+                            <or-conf-panel .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"></or-conf-panel>
                         </or-panel>
                         <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
-                            <or-conf-map .config="${this.mapConfig}"></or-conf-map>
+                            <or-conf-panel .config="${this.mapConfig}" .realmOptions="${realmOptions}"></or-conf-panel>
                         </or-panel>
                     </div>
                 `
@@ -236,6 +256,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         console.error("getMapConfig()");
         const response = await manager.rest.api.MapResource.getSettings();
         return (response.data.options as {[id: string]: any});
+    }
+
+    protected async getAccessibleRealms(): Promise<Realm[]> {
+        return (await manager.rest.api.RealmResource.getAccessible()).data;
     }
 
     // TODO: Improve this code

@@ -101,6 +101,10 @@ export class OrConfJson extends LitElement {
 
     }
 
+    protected willUpdate(changedProps: Map<string, any>) {
+        console.log(changedProps); // TODO: Temporary use for testing purposes
+    }
+
     render() {
         return html`
             <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => {this._showManagerConfigDialog()}}"></or-mwc-input>

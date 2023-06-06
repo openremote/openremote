@@ -1,38 +1,78 @@
-import {css, html, LitElement, TemplateResult} from "lit";
+import {html, LitElement, TemplateResult} from "lit";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import "./or-conf-map-card";
-import {customElement, property, state} from "lit/decorators.js";
+import {customElement, property} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
-import manager from "@openremote/core";
 import {ManagerAppConfig, MapConfig} from "@openremote/model";
 import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
+import "./or-conf-map/or-conf-map-card";
+import "./or-conf-realm/or-conf-realm-card";
 
 @customElement("or-conf-panel")
 export class OrConfPanel extends LitElement {
 
-    @property({attribute: false})
-    public config: MapConfig | ManagerAppConfig = {};
+    @property()
+    public config?: {[id: string]: any} | ManagerAppConfig = {};
 
-    @state()
-    protected _allRealms: { name: string, displayName: string, canDelete: boolean }[] = [];
+    @property()
+    public realmOptions: { name: string, displayName: string, canDelete: boolean }[] = [];
 
     protected _addedRealm: null | string = null
 
+    protected willUpdate(changedProps: Map<string, any>) {
+        console.log(changedProps); // TODO: Temporary use for testing purposes
+    }
+
+    protected isMapConfig(object: unknown): boolean {
+        const keys = Object.keys(object);
+        return this.realmOptions.filter((o) => keys.includes(o.name)).length === keys.length;
+    }
+
+    protected isManagerConfig(object: any): object is ManagerAppConfig {
+        return 'realms' in object;
+    }
+
+    /* ------------------------------ */
+
     render(): TemplateResult {
-        const availableRealms = this.getAvailableRealms(this.config, this._allRealms);
+
+        // Define the type of config
+        let type: 'managerconfig' | 'mapconfig' | undefined;
+        let realmConfigs: { [index: string]: any };
+        if(this.isManagerConfig(this.config)) {
+            type = 'managerconfig';
+            realmConfigs = (this.config as ManagerAppConfig).realms
+        } else if(this.isMapConfig(this.config)) {
+            type = 'mapconfig';
+            realmConfigs = (this.config as MapConfig);
+        }
+
+        // Render the panels
+        const availableRealms = this.getAvailableRealms(this.config, this.realmOptions);
         return html`
             <div class="panels">
-                ${Object.entries(this.config === undefined ? {} : this.config).map(([key, value]) => {
-                    const realmOption = this._allRealms.find((r) => r.name === key);
-                    return html`
-                        <or-conf-map-card .expanded="${this._addedRealm === key}" .name="${key}" .map="${value}" .canRemove="${realmOption?.canDelete}"
-                                          @remove="${() => this._removeRealm(key)}"
-                        ></or-conf-map-card>`
+                ${Object.entries(realmConfigs === undefined ? {} : realmConfigs).map(([key, value]) => {
+                    const realmOption = this.realmOptions.find((r) => r.name === key);
+                    switch (type) {
+                        case "managerconfig":
+                            return html`
+                                <or-conf-realm-card .expanded="${this._addedRealm === key}" .name="${key}" .realm="${value}" .canRemove="${realmOption?.canDelete}"
+                                                    @remove="${() => this._removeRealm(key)}"
+                                ></or-conf-realm-card>
+                            `;
+                        case "mapconfig":
+                            return html`
+                                <or-conf-map-card .expanded="${this._addedRealm === key}" .name="${key}" .map="${value}" .canRemove="${realmOption?.canDelete}"
+                                                  @remove="${() => this._removeRealm(key)}"
+                                ></or-conf-map-card>
+                            `;
+                        default:
+                            return html`Unknown error.`
+                    }
                 })}
             </div>
-
+            <!-- Show an "ADD REALM" button if there are realms available to be added -->
             <div style="display: flex; justify-content: space-between;">
                 ${when(availableRealms.length > 0, () => html`
                     <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addMapCustomization')}" icon="plus"
@@ -43,6 +83,9 @@ export class OrConfPanel extends LitElement {
         `
     }
 
+
+    /* ----------------------------------- */
+
     protected _removeRealm(realm: string) {
         if (this.config) {
             delete this.config[realm];
@@ -52,22 +95,38 @@ export class OrConfPanel extends LitElement {
         }
     }
 
-    protected getAvailableRealms(config?: ManagerAppConfig | MapConfig, realms?: { name: string, displayName: string, canDelete: boolean }[]): { name: string, displayName: string, canDelete: boolean }[] {
-        return realms.filter((r) => {
-            if (r.name in config) {
-                return null;
-            }
-            return r;
-        }).sort((a, b) => {
-            if (a.displayName && b.displayName) {
-                return (a.displayName > b.displayName) ? 1 : -1;
-            }
-            return -1;
-        })
+    // Filter the list of realms that are not present in the config.
+    // Most used for the "add realm" dialog, to hide the realms that are already present.
+    protected getAvailableRealms(config?: ManagerAppConfig | {[id: string]: any}, realmOptions?: { name: string, displayName: string, canDelete: boolean }[]): { name: string, displayName: string, canDelete: boolean }[] {
+        let realms;
+        if(this.isManagerConfig(config)) {
+            realms = config.realms;
+        } else if(this.isMapConfig(config)) {
+            realms = config;
+        }
+
+        if(realms) {
+            return realmOptions.filter((r) => {
+                if (r.name in realms) {
+                    return null;
+                }
+                return r;
+            }).sort((a, b) => {
+                if (a.displayName && b.displayName) {
+                    return (a.displayName > b.displayName) ? 1 : -1;
+                }
+                return -1;
+            })
+        } else {
+            console.error("Could not filter available realms!");
+            return [];
+        }
     }
+
 
     /* ------------------------------- */
 
+    // Show the dialog to "add realm", that allows users to override realm options.
     protected _showAddingRealmDialog() {
         this._addedRealm = null;
         const dialogActions: DialogAction[] = [
@@ -95,7 +154,7 @@ export class OrConfPanel extends LitElement {
             .setActions(dialogActions)
             .setContent(html`
                 <or-mwc-input class="selector" label="Realm" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._addedRealm = e.detail.value}" .type="${InputType.SELECT}"
-                              .options="${Object.entries(this._availableRealms).map(([key, value]) => {
+                              .options="${Object.entries(this.getAvailableRealms(this.config, this.realmOptions)).map(([, value]) => {
                 return [value.name, value.displayName]
             })}"
                 ></or-mwc-input>
