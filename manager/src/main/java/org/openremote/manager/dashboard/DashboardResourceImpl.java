@@ -11,7 +11,6 @@ import org.openremote.model.dashboard.DashboardAccess;
 import org.openremote.model.dashboard.DashboardResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.ClientRole;
-import org.openremote.model.security.Realm;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Collections;
@@ -41,9 +40,8 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             if(isAuthenticated()) {
                 publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
             }
-            // Realm should be enabled. Bypass if superuser.
-            // (similar to isRealmActiveAndAccessible() but supports unauthenticated users)
-            if(!isSuperUser() && !getRequestRealm().getEnabled()) {
+            // Realm should be enabled. Also takes unauthenticated users into count.
+            if(!isRealmActiveAndAccessible(realm)) {
                 throw new WebApplicationException(FORBIDDEN);
             }
             return this.dashboardStorageService.query(null, realm, getUserId(), publicOnly, false);
@@ -63,9 +61,8 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             if(isAuthenticated()) {
                 publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
             }
-            // Realm should be enabled. Bypass if superuser.
-            // (similar to isRealmActiveAndAccessible() but supports unauthenticated users)
-            if(!isSuperUser() && !getRequestRealm().getEnabled()) {
+            // Realm should be enabled. Also takes unauthenticated users into count.
+            if(!isRealmActiveAndAccessible(realm)) {
                 throw new WebApplicationException(FORBIDDEN);
             }
             Dashboard[] dashboards = this.dashboardStorageService.query(Collections.singletonList(dashboardId), realm, getUserId(), publicOnly, false);
