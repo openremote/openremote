@@ -152,6 +152,9 @@ export class PageView extends Page<AppStateKeyed> {
                         manager.login(); // if not logged in, auto login if no public dashboards are available
                     } else {
                         this._loadedDashboards = dashboards;
+                        if(dashboards.length === 1) {
+                            this._selectedId = this._loadedDashboards[0].id;
+                        }
                     }
                 })
             }
