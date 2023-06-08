@@ -22,6 +22,18 @@ export class OrConfPanel extends LitElement {
 
     protected willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
+        if(changedProps.has("config")) {
+            this.dispatchEvent(new CustomEvent("change", { detail: this.config }))
+        }
+    }
+
+    protected getRealmsProperty(config: unknown): { [index: string]: any } | undefined {
+        if(this.isManagerConfig(config)) {
+            return (config as ManagerAppConfig).realms;
+        } else if(this.isMapConfig(config)) {
+            return config;
+        }
+        return undefined;
     }
 
     protected isMapConfig(object: unknown): boolean {
@@ -39,16 +51,14 @@ export class OrConfPanel extends LitElement {
 
         // Define the type of config
         let type: 'managerconfig' | 'mapconfig' | undefined;
-        let realmConfigs: { [index: string]: any };
         if(this.isManagerConfig(this.config)) {
             type = 'managerconfig';
-            realmConfigs = (this.config as ManagerAppConfig).realms
         } else if(this.isMapConfig(this.config)) {
             type = 'mapconfig';
-            realmConfigs = (this.config as MapConfig);
         }
 
         // Render the panels
+        const realmConfigs = this.getRealmsProperty(this.config);
         const availableRealms = this.getAvailableRealms(this.config, this.realmOptions);
         return html`
             <div class="panels">
@@ -58,13 +68,13 @@ export class OrConfPanel extends LitElement {
                         case "managerconfig":
                             return html`
                                 <or-conf-realm-card .expanded="${this._addedRealm === key}" .name="${key}" .realm="${value}" .canRemove="${realmOption?.canDelete}"
-                                                    @remove="${() => this._removeRealm(key)}"
+                                                    @change="${() => this.requestUpdate('config')}" @remove="${() => this._removeRealm(key)}"
                                 ></or-conf-realm-card>
                             `;
                         case "mapconfig":
                             return html`
                                 <or-conf-map-card .expanded="${this._addedRealm === key}" .name="${key}" .map="${value}" .canRemove="${realmOption?.canDelete}"
-                                                  @remove="${() => this._removeRealm(key)}"
+                                                  @change="${() => this.requestUpdate('config')}" @remove="${() => this._removeRealm(key)}"
                                 ></or-conf-map-card>
                             `;
                         default:
@@ -87,9 +97,10 @@ export class OrConfPanel extends LitElement {
     /* ----------------------------------- */
 
     protected _removeRealm(realm: string) {
-        if (this.config) {
-            delete this.config[realm];
-            this.requestUpdate()
+        const realms = this.getRealmsProperty(this.config);
+        if (realms) {
+            delete realms[realm];
+            this.requestUpdate("config")
         } else {
             console.error("No config found when attempting to remove realm.")
         }
@@ -98,13 +109,7 @@ export class OrConfPanel extends LitElement {
     // Filter the list of realms that are not present in the config.
     // Most used for the "add realm" dialog, to hide the realms that are already present.
     protected getAvailableRealms(config?: ManagerAppConfig | {[id: string]: any}, realmOptions?: { name: string, displayName: string, canDelete: boolean }[]): { name: string, displayName: string, canDelete: boolean }[] {
-        let realms;
-        if(this.isManagerConfig(config)) {
-            realms = config.realms;
-        } else if(this.isMapConfig(config)) {
-            realms = config;
-        }
-
+        const realms = this.getRealmsProperty(config);
         if(realms) {
             return realmOptions.filter((r) => {
                 if (r.name in realms) {
@@ -140,11 +145,12 @@ export class OrConfPanel extends LitElement {
                 content: i18next.t("ok"),
                 action: () => {
                     if (this._addedRealm) {
-                        if (!this.config) {
-                            this.config = {}
+                        let realms = this.getRealmsProperty(this.config);
+                        if (!realms) {
+                            realms = {}
                         }
-                        this.config[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
-                        this.requestUpdate();
+                        realms[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
+                        this.requestUpdate("config");
                     }
                 }
             },

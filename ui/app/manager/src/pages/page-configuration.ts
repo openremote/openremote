@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {css, html, TemplateResult, unsafeCSS} from "lit";
+import {css, html, TemplateResult, PropertyValues, unsafeCSS} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
 import "@openremote/or-components/or-panel";
@@ -140,16 +140,19 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     @state()
-    protected managerConfiguration?: ManagerAppConfig;
+    public managerConfiguration?: ManagerAppConfig;
 
     @state()
-    protected mapConfig?: {[id: string]: any};
+    public mapConfig?: {[id: string]: any};
 
     @state()
     protected realms?: Realm[];
 
     @state()
     protected loading: boolean = false;
+
+    protected managerConfigurationChanged = false;
+    protected mapConfigChanged = false;
 
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
@@ -160,8 +163,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     }
 
     // On every update..
-    willUpdate(changedProps: Map<string, any>) {
+    willUpdate(changedProps: PropertyValues<this>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
+        console.log(changedProps.get("managerConfiguration"));
+        console.log(this.managerConfiguration);
+        console.log(changedProps.get("mapConfig"));
+        console.log(this.mapConfig);
 
         if(!this.loading) {
             let managerConfigPromise;
@@ -185,7 +192,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
             // Wait for both promises to complete, to only update UI once.
             if(managerConfigPromise || mapConfigPromise || realmsPromise) {
-                console.error("Starting to load stuff...");
                 this.loading = true;
                 Promise.all([managerConfigPromise, mapConfigPromise, realmsPromise]).finally(() => {
                     this.loading = false;
@@ -198,6 +204,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ------------------------ */
 
     protected render(): TemplateResult | void {
+        console.error("page-configuration render!");
         if (!manager.authenticated) {
             return html`<or-translate value="notAuthenticated"></or-translate>`;
         }
@@ -215,7 +222,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 `;
                 const realmOptions = this.realms?.map((r) => ({ name: r.name, displayName: r.displayName, canDelete: true }));
                 realmOptions.push({name: 'default', displayName: 'Default', canDelete: false});
-                console.log(realmOptions);
                 return html`
                     <div id="wrapper">
                         <div id="header-wrapper">
@@ -224,16 +230,20 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 ${i18next.t("appearance")}
                             </div>
                             <div id="header-actions">
-                                <or-mwc-input id="save-btn" raised type="button" .label="${i18next.t("save")}"
+                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged || !this.mapConfigChanged}" raised type="button" .label="${i18next.t("save")}"
                                               @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
                         <or-panel .heading="${realmHeading}">
-                            <or-conf-panel .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"></or-conf-panel>
+                            <or-conf-panel .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"
+                                           @change="${() => this.requestUpdate('managerConfiguration')}"
+                            ></or-conf-panel>
                         </or-panel>
                         <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
-                            <or-conf-panel .config="${this.mapConfig}" .realmOptions="${realmOptions}"></or-conf-panel>
+                            <or-conf-panel .config="${this.mapConfig}" .realmOptions="${realmOptions}"
+                                           @change="${() => this.requestUpdate('mapConfig')}"
+                            ></or-conf-panel>
                         </or-panel>
                     </div>
                 `
@@ -264,26 +274,38 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     // TODO: Improve this code
     protected saveAllConfigs(config: ManagerAppConfig, mapConfig: {[p: string]: MapRealmConfig}) {
-        console.error(config);
-        manager.rest.api.ConfigurationResource.update(config)
-            .then(() => {
-                /* fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
+        console.log(config);
+        this.loading = true;
+
+        let managerPromise;
+        if (this.managerConfigurationChanged) {
+            managerPromise = manager.rest.api.ConfigurationResource.update(config).then(() => {
+                fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
                 this.managerConfiguration = config;
                 Object.entries(this.managerConfiguration.realms).map(([name, settings]) => {
                     fetch(this.urlPrefix + settings?.favicon, {cache: "reload"});
                     fetch(this.urlPrefix + settings?.logo, {cache: "reload"});
                     fetch(this.urlPrefix + settings?.logoMobile, {cache: "reload"});
-                }); */
+                });
             }).catch((reason) => {
                 console.error(reason);
             });
+        }
 
-        console.error(mapConfig)
-        manager.rest.api.MapResource.saveSettings(mapConfig)
-            .then(() => {
-                this.mapConfig = mapConfig;
-            }).catch((reason) => {
-                console.error(reason);
-            });
+        let mapPromise;
+        if(this.mapConfigChanged) {
+            mapPromise = manager.rest.api.MapResource.saveSettings(mapConfig)
+                .then(() => {
+                    this.mapConfig = mapConfig;
+                }).catch((reason) => {
+                    console.error(reason);
+                });
+        }
+
+        Promise.all([managerPromise, mapPromise]).finally(() => {
+            this.loading = false;
+            this.managerConfigurationChanged = false;
+            this.mapConfigChanged = false;
+        })
     }
 }

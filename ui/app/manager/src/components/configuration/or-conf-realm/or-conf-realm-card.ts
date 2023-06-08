@@ -184,6 +184,7 @@ export class OrConfRealmCard extends LitElement {
             css += key +":" +value + ";"
         })
         this.realm.styles = css
+        this.requestUpdate("realm");
     }
 
     protected _setHeader(keys: string[], list: string[]) {
@@ -259,6 +260,9 @@ export class OrConfRealmCard extends LitElement {
 
     protected willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
+        if(changedProps.has("realm")) {
+            this.dispatchEvent(new CustomEvent("change", { detail: this.realm }));
+        }
     }
 
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
