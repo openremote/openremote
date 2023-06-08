@@ -36,13 +36,13 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             throw new WebApplicationException(BAD_REQUEST);
         }
         try {
-            // if not authenticated, or having no INSIGHTS access, only fetch public dashboards
-            if(isAuthenticated()) {
-                publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
-            }
             // Realm should be enabled. Also takes unauthenticated users into count.
             if(!isRealmActiveAndAccessible(realm)) {
                 throw new WebApplicationException(FORBIDDEN);
+            }
+            // if not authenticated, or having no INSIGHTS access, only fetch public dashboards
+            if(isAuthenticated()) {
+                publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
             }
             return this.dashboardStorageService.query(null, realm, getUserId(), publicOnly, false);
 
@@ -57,13 +57,13 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         boolean publicOnly = true;
         String realm = getRequestRealmName();
         try {
-            // if not authenticated, or having no INSIGHTS access, only take public dashboards into count
-            if(isAuthenticated()) {
-                publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
-            }
             // Realm should be enabled. Also takes unauthenticated users into count.
             if(!isRealmActiveAndAccessible(realm)) {
                 throw new WebApplicationException(FORBIDDEN);
+            }
+            // if not authenticated, or having no INSIGHTS access, only take public dashboards into count
+            if(isAuthenticated()) {
+                publicOnly = (!hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID));
             }
             Dashboard[] dashboards = this.dashboardStorageService.query(Collections.singletonList(dashboardId), realm, getUserId(), publicOnly, false);
             if(dashboards.length == 0) {
