@@ -102,6 +102,7 @@ export class OrConfPanel extends LitElement {
         if (realms) {
             delete realms[realm];
             this.requestUpdate("config")
+            this.notifyConfigChange(this.config);
         } else {
             console.error("No config found when attempting to remove realm.")
         }
@@ -152,6 +153,7 @@ export class OrConfPanel extends LitElement {
                         }
                         realms[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
                         this.requestUpdate("config");
+                        this.notifyConfigChange(this.config);
                     }
                 }
             },
