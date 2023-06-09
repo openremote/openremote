@@ -56,6 +56,9 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     public Dashboard get(RequestParams requestParams, String dashboardId) {
         boolean publicOnly = true;
         String realm = getRequestRealmName();
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
         try {
             // Realm should be enabled. Also takes unauthenticated users into count.
             if(!isRealmActiveAndAccessible(realm)) {
