@@ -8,6 +8,8 @@ import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import "./or-conf-map/or-conf-map-card";
 import "./or-conf-realm/or-conf-realm-card";
+import {OrConfRealmCard} from "./or-conf-realm/or-conf-realm-card";
+import {OrConfMapCard} from "./or-conf-map/or-conf-map-card";
 
 @customElement("or-conf-panel")
 export class OrConfPanel extends LitElement {
@@ -22,6 +24,14 @@ export class OrConfPanel extends LitElement {
 
     protected willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
+    }
+
+    public getCardElement(): OrConfRealmCard | OrConfMapCard | undefined {
+        if(this.isManagerConfig(this.config)) {
+            return this.shadowRoot?.querySelector('or-conf-realm-card');
+        } else if (this.isMapConfig(this.config)) {
+            return this.shadowRoot?.querySelector('or-conf-map-card');
+        }
     }
 
     protected getRealmsProperty(config: unknown): { [index: string]: any } | undefined {

@@ -21,7 +21,7 @@ import { css, html, LitElement, unsafeCSS } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-file-uploader";
-import manager, {
+import {
     DEFAULT_LANGUAGES,
     DefaultColor1,
     DefaultColor2,
@@ -223,6 +223,10 @@ export class OrConfRealmCard extends LitElement {
         }
     }
 
+    public getFiles() {
+        return this.files;
+    }
+
     protected _showRemoveRealmDialog(){
 
         const dialogActions: DialogAction[] = [
@@ -262,14 +266,6 @@ export class OrConfRealmCard extends LitElement {
 
     protected willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
-    }
-
-    protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
-        document.addEventListener('saveManagerConfig', () => {
-            Object.entries(this.files).forEach(async ([x, y]) => {
-                await manager.rest.api.ConfigurationResource.fileUpload(y, { path: x })
-            })
-        });
     }
 
     protected notifyConfigChange(config: ManagerAppRealmConfig) {

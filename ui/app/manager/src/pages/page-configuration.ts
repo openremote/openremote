@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 import {css, html, TemplateResult, PropertyValues, unsafeCSS} from "lit";
-import {customElement, state} from "lit/decorators.js";
+import {customElement, state, query} from "lit/decorators.js";
 import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
@@ -32,6 +32,8 @@ import "../components/configuration/or-conf-panel";
 import {ManagerAppConfig, MapRealmConfig, Realm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
+import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
+import {OrConfPanel} from "../components/configuration/or-conf-panel";
 
 declare const CONFIG_URL_PREFIX: string;
 
@@ -157,6 +159,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected mapConfigChanged = false;
 
+    @query("#managerConfig-panel")
+    protected realmCardElem?: OrConfPanel;
+
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
 
@@ -234,12 +239,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             </div>
                         </div>
                         <or-panel .heading="${realmHeading}">
-                            <or-conf-panel .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"
+                            <or-conf-panel id="managerConfig-panel" .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"
                                            @change="${() => { this.managerConfigurationChanged = true; }}"
                             ></or-conf-panel>
                         </or-panel>
                         <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
-                            <or-conf-panel .config="${this.mapConfig}" .realmOptions="${realmOptions}"
+                            <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
                                            @change="${() => { this.mapConfigChanged = true; }}"
                             ></or-conf-panel>
                         </or-panel>
@@ -296,7 +301,16 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
         }
 
-        Promise.all([managerPromise, mapPromise]).finally(() => {
+        const imagePromises = [];
+        if(this.realmCardElem !== undefined) {
+            const elem = this.realmCardElem?.getCardElement() as OrConfRealmCard;
+            Object.entries(elem?.getFiles()).forEach(async ([x, y]) => {
+                imagePromises.push(manager.rest.api.ConfigurationResource.fileUpload(y, {path: x}));
+            });
+        }
+
+        const promises = [...imagePromises, managerPromise, mapPromise];
+        Promise.all(promises).finally(() => {
             this.loading = false;
             this.managerConfigurationChanged = false;
             this.mapConfigChanged = false;
