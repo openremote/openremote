@@ -33,7 +33,7 @@ import {ManagerAppConfig, MapRealmConfig, Realm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 
-declare var CONFIG_URL_PREFIX: string;
+declare const CONFIG_URL_PREFIX: string;
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -151,7 +151,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected loading: boolean = false;
 
+    @state()
     protected managerConfigurationChanged = false;
+
+    @state()
     protected mapConfigChanged = false;
 
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
@@ -165,10 +168,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     // On every update..
     willUpdate(changedProps: PropertyValues<this>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
-        console.log(changedProps.get("managerConfiguration"));
-        console.log(this.managerConfiguration);
-        console.log(changedProps.get("mapConfig"));
-        console.log(this.mapConfig);
 
         if(!this.loading) {
             let managerConfigPromise;
@@ -204,7 +203,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ------------------------ */
 
     protected render(): TemplateResult | void {
-        console.error("page-configuration render!");
         if (!manager.authenticated) {
             return html`<or-translate value="notAuthenticated"></or-translate>`;
         }
@@ -230,19 +228,19 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 ${i18next.t("appearance")}
                             </div>
                             <div id="header-actions">
-                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged || !this.mapConfigChanged}" raised type="button" .label="${i18next.t("save")}"
+                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" .label="${i18next.t("save")}"
                                               @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
                         <or-panel .heading="${realmHeading}">
                             <or-conf-panel .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"
-                                           @change="${() => this.requestUpdate('managerConfiguration')}"
+                                           @change="${() => { this.managerConfigurationChanged = true; }}"
                             ></or-conf-panel>
                         </or-panel>
                         <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
                             <or-conf-panel .config="${this.mapConfig}" .realmOptions="${realmOptions}"
-                                           @change="${() => this.requestUpdate('mapConfig')}"
+                                           @change="${() => { this.mapConfigChanged = true; }}"
                             ></or-conf-panel>
                         </or-panel>
                     </div>
@@ -257,13 +255,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     // FETCH METHODS
 
     protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
-        console.error("getManagerConfig()");
         const response = await fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" });
         return await response.json() as ManagerAppConfig;
     }
 
     protected async getMapConfig(): Promise<{[id: string]: any}> {
-        console.error("getMapConfig()");
         const response = await manager.rest.api.MapResource.getSettings();
         return (response.data.options as {[id: string]: any});
     }
@@ -274,15 +270,13 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     // TODO: Improve this code
     protected saveAllConfigs(config: ManagerAppConfig, mapConfig: {[p: string]: MapRealmConfig}) {
-        console.log(config);
         this.loading = true;
-
         let managerPromise;
         if (this.managerConfigurationChanged) {
             managerPromise = manager.rest.api.ConfigurationResource.update(config).then(() => {
                 fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
                 this.managerConfiguration = config;
-                Object.entries(this.managerConfiguration.realms).map(([name, settings]) => {
+                Object.entries(this.managerConfiguration.realms).forEach(([name, settings]) => {
                     fetch(this.urlPrefix + settings?.favicon, {cache: "reload"});
                     fetch(this.urlPrefix + settings?.logo, {cache: "reload"});
                     fetch(this.urlPrefix + settings?.logoMobile, {cache: "reload"});

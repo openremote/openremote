@@ -180,11 +180,11 @@ export class OrConfRealmCard extends LitElement {
         const colors  = this._getColors()
         colors[key] = value
         let css = ":host > * {"
-        Object.entries(colors).map(([key, value]) => {
+        Object.entries(colors).forEach(([key, value]) => {
             css += key +":" +value + ";"
         })
         this.realm.styles = css
-        this.requestUpdate("realm");
+        this.notifyConfigChange(this.realm);
     }
 
     protected _setHeader(keys: string[], list: string[]) {
@@ -195,11 +195,12 @@ export class OrConfRealmCard extends LitElement {
             return !list.includes(ele);
         });
         this.realm.headers = this.realm.headers?.concat(keys);
+        this.notifyConfigChange(this.realm);
     }
 
     protected _getImagePath(file:File, fileName: string){
         if (file.type.startsWith("image/")){
-            let extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
+            const extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
             return "/images/" + this.name + "/" + fileName + extension
         }
         return null
@@ -217,6 +218,7 @@ export class OrConfRealmCard extends LitElement {
             this.realm[fileName] = path
             this[fileName] = this.files[path].contents
             this.requestUpdate()
+            this.notifyConfigChange(this.realm);
             return this.files[path].contents;
         }
     }
@@ -237,7 +239,7 @@ export class OrConfRealmCard extends LitElement {
                 }},
 
         ];
-        const dialog = showDialog(new OrMwcDialog()
+        showDialog(new OrMwcDialog()
             .setHeading(i18next.t('delete'))
             .setActions(dialogActions)
             .setContent(html `
@@ -260,17 +262,18 @@ export class OrConfRealmCard extends LitElement {
 
     protected willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
-        if(changedProps.has("realm")) {
-            this.dispatchEvent(new CustomEvent("change", { detail: this.realm }));
-        }
     }
 
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         document.addEventListener('saveManagerConfig', () => {
-            Object.entries(this.files).map(async ([x, y]) => {
+            Object.entries(this.files).forEach(async ([x, y]) => {
                 await manager.rest.api.ConfigurationResource.fileUpload(y, { path: x })
             })
         });
+    }
+
+    protected notifyConfigChange(config: ManagerAppRealmConfig) {
+        this.dispatchEvent(new CustomEvent("change", { detail: config }));
     }
 
 
@@ -278,33 +281,37 @@ export class OrConfRealmCard extends LitElement {
         const colors = this._getColors();
         const app = this;
         return html`
-            <or-collapsible-panel
-                    .expanded="${this.expanded}">
+            <or-collapsible-panel .expanded="${app.expanded}">
                 <div slot="header" class="header-container">
-                    ${this.name}
+                    ${app.name}
                 </div>
                 <div slot="content" class="panel-content">
                     <div class="subheader">${i18next.t("configuration.main")}</div>
-                    <or-mwc-input class="appTitle" .type="${InputType.TEXT}" value="${this.realm?.appTitle}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.appTitle = e.detail.value}"
-                                  .label="${i18next.t("configuration.realmTitle")}"></or-mwc-input>
-                    <or-mwc-input class="language" .type="${InputType.SELECT}" value="${this.realm?.language}"
-                                  .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {
-                                      return [key, i18next.t(value)];
-                                  })}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.realm.language = e.detail.value}"
-                                  .label="${i18next.t("configuration.defaultLanguage")}"></or-mwc-input>
+                    <or-mwc-input class="appTitle" .type="${InputType.TEXT}" .label="${i18next.t("configuration.realmTitle")}" value="${app.realm?.appTitle}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => { 
+                                      app.realm.appTitle = e.detail.value;
+                                      app.notifyConfigChange(app.realm);
+                                  }}"
+                    ></or-mwc-input>
+                    <or-mwc-input class="language" .type="${InputType.SELECT}" .label="${i18next.t("configuration.defaultLanguage")}" value="${app.realm?.language}"
+                                  .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => [key, i18next.t(value)])}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      app.realm.language = e.detail.value;
+                                      app.notifyConfigChange(app.realm);
+                                  }}"
+                    ></or-mwc-input>
                     <div class="logo-group">
                         <div class="subheader">${i18next.t("configuration.images")}</div>
                         <div class="d-inline-flex">
                             <or-file-uploader .title="${i18next.t('configuration.logo')}"
-                                              @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "logo")}"
-                                              .src="${this.logo ? this.logo : this.realm.logo}"></or-file-uploader>
+                                              @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logo")}"
+                                              .src="${app.logo ? app.logo : app.realm.logo}"></or-file-uploader>
                             <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
-                                              @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                              .src="${this.logoMobile ? this.logoMobile : this.realm.logoMobile}"></or-file-uploader>
+                                              @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logoMobile")}"
+                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}"></or-file-uploader>
                             <or-file-uploader .title="${html`Favicon`}"
-                                              @change="${async (e: CustomEvent) => await this._setImageForUpload(e.detail.value[0], "favicon")}"
-                                              .src="${this.favicon ? this.favicon : this.realm.favicon}"></or-file-uploader>
+                                              @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "favicon")}"
+                                              .src="${app.favicon ? app.favicon : app.realm.favicon}"></or-file-uploader>
                         </div>
                     </div>
                     <div class="color-group">
@@ -312,25 +319,25 @@ export class OrConfRealmCard extends LitElement {
                         <div>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color4"]}"
                                           .label="${i18next.t('configuration.--or-app-color4')}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color4", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color5"]}"
                                           .label="${i18next.t('configuration.--or-app-color5')}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color5", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color6"]}"
                                           .label="${i18next.t("configuration.--or-app-color6")}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color6", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color1"]}"
                                           .label="${i18next.t("configuration.--or-app-color1")}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color1", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color2"]}"
                                           .label="${i18next.t("configuration.--or-app-color2")}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color2", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color3"]}"
                                           .label="${i18next.t("configuration.--or-app-color3")}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color3", e.detail.value)}"></or-mwc-input>
                             <or-mwc-input class="color-item" .type="${InputType.COLOUR}" value="${colors["--or-app-color8"]}"
                                           .label="${i18next.t("configuration.--or-app-color8")}"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setColor("--or-app-color8", e.detail.value)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setColor("--or-app-color8", e.detail.value)}"></or-mwc-input>
                         </div>
                     </div>
                     <div class="header-group">
@@ -341,29 +348,29 @@ export class OrConfRealmCard extends LitElement {
                                     .type="${InputType.SELECT}" multiple
                                     class="header-item"
                                     .label="${i18next.t("configuration.primaryNavigation")}"
-                                    .value="${!!this.realm.headers ? this.realm.headers?.filter(function(ele: string) {
+                                    .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
                                         return app.headerListPrimary.includes(ele);
-                                    }) : this.headerListPrimary}"
-                                    .options="${this.headerListPrimary}"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setHeader(e.detail.value, this.headerListPrimary)}"
+                                    }) : app.headerListPrimary}"
+                                    .options="${app.headerListPrimary}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value, app.headerListPrimary)}"
                             ></or-mwc-input>
                             <or-mwc-input
                                     .type="${InputType.SELECT}" multiple
                                     class="header-item"
                                     .label="${i18next.t("configuration.secondaryNavigation")}"
-                                    .value="${!!this.realm.headers ? this.realm.headers?.filter(function(ele: string) {
+                                    .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
                                         return app.headerListSecondary.includes(ele);
-                                    }) : this.headerListSecondary}"
-                                    .options="${this.headerListSecondary}"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setHeader(e.detail.value, this.headerListSecondary)}"
+                                    }) : app.headerListSecondary}"
+                                    .options="${app.headerListSecondary}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value, app.headerListSecondary)}"
                             ></or-mwc-input>
                         </div>
                     </div>
 
-                    ${when(this.canRemove, () => html`
+                    ${when(app.canRemove, () => html`
                         <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
                                       .label="${i18next.t("configuration.deleteRealmCustomization")}"
-                                      @click="${() => { this._showRemoveRealmDialog(); }}"
+                                      @click="${() => { app._showRemoveRealmDialog(); }}"
                         ></or-mwc-input>
                     `)}
                 </div>

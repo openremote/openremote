@@ -2,7 +2,7 @@ import {html, LitElement, TemplateResult} from "lit";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {customElement, property} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
-import {ManagerAppConfig, MapConfig} from "@openremote/model";
+import {ManagerAppConfig} from "@openremote/model";
 import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
@@ -22,14 +22,11 @@ export class OrConfPanel extends LitElement {
 
     protected willUpdate(changedProps: Map<string, any>) {
         console.log(changedProps); // TODO: Temporary use for testing purposes
-        if(changedProps.has("config")) {
-            this.dispatchEvent(new CustomEvent("change", { detail: this.config }))
-        }
     }
 
     protected getRealmsProperty(config: unknown): { [index: string]: any } | undefined {
         if(this.isManagerConfig(config)) {
-            return (config as ManagerAppConfig).realms;
+            return config.realms;
         } else if(this.isMapConfig(config)) {
             return config;
         }
@@ -43,6 +40,10 @@ export class OrConfPanel extends LitElement {
 
     protected isManagerConfig(object: any): object is ManagerAppConfig {
         return 'realms' in object;
+    }
+
+    protected notifyConfigChange(config: {[id: string]: any} | ManagerAppConfig) {
+        this.dispatchEvent(new CustomEvent("change", { detail: config }));
     }
 
     /* ------------------------------ */
@@ -68,13 +69,13 @@ export class OrConfPanel extends LitElement {
                         case "managerconfig":
                             return html`
                                 <or-conf-realm-card .expanded="${this._addedRealm === key}" .name="${key}" .realm="${value}" .canRemove="${realmOption?.canDelete}"
-                                                    @change="${() => this.requestUpdate('config')}" @remove="${() => this._removeRealm(key)}"
+                                                    @change="${() => this.notifyConfigChange(this.config)}" @remove="${() => this._removeRealm(key)}"
                                 ></or-conf-realm-card>
                             `;
                         case "mapconfig":
                             return html`
                                 <or-conf-map-card .expanded="${this._addedRealm === key}" .name="${key}" .map="${value}" .canRemove="${realmOption?.canDelete}"
-                                                  @change="${() => this.requestUpdate('config')}" @remove="${() => this._removeRealm(key)}"
+                                                  @change="${() => this.notifyConfigChange(this.config)}" @remove="${() => this._removeRealm(key)}"
                                 ></or-conf-map-card>
                             `;
                         default:
@@ -155,7 +156,7 @@ export class OrConfPanel extends LitElement {
                 }
             },
         ];
-        const dialog = showDialog(new OrMwcDialog()
+        showDialog(new OrMwcDialog()
             .setHeading(i18next.t('configuration.addMapCustomization'))
             .setActions(dialogActions)
             .setContent(html`
