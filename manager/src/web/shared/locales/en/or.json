@@ -667,7 +667,7 @@
     "deleteRealmCustomization": "Delete Style",
     "deleteRealmCustomizationConfirm":"Are you sure you want to delete this Realm style?",
     "mapBounds": "Boundaries",
-    "mapBoundsDescription": "Define a view box that the user sees",
+    "mapBoundsDescription": "Override the default bounds of the map",
     "mapZoom": "Zoom",
     "mapZoomDescription": "Define the zoom level. The entire Earth is '1' and '24' shows the most detail",
     "mapSettings": "Map settings",

@@ -228,13 +228,13 @@ export class OrConfMapCard extends LitElement {
                                           class="boundary-item"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(2, e.detail.value)}"
                                           .step="${.01}"></or-mwc-input>
-                            <or-mwc-input .value="${this.map?.bounds[0]}" .type="${InputType.NUMBER}" .label="${i18next.t("west")}"
-                                          class="boundary-item"
-                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(0, e.detail.value)}"
-                                          .step="${.01}"></or-mwc-input>
                             <or-mwc-input .value="${this.map?.bounds[1]}" .type="${InputType.NUMBER}" .label="${i18next.t("south")}"
                                           class="boundary-item"
                                           @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(1, e.detail.value)}"
+                                          .step="${.01}"></or-mwc-input>
+                            <or-mwc-input .value="${this.map?.bounds[0]}" .type="${InputType.NUMBER}" .label="${i18next.t("west")}"
+                                          class="boundary-item"
+                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setBoundary(0, e.detail.value)}"
                                           .step="${.01}"></or-mwc-input>
                             <div class="subheader">${i18next.t("configuration.center")}</div>
                             <span>${i18next.t("configuration.centerDescription")}</span>
