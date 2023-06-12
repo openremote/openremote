@@ -53,7 +53,7 @@ export interface MapWidgetConfig extends OrWidgetConfig {
     valueType?: string,
     attributeName?: string,
     assetTypes: AssetDescriptor[],
-    assets: Asset[],
+    assetIds: string[],
     attributes: string[],
 }
 
@@ -78,8 +78,8 @@ export class OrMapWidget implements OrWidgetEntity {
             textColors: [['example', '4caf50'], ['example2', 'ef5350']],
             thresholds: [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]],
             assetTypes: [],
-            assetType: " ",
-            assets: [],
+            assetType: undefined,
+            assetIds: [],
             attributes: [],
         } as MapWidgetConfig;
     }
@@ -115,7 +115,7 @@ export class OrMapWidgetContent extends LitElement {
     public realm?: string;
 
     @state()
-    private assets: Asset[] = [];
+    private assets?: Asset[] = [];
 
     @query("#miniMap")
     protected _map?: OrMap;
@@ -138,7 +138,7 @@ export class OrMapWidgetContent extends LitElement {
                                     return false;
                                 }
                                 const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                                return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+                                return !attr || !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
                             }).map(asset => {
                                 if (this.markers) {
                                     // Configure map marker asset settings
@@ -184,7 +184,8 @@ export class OrMapWidgetContent extends LitElement {
 
     updated(changedProperties: Map<string, any>) {
         if (changedProperties.has("widget") || changedProperties.has("editMode")) {
-            if (this.assets !== this.widget!.widgetConfig.assets || this.assets.length === 0) {
+            const areAssetsIncorrect: boolean = this.assets?.find((a) => !this.widget?.widgetConfig?.assetIds?.includes(a.id)) != undefined;
+            if (this.assets == undefined || this.assets?.length === 0 || areAssetsIncorrect) {
                 this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
                     this.assets = assets!;
                 });
@@ -299,7 +300,7 @@ class OrMapWidgetSettings extends LitElement {
                     </or-dashboard-settingspanel>
                 ` : null}
             </div>
-            ${this.widget?.widgetConfig.assets.length > 0 ? html`
+            ${this.widget?.widgetConfig?.assetIds?.length > 0 ? html`
                 <div>
                     ${this.generateExpandableHeader(i18next.t('thresholds'))}
                 </div>

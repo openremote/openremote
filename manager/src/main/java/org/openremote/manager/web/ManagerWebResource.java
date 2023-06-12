@@ -47,11 +47,11 @@ public class ManagerWebResource extends WebResource {
     }
 
     public boolean isRealmActiveAndAccessible(String realm) {
-        return identityService.getIdentityProvider().isRealmActiveAndAccessible(this, realm);
+        return identityService.getIdentityProvider().isRealmActiveAndAccessible(getAuthContext(), realm);
     }
 
     public boolean isRealmActiveAndAccessible(Realm realm) {
-        return identityService.getIdentityProvider().isRealmActiveAndAccessible(this, realm);
+        return identityService.getIdentityProvider().isRealmActiveAndAccessible(getAuthContext(), realm);
     }
 
 }

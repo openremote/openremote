@@ -45,7 +45,6 @@ public interface AssetDatapointResource {
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
     ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,
                                       @PathParam("assetId") String assetId,
                                       @PathParam("attributeName") String attributeName,

@@ -23,6 +23,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
@@ -33,9 +34,9 @@ import org.openremote.model.http.RequestParams;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import org.openremote.model.security.ClientRole;
+import org.openremote.model.value.MetaItemType;
+
 import java.util.logging.Logger;
 
 public class AssetPredictedDatapointResourceImpl extends ManagerWebResource implements AssetPredictedDatapointResource {
@@ -71,7 +72,18 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
-            if (!isRealmActiveAndAccessible(asset.getRealm())) {
+            // Realm should be accessible
+            if(!isRealmActiveAndAccessible(asset.getRealm())) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            // If not logged in, asset should be PUBLIC READ
+            if(!isAuthenticated() && !asset.isAccessPublicRead()) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            // If logged in, user should have READ ASSETS role
+            if(isAuthenticated() && !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
@@ -80,7 +92,25 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
+            // If restricted, the attribute should also be restricted
+            if(isRestrictedUser()) {
+                attribute.getMeta().getValue(MetaItemType.ACCESS_RESTRICTED_READ).ifPresentOrElse((v) -> {
+                    if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
+                }, () -> {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                });
+            }
+
+            // If not logged in, attribute should be PUBLIC READ
+            if(!isAuthenticated()) {
+                attribute.getMeta().getValue(MetaItemType.ACCESS_PUBLIC_READ).ifPresentOrElse((v) -> {
+                    if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
+                }, () -> {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                });
+            }
             return assetPredictedDatapointService.queryDatapoints(assetId, attribute, query);
+
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }

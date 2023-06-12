@@ -1,7 +1,7 @@
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import "@openremote/or-app";
 import {AppConfig, appReducer, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
-import {pageInsightsProvider} from "./pages/page-insights";
+import {pageViewProvider} from "./pages/page-view";
 import {ManagerAppConfig} from "@openremote/model";
 
 declare const CONFIG_URL_PREFIX: string;
@@ -61,6 +61,10 @@ fetch(configURL).then(async (result) => {
         }
     }
 
+    // Override specific for Insights app, since it doesn't require login.
+    // Login and logout buttons can be found in the sidebar menu of the app.
+    appConfig.manager.autoLogin = false;
+
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {
@@ -112,7 +116,7 @@ fetch(configURL).then(async (result) => {
         }
 
         // Add insights page with correct parameters
-        orAppConfig.pages.push(pageInsightsProvider(store, orAppConfig.realms))
+        orAppConfig.pages.push(pageViewProvider(store, orAppConfig.realms))
 
         return orAppConfig;
     }

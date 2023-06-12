@@ -27,6 +27,14 @@ public class DashboardScreenPreset {
 
     /* -------------------------------- */
 
+    public DashboardScreenPreset() {
+    }
+    public DashboardScreenPreset(String displayName, DashboardScalingPreset scalingPreset) {
+        this.displayName = displayName;
+        this.breakpoint = 1;
+        this.scalingPreset = scalingPreset;
+    }
+
     public void setId(@NotNull @NotEmpty String id) { this.id = id; }
     public void setDisplayName(@NotNull @NotEmpty String displayName) { this.displayName = displayName; }
     public void setBreakpoint(@NotNull int breakpoint) { this.breakpoint = breakpoint; }
