@@ -41,9 +41,7 @@ export class OrConfJson extends LitElement {
         }
         const value = this._aceEditor.value.getValue()
         try {
-            const parsedJSON = JSON.parse(value || '{}');
-            console.error(parsedJSON);
-            return parsedJSON;
+            return JSON.parse(value || '{}');
         } catch (e) {
             return false;
         }
@@ -75,7 +73,7 @@ export class OrConfJson extends LitElement {
             },
 
         ];
-        const dialog = showDialog(new OrMwcDialog()
+        showDialog(new OrMwcDialog()
             .setActions(dialogActions)
             .setHeading("manager_config.json")
             .setContent(html `<or-ace-editor ${ref(this._aceEditor)} .value="${this.managerConfig}" ></or-ace-editor>`)
@@ -99,10 +97,6 @@ export class OrConfJson extends LitElement {
             `)
             .setDismissAction(null));
 
-    }
-
-    protected willUpdate(changedProps: Map<string, any>) {
-        console.log(changedProps); // TODO: Temporary use for testing purposes
     }
 
     render() {

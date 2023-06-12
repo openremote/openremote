@@ -24,10 +24,6 @@ export class OrConfMapGeoJson extends LitElement {
 
     /* -------------- */
 
-    protected willUpdate(changedProps: Map<string, any>) {
-        console.log(changedProps); // TODO: Temporary use for testing purposes
-    }
-
     protected render() {
         const heading = "GeoJSON editor"
         const content = html`

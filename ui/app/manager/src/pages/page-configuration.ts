@@ -172,7 +172,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     // On every update..
     willUpdate(changedProps: PropertyValues<this>) {
-        console.log(changedProps); // TODO: Temporary use for testing purposes
 
         if(!this.loading) {
             let managerConfigPromise;
@@ -276,10 +275,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         return (await manager.rest.api.RealmResource.getAccessible()).data;
     }
 
-    // TODO: Improve this code
     protected saveAllConfigs(config: ManagerAppConfig, mapConfig: {[p: string]: MapRealmConfig}) {
         this.loading = true;
         let managerPromise;
+
+        // POST manager config if changed...
         if (this.managerConfigurationChanged) {
             managerPromise = manager.rest.api.ConfigurationResource.update(config).then(() => {
                 fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
@@ -294,6 +294,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             });
         }
 
+        // POST map config if changed...
         let mapPromise;
         if(this.mapConfigChanged) {
             mapPromise = manager.rest.api.MapResource.saveSettings(mapConfig)
@@ -304,6 +305,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
         }
 
+        // Save the images to the server that have been uploaded by the user.
+        // TODO: Optimize code so it only saves images that have been changed.
         const imagePromises = [];
         if(this.realmCardElem !== undefined) {
             const elem = this.realmCardElem?.getCardElement() as OrConfRealmCard;
@@ -312,6 +315,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             });
         }
 
+        // Wait for all requests to complete, then finish loading.
         const promises = [...imagePromises, managerPromise, mapPromise];
         Promise.all(promises).finally(() => {
             this.loading = false;

@@ -223,6 +223,7 @@ export class OrConfRealmCard extends LitElement {
         }
     }
 
+    // Public GET method for getting the files uploaded by the user.
     public getFiles() {
         return this.files;
     }
@@ -262,10 +263,6 @@ export class OrConfRealmCard extends LitElement {
             `)
             .setDismissAction(null));
 
-    }
-
-    protected willUpdate(changedProps: Map<string, any>) {
-        console.log(changedProps); // TODO: Temporary use for testing purposes
     }
 
     protected notifyConfigChange(config: ManagerAppRealmConfig) {

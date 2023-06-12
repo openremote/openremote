@@ -22,10 +22,6 @@ export class OrConfPanel extends LitElement {
 
     protected _addedRealm: null | string = null
 
-    protected willUpdate(changedProps: Map<string, any>) {
-        console.log(changedProps); // TODO: Temporary use for testing purposes
-    }
-
     public getCardElement(): OrConfRealmCard | OrConfMapCard | undefined {
         if(this.isManagerConfig(this.config)) {
             return this.shadowRoot?.querySelector('or-conf-realm-card');
@@ -161,7 +157,11 @@ export class OrConfPanel extends LitElement {
                         if (!realms) {
                             realms = {}
                         }
-                        realms[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
+                        if(this.isManagerConfig(this.config)) {
+                            realms[this._addedRealm] = {}; // empty object since no fields are required
+                        } else if(this.isMapConfig(this.config)) {
+                            realms[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
+                        }
                         this.requestUpdate("config");
                         this.notifyConfigChange(this.config);
                     }

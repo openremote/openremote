@@ -110,10 +110,6 @@ export class OrConfMapCard extends LitElement {
     @state()
     protected zoom: number = 1;
 
-    willUpdate(changedProps: Map<string, any>) {
-        console.log(changedProps); // TODO: Temporary use for testing purposes
-    }
-
     protected notifyConfigChange(config: MapRealmConfig) {
         this.dispatchEvent(new CustomEvent("change", { detail: config }));
     }
@@ -210,9 +206,9 @@ export class OrConfMapCard extends LitElement {
                                 .geoJson="${this.map.geoJson}"
                                 .useZoomControl="${false}"
                                 style="height: 500px; width: 100%;">
-                            ${this.map.center ? html`
+                            ${when(this.map.center, () => html`
                                 <or-map-marker id="geo-json-point-marker" .lng="${this.map.center[0]}" .lat="${this.map.center[1]}"></or-map-marker>
-                            `: ""}
+                            `)}
                         </or-map>
                     </div>
 
