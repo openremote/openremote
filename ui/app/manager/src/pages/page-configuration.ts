@@ -219,7 +219,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                     <div id="heading" style="justify-content: space-between;">
                         <span style="margin: 0;">${i18next.t("configuration.realmStyling")}</span>
                             <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
-                                          @saveLocalManagerConfig="${(ev: CustomEvent) => { this.managerConfiguration = ev.detail.value as ManagerAppConfig }}"
+                                          @saveLocalManagerConfig="${(ev: CustomEvent) => {
+                                              this.managerConfiguration = ev.detail.value as ManagerAppConfig;
+                                              this.managerConfigurationChanged = true;
+                                          }}"
                             ></or-conf-json>
                     </div>
                 `;
