@@ -25,9 +25,9 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import { ORError } from "@openremote/core";
 import { Auth, ManagerConfig, Realm } from "@openremote/model";
 
-const DefaultLogo = require("../images/logo.svg");
-const DefaultMobileLogo = require("../images/logo-mobile.svg");
-const DefaultFavIcon = require("../images/favicon.ico");
+export const DefaultLogo = require("../images/logo.svg");
+export const DefaultMobileLogo = require("../images/logo-mobile.svg");
+export const DefaultFavIcon = require("../images/favicon.ico");
 
 export {AnyAction};
 export * from "./app";

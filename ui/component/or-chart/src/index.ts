@@ -377,7 +377,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
 
     @property({type: Object})
-    public datapointQuery!: AssetDatapointQueryUnion;
+    public readonly datapointQuery!: AssetDatapointQueryUnion;
 
     @property({type: Object})
     public config?: OrChartConfig;
@@ -1064,7 +1064,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
-            const query = this.datapointQuery;
+            const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
             query.fromTimestamp = this._startOfPeriod;
             query.toTimestamp = this._endOfPeriod;
 

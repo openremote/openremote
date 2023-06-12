@@ -19,13 +19,11 @@ public interface DashboardResource {
     @GET
     @Path("all/{realm}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_INSIGHTS_ROLE})
     Dashboard[] getAllRealmDashboards(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @GET
     @Path("{dashboardId}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_INSIGHTS_ROLE})
     Dashboard get(@BeanParam RequestParams requestParams, @PathParam("dashboardId") String dashboardId);
 
     @POST
@@ -38,10 +36,11 @@ public interface DashboardResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_INSIGHTS_ROLE})
-    void update(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
+    Dashboard update(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
 
     @DELETE
+    @Path("{dashboardId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_INSIGHTS_ROLE})
-    void delete(@BeanParam RequestParams requestParams, @QueryParam("dashboardId") List<String> fields);
+    void delete(@BeanParam RequestParams requestParams, @PathParam("dashboardId") String dashboardId);
 }
