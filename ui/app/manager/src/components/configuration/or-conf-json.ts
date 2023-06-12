@@ -52,9 +52,9 @@ export class OrConfJson extends LitElement {
     protected _showManagerConfigDialog(){
         const _saveConfig = ()=>{
             const config = this.beforeSave()
-            if (config){
+            if (config) {
                 this.managerConfig = config as ManagerAppConfig
-                document.dispatchEvent(
+                this.dispatchEvent(
                     new CustomEvent('saveLocalManagerConfig',
                         {detail: {value: this.managerConfig}}
                     )
