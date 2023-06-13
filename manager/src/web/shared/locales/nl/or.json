@@ -669,7 +669,7 @@
     "deleteRealmCustomization": "Verwijder stijl",
     "deleteRealmCustomizationConfirm":"Weet je zeker dat je deze realm stijl wilt verwijderen?",
     "mapBounds": "Randen",
-    "mapBoundsDescription": "Defineer het gebied dat de gebruiker kan gebruiken",
+    "mapBoundsDescription": "Overschrijf de standaard kaders van de kaart",
     "mapZoom": "Zoom",
     "mapZoomDescription": "Defineer het zoom niveau. De gehele wereld is '1' en '24' laat het meeste detail zien",
     "mapSettings": "Kaartinstelling",
