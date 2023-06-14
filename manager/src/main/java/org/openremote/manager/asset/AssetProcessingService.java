@@ -291,7 +291,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     MBeanServer server = ManagementFactory.getPlatformMBeanServer();
                     HotSpotDiagnosticMXBean mxBean = ManagementFactory.newPlatformMXBeanProxy(
                         server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
-                    mxBean.dumpHeap("C:\\temp\\dump" + timerService.getCurrentTimeMillis() + ".hprof", true);
+                    mxBean.dumpHeap("/deployment/dump" + timerService.getCurrentTimeMillis() + ".hprof", true);
                 }
             } catch (Exception e) {
                 LOG.warning("Failed to produce heap dump");
