@@ -287,6 +287,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return true;
     }
 
+    // TODO: Priority each canPublish call makes a call to the DB via AssetProcessingService:203
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
@@ -402,6 +403,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
+        LOG.fine("Publishing to client event queue: " + attributeEvent);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .withBody(attributeEvent)

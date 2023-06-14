@@ -245,6 +245,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .to(ClientEventService.CLIENT_EVENT_QUEUE)
             .end();
 
+        // TODO: Priority fix threads here means injected timestamps for same attribute can produce EVENT_OUTDATED errors in processing chain
         from(ClientEventService.CLIENT_EVENT_QUEUE)
             .routeId("ClientEvents")
             .threads().executorService(executorService)
@@ -388,6 +389,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         return authorized;
     }
 
+    // TODO: Priority this should be done once in a consistent way for events coming from any source
     /**
      * This handles basic authorisation checks for clients that want to write an event to the system
      */

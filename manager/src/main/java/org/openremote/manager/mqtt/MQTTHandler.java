@@ -105,6 +105,7 @@ public abstract class MQTTHandler {
         }
     }
 
+    // TODO: Priority publishes can come through after the connection is closed (slow delivery to this ActiveMQ client needs investigating)
     protected void addPublishConsumer(String topic) {
         try {
             getLogger().info("Adding publish consumer for topic '" + topic + "': handler=" + getName());

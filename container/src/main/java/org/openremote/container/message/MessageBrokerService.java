@@ -115,8 +115,8 @@ public class MessageBrokerService implements ContainerService {
                 );
 
                 if (meterRegistry != null) {
-                    String name = getExecutorName("", threadFactory);
-                    name = "".equals(name) ? profile.getId() : name;
+                    String name = getExecutorName("Pool", threadFactory);
+                    name = "Pool".equals(name) ? profile.getId() : name;
                     executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
                 }
 
@@ -132,7 +132,7 @@ public class MessageBrokerService implements ContainerService {
 
                 if (meterRegistry != null) {
                     String name = getExecutorName("", threadFactory);
-                    name = "".equals(name) ? profile.getId() : name;
+                    name = "ScheduledPool".equals(name) ? profile.getId() : name;
                     scheduledExecutorService = new TimedScheduledExecutorService(meterRegistry, scheduledExecutorService, name(name), Tags.empty());
                 }
 

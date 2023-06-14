@@ -100,6 +100,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
 
+        // TODO: Priority should each protocol instance have its' own camel route
         withLock(getProtocolName() + "::start", () -> {
             try {
                 messageBrokerContext.addRoutes(new RouteBuilder() {

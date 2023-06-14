@@ -405,7 +405,7 @@ Resources:
                     metric_relabel_configs:
                       - action: keep
                         source_labels: [__name__,name]
-                        regex: '(executor_pool_core_threads;seda:\/\/.*|executor_pool_size_threads;seda:\/\/.*|executor_queue_remaining_tasks;seda:\/\/.*|or_camel_route_failed_total;|or_camel_route_total;|or_camel_route_seconds.*;|or_rules_.*)'
+                        regex: '(executor_pool_size_threads;.*(ProducerTemplate|PersistenceTopic|ClientEventTopic).*|executor_queue_remaining_tasks;.*|or_camel_route_failed_total;|or_camel_route_total;|or_camel_route_seconds.*;|or_rules_.*)'
                       - action: replace
                         source_labels: [name]
                         regex: '.+:\/\/(.+)\?.*'

@@ -79,13 +79,13 @@ public class HealthService implements ContainerService {
 
         if (metricsEnabled) {
             MessageBrokerService brokerService = container.getService(MessageBrokerService.class);
-            MapAccess.getInteger(container.getConfig(), OR_METRICS_PORT, OR_METRICS_PORT_DEFAULT);
+            int metricsPort = MapAccess.getInteger(container.getConfig(), OR_METRICS_PORT, OR_METRICS_PORT_DEFAULT);
             LOG.log(System.Logger.Level.INFO, "Metrics collection enabled");
 
             // Add additional web server for metrics (this keeps CI/CD prometheus scraper config simple with no oauth
             // this port can be exposed to the host but not to the public
             metricsServer = new HTTPServer.Builder()
-                .withPort(8404)
+                .withPort(metricsPort)
                 .withExecutorService(container.getExecutorService())
                 .build();
 
@@ -108,7 +108,7 @@ public class HealthService implements ContainerService {
             MicrometerRoutePolicyFactory micrometerRoutePolicyFactory = new MicrometerRoutePolicyFactory() {
                 @Override
                 public RoutePolicy createRoutePolicy(CamelContext camelContext, String routeId, NamedNode routeDefinition) {
-                    if ("AssetQueueProcessor".equals(routeId)) {
+                    if ("AssetQueueProcessor".equals(routeId) || "AssetPersistenceChanges".equals(routeId) || "FromClientUpdates".equals(routeId) || "NotificationQueueProcessor".equals(routeId) || "ClientEvents".equals(routeId) || "FromSensorUpdates".equals(routeId)) {
                         return super.createRoutePolicy(camelContext, routeId, routeDefinition);
                     }
                     return null;

@@ -553,7 +553,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             attribute.getMetaValue(AGENT_LINK)
                 .map(agentLink -> {
                     LOG.finest("Attribute write for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + asset.getId() + ", attribute=" + attribute.getName());
-
+                    // TODO: Priority remove actuator topic and call protocol instance directly
                     messageBrokerService.getFluentProducerTemplate()
                         .withBody(attributeEvent)
                         .withHeader(Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL, getProtocolInstance(agentLink.getId()))
