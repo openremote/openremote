@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
@@ -47,7 +48,12 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.EntityManager;
+
+import javax.management.MBeanServer;
+import java.lang.management.ManagementFactory;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -138,6 +144,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected ClientEventService clientEventService;
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
+    protected ScheduledFuture<?> monitor;
 
     protected static Processor handleAssetProcessingException(Logger logger) {
         return exchange -> {
@@ -275,12 +282,28 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public void start(Container container) throws Exception {
-
+        // TODO: Remove this temporary monitoring code
+        monitor = container.getExecutorService().scheduleWithFixedDelay(() -> {
+            try {
+                long diff = timerService.getCurrentTimeMillis() - lastProcessedEventTimestamp;
+                if (diff > 30000 && diff < 120000) {
+                    LOG.fine("No event processed in last 60s so dumping threads");
+                    MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+                    HotSpotDiagnosticMXBean mxBean = ManagementFactory.newPlatformMXBeanProxy(
+                        server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
+                    mxBean.dumpHeap("C:\\temp\\dump" + timerService.getCurrentTimeMillis() + ".hprof", true);
+                }
+            } catch (Exception e) {
+                LOG.warning("Failed to produce heap dump");
+            }
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     @Override
     public void stop(Container container) throws Exception {
-
+        if (monitor != null) {
+            monitor.cancel(false);
+        }
     }
 
     @SuppressWarnings("rawtypes")
