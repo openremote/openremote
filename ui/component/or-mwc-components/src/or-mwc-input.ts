@@ -1584,7 +1584,7 @@ export class OrMwcInput extends LitElement {
                         const numberComponent = this.shadowRoot!.getElementById("number");
                         if (numberComponent) {
                             const numberField = new MDCTextField(numberComponent);
-                            numberField.useNativeValidation = false;
+                            numberField.useNativeValidation = true;
                             this._mdcComponent2 = numberField;
                         }
                         break;
