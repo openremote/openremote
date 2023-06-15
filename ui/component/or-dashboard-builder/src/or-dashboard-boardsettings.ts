@@ -193,7 +193,7 @@ export class OrDashboardBoardsettings extends LitElement {
         } else {
             return html`
                 <div style="padding: 24px;">
-                    <span>${i18next.t('errorOccured')}</span><br/>
+                    <span>${i18next.t('errorOccurred')}</span><br/>
                     <span>${i18next.t('noDashboardFound')}</span>
                 </div>
             `
