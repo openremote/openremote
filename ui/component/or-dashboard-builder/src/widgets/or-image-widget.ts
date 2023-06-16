@@ -21,7 +21,6 @@ export interface ImageWidgetConfig extends OrWidgetConfig {
     assets: Asset[];
 }
 
-
 export class OrImageWidget implements OrWidgetEntity {
 
     readonly DISPLAY_MDI_ICON: string = "file-image-marker"; // https://materialdesignicons.com;
@@ -38,12 +37,10 @@ export class OrImageWidget implements OrWidgetEntity {
             yCoordinatesMap: [],
             showTimestampControls: false,
             imageUploaded: false,
-            imagePath: "https://home3ds.com/wp-content/uploads/2018/11/PNG.png",
+            imagePath: "",
             assets: []
         } as unknown as ImageWidgetConfig;
     }
-
-    
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
         return html`<or-image-widgetsettings .widget="${widget}" realm="${realm}"></or-image-widgetsettings>`;
@@ -128,7 +125,7 @@ export class OrImageWidgetContent extends LitElement {
         return pos;
     }
 
-    private handleContainerSizing(config: ImageWidgetConfig){
+    private handleContainerSizing(){
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
                 const size = entries[0].contentRect;
@@ -167,8 +164,8 @@ export class OrImageWidgetContent extends LitElement {
     }
 
     render() {
-
         var imagePath = this.widget?.widgetConfig.imagePath;
+        const reader = new FileReader();
         return html
             `
             <div id="img-container">
@@ -190,7 +187,8 @@ export class OrImageWidgetContent extends LitElement {
                     return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
 
                 }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                this.handleContainerSizing(this.widget?.widgetConfig);
+                this.handleContainerSizing();
+                console.log(this.widget?.widgetConfig);
                 this.requestUpdate();
             });
         }
@@ -220,11 +218,11 @@ export class OrImageWidgetContent extends LitElement {
 }
 
 // change snake case to camelcase
-const marker_container_styling = css `
-    #marker_container {
+const marker_container_styling = css`
+    #marker-container {
         display: flex;
         justify-content: flex-end; 
-        flex-direction: column; 
+        flex-direction: column;
     }
 `;
 
@@ -235,7 +233,7 @@ export class OrImageWidgetSettings extends LitElement {
     }
 
     private _fileElem!: HTMLInputElement;
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings prototype'), i18next.t('image settings final')];
     private loadedAssets?: Asset[];
     @property()
     public readonly widget?: DashboardWidget;
@@ -269,14 +267,30 @@ export class OrImageWidgetSettings extends LitElement {
             ${ this.expandedPanels.includes(i18next.t('marker coordinates')) ? this.prepareCoordinateEntries(config, i18next.t('marker coordinates')): null}
         </div>
             <div>
-                ${this.generateExpandableHeader(i18next.t('image settings'))}
+                ${this.generateExpandableHeader(i18next.t('image settings prototype'))}
             </div>
             <div>
-                ${this.expandedPanels.includes(i18next.t('image settings')) ? html`
+                ${this.expandedPanels.includes(i18next.t('image settings prototype')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
-                        <div>
                         <input type="file" @change="${this.handleFileInputChange}" accept="${this.accept}"/> 
-                        </div>
+                    </div>
+                ` : null}
+            </div>
+
+            <div>
+                ${this.generateExpandableHeader(i18next.t('image settings final'))}
+            </div>
+            <div>
+                ${this.expandedPanels.includes(i18next.t('image settings final')) ? html`
+                    <div style="padding: 24px 24px 48px 24px;">
+                        <or-mwc-input style="flex: 1;" type="${InputType.URL}" 
+                        required label="${i18next.t('Image URL')}"
+                        .value="${config.imageUploaded}"
+                        @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                    config.imagePath = event.detail.value;
+                                    this.updateConfig(this.widget!, config);
+                        }}"
+                        ></or-mwc-input>
                     </div>
                 ` : null}
             </div>
@@ -284,16 +298,29 @@ export class OrImageWidgetSettings extends LitElement {
         return output;
     }
 
-    private prepareCoordinateEntries(config: ImageWidgetConfig, name: string){
+    private handleFileInputChange(event: Event) {
+        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
+        const input = event.target as HTMLInputElement;
+        if (input.files && input.files[0]) {
+            this._fileElem = input;
+            config.imagePath = URL.createObjectURL(input.files[0]);
+            this.updateConfig(this.widget!, config);
+            this.requestUpdate();
+        }
+    }
+    
+
+    private prepareCoordinateEntries(config: ImageWidgetConfig, name: string) {
         var min = 0;
         var max = 100;
         if (config.attributeRefs && config.attributeRefs.length > 0) {
+            // remove this? 
             this.updateConfig(this.widget!, config);
             return config.attributeRefs.map((attr) => 
             (html`
                     <div id="marker-container">
                     <div style="margin: 5%; font-family: inherit; width: 100%;">${attr.name}</div>
-                    <or-mwc-input .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.xCoordinatesMap[config.attributeRefs.indexOf(attr)]}"
+                    <or-mwc-input style="flex: 1;" .type="${InputType.RANGE}" .min="${min}" .max="${max}" .value="${config.xCoordinatesMap[config.attributeRefs.indexOf(attr)]}"
                     @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                         config.xCoordinatesMap[config.attributeRefs.indexOf(attr)] = event.detail.value;
                         this.updateConfig(this.widget!, config);
@@ -310,18 +337,7 @@ export class OrImageWidgetSettings extends LitElement {
         }
     }
 
-    private handleFileInputChange(event: Event) {
-        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
-        const input = event.target as HTMLInputElement;
-        if (input.files && input.files[0]) {
-            
-            this._fileElem = input;
-            config.imagePath = URL.createObjectURL(input.files[0]);
-            this.updateConfig(this.widget!, config);
-            this.requestUpdate();
-        }
-    }
-
+    
     private updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
         const oldWidget = JSON.parse(JSON.stringify(widget)) as DashboardWidget;
         widget.widgetConfig = config;
@@ -369,5 +385,3 @@ export class OrImageWidgetSettings extends LitElement {
         this.requestUpdate();
     }
 }
-
-
