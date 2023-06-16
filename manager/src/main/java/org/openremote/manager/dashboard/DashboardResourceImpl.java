@@ -53,9 +53,8 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     }
 
     @Override
-    public Dashboard get(RequestParams requestParams, String dashboardId) {
+    public Dashboard get(RequestParams requestParams, String realm, String dashboardId) {
         boolean publicOnly = true;
-        String realm = getRequestRealmName();
         if(realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -126,8 +125,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     }
 
     @Override
-    public void delete(RequestParams requestParams, String dashboardId) {
-        String realm = getRequestRealmName();
+    public void delete(RequestParams requestParams, String realm, String dashboardId) {
         if(realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
