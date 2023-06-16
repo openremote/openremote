@@ -22,7 +22,7 @@ export class OrConfMapGeoJson extends LitElement {
     protected _aceEditorValue: string;
 
 
-    /* --------------*/
+    /* -------------- */
 
     protected render() {
         const heading = "GeoJSON editor"

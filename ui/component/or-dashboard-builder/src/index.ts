@@ -21,7 +21,7 @@ import {
     DashboardTemplate,
     DashboardWidget
 } from "@openremote/model";
-import manager, {DefaultColor1, DefaultColor3, DefaultColor5} from "@openremote/core";
+import manager, {DefaultColor1, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs";
@@ -327,7 +327,7 @@ export class OrDashboardBuilder extends LitElement {
 
         // Setting dashboard if selectedId is given by parent component
         if(this.selectedId != undefined) {
-            this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == this.selectedId; }));
+            this.selectedDashboard = this.dashboards?.find(x => { return x.id == this.selectedId; });
         }
     }
 
@@ -341,7 +341,9 @@ export class OrDashboardBuilder extends LitElement {
 
         // On any update (except widget selection), check whether hasChanged should be updated.
         if(!(changedProperties.size == 1 && changedProperties.has('selectedWidget'))) {
-            this.hasChanged = (JSON.stringify(this.selectedDashboard) != this.initialDashboardJSON || JSON.stringify(this.currentTemplate) != this.initialTemplateJSON);
+            const dashboardEqual = Util.objectsEqual(this.selectedDashboard, this.initialDashboardJSON ? JSON.parse(this.initialDashboardJSON) : undefined);
+            const templateEqual = Util.objectsEqual(this.currentTemplate, this.initialTemplateJSON ? JSON.parse(this.initialTemplateJSON) : undefined);
+            this.hasChanged = (!dashboardEqual || !templateEqual);
         }
 
         // Support for realm switching
@@ -441,6 +443,13 @@ export class OrDashboardBuilder extends LitElement {
             const dashboard = this.selectedDashboard;
             dashboard.displayName = value;
             this.requestUpdate("selectedDashboard");
+        }
+    }
+
+    openDashboardInInsights() {
+        if(this.selectedDashboard != null) {
+            const insightsUrl: string = (window.location.origin + "/insights/?realm=" + manager.displayRealm + "#/view/" + this.selectedDashboard.id + "/true/"); // Just using relative URL to origin, as its enough for now.
+            window.open(insightsUrl)?.focus();
         }
     }
 
@@ -548,6 +557,9 @@ export class OrDashboardBuilder extends LitElement {
                                         <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
                                         </or-mwc-input>
+                                        <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
+                                                      @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}">
+                                        </or-mwc-input>
                                         <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
                                                       @or-mwc-input-changed="${() => { this.saveDashboard(); }}">
                                         </or-mwc-input>
@@ -568,7 +580,12 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
-                                        <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh" @or-mwc-input-changed="${() => { this.rerenderPending = true; }}"></or-mwc-input>
+                                        <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
+                                                      @or-mwc-input-changed="${() => { this.rerenderPending = true; }}"
+                                        ></or-mwc-input>
+                                        <or-mwc-input id="share-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
+                                                      @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}"
+                                        ></or-mwc-input>
                                         <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
                                                       @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>
