@@ -93,7 +93,7 @@ export const DEFAULT_LANGUAGES: Languages = {
     de: "german",
     it: "italian",
     pt: "portuguese",
-	ro: "romanian",
+    ro: "romanian",
     es: "spanish"
 };
 
