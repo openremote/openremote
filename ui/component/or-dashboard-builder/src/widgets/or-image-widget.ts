@@ -57,7 +57,7 @@ export class OrImageWidget implements OrWidgetEntity {
     }
 }
 
-const content_styling = css`
+const contentStyling = css`
     #img-container {
         height: 100%;
         display: flex;
@@ -95,7 +95,7 @@ const content_styling = css`
 
 @customElement("or-image-widget")
 export class OrImageWidgetContent extends LitElement {
-    public static styles = content_styling;
+    public static styles = contentStyling;
     @query("#img-container")
     private _imgSize!: HTMLElement;
     @state()
@@ -134,7 +134,7 @@ export class OrImageWidgetContent extends LitElement {
                     height: size.height
                 }
                 this.updateComplete.then(() => {
-                    console.log(this.imageSize);
+                    // console.log(this.imageSize);
                 });
             }, 200))
             this.resizeObserver.observe(this._imgSize);
@@ -165,7 +165,7 @@ export class OrImageWidgetContent extends LitElement {
 
     render() {
         var imagePath = this.widget?.widgetConfig.imagePath;
-        const reader = new FileReader();
+
         return html
             `
             <div id="img-container">
@@ -195,6 +195,7 @@ export class OrImageWidgetContent extends LitElement {
     }
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
+    // something here aint right
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             let assets: Asset[] = [];
@@ -218,7 +219,7 @@ export class OrImageWidgetContent extends LitElement {
 }
 
 // change snake case to camelcase
-const marker_container_styling = css`
+const markerContainerStyling = css`
     #marker-container {
         display: flex;
         justify-content: flex-end; 
@@ -229,11 +230,11 @@ const marker_container_styling = css`
 @customElement("or-image-widgetsettings")
 export class OrImageWidgetSettings extends LitElement {
     static get styles() {
-        return [style, widgetSettingsStyling, marker_container_styling];
+        return [style, widgetSettingsStyling, markerContainerStyling];
     }
 
     private _fileElem!: HTMLInputElement;
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings prototype'), i18next.t('image settings final')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings')];
     private loadedAssets?: Asset[];
     @property()
     public readonly widget?: DashboardWidget;
@@ -267,30 +268,23 @@ export class OrImageWidgetSettings extends LitElement {
             ${ this.expandedPanels.includes(i18next.t('marker coordinates')) ? this.prepareCoordinateEntries(config, i18next.t('marker coordinates')): null}
         </div>
             <div>
-                ${this.generateExpandableHeader(i18next.t('image settings prototype'))}
+                ${this.generateExpandableHeader(i18next.t('image settings'))}
             </div>
             <div>
-                ${this.expandedPanels.includes(i18next.t('image settings prototype')) ? html`
-                    <div style="padding: 24px 24px 48px 24px;">
-                        <input type="file" @change="${this.handleFileInputChange}" accept="${this.accept}"/> 
-                    </div>
-                ` : null}
-            </div>
-
-            <div>
-                ${this.generateExpandableHeader(i18next.t('image settings final'))}
-            </div>
-            <div>
-                ${this.expandedPanels.includes(i18next.t('image settings final')) ? html`
+                ${this.expandedPanels.includes(i18next.t('image settings')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
                         <or-mwc-input style="flex: 1;" type="${InputType.URL}" 
                         required label="${i18next.t('Image URL')}"
                         .value="${config.imageUploaded}"
                         @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                     config.imagePath = event.detail.value;
+                                    config.imageUploaded = true;
                                     this.updateConfig(this.widget!, config);
                         }}"
                         ></or-mwc-input>
+                        <div>
+                        ${this.showURL(config)}
+                        </div>
                     </div>
                 ` : null}
             </div>
@@ -298,6 +292,17 @@ export class OrImageWidgetSettings extends LitElement {
         return output;
     }
 
+    private showURL(config: ImageWidgetConfig) {
+        if (!config.imageUploaded){
+            return;
+        }
+        return html `
+        <span>${'Current URL: '}</span>
+        <span>${config.imagePath}</span>
+        `;
+    }
+
+    // old code for uploading file from local user path
     private handleFileInputChange(event: Event) {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
         const input = event.target as HTMLInputElement;
@@ -350,10 +355,14 @@ export class OrImageWidgetSettings extends LitElement {
         // in my head then we should be initializing the xCoordinatesMap/ yCoordinatesMap at this point but I'm 
         // not actually sure yet since this method only takes in some map of changes
         console.log(this.widget?.widgetConfig);
+        console.log(this.loadedAssets);
         // since it's just a key change maybe there's a "key for the xCoordinatesMap"
         if (changes.has('loadedAssets')) {
             this.loadedAssets = changes.get('loadedAssets');
+            console.log(this.loadedAssets);
         }
+        //returns undefined outside of the if???
+        //if attribute is removed still contains the entry
     }
 
     // Method to update the Grid. For example after changing a setting.
