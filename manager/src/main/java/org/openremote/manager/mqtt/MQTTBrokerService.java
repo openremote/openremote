@@ -194,6 +194,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         config.setWildCardConfiguration(wildcardConfiguration);
         config.setPersistenceEnabled(false);
 
+        // TODO: Priority Prevent ActiveMQ storing messages in memory (paging)
         // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
         // Disable auth cache so we can inject RemotingConnection into the subject as a principal otherwise we don't have access to the connection during authorisation so we cannot check topic contains the clientID
         // Disable caching so we can support auto provisioning sessions without having to reconnect - we need to re-evaluate this and clients should probably send X.509 through to the broker

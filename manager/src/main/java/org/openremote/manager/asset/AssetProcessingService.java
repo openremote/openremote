@@ -50,10 +50,15 @@ import org.openremote.model.value.ValueType;
 import jakarta.persistence.EntityManager;
 
 import javax.management.MBeanServer;
+import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -283,15 +288,16 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     @Override
     public void start(Container container) throws Exception {
         // TODO: Remove this temporary monitoring code
+        Path dumpFile = Paths.get("/deployment/dump.hprof");
         monitor = container.getExecutorService().scheduleWithFixedDelay(() -> {
             try {
                 long diff = timerService.getCurrentTimeMillis() - lastProcessedEventTimestamp;
-                if (diff > 30000 && diff < 120000) {
+                if (diff > 30000 && diff < 120000 && !dumpFile.toFile().exists()) {
                     LOG.fine("No event processed in last 60s so dumping threads");
                     MBeanServer server = ManagementFactory.getPlatformMBeanServer();
                     HotSpotDiagnosticMXBean mxBean = ManagementFactory.newPlatformMXBeanProxy(
                         server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
-                    mxBean.dumpHeap("/deployment/dump" + timerService.getCurrentTimeMillis() + ".hprof", true);
+                    mxBean.dumpHeap("/deployment/dump.hprof", true);
                 }
             } catch (Exception e) {
                 LOG.warning("Failed to produce heap dump");

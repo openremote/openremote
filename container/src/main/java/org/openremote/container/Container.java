@@ -22,9 +22,8 @@ package org.openremote.container;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.CollectorRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.container.util.LogUtil;
@@ -128,7 +127,7 @@ public class Container implements org.openremote.model.Container {
 
         if (metricsEnabled) {
             // TODO: Add a meter registry provider SPI to make this pluggable
-            meterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, CollectorRegistry.defaultRegistry, Clock.SYSTEM);
+            meterRegistry = new io.micrometer.prometheus.PrometheusMeterRegistry(PrometheusConfig.DEFAULT, io.prometheus.client.CollectorRegistry.defaultRegistry, Clock.SYSTEM);
         }
 
         int scheduledTasksThreadsMax = getInteger(
@@ -137,6 +136,10 @@ public class Container implements org.openremote.model.Container {
             OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT);
 
         EXECUTOR_SERVICE = new NoShutdownScheduledExecutorService("Scheduled task", scheduledTasksThreadsMax);
+
+        if (meterRegistry != null) {
+            EXECUTOR_SERVICE = ExecutorServiceMetrics.monitor(meterRegistry, EXECUTOR_SERVICE, "ContainerExecutorService");
+        }
 
         // Any log handlers of the root logger that are container services must be registered
         for (Handler handler : Logger.getLogger("").getHandlers()) {

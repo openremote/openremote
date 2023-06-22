@@ -320,7 +320,7 @@ services:
   #  -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
 
 # Custom JVM tool options (for remote debugging)
-#JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n'
+#JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:8000,server=y,suspend=n'
 
   # Keycloak identity provider
   keycloak:

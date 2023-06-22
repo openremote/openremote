@@ -61,8 +61,6 @@ import static org.openremote.container.util.MapAccess.getString;
 
 public class MessageBrokerService implements ContainerService {
 
-    public static final String MESSAGE_SESSION_ALLOWED_ORIGIN = "MESSAGE_SESSION_ALLOWED_ORIGIN";
-    public static final String MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT = null;
     private static final Logger LOG = Logger.getLogger(MessageBrokerService.class.getName());
     public static final int PRIORITY = ContainerService.LOW_PRIORITY;
 
@@ -186,12 +184,10 @@ public class MessageBrokerService implements ContainerService {
 
         ((SimpleRegistry)((DefaultRegistry)context.getRegistry()).getFallbackRegistry()).put("OpenRemote", Map.of(Container.class, container));
 
-        String allowedOrigin = getString(container.getConfig(), MESSAGE_SESSION_ALLOWED_ORIGIN, MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT);
+        // TODO: Replace this custom websocket component with camel undertow component once it is migrated to jakarta packages
         WebsocketComponent websocketComponent = new DefaultWebsocketComponent(
-            container,
-            allowedOrigin
+            container
         );
-
         context.addComponent(WebsocketComponent.NAME, websocketComponent);
         context.addComponent("snmp", new SnmpComponent());
     }

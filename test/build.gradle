@@ -17,7 +17,7 @@ dependencies {
     testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     testImplementation resolveProject(":setup").sourceSets.integration.output
-    api resolveProject(":manager")
+    testFixturesApi resolveProject(":manager")
 
     testFixturesImplementation "org.codehaus.groovy:groovy:$groovyVersion"
     testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")

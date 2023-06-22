@@ -20,6 +20,7 @@
 package org.openremote.manager.event;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
@@ -44,8 +45,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.web.ConnectionConstants.SESSION_TERMINATOR;
@@ -110,7 +109,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     public static final String HEADER_CONNECTION_TYPE_WEBSOCKET = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_WEBSOCKET";
     public static final String HEADER_CONNECTION_TYPE_MQTT = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_MQTT";
     public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
-    private static final Logger LOG = Logger.getLogger(ClientEventService.class.getName());
+    private static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     public static final String WEBSOCKET_EVENTS = "events";
     protected static final String INTERNAL_SESSION_KEY = "ClientEventServiceInternal";
 
@@ -173,6 +172,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class)
         );
+
+//        UndertowComponent websocketComponent = new UndertowComponent(messageBrokerService.getContext());
+//        messageBrokerService.getContext().addComponent("undertow", websocketComponent);
 
         messageBrokerService.getContext().getTypeConverterRegistry().addTypeConverters(
             new EventTypeConverters()
@@ -248,12 +250,13 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         // TODO: Priority fix threads here means injected timestamps for same attribute can produce EVENT_OUTDATED errors in processing chain
         from(ClientEventService.CLIENT_EVENT_QUEUE)
             .routeId("ClientEvents")
+            .log(LoggingLevel.INFO, ClientEventService.class.getName(), "Processing exchange on client event queue: ConnectionType=${header" + HEADER_CONNECTION_TYPE + "}")
             .threads().executorService(executorService)
             .choice()
             .when(header(ConnectionConstants.SESSION_OPEN))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
-                LOG.finest("Adding session: " + sessionKey);
+                LOG.log(System.Logger.Level.TRACE, "Adding session: " + sessionKey);
                 sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
                 passToInterceptors(exchange);
             })
@@ -264,13 +267,14 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             ))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
-                LOG.finest("Removing session: " + sessionKey);
+                LOG.log(System.Logger.Level.TRACE, "Removing session: " + sessionKey);
                 sessionKeyInfoMap.remove(sessionKey);
                 eventSubscriptions.cancelAll(sessionKey);
                 passToInterceptors(exchange);
             })
             .stop()
             .end()
+            .log(LoggingLevel.INFO, ClientEventService.class.getName(), "Adding timestamp if needed")
             .process(exchange -> {
                 // Set timestamp if not set
                 if (exchange.getIn().getBody() instanceof SharedEvent) {
@@ -287,6 +291,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
                 EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
+                LOG.log(System.Logger.Level.TRACE, () -> "Adding subscription for session '" + sessionKey + "': " + subscription);
                 eventSubscriptions.createOrUpdate(sessionKey, subscription);
                 subscription.setSubscribed(true);
                 sendToSession(sessionKey, subscription);
@@ -295,7 +300,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .when(body().isInstanceOf(CancelEventSubscription.class))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
-                eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
+                CancelEventSubscription cancelEventSubscription = exchange.getIn().getBody(CancelEventSubscription.class);
+                eventSubscriptions.cancel(sessionKey, cancelEventSubscription);
+                LOG.log(System.Logger.Level.TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': " + cancelEventSubscription);
             })
             .stop()
             .when(body().isInstanceOf(SharedEvent.class))
@@ -312,7 +319,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .stop()
             .endChoice()
             .otherwise()
-            .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
+            .process(exchange -> LOG.log(System.Logger.Level.TRACE, () -> "Unsupported message body: " + exchange.getIn().getBody()))
             .end();
     }
 
@@ -380,9 +387,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         if (!authorized) {
             if (authContext != null) {
-                LOG.fine("Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                LOG.log(System.Logger.Level.DEBUG, "Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
             } else {
-                LOG.fine("Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", user=null");
+                LOG.log(System.Logger.Level.DEBUG, "Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", user=null");
             }
         }
 
@@ -399,9 +406,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         if (!authorized) {
             if (authContext != null) {
-                LOG.fine("Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                LOG.log(System.Logger.Level.DEBUG, "Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
             } else {
-                LOG.fine("Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=null");
+                LOG.log(System.Logger.Level.DEBUG,"Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=null");
             }
         }
 
@@ -417,9 +424,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         if (messageBrokerService != null && messageBrokerService.getFluentProducerTemplate() != null) {
             // Don't log that we are publishing a syslog event,
             if (!(event instanceof SyslogEvent)) {
-                if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Publishing: " + event);
-                }
+                LOG.log(System.Logger.Level.TRACE, () -> "Publishing to clients: " + event);
             }
             messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
@@ -430,12 +435,10 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
     public void sendToSession(String sessionKey, Object data) {
         if (messageBrokerService != null && messageBrokerService.getFluentProducerTemplate() != null) {
-            if (LOG.isLoggable(Level.FINEST)) {
-                LOG.finest("Sending to session '" + sessionKey + "': " + data);
-            }
+            LOG.log(System.Logger.Level.TRACE, () -> "Sending to session '" + sessionKey + "': " + data);
             SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
             if (sessionInfo == null) {
-                LOG.info("Cannot send to requested session it doesn't exist or is disconnected:" + sessionKey);
+                LOG.log(System.Logger.Level.INFO, "Cannot send to requested session it doesn't exist or is disconnected:" + sessionKey);
                 return;
             }
             if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
@@ -461,7 +464,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             return;
         }
 
-        LOG.fine("Closing session: " + sessionKey);
+        LOG.log(System.Logger.Level.DEBUG, "Closing session: " + sessionKey);
         sessionInfo.closeRunnable.run();
     }
 
@@ -471,7 +474,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             interceptor.accept(exchange);
             boolean stop = exchange.isRouteStop();
             if (stop) {
-                LOG.finest("Client event interceptor marked exchange as `stop routing`");
+                LOG.log(System.Logger.Level.TRACE, "Client event interceptor marked exchange as `stop routing`");
             }
             return stop;
         }));

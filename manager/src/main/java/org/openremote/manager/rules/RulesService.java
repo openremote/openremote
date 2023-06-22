@@ -20,9 +20,7 @@
 package org.openremote.manager.rules;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Summary;
+import jakarta.persistence.EntityManager;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -62,7 +60,6 @@ import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 
-import jakarta.persistence.EntityManager;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -151,10 +148,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected long quickFireMillis;
     protected boolean initDone;
     protected boolean startDone;
-    protected Summary rulesFiringSummary;
-    protected Summary rulesFiringAllSummary;
-    protected Gauge rulesFactCount;
-
+    protected boolean metricsEnabled;
 
     @Override
     public int getPriority() {
@@ -185,12 +179,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
 
         MeterRegistry meterRegistry = container.getMeterRegistry();
-
-        if (meterRegistry != null) {
-            rulesFiringSummary = Summary.build().name("or_rules_firing_seconds").labelNames("type", "id").help("Rule engine firing seconds").register();
-            rulesFiringAllSummary = Summary.build().name("or_rules_firing_all_seconds").help("Rule engines firing seconds").register();
-            rulesFactCount = Gauge.build().name("or_rules_facts").labelNames("type", "id").help("Rule engine fact count").register();
-        }
+        metricsEnabled = meterRegistry != null;
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
 
@@ -669,7 +658,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     assetDatapointService,
                     assetPredictedDatapointService,
                     new RulesEngineId<>(),
-                    locationPredicateRulesConsumer
+                    locationPredicateRulesConsumer,
+                    metricsEnabled
                 );
             }
 
@@ -711,7 +701,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetDatapointService,
                         assetPredictedDatapointService,
                         new RulesEngineId<>(realm),
-                        locationPredicateRulesConsumer
+                        locationPredicateRulesConsumer,
+                        metricsEnabled
                     ));
 
             realmRulesEngine.addRuleset(ruleset);
@@ -789,7 +780,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetDatapointService,
                         assetPredictedDatapointService,
                         new RulesEngineId<>(ruleset.getRealm(), assetId),
-                        locationPredicateRulesConsumer
+                        locationPredicateRulesConsumer,
+                        metricsEnabled
                     ));
 
             assetRulesEngine.addRuleset(ruleset);

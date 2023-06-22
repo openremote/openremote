@@ -60,14 +60,12 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
 
     final protected Container container;
     final protected WebService webService;
-    final protected String allowedOrigin;
     protected DeploymentInfo deploymentInfo;
     protected WebService.RequestHandler websocketHttpHandler;
 
-    public DefaultWebsocketComponent(Container container, String allowedOrigin) {
+    public DefaultWebsocketComponent(Container container) {
         this.container = container;
         this.webService = container.getService(WebService.class);
-        this.allowedOrigin = allowedOrigin;
     }
 
     @Override

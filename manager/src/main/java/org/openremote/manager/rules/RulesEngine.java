@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.rules;
 
-import io.prometheus.client.Summary;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
@@ -48,6 +50,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -133,6 +136,7 @@ public class RulesEngine<T extends Ruleset> {
 
     // Only used in tests to prevent scheduled firing of engine
     protected boolean disableTemporaryFactExpiration = false;
+    protected Timer rulesFiringTimer;
 
     public RulesEngine(TimerService timerService,
                        RulesService rulesService,
@@ -146,7 +150,8 @@ public class RulesEngine<T extends Ruleset> {
                        AssetDatapointService assetDatapointService,
                        AssetPredictedDatapointService assetPredictedDatapointService,
                        RulesEngineId<T> id,
-                       AssetLocationPredicateProcessor assetLocationPredicatesConsumer) {
+                       AssetLocationPredicateProcessor assetLocationPredicatesConsumer,
+                       boolean metricsEnabled) {
         this.timerService = timerService;
         this.rulesService = rulesService;
         this.executorService = executorService;
@@ -193,6 +198,11 @@ public class RulesEngine<T extends Ruleset> {
                 throw ex;
             }
         });
+
+        if (metricsEnabled) {
+            Metrics.gauge("or.rules.facts", Tags.of("type", id.getScope().getSimpleName(), "id", getEngineId()), facts, (facts) -> (double) facts.getFactCount());
+            rulesFiringTimer = Metrics.timer("or.rules.firing", Tags.of("type", id.getScope().getSimpleName(), "id", getEngineId()));
+        }
     }
 
     public RulesEngineId<T> getId() {
@@ -528,67 +538,54 @@ public class RulesEngine<T extends Ruleset> {
 
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
-        long executionTotalMillis = 0L;
-        Summary.Timer allTimer = rulesService.rulesFiringSummary != null
-            ? rulesService.rulesFiringAllSummary.startTimer()
-            : null;
-        Summary.Timer timer = rulesService.rulesFiringSummary != null
-            ? rulesService.rulesFiringSummary.labels(id.getScope().getSimpleName(), getEngineId()).startTimer()
-            : null;
+        AtomicLong executionTotalMillis = new AtomicLong(0L);
 
-        if (rulesService.rulesFactCount != null) {
-            rulesService.rulesFactCount.labels(id.getScope().getSimpleName(), getEngineId()).set(facts.getFactCount());
-        }
+        rulesFiringTimer.record(() -> {
+            for (RulesetDeployment deployment : deploymentList) {
+                try {
 
-        for (RulesetDeployment deployment : deploymentList) {
-            try {
+                    if (deployment.getStatus() == DEPLOYED) {
 
-                if (deployment.getStatus() == DEPLOYED) {
+                        LOG.finest("Executing rules of: " + deployment);
 
-                    LOG.finest("Executing rules of: " + deployment);
+                        // If full detail logging is enabled
+                        // Log asset states and events before firing
+                        facts.logFacts(RULES_LOG, Level.FINEST);
 
-                    // If full detail logging is enabled
-                    // Log asset states and events before firing
-                    facts.logFacts(RULES_LOG, Level.FINEST);
+                        // Reset facts for this firing (loop detection etc.)
+                        facts.reset();
 
-                    // Reset facts for this firing (loop detection etc.)
+                        long startTimestamp = timerService.getCurrentTimeMillis();
+                        lastFireTimestamp = startTimestamp;
+                        engine.fire(deployment.getRules(), facts);
+                        long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
+                        executionTotalMillis.getAndAdd(executionMillis);
+                        LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
+                    } else {
+                        LOG.finest("Rules deployment '" + deployment.getName() + "' skipped as status is: " + deployment.getStatus());
+                    }
+                } catch (Exception ex) {
+                    LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
+
+                    deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
+                    deployment.setError(ex);
+                    publishRulesetStatus(deployment);
+
+                    // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
+                    if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
+                        stop();
+                        break;
+                    }
+                } finally {
+                    // Reset facts after this firing (loop detection etc.)
                     facts.reset();
-
-                    long startTimestamp = timerService.getCurrentTimeMillis();
-                    lastFireTimestamp = startTimestamp;
-                    engine.fire(deployment.getRules(), facts);
-                    long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
-                    executionTotalMillis += executionMillis;
-                    LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
-                } else {
-                    LOG.finest("Rules deployment '" + deployment.getName() + "' skipped as status is: " + deployment.getStatus());
                 }
-            } catch (Exception ex) {
-                LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
-
-                deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
-                deployment.setError(ex);
-                publishRulesetStatus(deployment);
-
-                // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
-                if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
-                    stop();
-                    break;
-                }
-            } finally {
-                // Reset facts after this firing (loop detection etc.)
-                facts.reset();
             }
-        }
 
-        trackLocationPredicates(false);
+            trackLocationPredicates(false);
+        });
 
-        if (timer != null) {
-            timer.observeDuration();
-            allTimer.observeDuration();
-        }
-
-        if (executionTotalMillis > 100) {
+        if (executionTotalMillis.get() > 100) {
             LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
         } else {
             LOG.fine("Rules firing took " + executionTotalMillis + "ms on: " + this);

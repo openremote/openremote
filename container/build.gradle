@@ -49,7 +49,7 @@ dependencies {
     api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
     api "com.vladmihalcea:hibernate-types-60:$hibernateTypesVersion"
     api "org.apache.camel:camel-micrometer:$camelVersion"
-    implementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+    api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }
 
 jar {

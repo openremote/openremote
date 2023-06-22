@@ -222,45 +222,45 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
-                    LOG.finest("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.fine("Asset subscribe forth token must be an asset ID or wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().size() == 5) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))) {
-                    LOG.finest("Asset subscribe forth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.fine("Asset subscribe forth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
                 if (!TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
-                    LOG.finest("Asset subscribe fifth token must be a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.fine("Asset subscribe fifth token must be a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             }
         } else {
             // Attribute topic
             if (topic.getTokens().size() < 5 || topic.getTokens().size() > 6) {
-                LOG.finest("Attribute subscribe token count should be 5 or 6: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                LOG.fine("Attribute subscribe token count should be 5 or 6: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                 return false;
             }
             if (topic.getTokens().size() == 5) {
                 if (TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3))) {
-                    LOG.finest("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.fine("Attribute subscribe multi level wildcard must be last token: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))
                     && !TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 4))) {
-                    LOG.finest("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.fine("Attribute subscribe fifth token must be an asset ID or a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             } else if (topic.getTokens().size() == 6) {
                 if (!Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                    LOG.finest("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.fine("Attribute subscribe fifth token must be an asset ID: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
                 if (!TOKEN_MULTI_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 5))
                     && !TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 5))) {
-                    LOG.finest("Attribute subscribe sixth token must be a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+                    LOG.fine("Attribute subscribe sixth token must be a wildcard: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
                     return false;
                 }
             }
@@ -292,20 +292,20 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
         if (!isKeycloak) {
-            LOG.finest("Identity provider is not keycloak");
+            LOG.fine("Identity provider is not keycloak");
             return false;
         }
 
         AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
 
         if (authContext == null) {
-            LOG.finest("Anonymous publish not supported: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
+            LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
             return false;
         }
 
         if (isAttributeValueWriteTopic(topic)) {
             if (topic.getTokens().size() != 5 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 4))) {
-                LOG.finest("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
+                LOG.finer("Publish attribute value topic should be {realm}/{clientId}/writeattributevalue/{attributeName}/{assetId}: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
                 return false;
             }
         } else {
@@ -315,7 +315,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         // We don't know the value at this point so just use a null value for authorization (value type will be handled
         // when the event is processed)
         if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
-            LOG.finest("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+            LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
 
