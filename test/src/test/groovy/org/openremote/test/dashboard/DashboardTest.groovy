@@ -89,7 +89,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         // Test to verify "DELETE" logic
 
         when: "admin user tries to delete a dashboard he doesn't own"
-        adminUserDashboardResource.delete(null, privateUser1Dashboard.id)
+        adminUserDashboardResource.delete(null, MASTER_REALM, privateUser1Dashboard.id)
 
         then: "it should throw exception"
         thrown NotFoundException
@@ -123,7 +123,7 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         // Test to verify private dashboards cannot be fetched by public/unauthenticated users, even if ID is specified
 
         when: "when a public user specifically fetches a private dashboard"
-        publicUserDashboardResource.get(null, adminDashboard.id);
+        publicUserDashboardResource.get(null, MASTER_REALM, adminDashboard.id);
 
         then: "it should throw exception"
         thrown ForbiddenException

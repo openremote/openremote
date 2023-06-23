@@ -23,6 +23,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.manager.webhook.WebhookService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
+import org.openremote.model.asset.impl.ConsoleAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -270,9 +271,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 ["manager"] as String[])
         consoleRegistration2 = authenticatedConsoleResource2.register(null, consoleRegistration2)
 
-        and: "the console location is marked as RULE_STATE"
+        and: "the console attributes are marked as RULE_STATE (inc LOCATION which is needed to trigger the rule)"
         def asset = assetStorageService.find(consoleRegistration.id)
         asset.getAttribute(Asset.LOCATION).ifPresent { it.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}
+        asset.getAttribute(ConsoleAsset.CONSOLE_NAME).ifPresent { it.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}
+        asset.getAttribute(ConsoleAsset.CONSOLE_VERSION).ifPresent { it.addMeta(new MetaItem<>(MetaItemType.RULE_STATE))}
         asset = assetStorageService.merge(asset)
 
         then: "a geofence refresh notification should have been sent to the console"
@@ -342,7 +345,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 2" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration2.id} == 1
         }
 
-        and: "an email notification should have been sent to test@openremote.io with the triggered asset in the body"
+        and: "an email notification should have been sent to test@openremote.io with the triggered asset in the body but only containing the triggered asset states"
         conditions.eventually {
             assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
                 && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"

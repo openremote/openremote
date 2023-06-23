@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -90,7 +91,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         AssetQuery.OrderBy orderBy;
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
-        Predicate<List<AssetState<?>>> assetPredicate = null;
+        Function<Collection<AssetState<?>>, Set<AssetState<?>>> assetPredicate = null;
         Set<AssetState<?>> unfilteredAssetStates = new HashSet<>();
         Set<AssetState<?>> previouslyMatchedAssetStates = new HashSet<>();
         Set<AssetState<?>> previouslyUnmatchedAssetStates;
@@ -199,7 +200,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-                    assetPredicate = AssetQueryPredicate.asAssetPredicate(timerService::getCurrentTimeMillis, attributePredicates);
+                    assetPredicate = AssetQueryPredicate.asAssetStateMatcher(timerService::getCurrentTimeMillis, attributePredicates);
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
@@ -285,8 +286,10 @@ public class JsonRulesBuilder extends RulesBuilder {
                 results.put(false, unmatched);
 
                 unfilteredAssetStates.stream().collect(Collectors.groupingBy(AssetState::getId)).forEach((id, states) -> {
-                    if (assetPredicate.test(states)) {
-                        matched.addAll(states);
+                    Set<AssetState<?>> matches = assetPredicate.apply(states);
+                    if (matches != null) {
+                        matched.addAll(matches);
+                        unmatched.addAll(states.stream().filter(matches::contains).collect(Collectors.toSet()));
                     } else {
                         unmatched.addAll(states);
                     }

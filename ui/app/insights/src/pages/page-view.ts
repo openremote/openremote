@@ -186,7 +186,7 @@ export class PageView extends Page<AppStateKeyed> {
     protected async fetchDashboard(id: string, loginRedirect: boolean = true): Promise<Dashboard | undefined> {
         let promise = this.getPromise('dashboard/' + id);
         if(promise == undefined) {
-            promise = this.registerPromise(('dashboard/' + id), manager.rest.api.DashboardResource.get(id), true, false);
+            promise = this.registerPromise(('dashboard/' + id), manager.rest.api.DashboardResource.get(this._realm, id), true, false);
         }
         try {
             const response = await promise;
@@ -259,7 +259,7 @@ export class PageView extends Page<AppStateKeyed> {
         } else if(!this.viewDashboardOnly) {
             return (translate ? i18next.t('noDashboardSelected-mobile') : 'noDashboardSelected-mobile')
         }
-        return (translate ? i18next.t('errorOccured') : 'errorOccured')
+        return (translate ? i18next.t('errorOccurred') : 'errorOccurred')
     }
 
     selectDashboard(id: string, closeDrawer: boolean = true) {
