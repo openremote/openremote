@@ -17,8 +17,16 @@ public class BleProvider: NSObject {
     private var centralManager: CBCentralManager?
     private var devices: Set<CBPeripheral> = []
     private var scanDevicesCallback: (([String: Any]) -> (Void))?
+    private var connectToDeviceCallback: (([String: Any]) -> (Void))?
+    private var sendToDeviceCallback: (([String: Any]) -> (Void))?
     private var scanTimer: Timer?
     private var connectedDevice: CBPeripheral?
+    private var selectedCharacteristic: CBCharacteristic?
+    private var deviceServices: [CBService] = []
+    private var deviceCharacteristics: [CBCharacteristic] = []
+    private var dataToSend: Data?
+    private var sendDataIndex = 0
+    private var maxDataLength = 182 // according to documentation
     
     var alertBluetoothCallback : (() -> (Void))?
     
@@ -79,14 +87,29 @@ public class BleProvider: NSObject {
         }
     }
     
-    public func connectoToDevice(deviceId: UUID, callback:@escaping ([String: Any]) -> (Void)) {
-        if let device = devices.first(where: {$0.identifier == deviceId}) {
+    public func connectoToDevice(deviceId: String, callback:@escaping ([String: Any]) -> (Void)) {
+        connectToDeviceCallback = callback
+        deviceServices.removeAll()
+        deviceCharacteristics.removeAll()
+        if let device = devices.first(where: {$0.identifier.uuidString == deviceId}) {
             centralManager?.connect(device)
         }
     }
     
+    public func sendToDevice(attributeId: String, value: Data, callback:@escaping ([String: Any]) -> (Void)) {
+        sendToDeviceCallback = callback
+        if self.connectedDevice!.canSendWriteWithoutResponse {
+            if let characteristic = deviceCharacteristics.first(where: {$0.uuid.uuidString == attributeId}) {
+                selectedCharacteristic = characteristic
+                dataToSend = value
+                sendDataIndex = 0
+                sendData(characteristic: characteristic)
+            }
+        }
+    }
+    
     private func startScan() {
-        self.centralManager!.scanForPeripherals(withServices: nil)
+        self.centralManager!.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
         scanTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: false, block: { timer in
             self.centralManager?.stopScan()
             self.scanDevicesCallback?([
@@ -136,23 +159,22 @@ extension BleProvider : CBCentralManagerDelegate {
     }
     
     public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-        print(advertisementData)
-        print("\(peripheral.name ?? "Unknown")")
         devices.insert(peripheral)
     }
     
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         self.connectedDevice = peripheral
+        self.maxDataLength = peripheral.maximumWriteValueLength(for: .withoutResponse)
         peripheral.delegate = self
         peripheral.discoverServices(nil)
     }
     
     public func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        
-    }
-    
-    public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        
+        connectToDeviceCallback?([
+            DefaultsKey.actionKey : Actions.connectToBleDevice,
+            DefaultsKey.providerKey : Providers.ble,
+            DefaultsKey.successKey : false
+        ])
     }
 }
 
@@ -162,6 +184,7 @@ extension BleProvider: CBPeripheralDelegate {
         guard let services = peripheral.services else {
             return
         }
+        deviceServices.append(contentsOf: services)
         for service in services {
             peripheral.discoverCharacteristics(nil, for: service)
         }
@@ -169,18 +192,85 @@ extension BleProvider: CBPeripheralDelegate {
     
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         guard let characteristics = service.characteristics else {
-                return
-            }
-        for characteristic in characteristics {
-            print(characteristic.uuid)
-            characteristic.properties
-            peripheral.discoverDescriptors(for: characteristic)
+            return
+        }
+        if let index = deviceServices.firstIndex(of: service) {
+            deviceServices.remove(at: index)
+        }
+        deviceCharacteristics.append(contentsOf: characteristics)
+        
+        for characteristic in characteristics.filter({ $0.properties.contains(.read)}) {
+            self.connectedDevice?.readValue(for: characteristic)
         }
     }
     
-    public func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
-        guard let descriptors = characteristic.descriptors else { return }
-         
-        
+    public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        print(characteristic.uuid.uuidString)
+        if deviceServices.isEmpty {
+            connectToDeviceCallback?([
+                DefaultsKey.actionKey : Actions.connectToBleDevice,
+                DefaultsKey.providerKey : Providers.ble,
+                DefaultsKey.successKey : true,
+                DefaultsKey.dataKey: [
+                    "attributes" : deviceCharacteristics.map { characteristic in
+                        [
+                            "attributeId": characteristic.uuid.uuidString,
+                            "isReadable": characteristic.properties.contains(.read),
+                            "isWritable": characteristic.properties.contains(.write) || characteristic.properties.contains(.writeWithoutResponse),
+                            "value": characteristic.value != nil ? String(decoding: characteristic.value!, as: UTF8.self) : nil
+                        ] as [String : Any?]
+                    }
+                ]
+            ])
+        }
+    }
+    
+    public func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) {
+        if let characteristic = selectedCharacteristic {
+            if let data = dataToSend {
+                if sendDataIndex < data.count {
+                    sendData(characteristic: characteristic)
+                }
+            }
+        }
+    }
+    
+    public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        if let data = dataToSend {
+            if sendDataIndex < data.count {
+                sendData(characteristic: characteristic)
+            }
+        }
+    }
+    
+    func sendData(characteristic: CBCharacteristic) {
+        if let data = dataToSend {
+            if sendDataIndex >= data.count {
+                // All data has been sent
+                sendToDeviceCallback?([DefaultsKey.actionKey: "SEND_TO_DEVICE", DefaultsKey.providerKey: "ble", DefaultsKey.successKey: true])
+                return
+            }
+            
+            var sending = true
+            
+            while sending {
+                var amountToSend = data.count - sendDataIndex
+                
+                if amountToSend > maxDataLength {
+                    amountToSend = maxDataLength
+                }
+                
+                let chunk = data.subdata(in: sendDataIndex..<sendDataIndex+amountToSend)
+                self.connectedDevice?.writeValue(chunk, for: characteristic, type: characteristic.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse)
+                
+                sendDataIndex += amountToSend
+                
+                if sendDataIndex >= data.count {
+                    // All data has been sent
+                    sendToDeviceCallback?([DefaultsKey.actionKey: "SEND_TO_DEVICE", DefaultsKey.providerKey: "ble", DefaultsKey.successKey: true])
+                    sending = false
+                }
+            }
+        }
     }
 }

@@ -312,8 +312,20 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                         self.sendData(data: scanData)
                                     }
                                 case Actions.connectToBleDevice:
-                                    bleProvider?.scanForDevices { scanData in
-                                        self.sendData(data: scanData)
+                                    if let deviceId = postMessageDict["address"] as? String {
+                                        bleProvider?.connectoToDevice(deviceId: deviceId) { connectData in
+                                            self.sendData(data: connectData)
+                                        }
+                                    }
+                                case Actions.sendToBleDevice:
+                                    if let attributeId = postMessageDict["attributeId"] as? String, let value = postMessageDict["value"] {
+                                        if let data = try? JSONSerialization.data(
+                                            withJSONObject: value,
+                                            options: []) {
+                                            bleProvider?.sendToDevice(attributeId: attributeId, value: data) { sendData in
+                                                self.sendData(data: sendData)
+                                            }
+                                        }
                                     }
                                 default:
                                     print("Wrong action \(action) for \(provider)")
