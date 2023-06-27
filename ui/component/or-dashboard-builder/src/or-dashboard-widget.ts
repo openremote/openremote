@@ -104,12 +104,9 @@ export class OrDashboardWidget extends LitElement {
     }
 
     getWidgetContent(widget: DashboardWidget): TemplateResult {
-        const _widget = Object.assign({}, widget);
-        if(_widget.gridItem) {
-
+        if(widget.gridItem) {
             const widgetEntity = widgetTypes.get(widget.widgetTypeId!);
-            return widgetEntity!.getWidgetHTML(this.widget!, this.editMode!, this.realm!);
-
+            return widgetEntity!.getWidgetHTML(widget, this.editMode!, this.realm!);
         }
         return html`<span>${i18next.t('error')}!</span>`;
     }

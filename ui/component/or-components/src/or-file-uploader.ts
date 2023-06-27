@@ -26,7 +26,7 @@ import "./or-loading-indicator";
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
 
-    //Contains the content that will be shown towards the user.
+    // Contains the content that will be shown towards the user.
     @property({ attribute: false })
     public src: string = "";
 
@@ -132,14 +132,12 @@ export class OrFileUploader extends LitElement {
                 <div class="title">${this.title}</div>
                 <div id="imageContainer">
 
-                    ${!!this.src ?
-                      html`<img src="${this.src}" alt="OR-File-Uploader">
-                      <div class="pencil-container">
-                          <or-icon icon="pencil-circle"></or-icon>
-                      </div>
-                      `
-                      :
-                      html`
+                    ${this.src ? html`
+                          <img src="${this.src}" alt="OR-File-Uploader">
+                          <div class="pencil-container">
+                              <or-icon icon="pencil-circle"></or-icon>
+                          </div>
+                      ` : html`
                           <div class="placeholder-container">
                               <or-icon icon="upload"></or-icon>
                               ${i18next.t('uploadFile')}

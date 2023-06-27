@@ -206,11 +206,14 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         `;
     }
 
+    // State is only utilised for initial loading, and for changes within the store.
+    // On the assets page, we shouldn't change editMode nor assetIds if the URL/state hasn't changed.
     stateChanged(state: AppStateKeyed) {
-        // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
-        this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
+        if(!this._assetIds || (this._assetIds.length === 0 && this._assetIds[0] === state.app.params.id)) {
+            this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
+        }
     }
 
     protected _onAssetSelectionRequested(event: OrAssetTreeRequestSelectionEvent) {
@@ -301,7 +304,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         }
     }
 
-    protected async  _onAssetParentChange(newParentId: any) {
+    protected async _onAssetParentChange(newParentId: any) {
         let parentId: string | undefined = newParentId.parentId;
         let assetsIds: string[] = newParentId.assetsIds;
 

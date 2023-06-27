@@ -279,7 +279,7 @@ export class OrDashboardPreview extends LitElement {
 
         // Setup template (list of widgets and properties)
         if(!this.template && this.dashboardId) {
-            manager.rest.api.DashboardResource.get(this.dashboardId)
+            manager.rest.api.DashboardResource.get(this.realm, this.dashboardId)
                 .then((response) => { this.template = response.data.template!; })
                 .catch((reason) => { console.error(reason); showSnackbar(undefined, i18next.t('errorOccurred')); });
         } else if(this.template == null && this.dashboardId == null) {
