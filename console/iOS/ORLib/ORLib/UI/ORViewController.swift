@@ -105,6 +105,10 @@ open class ORViewcontroller : UIViewController {
         webProgressBar = UIProgressView(progressViewStyle: .bar)
         webProgressBar?.progressTintColor = UIColor(named: "or_green")
         
+        if #available(macOS 13.3, iOS 16.4, tvOS 16.4, *) {
+            myWebView?.isInspectable = true
+        }
+        
         view.addSubview(myWebView!)
         view.addSubview(webProgressBar!)
         view.bringSubviewToFront(webProgressBar!)

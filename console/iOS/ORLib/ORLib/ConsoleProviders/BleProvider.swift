@@ -98,13 +98,12 @@ public class BleProvider: NSObject {
     
     public func sendToDevice(attributeId: String, value: Data, callback:@escaping ([String: Any]) -> (Void)) {
         sendToDeviceCallback = callback
-        if self.connectedDevice!.canSendWriteWithoutResponse {
-            if let characteristic = deviceCharacteristics.first(where: {$0.uuid.uuidString == attributeId}) {
-                selectedCharacteristic = characteristic
-                dataToSend = value
-                sendDataIndex = 0
-                sendData(characteristic: characteristic)
-            }
+        if let characteristic = deviceCharacteristics.first(where: {$0.uuid.uuidString == attributeId}) {
+            self.maxDataLength = self.connectedDevice!.maximumWriteValueLength(for: characteristic.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse)
+            selectedCharacteristic = characteristic
+            dataToSend = value
+            sendDataIndex = 0
+            sendData(characteristic: characteristic)
         }
     }
     
@@ -164,7 +163,6 @@ extension BleProvider : CBCentralManagerDelegate {
     
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         self.connectedDevice = peripheral
-        self.maxDataLength = peripheral.maximumWriteValueLength(for: .withoutResponse)
         peripheral.delegate = self
         peripheral.discoverServices(nil)
     }
@@ -205,7 +203,6 @@ extension BleProvider: CBPeripheralDelegate {
     }
     
     public func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        print(characteristic.uuid.uuidString)
         if deviceServices.isEmpty {
             connectToDeviceCallback?([
                 DefaultsKey.actionKey : Actions.connectToBleDevice,
@@ -217,7 +214,7 @@ extension BleProvider: CBPeripheralDelegate {
                             "attributeId": characteristic.uuid.uuidString,
                             "isReadable": characteristic.properties.contains(.read),
                             "isWritable": characteristic.properties.contains(.write) || characteristic.properties.contains(.writeWithoutResponse),
-                            "value": characteristic.value != nil ? String(decoding: characteristic.value!, as: UTF8.self) : nil
+                            "value": characteristic.value != nil ? decodeValue(from: characteristic.value!) : nil
                         ] as [String : Any?]
                     }
                 ]
@@ -236,6 +233,10 @@ extension BleProvider: CBPeripheralDelegate {
     }
     
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        if let err = error {
+            print(err)
+        }
+        
         if let data = dataToSend {
             if sendDataIndex < data.count {
                 sendData(characteristic: characteristic)
@@ -270,6 +271,19 @@ extension BleProvider: CBPeripheralDelegate {
                     sendToDeviceCallback?([DefaultsKey.actionKey: "SEND_TO_DEVICE", DefaultsKey.providerKey: "ble", DefaultsKey.successKey: true])
                     sending = false
                 }
+            }
+        }
+    }
+    
+    func decodeValue(from data: Data) -> Any {
+        do {
+            let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+            return jsonObject
+        } catch {
+            if let string = String(data: data, encoding: .utf8) {
+                return string
+            } else {
+                return data
             }
         }
     }
