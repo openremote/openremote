@@ -81,7 +81,7 @@ class BleProvider(val context: Context) {
             "requiresPermission" to true,
             "hasPermission" to hasPermission(),
             "success" to true,
-            "enabled" to false, // Always require enabling to ensure geofences are refresh at startup
+            "enabled" to false,
             "disabled" to sharedPreferences.contains(bleDisabledKey)
         )
     }

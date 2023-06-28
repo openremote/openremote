@@ -37,7 +37,7 @@ public class BleProvider: NSObject {
     public func initialize() -> [String: Any] {
         return [
             DefaultsKey.actionKey: Actions.providerInit,
-            DefaultsKey.providerKey: Providers.geofence,
+            DefaultsKey.providerKey: Providers.ble,
             DefaultsKey.versionKey: version,
             DefaultsKey.requiresPermissionKey: true,
             DefaultsKey.hasPermissionKey: CBCentralManager.authorization == .allowedAlways,
