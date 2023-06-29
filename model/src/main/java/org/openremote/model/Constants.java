@@ -45,6 +45,11 @@ public interface Constants {
     String WRITE_INSIGHTS_ROLE = "write:insights";
     String RESTRICTED_USER_REALM_ROLE = "restricted_user";
     String AUTH_CONTEXT = "AUTH_CONTEXT";
+    String SESSION_TERMINATOR = "connection.sessionTerminator";
+    String SESSION_KEY = "connection.sessionKey";
+    String SESSION_OPEN = "connection.sessionOpen";
+    String SESSION_CLOSE = "connection.sessionClose";
+    String SESSION_CLOSE_ERROR = "connection.sessionCloseError";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "OPENREMOTE_SEQUENCE";
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";

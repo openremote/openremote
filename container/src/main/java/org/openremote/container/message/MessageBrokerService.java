@@ -40,8 +40,6 @@ import org.apache.camel.util.StringHelper;
 import org.apache.camel.util.concurrent.CamelThreadFactory;
 import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
-import org.openremote.container.web.DefaultWebsocketComponent;
-import org.openremote.container.web.socket.WebsocketComponent;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 
@@ -51,12 +49,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getString;
-
 public class MessageBrokerService implements ContainerService {
 
-    public static final String MESSAGE_SESSION_ALLOWED_ORIGIN = "MESSAGE_SESSION_ALLOWED_ORIGIN";
-    public static final String MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT = null;
     private static final Logger LOG = Logger.getLogger(MessageBrokerService.class.getName());
     public static final int PRIORITY = ContainerService.LOW_PRIORITY;
 
@@ -142,13 +136,6 @@ public class MessageBrokerService implements ContainerService {
 
         ((SimpleRegistry)((DefaultRegistry)context.getRegistry()).getFallbackRegistry()).put("OpenRemote", Map.of(Container.class, container));
 
-        String allowedOrigin = getString(container.getConfig(), MESSAGE_SESSION_ALLOWED_ORIGIN, MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT);
-        WebsocketComponent websocketComponent = new DefaultWebsocketComponent(
-            container,
-            allowedOrigin
-        );
-
-        context.addComponent(WebsocketComponent.NAME, websocketComponent);
         context.addComponent("snmp", new SnmpComponent());
     }
 

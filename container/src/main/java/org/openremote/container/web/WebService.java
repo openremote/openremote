@@ -301,6 +301,10 @@ public abstract class WebService implements ContainerService {
         return resteasyDeployment;
     }
 
+    public Undertow getUndertow() {
+        return undertow;
+    }
+
     public static synchronized FilterInfo getCorsFilterInfo(Container container) {
 
         if (corsFilterRef == null) {
