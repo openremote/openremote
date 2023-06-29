@@ -54,8 +54,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
-import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.TRACE;
+import static java.lang.System.Logger.Level.*;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.model.Constants.*;
 
@@ -240,7 +239,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                         } else if (principal instanceof BasicAuthContext) {
                             authContext = (BasicAuthContext) principal;
                         } else if (principal != null) {
-                            LOG.log(System.Logger.Level.INFO, "Unsupported user principal type: " + principal);
+                            LOG.log(INFO, "Unsupported user principal type: " + principal);
                         }
 
                         // Push auth and realm into channel for future use
