@@ -35,7 +35,6 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.LogUtil
 import org.openremote.container.util.MapAccess
-import org.openremote.container.web.DefaultWebsocketComponent
 import org.openremote.container.web.WebClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -517,28 +516,5 @@ trait ContainerTrait {
 
     ProducerTemplate getMessageProducerTemplate(Container container) {
         return container.getService(MessageBrokerService.class).getContext().createProducerTemplate()
-    }
-
-    void addRoutes(RouteBuilder routeBuilder) {
-        container.getService(MessageBrokerService.class).getContext().addRoutes(routeBuilder)
-    }
-
-    WebSocketContainer createWebsocketClient() {
-        return ClientManager.createClient()
-    }
-
-    UriBuilder getWebsocketServerUrl(UriBuilder uriBuilder, String endpointPath, String realm, String accessToken) {
-        uriBuilder.clone()
-                .scheme("ws")
-                .replacePath(DefaultWebsocketComponent.WEBSOCKET_PATH)
-                .path(endpointPath)
-                .queryParam(Constants.REALM_PARAM_NAME, realm)
-                .queryParam("Authorization", "Bearer " + accessToken)
-    }
-
-    Session connect(WebSocketContainer websocketContainer, Endpoint endpoint, UriBuilder serverUri, String endpointPath, String realm, String accessToken) {
-        def websocketUrl = getWebsocketServerUrl(serverUri, endpointPath, realm, accessToken)
-        def config = ClientEndpointConfig.Builder.create().build()
-        websocketContainer.connectToServer(endpoint, config, websocketUrl.build())
     }
 }
