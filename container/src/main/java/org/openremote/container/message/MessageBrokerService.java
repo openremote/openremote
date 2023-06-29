@@ -25,7 +25,6 @@ import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
-import org.apache.camel.component.micrometer.spi.InstrumentedThreadPoolFactory;
 import org.apache.camel.component.micrometer.spi.TimedScheduledExecutorService;
 import org.apache.camel.component.snmp.SnmpComponent;
 import org.apache.camel.health.HealthCheckRegistry;
@@ -56,8 +55,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
-
-import static org.openremote.container.util.MapAccess.getString;
 
 public class MessageBrokerService implements ContainerService {
 

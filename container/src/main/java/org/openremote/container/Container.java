@@ -22,8 +22,10 @@ package org.openremote.container;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.prometheus.PrometheusConfig;
+import io.prometheus.client.CollectorRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.container.util.LogUtil;
@@ -53,28 +55,6 @@ import static org.openremote.container.util.MapAccess.getInteger;
  * to distinguish between development and production environments.
  */
 public class Container implements org.openremote.model.Container {
-
-    protected static class NoShutdownScheduledExecutorService extends ContainerScheduledExecutor {
-
-        public NoShutdownScheduledExecutorService(String name, int corePoolSize) {
-            super(name, corePoolSize);
-        }
-
-        @Override
-        public void shutdown() {
-            throw new UnsupportedOperationException();
-        }
-
-        @SuppressWarnings("NullableProblems")
-        @Override
-        public List<Runnable> shutdownNow() {
-            throw new UnsupportedOperationException();
-        }
-
-        void doShutdownNow() {
-            super.shutdownNow();
-        }
-    }
 
     public static final System.Logger LOG = System.getLogger(Container.class.getName());
     public static ScheduledExecutorService EXECUTOR_SERVICE;
@@ -135,7 +115,7 @@ public class Container implements org.openremote.model.Container {
             OR_SCHEDULED_TASKS_THREADS_MAX,
             OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT);
 
-        EXECUTOR_SERVICE = new NoShutdownScheduledExecutorService("Scheduled task", scheduledTasksThreadsMax);
+        EXECUTOR_SERVICE = new ContainerScheduledExecutor("Scheduled task", scheduledTasksThreadsMax);
 
         if (meterRegistry != null) {
             EXECUTOR_SERVICE = ExecutorServiceMetrics.monitor(meterRegistry, EXECUTOR_SERVICE, "ContainerExecutorService");
@@ -207,11 +187,14 @@ public class Container implements org.openremote.model.Container {
 
         try {
             LOG.log(INFO, "Cancelling scheduled tasks");
-            ((NoShutdownScheduledExecutorService) EXECUTOR_SERVICE).doShutdownNow();
+            EXECUTOR_SERVICE.shutdown();
         } catch (Exception e) {
             LOG.log(WARNING, "Exception thrown whilst trying to stop scheduled tasks", e);
         }
 
+        Metrics.globalRegistry.remove(meterRegistry);
+        CollectorRegistry.defaultRegistry.clear();
+        meterRegistry = null;
         waitingThread.interrupt();
         waitingThread = null;
         LOG.log(INFO, "<<< Runtime container stopped");

@@ -176,5 +176,8 @@ public class HealthService implements ContainerService {
         for (HealthStatusProvider healthStatusProvider : healthStatusProviderList) {
             healthStatusProvider.stop(container);
         }
+        if (metricsServer != null) {
+            metricsServer.close();
+        }
     }
 }
