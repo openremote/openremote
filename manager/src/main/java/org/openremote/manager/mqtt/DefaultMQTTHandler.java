@@ -25,7 +25,6 @@ import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
@@ -51,7 +50,7 @@ import java.util.regex.Pattern;
 
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_QUEUE;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
-import static org.openremote.model.Constants.ASSET_ID_REGEXP;
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -106,7 +105,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
                     .when(body().isInstanceOf(TriggeredEventSubscription.class))
                     .process(exchange -> {
                         // Get the subscriber consumer
-                        String connectionID = exchange.getIn().getHeader(ConnectionConstants.SESSION_KEY, String.class);
+                        String connectionID = exchange.getIn().getHeader(SESSION_KEY, String.class);
                         if (connectionID == null) {
                             LOG.warning("No connection ID for triggered subscription so cannot deliver");
                         } else {
@@ -138,7 +137,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onConnect(RemotingConnection connection) {
         super.onConnect(connection);
         Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(ConnectionConstants.SESSION_OPEN, true);
+        headers.put(SESSION_OPEN, true);
 
         // Put a close connection runnable into the headers for the client event service
         Runnable closeRunnable = () -> {
@@ -147,7 +146,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 mqttBrokerService.doForceDisconnect(connection);
             }
         };
-        headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
+        headers.put(SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .to(CLIENT_EVENT_QUEUE)
@@ -159,7 +158,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         super.onDisconnect(connection);
 
         Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(ConnectionConstants.SESSION_CLOSE, true);
+        headers.put(SESSION_CLOSE, true);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .to(CLIENT_EVENT_QUEUE)
@@ -171,7 +170,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onConnectionLost(RemotingConnection connection) {
         super.onConnectionLost(connection);
         Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
+        headers.put(SESSION_CLOSE_ERROR, true);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .to(CLIENT_EVENT_QUEUE)
@@ -574,7 +573,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConnectionConstants.SESSION_KEY, getConnectionIDString(connection));
+        headers.put(SESSION_KEY, getConnectionIDString(connection));
         headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
         headers.put(Constants.REALM_PARAM_NAME, requestRealm);
         return headers;

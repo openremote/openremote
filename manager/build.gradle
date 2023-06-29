@@ -23,7 +23,7 @@ dependencies {
     implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
     implementation "io.swagger.core.v3:swagger-jaxrs2-jakarta:$swaggerVersion"
     implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
-//    implementation "org.apache.camel:camel-undertow:4.0.0-M3" // TODO: Update all of camel to this version which uses jakarta packages
+    implementation "org.apache.camel:camel-undertow:$camelVersion"
 
     implementation ("io.netty:netty-codec-http:$nettyVersion") {
         force = true

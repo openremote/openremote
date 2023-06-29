@@ -44,8 +44,6 @@ import org.apache.camel.util.StringHelper;
 import org.apache.camel.util.concurrent.CamelThreadFactory;
 import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
-import org.openremote.container.web.DefaultWebsocketComponent;
-import org.openremote.container.web.socket.WebsocketComponent;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 
@@ -55,6 +53,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
+
+import static org.openremote.container.util.MapAccess.getString;
 
 public class MessageBrokerService implements ContainerService {
 
@@ -181,11 +181,6 @@ public class MessageBrokerService implements ContainerService {
 
         ((SimpleRegistry)((DefaultRegistry)context.getRegistry()).getFallbackRegistry()).put("OpenRemote", Map.of(Container.class, container));
 
-        // TODO: Replace this custom websocket component with camel undertow component once it is migrated to jakarta packages
-        WebsocketComponent websocketComponent = new DefaultWebsocketComponent(
-            container
-        );
-        context.addComponent(WebsocketComponent.NAME, websocketComponent);
         context.addComponent("snmp", new SnmpComponent());
     }
 
