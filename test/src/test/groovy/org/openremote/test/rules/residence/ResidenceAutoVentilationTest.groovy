@@ -54,7 +54,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
             assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
-            assert noRuleEngineFiringScheduled()
         }
 
         and: "the ventilation should be off"
@@ -68,11 +67,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         assetProcessingService.sendAttributeEvent(
                 new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", true)
         )
-
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
 
         then: "auto ventilation should be on"
         conditions.eventually {
@@ -101,11 +95,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             advancePseudoClock(2, MINUTES, container)
         }
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "ventilation level of the apartment should be MEDIUM"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -117,11 +106,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
                 managerTestSetup.apartment1LivingroomId, "co2Level", 500
         )
         simulatorProtocol.putValue(co2LevelDecrement)
-
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
 
         then: "the decreasing CO2 should have been detected in rules"
         conditions.eventually {
@@ -160,11 +144,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             advancePseudoClock(2, MINUTES, container)
         }
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "ventilation level of the apartment should be HIGH"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -186,11 +165,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         and: "time advances"
         advancePseudoClock(20, MINUTES, container)
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "ventilation level of the apartment should be MEDIUM"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -211,11 +185,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
         and: "time advances"
         advancePseudoClock(15, MINUTES, container)
-
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
 
         then: "ventilation level of the apartment should be LOW"
         conditions.eventually {

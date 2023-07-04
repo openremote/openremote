@@ -443,6 +443,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         sendAttributeEvent(attributeEvent, INTERNAL);
     }
 
+    // TODO: Priority QueueFull IllegalState exception causes the rule engine to stop (via AssetsFacade::dispatch)
     public void sendAttributeEvent(AttributeEvent attributeEvent, Source source) {
         // Set event source time if not already set
         if (attributeEvent.getTimestamp() <= 0) {

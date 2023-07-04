@@ -50,7 +50,6 @@ import org.shredzone.commons.suncalc.SunTimes;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -83,7 +82,7 @@ public class JsonRulesBuilder extends RulesBuilder {
      * Stores all state for a given {@link RuleCondition} and calculates which {@link AssetState}s match and don't
      * match the condition.
      */
-    static class RuleConditionState {
+    class RuleConditionState {
 
         RuleCondition ruleCondition;
         final TimerService timerService;
@@ -144,7 +143,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     throw e;
                 }
             } else if (ruleCondition.sun != null) {
-                SunTimes.Parameters sunCalculator = getSunCalculator(ruleCondition.sun, timerService);
+                SunTimes.Parameters sunCalculator = getSunCalculator(jsonRuleset, ruleCondition.sun, timerService);
                 long offsetMillis = ruleCondition.sun.getOffsetMins() != null ? ruleCondition.sun.getOffsetMins() * 60000 : 0;
 
                 // Calculate the next occurrence
@@ -418,7 +417,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     /**
      * Stores the state of the overall rule and each {@link RuleCondition}.
      */
-    static class RuleState {
+    class RuleState {
 
         protected JsonRule rule;
         protected Map<String, RuleConditionState> conditionStateMap = new HashMap<>();
@@ -536,7 +535,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     public static final String PLACEHOLDER_RULESET_NAME = "%RULESET_NAME%";
     public static final String PLACEHOLDER_TRIGGER_ASSETS = "%TRIGGER_ASSETS%";
     final static String TIMER_TEMPORAL_FACT_NAME_PREFIX = "TimerTemporalFact-";
-    final static String LOG_PREFIX = "JSON Rules: ";
+    final static String LOG_PREFIX = "JSON Rule '";
     final protected AssetStorageService assetStorageService;
     final protected TimerService timerService;
     final protected Assets assetsFacade;
@@ -595,21 +594,13 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     public void start(RulesFacts facts) {
-        AtomicBoolean hasTimeTrigger = new AtomicBoolean(false);
 
         Arrays.stream(jsonRules).forEach(jsonRule -> {
-            hasTimeTrigger.set(hasTimeTrigger.get() || LogicGroup.getItemsRecursive(jsonRule.when).stream().anyMatch(RuleCondition::hasTimeTrigger));
             executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
         });
 
         // Initialise asset states
         onAssetStatesChanged(facts, null);
-
-        // Insert a temporal fact if we have a time trigger (this will cause the engine to fire periodically)
-        if (hasTimeTrigger.get()) {
-            String tempFactName = TIMER_TEMPORAL_FACT_NAME_PREFIX + jsonRuleset.getId();
-            facts.putTemporary(tempFactName, Long.MAX_VALUE - timerService.getCurrentTimeMillis() - 5000, ""); // current time + expiration shouldn't overflow
-        }
     }
 
     public void onAssetStatesChanged(RulesFacts facts, RulesEngine.AssetStateChangeEvent event) {
@@ -731,7 +722,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    public static void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
 
         if (ruleActions != null && ruleActions.length > 0) {
 
@@ -779,7 +770,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             .collect(Collectors.toList());
     }
 
-    protected static RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade) {
+    protected RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade) {
 
         if (ruleAction instanceof RuleActionNotification notificationAction) {
 
@@ -1172,36 +1163,30 @@ public class JsonRulesBuilder extends RulesBuilder {
         return target != null && (target.users != null || (target.linkedUsers != null && target.linkedUsers));
     }
 
-    protected static void log(Level level, String message) {
-        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + message);
+    protected void log(Level level, String message) {
+        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message);
     }
 
-    protected static void log(Level level, String message, Throwable t) {
-        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + message, t);
+    protected void log(Level level, String message, Throwable t) {
+        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message, t);
     }
 
-    protected static SunTimes.Parameters getSunCalculator(SunPositionTrigger sunPositionTrigger, TimerService timerService) throws IllegalStateException {
+    protected static SunTimes.Parameters getSunCalculator(Ruleset ruleset, SunPositionTrigger sunPositionTrigger, TimerService timerService) throws IllegalStateException {
         SunPositionTrigger.Position position = sunPositionTrigger.getPosition();
         GeoJSONPoint location = sunPositionTrigger.getLocation();
 
         if (position == null) {
-            IllegalStateException e = new IllegalStateException("Rule condition sun requires a position value");
-            log(Level.SEVERE, e.getMessage(), e);
-            throw e;
+            throw new IllegalStateException(LOG_PREFIX + ruleset.getName() + "': Rule condition sun requires a position value");
         }
         if (location == null) {
-            IllegalStateException e = new IllegalStateException("Rule condition sun requires a location value");
-            log(Level.SEVERE, e.getMessage(), e);
-            throw e;
+            throw new IllegalStateException(LOG_PREFIX + ruleset.getName() + "': Rule condition sun requires a location value");
         }
 
         SunTimes.Twilight twilight = null;
         if (position.name().startsWith(SunPositionTrigger.TWILIGHT_PREFIX)) {
             String lookupValue = position.name().replace(SunPositionTrigger.MORNING_TWILIGHT_PREFIX, "").replace(SunPositionTrigger.EVENING_TWILIGHT_PREFIX, "").replace(SunPositionTrigger.TWILIGHT_PREFIX, "");
             twilight = EnumUtil.enumFromString(SunTimes.Twilight.class, lookupValue).orElseThrow(() -> {
-                IllegalStateException e = new IllegalStateException("Rule condition un-supported twilight position value '" + lookupValue + "'");
-                log(Level.SEVERE, e.getMessage(), e);
-                return e;
+                throw new IllegalStateException(LOG_PREFIX + ruleset.getName() + "': Rule condition un-supported twilight position value '" + lookupValue + "'");
             });
         }
 
