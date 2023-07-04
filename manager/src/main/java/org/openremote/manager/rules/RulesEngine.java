@@ -143,7 +143,13 @@ public class RulesEngine<T extends Ruleset> {
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
         this.id = id;
-        AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
+        AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, attributeEvent -> {
+            try {
+                assetProcessingService.sendAttributeEvent(attributeEvent);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to dispatch attribute event");
+            }
+        });
         this.assetsFacade = assetsFacade;
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
