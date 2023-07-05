@@ -99,14 +99,12 @@ class BasicRulesImport {
 
         globalEngine = rulesService.globalEngine
         assert globalEngine != null
-        globalEngine.disableTemporaryFactExpiration = true
         assert globalEngine.isRunning()
         assert globalEngine.deployments.size() == 1
         assert globalEngine.deployments.values().any { it -> it.name == "Some global demo rules" && it.status == DEPLOYED }
 
         assert rulesService.realmEngines.size() == 2
         masterEngine = rulesService.realmEngines.get(keycloakTestSetup.realmMaster.name)
-        masterEngine.disableTemporaryFactExpiration = true
         assert masterEngine != null
         assert masterEngine.isRunning()
         assert masterEngine.deployments.size() == 1
@@ -114,7 +112,6 @@ class BasicRulesImport {
         assert masterEngine.deployments.values().iterator().next().status == DEPLOYED
         realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
         assert realmBuildingEngine != null
-        realmBuildingEngine.disableTemporaryFactExpiration = true
         assert realmBuildingEngine.isRunning()
         assert realmBuildingEngine.deployments.size() == 1
         assert realmBuildingEngine.deployments.values().iterator().next().name == "Some building realm demo rules"
@@ -127,14 +124,12 @@ class BasicRulesImport {
         assert apartment1Engine == null
         apartment2Engine = rulesService.assetEngines.get(managerTestSetup.apartment2Id)
         assert apartment2Engine != null
-        apartment2Engine.disableTemporaryFactExpiration = true
         assert apartment2Engine.isRunning()
         assert apartment2Engine.deployments.size() == 1
         assert apartment2Engine.deployments.values().iterator().next().name == "Some apartment 2 demo rules"
         assert apartment2Engine.deployments.values().iterator().next().status == DEPLOYED
         apartment3Engine = rulesService.assetEngines.get(managerTestSetup.apartment3Id)
         assert apartment3Engine != null
-        apartment3Engine.disableTemporaryFactExpiration = true
         assert apartment3Engine.isRunning()
         assert apartment3Engine.deployments.size() == 1
         assert apartment3Engine.deployments.values().iterator().next().name == "Some apartment 3 demo rules"
