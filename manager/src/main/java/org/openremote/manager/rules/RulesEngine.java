@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.rules;
 
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
@@ -47,7 +49,6 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -497,60 +498,66 @@ public class RulesEngine<T extends Ruleset> {
 
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
-        AtomicLong executionTotalMillis = new AtomicLong(0L);
+        long executionTotalMillis = timerService.getCurrentTimeMillis();
 
-        rulesFiringTimer.record(() -> {
-                for (RulesetDeployment deployment : deployments.values()) {
-                    try {
-
-                        RulesetStatus status = deployment.getStatus();
-                        publishRulesetStatus(deployment);
-
-                        if (status == DEPLOYED) {
-
-                            LOG.finest("Executing rules of: " + deployment);
-
-                            // If full detail logging is enabled
-                            // Log asset states and events before firing
-                            facts.logFacts(RULES_LOG, Level.FINEST);
-
-                            // Reset facts for this firing (loop detection etc.)
-                            facts.reset();
-
-                            long startTimestamp = timerService.getCurrentTimeMillis();
-                            engine.fire(deployment.getRules(), facts);
-                            long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
-                            executionTotalMillis.getAndAdd(executionMillis);
-                            LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
-                        } else {
-                            LOG.fine("Rules deployment '" + deployment.getName() + "' skipped as status is: " + status);
-                        }
-                    } catch (Exception ex) {
-                        LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
-
-                        deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
-                        deployment.setError(ex);
-                        publishRulesetStatus(deployment);
-
-                        // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
-                        if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
-                            stop();
-                            break;
-                        }
-                    } finally {
-                        // Reset facts after this firing (loop detection etc.)
-                        facts.reset();
-                        lastFireTimestamp = timerService.getCurrentTimeMillis();
-                    }
-                }
-            });
+        if (rulesFiringTimer != null) {
+            rulesFiringTimer.record(this::doFire);
+        } else {
+            doFire();
+        }
 
         trackLocationPredicates(false);
+        executionTotalMillis = (timerService.getCurrentTimeMillis() - executionTotalMillis);
 
-        if (executionTotalMillis.get() > 500) {
+        if (executionTotalMillis > 500) {
             LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
         } else {
             LOG.fine("Rules firing took " + executionTotalMillis + "ms on: " + this);
+        }
+    }
+
+    protected void doFire() {
+        for (RulesetDeployment deployment : deployments.values()) {
+            try {
+
+                RulesetStatus status = deployment.getStatus();
+                publishRulesetStatus(deployment);
+
+                if (status == DEPLOYED) {
+
+                    LOG.finest("Executing rules of: " + deployment);
+
+                    // If full detail logging is enabled
+                    // Log asset states and events before firing
+                    facts.logFacts(RULES_LOG, Level.FINEST);
+
+                    // Reset facts for this firing (loop detection etc.)
+                    facts.reset();
+
+                    long startTimestamp = timerService.getCurrentTimeMillis();
+                    engine.fire(deployment.getRules(), facts);
+                    long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
+                    LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
+                } else {
+                    LOG.fine("Rules deployment '" + deployment.getName() + "' skipped as status is: " + status);
+                }
+            } catch (Exception ex) {
+                LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
+
+                deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
+                deployment.setError(ex);
+                publishRulesetStatus(deployment);
+
+                // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
+                if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
+                    stop();
+                    break;
+                }
+            } finally {
+                // Reset facts after this firing (loop detection etc.)
+                facts.reset();
+                lastFireTimestamp = timerService.getCurrentTimeMillis();
+            }
         }
     }
 
@@ -562,10 +569,6 @@ public class RulesEngine<T extends Ruleset> {
             return id.realm;
         }
         return id.realm + ":" + id.assetId;
-    }
-
-    protected void fireAllDeployments() {
-        doFire(deployments.values());
     }
 
     protected synchronized void notifyAssetStatesChanged(AssetStateChangeEvent event) {
