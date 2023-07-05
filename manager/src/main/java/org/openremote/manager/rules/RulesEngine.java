@@ -19,10 +19,7 @@
  */
 package org.openremote.manager.rules;
 
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
@@ -51,7 +48,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -101,9 +97,6 @@ public class RulesEngine<T extends Ruleset> {
 
     // Separate logger for periodic stats printer
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
-    protected static BiConsumer<RulesEngine<?>, RulesetDeployment> UNPAUSE_SCHEDULER = RulesEngine::scheduleUnpause;
-    // Here to facilitate testing
-    protected static BiConsumer<RulesEngine<?>, RulesetDeployment> PAUSE_SCHEDULER = RulesEngine::schedulePause;
     final protected TimerService timerService;
     final protected RulesService rulesService;
     final protected ScheduledExecutorService executorService;
@@ -120,6 +113,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected AssetLocationPredicateProcessor assetLocationPredicatesConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
+    final protected Map<Long, RulesetStatus> deploymentStatusMap = new LinkedHashMap<>();
     final protected RulesFacts facts;
     final protected AbstractRulesEngine engine;
 
@@ -128,14 +122,9 @@ public class RulesEngine<T extends Ruleset> {
     protected boolean trackLocationPredicates;
     protected ScheduledFuture<?> fireTimer;
     protected ScheduledFuture<?> statsTimer;
-    protected Map<Long, ScheduledFuture<?>> pauseTimers = new HashMap<>();
-    protected Map<Long, ScheduledFuture<?>> unpauseTimers = new HashMap<>();
 
     // Only used to optimize toString(), contains the details of this engine
     protected String deploymentInfo;
-
-    // Only used in tests to prevent scheduled firing of engine
-    protected boolean disableTemporaryFactExpiration = false;
     protected Timer rulesFiringTimer;
 
     public RulesEngine(TimerService timerService,
@@ -158,7 +147,13 @@ public class RulesEngine<T extends Ruleset> {
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
         this.id = id;
-        AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
+        AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, attributeEvent -> {
+            try {
+                assetProcessingService.sendAttributeEvent(attributeEvent);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Failed to dispatch attribute event");
+            }
+        });
         this.assetsFacade = assetsFacade;
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
@@ -278,35 +273,36 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
+
         deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, historicFacade, predictedFacade);
         boolean compiled;
 
-        if (TextUtil.isNullOrEmpty(ruleset.getRules())) {
-            LOG.finest("Ruleset is empty so no rules to deploy: " + ruleset.getName());
-            deployment.setStatus(EMPTY);
-            publishRulesetStatus(deployment);
-        } else if (!ruleset.isEnabled()) {
-            LOG.finest("Ruleset is disabled: " + ruleset.getName());
-            deployment.setStatus(DISABLED);
-            publishRulesetStatus(deployment);
-        } else {
-            deployment.updateValidity();
-            if (deployment.hasExpired()) {
-                LOG.finest("Ruleset validity period has expired: " + ruleset.getName());
-                deployment.setStatus(EXPIRED);
+        try {
+            deployment.init();
+
+            if (TextUtil.isNullOrEmpty(ruleset.getRules())) {
+                LOG.finest("Ruleset is empty so no rules to deploy: " + ruleset.getName());
+                deployment.setStatus(EMPTY);
                 publishRulesetStatus(deployment);
-                compiled = true;
+            } else if (!ruleset.isEnabled()) {
+                LOG.finest("Ruleset is disabled: " + ruleset.getName());
+                deployment.setStatus(DISABLED);
+                publishRulesetStatus(deployment);
             } else {
                 compiled = deployment.compile();
-            }
 
-            if (!compiled) {
-                LOG.log(Level.SEVERE, "Ruleset compilation error: " + ruleset.getName(), deployment.getError());
-                deployment.setStatus(COMPILATION_ERROR);
-                publishRulesetStatus(deployment);
-            } else if (running) {
-                startRuleset(deployment);
+                if (!compiled) {
+                    LOG.log(Level.SEVERE, "Ruleset compilation error: " + ruleset.getName(), deployment.getError());
+                    deployment.setStatus(COMPILATION_ERROR);
+                    publishRulesetStatus(deployment);
+                } else if (running) {
+                    startRuleset(deployment);
+                }
             }
+        } catch (IllegalStateException e) {
+            LOG.log(Level.WARNING, e.getMessage());
+            deployment.setStatus(VALIDITY_PERIOD_ERROR);
+            publishRulesetStatus(deployment);
         }
 
         deployments.put(ruleset.getId(), deployment);
@@ -333,12 +329,6 @@ public class RulesEngine<T extends Ruleset> {
         deployment.setStatus(REMOVED);
         publishRulesetStatus(deployment);
         deployments.remove(ruleset.getId());
-
-        ScheduledFuture<?> timer = pauseTimers.remove(ruleset.getId());
-        if (timer != null) timer.cancel(true);
-        timer = unpauseTimers.remove(ruleset.getId());
-        if (timer != null) timer.cancel(true);
-
         updateDeploymentInfo();
         start();
 
@@ -413,10 +403,6 @@ public class RulesEngine<T extends Ruleset> {
             statsTimer.cancel(true);
             statsTimer = null;
         }
-        pauseTimers.values().forEach(pauseTimer -> pauseTimer.cancel(true));
-        pauseTimers.clear();
-        unpauseTimers.values().forEach(unpauseTimer -> unpauseTimer.cancel(true));
-        unpauseTimers.clear();
 
         deployments.values().forEach(this::stopRuleset);
         running = false;
@@ -434,30 +420,17 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        if (deployment.getStatus() == COMPILATION_ERROR || deployment.getStatus() == DISABLED || deployment.getStatus() == EXPIRED) {
-            return;
-        }
+        RulesetStatus status = deployment.getStatus();
 
-        deployment.updateValidity();
-
-        if (deployment.hasExpired()) {
-            deployment.setStatus(EXPIRED);
+        if (status == COMPILATION_ERROR || status == DISABLED || status == EXPIRED) {
+            LOG.finest("Ruleset '" + deployment.getName() + "': status=" + status);
             publishRulesetStatus(deployment);
             return;
         }
 
-        if (deployment.getValidFrom() > timerService.getCurrentTimeMillis()) {
-            // Not ready to start yet so pause
-            pauseRuleset(deployment);
-        } else {
-            deployment.setStatus(DEPLOYED);
-            publishRulesetStatus(deployment);
-            deployment.start(facts);
-
-            if (deployment.getValidTo() != Long.MAX_VALUE) {
-                PAUSE_SCHEDULER.accept(this, deployment);
-            }
-        }
+        deployment.setStatus(DEPLOYED);
+        deployment.start(facts);
+        publishRulesetStatus(deployment);
     }
 
     protected synchronized void stopRuleset(RulesetDeployment deployment) {
@@ -502,24 +475,10 @@ public class RulesEngine<T extends Ruleset> {
         fireTimer = executorService.schedule(
             () -> {
                 synchronized (RulesEngine.this) {
-                    // Are temporary facts present before rules are fired?
-                    boolean hadTemporaryFactsBefore = facts.hasTemporaryFacts();
-
                     // Process rules for all deployments
                     fireAllDeployments();
-
-                    // If there are temporary facts, or if there were some before and
-                    // now they are gone, schedule a new firing to guarantee processing
-                    // of expired and removed temporary facts
-                    if ((facts.hasTemporaryFacts() || (hadTemporaryFactsBefore && !facts.hasTemporaryFacts()))
-                        && !disableTemporaryFactExpiration) {
-                        // Schedule call to schedule fire so the fireTimer shows as done
-                        executorService.schedule(() -> scheduleFire(false), 10, TimeUnit.MILLISECONDS);
-                    } else if (!disableTemporaryFactExpiration) {
-                        LOG.finest("No temporary facts present/changed when firing rules on: " + this);
-                    }
-
                     fireTimer = null;
+                    scheduleFire(false);
                 }
             },
             fireTimeMillis,
@@ -527,7 +486,7 @@ public class RulesEngine<T extends Ruleset> {
         );
     }
 
-    private void doFire(Collection<RulesetDeployment> deploymentList) {
+    protected void fireAllDeployments() {
         if (!running) {
             return;
         }
@@ -541,51 +500,54 @@ public class RulesEngine<T extends Ruleset> {
         AtomicLong executionTotalMillis = new AtomicLong(0L);
 
         rulesFiringTimer.record(() -> {
-            for (RulesetDeployment deployment : deploymentList) {
-                try {
+                for (RulesetDeployment deployment : deployments.values()) {
+                    try {
 
-                    if (deployment.getStatus() == DEPLOYED) {
+                        RulesetStatus status = deployment.getStatus();
+                        publishRulesetStatus(deployment);
 
-                        LOG.finest("Executing rules of: " + deployment);
+                        if (status == DEPLOYED) {
 
-                        // If full detail logging is enabled
-                        // Log asset states and events before firing
-                        facts.logFacts(RULES_LOG, Level.FINEST);
+                            LOG.finest("Executing rules of: " + deployment);
 
-                        // Reset facts for this firing (loop detection etc.)
+                            // If full detail logging is enabled
+                            // Log asset states and events before firing
+                            facts.logFacts(RULES_LOG, Level.FINEST);
+
+                            // Reset facts for this firing (loop detection etc.)
+                            facts.reset();
+
+                            long startTimestamp = timerService.getCurrentTimeMillis();
+                            engine.fire(deployment.getRules(), facts);
+                            long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
+                            executionTotalMillis.getAndAdd(executionMillis);
+                            LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
+                        } else {
+                            LOG.fine("Rules deployment '" + deployment.getName() + "' skipped as status is: " + status);
+                        }
+                    } catch (Exception ex) {
+                        LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
+
+                        deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
+                        deployment.setError(ex);
+                        publishRulesetStatus(deployment);
+
+                        // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
+                        if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
+                            stop();
+                            break;
+                        }
+                    } finally {
+                        // Reset facts after this firing (loop detection etc.)
                         facts.reset();
-
-                        long startTimestamp = timerService.getCurrentTimeMillis();
-                        lastFireTimestamp = startTimestamp;
-                        engine.fire(deployment.getRules(), facts);
-                        long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
-                        executionTotalMillis.getAndAdd(executionMillis);
-                        LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
-                    } else {
-                        LOG.finest("Rules deployment '" + deployment.getName() + "' skipped as status is: " + deployment.getStatus());
+                        lastFireTimestamp = timerService.getCurrentTimeMillis();
                     }
-                } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
-
-                    deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
-                    deployment.setError(ex);
-                    publishRulesetStatus(deployment);
-
-                    // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
-                    if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
-                        stop();
-                        break;
-                    }
-                } finally {
-                    // Reset facts after this firing (loop detection etc.)
-                    facts.reset();
                 }
-            }
+            });
 
-            trackLocationPredicates(false);
-        });
+        trackLocationPredicates(false);
 
-        if (executionTotalMillis.get() > 100) {
+        if (executionTotalMillis.get() > 500) {
             LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
         } else {
             LOG.fine("Rules firing took " + executionTotalMillis + "ms on: " + this);
@@ -707,65 +669,26 @@ public class RulesEngine<T extends Ruleset> {
 
     protected void publishRulesetStatus(RulesetDeployment deployment) {
         Ruleset ruleset = deployment.ruleset;
+        RulesetStatus previousStatus = deploymentStatusMap.get(ruleset.getId());
         String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
+        RulesetStatus currentStatus = deployment.getStatus();
 
-        ruleset.setStatus(deployment.getStatus());
-        ruleset.setError(deployment.getErrorMessage());
+        if (currentStatus != previousStatus) {
+            deploymentStatusMap.put(ruleset.getId(), currentStatus);
+            ruleset.setStatus(deployment.getStatus());
+            ruleset.setError(deployment.getErrorMessage());
 
-        RulesetChangedEvent event = new RulesetChangedEvent(
-            timerService.getCurrentTimeMillis(),
-            engineId,
-            ruleset
-        );
+            RulesetChangedEvent event = new RulesetChangedEvent(
+                timerService.getCurrentTimeMillis(),
+                engineId,
+                ruleset
+            );
 
-        LOG.finest("Publishing ruleset status event: " + event);
+            LOG.finest("Ruleset '" + deployment.getName() + "': status=" + currentStatus);
 
-        // Notify clients
-        clientEventService.publishEvent(event);
-    }
-
-    protected void schedulePause(RulesetDeployment deployment) {
-        long delay = deployment.getValidTo() - timerService.getCurrentTimeMillis();
-        LOG.info("Scheduling pause of ruleset at '" + new Date(deployment.getValidTo()) + " for " + DurationFormatUtils.formatDurationHMS(delay) +": " + deployment.ruleset.getName());
-        pauseTimers.put(deployment.getId(), executorService.schedule(() -> pauseRuleset(deployment), delay, TimeUnit.MILLISECONDS));
-    }
-
-    protected void pauseRuleset(RulesetDeployment deployment) {
-        pauseTimers.remove(deployment.getId());
-
-        if (!running) {
-            return;
+            // Notify clients
+            clientEventService.publishEvent(event);
         }
-
-        LOG.info("Pausing ruleset: " + deployment.getRuleset().getName());
-        stopRuleset(deployment);
-        deployment.updateValidity();
-
-        if (deployment.hasExpired()) {
-            deployment.setStatus(EXPIRED);
-            publishRulesetStatus(deployment);
-        } else {
-            deployment.setStatus(PAUSED);
-            publishRulesetStatus(deployment);
-            UNPAUSE_SCHEDULER.accept(this, deployment);
-        }
-    }
-
-    protected void scheduleUnpause(RulesetDeployment deployment) {
-        long delay = deployment.getValidFrom() - timerService.getCurrentTimeMillis();
-        LOG.info("Scheduling un-pause of ruleset at '" + new Date(deployment.getValidFrom()).toString() + "' (" + delay + "ms): " + deployment.ruleset.getName());
-        unpauseTimers.put(deployment.getId(), executorService.schedule(() -> unPauseRuleset(deployment), delay, TimeUnit.MILLISECONDS));
-    }
-
-    protected void unPauseRuleset(RulesetDeployment deployment) {
-        unpauseTimers.remove(deployment.getId());
-
-        if (!running) {
-            return;
-        }
-
-        LOG.info("Un-pausing ruleset: " + deployment.getRuleset().getName());
-        startRuleset(deployment);
     }
 
     @Override
