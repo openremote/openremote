@@ -69,6 +69,7 @@ class BleProvider(val context: Context) {
             }
         }
     }
+    private var sendToDeviceCallback: BleCallback? = null
 
     fun initialize(): Map<String, Any> {
         val sharedPreferences =
@@ -312,6 +313,13 @@ class BleProvider(val context: Context) {
                         "BluetoothGattCallback",
                         "Write characteristic ${characteristic?.uuid}:\n${status}"
                     )
+                    sendToDeviceCallback?.accept(
+                        hashMapOf(
+                            "action" to "SEND_TO_DEVICE",
+                            "provider" to "ble",
+                            "success" to (status == BluetoothGatt.GATT_SUCCESS)
+                        )
+                    )
                 }
 
                 override fun onReliableWriteCompleted(gatt: BluetoothGatt?, status: Int) {
@@ -365,14 +373,8 @@ class BleProvider(val context: Context) {
             }
         }
 
-        val jsonObject = value as? JSONObject
-
-        val payload = ByteArrayOutputStream().use { bos ->
-            ObjectOutputStream(bos).use { out ->
-                out.writeObject(jsonObject?.toString() ?: value)
-                bos.toByteArray()
-            }
-        }
+        val jsonString = value.toString()
+        val payload = jsonString.toByteArray(Charsets.UTF_8)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             currentGatt?.writeCharacteristic(characteristic, payload, writeType)
@@ -384,13 +386,7 @@ class BleProvider(val context: Context) {
                 gatt.writeCharacteristic(characteristic)
             } ?: error("Not connected to a BLE device!")
         }
-        callback.accept(
-            hashMapOf(
-                "action" to "SEND_TO_DEVICE",
-                "provider" to "ble",
-                "success" to true,
-            )
-        )
+        sendToDeviceCallback = callback
     }
 
     private fun requestPermissions(activity: Activity) {

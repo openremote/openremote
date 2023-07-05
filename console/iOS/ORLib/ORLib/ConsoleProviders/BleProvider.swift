@@ -276,15 +276,15 @@ extension BleProvider: CBPeripheralDelegate {
     }
     
     func decodeValue(from data: Data) -> Any {
-        do {
-            let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
-            return jsonObject
-        } catch {
+       
             if let string = String(data: data, encoding: .utf8) {
-                return string
+                let escapedJsonString = string.replacingOccurrences(of: "\\", with: "\\\\")
+                                                   .replacingOccurrences(of: "\"", with: "\\\"")
+
+                return escapedJsonString
             } else {
                 return data
             }
-        }
+       
     }
 }
