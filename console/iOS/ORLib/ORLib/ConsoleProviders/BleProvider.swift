@@ -97,13 +97,17 @@ public class BleProvider: NSObject {
     }
     
     public func sendToDevice(attributeId: String, value: Data, callback:@escaping ([String: Any]) -> (Void)) {
-        sendToDeviceCallback = callback
-        if let characteristic = deviceCharacteristics.first(where: {$0.uuid.uuidString == attributeId}) {
-            self.maxDataLength = self.connectedDevice!.maximumWriteValueLength(for: characteristic.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse)
-            selectedCharacteristic = characteristic
-            dataToSend = value
-            sendDataIndex = 0
-            sendData(characteristic: characteristic)
+        if let device = self.connectedDevice {
+            sendToDeviceCallback = callback
+            if let characteristic = deviceCharacteristics.first(where: {$0.uuid.uuidString == attributeId}) {
+                self.maxDataLength = self.connectedDevice!.maximumWriteValueLength(for: characteristic.properties.contains(.writeWithoutResponse) ? .withoutResponse : .withResponse)
+                selectedCharacteristic = characteristic
+                dataToSend = value
+                sendDataIndex = 0
+                sendData(characteristic: characteristic)
+            }
+        } else {
+            callback([DefaultsKey.actionKey: "SEND_TO_DEVICE", DefaultsKey.providerKey: "ble", DefaultsKey.successKey: false])
         }
     }
     
@@ -174,6 +178,10 @@ extension BleProvider : CBCentralManagerDelegate {
             DefaultsKey.successKey : false
         ])
     }
+    
+    public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+        self.connectedDevice = nil
+    }
 }
 
 extension BleProvider: CBPeripheralDelegate {
@@ -234,12 +242,14 @@ extension BleProvider: CBPeripheralDelegate {
     
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         if let err = error {
-            print(err)
-        }
-        
-        if let data = dataToSend {
-            if sendDataIndex < data.count {
-                sendData(characteristic: characteristic)
+            sendToDeviceCallback?([DefaultsKey.actionKey: "SEND_TO_DEVICE", DefaultsKey.providerKey: "ble", DefaultsKey.successKey: false])
+        } else {
+            if let data = dataToSend {
+                if sendDataIndex >= data.count {
+                    sendToDeviceCallback?([DefaultsKey.actionKey: "SEND_TO_DEVICE", DefaultsKey.providerKey: "ble", DefaultsKey.successKey: true])
+                } else {
+                    sendData(characteristic: characteristic)
+                }
             }
         }
     }
@@ -248,7 +258,6 @@ extension BleProvider: CBPeripheralDelegate {
         if let data = dataToSend {
             if sendDataIndex >= data.count {
                 // All data has been sent
-                sendToDeviceCallback?([DefaultsKey.actionKey: "SEND_TO_DEVICE", DefaultsKey.providerKey: "ble", DefaultsKey.successKey: true])
                 return
             }
             
@@ -268,7 +277,6 @@ extension BleProvider: CBPeripheralDelegate {
                 
                 if sendDataIndex >= data.count {
                     // All data has been sent
-                    sendToDeviceCallback?([DefaultsKey.actionKey: "SEND_TO_DEVICE", DefaultsKey.providerKey: "ble", DefaultsKey.successKey: true])
                     sending = false
                 }
             }
