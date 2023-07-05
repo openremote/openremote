@@ -50,6 +50,7 @@ import org.shredzone.commons.suncalc.SunTimes;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -144,50 +145,40 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
             } else if (ruleCondition.sun != null) {
                 SunTimes.Parameters sunCalculator = getSunCalculator(jsonRuleset, ruleCondition.sun, timerService);
-                long offsetMillis = ruleCondition.sun.getOffsetMins() != null ? ruleCondition.sun.getOffsetMins() * 60000 : 0;
+                final long offsetMillis = ruleCondition.sun.getOffsetMins() != null ? ruleCondition.sun.getOffsetMins() * 60000 : 0;
+                final boolean useRiseTime = ruleCondition.sun.getPosition() == SunPositionTrigger.Position.SUNRISE || ruleCondition.sun.getPosition().toString().startsWith(SunPositionTrigger.MORNING_TWILIGHT_PREFIX);
 
                 // Calculate the next occurrence
                 AtomicReference<SunTimes> sunTimes = new AtomicReference<>(sunCalculator.execute());
-                ZonedDateTime occurrence;
-                if(ruleCondition.sun.getPosition() == SunPositionTrigger.Position.SUNRISE || ruleCondition.sun.getPosition().toString().startsWith(SunPositionTrigger.MORNING_TWILIGHT_PREFIX)) {
-                    occurrence = sunTimes.get().getRise();
-                } else {
-                    occurrence = sunTimes.get().getSet();
-                }
 
-                if (occurrence == null) {
-                    Exception e = new IllegalStateException("Rule condition requested sun position never occurs at the specified location: " + ruleCondition.sun);
-                    log(Level.SEVERE, e.getMessage(), e);
-                    throw e;
-                }
-                try {
-                    AtomicLong nextExecuteMillis = new AtomicLong(occurrence.toInstant().toEpochMilli() + offsetMillis);
+                Function<Long, Long> nextExecuteMillisCalculator = (time) -> {
+                    ZonedDateTime occurrence = useRiseTime ? sunTimes.get().getRise() : sunTimes.get().getSet();
 
-                    timePredicate = (time) -> {
-                        long nextExecute = nextExecuteMillis.get();
-                        if (time >= nextExecute) {
-                            // Advance the calculator beyond now or next occurrence (whichever is later)
-                            long calcMillis = Math.max(sunTimes.get().getSet().toEpochSecond()*1000, time);
-                            sunTimes.set(sunCalculator.on(new Date(calcMillis)).execute());
-                            ZonedDateTime nextOccurrence = ruleCondition.sun.getPosition() == SunPositionTrigger.Position.SUNSET ? sunTimes.get().getSet() : sunTimes.get().getRise();
+                    if (occurrence == null) {
+                        log(Level.WARNING, "Rule condition requested sun position never occurs at the specified location: " + ruleCondition.sun);
+                        return Long.MAX_VALUE;
+                    }
 
-                            log(Level.INFO, "Rule condition sun position has triggered at: " + timerService.getCurrentTimeMillis());
+                    long nextMillis = occurrence.toInstant().toEpochMilli() + offsetMillis;
 
-                            if (nextOccurrence == null) {
-                                log(Level.WARNING, "Rule condition requested sun position never occurs at the specified location: " + ruleCondition.sun);
-                            } else {
-                                long nextMillis = nextOccurrence.toInstant().toEpochMilli() + offsetMillis;
-                                log(Level.FINE, "Rule condition sun position next trigger time = " + nextMillis);
-                                nextExecuteMillis.set(nextMillis);
-                            }
-                            return true;
-                        }
-                        return false;
-                    };
-                } catch (Exception e) {
-                    log(Level.SEVERE, "Failed to parse rule condition duration expression: " + ruleCondition.duration, e);
-                    throw e;
-                }
+                    // If occurrence is before requested time then advance the sun calculator to either reset occurrence or requested time (whichever is later)
+                    if (nextMillis < time) {
+                        ZonedDateTime resetOccurrence = useRiseTime ? sunTimes.get().getSet() : sunTimes.get().getRise();
+                        sunTimes.set(sunCalculator.on(new Date(Math.max(resetOccurrence.toEpochSecond()*1000, time))).execute());
+                    }
+
+                    return nextMillis;
+                };
+
+                timePredicate = (time) -> {
+                    long nextExecute = nextExecuteMillisCalculator.apply(time);
+
+                    if (time >= nextExecute) {
+                        log(Level.INFO, "Rule condition sun position has triggered at: " + timerService.getCurrentTimeMillis());
+                        return true;
+                    }
+                    return false;
+                };
             } else if (ruleCondition.assets != null) {
 
                 // Pull out order, limit and attribute predicates so they can be applied at required times
