@@ -286,7 +286,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return true;
     }
 
-    // TODO: Priority each canPublish call makes a call to the DB via AssetProcessingService:203
+    // TODO: Priority each canPublish is very slow with keycloak API calls and DB calls in AssetProcessingService event authoriser
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 

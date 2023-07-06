@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
 import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
@@ -113,6 +114,7 @@ public abstract class MQTTHandler {
             mqttBrokerService.internalSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.ANYCAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
             ClientConsumer consumer = mqttBrokerService.internalSession.createConsumer(coreTopic);
             consumer.setMessageHandler(message -> {
+                long start = System.currentTimeMillis();
                 Topic publishTopic = Topic.parse(MQTTUtil.convertCoreAddressToMqttTopicFilter(message.getAddress(), mqttBrokerService.wildcardConfiguration));
                 String clientID = message.getStringProperty(MessageUtil.CONNECTION_ID_PROPERTY_NAME);
                 RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
@@ -124,6 +126,7 @@ public abstract class MQTTHandler {
 
                 getLogger().fine("Client published to '" + publishTopic + "': " + mqttBrokerService.connectionToString(connection));
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
+                LOG.log(INFO, "Processing time = " + (System.currentTimeMillis() - start));
             });
         } catch (ActiveMQException e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
