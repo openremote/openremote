@@ -20,6 +20,8 @@
 package org.openremote.manager.event;
 
 import io.undertow.websockets.core.WebSocketChannel;
+import io.undertow.websockets.core.WebSocketFrameType;
+import io.undertow.websockets.core.WebSockets;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -43,11 +45,9 @@ import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.security.Principal;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -325,23 +325,34 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
                 if (exchange.getIn().getBody() instanceof String) {
                     String bodyStr = exchange.getIn().getBody(String.class);
+                    System.out.println("bodyStr: [" + bodyStr + "]");
                     if (bodyStr.startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX)) {
                         exchange.getIn().setBody(exchange.getIn().getBody(EventSubscription.class));
                     } else if (bodyStr.startsWith(CancelEventSubscription.MESSAGE_PREFIX)) {
                         exchange.getIn().setBody(exchange.getIn().getBody(CancelEventSubscription.class));
-                    } else if (bodyStr.startsWith(SharedEvent.MESSAGE_PREFIX)) {
-                        exchange.getIn().setBody(exchange.getIn().getBody(SharedEvent.class));
+                    } else if (bodyStr.startsWith(PingEvent.PING_MESSAGE_PREFIX)) {
+                        System.out.println("detected ping_message_prefix!");
+                        exchange.getIn().setBody(exchange.getIn().getBody(PingEvent.class));
                     }
                 }
 
                 // Perform authorisation
-                if (exchange.getIn().getBody() instanceof SharedEvent) {
+                if (exchange.getIn().getBody() instanceof PingEvent) {
+                    System.out.println("Server is sending ping event back now.");
+                    PingEvent event = exchange.getIn().getBody(PingEvent.class);
+                    String sessionKey = getSessionKey(exchange);
+                    sendToSession(sessionKey, event);
+                    stopMessage(exchange);
+                } else if (exchange.getIn().getBody() instanceof SharedEvent) {
+                    System.out.println("It is a SharedEvent now!");
                     SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
 
                     if (!authorizeEventWrite(realm, authContext, event)) {
                         stopMessage(exchange);
                     }
+
                 } else if (exchange.getIn().getBody() instanceof EventSubscription<?>) {
+                    System.out.println("It is a EventSubscription now!");
                     EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
                     String sessionKey = getSessionKey(exchange);
 

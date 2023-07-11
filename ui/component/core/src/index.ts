@@ -1,6 +1,6 @@
 import "url-search-params-polyfill";
 import {Console} from "./console";
-import rest from "@openremote/rest";
+import rest, {isAxiosError} from "@openremote/rest";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next, {InitOptions} from "i18next";
@@ -40,6 +40,8 @@ export declare type Keycloak = {
     resourceAccess: any;
     onAuthSuccess: () => void;
     onAuthError: () => void;
+    onAuthRefreshSuccess: () => void;
+    onAuthRefreshError: () => void;
     init(options?: any): PromiseLike<boolean>;
     login(options?: any): void;
     hasRealmRole(role: string): boolean;
@@ -880,6 +882,22 @@ export class Manager implements EventProviderFactory {
                 this._setAuthenticated(false);
             };
 
+            this._keycloak!.onAuthRefreshError = () => {
+                // Refresh token expired (either SSO max session duration or offline idle timeout), see
+                // OR_IDENTITY_SESSION_MAX_MINUTES and OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
+                fetch(this._config.keycloakUrl! + "/health/ready", {method: 'HEAD', mode: 'no-cors'})
+                    .then((response) => {
+                        if(response.status === 200) {
+                            this._keycloak!.clearToken();
+                            this._keycloak!.login();
+                        } else {
+                            console.error("Something went wrong reaching the keycloak server. Not redirecting.")
+                        }
+                    }).catch(() => {
+                        console.error("Could not reach keycloak server. Not redirecting.")
+                    })
+            }
+
             try {
                 // Try to use a stored offline refresh token if defined
                 const offlineToken = await this._getNativeOfflineRefreshToken();
@@ -923,19 +941,12 @@ export class Manager implements EventProviderFactory {
         }
     }
 
-    protected async updateKeycloakAccessToken() {
-        try {
-            // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
-            const tokenRefreshed = await this._keycloak!.updateToken(30);
-            // If refreshed from server, it means the refresh token was still good for another access token
-            console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
-        } catch (e) {
-            // Refresh token expired (either SSO max session duration or offline idle timeout), see
-            // OR_IDENTITY_SESSION_MAX_MINUTES and OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
-            console.info("Access token update failed, refresh token expired, login required");
-            this._keycloak!.clearToken();
-            this._keycloak!.login();
-        }
+    protected async updateKeycloakAccessToken(): Promise<boolean | void> {
+        // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
+        const tokenRefreshed = await this._keycloak!.updateToken(30);
+        // If refreshed from server, it means the refresh token was still good for another access token
+        console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
+        return tokenRefreshed;
     }
 
     protected async _getNativeOfflineRefreshToken(): Promise<string | undefined> {
@@ -965,6 +976,7 @@ export class Manager implements EventProviderFactory {
 
         // Reconnect to websocket
         if (this._events) {
+            console.log("disconnect!")
             this._events.disconnect();
         }
 
