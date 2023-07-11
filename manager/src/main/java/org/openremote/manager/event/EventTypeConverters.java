@@ -106,7 +106,6 @@ public class EventTypeConverters implements TypeConverters {
 
     @Converter
     public EventRequestResponseWrapper readRequestResponse(String string, Exchange exchange) throws Exception {
-        System.out.println("readRequestResponse: [" + string + "]");
         if (!string.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX))
             return null;
         string = string.substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length());
