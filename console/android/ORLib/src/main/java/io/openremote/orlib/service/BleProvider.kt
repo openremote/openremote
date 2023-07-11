@@ -21,7 +21,6 @@ class BleProvider(val context: Context) {
     }
 
     companion object {
-        private const val bluetoothPermissionAskedKey = "BluetoothPermissionAsked"
         private const val bleDisabledKey = "bleDisabled"
         private const val version = "ble"
 
