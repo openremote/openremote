@@ -7,32 +7,34 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4C0E4A10274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C0E4A0F274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift */; };
+		4C0E4A12274BE411008CB352 /* QrScannerProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C0E4A11274BE411008CB352 /* QrScannerProvider.swift */; };
+		4C2CE794274BB48500416B1A /* QrScannerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2CE793274BB48500416B1A /* QrScannerViewController.swift */; };
 		4C537EE2299D3BA0006EFB94 /* ORLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C537EE1299D3BA0006EFB94 /* ORLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		4C537EE6299D3BA7006EFB94 /* Window+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05D27143F1F00D705BE /* Window+Utils.swift */; };
-		4C537EE7299D3BAB006EFB94 /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */; };
-		4C537EE8299D3BAD006EFB94 /* ORLib.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D04A27143EEC00D705BE /* ORLib.swift */; };
-		4C537EE9299D3BAF006EFB94 /* String+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06027143F1F00D705BE /* String+Utils.swift */; };
-		4C537EEA299D3BB2006EFB94 /* UIColor+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05E27143F1F00D705BE /* UIColor+Utils.swift */; };
-		4C537EEB299D3BB4006EFB94 /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05F27143F1F00D705BE /* Reachability.swift */; };
-		4C537EEC299D3BB7006EFB94 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05C27143F1F00D705BE /* Constants.swift */; };
-		4C537EED299D3BBB006EFB94 /* ScannerOverlayPreviewLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C0E4A0F274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift */; };
-		4C537EEE299D3BBD006EFB94 /* QrScannerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2CE793274BB48500416B1A /* QrScannerViewController.swift */; };
-		4C537EEF299D3BC0006EFB94 /* ErrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05A27143F1F00D705BE /* ErrorManager.swift */; };
-		4C537EF0299D3BC2006EFB94 /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05827143F1F00D705BE /* ORViewController.swift */; };
-		4C537EF1299D3BC4006EFB94 /* ORTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05727143F1F00D705BE /* ORTextInput.swift */; };
-		4C537EF2299D3BCA006EFB94 /* ApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FE28BF6C4C00DF8928 /* ApiManager.swift */; };
-		4C537EF3299D3BCD006EFB94 /* HttpApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06827143F1F00D705BE /* HttpApiManager.swift */; };
-		4C537EF4299D3BCF006EFB94 /* ORNotificationResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06727143F1F00D705BE /* ORNotificationResource.swift */; };
-		4C537EF5299D3BD2006EFB94 /* ProjectConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AA79F028D4D525005B9913 /* ProjectConfig.swift */; };
-		4C537EF6299D3BD4006EFB94 /* ORAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9228897EDD000FF05C /* ORAppInfo.swift */; };
-		4C537EF7299D3BD6006EFB94 /* ORConsoleConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9028897E55000FF05C /* ORConsoleConfig.swift */; };
-		4C537EF8299D3BD8006EFB94 /* ORPushNotificationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */; };
-		4C537EF9299D3BDA006EFB94 /* ORPushNotificationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */; };
-		4C537EFA299D3BDC006EFB94 /* ORLinkConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06327143F1F00D705BE /* ORLinkConfig.swift */; };
-		4C537EFB299D3BE0006EFB94 /* QrScannerProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C0E4A11274BE411008CB352 /* QrScannerProvider.swift */; };
-		4C537EFC299D3BE2006EFB94 /* PushNotificationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05427143F1F00D705BE /* PushNotificationProvider.swift */; };
-		4C537EFD299D3BE5006EFB94 /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05327143F1F00D705BE /* GeofenceProvider.swift */; };
-		4C537EFE299D3BE6006EFB94 /* StorageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05227143F1F00D705BE /* StorageProvider.swift */; };
+		4C649E6829C251A300FFBEA4 /* BleProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C649E6729C251A300FFBEA4 /* BleProvider.swift */; };
+		4C649E6A29C2554F00FFBEA4 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C649E6929C2554F00FFBEA4 /* CoreBluetooth.framework */; };
+		4CB8B7BA29CAFB5200085BBD /* ORConsoleConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9028897E55000FF05C /* ORConsoleConfig.swift */; };
+		4CB8B7BB29CAFB5200085BBD /* ORAppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F9228897EDD000FF05C /* ORAppInfo.swift */; };
+		4CB8B7BC29CAFB5200085BBD /* ProjectConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AA79F028D4D525005B9913 /* ProjectConfig.swift */; };
+		4CB8B7BD29CAFB5200085BBD /* ApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FE28BF6C4C00DF8928 /* ApiManager.swift */; };
+		4CB8B7BF29CAFB5200085BBD /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */; };
+		4CF5D04B27143EEC00D705BE /* ORLib.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D04A27143EEC00D705BE /* ORLib.swift */; };
+		4CF5D06927143F2000D705BE /* StorageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05227143F1F00D705BE /* StorageProvider.swift */; };
+		4CF5D06A27143F2000D705BE /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05327143F1F00D705BE /* GeofenceProvider.swift */; };
+		4CF5D06B27143F2000D705BE /* PushNotificationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05427143F1F00D705BE /* PushNotificationProvider.swift */; };
+		4CF5D06D27143F2000D705BE /* ORTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05727143F1F00D705BE /* ORTextInput.swift */; };
+		4CF5D06E27143F2000D705BE /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05827143F1F00D705BE /* ORViewController.swift */; };
+		4CF5D07027143F2000D705BE /* ErrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05A27143F1F00D705BE /* ErrorManager.swift */; };
+		4CF5D07127143F2000D705BE /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05C27143F1F00D705BE /* Constants.swift */; };
+		4CF5D07227143F2000D705BE /* Window+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05D27143F1F00D705BE /* Window+Utils.swift */; };
+		4CF5D07327143F2000D705BE /* UIColor+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05E27143F1F00D705BE /* UIColor+Utils.swift */; };
+		4CF5D07427143F2000D705BE /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05F27143F1F00D705BE /* Reachability.swift */; };
+		4CF5D07527143F2000D705BE /* String+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06027143F1F00D705BE /* String+Utils.swift */; };
+		4CF5D07727143F2000D705BE /* ORLinkConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06327143F1F00D705BE /* ORLinkConfig.swift */; };
+		4CF5D07827143F2000D705BE /* ORPushNotificationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */; };
+		4CF5D07927143F2000D705BE /* ORPushNotificationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */; };
+		4CF5D07A27143F2000D705BE /* ORNotificationResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06727143F1F00D705BE /* ORNotificationResource.swift */; };
+		4CF5D07B27143F2000D705BE /* HttpApiManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06827143F1F00D705BE /* HttpApiManager.swift */; };
 		914F7D4429215D3500655A22 /* test12.json in Resources */ = {isa = PBXBuildFile; fileRef = 914F7D4329215D3500655A22 /* test12.json */; };
 		9156512A28FC6D6700062E16 /* test9.json in Resources */ = {isa = PBXBuildFile; fileRef = 9156512928FC6D6700062E16 /* test9.json */; };
 		91932F9328C66A3C00BABBA3 /* test1.json in Resources */ = {isa = PBXBuildFile; fileRef = 91932F9228C66A3C00BABBA3 /* test1.json */; };
@@ -49,11 +51,10 @@
 		91D2D11A28E988B10030E2FB /* test8.json in Resources */ = {isa = PBXBuildFile; fileRef = 91D2D11928E988B10030E2FB /* test8.json */; };
 		91DD9FEE29102A5800912F79 /* test10.json in Resources */ = {isa = PBXBuildFile; fileRef = 91DD9FED2910280900912F79 /* test10.json */; };
 		91DD9FF029102A8B00912F79 /* test11.json in Resources */ = {isa = PBXBuildFile; fileRef = 91DD9FEF29102A8B00912F79 /* test11.json */; };
-		E7D11C4B23B7F100063C924F /* Pods_ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00395F968190E690BA7C7301 /* Pods_ORLib.framework */; };
+		F8ADB5E4C72BC3900710C0C5 /* Pods_ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 850D0E4EC689CD46245628A2 /* Pods_ORLib.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		00395F968190E690BA7C7301 /* Pods_ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		00E2F1C1D04B6576AE83F054 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "../../../michael/Documents/Projects/OR/k2/console/iOS/K2/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
 		38A2074B5ACA112DAAEE17DD /* Pods-ORLibb.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLibb.debug.xcconfig"; path = "../../../michael/Documents/Projects/OR/k2/console/iOS/K2/Pods/Target Support Files/Pods-ORLibb/Pods-ORLibb.debug.xcconfig"; sourceTree = "<group>"; };
 		39617E7CE27B653F072B33C8 /* Pods-ORLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.debug.xcconfig"; path = "../../../michael/Documents/Projects/OR/k2/console/iOS/K2/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.debug.xcconfig"; sourceTree = "<group>"; };
@@ -62,6 +63,8 @@
 		4C2CE793274BB48500416B1A /* QrScannerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScannerViewController.swift; sourceTree = "<group>"; };
 		4C537EDF299D3BA0006EFB94 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C537EE1299D3BA0006EFB94 /* ORLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ORLib.h; sourceTree = "<group>"; };
+		4C649E6729C251A300FFBEA4 /* BleProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BleProvider.swift; sourceTree = "<group>"; };
+		4C649E6929C2554F00FFBEA4 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks/CoreBluetooth.framework; sourceTree = DEVELOPER_DIR; };
 		4CC64C3E27C3CDD400A2FA4C /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Media.xcassets; sourceTree = "<group>"; };
 		4CF5D04A27143EEC00D705BE /* ORLib.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORLib.swift; sourceTree = "<group>"; };
 		4CF5D05227143F1F00D705BE /* StorageProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StorageProvider.swift; sourceTree = "<group>"; };
@@ -80,6 +83,7 @@
 		4CF5D06527143F1F00D705BE /* ORPushNotificationAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationAction.swift; sourceTree = "<group>"; };
 		4CF5D06727143F1F00D705BE /* ORNotificationResource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORNotificationResource.swift; sourceTree = "<group>"; };
 		4CF5D06827143F1F00D705BE /* HttpApiManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HttpApiManager.swift; sourceTree = "<group>"; };
+		850D0E4EC689CD46245628A2 /* Pods_ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		914F7D4329215D3500655A22 /* test12.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test12.json; sourceTree = "<group>"; };
 		9156512928FC6D6700062E16 /* test9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test9.json; sourceTree = "<group>"; };
 		91658F9028897E55000FF05C /* ORConsoleConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORConsoleConfig.swift; sourceTree = "<group>"; };
@@ -111,7 +115,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E7D11C4B23B7F100063C924F /* Pods_ORLib.framework in Frameworks */,
+				4C649E6A29C2554F00FFBEA4 /* CoreBluetooth.framework in Frameworks */,
+				F8ADB5E4C72BC3900710C0C5 /* Pods_ORLib.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -180,6 +185,7 @@
 				4CF5D05327143F1F00D705BE /* GeofenceProvider.swift */,
 				4CF5D05427143F1F00D705BE /* PushNotificationProvider.swift */,
 				4C0E4A11274BE411008CB352 /* QrScannerProvider.swift */,
+				4C649E6729C251A300FFBEA4 /* BleProvider.swift */,
 			);
 			path = ConsoleProviders;
 			sourceTree = "<group>";
@@ -234,7 +240,8 @@
 		717C35290053DAF6024CFEA7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				00395F968190E690BA7C7301 /* Pods_ORLib.framework */,
+				4C649E6929C2554F00FFBEA4 /* CoreBluetooth.framework */,
+				850D0E4EC689CD46245628A2 /* Pods_ORLib.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -416,31 +423,32 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4C537EFD299D3BE5006EFB94 /* GeofenceProvider.swift in Sources */,
-				4C537EF3299D3BCD006EFB94 /* HttpApiManager.swift in Sources */,
-				4C537EF8299D3BD8006EFB94 /* ORPushNotificationAction.swift in Sources */,
-				4C537EEA299D3BB2006EFB94 /* UIColor+Utils.swift in Sources */,
-				4C537EE9299D3BAF006EFB94 /* String+Utils.swift in Sources */,
-				4C537EEB299D3BB4006EFB94 /* Reachability.swift in Sources */,
-				4C537EF9299D3BDA006EFB94 /* ORPushNotificationButton.swift in Sources */,
-				4C537EE6299D3BA7006EFB94 /* Window+Utils.swift in Sources */,
-				4C537EF4299D3BCF006EFB94 /* ORNotificationResource.swift in Sources */,
-				4C537EFE299D3BE6006EFB94 /* StorageProvider.swift in Sources */,
-				4C537EEF299D3BC0006EFB94 /* ErrorManager.swift in Sources */,
-				4C537EFA299D3BDC006EFB94 /* ORLinkConfig.swift in Sources */,
-				4C537EED299D3BBB006EFB94 /* ScannerOverlayPreviewLayer.swift in Sources */,
-				4C537EF7299D3BD6006EFB94 /* ORConsoleConfig.swift in Sources */,
-				4C537EF1299D3BC4006EFB94 /* ORTextInput.swift in Sources */,
-				4C537EEC299D3BB7006EFB94 /* Constants.swift in Sources */,
-				4C537EFC299D3BE2006EFB94 /* PushNotificationProvider.swift in Sources */,
-				4C537EF2299D3BCA006EFB94 /* ApiManager.swift in Sources */,
-				4C537EF5299D3BD2006EFB94 /* ProjectConfig.swift in Sources */,
-				4C537EF6299D3BD4006EFB94 /* ORAppInfo.swift in Sources */,
-				4C537EF0299D3BC2006EFB94 /* ORViewController.swift in Sources */,
-				4C537EEE299D3BBD006EFB94 /* QrScannerViewController.swift in Sources */,
-				4C537EE8299D3BAD006EFB94 /* ORLib.swift in Sources */,
-				4C537EFB299D3BE0006EFB94 /* QrScannerProvider.swift in Sources */,
-				4C537EE7299D3BAB006EFB94 /* ConfigManager.swift in Sources */,
+				4CB8B7BA29CAFB5200085BBD /* ORConsoleConfig.swift in Sources */,
+				4CB8B7BB29CAFB5200085BBD /* ORAppInfo.swift in Sources */,
+				4CB8B7BC29CAFB5200085BBD /* ProjectConfig.swift in Sources */,
+				4CB8B7BD29CAFB5200085BBD /* ApiManager.swift in Sources */,
+				4CB8B7BF29CAFB5200085BBD /* ConfigManager.swift in Sources */,
+				4C649E6829C251A300FFBEA4 /* BleProvider.swift in Sources */,
+				4CF5D07027143F2000D705BE /* ErrorManager.swift in Sources */,
+				4CF5D07227143F2000D705BE /* Window+Utils.swift in Sources */,
+				4C0E4A12274BE411008CB352 /* QrScannerProvider.swift in Sources */,
+				4CF5D07727143F2000D705BE /* ORLinkConfig.swift in Sources */,
+				4C2CE794274BB48500416B1A /* QrScannerViewController.swift in Sources */,
+				4CF5D06E27143F2000D705BE /* ORViewController.swift in Sources */,
+				4CF5D07327143F2000D705BE /* UIColor+Utils.swift in Sources */,
+				4CF5D06D27143F2000D705BE /* ORTextInput.swift in Sources */,
+				4CF5D07A27143F2000D705BE /* ORNotificationResource.swift in Sources */,
+				4CF5D07827143F2000D705BE /* ORPushNotificationButton.swift in Sources */,
+				4CF5D06A27143F2000D705BE /* GeofenceProvider.swift in Sources */,
+				4CF5D06927143F2000D705BE /* StorageProvider.swift in Sources */,
+				4CF5D07127143F2000D705BE /* Constants.swift in Sources */,
+				4CF5D07B27143F2000D705BE /* HttpApiManager.swift in Sources */,
+				4CF5D04B27143EEC00D705BE /* ORLib.swift in Sources */,
+				4CF5D06B27143F2000D705BE /* PushNotificationProvider.swift in Sources */,
+				4CF5D07527143F2000D705BE /* String+Utils.swift in Sources */,
+				4C0E4A10274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift in Sources */,
+				4CF5D07427143F2000D705BE /* Reachability.swift in Sources */,
+				4CF5D07927143F2000D705BE /* ORPushNotificationAction.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

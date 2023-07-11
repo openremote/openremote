@@ -5,8 +5,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.appcompat.app.AlertDialog
-import androidx.core.app.ActivityCompat
 import io.openremote.orlib.R
 import io.openremote.orlib.ui.QrScannerActivity
 
@@ -21,9 +19,6 @@ class QrScannerProvider(val context: Context) {
         private const val version = "qr"
         const val REQUEST_SCAN_QR = 222
     }
-
-    private var enableCallback: ScannerCallback? = null
-
     fun initialize(): Map<String, Any> {
         val sharedPreferences =
             context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)

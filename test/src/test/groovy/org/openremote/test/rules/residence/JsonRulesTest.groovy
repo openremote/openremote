@@ -17,7 +17,10 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
-import org.openremote.manager.rules.*
+import org.openremote.manager.rules.JsonRulesBuilder
+import org.openremote.manager.rules.RulesEngine
+import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.webhook.WebhookService
@@ -56,7 +59,6 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
-import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.model.util.ValueUtil.parse
@@ -448,32 +450,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert pushTargetsAndMessages.findAll {it.v2.title == "Test title" && it.v1.id == consoleRegistration.id}.size() == 4
         }
 
-        when: "the Rules PAUSE_SCHEDULER is overridden to facilitate testing"
-        RulesEngine engine
-        RulesetDeployment deployment
-        def originalPause = RulesEngine.PAUSE_SCHEDULER
-        RulesEngine.PAUSE_SCHEDULER = {e, d ->
-            engine = e
-            deployment = d
-            long delay = d.getValidTo() - timerService.getCurrentTimeMillis()
-            // Don't actually schedule just simulate time passing and let test decide when to move on
-            advancePseudoClock(delay, MILLISECONDS, container)
-
-        }
-        def originalUnpause = RulesEngine.UNPAUSE_SCHEDULER
-        RulesEngine.UNPAUSE_SCHEDULER = {e, d ->
-            engine = e
-            deployment = d
-            long delay = d.getValidFrom() - timerService.getCurrentTimeMillis()
-            // Don't actually schedule just simulate time passing and let test decide when to move on
-            advancePseudoClock(delay, MILLISECONDS, container)
-        }
-
-        and: "a validity period is added to the ruleset (fictional times to ensure firing in sensible time within test)"
+        when: "a validity period is added to the ruleset"
         version = ruleset.version
         def validityStart = Instant.ofEpochMilli(getClockTimeOf(container)).plus(2, ChronoUnit.HOURS)
         def validityEnd = Instant.ofEpochMilli(getClockTimeOf(container)).plus(4, ChronoUnit.HOURS)
-        def recur = new Recur(Recur.DAILY, 3)
+        def recur = new Recur(Recur.Frequency.DAILY, 3)
         recur.setInterval(2)
         def calendarEvent = new CalendarEvent(
                 Date.from(validityStart),
@@ -502,10 +483,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "no notification should have been sent as outside the validity period"
         assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 4
 
-        when: "the pause elapses"
-        engine.unPauseRuleset(deployment)
+        when: "time advances to inside the validity period"
+        advancePseudoClock(3, HOURS, container)
 
-        then: "eventually the ruleset should be unpaused (1st occurrence)"
+        then: "the ruleset should be unpaused (1st occurrence)"
         conditions.eventually {
             assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
@@ -526,8 +507,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 5
         }
 
-        when: "the un-pause elapses"
-        engine.pauseRuleset(deployment)
+        when: "time advances past the validity period"
+        advancePseudoClock(1, HOURS, container)
 
         then: "the ruleset should become paused again (until next occurrence)"
         conditions.eventually {
@@ -548,32 +529,32 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "no notification should have been sent as outside the validity period"
         assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 5
 
-        when: "the pause elapses"
-        engine.unPauseRuleset(deployment)
+        when: "time advances to inside the next validity period"
+        advancePseudoClock(47, HOURS, container)
 
         then: "eventually the ruleset should be unpaused (next occurrence)"
         conditions.eventually {
             assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
-        when: "the un-pause elapses"
-        engine.pauseRuleset(deployment)
+        when: "time advances past the validity period"
+        advancePseudoClock(1, HOURS, container)
 
         then: "the ruleset should become paused again (until last occurrence)"
         conditions.eventually {
             assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == PAUSED
         }
 
-        when: "the pause elapses"
-        engine.unPauseRuleset(deployment)
+        when: "time advances to inside the next validity period"
+        advancePseudoClock(47, HOURS, container)
 
         then: "eventually the ruleset should be unpaused (last occurrence)"
         conditions.eventually {
             assert realmBuildingEngine.deployments.find{it.key == ruleset.id}.value.status == DEPLOYED
         }
 
-        when: "the un-pause elapses"
-        engine.pauseRuleset(deployment)
+        when: "time advances past the validity period"
+        advancePseudoClock(1, HOURS, container)
 
         then: "the ruleset should expire"
         conditions.eventually {
@@ -581,12 +562,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         cleanup: "static variables are reset and the mock is removed"
-        if (originalPause != null) {
-            RulesEngine.PAUSE_SCHEDULER = originalPause
-        }
-        if (originalUnpause != null) {
-            RulesEngine.UNPAUSE_SCHEDULER = originalUnpause
-        }
         if (originalDebounceMillis != null) {
             ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = originalDebounceMillis
         }
@@ -629,7 +604,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "the pseudo clock is stopped"
         stopPseudoClock()
 
-        and: "a ruleset with sunset trigger condition is added whose action updates the thing asset"
+        when: "a ruleset with sunset trigger condition is added whose action updates the thing asset"
         def rulesStr = getClass().getResource("/org/openremote/test/rules/JsonRuleSunset.json").text
         def rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
         Ruleset ruleset = new RealmRuleset(
@@ -638,11 +613,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 Ruleset.Lang.JSON,
                 rulesStr)
         ruleset = rulesetStorageService.merge(ruleset)
-        def sunsetCalculator = JsonRulesBuilder.getSunCalculator(rule.rules[0].when.groups[0].items[0].sun, timerService)
+        def sunsetCalculator = JsonRulesBuilder.getSunCalculator(ruleset, rule.rules[0].when.groups[0].items[0].sun, timerService)
         def sunTimes = sunsetCalculator.execute()
         def lastFireTimestamp = 0
 
-        expect: "the rule engines to become available and be running with asset states inserted"
+        then: "the rule engines to become available and be running with asset states inserted"
         conditions.eventually {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
@@ -650,6 +625,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+            assert sunsetCalculator != null
         }
 
         and: "the next sunset should be calculated and should be in the future"
@@ -735,7 +711,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 Ruleset.Lang.JSON,
                 rulesStr)
         ruleset = rulesetStorageService.merge(ruleset)
-        sunsetCalculator = JsonRulesBuilder.getSunCalculator(rule.rules[0].when.groups[0].items[0].sun, timerService)
+        sunsetCalculator = JsonRulesBuilder.getSunCalculator(ruleset, rule.rules[0].when.groups[0].items[0].sun, timerService)
         sunTimes = sunsetCalculator.execute()
 
         then: "the rule engines to become available and be running with asset states inserted"
@@ -790,7 +766,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 Ruleset.Lang.JSON,
                 rulesStr)
         ruleset = rulesetStorageService.merge(ruleset)
-        sunsetCalculator = JsonRulesBuilder.getSunCalculator(rule.rules[0].when.groups[0].items[0].sun, timerService)
+        sunsetCalculator = JsonRulesBuilder.getSunCalculator(ruleset, rule.rules[0].when.groups[0].items[0].sun, timerService)
         sunTimes = sunsetCalculator.execute()
 
         then: "the rule engines to become available and be running with asset states inserted"

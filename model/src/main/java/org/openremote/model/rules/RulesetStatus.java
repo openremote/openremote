@@ -36,6 +36,11 @@ public enum RulesetStatus {
     COMPILATION_ERROR,
 
     /**
+     * Validity period is not valid
+     */
+    VALIDITY_PERIOD_ERROR,
+
+    /**
      * Ruleset was executed but there was a runtime error.
      */
     EXECUTION_ERROR,
