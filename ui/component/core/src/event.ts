@@ -10,7 +10,7 @@ import {
     AttributeRef,
     CancelEventSubscription,
     EventRequestResponseWrapper,
-    EventSubscription, PingEvent,
+    EventSubscription,
     ReadAssetsEvent,
     ReadAttributeEvent,
     SharedEvent,
@@ -77,8 +77,6 @@ const UNSUBSCRIBE_MESSAGE_PREFIX = "UNSUBSCRIBE:";
 const UNAUTHORIZED_MESSAGE_PREFIX = "UNAUTHORIZED:";
 const TRIGGERED_MESSAGE_PREFIX = "TRIGGERED:";
 const EVENT_MESSAGE_PREFIX = "EVENT:";
-const PING_MESSAGE_PREFIX = "PING:";
-const PONG_MESSAGE_PREFIX = "PONG:";
 const EVENT_REQUEST_RESPONSE_MESSAGE_PREFIX = "REQUESTRESPONSE:";
 
 abstract class EventProviderImpl implements EventProvider {
@@ -160,7 +158,6 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public disconnect(): void {
-        console.log("public disconnect()")
         if (this._disconnectRequested) {
             return;
         }
@@ -627,21 +624,14 @@ export class WebSocketEventProvider extends EventProviderImpl {
         this._connectDeferred = new Deferred();
 
         this._webSocket!.onopen = () => {
-            console.log("onopen!");
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
                 deferred.resolve(true);
             }
-            console.log("Sending ping..")
-            const ping: PingEvent = {
-                timestampTest: "test"
-            };
-            this._webSocket!.send(PING_MESSAGE_PREFIX + JSON.stringify(ping));
         };
 
         this._webSocket!.onerror = (err) => {
-            console.log(err);
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
@@ -653,9 +643,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
             }
         };
 
-        this._webSocket!.onclose = (ev) => {
-            console.log("onclose!");
-            console.log(ev);
+        this._webSocket!.onclose = () => {
             this._webSocket = undefined;
 
             if (this._connectDeferred) {
@@ -668,7 +656,6 @@ export class WebSocketEventProvider extends EventProviderImpl {
         };
 
         this._webSocket!.onmessage = (e) => {
-            console.log(e);
             const msg = e.data as string;
 
             if (msg && msg.startsWith(SUBSCRIBED_MESSAGE_PREFIX)) {
@@ -717,7 +704,6 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected _doDisconnect(): void {
-        console.log("doDisconnect!");
         this._webSocket!.close();
         this._subscribeDeferred = null;
         this._repliesDeferred.clear();

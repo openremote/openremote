@@ -1,6 +1,6 @@
 import "url-search-params-polyfill";
 import {Console} from "./console";
-import rest, {isAxiosError} from "@openremote/rest";
+import rest from "@openremote/rest";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next, {InitOptions} from "i18next";
@@ -976,7 +976,6 @@ export class Manager implements EventProviderFactory {
 
         // Reconnect to websocket
         if (this._events) {
-            console.log("disconnect!")
             this._events.disconnect();
         }
 
