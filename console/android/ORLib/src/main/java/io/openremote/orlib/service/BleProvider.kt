@@ -13,9 +13,6 @@ import android.os.Handler
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import io.openremote.orlib.R
-import org.json.JSONObject
-import java.io.ByteArrayOutputStream
-import java.io.ObjectOutputStream
 import java.util.*
 
 class BleProvider(val context: Context) {
@@ -112,7 +109,7 @@ class BleProvider(val context: Context) {
         val sharedPreferences =
             context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
         sharedPreferences.edit()
-            .putBoolean(bluetoothPermissionAskedKey, true)
+            .putBoolean(bleDisabledKey, true)
             .apply()
 
         return hashMapOf(
