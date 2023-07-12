@@ -905,7 +905,6 @@ export class Manager implements EventProviderFactory {
             this._keycloak!.onAuthRefreshSuccess = () => {
                 this._emitEvent(OREvent.AUTH_REFRESH_SUCCESS)
             }
-
             try {
                 // Try to use a stored offline refresh token if defined
                 const offlineToken = await this._getNativeOfflineRefreshToken();
