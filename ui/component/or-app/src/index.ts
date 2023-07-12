@@ -1,11 +1,4 @@
-import {
-    css,
-    html,
-    LitElement,
-    PropertyValues,
-    TemplateResult,
-    unsafeCSS
-} from "lit";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {AppConfig, Page, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
@@ -15,15 +8,15 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {DefaultColor2, DefaultColor3, DefaultColor4, Util, BasicLoginResult, normaliseConfig, Manager} from "@openremote/core";
+import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
-import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
-import {AppStateKeyed, updatePage, updateRealm} from "./app";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { ORError } from "@openremote/core";
-import { Auth, ManagerConfig, Realm } from "@openremote/model";
+import {AppStateKeyed, setOffline, updatePage, updateRealm} from "./app";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {Auth, ManagerConfig, Realm} from "@openremote/model";
+import {getPageOffline} from "./or-offline";
 
 export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -92,6 +85,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     @state()
     protected _realm?: string;
+
+    @state()
+    protected _offline: boolean = false;
 
     @state()
     protected _activeMenu?: string;
@@ -222,6 +218,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     return;
                 }
 
+                manager.addListener((event) => {
+                    if(event === OREvent.AUTH_REFRESH_FAILED) {
+                        if(!this._offline) {
+                            this._store.dispatch((setOffline(true)))
+                        }
+                    }
+                    if(event === OREvent.AUTH_REFRESH_SUCCESS) {
+                        if(this._offline) {
+                            this._store.dispatch((setOffline(false)))
+                        }
+                    }
+                })
+
                 // Load available realm info
                 const response = await manager.rest.api.RealmResource.getAccessible();
                 this._realms = response.data;
@@ -283,7 +292,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             return;
         }
 
-        if (changedProps.has("_page")) {
+        if (changedProps.has("_page") || changedProps.has("_offline")) {
             if (this._mainElem) {
                 if (this._mainElem.firstElementChild) {
                     this._mainElem.firstElementChild.remove();
@@ -291,7 +300,16 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 if (this._page) {
                     const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
                     if (pageProvider) {
-                        const pageElem = pageProvider.pageCreator();
+                        let pageElem;
+                        if(!this._offline || pageProvider.allowOffline) {
+                            pageElem = pageProvider.pageCreator();
+                        } else {
+                            if(this.appConfig?.offlinePage) {
+                                pageElem = this.appConfig.offlinePage;
+                            } else {
+                                pageElem = getPageOffline(this._store);
+                            }
+                        }
                         this._mainElem.appendChild(pageElem);
                     }
                 }
@@ -366,6 +384,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     public stateChanged(state: AppStateKeyed) {
         this._realm = state.app.realm;
         this._page = state.app!.page;
+        this._offline = state.app!.offline;
     }
 
     public logout() {

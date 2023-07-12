@@ -69,7 +69,9 @@ export enum OREvent {
     EVENTS_DISCONNECTED = "EVENTS_DISCONNECTED",
     TRANSLATE_INIT = "TRANSLATE_INIT",
     TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED",
-    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
+    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED",
+    AUTH_REFRESH_FAILED = "AUTH_REFRESH_FAILED",
+    AUTH_REFRESH_SUCCESS = "AUTH_REFRESH_SUCCESS"
 }
 
 export interface LoginOptions {
@@ -891,11 +893,17 @@ export class Manager implements EventProviderFactory {
                             this._keycloak!.clearToken();
                             this._keycloak!.login();
                         } else {
-                            console.error("Something went wrong reaching the keycloak server. Not redirecting.")
+                            console.error("Something went wrong reaching the keycloak server. Not redirecting.");
+                            this._emitEvent(OREvent.AUTH_REFRESH_FAILED);
                         }
                     }).catch(() => {
                         console.error("Could not reach keycloak server. Not redirecting.")
+                        this._emitEvent(OREvent.AUTH_REFRESH_FAILED);
                     })
+            }
+
+            this._keycloak!.onAuthRefreshSuccess = () => {
+                this._emitEvent(OREvent.AUTH_REFRESH_SUCCESS)
             }
 
             try {

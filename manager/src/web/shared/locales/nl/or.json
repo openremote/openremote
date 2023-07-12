@@ -322,6 +322,8 @@
   "host": "Hostname",
   "errorOccurred": "Er is een fout opgetreden",
   "sendFailed": "Verzenden mislukt",
+  "youAreOffline": "Geen internet.",
+  "checkConnection": "Controleer je internetverbinding.",
   "managerError": {
     "MANAGER_FAILED_TO_LOAD": "Manager kan niet geladen worden (bekijk de console logs)",
     "AUTH_FAILED": "Auth kan niet geladen worden (bekijk de console logs)",

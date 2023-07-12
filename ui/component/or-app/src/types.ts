@@ -21,6 +21,7 @@ export interface RealmAppConfig {
 
 export interface AppConfig<S extends AppStateKeyed> {
     pages: PageProvider<S>[];
+    offlinePage?: Page<S>;
     languages?: Languages;
     superUserHeader?: HeaderConfig;
     realms?: {
@@ -33,6 +34,7 @@ export interface AppConfig<S extends AppStateKeyed> {
 export interface PageProvider<S extends AppStateKeyed> {
     name: string;
     routes: string[];
+    allowOffline?: boolean;
     pageCreator: () => Page<S>;
 }
 
