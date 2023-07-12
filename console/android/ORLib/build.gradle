@@ -1,11 +1,13 @@
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
+    namespace 'io.openremote.orlib'
     compileSdkVersion 33
-    buildToolsVersion "32.0.0"
+    buildToolsVersion "33.0.2"
 
     defaultConfig {
         minSdkVersion 25
@@ -37,9 +39,9 @@ android {
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.preference:preference-ktx:1.2.0'
     implementation "com.google.android.gms:play-services-location:21.0.1"
     implementation 'com.google.android.gms:play-services-vision:20.1.3'
