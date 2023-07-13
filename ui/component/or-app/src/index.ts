@@ -8,7 +8,7 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
+import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, EventCallback, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -92,6 +92,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @state()
     protected _activeMenu?: string;
 
+    protected _eventCallback?: EventCallback;
     protected _realms!: Realm[];
     protected _store: Store<S, AnyAction>;
     protected _storeUnsubscribe!: Unsubscribe;
@@ -166,6 +167,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     disconnectedCallback() {
         this._storeUnsubscribe();
+        if(this._eventCallback !== undefined) {
+            manager.removeListener(this._eventCallback);
+        }
         super.disconnectedCallback();
     }
 
@@ -218,19 +222,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     return;
                 }
 
-                manager.addListener((event) => {
-                    if(event === OREvent.AUTH_REFRESH_FAILED) {
-                        if(!this._offline) {
-                            this._store.dispatch((setOffline(true)))
-                        }
-                    }
-                    if(event === OREvent.AUTH_REFRESH_SUCCESS) {
-                        if(this._offline) {
-                            this._store.dispatch((setOffline(false)))
-                        }
-                    }
-                })
-
                 // Load available realm info
                 const response = await manager.rest.api.RealmResource.getAccessible();
                 this._realms = response.data;
@@ -249,6 +240,21 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this._store.dispatch(updateRealm(realm || manager.getRealm() || "master"));
 
                 this._initialised = true;
+
+                // Register listeners to change global state based on certain events
+                this._eventCallback = (event) => {
+                    if(event === OREvent.AUTH_REFRESH_FAILED) {
+                        if(!this._offline) {
+                            this._store.dispatch((setOffline(true)))
+                        }
+                    }
+                    if(event === OREvent.AUTH_REFRESH_SUCCESS) {
+                        if(this._offline) {
+                            this._store.dispatch((setOffline(false)))
+                        }
+                    }
+                };
+                manager.addListener(this._eventCallback);
 
                 // Create route listener to set header active item (this must be done before any routes added)
                 const headerUpdater = (activeMenu: string | undefined) => {
@@ -292,6 +298,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             return;
         }
 
+        // If either page or 'offline'-status is changed, it should update to the correct page,
+        // by appending the page to the HTML content
         if (changedProps.has("_page") || changedProps.has("_offline")) {
             if (this._mainElem) {
                 if (this._mainElem.firstElementChild) {
@@ -304,10 +312,11 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                         if(!this._offline || pageProvider.allowOffline) {
                             pageElem = pageProvider.pageCreator();
                         } else {
+                            // Check for override offline page
                             if(this.appConfig?.offlinePage) {
                                 pageElem = this.appConfig.offlinePage;
                             } else {
-                                pageElem = getPageOffline(this._store);
+                                pageElem = getPageOffline(this._store); // default offline page
                             }
                         }
                         this._mainElem.appendChild(pageElem);
