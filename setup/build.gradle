@@ -33,5 +33,5 @@ task installDist(type: Copy) {
     dependsOn setupTask
     dependsOn resolveTask(":manager:installDist")
     from setupTask.archiveFile
-    into "${resolveProject(":manager").buildDir}/install/manager/extensions"
+    into "${resolveProject(":manager").buildDir}/install/manager/deployment/manager/extensions"
 }
