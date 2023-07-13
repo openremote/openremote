@@ -102,16 +102,18 @@ public abstract class MQTTHandler {
     public void start(Container container) throws Exception {
         Set<String> publishListenerTopics = getPublishListenerTopics();
         if (publishListenerTopics != null) {
-            publishListenerTopics.forEach(this::addPublishConsumer);
+            for (String publishListenerTopic : publishListenerTopics) {
+                addPublishConsumer(publishListenerTopic);
+            }
         }
     }
 
     // TODO: Priority publishes can come through after the connection is closed (slow delivery to this ActiveMQ client needs investigating)
-    protected void addPublishConsumer(String topic) {
+    protected void addPublishConsumer(String topic) throws Exception {
         try {
             getLogger().info("Adding publish consumer for topic '" + topic + "': handler=" + getName());
             String coreTopic = MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, mqttBrokerService.wildcardConfiguration);
-            mqttBrokerService.internalSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.ANYCAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
+            mqttBrokerService.internalSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.MULTICAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
             ClientConsumer consumer = mqttBrokerService.internalSession.createConsumer(coreTopic);
             consumer.setMessageHandler(message -> {
                 long start = System.currentTimeMillis();
@@ -130,6 +132,7 @@ public abstract class MQTTHandler {
             });
         } catch (ActiveMQException e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
+            throw e;
         }
     }
 

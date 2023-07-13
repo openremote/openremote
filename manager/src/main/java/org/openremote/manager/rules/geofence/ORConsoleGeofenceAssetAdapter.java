@@ -262,7 +262,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 notification.setTargets(subTargets);
 
                 executorService.schedule(() -> {
-                    LOG.fine("Notifiying consoles that geofences have changed: " + notification.getTargets());
+                    LOG.fine("Notifying consoles that geofences have changed: " + notification.getTargets());
                     notificationService.sendNotification(notification);
                 }, (long) i * NOTIFY_ASSETS_BATCH_MILLIS, TimeUnit.MILLISECONDS);
             });

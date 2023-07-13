@@ -84,7 +84,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public static final String ATTRIBUTE_VALUE_TOPIC = "attributevalue";
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
-    protected AssetStorageService assetStorageService;
     protected final ConcurrentMap<String, SubscriberInfo> connectionSubscriberInfoMap = new ConcurrentHashMap<>();
 
     @Override
@@ -125,12 +124,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
                     .end();
             }
         });
-    }
-
-    @Override
-    public void start(Container container) throws Exception {
-        super.start(container);
-        assetStorageService = container.getService(AssetStorageService.class);
     }
 
     @Override
