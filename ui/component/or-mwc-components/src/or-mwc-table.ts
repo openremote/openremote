@@ -136,7 +136,8 @@ interface TableConfig {
 export interface TableColumn {
     title?: string,
     isNumeric?: boolean,
-    hideMobile?: boolean
+    hideMobile?: boolean,
+    isSortable?: boolean
 }
 
 export interface TableRow {
@@ -203,12 +204,19 @@ export class OrMwcTable extends LitElement {
     @state()
     protected _dataTable?: MDCDataTable;
 
+    @property({ type: String })
+    protected sortColumn?: string;
+
+    @property({ type: String })
+    protected sortDirection?: 'ASC' | 'DESC';
 
     /* ------------------- */
 
     protected firstUpdated(changedProperties: Map<string, any>) {
         const elem = this.shadowRoot!.querySelector('.mdc-data-table');
         this._dataTable = new MDCDataTable(elem!);
+        this.sortColumn = '';
+        this.sortDirection = 'ASC';
     }
 
     protected updated(changedProperties: Map<string, any>) {
@@ -221,6 +229,9 @@ export class OrMwcTable extends LitElement {
                 observer.unobserve(entries[0].target);
             })
             observer.observe(elem!);
+        }
+        if(changedProperties.has('sortColumn') || changedProperties.has('sortDirection')){
+            // Do thing
         }
     }
 
@@ -247,10 +258,11 @@ export class OrMwcTable extends LitElement {
                                         ` : html`
                                             <th class="mdc-data-table__header-cell ${classMap({
                                                 'mdc-data-table__cell--numeric': !!column.isNumeric,
-                                                'hide-mobile': !!column.hideMobile
+                                                'hide-mobile': !!column.hideMobile,
+                                                'mdc-data-table__header-cell--with-sort': !!column.isSortable
                                             })}"
-                                                role="columnheader" scope="col" title="${column.title}">
-                                                ${column.title}
+                                                role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}">
+                                                ${!!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, !!column.isSortable), html`${i18next.t('loading')}`)}
                                             </th>
                                         `;
                                     })}
@@ -327,6 +339,24 @@ export class OrMwcTable extends LitElement {
             </div>
         `;
     }
+
+    async getSortHeader(index: number, title: string, orderAsc: boolean): Promise<TemplateResult> {
+        return html`
+                <div class="mdc-data-table__header-cell-wrapper">
+                    <div class="mdc-data-table__header-cell-label">
+                        ${title}
+                    </div>
+                    <or-mwc-input aria-label="Sort by ${title}" aria-describedby="${title}-status-label"
+                                  id="sort-btn" type="button" icon="${ orderAsc ? "arrow-up" : "arrow-down"}"
+                                  @click="${() => ''}"
+                    ></or-mwc-input>
+                    <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="${title}-status-label">
+                    </div>
+                </div>
+        `;
+    }
+
+
 
     // HTML for the controls on the bottom of the table.
     // Includes basic pagination for browsing pages, with calculations of where to go.
