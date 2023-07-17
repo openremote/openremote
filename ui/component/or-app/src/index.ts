@@ -243,12 +243,12 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 // Register listeners to change global state based on certain events
                 this._eventCallback = (event) => {
-                    if(event === OREvent.AUTH_REFRESH_FAILED) {
+                    if(event === OREvent.OFFLINE) {
                         if(!this._offline) {
                             this._store.dispatch((setOffline(true)))
                         }
                     }
-                    if(event === OREvent.AUTH_REFRESH_SUCCESS) {
+                    if(event === OREvent.ONLINE) {
                         if(this._offline) {
                             this._store.dispatch((setOffline(false)))
                         }

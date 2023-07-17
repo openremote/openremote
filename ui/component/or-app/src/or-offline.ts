@@ -53,34 +53,49 @@ async function* countDown(count: number) {
 export class OrOffline extends Page<AppStateKeyed> {
 
     @state()
-    protected timer?: AsyncGenerator<number>;
+    protected _timer?: AsyncGenerator<number | undefined>;
 
-    protected eventCallback?: EventCallback;
+    protected _eventCallback?: EventCallback;
 
     static get styles() {
         return [styling]
     }
 
     public stateChanged(state: AppStateKeyed) {
-        this.timer = state.app.offline ? countDown(10) : undefined;
+        if(state.app.offline) {
+            this._startTimer(10);
+        }
     }
 
     connectedCallback() {
         super.connectedCallback();
-        this.eventCallback = (ev) => {
-            if (ev === OREvent.AUTH_REFRESH_FAILED) {
-                this.timer = countDown(10); // reset countdown
-            } else if (ev === OREvent.AUTH_REFRESH_SUCCESS) {
-                this.timer = undefined;
+        this._eventCallback = (ev) => {
+            if (ev === OREvent.CONNECTING) {
+                this._startTimer(10);
             }
         };
-        manager.addListener(this.eventCallback);
+        manager.addListener(this._eventCallback);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        if (this.eventCallback !== undefined) {
-            manager.removeListener(this.eventCallback);
+        if (this._eventCallback !== undefined) {
+            manager.removeListener(this._eventCallback);
+        }
+    }
+
+    protected _startTimer(seconds: number) {
+        const timer = countDown(seconds);
+        this._timer = timer;
+        setTimeout(() => {
+            this._stopTimer(timer); // stop after the amount of seconds is passed.
+        }, seconds * 1000)
+    }
+
+    // Stopping the timer/timeout if it is the current active timer
+    protected _stopTimer(timer: AsyncGenerator<number | undefined>) {
+        if(this._timer === timer) {
+            delete this._timer;
         }
     }
 
@@ -93,10 +108,10 @@ export class OrOffline extends Page<AppStateKeyed> {
                     <span>${i18next.t('checkConnection')}</span>
                 </div>
                 <!-- Countdown to when it tries reconnecting again -->
-                ${when(this.timer, () => {
+                ${when(this._timer, () => {
                     const splitMsg = i18next.t("retryingConnection").split('{{seconds}}');
-                    return html`${splitMsg[0]} ${asyncReplace(this.timer!)} ${splitMsg[1]}`;
-                })}
+                    return html`${splitMsg[0]} ${asyncReplace(this._timer!)} ${splitMsg[1]}`;
+                }, () => html`Reconnecting...`)}
             </div>
         `
     }
