@@ -167,9 +167,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-        if(this._eventCallback !== undefined) {
-            manager.removeListener(this._eventCallback);
-        }
+        manager.removeListener(this._onEvent);
         super.disconnectedCallback();
     }
 
@@ -241,20 +239,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 this._initialised = true;
 
-                // Register listeners to change global state based on certain events
-                this._eventCallback = (event) => {
-                    if(event === OREvent.OFFLINE) {
-                        if(!this._offline) {
-                            this._store.dispatch((setOffline(true)))
-                        }
-                    }
-                    if(event === OREvent.ONLINE) {
-                        if(this._offline) {
-                            this._store.dispatch((setOffline(false)))
-                        }
-                    }
-                };
-                manager.addListener(this._eventCallback);
+                // Register listener to change global state based on certain events
+                manager.addListener(this._onEvent.bind(this));
 
                 // Create route listener to set header active item (this must be done before any routes added)
                 const headerUpdater = (activeMenu: string | undefined) => {
@@ -414,6 +400,20 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._realm = state.app.realm;
         this._page = state.app!.page;
         this._offline = state.app!.offline;
+    }
+
+    protected _onEvent(event: OREvent) {
+        console.log(event);
+        if(event === OREvent.OFFLINE) {
+            if(!this._offline) {
+                this._store.dispatch((setOffline(true)))
+            }
+        }
+        if(event === OREvent.ONLINE) {
+            if(this._offline) {
+                this._store.dispatch((setOffline(false)))
+            }
+        }
     }
 
     public logout() {

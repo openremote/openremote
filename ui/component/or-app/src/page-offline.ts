@@ -1,10 +1,10 @@
-import {Page, PageProvider, RealmAppConfig} from "./types";
+import {Page, PageProvider} from "./types";
 import {css, html, TemplateResult} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import {AppStateKeyed} from "./app";
-import {EnhancedStore, Store} from "@reduxjs/toolkit";
+import {Store} from "@reduxjs/toolkit";
 import {i18next} from "@openremote/or-translate";
-import manager, {EventCallback, OREvent} from "@openremote/core";
+import manager, {OREvent} from "@openremote/core";
 import {asyncReplace} from 'lit/directives/async-replace.js';
 import {when} from 'lit/directives/when.js';
 
@@ -63,8 +63,6 @@ export class PageOffline extends Page<AppStateKeyed> {
     @state()
     protected _timer?: AsyncGenerator<number | undefined>;
 
-    protected _eventCallback?: EventCallback;
-
     static get styles() {
         return [styling]
     }
@@ -74,18 +72,17 @@ export class PageOffline extends Page<AppStateKeyed> {
 
     connectedCallback() {
         super.connectedCallback();
-        this._eventCallback = (ev) => {
-            if (ev === OREvent.CONNECTING) {
-                this._startTimer(10);
-            }
-        };
-        manager.addListener(this._eventCallback);
+        manager.addListener(this._onEvent.bind(this));
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        if (this._eventCallback !== undefined) {
-            manager.removeListener(this._eventCallback);
+        manager.removeListener(this._onEvent);
+    }
+
+    protected _onEvent(event: OREvent) {
+        if (event === OREvent.CONNECTING) {
+            this._startTimer(10);
         }
     }
 
