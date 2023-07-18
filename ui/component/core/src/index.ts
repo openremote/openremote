@@ -630,9 +630,11 @@ export class Manager implements EventProviderFactory {
     protected _onEventProviderStatusChanged(status: EventProviderStatus) {
         switch (status) {
             case EventProviderStatus.DISCONNECTED:
+                console.log("Event provider disconnected.");
                 this._emitEvent(OREvent.OFFLINE);
                 break;
             case EventProviderStatus.CONNECTED:
+                console.log("Event provider connected.")
                 this._emitEvent(OREvent.ONLINE);
                 break;
             case EventProviderStatus.CONNECTING:
@@ -924,6 +926,7 @@ export class Manager implements EventProviderFactory {
             };
 
             this._keycloak!.onAuthRefreshError = () => {
+                console.log("Failed to refresh the access token.")
                 if(this._keycloak?.isTokenExpired()) {
                     this._runReconnectTimer();
                 }

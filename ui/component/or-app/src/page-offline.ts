@@ -1,16 +1,12 @@
-import {Page} from "./types";
+import {Page, PageProvider, RealmAppConfig} from "./types";
 import {css, html, TemplateResult} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import {AppStateKeyed} from "./app";
-import {Store} from "@reduxjs/toolkit";
+import {EnhancedStore, Store} from "@reduxjs/toolkit";
 import {i18next} from "@openremote/or-translate";
 import manager, {EventCallback, OREvent} from "@openremote/core";
 import {asyncReplace} from 'lit/directives/async-replace.js';
 import {when} from 'lit/directives/when.js';
-
-export function getPageOffline(store: Store<AppStateKeyed>): Page<AppStateKeyed> {
-    return new OrOffline(store);
-}
 
 // language=css
 const styling = css`
@@ -48,9 +44,21 @@ async function* countDown(count: number) {
     }
 }
 
+export function pageOfflineProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
+    return {
+        name: "offline",
+        routes: [
+            "offline"
+        ],
+        pageCreator: () => {
+            return new PageOffline(store);
+        }
+    };
+}
 
-@customElement("or-offline")
-export class OrOffline extends Page<AppStateKeyed> {
+
+@customElement("page-offline")
+export class PageOffline extends Page<AppStateKeyed> {
 
     @state()
     protected _timer?: AsyncGenerator<number | undefined>;
@@ -62,9 +70,6 @@ export class OrOffline extends Page<AppStateKeyed> {
     }
 
     public stateChanged(state: AppStateKeyed) {
-        if(state.app.offline) {
-            this._startTimer(10);
-        }
     }
 
     connectedCallback() {
@@ -111,12 +116,14 @@ export class OrOffline extends Page<AppStateKeyed> {
                 ${when(this._timer, () => {
                     const splitMsg = i18next.t("retryingConnection").split('{{seconds}}');
                     return html`${splitMsg[0]} ${asyncReplace(this._timer!)} ${splitMsg[1]}`;
-                }, () => html`Reconnecting...`)}
+                }, () => html`
+                    ${i18next.t('reconnecting')}...
+                `)}
             </div>
         `
     }
 
     get name(): string {
-        return "";
+        return "offline";
     }
 }
