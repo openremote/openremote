@@ -63,6 +63,8 @@ export class PageOffline extends Page<AppStateKeyed> {
     @state()
     protected _timer?: AsyncGenerator<number | undefined>;
 
+    protected _onEventBind?: any;
+
     static get styles() {
         return [styling]
     }
@@ -72,12 +74,15 @@ export class PageOffline extends Page<AppStateKeyed> {
 
     connectedCallback() {
         super.connectedCallback();
-        manager.addListener(this._onEvent.bind(this));
+        this._onEventBind = this._onEvent.bind(this);
+        manager.addListener(this._onEventBind);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        manager.removeListener(this._onEvent);
+        if(this._onEventBind) {
+            manager.removeListener(this._onEventBind);
+        }
     }
 
     protected _onEvent(event: OREvent) {

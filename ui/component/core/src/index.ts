@@ -70,7 +70,7 @@ export enum OREvent {
     CONSOLE_READY = "CONSOLE_READY",
     TRANSLATE_INIT = "TRANSLATE_INIT",
     TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED",
-    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED",
+    DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
 }
 
 export interface LoginOptions {
@@ -614,6 +614,7 @@ export class Manager implements EventProviderFactory {
         let keycloakOffline = false;
         if(this._keycloak !== undefined) {
             try {
+                // Before updating keycloak token, check whether Keycloak is UP using a simple HEAD request
                 await fetch(this._config.keycloakUrl! + "/health/ready", {method: 'HEAD', mode: 'no-cors'});
                 await this.updateKeycloakAccessToken();
             } catch (e) {

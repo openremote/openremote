@@ -8,7 +8,7 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, EventCallback, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
+import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -92,7 +92,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @state()
     protected _activeMenu?: string;
 
-    protected _eventCallback?: EventCallback;
+    protected _onEventBind?: any;
     protected _realms!: Realm[];
     protected _store: Store<S, AnyAction>;
     protected _storeUnsubscribe!: Unsubscribe;
@@ -167,7 +167,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-        manager.removeListener(this._onEvent);
+        if(this._onEventBind) {
+            manager.removeListener(this._onEventBind);
+        }
         super.disconnectedCallback();
     }
 
@@ -240,7 +242,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this._initialised = true;
 
                 // Register listener to change global state based on certain events
-                manager.addListener(this._onEvent.bind(this));
+                this._onEventBind = this._onEvent.bind(this);
+                manager.addListener(this._onEventBind);
 
                 // Create route listener to set header active item (this must be done before any routes added)
                 const headerUpdater = (activeMenu: string | undefined) => {
@@ -403,7 +406,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     }
 
     protected _onEvent(event: OREvent) {
-        console.log(event);
         if(event === OREvent.OFFLINE) {
             if(!this._offline) {
                 this._store.dispatch((setOffline(true)))
