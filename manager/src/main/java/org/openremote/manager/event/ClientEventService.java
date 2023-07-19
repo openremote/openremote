@@ -33,12 +33,12 @@ import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.gateway.GatewayService;
-import org.openremote.manager.mqtt.DefaultMQTTHandler;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
@@ -56,7 +56,10 @@ import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.*;
 import static org.apache.camel.builder.PredicateBuilder.or;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
 import static org.openremote.model.Constants.*;
+import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
+import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.
@@ -100,7 +103,6 @@ import static org.openremote.model.Constants.*;
  * </p></dd>
  * </dl>
  */
-// TODO: Implement session expiry based on security principal
 public class ClientEventService extends RouteBuilder implements ContainerService {
 
     protected static class SessionInfo {
@@ -118,16 +120,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     public static final String HEADER_CONNECTION_TYPE_WEBSOCKET = "websocket";
     public static final String HEADER_CONNECTION_TYPE_MQTT = "mqtt";
     public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
-    private static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
+    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+    public static final String CLIENT_OUTBOUND_QUEUE = "seda://ClientOutboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+    protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String INTERNAL_SESSION_KEY = "ClientEventServiceInternal";
-
-    // TODO: Some of these options should be configurable depending on expected load etc.
-    public static final String CLIENT_EVENT_TOPIC = "seda://ClientEventTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
-
-//    public static final String CLIENT_EVENT_QUEUE = "seda://ClientEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
-    // A direct endpoint with threading which then makes it async
-    public static final String CLIENT_EVENT_QUEUE = "direct://ClientEventQueue";
+    protected static final String PUBLISH_QUEUE = "seda://ClientPublishQueue?multipleConsumers=false&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     final protected Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
@@ -147,10 +145,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
      */
     public static void stopMessage(Exchange exchange) {
         exchange.setRouteStop(true);
-    }
-
-    public static boolean isInbound(Exchange exchange) {
-        return org.apache.camel.builder.Builder.header(HEADER_CONNECTION_TYPE).isNotNull().matches(exchange);
     }
 
     public static String getSessionKey(Exchange exchange) {
@@ -211,12 +205,15 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     // TODO: Remove prefix and just use event type then use a subscription wrapper to pass subscription ID around
     @Override
     public void configure() throws Exception {
+
+        // Route for deserializing incoming websocket messages and normalising them for the INBOUND_CLIENT_QUEUE
         from(WEBSOCKET_URI)
             .routeId("FromWebsocket")
             .process(exchange -> {
                 String connectionKey = exchange.getIn().getHeader(UndertowConstants.CONNECTION_KEY, String.class);
                 exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, HEADER_CONNECTION_TYPE_WEBSOCKET);
                 exchange.getIn().setHeader(SESSION_KEY, connectionKey);
+                exchange.getIn().setHeader(HEADER_SOURCE, CLIENT);
             })
             .choice()
             .when(header(UndertowConstants.EVENT_TYPE))
@@ -279,19 +276,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                     }
                 }
             })
-            .to(CLIENT_EVENT_QUEUE)
+            .to(CLIENT_INBOUND_QUEUE)
             .stop()
-            .when(body().isInstanceOf(SharedEvent.class))
-            .process(exchange -> {
-                // Set timestamp if not set
-                if (exchange.getIn().getBody() instanceof SharedEvent) {
-                    SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
-                    // If there is no timestamp in event, set to system time
-                    if (event.getTimestamp() <= 0) {
-                        event.setTimestamp(timerService.getCurrentTimeMillis());
-                    }
-                }
-            })
             .endChoice()
             .end()
             .process(exchange -> {
@@ -344,13 +330,11 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                     }
                 }
             })
-            .to(CLIENT_EVENT_QUEUE)
+            .to(CLIENT_INBOUND_QUEUE)
             .end();
 
-        // TODO: Priority fix threads here means injected timestamps for same attribute can produce EVENT_OUTDATED errors in processing chain
-        from(CLIENT_EVENT_QUEUE)
+        from(CLIENT_INBOUND_QUEUE)
             .routeId("ClientEvents")
-            .threads().executorService(executorService)
             .choice()
             .when(header(SESSION_OPEN))
             .process(exchange -> {
@@ -393,22 +377,37 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 LOG.log(TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': " + cancelEventSubscription);
             })
             .stop()
-            .when(body().isInstanceOf(SharedEvent.class))
-            .choice()
-            .when(header(HEADER_CONNECTION_TYPE).isNotNull()) // Inbound messages from client
-            .to(ClientEventService.CLIENT_EVENT_TOPIC)
-            .stop()
-            .when(header(HEADER_CONNECTION_TYPE).isNull()) // Outbound message to clients
-            .split(method(eventSubscriptions, "splitForSubscribers"))
+            // Route attribute events straight to the asset queue
+            .when(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
-                String sessionKey = getSessionKey(exchange);
-                sendToSession(sessionKey, exchange.getIn().getBody());
+                // Set timestamp if not set
+                AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+                if (event.getTimestamp() <= 0) {
+                    event.setTimestamp(timerService.getCurrentTimeMillis());
+                }
             })
-            .stop()
+            .to(ATTRIBUTE_EVENT_QUEUE)
             .endChoice()
-            .otherwise()
-            .process(exchange -> LOG.log(TRACE, () -> "Unsupported message body: " + exchange.getIn().getBody()))
             .end();
+
+        // Split publish messages for individual subscribers
+        from(PUBLISH_QUEUE)
+            .routeId("PublishQueue")
+            .split(method(eventSubscriptions, "splitForSubscribers"))
+            .to(CLIENT_OUTBOUND_QUEUE);
+
+        // Route messages destined for websocket clients
+        from(CLIENT_OUTBOUND_QUEUE)
+            .routeId("WebsocketClientOutbound")
+            .filter(header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_WEBSOCKET))
+            .process(exchange -> {
+                String sessionKey = exchange.getIn().getHeader(SESSION_KEY, String.class);
+                messageBrokerService.getFluentProducerTemplate()
+                    .withBody(exchange.getIn().getBody())
+                    .withHeader(UndertowConstants.CONNECTION_KEY, sessionKey)
+                    .to(WEBSOCKET_URI)
+                    .asyncSend();
+            });
     }
 
     /**
@@ -484,25 +483,29 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         return authorized;
     }
 
-    // TODO: Priority this should be done once in a consistent way for events coming from any source
     /**
-     * This handles basic authorisation checks for clients that want to write an event to the system
+     * This handles basic authorisation checks for clients that want to write an event to the system; this gets hit a lot
+     * so should be as performant as possible
      */
+    // TODO: Implement auth cache in OR that covers HTTP, WS and MQTT (ActiveMQ Authorization cache currently covers MQTT which is the main use case)
     public <T extends SharedEvent> boolean authorizeEventWrite(String realm, AuthContext authContext, T event) {
         boolean authorized = eventAuthorizers.stream()
             .anyMatch(authorizer -> authorizer.authorise(realm, authContext, event));
 
         if (!authorized) {
             if (authContext != null) {
-                LOG.log(DEBUG, "Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                LOG.log(DEBUG, () -> "Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
             } else {
-                LOG.log(DEBUG,"Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=null");
+                LOG.log(DEBUG, () -> "Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=null");
             }
         }
 
         return authorized;
     }
 
+    /**
+     * Publish an event to interested clients
+     */
     public <T extends SharedEvent> void publishEvent(T event) {
         // Only publish if service is not stopped
         if (stopped) {
@@ -516,7 +519,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             }
             messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
-                .to(CLIENT_EVENT_QUEUE)
+                .to(PUBLISH_QUEUE)
                 .asyncSend();
         }
     }
@@ -529,19 +532,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 LOG.log(INFO, "Cannot send to requested session it doesn't exist or is disconnected:" + sessionKey);
                 return;
             }
-            if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_WEBSOCKET)) {
-                messageBrokerService.getFluentProducerTemplate()
-                    .withBody(data)
-                    .withHeader(UndertowConstants.CONNECTION_KEY, sessionKey)
-                    .to(WEBSOCKET_URI)
-                    .asyncSend();
-            } else if (sessionInfo.connectionType.equals(HEADER_CONNECTION_TYPE_MQTT)) {
-                messageBrokerService.getFluentProducerTemplate()
-                    .withBody(data)
-                    .withHeader(SESSION_KEY, sessionKey)
-                    .to(DefaultMQTTHandler.CLIENT_QUEUE)
-                    .asyncSend();
-            }
+            messageBrokerService.getFluentProducerTemplate()
+                .withBody(data)
+                .withHeader(SESSION_KEY, sessionKey)
+                .withHeader(HEADER_CONNECTION_TYPE, sessionInfo.connectionType)
+                .to(CLIENT_OUTBOUND_QUEUE)
+                .asyncSend();
         }
     }
 
@@ -556,16 +552,17 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         sessionInfo.closeRunnable.run();
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     protected void passToInterceptors(Exchange exchange) {
         // Pass to each interceptor and stop if any interceptor marks the exchange as stop routing
-        if (exchangeInterceptors.stream().anyMatch(interceptor -> {
+       exchangeInterceptors.stream().anyMatch(interceptor -> {
             interceptor.accept(exchange);
             boolean stop = exchange.isRouteStop();
             if (stop) {
                 LOG.log(TRACE, "Client event interceptor marked exchange as `stop routing`: " + interceptor);
             }
             return stop;
-        }));
+        });
     }
 
     @Override
@@ -580,6 +577,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         return new SessionInfo(connectionType, closeRunnable);
     }
 
+    /**
+     * Provides a protocol agnostic way to close a client session
+     */
     protected Runnable getWebsocketSessionTerminator(WebSocketChannel webSocketChannel) {
         return () -> {
             try {

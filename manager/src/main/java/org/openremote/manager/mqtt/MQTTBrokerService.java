@@ -25,7 +25,6 @@ import io.netty.channel.ChannelId;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
-import org.apache.activemq.artemis.api.core.RoutingType;
 import org.apache.activemq.artemis.api.core.SimpleString;
 import org.apache.activemq.artemis.api.core.client.*;
 import org.apache.activemq.artemis.api.core.management.CoreNotificationType;
@@ -114,6 +113,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
     protected ConcurrentMap<String, RemotingConnection> clientIDConnectionMap = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, RemotingConnection> connectionIDConnectionMap = new ConcurrentHashMap<>();
+    protected ConcurrentMap<String, List<PersistenceEvent<UserAssetLink>>> userAssetLinkChangeMap = new ConcurrentHashMap<>();
     protected Debouncer<String> userAssetDisconnectDebouncer;
     // Stores disconnected connections for a short period to allow last will publishes to be processed
     protected Cache<String, RemotingConnection> disconnectedConnectionCache;
@@ -144,7 +144,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
 
-        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::processUserAssetLinkChange, debounceMillis);
+        userAssetDisconnectDebouncer = new Debouncer<>(executorService, id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
         disconnectedConnectionCache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
                 .expireAfterWrite(10000, TimeUnit.MILLISECONDS)
@@ -217,7 +217,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Disable auth cache so we can inject RemotingConnection into the subject as a principal otherwise we don't have access to the connection during authorisation so we cannot check topic contains the clientID
         // Disable caching so we can support auto provisioning sessions without having to reconnect - we need to re-evaluate this and clients should probably send X.509 through to the broker
         config.setAuthenticationCacheSize(0);
-        config.setAuthorizationCacheSize(0);
+        config.setAuthorizationCacheSize(100000);
 
         server = new EmbeddedActiveMQ();
         server.setConfiguration(config);
@@ -318,6 +318,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     } else if (persistenceEvent.getEntity() instanceof UserAssetLink userAssetLink) {
                         String userID = userAssetLink.getId().getUserId();
                         // Debounce force disconnect check of this user's sessions as there could be many asset links changing
+                        List<PersistenceEvent<UserAssetLink>> changedUserAssetLinks = userAssetLinkChangeMap.computeIfAbsent(userID, id -> Collections.synchronizedList(new ArrayList<>()));
+                        changedUserAssetLinks.add((PersistenceEvent<UserAssetLink>) persistenceEvent);
                         userAssetDisconnectDebouncer.call(userID);
                     }
                 });
@@ -439,7 +441,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return customHandlers;
     }
 
-    public void processUserAssetLinkChange(String userID) {
+    public void processUserAssetLinkChange(String userID, List<PersistenceEvent<UserAssetLink>> changes) {
         if (TextUtil.isNullOrEmpty(userID)) {
             return;
         }
@@ -455,7 +457,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             userConnections.forEach(connection -> {
                 for (MQTTHandler handler : customHandlers) {
                     connection.setSubject(subject);
-                    handler.onUserAssetLinksChanged(connection);
+                    handler.onUserAssetLinksChanged(connection, changes);
                 }
             });
         }

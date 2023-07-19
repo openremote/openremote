@@ -25,12 +25,12 @@ import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
-import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.CancelEventSubscription;
@@ -48,9 +48,12 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_QUEUE;
+import static org.apache.camel.support.builder.PredicateBuilder.and;
+import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.model.Constants.*;
+import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
+import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -77,7 +80,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         }
     }
 
-    public static final String CLIENT_QUEUE = "seda://MQTTDefaultHandlerQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final int PRIORITY = Integer.MIN_VALUE + 1000;
     public static final String ASSET_TOPIC = "asset";
     public static final String ATTRIBUTE_TOPIC = "attribute";
@@ -98,30 +100,29 @@ public class DefaultMQTTHandler extends MQTTHandler {
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from(CLIENT_QUEUE)
-                    .routeId("MQTTDefaultHandlerQueue")
-                    .choice()
-                    .when(body().isInstanceOf(TriggeredEventSubscription.class))
+
+                // Route messages destined for MQTT clients
+                from(CLIENT_OUTBOUND_QUEUE)
+                    .routeId("DefaultMQTTHandlerOutbound")
+                    .filter(and(
+                        header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_MQTT),
+                        body().isInstanceOf(TriggeredEventSubscription.class)
+                    ))
                     .process(exchange -> {
                         // Get the subscriber consumer
                         String connectionID = exchange.getIn().getHeader(SESSION_KEY, String.class);
-                        if (connectionID == null) {
-                            LOG.warning("No connection ID for triggered subscription so cannot deliver");
-                        } else {
-                            SubscriberInfo subscriberInfo = connectionSubscriberInfoMap.get(connectionID);
-                            if (subscriberInfo != null) {
-                                TriggeredEventSubscription<?> triggeredEventSubscription = exchange.getIn().getBody(TriggeredEventSubscription.class);
-                                String topic = triggeredEventSubscription.getSubscriptionId();
-                                // Should only be a single event in here
-                                SharedEvent event = triggeredEventSubscription.getEvents().get(0);
-                                Consumer<SharedEvent> eventConsumer = subscriberInfo.topicSubscriptionMap.get(topic);
-                                if (eventConsumer != null) {
-                                    eventConsumer.accept(event);
-                                }
+                        SubscriberInfo subscriberInfo = connectionSubscriberInfoMap.get(connectionID);
+                        if (subscriberInfo != null) {
+                            TriggeredEventSubscription<?> triggeredEventSubscription = exchange.getIn().getBody(TriggeredEventSubscription.class);
+                            String topic = triggeredEventSubscription.getSubscriptionId();
+                            // Should only be a single event in here
+                            SharedEvent event = triggeredEventSubscription.getEvents().get(0);
+                            Consumer<SharedEvent> eventConsumer = subscriberInfo.topicSubscriptionMap.get(topic);
+                            if (eventConsumer != null) {
+                                eventConsumer.accept(event);
                             }
                         }
-                    })
-                    .end();
+                    });
             }
         });
     }
@@ -142,7 +143,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
-            .to(CLIENT_EVENT_QUEUE)
+            .to(CLIENT_INBOUND_QUEUE)
             .asyncSend();
     }
 
@@ -154,7 +155,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(SESSION_CLOSE, true);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
-            .to(CLIENT_EVENT_QUEUE)
+            .to(CLIENT_INBOUND_QUEUE)
             .asyncSend();
         connectionSubscriberInfoMap.remove(getConnectionIDString(connection));
     }
@@ -166,7 +167,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(SESSION_CLOSE_ERROR, true);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
-            .to(CLIENT_EVENT_QUEUE)
+            .to(CLIENT_INBOUND_QUEUE)
             .asyncSend();
         connectionSubscriberInfoMap.remove(getConnectionIDString(connection));
     }
@@ -340,7 +341,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .withBody(subscription)
-            .to(CLIENT_EVENT_QUEUE)
+            .to(CLIENT_INBOUND_QUEUE)
             .asyncSend();
 
         // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
@@ -367,7 +368,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .withBody(cancelEventSubscription)
-            .to(CLIENT_EVENT_QUEUE)
+            .to(CLIENT_INBOUND_QUEUE)
             .asyncSend();
 
         // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
@@ -399,13 +400,17 @@ public class DefaultMQTTHandler extends MQTTHandler {
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .withBody(attributeEvent)
-            .to(CLIENT_EVENT_QUEUE)
+            .to(CLIENT_INBOUND_QUEUE)
             .asyncSend();
     }
 
     @Override
-    public void onUserAssetLinksChanged(RemotingConnection connection) {
+    public void onUserAssetLinksChanged(RemotingConnection connection, List<PersistenceEvent<UserAssetLink>> changes) {
         if (connectionSubscriberInfoMap.containsKey(getConnectionIDString(connection))) {
+            if (changes.stream().allMatch(pe -> pe.getCause() == PersistenceEvent.Cause.CREATE)) {
+                // Do nothing if only links have been added
+                return;
+            }
             LOG.info("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + mqttBrokerService.connectionToString(connection));
             mqttBrokerService.doForceDisconnect(connection);
         }
@@ -567,8 +572,9 @@ public class DefaultMQTTHandler extends MQTTHandler {
     protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
         Map<String, Object> headers = new HashMap<>();
         headers.put(SESSION_KEY, getConnectionIDString(connection));
-        headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
-        headers.put(Constants.REALM_PARAM_NAME, requestRealm);
+        headers.put(HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
+        headers.put(REALM_PARAM_NAME, requestRealm);
+        headers.put(HEADER_SOURCE, CLIENT);
         return headers;
     }
 }

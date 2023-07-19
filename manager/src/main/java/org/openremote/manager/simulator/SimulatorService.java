@@ -36,10 +36,8 @@ import org.openremote.model.simulator.SimulatorState;
 
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
-import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
-import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
+import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
 
 /**
@@ -109,7 +107,7 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
-        from(CLIENT_EVENT_TOPIC)
+        from(CLIENT_INBOUND_QUEUE)
             .routeId("FromClientSimulatorRequests")
             .filter(body().isInstanceOf(RequestSimulatorState.class))
             .process(exchange -> {
@@ -128,12 +126,10 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
 
         Protocol<?> protocol = agentService.getProtocolInstance(agentId);
 
-        if (!(protocol instanceof SimulatorProtocol)) {
+        if (!(protocol instanceof SimulatorProtocol simulatorProtocol)) {
             LOG.warning("Failed to publish simulator state, agent is not a simulator agent: Agent ID=" + agentId);
             return;
         }
-
-        SimulatorProtocol simulatorProtocol = (SimulatorProtocol)protocol;
 
         SimulatorState simulatorState = getSimulatorState(simulatorProtocol);
 
@@ -148,27 +144,24 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
      * Get info about all attributes linked to this instance (for frontend usage)
      */
     protected SimulatorState getSimulatorState(SimulatorProtocol protocolInstance) {
-        return withLockReturning(protocolInstance.getProtocolInstanceUri() + "::getSimulatorInfo", () -> {
-            LOG.info("Getting simulator info for protocol instance: " + protocolInstance);
+        LOG.info("Getting simulator info for protocol instance: " + protocolInstance);
 
-            // We need asset names instead of identifiers for user-friendly display
-            List<String> linkedAssetIds = protocolInstance.getLinkedAttributes().keySet().stream().map(AttributeRef::getId).distinct().collect(Collectors.toList());
-            List<String> assetNames = assetStorageService.findNames(linkedAssetIds.toArray(new String[0]));
+        // We need asset names instead of identifiers for user-friendly display
+        List<String> linkedAssetIds = protocolInstance.getLinkedAttributes().keySet().stream().map(AttributeRef::getId).distinct().toList();
+        List<String> assetNames = assetStorageService.findNames(linkedAssetIds.toArray(new String[0]));
 
-            if (assetNames.size() != linkedAssetIds.size()) {
-                LOG.warning("Retrieved asset names don't match requested asset IDs");
-                return null;
-            }
+        if (assetNames.size() != linkedAssetIds.size()) {
+            LOG.warning("Retrieved asset names don't match requested asset IDs");
+            return null;
+        }
 
-            SimulatorAttributeInfo[] attributeInfos = protocolInstance.getLinkedAttributes().entrySet().stream().map(refAttributeEntry -> {
-                String assetName = assetNames.get(linkedAssetIds.indexOf(refAttributeEntry.getKey().getId()));
-                return new SimulatorAttributeInfo(assetName, refAttributeEntry.getKey().getId(), refAttributeEntry.getValue(), protocolInstance.getReplayMap().containsKey(refAttributeEntry.getKey()));
-            }).toArray(SimulatorAttributeInfo[]::new);
+        SimulatorAttributeInfo[] attributeInfos = protocolInstance.getLinkedAttributes().entrySet().stream().map(refAttributeEntry -> {
+            String assetName = assetNames.get(linkedAssetIds.indexOf(refAttributeEntry.getKey().getId()));
+            return new SimulatorAttributeInfo(assetName, refAttributeEntry.getKey().getId(), refAttributeEntry.getValue(), protocolInstance.getReplayMap().containsKey(refAttributeEntry.getKey()));
+        }).toArray(SimulatorAttributeInfo[]::new);
 
-            return new SimulatorState(protocolInstance.getAgent().getId(), attributeInfos);
-        });
+        return new SimulatorState(protocolInstance.getAgent().getId(), attributeInfos);
     }
-
 
     @Override
     public String toString() {

@@ -307,7 +307,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
 
         // Inbound shared events
-        if (and(ClientEventService::isInbound, body().isInstanceOf(SharedEvent.class)).matches(exchange)) {
+        if (body().isInstanceOf(SharedEvent.class).matches(exchange)) {
             ClientEventService.stopMessage(exchange);
             String gatewayId = getGatewayIdFromClientId(clientId);
             onGatewayClientEventReceived(gatewayId, exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class), exchange.getIn().getBody(SharedEvent.class));

@@ -126,6 +126,9 @@ public class EventSubscriptions {
         }
     }
 
+    /**
+     * Used in {@link ClientEventService#PUBLISH_QUEUE}
+     */
     @SuppressWarnings({"unchecked", "unused"})
     public <T extends SharedEvent> List<Message> splitForSubscribers(Exchange exchange) {
         List<Message> messageList = new ArrayList<>();

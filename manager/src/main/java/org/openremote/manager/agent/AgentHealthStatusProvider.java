@@ -103,7 +103,7 @@ public class AgentHealthStatusProvider implements HealthStatusProvider {
             objectValue.set(agent.getId(), agentValue);
         }
 
-        objectValue.put("totalAgents", agentService.agentMap.size());
+        objectValue.put("totalAgents", agentService.getAgents().size());
         objectValue.put("connectedAgents", connectedCount.get());
         objectValue.put("errorAgents", errorCount.get());
         objectValue.put("disabledAgents", disabledCount.get());

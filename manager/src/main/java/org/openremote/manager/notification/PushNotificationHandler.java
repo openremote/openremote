@@ -35,7 +35,6 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.AbstractNotificationMessage;
@@ -56,15 +55,14 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
-import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
 import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
 
 @SuppressWarnings("deprecation")
@@ -80,8 +78,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     protected AssetStorageService assetStorageService;
     protected GatewayService gatewayService;
     protected boolean valid;
-    protected Map<String, String> consoleFCMTokenMap = new HashMap<>();
-    protected List<String> fcmTokenBlacklist = new ArrayList<>();
+    protected Map<String, String> consoleFCMTokenMap = new ConcurrentHashMap<>();
+    protected Set<String> fcmTokenBlacklist = Collections.synchronizedSet(new HashSet<>());
 
     @Override
     public int getPriority() {
@@ -497,23 +495,19 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     protected void processConsoleAssetChange(ConsoleAsset asset, PersistenceEvent<ConsoleAsset> persistenceEvent) {
+        String fcmToken = consoleFCMTokenMap.remove(asset.getId());
+        if (!TextUtil.isNullOrEmpty(fcmToken)) {
+            fcmTokenBlacklist.remove(fcmToken);
+        }
 
-        withLock(getClass().getSimpleName() + "::processAssetChange", () -> {
+        switch (persistenceEvent.getCause()) {
 
-            String fcmToken = consoleFCMTokenMap.remove(asset.getId());
-            if (!TextUtil.isNullOrEmpty(fcmToken)) {
-                fcmTokenBlacklist.remove(fcmToken);
-            }
+            case CREATE:
+            case UPDATE:
 
-            switch (persistenceEvent.getCause()) {
-
-                case CREATE:
-                case UPDATE:
-
-                    consoleFCMTokenMap.put(asset.getId(), getFcmToken(asset).orElse(null));
-                    break;
-            }
-        });
+                consoleFCMTokenMap.put(asset.getId(), getFcmToken(asset).orElse(null));
+                break;
+        }
     }
 
     protected void handleFcmException(FirebaseMessagingException e) {

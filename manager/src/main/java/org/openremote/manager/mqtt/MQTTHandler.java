@@ -36,16 +36,18 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
+import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.UserAssetLink;
 
 import javax.security.auth.Subject;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.System.Logger.Level.INFO;
-import static java.lang.System.Logger.Level.WARNING;
+import static java.lang.System.Logger.Level.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
 /**
@@ -108,7 +110,6 @@ public abstract class MQTTHandler {
         }
     }
 
-    // TODO: Priority publishes can come through after the connection is closed (slow delivery to this ActiveMQ client needs investigating)
     protected void addPublishConsumer(String topic) throws Exception {
         try {
             getLogger().info("Adding publish consumer for topic '" + topic + "': handler=" + getName());
@@ -122,13 +123,12 @@ public abstract class MQTTHandler {
                 RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
 
                 if (connection == null) {
-                    LOG.log(WARNING, "Failed to find connection for connected client so dropping publish to topic '" + topic + "': clientID=" +  clientID);
+                    LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
                     return;
                 }
 
                 getLogger().fine("Client published to '" + publishTopic + "': " + mqttBrokerService.connectionToString(connection));
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
-                LOG.log(INFO, "Processing time = " + (System.currentTimeMillis() - start));
             });
         } catch (ActiveMQException e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
@@ -225,7 +225,7 @@ public abstract class MQTTHandler {
      * Called when {@link org.openremote.model.asset.UserAssetLink}s for a restricted user are changed and that user
      * has an active connection (subject can be accessed from the connection).
      */
-    public void onUserAssetLinksChanged(RemotingConnection connection) {
+    public void onUserAssetLinksChanged(RemotingConnection connection, List<PersistenceEvent<UserAssetLink>> changes) {
     }
 
     /**

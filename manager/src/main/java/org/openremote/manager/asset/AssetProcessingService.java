@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.asset;
 
-import com.sun.management.HotSpotDiagnosticMXBean;
+import jakarta.persistence.EntityManager;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
@@ -47,24 +47,11 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
-import jakarta.persistence.EntityManager;
-
-import javax.management.MBeanServer;
-import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.concurrent.GlobalLock.withLock;
-import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.attribute.AttributeEvent.Source.*;
 import static org.openremote.model.attribute.AttributeWriteFailure.*;
@@ -76,7 +63,7 @@ import static org.openremote.model.attribute.AttributeWriteFailure.*;
  * <dd><p>Client events published through event bus or sent by web service. These exchanges must contain an {@link AuthContext}
  * header named {@link Constants#AUTH_CONTEXT}.</dd>
  * <dt>{@link Source#INTERNAL}</dt>
- * <dd><p>Events sent to {@link #ASSET_QUEUE} or through {@link #sendAttributeEvent} convenience method by processors.</dd>
+ * <dd><p>Events sent to {@link #ATTRIBUTE_EVENT_QUEUE} or through {@link #sendAttributeEvent} convenience method by processors.</dd>
  * <dt>{@link Source#SENSOR}</dt>
  * <dd><p>Protocol sensor updates sent to {@link Protocol#SENSOR_QUEUE}.</dd>
  * </dl>
@@ -131,9 +118,8 @@ import static org.openremote.model.attribute.AttributeWriteFailure.*;
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
-    // TODO: Some of these options should be configurable depending on expected load etc.
-    // Message topic for communicating individual asset attribute changes
-    public static final String ASSET_QUEUE = "seda://AssetQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
+    // Single threaded attribute event queue (event order has to be maintained)
+    public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
     final protected List<AssetUpdateProcessor> processors = new ArrayList<>();
     protected TimerService timerService;
@@ -149,7 +135,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected ClientEventService clientEventService;
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
-    protected ScheduledFuture<?> monitor;
 
     protected static Processor handleAssetProcessingException(Logger logger) {
         return exchange -> {
@@ -287,41 +272,15 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public void start(Container container) throws Exception {
-        // TODO: Remove this temporary monitoring code
-        Path dumpFile = Paths.get("/deployment/dump.hprof");
-        monitor = container.getExecutorService().scheduleWithFixedDelay(() -> {
-            try {
-                long diff = timerService.getCurrentTimeMillis() - lastProcessedEventTimestamp;
-                if (diff > 30000 && diff < 120000 && !dumpFile.toFile().exists()) {
-                    LOG.fine("No event processed in last 60s so dumping threads");
-                    MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-                    HotSpotDiagnosticMXBean mxBean = ManagementFactory.newPlatformMXBeanProxy(
-                        server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
-                    mxBean.dumpHeap("/deployment/dump.hprof", true);
-                }
-            } catch (Exception e) {
-                LOG.warning("Failed to produce heap dump");
-            }
-        }, 1, 1, TimeUnit.MINUTES);
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        if (monitor != null) {
-            monitor.cancel(false);
-        }
     }
 
     @SuppressWarnings("rawtypes")
     @Override
     public void configure() throws Exception {
-
-        // A client wants to write attribute state through event bus
-        from(CLIENT_EVENT_TOPIC)
-            .routeId("FromClientUpdates")
-            .filter(body().isInstanceOf(AttributeEvent.class))
-            .setHeader(HEADER_SOURCE, () -> CLIENT)
-            .to(ASSET_QUEUE);
 
         // Process attribute events
         // TODO: Make SENDER much more granular (switch to microservices with RBAC)
@@ -340,15 +299,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
          - Replace at-most-once ClientEventService with at-least-once capable, embeddable message broker/protocol
          - See pseudocode here: http://activemq.apache.org/should-i-use-xa.html
         */
-        from(ASSET_QUEUE)
+        from(ATTRIBUTE_EVENT_QUEUE)
             .routeId("AssetQueueProcessor")
             .filter(body().isInstanceOf(AttributeEvent.class))
             .doTry()
-            // Lock the global context, we can only process attribute events when the
-            // context isn't locked. Agent- and RulesService lock the context while protocols
-            // or rulesets are modified.
-            .process(exchange -> withLock(getClass().getSimpleName() + "::processFromAssetQueue", () -> {
-
+            .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                 if (LOG.isLoggable(Level.FINEST)) {
                     LOG.finest("Processing: " + event);
@@ -459,14 +414,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     // Push through all processors
                     processAssetUpdate(em, asset, updatedAttribute, source);
                 });
-            }))
+            })
             .endDoTry()
             .doCatch(AssetProcessingException.class)
             .process(handleAssetProcessingException(LOG));
     }
 
     /**
-     * Send internal attribute change events into the {@link #ASSET_QUEUE}.
+     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_QUEUE}.
      */
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
         sendAttributeEvent(attributeEvent, INTERNAL);
@@ -480,7 +435,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         messageBrokerService.getFluentProducerTemplate()
                 .withHeader(HEADER_SOURCE, source)
                 .withBody(attributeEvent)
-                .to(ASSET_QUEUE)
+                .to(ATTRIBUTE_EVENT_QUEUE)
                 .asyncSend();
     }
 

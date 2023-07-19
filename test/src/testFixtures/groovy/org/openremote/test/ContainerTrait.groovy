@@ -243,7 +243,7 @@ trait ContainerTrait {
                             if (counter++ > 100) {
                                 throw new IllegalStateException("Failed to purge agents")
                             }
-                            agentsRemoved = container.getService(AgentService.class).agentMap.isEmpty()
+                            agentsRemoved = container.getService(AgentService.class).agents.isEmpty()
                             Thread.sleep(100)
                         }
 
@@ -325,7 +325,7 @@ trait ContainerTrait {
         if (agentService != null) {
             LOG.info("Waiting for agents to be deployed")
             i=0
-            while (i < 100 && TestFixture.assets.stream().filter { it instanceof Agent }.any { !agentService.agentMap.containsKey(it.id) }) {
+            while (i < 100 && TestFixture.assets.stream().filter { it instanceof Agent }.any { !agentService.agents.containsKey(it.id) }) {
                 Thread.sleep(100)
                 i++
             }

@@ -79,7 +79,7 @@ import static java.util.logging.Level.FINE;
 import static java.util.stream.Collectors.groupingBy;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
+import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
 import static org.openremote.model.query.AssetQuery.*;
 import static org.openremote.model.query.AssetQuery.Access.*;
@@ -383,7 +383,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
 
         // React if a client wants to read assets and attributes
-        from(CLIENT_EVENT_TOPIC)
+        from(CLIENT_INBOUND_QUEUE)
             .routeId("FromClientReadRequests")
             .filter(body().isInstanceOf(HasAssetQuery.class))
             .process(exchange -> {

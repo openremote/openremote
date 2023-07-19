@@ -123,7 +123,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         then: "all agents should become connected"
         conditions.eventually {
-            assert agentService.agentMap.values().every {it.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED}
+            assert agentService.agents.values().every {it.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED}
         }
 
         then: "the mock thing to be deployed to the protocol instance"
