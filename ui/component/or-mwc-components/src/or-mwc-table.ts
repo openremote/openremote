@@ -3,6 +3,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import {classMap} from "lit/directives/class-map.js";
 import {until} from 'lit/directives/until.js';
 import {MDCDataTable} from "@material/data-table";
+import {MDCCheckbox} from "@material/checkbox"
 import {when} from 'lit/directives/when.js';
 import {DefaultColor3, DefaultColor2, DefaultColor1} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
@@ -131,6 +132,7 @@ interface TableConfig {
     pagination?: {
         enable?: boolean
     }
+    multiSelect?: boolean;
 }
 
 export interface TableColumn {
@@ -207,6 +209,9 @@ export class OrMwcTable extends LitElement {
     @property({ type: String })
     protected sortDirection?: 'ASC' | 'DESC';
 
+    @property({type: Array})
+    protected selectedRows?: number[] = [];
+
     /* ------------------- */
 
     protected firstUpdated(changedProperties: Map<string, any>) {
@@ -229,6 +234,7 @@ export class OrMwcTable extends LitElement {
     }
 
     protected render() {
+        this.config.multiSelect = true;
         const tableClasses = {
             "mdc-data-table": true,
             "mdc-data-table__paginated": !!this.config.pagination,
@@ -243,6 +249,12 @@ export class OrMwcTable extends LitElement {
                             return this.columns ? html`
                                 <thead>
                                 <tr class="mdc-data-table__header-row">
+                                    ${this.config.multiSelect ? html`
+                                        <td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+                                            <div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--upgraded mdc-ripple-upgraded mdc-ripple-upgraded--unbounded mdc-checkbox--selected" style="--mdc-ripple-fg-size: 24px; --mdc-ripple-fg-scale: 1.6666666666666667; --mdc-ripple-left: 8px; --mdc-ripple-top: 8px;">
+                                                <input type="checkbox" class="mdc-checkbox__native-control">
+                                            </div>
+                                        </td> ` : ''}
                                     ${this.columns.map((column: TableColumn | string, index: number) => {
                                         return (typeof column == "string") ? html`
                                             <th class="mdc-data-table__header-cell" id="column-${index+1}" role="columnheader" scope="col"
@@ -292,11 +304,21 @@ export class OrMwcTable extends LitElement {
                                                                 "mdc-data-table__cell--clickable": (!Array.isArray(item) && (item as TableRow).clickable)!,
                                                                 "hide-mobile": (this.columns && typeof this.columns[index] != "string" && (this.columns[index] as TableColumn).hideMobile)!
                                                             }
-                                                            return html`
+                                                            if(index == 0 && this.config.multiSelect){
+                                                                return html`
+                                                                    <td class="mdc-data-table__cell mdc-data-table__cell--checkbox ${classMap(classes)}" title="${cell}">
+                                                                        <div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--upgraded mdc-ripple-upgraded mdc-ripple-upgraded--unbounded mdc-checkbox--selected" style="--mdc-ripple-fg-size: 24px; --mdc-ripple-fg-scale: 1.6666666666666667; --mdc-ripple-left: 8px; --mdc-ripple-top: 8px;">
+                                                                            <or-mwc-input type="${InputType.CHECKBOX}" class="mdc-checkbox__native-control" id="checkbox-${index}"></or-mwc-input>
+                                                                            <span>${cell}</span>
+                                                                        </div>
+                                                                    </td> `
+                                                            }
+                                                            else {
+                                                                return html`
                                                                 <td class="${classMap(classes)}" title="${cell}">
                                                                     <span>${cell}</span>
                                                                 </td>
-                                                            `;
+                                                            `}
                                                         })}
                                                     </tr>
                                                 `
