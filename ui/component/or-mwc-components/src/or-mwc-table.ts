@@ -205,9 +205,6 @@ export class OrMwcTable extends LitElement {
     protected _dataTable?: MDCDataTable;
 
     @property({ type: String })
-    protected sortColumn?: string;
-
-    @property({ type: String })
     protected sortDirection?: 'ASC' | 'DESC';
 
     /* ------------------- */
@@ -215,7 +212,6 @@ export class OrMwcTable extends LitElement {
     protected firstUpdated(changedProperties: Map<string, any>) {
         const elem = this.shadowRoot!.querySelector('.mdc-data-table');
         this._dataTable = new MDCDataTable(elem!);
-        this.sortColumn = '';
         this.sortDirection = 'ASC';
     }
 
@@ -229,9 +225,6 @@ export class OrMwcTable extends LitElement {
                 observer.unobserve(entries[0].target);
             })
             observer.observe(elem!);
-        }
-        if(changedProperties.has('sortColumn') || changedProperties.has('sortDirection')){
-            // Do thing
         }
     }
 
@@ -262,7 +255,7 @@ export class OrMwcTable extends LitElement {
                                                 'mdc-data-table__header-cell--with-sort': !!column.isSortable
                                             })}"
                                                 role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}">
-                                                ${!!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, !!column.isSortable), html`${i18next.t('loading')}`)}
+                                                ${!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!), html`${i18next.t('loading')}`)}
                                             </th>
                                         `;
                                     })}
@@ -340,20 +333,53 @@ export class OrMwcTable extends LitElement {
         `;
     }
 
-    async getSortHeader(index: number, title: string, orderAsc: boolean): Promise<TemplateResult> {
+    async getSortHeader(index: number, title: string): Promise<TemplateResult> {
         return html`
                 <div class="mdc-data-table__header-cell-wrapper">
                     <div class="mdc-data-table__header-cell-label">
                         ${title}
                     </div>
-                    <or-mwc-input aria-label="Sort by ${title}" aria-describedby="${title}-status-label"
-                                  id="sort-btn" type="button" icon="${ orderAsc ? "arrow-up" : "arrow-down"}"
-                                  @click="${() => ''}"
-                    ></or-mwc-input>
+                    <div>
+                        <or-mwc-input class="mdc-icon-button material-icons mdc-data-table__sort-icon-button"
+                                      aria-label="Sort by ${title}" aria-describedby="${title}-status-label"
+                                      id="sort-btn" type="button" icon="${ this.sortDirection == 'ASC' ? "arrow-up" : "arrow-down"}"
+                                      @click="${() => this.sortRows(index)}"
+                        ></or-mwc-input>
+                    </div>
                     <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="${title}-status-label">
                     </div>
                 </div>
         `;
+    }
+
+    async sortRows(index: number){
+        this.sortDirection == 'ASC' ? this.sortDirection = 'DESC' : this.sortDirection = 'ASC';
+        if(this.rows!){
+            if('content' in this.rows[0]) {
+                (this.rows as TableRow[]).sort((a : TableRow, b : TableRow) => {
+                    return this.customSort(a.content, b.content, index);
+                });
+            } else {
+                (this.rows as string[][]).sort((a : string[], b : string[]) => { return this.customSort(a, b, index)});
+            }
+            return;
+        }
+        return;
+    }
+
+    protected customSort(a: any, b: any, index: number): number{
+        if (!a[index] && !b[index]) {
+            return 0;
+        }
+
+        if (!a[index]) {
+            return 1;
+        }
+
+        if (!b[index]) {
+            return -1;
+        }
+        return this.sortDirection == 'DESC' ? (a[index] > b[index] ? -1 : 1) : (a[index] < b[index] ? -1 : 1);
     }
 
 
