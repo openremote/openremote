@@ -49,6 +49,7 @@ import org.openremote.model.ContainerService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.Agent
+import org.openremote.model.asset.agent.Protocol
 import org.openremote.model.gateway.GatewayConnection
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.RulesetQuery
@@ -325,11 +326,27 @@ trait ContainerTrait {
         if (agentService != null) {
             LOG.info("Waiting for agents to be deployed")
             i=0
-            while (i < 100 && TestFixture.assets.stream().filter { it instanceof Agent }.any { !agentService.agents.containsKey(it.id) }) {
+            while (i < 100 && TestFixture.assets.stream().filter { it instanceof Agent }.any {
+                def agent = agentService.agents.get(it.id)
+                if (agent == null) {
+                    return true
+                }
+                Protocol<?> protocolInstance = agentService.protocolInstanceMap.get(it.id)
+                if (protocolInstance == null) {
+                    return true
+                }
+                return !protocolInstance.agent.is(agent)
+            }) {
                 Thread.sleep(100)
                 i++
             }
-            LOG.info("Agents are deployed")
+            if (i >= 100) {
+                LOG.info("Agents didn't load correctly so stopping and starting the container")
+                stopContainer()
+                startContainer(config, services)
+            } else {
+                LOG.info("Agents are deployed")
+            }
         }
 
         if (rulesService != null) {

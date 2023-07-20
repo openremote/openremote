@@ -300,11 +300,17 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
          - See pseudocode here: http://activemq.apache.org/should-i-use-xa.html
         */
         from(ATTRIBUTE_EVENT_QUEUE)
-            .routeId("AssetQueueProcessor")
+            .routeId("AttributeEventProcessor")
             .filter(body().isInstanceOf(AttributeEvent.class))
             .doTry()
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+
+                // Set timestamp if not set
+                if (event.getTimestamp() <= 0) {
+                    event.setTimestamp(timerService.getCurrentTimeMillis());
+                }
+
                 if (LOG.isLoggable(Level.FINEST)) {
                     LOG.finest("Processing: " + event);
                 }

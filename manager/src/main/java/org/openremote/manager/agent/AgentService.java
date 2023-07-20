@@ -387,7 +387,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         try {
             protocol = agent.getProtocolInstance();
-            protocolInstanceMap.put(agent.getId(), protocol);
 
             LOG.fine("Starting protocol instance: " + protocol);
             protocol.start(container);
@@ -416,6 +415,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                             .orElse(false)
                     ).forEach((agnt, attributes) -> linkAttributes(agnt, asset.getId(), attributes))
             );
+
+            protocolInstanceMap.put(agent.getId(), protocol);
         } catch (Exception e) {
             if (protocol != null) {
                 try {

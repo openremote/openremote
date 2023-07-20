@@ -52,6 +52,7 @@ import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static jakarta.ws.rs.core.Response.Status.*;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.query.AssetQuery.Access;
@@ -600,7 +601,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             Object result = messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
                 .withHeader(AttributeEvent.HEADER_SOURCE, CLIENT)
-                .to(CLIENT_INBOUND_QUEUE)
+                .to(ATTRIBUTE_EVENT_QUEUE)
                 .request();
 
             if (result instanceof AssetProcessingException processingException) {

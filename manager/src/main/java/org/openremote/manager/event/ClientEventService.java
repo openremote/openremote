@@ -38,7 +38,6 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
@@ -56,7 +55,6 @@ import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.*;
 import static org.apache.camel.builder.PredicateBuilder.or;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
@@ -121,7 +119,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     public static final String HEADER_CONNECTION_TYPE_MQTT = "mqtt";
     public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
     public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
-    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&concurrentConsumers=2&waitForTaskToComplete=IfReplyExpected&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
     public static final String CLIENT_OUTBOUND_QUEUE = "seda://ClientOutboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String INTERNAL_SESSION_KEY = "ClientEventServiceInternal";
@@ -377,17 +375,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 LOG.log(TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': " + cancelEventSubscription);
             })
             .stop()
-            // Route attribute events straight to the asset queue
-            .when(body().isInstanceOf(AttributeEvent.class))
-            .process(exchange -> {
-                // Set timestamp if not set
-                AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-                if (event.getTimestamp() <= 0) {
-                    event.setTimestamp(timerService.getCurrentTimeMillis());
-                }
-            })
-            .to(ATTRIBUTE_EVENT_QUEUE)
-            .endChoice()
             .end();
 
         // Split publish messages for individual subscribers
