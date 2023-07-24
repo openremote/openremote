@@ -181,8 +181,7 @@ public class Container implements org.openremote.model.Container {
                 LOG.log(INFO, "Stopping service: " + service.getClass().getName());
                 service.stop(this);
             }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (Exception ignored) {
         }
 
         try {

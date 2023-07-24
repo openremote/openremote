@@ -490,8 +490,12 @@ trait ContainerTrait {
     }
 
     void stopContainer() {
-        if (container != null) {
-            container.stop()
+        try {
+            if (container != null) {
+                container.stop()
+            }
+        } catch (Exception e) {
+
         }
     }
 
