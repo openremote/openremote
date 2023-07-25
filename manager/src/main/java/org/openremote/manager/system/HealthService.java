@@ -173,11 +173,11 @@ public class HealthService implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
-        for (HealthStatusProvider healthStatusProvider : healthStatusProviderList) {
-            healthStatusProvider.stop(container);
-        }
         if (metricsServer != null) {
             metricsServer.close();
+        }
+        for (HealthStatusProvider healthStatusProvider : healthStatusProviderList) {
+            healthStatusProvider.stop(container);
         }
     }
 }

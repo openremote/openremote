@@ -176,12 +176,13 @@ public class Container implements org.openremote.model.Container {
 
         List<ContainerService> servicesToStop = Arrays.asList(getServices());
         Collections.reverse(servicesToStop);
-        try {
-            for (ContainerService service : servicesToStop) {
-                LOG.log(INFO, "Stopping service: " + service.getClass().getName());
+        for (ContainerService service : servicesToStop) {
+            LOG.log(INFO, "Stopping service: " + service.getClass().getName());
+            try {
                 service.stop(this);
+            } catch (Exception e) {
+                LOG.log(INFO, "Exception thrown whilst stopping service: " + service.getClass().getName(), e);
             }
-        } catch (Exception ignored) {
         }
 
         try {

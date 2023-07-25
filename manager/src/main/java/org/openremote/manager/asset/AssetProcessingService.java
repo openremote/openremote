@@ -301,7 +301,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         */
         from(ATTRIBUTE_EVENT_QUEUE)
             .routeId("AttributeEventProcessor")
-            .filter(body().isInstanceOf(AttributeEvent.class))
             .doTry()
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);

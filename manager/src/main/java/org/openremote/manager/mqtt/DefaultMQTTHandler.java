@@ -19,9 +19,13 @@
  */
 package org.openremote.manager.mqtt;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.activemq.artemis.api.core.SimpleString;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
@@ -43,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Logger;
@@ -87,6 +92,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     protected final ConcurrentMap<String, SubscriberInfo> connectionSubscriberInfoMap = new ConcurrentHashMap<>();
+    // An authorisation cache for publishing
+    protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
+        .maximumSize(100000)
+        .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
+        .build();
 
     @Override
     public int getPriority() {
@@ -280,7 +290,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return true;
     }
 
-    // TODO: Priority each canPublish is very slow with keycloak API calls and DB calls in AssetProcessingService event authoriser
+    // TODO: improve authorisation performance
+    // We make heavy use of authorisation caching as clients can hit this a lot and it is currently quite slow with DB calls
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
 
@@ -305,12 +316,33 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return false;
         }
 
+        String cacheKey = securityContext.getRealm() + securityContext.getToken().getSubject();
+
+        // Check cache
+        ConcurrentHashSet<String> act = authorizationCache.getIfPresent(cacheKey);
+        if (act != null && act.contains(topic.getString())) {
+            return true;
+        }
+
         // We don't know the value at this point so just use a null value for authorization (value type will be handled
         // when the event is processed)
         if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
             LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
+
+        // Add to cache
+        ConcurrentHashSet<String> set;
+        synchronized (authorizationCache) {
+            act = authorizationCache.getIfPresent(cacheKey);
+            if (act != null) {
+                set = act;
+            } else {
+                set = new ConcurrentHashSet<>();
+                authorizationCache.put(cacheKey, set);
+            }
+        }
+        set.add(topic.getString());
 
         return true;
     }
@@ -396,7 +428,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        LOG.fine("Publishing to client event queue: " + attributeEvent);
+        LOG.finer("Publishing to client inbound queue: " + attributeEvent);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .withBody(attributeEvent)

@@ -46,6 +46,7 @@ import org.openremote.model.rules.*;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -113,8 +114,8 @@ public class RulesEngine<T extends Ruleset> {
     final protected HistoricDatapoints historicFacade;
     final protected AssetLocationPredicateProcessor assetLocationPredicatesConsumer;
 
-    final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
-    final protected Map<Long, RulesetStatus> deploymentStatusMap = new LinkedHashMap<>();
+    final protected Map<Long, RulesetDeployment> deployments = new ConcurrentHashMap<>();
+    final protected Map<Long, RulesetStatus> deploymentStatusMap = new ConcurrentHashMap<>();
     final protected RulesFacts facts;
     final protected AbstractRulesEngine engine;
 
@@ -395,6 +396,7 @@ public class RulesEngine<T extends Ruleset> {
         if (!running) {
             return;
         }
+        running = false;
         LOG.info("Stopping: " + this);
         if (fireTimer != null) {
             fireTimer.cancel(true);
@@ -406,13 +408,16 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         deployments.values().forEach(this::stopRuleset);
-        running = false;
 
-        if (!systemShutdownInProgress && assetLocationPredicatesConsumer != null) {
+        if (systemShutdownInProgress) {
+            deployments.clear();
+            return;
+        }
+
+        if (assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, null);
         }
 
-        updateDeploymentInfo();
         publishRulesEngineStatus();
     }
 
@@ -435,10 +440,6 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected synchronized void stopRuleset(RulesetDeployment deployment) {
-        if (!running) {
-            return;
-        }
-
         if (deployment.getStatus() == DEPLOYED) {
             deployment.stop(facts);
             deployment.setStatus(READY);
@@ -671,6 +672,10 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected void publishRulesetStatus(RulesetDeployment deployment) {
+        if (!running) {
+            return;
+        }
+
         Ruleset ruleset = deployment.ruleset;
         RulesetStatus previousStatus = deploymentStatusMap.get(ruleset.getId());
         String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));

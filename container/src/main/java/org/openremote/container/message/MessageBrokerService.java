@@ -169,7 +169,7 @@ public class MessageBrokerService implements ContainerService {
         context.setExtension(HealthCheckRegistry.class, checkRegistry);
 
         // Force a quick shutdown of routes with in-flight exchanges
-        context.getShutdownStrategy().setTimeout(1);
+        context.getShutdownStrategy().setTimeout(5);
         context.getShutdownStrategy().setSuppressLoggingOnTimeout(true);
 
         context.setStreamCaching(true);

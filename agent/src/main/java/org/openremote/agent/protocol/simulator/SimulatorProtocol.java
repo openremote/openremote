@@ -68,6 +68,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
     @Override
     protected void doStop(Container container) throws Exception {
+        replayMap.values().forEach(scheduledFuture -> {
+            try {
+                scheduledFuture.cancel(true);
+            } catch (Exception ignored) {
+
+            }
+        });
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.remoting.FailureListener;
 import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnection;
+import org.apache.activemq.artemis.core.security.impl.SecurityStoreImpl;
 import org.apache.activemq.artemis.core.server.ServerSession;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPlugin;
@@ -192,7 +193,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             .build().toString();
         config.addAcceptorConfiguration("tcp", serverURI);
 
-        config.setSecurityInvalidationInterval(30000);
         config.registerBrokerPlugin(this);
         config.setWildCardConfiguration(wildcardConfiguration);
 
@@ -212,12 +212,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         config.setPersistenceEnabled(false);
 
-        // TODO: Priority Prevent ActiveMQ storing messages in memory (paging)
         // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
-        // Disable auth cache so we can inject RemotingConnection into the subject as a principal otherwise we don't have access to the connection during authorisation so we cannot check topic contains the clientID
-        // Disable caching so we can support auto provisioning sessions without having to reconnect - we need to re-evaluate this and clients should probably send X.509 through to the broker
+        // Cannot use authentication or authorisation cache as auto provisioning MQTT clients will authenticate as anonymous and this is then baked into the created ServerSession and cannot be modified
+        // so all anonymous sessions will use the same username/password for key lookups in the caches - Can possibly use caching if ActiveMQ makes changes and/or we move to using X.509 TLS with ActiveMQ
+        //config.setSecurityInvalidationInterval(600000); // Long cache as we force clear it when needed
         config.setAuthenticationCacheSize(0);
-        config.setAuthorizationCacheSize(100000);
+        config.setAuthorizationCacheSize(0);
 
         server = new EmbeddedActiveMQ();
         server.setConfiguration(config);
@@ -481,6 +481,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected void doForceDisconnect(RemotingConnection connection) {
         LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
         connection.disconnect(false);
+        ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
 
     public boolean disconnectSession(String sessionID) {

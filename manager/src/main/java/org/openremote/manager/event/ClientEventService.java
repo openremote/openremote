@@ -38,6 +38,7 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
@@ -55,6 +56,7 @@ import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.*;
 import static org.apache.camel.builder.PredicateBuilder.or;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
@@ -333,13 +335,17 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         from(CLIENT_INBOUND_QUEUE)
             .routeId("ClientEvents")
+            .process(this::passToInterceptors)
             .choice()
+            .when(body().isInstanceOf(AttributeEvent.class))
+            .to(ATTRIBUTE_EVENT_QUEUE)
+            .stop()
+            .endChoice()
             .when(header(SESSION_OPEN))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
                 LOG.log(TRACE, "Adding session: " + sessionKey);
                 sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
-                passToInterceptors(exchange);
             })
             .stop()
             .when(or(
@@ -351,11 +357,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 LOG.log(TRACE, "Removing session: " + sessionKey);
                 sessionKeyInfoMap.remove(sessionKey);
                 eventSubscriptions.cancelAll(sessionKey);
-                passToInterceptors(exchange);
             })
             .stop()
             .end()
-            .process(this::passToInterceptors)
             .choice()
             .when(body().isInstanceOf(EventSubscription.class))
             .process(exchange -> {
@@ -381,6 +385,15 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         from(PUBLISH_QUEUE)
             .routeId("PublishQueue")
             .split(method(eventSubscriptions, "splitForSubscribers"))
+            .process(exchange -> {
+                String sessionKey = getSessionKey(exchange);
+                SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
+                if (sessionInfo == null) {
+                    LOG.log(INFO, "Cannot send to requested session it doesn't exist or is disconnected:" + sessionKey);
+                    return;
+                }
+                exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, sessionInfo.connectionType);
+            })
             .to(CLIENT_OUTBOUND_QUEUE);
 
         // Route messages destined for websocket clients

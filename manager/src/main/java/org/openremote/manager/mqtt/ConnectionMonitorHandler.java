@@ -248,7 +248,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     }
 
     protected void addSessionAttributes(String realm, List<Pair<String, Attribute<?>>> assetIdsAttrs) {
-        LOG.fine("Adding '" + assetIdsAttrs.size() + "' attributes(s) with user linked attributes in realm: " + realm);
+        LOG.finest("Adding '" + assetIdsAttrs.size() + "' attributes(s) with user linked attributes in realm: " + realm);
 
         List<String> usernames = assetIdsAttrs.stream().map(assetIdAttr -> assetIdAttr.getValue().getMetaValue(USER_CONNECTED).orElse(null))
             .filter(Objects::nonNull)

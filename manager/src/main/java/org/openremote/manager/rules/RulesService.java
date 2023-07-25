@@ -115,8 +115,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     public static final String OR_RULES_QUICK_FIRE_MILLIS = "OR_RULES_QUICK_FIRE_MILLIS";
     public static final int OR_RULES_QUICK_FIRE_MILLIS_DEFAULT = 3000;
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
-    protected final ConcurrentMap<String, RulesEngine<RealmRuleset>> realmEngines = new ConcurrentHashMap<>();
-    protected final ConcurrentMap<String, RulesEngine<AssetRuleset>> assetEngines = new ConcurrentHashMap<>();
+    protected final Map<String, RulesEngine<RealmRuleset>> realmEngines = new ConcurrentHashMap<>();
+    protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new ConcurrentHashMap<>();
     protected List<GeofenceAssetAdapter> geofenceAssetAdapters = new ArrayList<>();
     protected TimerService timerService;
     protected ScheduledExecutorService executorService;
@@ -566,7 +566,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
     }
 
-    protected void processRulesetChange(Ruleset ruleset, PersistenceEvent.Cause cause) {
+    protected synchronized void processRulesetChange(Ruleset ruleset, PersistenceEvent.Cause cause) {
         if (cause == PersistenceEvent.Cause.DELETE || !ruleset.isEnabled()) {
             if (ruleset instanceof GlobalRuleset) {
                 undeployGlobalRuleset((GlobalRuleset) ruleset);
@@ -630,47 +630,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
      * Deploy the ruleset into the global engine creating the engine if necessary.
      */
     protected RulesEngine<GlobalRuleset> deployGlobalRuleset(GlobalRuleset ruleset) {
-        // Global rules have access to everything in the system
-        if (globalEngine == null) {
-            globalEngine = new RulesEngine<>(
-                timerService,
-                this,
-                identityService,
-                executorService,
-                assetStorageService,
-                assetProcessingService,
-                notificationService,
-                webhookService,
-                clientEventService,
-                assetDatapointService,
-                assetPredictedDatapointService,
-                new RulesEngineId<>(),
-                locationPredicateRulesConsumer,
-                metricsEnabled
-            );
-        }
 
-        globalEngine.addRuleset(ruleset);
-
-        return globalEngine;
-    }
-
-    protected void undeployGlobalRuleset(GlobalRuleset ruleset) {
-        if (globalEngine == null) {
-            return;
-        }
-
-        if (globalEngine.removeRuleset(ruleset)) {
-            globalEngine.stop();
-            globalEngine = null;
-        }
-    }
-
-    protected RulesEngine<RealmRuleset> deployRealmRuleset(RealmRuleset ruleset) {
-        // Look for existing rules engines for this realm
-        RulesEngine<RealmRuleset> realmRulesEngine = realmEngines
-            .computeIfAbsent(ruleset.getRealm(), (realm) ->
-                new RulesEngine<>(
+        synchronized (this) {
+            // Global rules have access to everything in the system
+            if (globalEngine == null) {
+                globalEngine = new RulesEngine<>(
                     timerService,
                     this,
                     identityService,
@@ -682,17 +646,60 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     clientEventService,
                     assetDatapointService,
                     assetPredictedDatapointService,
-                    new RulesEngineId<>(realm),
+                    new RulesEngineId<>(),
                     locationPredicateRulesConsumer,
                     metricsEnabled
-                ));
+                );
+            }
+        }
+
+        globalEngine.addRuleset(ruleset);
+
+        return globalEngine;
+    }
+
+    protected synchronized void undeployGlobalRuleset(GlobalRuleset ruleset) {
+        if (globalEngine == null) {
+            return;
+        }
+
+        if (globalEngine.removeRuleset(ruleset)) {
+            globalEngine.stop();
+            globalEngine = null;
+        }
+    }
+
+    protected RulesEngine<RealmRuleset> deployRealmRuleset(RealmRuleset ruleset) {
+        RulesEngine<RealmRuleset> realmRulesEngine;
+
+        synchronized (this) {
+            // Look for existing rules engines for this realm
+            realmRulesEngine = realmEngines
+                .computeIfAbsent(ruleset.getRealm(), (realm) ->
+                    new RulesEngine<>(
+                        timerService,
+                        this,
+                        identityService,
+                        executorService,
+                        assetStorageService,
+                        assetProcessingService,
+                        notificationService,
+                        webhookService,
+                        clientEventService,
+                        assetDatapointService,
+                        assetPredictedDatapointService,
+                        new RulesEngineId<>(realm),
+                        locationPredicateRulesConsumer,
+                        metricsEnabled
+                    ));
+        }
 
         realmRulesEngine.addRuleset(ruleset);
 
         return realmRulesEngine;
     }
 
-    protected void undeployRealmRuleset(RealmRuleset ruleset) {
+    protected synchronized void undeployRealmRuleset(RealmRuleset ruleset) {
         RulesEngine<RealmRuleset> rulesEngine = realmEngines.get(ruleset.getRealm());
         if (rulesEngine == null) {
             return;
@@ -740,32 +747,35 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected RulesEngine<AssetRuleset> deployAssetRuleset(AssetRuleset ruleset) {
-        // Look for existing rules engine for this asset
-        RulesEngine<AssetRuleset> assetRulesEngine = assetEngines
-            .computeIfAbsent(ruleset.getAssetId(), (assetId) ->
-                new RulesEngine<>(
-                    timerService,
-                    this,
-                    identityService,
-                    executorService,
-                    assetStorageService,
-                    assetProcessingService,
-                    notificationService,
-                    webhookService,
-                    clientEventService,
-                    assetDatapointService,
-                    assetPredictedDatapointService,
-                    new RulesEngineId<>(ruleset.getRealm(), assetId),
-                    locationPredicateRulesConsumer,
-                    metricsEnabled
-                ));
+        RulesEngine<AssetRuleset> assetRulesEngine;
+
+        synchronized (this) {
+            // Look for existing rules engine for this asset
+            assetRulesEngine = assetEngines
+                .computeIfAbsent(ruleset.getAssetId(), (assetId) ->
+                    new RulesEngine<>(
+                        timerService,
+                        this,
+                        identityService,
+                        executorService,
+                        assetStorageService,
+                        assetProcessingService,
+                        notificationService,
+                        webhookService,
+                        clientEventService,
+                        assetDatapointService,
+                        assetPredictedDatapointService,
+                        new RulesEngineId<>(ruleset.getRealm(), assetId),
+                        locationPredicateRulesConsumer,
+                        metricsEnabled
+                    ));
+        }
 
         assetRulesEngine.addRuleset(ruleset);
-
         return assetRulesEngine;
     }
 
-    protected void undeployAssetRuleset(AssetRuleset ruleset) {
+    protected synchronized void undeployAssetRuleset(AssetRuleset ruleset) {
         RulesEngine<AssetRuleset> rulesEngine = assetEngines.get(ruleset.getAssetId());
         if (rulesEngine == null) {
             return;

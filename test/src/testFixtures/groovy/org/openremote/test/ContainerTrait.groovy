@@ -19,8 +19,9 @@
  */
 package org.openremote.test
 
+import jakarta.persistence.TypedQuery
+import jakarta.ws.rs.core.UriBuilder
 import org.apache.camel.ProducerTemplate
-import org.apache.camel.builder.RouteBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
@@ -40,11 +41,11 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.gateway.GatewayClientService
+import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.web.ManagerWebService
-import org.openremote.model.Constants
 import org.openremote.model.ContainerService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
@@ -55,18 +56,12 @@ import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.RulesetQuery
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
-import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RealmRuleset
+import org.openremote.model.rules.Ruleset
 import org.openremote.model.security.User
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import jakarta.persistence.TypedQuery
-import jakarta.websocket.ClientEndpointConfig
-import jakarta.websocket.Endpoint
-import jakarta.websocket.Session
-import jakarta.websocket.WebSocketContainer
-import jakarta.ws.rs.core.UriBuilder
 import java.util.concurrent.TimeUnit
 import java.util.logging.Handler
 import java.util.stream.Collectors
@@ -122,6 +117,7 @@ trait ContainerTrait {
 
             if (configsMatch && servicesMatch) {
                 try {
+                    long startTime = System.currentTimeMillis()
                     LOG.info("Services and config matches already running container so checking state")
                     def counter = 0
 
@@ -153,67 +149,58 @@ trait ContainerTrait {
 
                     // Reset rulesets
                     if (container.hasService(RulesetStorageService.class) && container.hasService(RulesService.class)) {
-                        def globalRulesets = getRulesets(GlobalRuleset.class)
-                        def realmRulesets = getRulesets(RealmRuleset.class)
-                        def assetRulesets = getRulesets(AssetRuleset.class)
                         def rulesService = container.getService(RulesService.class)
                         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
-                        if (!assetRulesets.isEmpty()) {
-                            LOG.info("Purging ${assetRulesets.size()} asset ruleset(s)")
-                            assetRulesets.forEach {
-                                rulesetStorageService.delete(AssetRuleset.class, it.id)
-                                def assetEngine = rulesService.assetEngines.get(((AssetRuleset) it).assetId)
-                                def rulesStopped = false
-                                while (assetEngine != null && !rulesStopped) {
-                                    rulesStopped = assetEngine.deployments.containsKey(it.id)
-                                    if (counter++ > 100) {
-                                        throw new IllegalStateException("Failed to purge ruleset: " + it.name)
-                                    }
-                                    Thread.sleep(100)
+                        def assetEngines = new HashSet<RulesEngine>(rulesService.assetEngines.values())
+                        LOG.info("Purging ${assetEngines.size()} asset engine(s)")
+                        assetEngines.forEach {
+                            it.stop(true)
+                            while (!it.deployments.isEmpty()) {
+                                if (counter++ > 20) {
+                                    throw new IllegalStateException("Failed to stop asset engine: " + it.id)
                                 }
+                                Thread.sleep(100)
                             }
+                            rulesService.assetEngines.values().remove(it)
                         }
-                        if (!realmRulesets.isEmpty()) {
-                            LOG.info("Purging ${realmRulesets.size()} realm ruleset(s)")
-                            realmRulesets.forEach {
-                                rulesetStorageService.delete(RealmRuleset.class, it.id)
-                                def realmEngine = rulesService.realmEngines.get(((RealmRuleset) it).realm)
-                                def rulesStopped = false
-                                while (realmEngine != null && !rulesStopped) {
-                                    rulesStopped = !realmEngine.deployments.containsKey(it.id)
-                                    if (counter++ > 100) {
-                                        throw new IllegalStateException("Failed to purge ruleset: " + it.name)
-                                    }
-                                    Thread.sleep(100)
-                                }
-                            }
-                        }
-                        if (!globalRulesets.isEmpty()) {
-                            LOG.info("Purging ${globalRulesets.size()} global ruleset(s)")
-                            globalRulesets.forEach {
-                                rulesetStorageService.delete(GlobalRuleset.class, it.id)
-                                def rulesStopped = false
-                                while (!rulesStopped) {
-                                    def engine = rulesService.globalEngine
-                                    rulesStopped = engine == null || !engine.deployments.containsKey(it.id)
-                                    if (counter++ > 100) {
-                                        throw new IllegalStateException("Failed to purge ruleset: " + it.name)
-                                    }
-                                    Thread.sleep(100)
-                                }
-                            }
+                        def assetRulesets = getRulesets(AssetRuleset.class)
+                        assetRulesets.forEach{
+                            rulesetStorageService.delete(AssetRuleset.class, it.id)
                         }
 
-                        // Wait for all rule engines to stop and be removed
-                        counter = 0
-                        def enginesStopped = false
-                        while (!enginesStopped) {
-                            enginesStopped = (rulesService.realmEngines == null || rulesService.realmEngines.isEmpty()) && (rulesService.assetEngines == null || rulesService.assetEngines.isEmpty())
-                            if (counter++ > 100) {
-                                throw new IllegalStateException("Rule engines have failed to stop")
+                        def realmEngines = new HashSet<RulesEngine>(rulesService.realmEngines.values())
+                        LOG.info("Purging ${realmEngines.size()} realm engine(s)")
+                        realmEngines.forEach {
+                            it.stop(true)
+                            while (!it.deployments.isEmpty()) {
+                                if (counter++ > 20) {
+                                    throw new IllegalStateException("Failed to stop realm engine: " + it.id)
+                                }
+                                Thread.sleep(100)
                             }
-                            Thread.sleep(100)
+                            rulesService.realmEngines.values().remove(it)
+                        }
+                        def realmRulesets = getRulesets(RealmRuleset.class)
+                        realmRulesets.forEach{
+                            rulesetStorageService.delete(RealmRuleset.class, it.id)
+                        }
+
+                        def globalEngine = rulesService.globalEngine
+                        if (globalEngine != null) {
+                            LOG.info("Purging global engine")
+                            globalEngine.stop(true)
+                            while (!globalEngine.deployments.isEmpty()) {
+                                if (counter++ > 20) {
+                                    throw new IllegalStateException("Failed to stop global engine: " + globalEngine.id)
+                                }
+                                Thread.sleep(100)
+                            }
+                            rulesService.globalEngine = null
+                        }
+                        def globalRulesets = getRulesets(GlobalRuleset.class)
+                        globalRulesets.forEach{
+                            rulesetStorageService.delete(GlobalRuleset.class, it.id)
                         }
                     }
 
@@ -280,8 +267,11 @@ trait ContainerTrait {
                             TestFixture.globalRulesets.forEach { rulesetStorageService.merge(it) }
                         }
                     }
+
+                    long endTime = System.currentTimeMillis()
+                    LOG.info("Container reuse took: " + (startTime - endTime) + "ms")
                 } catch (IllegalStateException e) {
-                    LOG.info("Failed to clean the existing container so creating a new one")
+                    LOG.info("Failed to clean the existing container so creating a new one", e)
                     stopContainer()
                     TestFixture.container = null
                 }
@@ -293,8 +283,14 @@ trait ContainerTrait {
         }
 
         if (container == null) {
-            TestFixture.container = new Container(config, services)
-            container.startBackground()
+            try {
+                TestFixture.container = new Container(config, services)
+                container.startBackground()
+            } catch (Exception e) {
+                LOG.warn("Failed to start the container")
+                stopContainer()
+                throw e
+            }
 
             // Block until container is actually running to aid in testing but also to record some state info
             while (!container.isRunning()) {
@@ -495,7 +491,7 @@ trait ContainerTrait {
                 container.stop()
             }
         } catch (Exception e) {
-
+            LOG.warn("Failed to stop container", e)
         }
     }
 
