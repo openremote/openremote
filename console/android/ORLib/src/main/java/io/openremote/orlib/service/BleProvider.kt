@@ -59,7 +59,7 @@ class BleProvider(val context: Context) {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: android.bluetooth.le.ScanResult) {
             super.onScanResult(callbackType, result)
-            Log.i("BleProvider", "onScanResult: ${result.device.name} - ${result.device.address}")
+            Log.d("BleProvider", "onScanResult: ${result.device.name} - ${result.device.address}")
             if (result.device != null && result.device.name != null) {
                 devices.add(result.device)
             }
@@ -169,7 +169,7 @@ class BleProvider(val context: Context) {
                         readableDeviceIndex = 0
                         deviceCharacteristics.clear()
                         if (newState == BluetoothProfile.STATE_CONNECTED) {
-                            Log.i(
+                            Log.d(
                                 "BluetoothGattCallback",
                                 "Successfully connected to $deviceAddress"
                             )
@@ -200,9 +200,9 @@ class BleProvider(val context: Context) {
                 override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
                     with(gatt) {
                         this?.services?.forEach { service ->
-                            Log.i("BluetoothGattCallback", "Service: ${service.uuid}")
+                            Log.d("BluetoothGattCallback", "Service: ${service.uuid}")
                             service.characteristics.forEach { characteristic ->
-                                Log.i(
+                                Log.d(
                                     "BluetoothGattCallback",
                                     "Characteristic: ${characteristic.uuid}"
                                 )
@@ -230,18 +230,6 @@ class BleProvider(val context: Context) {
                     }
                 }
 
-                override fun onCharacteristicChanged(
-                    gatt: BluetoothGatt,
-                    characteristic: BluetoothGattCharacteristic,
-                    value: ByteArray
-                ) {
-                    super.onCharacteristicChanged(gatt, characteristic, value)
-                    Log.i(
-                        "BluetoothGattCallback",
-                        "Characteristic changed: ${characteristic.uuid} - ${String(value)}"
-                    )
-                }
-
                 override fun onCharacteristicRead(
                     gatt: BluetoothGatt?,
                     characteristic: BluetoothGattCharacteristic?,
@@ -260,27 +248,52 @@ class BleProvider(val context: Context) {
                     value: ByteArray,
                     status: Int
                 ) {
-                    handleCharacteristicStatus(gatt, characteristic, status)
+                    handleCharacteristicStatus(gatt, characteristic, status, value)
                 }
 
                 private fun handleCharacteristicStatus(
                     gatt: BluetoothGatt?,
                     readCharacteristic: BluetoothGattCharacteristic,
-                    status: Int
+                    status: Int,
+                    value: ByteArray? = null
                 ) {
                     when (status) {
-                        BluetoothGatt.GATT_SUCCESS -> handleSuccess(gatt, readCharacteristic)
-                        BluetoothGatt.GATT_READ_NOT_PERMITTED -> Log.e("BluetoothGattCallback", "Read not permitted for ${readCharacteristic.uuid}!")
-                        else -> Log.e("BluetoothGattCallback", "Characteristic read failed for ${readCharacteristic.uuid}, error: $status")
+                        BluetoothGatt.GATT_SUCCESS -> handleSuccess(
+                            gatt,
+                            readCharacteristic,
+                            value ?: readCharacteristic.value
+                        )
+
+                        BluetoothGatt.GATT_READ_NOT_PERMITTED -> Log.e(
+                            "BluetoothGattCallback",
+                            "Read not permitted for ${readCharacteristic.uuid}!"
+                        )
+
+                        else -> Log.e(
+                            "BluetoothGattCallback",
+                            "Characteristic read failed for ${readCharacteristic.uuid}, error: $status"
+                        )
                     }
                 }
 
-                private fun handleSuccess(gatt: BluetoothGatt?, readCharacteristic: BluetoothGattCharacteristic) {
-                    val deviceCharacteristic = deviceCharacteristics.find { it.characteristic.uuid == readCharacteristic.uuid }
+                private fun handleSuccess(
+                    gatt: BluetoothGatt?,
+                    readCharacteristic: BluetoothGattCharacteristic,
+                    value: ByteArray
+                ) {
+                    val deviceCharacteristic =
+                        deviceCharacteristics.find { it.characteristic.uuid == readCharacteristic.uuid }
                     deviceCharacteristic?.also {
-                        it.value = String(readCharacteristic.value).substringBefore('\u0000')
+                        it.value = String(value).substringBefore('\u0000')
                     }
-                    Log.i("BluetoothGattCallback", "Read characteristic ${readCharacteristic.uuid}:\n${String(readCharacteristic.value)} - ${readCharacteristic.value.contentToString()} - ${readCharacteristic.value.toHexString()}")
+                    Log.d(
+                        "BluetoothGattCallback",
+                        "Read characteristic ${readCharacteristic.uuid}:\n${
+                            String(
+                                value
+                            )
+                        }"
+                    )
                     handleDeviceIndex(gatt)
                 }
 
@@ -293,7 +306,11 @@ class BleProvider(val context: Context) {
                                 "action" to "CONNECT_TO_DEVICE",
                                 "provider" to "ble",
                                 "success" to true,
-                                "data" to hashMapOf("attributes" to deviceCharacteristics.map { createAttributeMap(it) })
+                                "data" to hashMapOf("attributes" to deviceCharacteristics.map {
+                                    createAttributeMap(
+                                        it
+                                    )
+                                })
                             )
                         )
                     }
@@ -314,7 +331,7 @@ class BleProvider(val context: Context) {
                     status: Int
                 ) {
                     super.onCharacteristicWrite(gatt, characteristic, status)
-                    Log.i(
+                    Log.d(
                         "BluetoothGattCallback",
                         "Write characteristic ${characteristic?.uuid}:\n${status}"
                     )
@@ -332,7 +349,7 @@ class BleProvider(val context: Context) {
                 }
 
                 override fun onMtuChanged(gatt: BluetoothGatt?, mtu: Int, status: Int) {
-                    Log.i(
+                    Log.d(
                         "BluetoothGattCallback",
                         "ATT MTU changed to $mtu, success: ${status == BluetoothGatt.GATT_SUCCESS}"
                     )
@@ -422,6 +439,7 @@ class BleProvider(val context: Context) {
 
     @SuppressLint("MissingPermission")
     private fun scanLeDevice(bleCallback: BleCallback) {
+        devices.clear()
         bluetoothAdapter.bluetoothLeScanner?.let { bluetoothLeScanner ->
             if (!scanning) { // Stops scanning after a pre-defined scan period.
                 handler.postDelayed({
@@ -506,6 +524,3 @@ fun BluetoothGattCharacteristic.isWritableWithoutResponse(): Boolean =
 fun BluetoothGattCharacteristic.containsProperty(property: Int): Boolean {
     return properties and property != 0
 }
-
-fun ByteArray.toHexString(): String =
-    joinToString(separator = " ", prefix = "0x") { String.format("%02X", it) }
