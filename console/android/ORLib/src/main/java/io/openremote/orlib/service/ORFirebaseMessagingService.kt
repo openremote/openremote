@@ -166,7 +166,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
         val pm = packageManager
         val notificationIntent = pm.getLaunchIntentForPackage(packageName)
         notificationIntent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0)
+        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val notificationBuilder = NotificationCompat.Builder(
             this,
@@ -221,7 +221,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
             actionIntent.putExtra("openInBrowser", ORAlertAction.openInBrowser)
             actionIntent.putExtra("data", ObjectMapper().writeValueAsString(ORAlertAction.data))
         }
-        return PendingIntent.getService(this, 0, actionIntent, PendingIntent.FLAG_ONE_SHOT)
+        return PendingIntent.getService(this, 0, actionIntent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
     }
 
     companion object {
