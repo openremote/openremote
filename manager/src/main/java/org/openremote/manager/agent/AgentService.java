@@ -161,7 +161,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-            .routeId("AgentPersistenceChanges")
+            .routeId("Persistence-Agent")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
@@ -177,7 +177,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         // A protocol wants to write a new sensor value
         from(SENSOR_QUEUE)
-            .routeId("FromSensorUpdates")
+            .routeId("ProtocolOutbound")
             .filter(body().isInstanceOf(AttributeEvent.class))
             .setHeader(HEADER_SOURCE, () -> SENSOR)
             .to(ATTRIBUTE_EVENT_QUEUE);

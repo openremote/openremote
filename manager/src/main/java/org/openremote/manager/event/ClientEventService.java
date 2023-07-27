@@ -208,7 +208,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         // Route for deserializing incoming websocket messages and normalising them for the INBOUND_CLIENT_QUEUE
         from(WEBSOCKET_URI)
-            .routeId("FromWebsocket")
+            .routeId("ClientInbound-Websocket")
             .process(exchange -> {
                 String connectionKey = exchange.getIn().getHeader(UndertowConstants.CONNECTION_KEY, String.class);
                 exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, HEADER_CONNECTION_TYPE_WEBSOCKET);
@@ -334,7 +334,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .end();
 
         from(CLIENT_INBOUND_QUEUE)
-            .routeId("ClientEvents")
+            .routeId("ClientInbound-EventProcessor")
             .process(this::passToInterceptors)
             .choice()
             .when(body().isInstanceOf(AttributeEvent.class))
@@ -383,7 +383,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         // Split publish messages for individual subscribers
         from(PUBLISH_QUEUE)
-            .routeId("PublishQueue")
+            .routeId("ClientOutbound-Splitter")
             .split(method(eventSubscriptions, "splitForSubscribers"))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
@@ -398,7 +398,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         // Route messages destined for websocket clients
         from(CLIENT_OUTBOUND_QUEUE)
-            .routeId("WebsocketClientOutbound")
+            .routeId("ClientOutbound-Websocket")
             .filter(header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_WEBSOCKET))
             .process(exchange -> {
                 String sessionKey = exchange.getIn().getHeader(SESSION_KEY, String.class);

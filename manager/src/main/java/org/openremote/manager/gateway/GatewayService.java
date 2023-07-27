@@ -245,7 +245,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
         if (active) {
             from(PERSISTENCE_TOPIC)
-                .routeId("GatewayServiceAssetChanges")
+                .routeId("Persistence-GatewayAsset")
                 .filter(isPersistenceEventForEntityType(Asset.class))
                 .process(exchange -> {
                     @SuppressWarnings("unchecked")

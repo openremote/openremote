@@ -152,7 +152,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     public void configure() throws Exception {
         // If any console asset was modified in the database, detect push provider changes
         from(PersistenceService.PERSISTENCE_TOPIC)
-            .routeId("PushNotificationAssetChanges")
+            .routeId("Persistence-PushNotificationConsoleAsset")
             .filter(PersistenceService.isPersistenceEventForEntityType(ConsoleAsset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
@@ -504,8 +504,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
             case CREATE:
             case UPDATE:
-
-                consoleFCMTokenMap.put(asset.getId(), getFcmToken(asset).orElse(null));
+                getFcmToken(asset).ifPresent(token -> consoleFCMTokenMap.put(asset.getId(), token));
                 break;
         }
     }

@@ -24,8 +24,10 @@ import io.prometheus.client.exporter.HTTPServer;
 import org.apache.camel.CamelContext;
 import org.apache.camel.NamedNode;
 import org.apache.camel.Route;
+import org.apache.camel.component.micrometer.routepolicy.MicrometerRoutePolicy;
 import org.apache.camel.component.micrometer.routepolicy.MicrometerRoutePolicyFactory;
 import org.apache.camel.component.micrometer.routepolicy.MicrometerRoutePolicyNamingStrategy;
+import org.apache.camel.component.seda.SedaEndpoint;
 import org.apache.camel.spi.RoutePolicy;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.util.MapAccess;
@@ -46,8 +48,20 @@ import static org.apache.camel.component.micrometer.MicrometerConstants.ROUTE_ID
  */
 public class HealthService implements ContainerService {
 
+    /**
+     * Customised {@link MicrometerRoutePolicy} to add SEDA queue metrics
+     */
+    protected static class SedaMicrometerRoutePolicy extends MicrometerRoutePolicy {
+        @Override
+        public void onInit(Route route) {
+            if (route.getEndpoint() instanceof SedaEndpoint sedaEndpoint) {
+                getMeterRegistry().gauge("or.camel.route.queue.size", getNamingStrategy().getTags(route), sedaEndpoint, SedaEndpoint::getCurrentQueueSize);
+            }
+            super.onInit(route);
+        }
+    }
+
     public static final System.Logger LOG = System.getLogger(HealthService.class.getName());
-    public static final String METRICS_PATH = "/metrics";
     public static final String OR_METRICS_PORT = "OR_METRICS_PORT";
     public static final int OR_METRICS_PORT_DEFAULT = 8404;
     protected List<HealthStatusProvider> healthStatusProviderList = new ArrayList<>();
@@ -108,10 +122,12 @@ public class HealthService implements ContainerService {
             MicrometerRoutePolicyFactory micrometerRoutePolicyFactory = new MicrometerRoutePolicyFactory() {
                 @Override
                 public RoutePolicy createRoutePolicy(CamelContext camelContext, String routeId, NamedNode routeDefinition) {
-                    if ("AssetQueueProcessor".equals(routeId) || "AssetPersistenceChanges".equals(routeId) || "FromClientUpdates".equals(routeId) || "NotificationQueueProcessor".equals(routeId) || "ClientEvents".equals(routeId) || "FromSensorUpdates".equals(routeId)) {
-                        return super.createRoutePolicy(camelContext, routeId, routeDefinition);
-                    }
-                    return null;
+                    SedaMicrometerRoutePolicy answer = new SedaMicrometerRoutePolicy();
+                    answer.setMeterRegistry(getMeterRegistry());
+                    answer.setPrettyPrint(isPrettyPrint());
+                    answer.setDurationUnit(getDurationUnit());
+                    answer.setNamingStrategy(getNamingStrategy());
+                    return answer;
                 }
             };
             micrometerRoutePolicyFactory.setNamingStrategy(new MicrometerRoutePolicyNamingStrategy() {

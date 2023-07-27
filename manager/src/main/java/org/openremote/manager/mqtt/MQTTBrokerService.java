@@ -289,7 +289,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-                .routeId("UserPersistenceChanges")
+                .routeId("Persistence-UserAndAssetLink")
                 .filter(body().isInstanceOf(PersistenceEvent.class))
                 .process(exchange -> {
                     PersistenceEvent<?> persistenceEvent = (PersistenceEvent<?>) exchange.getIn().getBody(PersistenceEvent.class);

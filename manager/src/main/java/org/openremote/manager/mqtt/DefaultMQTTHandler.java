@@ -113,7 +113,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
                 // Route messages destined for MQTT clients
                 from(CLIENT_OUTBOUND_QUEUE)
-                    .routeId("DefaultMQTTHandlerOutbound")
+                    .routeId("ClientOutbound-DefaultMQTTHandler")
                     .filter(and(
                         header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_MQTT),
                         body().isInstanceOf(TriggeredEventSubscription.class)

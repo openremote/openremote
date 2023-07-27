@@ -91,9 +91,9 @@ public class MessageBrokerService implements ContainerService {
                     10,
                     -1);
 
-                if (meterRegistry != null) {
-                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name("instrumented-delegate-"));
-                }
+//                if (meterRegistry != null) {
+//                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name("instrumented-delegate-"));
+//                }
 
                 return executorService;
             }
@@ -109,11 +109,12 @@ public class MessageBrokerService implements ContainerService {
                     profile.getMaxQueueSize()
                 );
 
-                if (meterRegistry != null) {
-                    String name = getExecutorName("Pool", threadFactory);
-                    name = "Pool".equals(name) ? profile.getId() : name;
-                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
-                }
+// Disabled as not very useful for SEDA components
+//                if (meterRegistry != null) {
+//                    String name = getExecutorName("Pool", threadFactory);
+//                    name = "Pool".equals(name) ? profile.getId() : name;
+//                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
+//                }
 
                 return executorService;
             }
@@ -125,11 +126,12 @@ public class MessageBrokerService implements ContainerService {
                     profile.getPoolSize()
                 );
 
-                if (meterRegistry != null) {
-                    String name = getExecutorName("", threadFactory);
-                    name = "ScheduledPool".equals(name) ? profile.getId() : name;
-                    scheduledExecutorService = new TimedScheduledExecutorService(meterRegistry, scheduledExecutorService, name(name), Tags.empty());
-                }
+// Disabled as not very useful for SEDA components
+//                if (meterRegistry != null) {
+//                    String name = getExecutorName("", threadFactory);
+//                    name = "ScheduledPool".equals(name) ? profile.getId() : name;
+//                    scheduledExecutorService = new TimedScheduledExecutorService(meterRegistry, scheduledExecutorService, name(name), Tags.empty());
+//                }
 
                 return scheduledExecutorService;
             }

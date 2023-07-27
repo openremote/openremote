@@ -18,6 +18,7 @@ import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
 import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.rules.RulesService.OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS
 import static org.openremote.manager.rules.RulesService.OR_RULES_QUICK_FIRE_MILLIS
+import static org.openremote.model.Container.OR_METRICS_ENABLED
 
 trait ManagerContainerTrait extends ContainerTrait {
 
@@ -31,7 +32,8 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (MQTTBrokerService.MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS): "10",
                 (OR_RULES_QUICK_FIRE_MILLIS): "500",
                 (OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
-                (TIMER_CLOCK_TYPE)        : PSEUDO.name()
+                (TIMER_CLOCK_TYPE)        : PSEUDO.name(),
+                (OR_METRICS_ENABLED):  "false"
         ]
     }
 

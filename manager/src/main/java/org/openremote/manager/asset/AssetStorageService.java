@@ -378,13 +378,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public void configure() throws Exception {
         // If any asset was modified in the database, publish events
         from(PERSISTENCE_TOPIC)
-            .routeId("AssetPersistenceChanges")
+            .routeId("Persistence-Asset")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
 
         // React if a client wants to read assets and attributes
         from(CLIENT_INBOUND_QUEUE)
-            .routeId("FromClientReadRequests")
+            .routeId("ClientInbound-Query")
             .filter(body().isInstanceOf(HasAssetQuery.class))
             .process(exchange -> {
                 HasAssetQuery hasAssetQuery = exchange.getIn().getBody(HasAssetQuery.class);

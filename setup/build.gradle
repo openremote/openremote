@@ -30,6 +30,7 @@ task load1Jar(type: Jar) {
 // Use demo setup sourceset by default for jar
 task installDist(type: Copy) {
     def setupTask = getTasksByName(project.hasProperty("SETUP_JAR") ? "${project.getProperties().get("SETUP_JAR")}Jar" : "demoJar", false)[0] as org.gradle.jvm.tasks.Jar
+    System.out.println(setupTask.name)
     dependsOn setupTask
     dependsOn resolveTask(":manager:installDist")
     from setupTask.archiveFile

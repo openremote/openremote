@@ -108,7 +108,7 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
     @Override
     public void configure() throws Exception {
         from(CLIENT_INBOUND_QUEUE)
-            .routeId("FromClientSimulatorRequests")
+            .routeId("ClientInbound-ReadSimulatorState")
             .filter(body().isInstanceOf(RequestSimulatorState.class))
             .process(exchange -> {
                 RequestSimulatorState event = exchange.getIn().getBody(RequestSimulatorState.class);

@@ -94,7 +94,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-                .routeId("ForecastSolarAssetPersistenceChanges")
+                .routeId("Persistence-ForecastSolar")
                 .filter(isPersistenceEventForEntityType(ElectricityProducerSolarAsset.class))
                 .filter(isNotForGateway(gatewayService))
                 .process(exchange -> processAssetChange((PersistenceEvent<ElectricityProducerSolarAsset>) exchange.getIn().getBody(PersistenceEvent.class)));

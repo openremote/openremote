@@ -146,7 +146,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected long quickFireMillis;
     protected boolean initDone;
     protected boolean startDone;
-    protected boolean metricsEnabled;
+    protected MeterRegistry meterRegistry;
 
     @Override
     public int getPriority() {
@@ -176,8 +176,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             return;
         }
 
-        MeterRegistry meterRegistry = container.getMeterRegistry();
-        metricsEnabled = meterRegistry != null;
+        meterRegistry = container.getMeterRegistry();
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
 
@@ -237,7 +236,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     public void configure() throws Exception {
         // If any ruleset was modified in the database then check its' status and undeploy, deploy, or update it
         from(PERSISTENCE_TOPIC)
-            .routeId("RulesetPersistenceChanges")
+            .routeId("Persistence-Ruleset")
             .filter(isPersistenceEventForEntityType(Ruleset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
@@ -245,10 +244,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 processRulesetChange((Ruleset) persistenceEvent.getEntity(), persistenceEvent.getCause());
             });
 
-        // If any realm was modified in the database then check its' status and undeploy, deploy or update any
+        // If any realm was modified in the database then check its status and undeploy, deploy or update any
         // associated rulesets
         from(PERSISTENCE_TOPIC)
-            .routeId("RuleEngineRealmChanges")
+            .routeId("Persistence-RulesRealm")
             .filter(isPersistenceEventForEntityType(Realm.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
@@ -259,7 +258,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         // If any asset was modified in the database, detect changed attributes
         from(PERSISTENCE_TOPIC)
-            .routeId("RuleEngineAssetChanges")
+            .routeId("Persistence-RulesAsset")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
                 PersistenceEvent<Asset<?>> persistenceEvent = (PersistenceEvent<Asset<?>>) exchange.getIn().getBody(PersistenceEvent.class);
@@ -648,7 +647,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     assetPredictedDatapointService,
                     new RulesEngineId<>(),
                     locationPredicateRulesConsumer,
-                    metricsEnabled
+                    meterRegistry
                 );
             }
         }
@@ -690,7 +689,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetPredictedDatapointService,
                         new RulesEngineId<>(realm),
                         locationPredicateRulesConsumer,
-                        metricsEnabled
+                        meterRegistry
                     ));
         }
 
@@ -767,7 +766,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetPredictedDatapointService,
                         new RulesEngineId<>(ruleset.getRealm(), assetId),
                         locationPredicateRulesConsumer,
-                        metricsEnabled
+                        meterRegistry
                     ));
         }
 

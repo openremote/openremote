@@ -134,7 +134,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-            .routeId("ForecastConfigurationPersistenceChanges")
+            .routeId("Persistence-ForecastConfiguration")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {

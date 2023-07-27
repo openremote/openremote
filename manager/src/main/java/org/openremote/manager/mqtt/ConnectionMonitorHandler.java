@@ -93,7 +93,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
                 @Override
                 public void configure() throws Exception {
                     from(PERSISTENCE_TOPIC)
-                        .routeId("MQTTConnectionMonitorHandlerQueue")
+                        .routeId("Persistence-MQTTConnectedAttributes")
                         .filter(isPersistenceEventForEntityType(Asset.class))
                         .filter(isNotForGateway(gatewayService))
                         .process(exchange -> {
