@@ -17,6 +17,8 @@
     <string name="download_completed">Download completed</string>
     <string name="background_location_alert_title">Background location needed</string>
     <string name="background_location_alert_body">In order to receive these notifications when the app is running in the background, background location access is needed.\nNo location history is stored, only the latest location is saved.\nDo you want to enabled it in the settings?</string>
+    <string name="push_notification_alert_title">Push notifications needed</string>
+    <string name="push_notification_alert_message">In order to receive these notifications, push notifications need to be enabled.\nDo you want to enabled it in the settings?</string>
     <string name="camera_needed_alert_title">Camera access needed</string>
     <string name="camera_needed_alert_body">In order to scan QR codes, access to the devices camera is needed.</string>
     <string name="location_background_disabled_title">Background location disabled</string>
