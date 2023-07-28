@@ -376,11 +376,11 @@ export class OrMwcTable extends LitElement {
                 <div class="mdc-data-table__header-cell-label">
                     ${title}
                 </div>
-                <button class="mdc-icon-button material-icons mdc-data-table__sort-icon-button"
-                        aria-label="Sort by dessert" aria-describedby="dessert-status-label">
+                <button class="mdc-icon-button material-icons"
+                        aria-label="Sort by ${title}" aria-describedby="${title}-status-label">
                     <or-icon icon="${ this.sortDirection == 'ASC' ? "arrow-up" : "arrow-down"}"  @click="${() => this.sortRows(index)}"></or-icon>
                 </button>
-                <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="dessert-status-label">
+                <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="${title}-status-label">
                 </div>
             </div>
             <!--
