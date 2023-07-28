@@ -168,6 +168,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             .to(CLIENT_INBOUND_QUEUE)
             .asyncSend();
         connectionSubscriberInfoMap.remove(getConnectionIDString(connection));
+        authorizationCache.invalidate(getConnectionIDString(connection));
     }
 
     @Override
@@ -316,7 +317,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        String cacheKey = securityContext.getRealm() + securityContext.getToken().getSubject();
+        String cacheKey = getConnectionIDString(connection);
 
         // Check cache
         ConcurrentHashSet<String> act = authorizationCache.getIfPresent(cacheKey);
