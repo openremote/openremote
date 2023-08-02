@@ -48,4 +48,5 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation platform('com.google.firebase:firebase-bom:32.2.0')
     implementation 'com.google.firebase:firebase-messaging-ktx'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 }
