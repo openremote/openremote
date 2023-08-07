@@ -1,5 +1,6 @@
 package org.openremote.test.notification
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import jakarta.mail.Message
@@ -15,6 +16,7 @@ import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.web.ManagerWebService
+import org.openremote.model.asset.impl.ConsoleAsset
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
@@ -56,6 +58,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
         def consoleResource = (ConsoleResourceImpl)container.getService(ManagerWebService.class).apiSingletons.find {it instanceof ConsoleResourceImpl}
 
         and: "a mock push notification handler"
@@ -326,6 +329,30 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert notificationTargetIds.contains(testuser3Console2.id)
         }
 
+        when: "the FCM token is set to null for a console asset"
+        notificationIds.clear()
+        notificationTargetIds.clear()
+        def testUser3Console1Asset = assetStorageService.find(testuser3Console1.id) as ConsoleAsset
+        testUser3Console1Asset.getConsoleProviders().map{it.get(PushNotificationMessage.TYPE)}.get().getData().set("token", null)
+        testUser3Console1Asset = assetStorageService.merge(testUser3Console1Asset)
+
+        then: "the cached FCM token should be removed from the handler"
+        conditions.eventually {
+            assert pushNotificationHandler.consoleFCMTokenMap.get(testUser3Console1Asset.id) == null
+        }
+
+        when: "the admin user sends a notification to a user linked to the console without an FCM token"
+        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser3Id)]
+        advancePseudoClock(1, TimeUnit.HOURS, container)
+        adminNotificationResource.sendNotification(null, notification)
+
+        then: "the notification should have been sent"
+        conditions.eventually {
+            assert notificationIds.size() == 1
+            assert notificationTargetIds.contains(testuser3Console2.id)
+            assert !notificationTargetIds.contains(testuser3Console1.id)
+        }
+
         // -----------------------------------------------
         //    Check notification resource
         // -----------------------------------------------
@@ -343,7 +370,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                         n.deliveredOn == null &&
                         n.acknowledgedOn == null
             }
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 6
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 7
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id).length == 4
         }
 
@@ -461,12 +488,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 .plus(59, ChronoUnit.MINUTES)
 
         advancePseudoClock(ChronoUnit.MILLIS.between(Instant.ofEpochMilli(getClockTimeOf(container)), advancement), TimeUnit.MILLISECONDS, container)
+        notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser3Console2.id)]
         notification.setRepeatFrequency(RepeatFrequency.HOURLY)
         testuser3NotificationResource.sendNotification(null, notification)
 
-        then: "the notifications should have been sent (to testuser3 consoles)"
+        then: "the notification should have been sent to the console"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 1
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 1
         }
 
@@ -475,7 +502,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 1
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 1
         }
 
@@ -484,7 +510,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 2
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 2
         }
 
@@ -494,7 +519,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 2
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 2
         }
 
@@ -504,7 +528,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 3
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 3
         }
 
@@ -515,7 +538,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 3
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 3
         }
 
@@ -525,19 +547,16 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 4
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 4
         }
 
         and: "notifications are retrieved only for the past day only the relevant notifications should have been returned"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000*24), null, null, null, testuser3Console1.id).length == 1
             assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000*24), null, null, null, testuser3Console2.id).length == 1
         }
 
         and: "notifications are retrieved only for the past 40 days only the relevant notifications should have been returned"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000L*24*40), null, null, null, testuser3Console1.id).length == 4
             assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000L*24*40), null, null, null, testuser3Console2.id).length == 4
         }
 
