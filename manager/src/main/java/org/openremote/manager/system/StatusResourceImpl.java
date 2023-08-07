@@ -20,9 +20,6 @@
 package org.openremote.manager.system;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.Counter;
-import org.openremote.container.security.IdentityService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
@@ -31,8 +28,6 @@ import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
