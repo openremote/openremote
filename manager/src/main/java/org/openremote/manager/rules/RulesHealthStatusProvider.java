@@ -27,7 +27,7 @@ import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
 
-public class RulesHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class RulesHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "rules";
     protected RulesService rulesService;

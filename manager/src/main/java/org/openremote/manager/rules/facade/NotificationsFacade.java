@@ -41,6 +41,7 @@ public class NotificationsFacade<T extends Ruleset> extends Notifications {
         this.notificationService = notificationService;
     }
 
+    // TODO: Priority NotificationService.sendNotification can throw ExchangeTimedOutException: The OUT message was not received within: 10000 millis
     public void send(Notification notification) {
         Notification.Source source;
         String sourceId = null;

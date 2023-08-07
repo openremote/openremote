@@ -144,7 +144,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     public void configure() throws Exception {
 
         from(NOTIFICATION_QUEUE)
-                .routeId("NotificationQueueProcessor")
+                .routeId("NotificationQueue")
                 .doTry()
                 .process(exchange -> {
                     Notification notification = exchange.getIn().getBody(Notification.class);

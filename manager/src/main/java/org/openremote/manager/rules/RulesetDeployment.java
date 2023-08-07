@@ -40,18 +40,13 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 
 import javax.script.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static org.openremote.container.concurrent.GlobalLock.withLock;
 
 public class RulesetDeployment {
 
@@ -133,7 +128,7 @@ public class RulesetDeployment {
     final protected Webhooks webhooksFacade;
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
-    final protected List<ScheduledFuture<?>> scheduledRuleActions = new ArrayList<>();
+    final protected List<ScheduledFuture<?>> scheduledRuleActions = Collections.synchronizedList(new ArrayList<>());
     protected RulesetStatus status = RulesetStatus.READY;
     protected Throwable error;
     protected JsonRulesBuilder jsonRulesBuilder;
@@ -252,10 +247,12 @@ public class RulesetDeployment {
      * during execution
      */
     public void stop(RulesFacts facts) {
-        scheduledRuleActions.removeIf(scheduledFuture -> {
-            scheduledFuture.cancel(true);
-            return true;
-        });
+        synchronized (scheduledRuleActions) {
+            scheduledRuleActions.removeIf(scheduledFuture -> {
+                scheduledFuture.cancel(true);
+                return true;
+            });
+        }
 
         if (jsonRulesBuilder != null) {
             jsonRulesBuilder.stop(facts);
@@ -269,14 +266,11 @@ public class RulesetDeployment {
     }
 
     protected void scheduleRuleAction(Runnable action, long delayMillis) {
-        withLock(toString() + "::scheduleRuleAction", () -> {
-            ScheduledFuture<?> future = executorService.schedule(() ->
-                    withLock(toString() + "::scheduledRuleActionFire", () -> {
-                        scheduledRuleActions.removeIf(Future::isDone);
-                        action.run();
-                    }), delayMillis, TimeUnit.MILLISECONDS);
-            scheduledRuleActions.add(future);
-        });
+        ScheduledFuture<?> future = executorService.schedule(() -> {
+            scheduledRuleActions.removeIf(Future::isDone);
+            action.run();
+        }, delayMillis, TimeUnit.MILLISECONDS);
+        scheduledRuleActions.add(future);
     }
 
     protected boolean compileRulesJson(Ruleset ruleset) {

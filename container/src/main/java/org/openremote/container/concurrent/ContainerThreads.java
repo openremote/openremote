@@ -33,7 +33,7 @@ public interface ContainerThreads {
         @Override
         public void rejectedExecution(Runnable runnable, ThreadPoolExecutor threadPoolExecutor) {
             // Log and discard
-            LOG.info("Container thread pool '" + threadPoolExecutor + "' rejected execution of " + runnable.getClass());
+            LOG.info("Container thread pool '" + threadPoolExecutor + "' rejected execution of " + runnable);
             super.rejectedExecution(runnable, threadPoolExecutor);
         }
     };

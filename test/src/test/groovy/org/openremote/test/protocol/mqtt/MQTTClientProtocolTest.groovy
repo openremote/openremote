@@ -46,6 +46,7 @@ import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.NUMBER
 
@@ -107,6 +108,9 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         then: "the linked attributes should be correctly linked"
         conditions.eventually {
             assert !(agentService.getProtocolInstance(agent.id) as MQTTProtocol).protocolMessageConsumers.isEmpty()
+            def connection = brokerService.getConnectionFromClientID(clientId)
+            assert connection != null
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
         }
 
         when: "the attribute referenced in the agent link is updated"

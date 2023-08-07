@@ -25,6 +25,7 @@ import io.netty.channel.ChannelId;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
+import org.apache.activemq.artemis.api.core.SimpleString;
 import org.apache.activemq.artemis.api.core.client.*;
 import org.apache.activemq.artemis.api.core.management.CoreNotificationType;
 import org.apache.activemq.artemis.api.core.management.ManagementHelper;
@@ -36,10 +37,12 @@ import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.remoting.FailureListener;
 import org.apache.activemq.artemis.core.remoting.impl.invm.InVMConnection;
+import org.apache.activemq.artemis.core.security.impl.SecurityStoreImpl;
 import org.apache.activemq.artemis.core.server.ServerSession;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPlugin;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerSessionPlugin;
+import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
@@ -111,6 +114,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
     protected ConcurrentMap<String, RemotingConnection> clientIDConnectionMap = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, RemotingConnection> connectionIDConnectionMap = new ConcurrentHashMap<>();
+    protected ConcurrentMap<String, List<PersistenceEvent<UserAssetLink>>> userAssetLinkChangeMap = new ConcurrentHashMap<>();
     protected Debouncer<String> userAssetDisconnectDebouncer;
     // Stores disconnected connections for a short period to allow last will publishes to be processed
     protected Cache<String, RemotingConnection> disconnectedConnectionCache;
@@ -141,7 +145,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
 
-        userAssetDisconnectDebouncer = new Debouncer<>(executorService, this::processUserAssetLinkChange, debounceMillis);
+        userAssetDisconnectDebouncer = new Debouncer<>(executorService, id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
         disconnectedConnectionCache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
                 .expireAfterWrite(10000, TimeUnit.MILLISECONDS)
@@ -182,21 +186,36 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Configure and start the broker
         Configuration config = new ConfigurationImpl();
         config.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
-        String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port).setParameter("protocols", "MQTT").build().toString();
+        String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port)
+            .setParameter("protocols", "MQTT")
+            .setParameter("allowLinkStealing", "true")
+            .setParameter("defaultMqttSessionExpiryInterval", "0") // Don't support retained sessions
+            .build().toString();
         config.addAcceptorConfiguration("tcp", serverURI);
 
-        // TODO: Make this configurable
-        config.setMaxDiskUsage(-1);
-        config.setSecurityInvalidationInterval(30000);
         config.registerBrokerPlugin(this);
-
-        // Register notification plugin
         config.setWildCardConfiguration(wildcardConfiguration);
+
+        // Force all addresses to aggressively cleanup queues (don't support resumable sessions)
+        config.addAddressSetting(wildcardConfiguration.getAnyWordsString(),
+            new AddressSettings()
+                .setDeadLetterAddress(SimpleString.toSimpleString("ActiveMQ.DLQ"))
+                .setExpiryAddress(SimpleString.toSimpleString("ActiveMQ.expired"))
+                .setAutoDeleteCreatedQueues(true)
+                .setAutoDeleteAddresses(true)
+                // Auto delete MQTT addresses after 1 day as they never get flagged as used so will linger otherwise
+                .setAutoDeleteAddressesSkipUsageCheck(true)
+                .setAutoDeleteAddressesDelay(86400000)
+                .setAutoDeleteQueuesDelay(0)
+                .setAutoDeleteQueuesMessageCount(-1L)
+        );
+
         config.setPersistenceEnabled(false);
 
         // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
-        // Disable auth cache so we can inject RemotingConnection into the subject as a principal otherwise we don't have access to the connection during authorisation so we cannot check topic contains the clientID
-        // Disable caching so we can support auto provisioning sessions without having to reconnect - we need to re-evaluate this and clients should probably send X.509 through to the broker
+        // Cannot use authentication or authorisation cache as auto provisioning MQTT clients will authenticate as anonymous and this is then baked into the created ServerSession and cannot be modified
+        // so all anonymous sessions will use the same username/password for key lookups in the caches - Can possibly use caching if ActiveMQ makes changes and/or we move to using X.509 TLS with ActiveMQ
+        //config.setSecurityInvalidationInterval(600000); // Long cache as we force clear it when needed
         config.setAuthenticationCacheSize(0);
         config.setAuthorizationCacheSize(0);
 
@@ -270,7 +289,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-                .routeId("UserPersistenceChanges")
+                .routeId("Persistence-UserAndAssetLink")
                 .filter(body().isInstanceOf(PersistenceEvent.class))
                 .process(exchange -> {
                     PersistenceEvent<?> persistenceEvent = (PersistenceEvent<?>) exchange.getIn().getBody(PersistenceEvent.class);
@@ -299,6 +318,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     } else if (persistenceEvent.getEntity() instanceof UserAssetLink userAssetLink) {
                         String userID = userAssetLink.getId().getUserId();
                         // Debounce force disconnect check of this user's sessions as there could be many asset links changing
+                        List<PersistenceEvent<UserAssetLink>> changedUserAssetLinks = userAssetLinkChangeMap.computeIfAbsent(userID, id -> Collections.synchronizedList(new ArrayList<>()));
+                        changedUserAssetLinks.add((PersistenceEvent<UserAssetLink>) persistenceEvent);
                         userAssetDisconnectDebouncer.call(userID);
                     }
                 });
@@ -337,26 +358,26 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
                 // TODO: Force delete session (don't allow retained/durable sessions)
 
-                if (exception.getType() == ActiveMQExceptionType.REMOTE_DISCONNECT) {// Seems to be the type for graceful close of connection
-                    // Notify handlers of connection close
-                    LOG.log(DEBUG, () -> "Client connection closed: " + connectionToString(connection));
-                    for (MQTTHandler handler : getCustomHandlers()) {
-                        handler.onDisconnect(connection);
-                    }
-                } else {
-                    // Notify handlers of connection failure
-                    LOG.log(DEBUG, () -> "Client connection failed: " + connectionToString(connection));
-                    for (MQTTHandler handler : getCustomHandlers()) {
-                        handler.onConnectionLost(connection);
-                    }
-                }
-
                 connectionIDConnectionMap.remove(getConnectionIDString(connection));
 
                 if (connection.getClientID() != null) {
                     RemotingConnection remotingConnection = clientIDConnectionMap.remove(connection.getClientID());
                     if (remotingConnection != null) {
                         disconnectedConnectionCache.put(connection.getClientID(), remotingConnection);
+                    }
+                }
+
+                if (exception.getType() == ActiveMQExceptionType.REMOTE_DISCONNECT) {// Seems to be the type for graceful close of connection
+                    // Notify handlers of connection close
+                    LOG.log(DEBUG, () -> "Client disconnected: " + connectionToString(connection));
+                    for (MQTTHandler handler : getCustomHandlers()) {
+                        handler.onDisconnect(connection);
+                    }
+                } else {
+                    // Notify handlers of connection failure
+                    LOG.log(DEBUG, () -> "Client disconnected (failure=" + exception.getMessage() + "): " + connectionToString(connection));
+                    for (MQTTHandler handler : getCustomHandlers()) {
+                        handler.onConnectionLost(connection);
                     }
                 }
             }
@@ -378,7 +399,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         clientIDConnectionMap.put(remotingConnection.getClientID(), remotingConnection);
 
         if (!connectionIDConnectionMap.containsKey(connectionID)) {
-            LOG.log(DEBUG, () -> "Client connection created: " + connectionToString(remotingConnection));
+            LOG.log(DEBUG, () -> "Client connected: " + connectionToString(remotingConnection));
             connectionIDConnectionMap.put(connectionID, remotingConnection);
             for (MQTTHandler handler : getCustomHandlers()) {
                 handler.onConnect(remotingConnection);
@@ -396,7 +417,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
                 String connectionStr = LOG.isLoggable(DEBUG) ? connectionToString(connection) : null;
-                LOG.log(TRACE, "Handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", " + connectionStr);
                 LOG.log(DEBUG, "Client subscribed '" + topicStr + "': " + connectionStr);
                 handler.onSubscribe(connection, topic);
                 break;
@@ -410,7 +430,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
                 String connectionStr = LOG.isLoggable(DEBUG) ? connectionToString(connection) : null;
-                LOG.log(TRACE, "Handler has handled unsubscribe: handler=" + handler.getName() + ", topic=" + topic + ", "  + connectionStr);
                 LOG.log(DEBUG, "Client unsubscribed '" + topicStr + "': " + connectionStr);
                 handler.onUnsubscribe(connection, topic);
                 break;
@@ -422,7 +441,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return customHandlers;
     }
 
-    public void processUserAssetLinkChange(String userID) {
+    public void processUserAssetLinkChange(String userID, List<PersistenceEvent<UserAssetLink>> changes) {
         if (TextUtil.isNullOrEmpty(userID)) {
             return;
         }
@@ -438,7 +457,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             userConnections.forEach(connection -> {
                 for (MQTTHandler handler : customHandlers) {
                     connection.setSubject(subject);
-                    handler.onUserAssetLinksChanged(connection);
+                    handler.onUserAssetLinksChanged(connection, changes);
                 }
             });
         }
@@ -462,6 +481,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected void doForceDisconnect(RemotingConnection connection) {
         LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
         connection.disconnect(false);
+        ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
 
     public boolean disconnectSession(String sessionID) {

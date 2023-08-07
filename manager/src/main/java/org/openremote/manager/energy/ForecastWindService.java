@@ -128,7 +128,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-                .routeId("ForecastWindAssetPersistenceChanges")
+                .routeId("Persistence-ForecastWind")
                 .filter(isPersistenceEventForEntityType(ElectricityProducerWindAsset.class))
                 .filter(isNotForGateway(gatewayService))
                 .process(exchange -> processAssetChange((PersistenceEvent<ElectricityProducerWindAsset>) exchange.getIn().getBody(PersistenceEvent.class)));

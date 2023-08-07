@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.rules;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
@@ -43,6 +46,7 @@ import org.openremote.model.rules.*;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +75,8 @@ public class RulesEngine<T extends Ruleset> {
      */
     public static final class AssetStateLocationPredicates {
 
-        protected final String assetId;
-        protected final Set<GeofencePredicate> locationPredicates;
+        final String assetId;
+        final Set<GeofencePredicate> locationPredicates;
 
         public AssetStateLocationPredicates(String assetId, Set<GeofencePredicate> locationPredicates) {
             this.assetId = assetId;
@@ -110,8 +114,8 @@ public class RulesEngine<T extends Ruleset> {
     final protected HistoricDatapoints historicFacade;
     final protected AssetLocationPredicateProcessor assetLocationPredicatesConsumer;
 
-    final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
-    final protected Map<Long, RulesetStatus> deploymentStatusMap = new LinkedHashMap<>();
+    final protected Map<Long, RulesetDeployment> deployments = new ConcurrentHashMap<>();
+    final protected Map<Long, RulesetStatus> deploymentStatusMap = new ConcurrentHashMap<>();
     final protected RulesFacts facts;
     final protected AbstractRulesEngine engine;
 
@@ -123,6 +127,7 @@ public class RulesEngine<T extends Ruleset> {
 
     // Only used to optimize toString(), contains the details of this engine
     protected String deploymentInfo;
+    protected Timer rulesFiringTimer;
 
     public RulesEngine(TimerService timerService,
                        RulesService rulesService,
@@ -136,7 +141,8 @@ public class RulesEngine<T extends Ruleset> {
                        AssetDatapointService assetDatapointService,
                        AssetPredictedDatapointService assetPredictedDatapointService,
                        RulesEngineId<T> id,
-                       AssetLocationPredicateProcessor assetLocationPredicatesConsumer) {
+                       AssetLocationPredicateProcessor assetLocationPredicatesConsumer,
+                       MeterRegistry meterRegistry) {
         this.timerService = timerService;
         this.rulesService = rulesService;
         this.executorService = executorService;
@@ -189,6 +195,11 @@ public class RulesEngine<T extends Ruleset> {
                 throw ex;
             }
         });
+
+        if (meterRegistry != null) {
+            meterRegistry.gauge("or.rules.facts", Tags.of("type", id.getScope().getSimpleName(), "id", getEngineId()), facts, (facts) -> (double) facts.getFactCount());
+            rulesFiringTimer = meterRegistry.timer("or.rules.firing", Tags.of("type", id.getScope().getSimpleName(), "id", getEngineId()));
+        }
     }
 
     public RulesEngineId<T> getId() {
@@ -385,6 +396,7 @@ public class RulesEngine<T extends Ruleset> {
         if (!running) {
             return;
         }
+        running = false;
         LOG.info("Stopping: " + this);
         if (fireTimer != null) {
             fireTimer.cancel(true);
@@ -396,13 +408,16 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         deployments.values().forEach(this::stopRuleset);
-        running = false;
 
-        if (!systemShutdownInProgress && assetLocationPredicatesConsumer != null) {
+        if (systemShutdownInProgress) {
+            deployments.clear();
+            return;
+        }
+
+        if (assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, null);
         }
 
-        updateDeploymentInfo();
         publishRulesEngineStatus();
     }
 
@@ -425,10 +440,6 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected synchronized void stopRuleset(RulesetDeployment deployment) {
-        if (!running) {
-            return;
-        }
-
         if (deployment.getStatus() == DEPLOYED) {
             deployment.stop(facts);
             deployment.setStatus(READY);
@@ -488,8 +499,25 @@ public class RulesEngine<T extends Ruleset> {
 
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
-        long executionTotalMillis = 0L;
+        long executionTotalMillis = timerService.getCurrentTimeMillis();
 
+        if (rulesFiringTimer != null) {
+            rulesFiringTimer.record(this::doFire);
+        } else {
+            doFire();
+        }
+
+        trackLocationPredicates(false);
+        executionTotalMillis = (timerService.getCurrentTimeMillis() - executionTotalMillis);
+
+        if (executionTotalMillis > 500) {
+            LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
+        } else {
+            LOG.fine("Rules firing took " + executionTotalMillis + "ms on: " + this);
+        }
+    }
+
+    protected void doFire() {
         for (RulesetDeployment deployment : deployments.values()) {
             try {
 
@@ -510,7 +538,6 @@ public class RulesEngine<T extends Ruleset> {
                     long startTimestamp = timerService.getCurrentTimeMillis();
                     engine.fire(deployment.getRules(), facts);
                     long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
-                    executionTotalMillis += executionMillis;
                     LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
                 } else {
                     LOG.fine("Rules deployment '" + deployment.getName() + "' skipped as status is: " + status);
@@ -533,14 +560,16 @@ public class RulesEngine<T extends Ruleset> {
                 lastFireTimestamp = timerService.getCurrentTimeMillis();
             }
         }
+    }
 
-        trackLocationPredicates(false);
-
-        if (executionTotalMillis > 500) {
-            LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
-        } else {
-            LOG.finer("Rules firing took " + executionTotalMillis + "ms on: " + this);
+    protected String getEngineId() {
+        if (id.scope == GlobalRuleset.class) {
+            return "";
         }
+        if (id.scope == RealmRuleset.class) {
+            return id.realm;
+        }
+        return id.realm + ":" + id.assetId;
     }
 
     protected synchronized void notifyAssetStatesChanged(AssetStateChangeEvent event) {
@@ -643,6 +672,10 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected void publishRulesetStatus(RulesetDeployment deployment) {
+        if (!running) {
+            return;
+        }
+
         Ruleset ruleset = deployment.ruleset;
         RulesetStatus previousStatus = deploymentStatusMap.get(ruleset.getId());
         String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
