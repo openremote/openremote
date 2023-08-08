@@ -43,10 +43,7 @@ import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.NameValuePredicate;
-import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.query.filter.*;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -135,7 +132,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 .select(new AssetQuery.Select().attributes(ConsoleAsset.CONSOLE_PROVIDERS.getName()))
                 .types(ConsoleAsset.class)
                 .attributes(
-                    new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))
+                    new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, new ValueEmptyPredicate().negate(true), false, new NameValuePredicate.Path(PushNotificationMessage.TYPE, "data", "token"))
                 ))
             .stream()
             .map(asset -> (ConsoleAsset) asset)
@@ -171,12 +168,11 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     @Override
     public boolean isMessageValid(AbstractNotificationMessage message) {
 
-        if (!(message instanceof PushNotificationMessage)) {
+        if (!(message instanceof PushNotificationMessage pushMessage)) {
             LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
             return false;
         }
 
-        PushNotificationMessage pushMessage = (PushNotificationMessage) message;
         if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
             LOG.warning("Invalid message: must either contain a title and/or data");
             return false;
@@ -213,6 +209,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                         .filter(target -> {
                             boolean isConsoleAsset = consoleAssets.contains(target.getId());
                             if (isConsoleAsset) {
+                                // Don't filter out consoles without FCM here so we can record the failure in the actual send
                                 mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
                             }
                             return !isConsoleAsset;
@@ -227,7 +224,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 AssetQuery assetQuery = new AssetQuery()
                     .select(new AssetQuery.Select().excludeAttributes())
                     .types(ConsoleAsset.class)
-                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE)));
+                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, new ValueEmptyPredicate().negate(true), false, new NameValuePredicate.Path(PushNotificationMessage.TYPE, "data", "token")));
 
                 switch (targetType) {
                     case REALM ->
@@ -242,6 +239,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                             assetStorageService.findUserAssetLinks(null, null, targetId)
                                 .stream()
                                 .map(ual -> ual.getId().getUserId())
+                                .collect(Collectors.toSet())
                                 .toArray(String[]::new));
                 }
 
@@ -316,7 +314,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         String fcmToken = consoleFCMTokenMap.get(targetId);
 
         if (TextUtil.isNullOrEmpty(fcmToken)) {
-            LOG.warning("No FCM token found for console: " + targetId);
+            LOG.finer("No FCM token found for console: " + targetId);
             return NotificationSendResult.failure("No FCM token found for console: " + targetId);
         }
 
@@ -397,15 +395,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         boolean dataOnly = TextUtil.isNullOrEmpty(pushMessage.getTitle());
 
         switch (pushMessage.getTargetType()) {
-            case DEVICE:
-                builder.setToken(pushMessage.getTarget());
-                break;
-            case TOPIC:
-                builder.setTopic(pushMessage.getTarget());
-                break;
-            case CONDITION:
-                builder.setCondition(pushMessage.getTarget());
-                break;
+            case DEVICE -> builder.setToken(pushMessage.getTarget());
+            case TOPIC -> builder.setTopic(pushMessage.getTarget());
+            case CONDITION -> builder.setCondition(pushMessage.getTarget());
         }
 
         AndroidConfig.Builder androidConfigBuilder = AndroidConfig.builder();
@@ -491,7 +483,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         return asset.getConsoleProviders().flatMap(consoleProviders ->
             Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
                 .map(ConsoleProvider::getData)
-                .map(data -> data.get("token") != null ? data.get("token").asText() : null));
+                .map(data -> data.get("token") != null && !data.get("token").isNull() && !data.get("token").asText().isEmpty() ? data.get("token").asText() : null));
     }
 
     protected void processConsoleAssetChange(ConsoleAsset asset, PersistenceEvent<ConsoleAsset> persistenceEvent) {
@@ -501,11 +493,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
 
         switch (persistenceEvent.getCause()) {
-
-            case CREATE:
-            case UPDATE:
-                getFcmToken(asset).ifPresent(token -> consoleFCMTokenMap.put(asset.getId(), token));
-                break;
+            case CREATE, UPDATE -> getFcmToken(asset).ifPresent(token -> consoleFCMTokenMap.put(asset.getId(), token));
         }
     }
 
