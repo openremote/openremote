@@ -155,13 +155,7 @@ trait ContainerTrait {
                         def assetEngines = new HashSet<RulesEngine>(rulesService.assetEngines.values())
                         LOG.info("Purging ${assetEngines.size()} asset engine(s)")
                         assetEngines.forEach {
-                            it.stop(true)
-                            while (!it.deployments.isEmpty()) {
-                                if (counter++ > 20) {
-                                    throw new IllegalStateException("Failed to stop asset engine: " + it.id)
-                                }
-                                Thread.sleep(100)
-                            }
+                            it.stop()
                             rulesService.assetEngines.values().remove(it)
                         }
                         def assetRulesets = getRulesets(AssetRuleset.class)
@@ -172,13 +166,7 @@ trait ContainerTrait {
                         def realmEngines = new HashSet<RulesEngine>(rulesService.realmEngines.values())
                         LOG.info("Purging ${realmEngines.size()} realm engine(s)")
                         realmEngines.forEach {
-                            it.stop(true)
-                            while (!it.deployments.isEmpty()) {
-                                if (counter++ > 20) {
-                                    throw new IllegalStateException("Failed to stop realm engine: " + it.id)
-                                }
-                                Thread.sleep(100)
-                            }
+                            it.stop()
                             rulesService.realmEngines.values().remove(it)
                         }
                         def realmRulesets = getRulesets(RealmRuleset.class)
@@ -189,13 +177,7 @@ trait ContainerTrait {
                         def globalEngine = rulesService.globalEngine
                         if (globalEngine != null) {
                             LOG.info("Purging global engine")
-                            globalEngine.stop(true)
-                            while (!globalEngine.deployments.isEmpty()) {
-                                if (counter++ > 20) {
-                                    throw new IllegalStateException("Failed to stop global engine: " + globalEngine.id)
-                                }
-                                Thread.sleep(100)
-                            }
+                            globalEngine.stop()
                             rulesService.globalEngine = null
                         }
                         def globalRulesets = getRulesets(GlobalRuleset.class)

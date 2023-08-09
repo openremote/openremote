@@ -43,7 +43,6 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
-import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -226,7 +225,7 @@ public class RulesEngine<T extends Ruleset> {
 
     public boolean isError() {
         for (RulesetDeployment deployment : deployments.values()) {
-            if (deployment.isError() || deployment.getError() instanceof RulesLoopException) {
+            if (deployment.isError()) {
                 return true;
             }
         }
@@ -256,13 +255,6 @@ public class RulesEngine<T extends Ruleset> {
         return null;
     }
 
-    /**
-     * @return <code>true</code> if all rulesets are not in an error state.
-     */
-    public boolean canStart() {
-        return deployments.values().stream().noneMatch(rd -> rd.getStatus() == COMPILATION_ERROR && !rd.isContinueOnError());
-    }
-
     public void addRuleset(T ruleset) {
 
         // Check for previous version of this ruleset
@@ -275,39 +267,10 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-
         deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, historicFacade, predictedFacade);
-        boolean compiled;
-
-        try {
-            deployment.init();
-
-            if (TextUtil.isNullOrEmpty(ruleset.getRules())) {
-                LOG.finest("Ruleset is empty so no rules to deploy: " + ruleset.getName());
-                deployment.setStatus(EMPTY);
-                publishRulesetStatus(deployment);
-            } else if (!ruleset.isEnabled()) {
-                LOG.finest("Ruleset is disabled: " + ruleset.getName());
-                deployment.setStatus(DISABLED);
-                publishRulesetStatus(deployment);
-            } else {
-                compiled = deployment.compile();
-
-                if (!compiled) {
-                    LOG.log(Level.SEVERE, "Ruleset compilation error: " + ruleset.getName(), deployment.getError());
-                    deployment.setStatus(COMPILATION_ERROR);
-                    publishRulesetStatus(deployment);
-                } else if (running) {
-                    startRuleset(deployment);
-                }
-            }
-        } catch (IllegalStateException e) {
-            LOG.log(Level.WARNING, e.getMessage());
-            deployment.setStatus(VALIDITY_PERIOD_ERROR);
-            publishRulesetStatus(deployment);
-        }
-
+        deployment.init();
         deployments.put(ruleset.getId(), deployment);
+        publishRulesetStatus(deployment);
         updateDeploymentInfo();
 
         if (wasRunning) {
@@ -322,19 +285,19 @@ public class RulesEngine<T extends Ruleset> {
         RulesetDeployment deployment = deployments.get(ruleset.getId());
 
         if (deployment == null) {
-            LOG.finest("Ruleset cannot be retracted as it was never deployed: " + ruleset);
-            return deployments.size() == 0;
+            LOG.fine("Ruleset cannot be retracted as it was never deployed: " + ruleset);
+        } else {
+            boolean wasRunning = this.running;
+            stop();
+            stopRuleset(deployment);
+            deployments.values().remove(deployment);
+            updateDeploymentInfo();
+            if (wasRunning && !deployments.isEmpty()) {
+                start();
+            }
         }
 
-        stopRuleset(deployment);
-
-        deployment.setStatus(REMOVED);
-        publishRulesetStatus(deployment);
-        deployments.remove(ruleset.getId());
-        updateDeploymentInfo();
-        start();
-
-        return deployments.size() == 0;
+        return deployments.isEmpty();
     }
 
     public void start() {
@@ -347,8 +310,10 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        if (!canStart()) {
-            LOG.info("Cannot start rules engine one or more rulesets in an error state");
+        boolean canAnyStart = deployments.values().stream().noneMatch(RulesetDeployment::canStart);
+
+        if (canAnyStart) {
+            LOG.info("Cannot start rules engine as no rulesets are able to be started");
             return;
         }
 
@@ -389,10 +354,6 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public void stop() {
-        stop(false);
-    }
-
-    public void stop(boolean systemShutdownInProgress) {
         if (!running) {
             return;
         }
@@ -407,12 +368,7 @@ public class RulesEngine<T extends Ruleset> {
             statsTimer = null;
         }
 
-        deployments.values().forEach(this::stopRuleset);
-
-        if (systemShutdownInProgress) {
-            deployments.clear();
-            return;
-        }
+        new HashSet<>(deployments.values()).forEach(this::stopRuleset);
 
         if (assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, null);
@@ -426,23 +382,13 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        RulesetStatus status = deployment.getStatus();
-
-        if (status == COMPILATION_ERROR || status == DISABLED || status == EXPIRED) {
-            LOG.finest("Ruleset '" + deployment.getName() + "': status=" + status);
+        if (deployment.start(facts)) {
             publishRulesetStatus(deployment);
-            return;
         }
-
-        deployment.setStatus(DEPLOYED);
-        deployment.start(facts);
-        publishRulesetStatus(deployment);
     }
 
     protected synchronized void stopRuleset(RulesetDeployment deployment) {
-        if (deployment.getStatus() == DEPLOYED) {
-            deployment.stop(facts);
-            deployment.setStatus(READY);
+        if (deployment.stop(facts)) {
             publishRulesetStatus(deployment);
         }
     }
@@ -549,7 +495,6 @@ public class RulesEngine<T extends Ruleset> {
                 deployment.setError(ex);
                 publishRulesetStatus(deployment);
 
-                // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
                 if (ex instanceof RulesLoopException || !deployment.ruleset.isContinueOnError()) {
                     stop();
                     break;

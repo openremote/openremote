@@ -348,13 +348,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             }
         }
 
-        assetEngines.forEach((assetId, rulesEngine) -> rulesEngine.stop(true));
+        assetEngines.forEach((assetId, rulesEngine) -> rulesEngine.stop());
         assetEngines.clear();
-        realmEngines.forEach((realm, rulesEngine) -> rulesEngine.stop(true));
+        realmEngines.forEach((realm, rulesEngine) -> rulesEngine.stop());
         realmEngines.clear();
 
         if (globalEngine != null) {
-            globalEngine.stop(true);
+            globalEngine.stop();
             globalEngine = null;
         }
 
@@ -663,7 +663,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
 
         if (globalEngine.removeRuleset(ruleset)) {
-            globalEngine.stop();
             globalEngine = null;
         }
     }
@@ -705,7 +704,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
 
         if (rulesEngine.removeRuleset(ruleset)) {
-            rulesEngine.stop();
             realmEngines.remove(ruleset.getRealm());
         }
     }
@@ -781,7 +779,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
 
         if (rulesEngine.removeRuleset(ruleset)) {
-            rulesEngine.stop();
             assetEngines.remove(ruleset.getAssetId());
         }
     }
