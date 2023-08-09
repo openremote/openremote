@@ -158,7 +158,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             // Get MQTT topic from address
             topic = Topic.fromAddress(address, brokerService.getWildcardConfiguration());
         } catch (IllegalArgumentException e) {
-            LOG.log(Level.INFO, "Invalid topic provided by client '" + address, e);
+            LOG.log(Level.FINE, "Invalid topic provided by client '" + address, e);
             return false;
         }
 
@@ -166,7 +166,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         String topicClientID = MQTTHandler.topicClientID(topic);
 
         if (topicClientID == null) {
-            LOG.info("Client ID not found but it must be included as the second token in the topic: topic=" + topic);
+            LOG.fine("Client ID not found but it must be included as the second token in the topic: topic=" + topic);
             return false;
         }
 

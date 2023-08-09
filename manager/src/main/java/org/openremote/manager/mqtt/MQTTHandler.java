@@ -36,15 +36,18 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
+import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.UserAssetLink;
 
 import javax.security.auth.Subject;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.System.Logger.Level.WARNING;
+import static java.lang.System.Logger.Level.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
 /**
@@ -101,15 +104,17 @@ public abstract class MQTTHandler {
     public void start(Container container) throws Exception {
         Set<String> publishListenerTopics = getPublishListenerTopics();
         if (publishListenerTopics != null) {
-            publishListenerTopics.forEach(this::addPublishConsumer);
+            for (String publishListenerTopic : publishListenerTopics) {
+                addPublishConsumer(publishListenerTopic);
+            }
         }
     }
 
-    protected void addPublishConsumer(String topic) {
+    protected void addPublishConsumer(String topic) throws Exception {
         try {
             getLogger().info("Adding publish consumer for topic '" + topic + "': handler=" + getName());
             String coreTopic = MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, mqttBrokerService.wildcardConfiguration);
-            mqttBrokerService.internalSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.ANYCAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
+            mqttBrokerService.internalSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.MULTICAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
             ClientConsumer consumer = mqttBrokerService.internalSession.createConsumer(coreTopic);
             consumer.setMessageHandler(message -> {
                 Topic publishTopic = Topic.parse(MQTTUtil.convertCoreAddressToMqttTopicFilter(message.getAddress(), mqttBrokerService.wildcardConfiguration));
@@ -117,7 +122,7 @@ public abstract class MQTTHandler {
                 RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
 
                 if (connection == null) {
-                    LOG.log(WARNING, "Failed to find connection for connected client so dropping publish to topic '" + topic + "': clientID=" +  clientID);
+                    LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
                     return;
                 }
 
@@ -126,6 +131,7 @@ public abstract class MQTTHandler {
             });
         } catch (ActiveMQException e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
+            throw e;
         }
     }
 
@@ -218,7 +224,7 @@ public abstract class MQTTHandler {
      * Called when {@link org.openremote.model.asset.UserAssetLink}s for a restricted user are changed and that user
      * has an active connection (subject can be accessed from the connection).
      */
-    public void onUserAssetLinksChanged(RemotingConnection connection) {
+    public void onUserAssetLinksChanged(RemotingConnection connection, List<PersistenceEvent<UserAssetLink>> changes) {
     }
 
     /**

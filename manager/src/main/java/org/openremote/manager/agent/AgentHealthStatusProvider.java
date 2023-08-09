@@ -29,7 +29,7 @@ import org.openremote.model.util.ValueUtil;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class AgentHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class AgentHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "agents";
     protected AgentService agentService;
@@ -103,7 +103,7 @@ public class AgentHealthStatusProvider implements HealthStatusProvider, Containe
             objectValue.set(agent.getId(), agentValue);
         }
 
-        objectValue.put("totalAgents", agentService.agentMap.size());
+        objectValue.put("totalAgents", agentService.getAgents().size());
         objectValue.put("connectedAgents", connectedCount.get());
         objectValue.put("errorAgents", errorCount.get());
         objectValue.put("disabledAgents", disabledCount.get());

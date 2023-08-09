@@ -160,10 +160,10 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     long nextMillis = occurrence.toInstant().toEpochMilli() + offsetMillis;
 
-                    // If occurrence is before requested time then advance the sun calculator to either reset occurrence or requested time (whichever is later)
+                    // If occurrence is before requested time then advance the sun calculator to either reset occurrence or 5 mins before requested time (whichever is later)
                     if (nextMillis < time) {
                         ZonedDateTime resetOccurrence = useRiseTime ? sunTimes.get().getSet() : sunTimes.get().getRise();
-                        sunTimes.set(sunCalculator.on(new Date(Math.max(resetOccurrence.toEpochSecond()*1000, time))).execute());
+                        sunTimes.set(sunCalculator.on(new Date(Math.max(resetOccurrence.toInstant().toEpochMilli(), time - 300000))).execute());
                     }
 
                     return nextMillis;
@@ -172,7 +172,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                 timePredicate = (time) -> {
                     long nextExecute = nextExecuteMillisCalculator.apply(time);
 
-                    if (time >= nextExecute) {
+                    // Next execute must be within a minute of requested time
+                    if (time >= nextExecute && time - nextExecute < 60000) {
                         log(Level.INFO, "Rule condition sun position has triggered at: " + timerService.getCurrentTimeMillis());
                         return true;
                     }

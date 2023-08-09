@@ -17,6 +17,7 @@ import io.openremote.orlib.ORConstants
 import io.openremote.orlib.R
 import io.openremote.orlib.models.ORAlertAction
 import io.openremote.orlib.models.ORAlertButton
+import io.openremote.orlib.ui.NotificationActivity
 import io.openremote.orlib.ui.OrMainActivity
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -165,8 +166,8 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
     ) {
         val pm = packageManager
         val notificationIntent = pm.getLaunchIntentForPackage(packageName)
-        notificationIntent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+        notificationIntent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
         val notificationBuilder = NotificationCompat.Builder(
             this,
@@ -210,7 +211,10 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
         acknowledgement: String?,
         ORAlertAction: ORAlertAction?
     ): PendingIntent {
-        val actionIntent = Intent(this, ORMessagingActionService::class.java)
+        val actionIntent = when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->Intent(this, NotificationActivity::class.java)
+            else -> Intent(this, ORMessagingActionService::class.java)
+        }
         actionIntent.putExtra("notificationId", notificationId)
         actionIntent.putExtra("acknowledgement", acknowledgement)
         actionIntent.action = System.currentTimeMillis().toString()
@@ -221,7 +225,20 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
             actionIntent.putExtra("openInBrowser", ORAlertAction.openInBrowser)
             actionIntent.putExtra("data", ObjectMapper().writeValueAsString(ORAlertAction.data))
         }
-        return PendingIntent.getService(this, 0, actionIntent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.getActivity(
+                this,
+                0,
+                actionIntent,
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
+        } else {
+            PendingIntent.getService(
+                this,
+                0,
+                actionIntent,
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
     }
 
     companion object {

@@ -104,6 +104,11 @@ public class EventSubscriptions {
         }
         LOG.finest("Cancel subscription for session '" + sessionKey + "': " + subscription);
         SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
+
+        if (sessionSubscriptions == null) {
+            return;
+        }
+
         if (!TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
             sessionSubscriptions.cancelById(subscription.getSubscriptionId());
         } else {
@@ -121,6 +126,9 @@ public class EventSubscriptions {
         }
     }
 
+    /**
+     * Used in {@link ClientEventService#PUBLISH_QUEUE}
+     */
     @SuppressWarnings({"unchecked", "unused"})
     public <T extends SharedEvent> List<Message> splitForSubscribers(Exchange exchange) {
         List<Message> messageList = new ArrayList<>();
