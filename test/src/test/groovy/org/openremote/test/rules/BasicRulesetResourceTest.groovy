@@ -142,6 +142,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
+            assert rulesService.globalEngine != null
             def deployment = rulesService.globalEngine.deployments.get(rulesetId)
             assert deployment == null
         }

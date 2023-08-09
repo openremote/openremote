@@ -101,6 +101,7 @@ services:
       - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
       - "${OR_SSL_PORT:-443}:443" # HTTPS /auth directs to keycloak and other paths direct to manager
       - "8883:8883" # MQTTS
+      - "127.0.0.1:8404:8404" # Localhost metrics access
 
   # The OpenRemote Manager
   manager:
@@ -125,6 +126,7 @@ services:
     #  - "8080:8080" # Web server port
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
+    #  - "127.0.0.1:8405:8404" # Localhost metrics access
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -286,6 +288,11 @@ services:
       # processing push notifications) and will therefore fail silently until the user logs in again.
       OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: ${OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES:-2628000}
 
+      # Enable/disable Prometheus metrics collection
+      OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
+      # Web server port used to host metrics endpoint
+      OR_METRICS_PORT: ${OR_METRICS_PORT:-8404}
+
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # OR_DATA_POINTS_MAX_AGE_DAYS = 30
@@ -312,8 +319,8 @@ services:
   #  -Dcom.sun.management.jmxremote.rmi.port=8085
   #  -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
 
-# Custom JVM tool options (for remote debugging)
-#JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n'
+  # Custom JVM tool options (for remote debugging)
+  #JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:8000,server=y,suspend=n'
 
   # Keycloak identity provider
   keycloak:

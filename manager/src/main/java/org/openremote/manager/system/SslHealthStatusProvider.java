@@ -39,7 +39,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 
-public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider, ContainerService {
+public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider {
 
     public static final String NAME = "ssl";
     protected static final Logger LOG = Logger.getLogger(SslHealthStatusProvider.class.getName());

@@ -28,7 +28,7 @@ import org.openremote.model.util.ValueUtil;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 
-public class SystemHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class SystemHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "system";
 

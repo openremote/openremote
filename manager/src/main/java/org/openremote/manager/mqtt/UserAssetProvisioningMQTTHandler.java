@@ -78,7 +78,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         public void configure() throws Exception {
 
             from(PERSISTENCE_TOPIC)
-                .routeId("ProvisioningConfigPersistenceChanges")
+                .routeId("Persistence-ProvisioningConfig")
                 .filter(isPersistenceEventForEntityType(ProvisioningConfig.class))
                 .process(exchange -> {
                     PersistenceEvent<ProvisioningConfig<?,?>> persistenceEvent = (PersistenceEvent<ProvisioningConfig<?,?>>)exchange.getIn().getBody(PersistenceEvent.class);
