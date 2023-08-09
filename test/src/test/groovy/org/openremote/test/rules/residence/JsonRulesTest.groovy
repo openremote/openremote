@@ -42,6 +42,7 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -692,6 +693,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "time advances slightly past the next sunset time and the rule engine fires"
+        sunTimes = sunsetCalculator.on(sunTimes.getSet().plusHours(1)).execute()
         advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet().plusSeconds(10)).getSeconds()+1, TimeUnit.SECONDS, container)
 
         then: "the rule engine should have fired again and the rule should have triggered"
@@ -700,6 +702,37 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             thingAsset = assetStorageService.find(thingId) as ThingAsset
             assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 100
+        }
+
+        when: "a schedule is added to the rule to enable it 2 hours after sunset each day"
+        ruleset.setValidity(new CalendarEvent(sunTimes.getSet().plusHours(2).toDate(), sunTimes.getSet().plusHours(12).toDate(), new Recur(Recur.Frequency.DAILY, 5)))
+        ruleset = rulesetStorageService.merge(ruleset)
+
+        then: "the rule should become paused in the engine"
+        conditions.eventually {
+            assert realmBuildingEngine.deployments.get(ruleset.id).status == PAUSED
+        }
+
+        when: "the updated attribute is cleared"
+        thingAsset.getAttribute("sunset").get().setValue(null)
+        thingAsset = assetStorageService.merge(thingAsset)
+
+        and: "time advances into the next active time of the rule"
+        sunTimes = sunsetCalculator.on(sunTimes.getSet().plusHours(1)).execute()
+        advancePseudoClock(Duration.between(timerService.getNow(), sunTimes.getSet().plusHours(4)).getSeconds(), TimeUnit.SECONDS, container)
+
+        then: "the rule should become un-paused in the engine"
+        conditions.eventually {
+            assert realmBuildingEngine.deployments.get(ruleset.id).status == DEPLOYED
+        }
+
+        then: "the rule engine should have fired again and the rule should not have triggered (as past sunset)"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            thingAsset = assetStorageService.find(thingId) as ThingAsset
+            assert thingAsset.getAttribute("sunset").get().getValue().orElse(0) == 0
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
         when: "a ruleset with sunrise offset trigger condition is added whose action updates the thing asset"
