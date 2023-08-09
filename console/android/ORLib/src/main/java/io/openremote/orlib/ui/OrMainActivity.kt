@@ -149,7 +149,9 @@ open class OrMainActivity : Activity() {
                     }
                 }
                 LOG.fine("Loading web view: $url")
-                loadUrl(url!!)
+                if (url != null) {
+                    loadUrl(url)
+                }
             }
         }
     }
