@@ -302,7 +302,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
                 const showOfflineFallback = (this._offline && !pageProvider?.allowOffline);
-                const offlinePage = this._mainElem.querySelector('page-offline');
+                const offlinePage = this._mainElem.querySelector('#offline-page');
 
                 // If page has changed, replace the previous content with the new page.
                 // However, if no page is present yet, append it to the page.
@@ -339,6 +339,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     console.log("Showing offline page fallback!");
                     const newOfflinePage = (this.appConfig?.offlinePage) ? this.appConfig.offlinePage.pageCreator() : pageOfflineProvider(this._store).pageCreator();
                     (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
+                    newOfflinePage.id = "offline-page";
                     this._mainElem.appendChild(newOfflinePage);
                 }
             }
