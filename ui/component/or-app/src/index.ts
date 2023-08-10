@@ -408,8 +408,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._offline = state.app!.offline;
     }
 
-    // When the manager emits any event
-    // Check beforehand if the app is unloading, to prevent unnecessary UI changes during for example a "DISCONNECTED" state.
     protected _onEvent(event: OREvent) {
         if(event === OREvent.OFFLINE) {
             if(!this._offline) {
