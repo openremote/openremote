@@ -78,9 +78,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _initialised = false;
 
     @state()
-    protected _unloading = false;
-
-    @state()
     protected _page?: string;
 
     @state()
@@ -156,11 +153,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         // Set this element as the host for dialogs
         OrMwcDialog.DialogHostElement = this;
         OrMwcSnackbar.DialogHostElement = this;
-
-        // Set 'unloading' state, to allow events/methods to behave differently when unloading
-        window.addEventListener("beforeunload", () => {
-            this._unloading = true;
-        });
     }
 
     public getState(): S {
@@ -419,15 +411,13 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // When the manager emits any event
     // Check beforehand if the app is unloading, to prevent unnecessary UI changes during for example a "DISCONNECTED" state.
     protected _onEvent(event: OREvent) {
-        if(!this._unloading) {
-            if(event === OREvent.OFFLINE) {
-                if(!this._offline) {
-                    this._store.dispatch((setOffline(true)))
-                }
-            } else if(event === OREvent.ONLINE) {
-                if(this._offline) {
-                    this._store.dispatch((setOffline(false)))
-                }
+        if(event === OREvent.OFFLINE) {
+            if(!this._offline) {
+                this._store.dispatch((setOffline(true)))
+            }
+        } else if(event === OREvent.ONLINE) {
+            if(this._offline) {
+                this._store.dispatch((setOffline(false)))
             }
         }
     }
