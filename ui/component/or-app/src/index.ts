@@ -157,7 +157,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         OrMwcDialog.DialogHostElement = this;
         OrMwcSnackbar.DialogHostElement = this;
 
-        // Close socket on unload/refresh of page
+        // Set 'unloading' state, to allow events/methods to behave differently when unloading
         window.addEventListener("beforeunload", () => {
             this._unloading = true;
         });
