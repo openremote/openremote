@@ -96,6 +96,7 @@ abstract class EventProviderImpl implements EventProvider {
     protected _assetEventCallbackMap: Map<string, (e: AssetEvent) => void> = new Map();
     protected _attributeEventPromise?: Promise<string>;
     protected _attributeEventCallbackMap: Map<string, (e: AttributeEvent) => void> = new Map();
+    protected _unloading = false;
     protected static _subscriptionCounter: number = 0;
 
     abstract get endpointUrl(): string;
@@ -508,9 +509,11 @@ abstract class EventProviderImpl implements EventProvider {
         console.debug("Event provider status changed: " + status);
 
         this._status = status;
-        window.setTimeout(() => {
-            this._statusCallbacks.forEach((cb) => cb(status));
-        }, 0);
+        if(!this._unloading) {
+            window.setTimeout(() => {
+                this._statusCallbacks.forEach((cb) => cb(status));
+            }, 0);
+        }
     }
 
     protected _onMessageReceived(subscriptionId: string, event: SharedEvent) {
@@ -609,6 +612,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
         // Close socket on unload/refresh of page
         window.addEventListener("beforeunload", () => {
+            this._unloading = true;
             this.disconnect();
         });
     }

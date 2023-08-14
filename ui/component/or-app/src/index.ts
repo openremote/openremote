@@ -294,7 +294,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
                 const showOfflineFallback = (this._offline && !pageProvider?.allowOffline);
-                const offlinePage = this._mainElem.querySelector('page-offline');
+                const offlinePage = this._mainElem.querySelector('#offline-page');
 
                 // If page has changed, replace the previous content with the new page.
                 // However, if no page is present yet, append it to the page.
@@ -314,6 +314,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 // CASE: "Offline overlay page is present, but should not be shown"
                 if(offlinePage && !showOfflineFallback) {
+                    console.log("Removing offline page fallback!");
                     this._mainElem.removeChild(offlinePage);
                     const elem = this._mainElem.firstElementChild as HTMLElement;
 
@@ -327,8 +328,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 // CASE: "Offline overlay page is NOT present, but needs to be there"
                 else if(!offlinePage && showOfflineFallback) {
+                    console.log("Showing offline page fallback!");
                     const newOfflinePage = (this.appConfig?.offlinePage) ? this.appConfig.offlinePage.pageCreator() : pageOfflineProvider(this._store).pageCreator();
                     (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
+                    newOfflinePage.id = "offline-page";
                     this._mainElem.appendChild(newOfflinePage);
                 }
             }
@@ -410,8 +413,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if(!this._offline) {
                 this._store.dispatch((setOffline(true)))
             }
-        }
-        if(event === OREvent.ONLINE) {
+        } else if(event === OREvent.ONLINE) {
             if(this._offline) {
                 this._store.dispatch((setOffline(false)))
             }
