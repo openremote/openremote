@@ -148,7 +148,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     public void configure() throws Exception {
 
         from(PERSISTENCE_TOPIC)
-            .routeId("GatewayServiceConnectionChanges")
+            .routeId("Persistence-GatewayConnection")
             .filter(isPersistenceEventForEntityType(GatewayConnection.class))
             .process(exchange -> {
                 @SuppressWarnings("unchecked")

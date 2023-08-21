@@ -6,7 +6,6 @@ import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.mqtt.MQTTBrokerService
-import org.openremote.manager.rules.RulesService
 import org.openremote.model.ContainerService
 import spock.util.concurrent.PollingConditions
 
@@ -14,12 +13,12 @@ import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
-import static org.openremote.container.timer.TimerService.Clock.REAL
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
 import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.rules.RulesService.OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS
 import static org.openremote.manager.rules.RulesService.OR_RULES_QUICK_FIRE_MILLIS
+import static org.openremote.model.Container.OR_METRICS_ENABLED
 
 trait ManagerContainerTrait extends ContainerTrait {
 
@@ -33,7 +32,8 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (MQTTBrokerService.MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS): "10",
                 (OR_RULES_QUICK_FIRE_MILLIS): "500",
                 (OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
-                (TIMER_CLOCK_TYPE)        : PSEUDO.name()
+                (TIMER_CLOCK_TYPE)        : PSEUDO.name(),
+                (OR_METRICS_ENABLED):  "false"
         ]
     }
 
@@ -48,23 +48,6 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     Iterable<ContainerService> defaultServices(ContainerService... additionalServices) {
         defaultServices(Arrays.asList(additionalServices))
-    }
-
-    /**
-     * Use wall clock instead of pseudo clock.
-     */
-    Container startContainerWithoutPseudoClock(Map<String, String> config, Iterable<ContainerService> services) {
-        startContainer(config << [(TIMER_CLOCK_TYPE): REAL.name()], services)
-    }
-
-    boolean noRuleEngineFiringScheduled() {
-        if (!this.container) {
-            return false
-        }
-
-        def rulesService = this.container.getService(RulesService.class)
-
-        return (rulesService.globalEngine == null || rulesService.globalEngine.fireTimer == null) && rulesService.realmEngines.values().every {it.fireTimer == null} && rulesService.assetEngines.values().every {it.fireTimer == null}
     }
 
     /**

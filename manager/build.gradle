@@ -23,6 +23,7 @@ dependencies {
     implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
     implementation "io.swagger.core.v3:swagger-jaxrs2-jakarta:$swaggerVersion"
     implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
+    implementation "org.apache.camel:camel-undertow:$camelVersion"
 
     implementation ("io.netty:netty-codec-http:$nettyVersion") {
         force = true
@@ -49,8 +50,8 @@ dependencies {
     }
 
     implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
-
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "io.prometheus:simpleclient_httpserver:$prometheusVersion"
 }
 
 jar {

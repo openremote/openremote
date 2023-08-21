@@ -33,6 +33,10 @@ echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
 
 status=\$?
 
+if [ \$status != 0 ]; then
+   echo "***** One or more encrypted files are not listed in a .gitignore - please add to prevent unencrypted version of file(s) from being committed *****"
+fi
+
 exit \$status
 """
                 Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()

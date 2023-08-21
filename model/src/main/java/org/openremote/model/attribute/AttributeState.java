@@ -79,9 +79,10 @@ public class AttributeState implements Serializable {
 
     @Override
     public String toString() {
+        String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
             "ref=" + ref +
-            ", value=" + value +
+            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             ", deleted=" + deleted +
             '}';
     }

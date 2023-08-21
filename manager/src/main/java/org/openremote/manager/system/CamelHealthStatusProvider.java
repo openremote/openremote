@@ -35,7 +35,7 @@ import org.openremote.model.util.ValueUtil;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CamelHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class CamelHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "camel";
     protected MessageBrokerService brokerService;

@@ -29,7 +29,7 @@ rules.add()
         .when(
                 { facts ->
 
-                    List<AssetState<?>> changes = []
+                    List<AssetState<?>> changes = Collections.synchronizedList(new ArrayList<>())
 
                     def childUpdates = facts.matchAssetState(
                             new AssetQuery().ids(parentAssetId)

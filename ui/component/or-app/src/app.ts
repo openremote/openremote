@@ -57,9 +57,15 @@ const appSlice = createSlice({
                 ...state,
                 realm: action.payload
             }
+        },
+        setOffline(state, action: PayloadAction<boolean>) {
+            return {
+                ...state,
+                offline: action.payload
+            }
         }
     }
 });
 
-export const {updatePage, updateDrawer, scrollToTop, updateRealm} = appSlice.actions;
+export const {updatePage, updateDrawer, scrollToTop, updateRealm, setOffline} = appSlice.actions;
 export const appReducer = appSlice.reducer;

@@ -34,7 +34,6 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
-import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -938,42 +937,39 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             throw new NotFoundException("Realm does not exist: " + realmName);
         }
 
-        // TODO: This should be de-centralised and use a realm lock to prevent any resources being added to the realm during deletion
-        GlobalLock.withLock("RealmDeletion", () -> {
-            persistenceService.doTransaction(entityManager -> {
+        persistenceService.doTransaction(entityManager -> {
 
-                // Delete gateway connections
-                Query query = entityManager.createQuery("delete from " + GatewayConnection.class.getSimpleName() + " gc " +
-                    "where gc.localRealm = ?1");
+            // Delete gateway connections
+            Query query = entityManager.createQuery("delete from " + GatewayConnection.class.getSimpleName() + " gc " +
+                "where gc.localRealm = ?1");
 
-                query.setParameter(1, realmName);
-                query.executeUpdate();
+            query.setParameter(1, realmName);
+            query.executeUpdate();
 
-                // Delete provisioning configs
-                query = entityManager.createQuery("delete from " + ProvisioningConfig.class.getSimpleName() + " pc " +
-                    "where pc.realm = ?1");
+            // Delete provisioning configs
+            query = entityManager.createQuery("delete from " + ProvisioningConfig.class.getSimpleName() + " pc " +
+                "where pc.realm = ?1");
 
-                query.setParameter(1, realmName);
-                query.executeUpdate();
+            query.setParameter(1, realmName);
+            query.executeUpdate();
 
-                // Delete Rules
-                query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
-                    "where rs.realm = ?1");
-                query.setParameter(1, realmName);
-                query.executeUpdate();
+            // Delete Rules
+            query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
+                "where rs.realm = ?1");
+            query.setParameter(1, realmName);
+            query.executeUpdate();
 
-                // Delete Assets
-                List<String> assetIds = assetStorageService.findAll(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).realm(new RealmPredicate(realmName))).stream().map(Asset::getId).toList();
-                assetStorageService.delete(assetIds);
-            });
-
-            LOG.fine("Deleting realm: " + realmName);
-            getRealms(realmsResource -> {
-                realmsResource.realm(realmName).remove();
-                return null;
-            });
-            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, realm, Realm.class, null, null);
+            // Delete Assets
+            List<String> assetIds = assetStorageService.findAll(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).realm(new RealmPredicate(realmName))).stream().map(Asset::getId).toList();
+            assetStorageService.delete(assetIds);
         });
+
+        LOG.fine("Deleting realm: " + realmName);
+        getRealms(realmsResource -> {
+            realmsResource.realm(realmName).remove();
+            return null;
+        });
+        persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, realm, Realm.class, null, null);
     }
 
     public ClientRepresentation generateOpenRemoteClientRepresentation() {

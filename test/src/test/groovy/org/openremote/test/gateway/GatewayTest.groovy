@@ -340,9 +340,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         Thread.sleep(500)
         conditions.eventually {
             assert !agentService.protocolInstanceMap.containsKey(agentAssetIds[0])
-            assert !agentService.agentMap.containsKey(agentAssetIds[0])
+            assert !agentService.agents.containsKey(agentAssetIds[0])
             assert !agentService.protocolInstanceMap.containsKey(agentAssetIds[4])
-            assert !agentService.agentMap.containsKey(agentAssetIds[4])
+            assert !agentService.agents.containsKey(agentAssetIds[4])
         }
 
         when: "the previously received messages are cleared"

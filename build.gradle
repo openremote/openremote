@@ -38,7 +38,8 @@ task checkFilesGitIgnoredNew(type: Exec) {
     commandLine args
 }
 // openremote .git dir doesn't exist when used as a submodule
-checkFilesGitIgnoredNew.enabled = Paths.get(projectDir.path, ".git").toFile().exists()
+def gitFile = Paths.get(projectDir.path, ".git").toFile()
+checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 
 task clean() {
     doLast {

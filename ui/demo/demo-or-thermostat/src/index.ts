@@ -51,7 +51,7 @@ async function refreshUI(assetId:string) {
 manager.addListener((event: OREvent) => {
     console.log("OR Event:" + event);
 
-    if(event === OREvent.EVENTS_CONNECTED) {
+    if(event === OREvent.ONLINE) {
         initApartment1Asset().then(assetId => {
             if (assetId) {
                 refreshUI(assetId);
