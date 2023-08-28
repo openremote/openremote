@@ -154,7 +154,10 @@ export class OrGaugeWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
-                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .onlyDataAttrs="${false}" .widgetConfig="${this.widget?.widgetConfig}"
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .onlyDataAttrs="${false}" .widgetConfig="${this.widget?.widgetConfig}" 
+                                                .attributeFilter="${(attribute: Attribute<any>) => {
+                                                    return ["positiveInteger", "positiveNumber", "number", "long", "integer", "bigInteger", "negativeInteger", "negativeNumber", "bigNumber", "integerByte", "direction"]
+                                                      .includes(attribute.type!)}}"
                                                 @updated="${(event: CustomEvent) => {
                                                     this.updateConfig(this.widget!, event.detail.changes.get('config'));
                                                     this.onAttributesUpdate(event.detail.changes);
@@ -167,7 +170,7 @@ export class OrGaugeWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('values')) ? html`
-                    <div style="padding: 12px 24px 48px 24px; display: flex; flex-direction: column; gap: 16px;">
+                    <div class="expanded-panel">
                         <div style="display: flex; gap: 8px;">
                             <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('min')}" .max="${this.widget?.widgetConfig.max}" .value="${this.widget?.widgetConfig.min}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
@@ -242,7 +245,7 @@ export class OrGaugeWidgetSettings extends LitElement {
 
     generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
+            <span class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
                 <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
             </span>

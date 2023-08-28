@@ -40,6 +40,11 @@ export class OrAttributePicker extends OrMwcDialog {
     @property({type: Boolean})
     public showOnlyRuleStateAttrs?: boolean = false;
 
+
+    @property()
+    public attributeFilter?: (attribute: Attribute<any>) => boolean;
+
+
     @property({type: Boolean})
     public multiSelect?: boolean = false;
 
@@ -88,6 +93,11 @@ export class OrAttributePicker extends OrMwcDialog {
 
     public setShowOnlyRuleStateAttrs(showOnlyRuleStateAttrs: boolean | undefined): OrAttributePicker {
         this.showOnlyRuleStateAttrs = showOnlyRuleStateAttrs;
+        return this;
+    }
+
+    public setAttributeFilter(attributeFilter: ((attribute: Attribute<any>) => boolean) | undefined): OrAttributePicker {
+        this.attributeFilter = attributeFilter;
         return this;
     }
 
@@ -251,6 +261,10 @@ export class OrAttributePicker extends OrMwcDialog {
             if (selectedAsset) {
                 this.assetAttributes = Object.values(selectedAsset.attributes!).map(attr => { return {...attr, id: selectedAsset!.id!}; })
                     .sort(Util.sortByString((attribute) => attribute.name!));
+
+                if (this.attributeFilter){
+                    this.assetAttributes = this.assetAttributes.filter((attr) => this.attributeFilter!(attr))
+                }
 
                 if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
                     this.assetAttributes = this.assetAttributes
