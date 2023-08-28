@@ -210,14 +210,11 @@ export class OrConfRealmCard extends LitElement {
 
     protected async _setImageForUpload(file: File, fileName: string) {
         const path = this._getImagePath(file, fileName)
-        console.log(path);
         if (path) {
-            console.log(this.files);
             this.files[path] = {
                 path: path,
                 contents: await Util.blobToBase64(file),
             } as FileInfo;
-            console.log(this.files);
             this.realm[fileName] = path
             this[fileName] = this.files[path].contents
             this.requestUpdate()
@@ -273,10 +270,6 @@ export class OrConfRealmCard extends LitElement {
         this.dispatchEvent(new CustomEvent("change", { detail: config }));
     }
 
-    protected willUpdate(changedProps: Map<string, any>) {
-        console.log(changedProps);
-        super.willUpdate(changedProps);
-    }
 
 
     render() {
