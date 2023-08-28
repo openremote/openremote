@@ -324,6 +324,10 @@
   "host": "Hostname",
   "errorOccurred": "An error has occurred",
   "sendFailed": "Send failed",
+  "youAreOffline": "You are offline",
+  "checkConnection": "Please check your connection",
+  "retryingConnection": "Retrying in {{seconds}} seconds",
+  "reconnecting": "Reconnecting",
   "managerError": {
     "MANAGER_FAILED_TO_LOAD": "Manager failed to load (see console logs)",
     "AUTH_FAILED": "Auth failed to load (see console logs)",

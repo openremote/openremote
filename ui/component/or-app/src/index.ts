@@ -1,11 +1,4 @@
-import {
-    css,
-    html,
-    LitElement,
-    PropertyValues,
-    TemplateResult,
-    unsafeCSS
-} from "lit";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {AppConfig, Page, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
@@ -15,15 +8,15 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {DefaultColor2, DefaultColor3, DefaultColor4, Util, BasicLoginResult, normaliseConfig, Manager} from "@openremote/core";
+import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
-import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
-import {AppStateKeyed, updatePage, updateRealm} from "./app";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { ORError } from "@openremote/core";
-import { Auth, ManagerConfig, Realm } from "@openremote/model";
+import {AppStateKeyed, setOffline, updatePage, updateRealm} from "./app";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {Auth, ManagerConfig, Realm} from "@openremote/model";
+import {pageOfflineProvider} from "./page-offline";
 
 export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -94,8 +87,12 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _realm?: string;
 
     @state()
+    protected _offline: boolean = false;
+
+    @state()
     protected _activeMenu?: string;
 
+    protected _onEventBind?: any;
     protected _realms!: Realm[];
     protected _store: Store<S, AnyAction>;
     protected _storeUnsubscribe!: Unsubscribe;
@@ -170,6 +167,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     disconnectedCallback() {
         this._storeUnsubscribe();
+        if(this._onEventBind) {
+            manager.removeListener(this._onEventBind);
+        }
         super.disconnectedCallback();
     }
 
@@ -241,6 +241,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 this._initialised = true;
 
+                // Register listener to change global state based on certain events
+                this._onEventBind = this._onEvent.bind(this);
+                manager.addListener(this._onEventBind);
+
                 // Create route listener to set header active item (this must be done before any routes added)
                 const headerUpdater = (activeMenu: string | undefined) => {
                     this._activeMenu = activeMenu;
@@ -283,17 +287,52 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             return;
         }
 
-        if (changedProps.has("_page")) {
+        // If either page or 'offline'-status is changed, it should update to the correct page,
+        // by appending the page to the HTML content
+        if (changedProps.has("_page") || changedProps.has("_offline")) {
             if (this._mainElem) {
-                if (this._mainElem.firstElementChild) {
-                    this._mainElem.firstElementChild.remove();
-                }
-                if (this._page) {
-                    const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
-                    if (pageProvider) {
-                        const pageElem = pageProvider.pageCreator();
-                        this._mainElem.appendChild(pageElem);
+
+                const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
+                const showOfflineFallback = (this._offline && !pageProvider?.allowOffline);
+                const offlinePage = this._mainElem.querySelector('#offline-page');
+
+                // If page has changed, replace the previous content with the new page.
+                // However, if no page is present yet, append it to the page.
+                if(changedProps.has('_page') && pageProvider) {
+                    const currentPage = this._mainElem.firstElementChild;
+                    if(currentPage) {
+                        const newPage = pageProvider.pageCreator();
+                        if(showOfflineFallback) {
+                            newPage.style.setProperty('display', 'none'); // hide the new page while offline overlay page is shown
+                            newPage.setAttribute('loadedDuringOffline', 'true'); // mark the page as "loaded during offline", since the content is either empty or invalid
+                        }
+                        this._mainElem.replaceChild(newPage, currentPage); // replace content
+                    } else {
+                        this._mainElem.appendChild(pageProvider.pageCreator());
                     }
+                }
+
+                // CASE: "Offline overlay page is present, but should not be shown"
+                if(offlinePage && !showOfflineFallback) {
+                    console.log("Removing offline page fallback!");
+                    this._mainElem.removeChild(offlinePage);
+                    const elem = this._mainElem.firstElementChild as HTMLElement;
+
+                    // If the current page is "loaded during offline", the content is either empty or invalid; so we recreate it.
+                    if(pageProvider && elem?.getAttribute('loadedDuringOffline') === 'true') {
+                        this._mainElem.replaceChild(pageProvider.pageCreator(), elem); // recreate page
+                    } else {
+                        elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
+                    }
+                }
+
+                // CASE: "Offline overlay page is NOT present, but needs to be there"
+                else if(!offlinePage && showOfflineFallback) {
+                    console.log("Showing offline page fallback!");
+                    const newOfflinePage = (this.appConfig?.offlinePage) ? this.appConfig.offlinePage.pageCreator() : pageOfflineProvider(this._store).pageCreator();
+                    (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
+                    newOfflinePage.id = "offline-page";
+                    this._mainElem.appendChild(newOfflinePage);
                 }
             }
 
@@ -366,6 +405,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     public stateChanged(state: AppStateKeyed) {
         this._realm = state.app.realm;
         this._page = state.app!.page;
+        this._offline = state.app!.offline;
+    }
+
+    protected _onEvent(event: OREvent) {
+        if(event === OREvent.OFFLINE) {
+            if(!this._offline) {
+                this._store.dispatch((setOffline(true)))
+            }
+        } else if(event === OREvent.ONLINE) {
+            if(this._offline) {
+                this._store.dispatch((setOffline(false)))
+            }
+        }
     }
 
     public logout() {

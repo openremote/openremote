@@ -1,25 +1,28 @@
-package io.openremote.orlib.service
+package io.openremote.orlib.ui
 
-import android.app.IntentService
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
 import android.text.TextUtils
-import io.openremote.orlib.BuildConfig
 import io.openremote.orlib.ORConstants
 import io.openremote.orlib.R
-import io.openremote.orlib.ui.OrMainActivity
+import io.openremote.orlib.service.NotificationResource
 
-class ORMessagingActionService : IntentService("org.openremote.android.ORMessagingActionService") {
+class NotificationActivity : AppCompatActivity() {
     private var notificationResource: NotificationResource? = null
-    override fun onCreate() {
-        super.onCreate()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_notification)
         notificationResource = NotificationResource(applicationContext)
     }
 
-    override fun onHandleIntent(intent: Intent?) {
+    override fun onResume() {
+        super.onResume()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             val it = Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
             this.sendBroadcast(it)
@@ -55,13 +58,19 @@ class ORMessagingActionService : IntentService("org.openremote.android.ORMessagi
                     i.data = Uri.parse(appUrl)
                     startActivity(i)
                 }
+
                 silent -> {
                     // Do silent HTTP request
                     notificationResource!!.executeRequest(httpMethod!!, appUrl, data)
                 }
+
                 else -> {
                     val pm: PackageManager = packageManager
-                    val launchIntent: Intent = pm.getLaunchIntentForPackage(applicationContext.packageName) ?: Intent(applicationContext, OrMainActivity::class.java)
+                    val launchIntent: Intent =
+                        pm.getLaunchIntentForPackage(applicationContext.packageName) ?: Intent(
+                            applicationContext,
+                            OrMainActivity::class.java
+                        )
                     launchIntent.addFlags(
                         Intent.FLAG_ACTIVITY_NEW_TASK or
                                 Intent.FLAG_ACTIVITY_SINGLE_TOP

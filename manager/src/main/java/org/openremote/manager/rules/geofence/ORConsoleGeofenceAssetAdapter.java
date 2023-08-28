@@ -118,7 +118,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
         // If any console asset was modified in the database, detect geofence provider changes
         from(PERSISTENCE_TOPIC)
-            .routeId("ORConsoleGeofenceAdapterAssetChanges")
+            .routeId("Persistence-GeofenceAdapterConsoleAsset")
             .filter(isPersistenceEventForEntityType(ConsoleAsset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
@@ -262,7 +262,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 notification.setTargets(subTargets);
 
                 executorService.schedule(() -> {
-                    LOG.fine("Notifiying consoles that geofences have changed: " + notification.getTargets());
+                    LOG.fine("Notifying consoles that geofences have changed: " + notification.getTargets());
                     notificationService.sendNotification(notification);
                 }, (long) i * NOTIFY_ASSETS_BATCH_MILLIS, TimeUnit.MILLISECONDS);
             });

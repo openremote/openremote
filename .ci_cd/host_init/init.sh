@@ -33,7 +33,7 @@ if [ "$DAILY_RESTART" == 'true' ]; then
   echo "Adding daily manager restart cron job"
 
   echo '#!/bin/bash' > /etc/cron.d/or-restart
-  echo "0 5 * * * root $HOME_DIR/temp/host_init/restart.sh" >> /etc/cron.d/or-restart
+  echo "0 3 * * * root $HOME_DIR/temp/host_init/restart.sh" >> /etc/cron.d/or-restart
 else
   echo "Removing any existing daily restart cron job"
   rm -f /etc/cron.d/or-restart &>/dev/null

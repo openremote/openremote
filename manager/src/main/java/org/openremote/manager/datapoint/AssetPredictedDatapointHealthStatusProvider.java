@@ -25,7 +25,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
 
-public class AssetPredictedDatapointHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class AssetPredictedDatapointHealthStatusProvider implements HealthStatusProvider {
     public static final String NAME = "predicted";
     protected AssetPredictedDatapointService assetPredictedDatapointService;
 

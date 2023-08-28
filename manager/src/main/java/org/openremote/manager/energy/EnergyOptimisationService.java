@@ -148,7 +148,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-            .routeId("EnergyOptimisationAssetPersistenceChanges")
+            .routeId("Persistence-EnergyOptimisation")
             .filter(isPersistenceEventForEntityType(EnergyOptimisationAsset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> processAssetChange((PersistenceEvent<EnergyOptimisationAsset>) exchange.getIn().getBody(PersistenceEvent.class)));
