@@ -244,8 +244,7 @@ class OrMapWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('configuration.mapSettings')) ? html`
-                    <div style="padding: 12px 24px 48px 24px; display: flex; flex-direction: column; gap: 16px;">
-
+                    <div class="expanded-panel">
                         <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;"
                                           .value="${this.widget?.widgetConfig?.zoom}" label="${i18next.t('dashboard.zoom')}"
@@ -274,7 +273,7 @@ class OrMapWidgetSettings extends LitElement {
                                           }}"
                             ></or-mwc-input>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px 12px 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span>${i18next.t('dashboard.showGeoJson')}</span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                           .value="${config.showGeoJson}"
@@ -342,7 +341,7 @@ class OrMapWidgetSettings extends LitElement {
 
     generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => {
+            <span class="expandableHeader" @click="${() => {
                 this.expandPanel(name);
             }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>

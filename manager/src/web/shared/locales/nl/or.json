@@ -154,7 +154,9 @@
   "ending": "Einde",
   "timeframe": "Tijdvak",
   "timeframeDefault": "Standaard tijdvak",
+  "dataSampling": "Data weergave",
   "algorithm": "Algoritme",
+  "algorithmMethod": "Methode per interval",
   "addAttribute": "Attribuut toevoegen",
   "selectAttributes": "Kies attributen",
   "selectAttribute": "Kies attribuut",
@@ -462,6 +464,8 @@
   "addMetaItems": "Voeg configuratie item toe",
   "loseChanges": "Wijzigingen negeren?",
   "confirmContinueAssetModified": "Asset is aangepast, wijzigingen negeren?",
+  "assetModified": "Asset is aangepast",
+  "assetModifiedMustRefresh": "De asset is door een andere bron aangepast en de pagina moet ververst worden. Je wijzigingen zullen verloren gaan.",
   "saveAssetFailed": "Asset opslaan niet gelukt",
   "noCommand": "Geen commando",
   "start": "Start",
@@ -693,5 +697,10 @@
   "address": "Adres",
   "since": "Vanaf",
   "roles": "Rollen",
-  "restrictedUser": "Gebruiker met beperkte toegang"
+  "restrictedUser": "Gebruiker met beperkte toegang",
+  "lttb": "Standaard (LTTB)",
+  "withInterval": "Met interval",
+  "AVG": "Gemiddelde",
+  "MIN": "Minimum",
+  "MAX": "Maximum"
 }
