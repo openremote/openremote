@@ -210,7 +210,7 @@ export class OrConfRealmCard extends LitElement {
 
     protected async _setImageForUpload(file: File, fileName: string) {
         const path = this._getImagePath(file, fileName)
-        if (path) {
+        if (path){
             this.files[path] = {
                 path: path,
                 contents: await Util.blobToBase64(file),
@@ -225,7 +225,6 @@ export class OrConfRealmCard extends LitElement {
 
     // Public GET method for getting the files uploaded by the user.
     public getFiles() {
-        console.log(this.files);
         return this.files;
     }
 
@@ -269,7 +268,6 @@ export class OrConfRealmCard extends LitElement {
     protected notifyConfigChange(config: ManagerAppRealmConfig) {
         this.dispatchEvent(new CustomEvent("change", { detail: config }));
     }
-
 
 
     render() {

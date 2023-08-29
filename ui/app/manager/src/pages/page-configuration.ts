@@ -309,11 +309,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         // TODO: Optimize code so it only saves images that have been changed.
         const imagePromises = [];
         if(this.realmConfigPanel !== undefined) {
-            const elems = this.realmConfigPanel?.getCardElements() as OrConfRealmCard[];
+            const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
             elems.forEach((elem, index) => {
                 const files = elem?.getFiles();
-                console.log(`Files to be uploaded for this realm ${index}:`);
-                console.log(files);
                 Object.entries(files).forEach(async ([x, y]) => {
                     imagePromises.push(manager.rest.api.ConfigurationResource.fileUpload(y, {path: x}));
                 });
