@@ -311,8 +311,7 @@ export class OrMwcTable extends LitElement {
                                             .map((item: TableRow | string[]) => {
                                                 const content: (string | number | TemplateResult)[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
                                                 return html`
-                                                    <tr class="mdc-data-table__row"
-                                                        ${this.config.multiSelect ? '' : html` @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent((this.rows as any[]).indexOf(item)))}"`}>
+                                                    <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.onRowClick(ev, item)}">
                                                         ${content?.map((cell: string | number | TemplateResult, index: number) => {
                                                             const classes = {
                                                                 "mdc-data-table__cell": true,
@@ -370,6 +369,16 @@ export class OrMwcTable extends LitElement {
                 })}
             </div>
         `;
+    }
+
+    protected onRowClick(ev: MouseEvent, item: TableRow | string[]) {
+        if(this.config.multiSelect) {
+            const elem = ev.target as HTMLElement;
+            if(elem.nodeName === "OR-MWC-INPUT" && elem.id.includes('checkbox')) {
+                return; // if checkbox is clicked, the regular "click on row" should not trigger.
+            }
+        }
+        this.dispatchEvent(new OrMwcTableRowClickEvent((this.rows as any[]).indexOf(item)))
     }
 
 
