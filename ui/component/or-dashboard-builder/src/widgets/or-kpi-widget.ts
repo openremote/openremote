@@ -142,6 +142,9 @@ export class OrKpiWidgetSettings extends LitElement {
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widgetConfig="${this.widget!.widgetConfig}"
+                                                .attributeFilter="${(attribute: Attribute<any>) => {
+                                                    return ["positiveInteger", "positiveNumber", "number", "long", "integer", "bigInteger", "negativeInteger", "negativeNumber", "bigNumber", "integerByte", "direction"]
+                                                      .includes(attribute.type!)}}"
                                                 @updated="${(event: CustomEvent) => {
                                                     this.onAttributesUpdate(event.detail.changes);
                                                     this.updateConfig(this.widget!, event.detail.changes.get('config'));
@@ -154,7 +157,7 @@ export class OrKpiWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('display')) ? html`
-                    <div style="padding: 24px 24px 48px 24px;">
+                    <div class="expanded-panel">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" 
                                           .options="${['year', 'month', 'week', 'day', 'hour']}" 
@@ -165,7 +168,7 @@ export class OrKpiWidgetSettings extends LitElement {
                                           }}"
                             ></or-mwc-input>
                         </div>
-                        <div class="switchMwcInputContainer" style="margin-top: 16px;">
+                        <div class="switchMwcInputContainer">
                             <span>${i18next.t('dashboard.allowTimerangeSelect')}</span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${config.showTimestampControls}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
@@ -182,7 +185,7 @@ export class OrKpiWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('values')) ? html`
-                    <div style="padding: 24px 24px 48px 24px;">
+                    <div class="expanded-panel">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${config.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
@@ -191,7 +194,7 @@ export class OrKpiWidgetSettings extends LitElement {
                                           }}"
                             ></or-mwc-input>
                         </div>
-                        <div style="margin-top: 18px;">
+                        <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { 
                                               config.decimals = event.detail.value;
@@ -232,7 +235,7 @@ export class OrKpiWidgetSettings extends LitElement {
 
     generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
+            <span class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
                 <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
             </span>
