@@ -22,11 +22,11 @@ export class OrConfPanel extends LitElement {
 
     protected _addedRealm: null | string = null
 
-    public getCardElement(): OrConfRealmCard | OrConfMapCard | undefined {
+    public getCardElements(): OrConfRealmCard[] | OrConfMapCard[] | undefined {
         if(this.isManagerConfig(this.config)) {
-            return this.shadowRoot?.querySelector('or-conf-realm-card');
+            return Array.from(this.shadowRoot?.querySelectorAll('or-conf-realm-card')) as OrConfRealmCard[];
         } else if (this.isMapConfig(this.config)) {
-            return this.shadowRoot?.querySelector('or-conf-map-card');
+            return Array.from(this.shadowRoot?.querySelectorAll('or-conf-map-card')) as OrConfMapCard[];
         }
     }
 
@@ -92,7 +92,7 @@ export class OrConfPanel extends LitElement {
             <!-- Show an "ADD REALM" button if there are realms available to be added -->
             <div style="display: flex; justify-content: space-between;">
                 ${when(availableRealms.length > 0, () => html`
-                    <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${i18next.t('configuration.addMapCustomization')}" icon="plus"
+                    <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${type === 'mapconfig' ? i18next.t('configuration.addMapCustomization') : i18next.t('configuration.addRealmCustomization')}" icon="plus"
                                   @click="${() => this._showAddingRealmDialog()}"
                     ></or-mwc-input>
                 `)}

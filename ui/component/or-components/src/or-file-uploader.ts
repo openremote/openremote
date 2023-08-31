@@ -28,15 +28,15 @@ export class OrFileUploader extends LitElement {
 
     // Contains the content that will be shown towards the user.
     @property({ attribute: false })
-    public src: string = "";
+    public readonly src: string = "";
 
     @property()
-    public title: string = "";
+    public readonly title: string = "";
 
     @property({ attribute: false })
-    public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
+    public readonly accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
 
-    private loading: boolean = false;
+    private loading = false;
     private files: FileInfo[] = []
 
     get Files(): FileInfo[] {
