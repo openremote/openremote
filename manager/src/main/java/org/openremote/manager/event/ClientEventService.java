@@ -338,6 +338,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .process(this::passToInterceptors)
             .choice()
             .when(body().isInstanceOf(AttributeEvent.class))
+            .process(exchange -> {
+                AttributeEvent attributeEvent = exchange.getIn().getBody(AttributeEvent.class);
+                if (attributeEvent.getTimestamp() <= 0) {
+                    attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
+                }
+            })
             .to(ATTRIBUTE_EVENT_QUEUE)
             .stop()
             .endChoice()

@@ -93,6 +93,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     protected final ConcurrentMap<String, SubscriberInfo> connectionSubscriberInfoMap = new ConcurrentHashMap<>();
     // An authorisation cache for publishing
+    // TODO: Switch to caffeine library once ActiveMQ has migrated
     protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
         .maximumSize(100000)
         .expireAfterWrite(300000, TimeUnit.MILLISECONDS)

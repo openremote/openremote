@@ -180,6 +180,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             .routeId("ProtocolOutbound")
             .filter(body().isInstanceOf(AttributeEvent.class))
             .setHeader(HEADER_SOURCE, () -> SENSOR)
+            .process(exchange -> {
+                AttributeEvent attributeEvent = exchange.getIn().getBody(AttributeEvent.class);
+                if (attributeEvent.getTimestamp() <= 0) {
+                    attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
+                }
+            })
             .to(ATTRIBUTE_EVENT_QUEUE);
     }
 

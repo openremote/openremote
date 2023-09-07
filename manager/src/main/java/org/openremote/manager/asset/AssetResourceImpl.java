@@ -592,6 +592,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
         AttributeWriteFailure failure = null;
 
+        if (event.getTimestamp() <= 0) {
+            event.setTimestamp(timerService.getCurrentTimeMillis());
+        }
+
         try {
             if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Write attribute value request: " + event);

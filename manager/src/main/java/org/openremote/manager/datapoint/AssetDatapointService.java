@@ -77,6 +77,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         if (maxDatapointAgeDays <= 0) {
             LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
+        } else {
+            LOG.log(Level.INFO, "Data point purge interval days = " + maxDatapointAgeDays);
         }
 
         Path storageDir = persistenceService.getStorageDir();

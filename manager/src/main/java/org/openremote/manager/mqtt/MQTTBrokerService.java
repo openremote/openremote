@@ -524,7 +524,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return ID instanceof ChannelId ? ((ChannelId) ID).asLongText() : ID.toString();
     }
 
-    public String connectionToString(RemotingConnection connection) {
+    public static String connectionToString(RemotingConnection connection) {
         if (connection == null) {
             return "";
         }
@@ -533,20 +533,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         Subject subject = connection.getSubject();
 
         if (subject != null) {
-            username = getSubjectNameAndRealm(subject);
+            username = getSubjectName(subject);
         }
 
         return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + username;
     }
 
     public static String getSubjectName(Subject subject) {
-        return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal)
-            .findFirst()
-            .map(Principal::getName)
-            .orElse(KeycloakIdentityProvider.getSubjectName(subject));
-    }
-
-    public static String getSubjectNameAndRealm(Subject subject) {
         return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal)
             .findFirst()
             .map(Principal::getName)
