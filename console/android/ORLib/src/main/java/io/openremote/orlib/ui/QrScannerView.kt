@@ -43,7 +43,6 @@ class QrScannerView : View {
         mStrokePaint!!.style = Paint.Style.STROKE
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         pTopLeft.x = width / 13 + 10

@@ -26,6 +26,9 @@ import java.util.concurrent.ThreadFactory;
 import static org.openremote.container.concurrent.ContainerThreads.DEFAULT_REJECTED_EXECUTION_HANDLER;
 import static org.openremote.container.concurrent.ContainerThreads.logExceptionCause;
 
+/**
+ * Thread pool that adds logging for tasks that throw exceptions
+ */
 public class ContainerScheduledExecutor extends ScheduledThreadPoolExecutor {
 
     public ContainerScheduledExecutor(String name, int corePoolSize) {

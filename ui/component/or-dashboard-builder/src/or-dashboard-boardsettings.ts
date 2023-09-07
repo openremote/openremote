@@ -216,7 +216,7 @@ export class OrDashboardBoardsettings extends LitElement {
     // UI generation of an expandable panel header.
     generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
+            <span class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
                 <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
             </span>

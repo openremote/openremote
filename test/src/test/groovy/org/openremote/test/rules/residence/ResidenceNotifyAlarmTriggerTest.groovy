@@ -285,67 +285,39 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             rulesetDeployment = apartment1Engine.deployments.get(ruleset.getId())
             assert rulesetDeployment != null
             assert rulesetDeployment.status == RulesetStatus.PAUSED
-            assert apartment1Engine.pauseTimers.size() == 0
-            assert apartment1Engine.unpauseTimers.size() == 1
-            // Assert scheduled future delay is correct
-            assert fromTo[0].getTime() - getClockTimeOf(container) - apartment1Engine.unpauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
         }
 
         when: "time advances to within the first valid time period"
         advancePseudoClock(fromTo[0].getTime()-getClockTimeOf(container)+10000, TimeUnit.MILLISECONDS, container)
-        apartment1Engine.unPauseRuleset(rulesetDeployment)
 
-        then: "the ruleset status should be un-paused"
+        then: "the ruleset status should become un-paused"
         conditions.eventually {
             assert rulesetDeployment.status == RulesetStatus.DEPLOYED
         }
 
-        and: "the next pause of the ruleset should be scheduled"
-        assert apartment1Engine.pauseTimers.size() == 1
-        assert apartment1Engine.unpauseTimers.size() == 0
-        assert fromTo[1].getTime() - getClockTimeOf(container) - apartment1Engine.pauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
-
         when: "time advances past the first expiry the ruleset is paused again"
         advancePseudoClock((fromTo[1].getTime()-getClockTimeOf(container))+10000, TimeUnit.MILLISECONDS, container)
-        apartment1Engine.pauseRuleset(rulesetDeployment)
 
         then: "the ruleset status should be paused"
         conditions.eventually {
             assert rulesetDeployment.status == RulesetStatus.PAUSED
         }
 
-        when: "the next occurrence is calculated"
-        fromTo = getOccurrenceFromTo(baseTime, 1)
-
-        then: "the next unpause of the ruleset should be scheduled"
-        assert apartment1Engine.pauseTimers.size() == 0
-        assert apartment1Engine.unpauseTimers.size() == 1
-        assert fromTo[0].getTime() - getClockTimeOf(container) - apartment1Engine.unpauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
-
         when: "time advances to within the next valid time period"
+        fromTo = getOccurrenceFromTo(baseTime, 1)
         advancePseudoClock(fromTo[0].getTime() - getClockTimeOf(container) + (61*60000), TimeUnit.MILLISECONDS, container)
-        apartment1Engine.unPauseRuleset(rulesetDeployment)
 
         then: "the ruleset status should be un-paused"
         conditions.eventually {
             assert rulesetDeployment.status == RulesetStatus.DEPLOYED
         }
 
-        and: "the next pause of the ruleset should be scheduled"
-        assert apartment1Engine.pauseTimers.size() == 1
-        assert apartment1Engine.unpauseTimers.size() == 0
-        // Assert scheduled future delay is correct
-        assert fromTo[1].getTime() - getClockTimeOf(container) - apartment1Engine.pauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
-
         when: "time advances past the second expiry the ruleset is paused again"
         advancePseudoClock(fromTo[1].getTime() - getClockTimeOf(container) + (45*60000), TimeUnit.MILLISECONDS, container)
-        apartment1Engine.pauseRuleset(rulesetDeployment)
 
         then: "the ruleset status should be expired"
         conditions.eventually {
             assert rulesetDeployment.status == RulesetStatus.EXPIRED
-            assert apartment1Engine.pauseTimers.size() == 0
-            assert apartment1Engine.unpauseTimers.size() == 0
         }
 
         cleanup: "the mock is removed"

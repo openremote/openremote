@@ -34,6 +34,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("")
 public interface StatusResource {
 
+    // TODO: Replace this with prometheus metrics
     @Path("health")
     @GET
     @Produces(APPLICATION_JSON)

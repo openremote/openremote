@@ -24,15 +24,12 @@ import java.util.concurrent.*;
 import static org.openremote.container.concurrent.ContainerThreads.DEFAULT_REJECTED_EXECUTION_HANDLER;
 import static org.openremote.container.concurrent.ContainerThreads.logExceptionCause;
 
+/**
+ * Thread pool that adds logging for tasks that throw exceptions
+ */
 public class ContainerExecutor extends ThreadPoolExecutor {
 
-    /**
-     * Creates an unbounded thread pool with {@link SynchronousQueue}, this is the same as
-     * {@link Executors#newCachedThreadPool}.
-     */
-    public ContainerExecutor(String name) {
-        this(name, 0, Integer.MAX_VALUE, 60L, -1);
-    }
+    protected String name;
 
     /**
      * @param blockingQueueCapacity Set to <code>-1</code> if a {@link SynchronousQueue} should be used.
@@ -42,28 +39,27 @@ public class ContainerExecutor extends ThreadPoolExecutor {
                              int maximumPoolSize,
                              long keepAliveSeconds,
                              int blockingQueueCapacity) {
-        this(
-            new ContainerThreadFactory(name),
-            DEFAULT_REJECTED_EXECUTION_HANDLER,
+        super(
             corePoolSize,
             maximumPoolSize,
             keepAliveSeconds,
-            blockingQueueCapacity == -1 ? new SynchronousQueue<>() : new ArrayBlockingQueue<>(blockingQueueCapacity)
+            TimeUnit.SECONDS,
+            blockingQueueCapacity == -1 ? new SynchronousQueue<>() : new ArrayBlockingQueue<>(blockingQueueCapacity),
+            new ContainerThreadFactory(name),
+            DEFAULT_REJECTED_EXECUTION_HANDLER
         );
-    }
 
-    public ContainerExecutor(ThreadFactory threadFactory,
-                             RejectedExecutionHandler rejectedHandler,
-                             int corePoolSize,
-                             int maximumPoolSize,
-                             long keepAliveSeconds,
-                             BlockingQueue<Runnable> workQueue) {
-        super(corePoolSize, maximumPoolSize, keepAliveSeconds, TimeUnit.SECONDS, workQueue, threadFactory, rejectedHandler);
+        this.name = name;
     }
 
     @Override
     protected void afterExecute(Runnable runnable, Throwable throwable) {
         super.afterExecute(runnable, throwable);
         logExceptionCause(runnable, throwable);
+    }
+
+    @Override
+    public String toString() {
+        return name + ":" + super.toString();
     }
 }

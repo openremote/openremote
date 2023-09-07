@@ -615,17 +615,47 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
         }
 
-        when: "user asset links are updated for a connected restricted user"
+        when: "a user asset link is added for a connected restricted user"
         existingConnection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
         assetStorageService.storeUserAssetLinks(List.of(
                 new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                         keycloakTestSetup.serviceUser2.getId(),
                         managerTestSetup.apartment1BathroomId)))
 
+        then: "the existing connection should not have been terminated"
+        new PollingConditions(initialDelay: 2, timeout: 10, delay: 1).eventually {
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0].is(existingConnection)
+        }
+
+        when: "a user asset link is removed for a connected restricted user"
+        existingConnection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+        assetStorageService.deleteUserAssetLinks(List.of(
+                new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                        keycloakTestSetup.serviceUser2.getId(),
+                        managerTestSetup.apartment1HallwayId)))
+
         then: "the existing connection should be terminated and the client should reconnect"
         conditions.eventually {
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0] !== existingConnection
+        }
+
+        when: "the restricted mqtt client removes all subscriptions"
+        newClient.removeAllMessageConsumers() // Clear subscriptions as otherwise it won't hit the server again
+
+        then: "no subscriptions should exist in the client"
+        assert newClient.topicConsumerMap.isEmpty()
+
+        when: "the restricted mqtt client subscribes to a now unlinked asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        newClient.addMessageConsumer(topic, {msg ->})
+
+        then: "no subscription should exist"
+        conditions.eventually {
+            assert newClient.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
         }
 
         // TODO: Further MQTT tests

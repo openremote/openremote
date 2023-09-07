@@ -8,7 +8,7 @@ import io.openremote.app.model.ORAppInfo
 import io.openremote.app.model.ORConsoleConfig
 import java.net.HttpURLConnection
 import java.net.URL
-import jakarta.net.ssl.HttpsURLConnection
+import javax.net.ssl.HttpsURLConnection
 import kotlin.concurrent.thread
 
 

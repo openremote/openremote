@@ -34,6 +34,7 @@ open class ORViewcontroller : UIViewController {
     public var pushProvider: PushNotificationProvider?
     public var storageProvider: StorageProvider?
     public var qrProvider: QrScannerProvider?
+    public var bleProvider: BleProvider?
     
     public var baseUrl: String?
     
@@ -44,7 +45,7 @@ open class ORViewcontroller : UIViewController {
         view.backgroundColor = UIColor.white
         self.configureAccess()
     }
-
+    
     open override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
@@ -56,7 +57,7 @@ open class ORViewcontroller : UIViewController {
             }
         }
     }
-
+    
     func sendData(data: [String: Any?]) {
         if let theJSONData = try? JSONSerialization.data(
             withJSONObject: data,
@@ -99,21 +100,26 @@ open class ORViewcontroller : UIViewController {
         myWebView?.navigationDelegate = self;
         //add observer to get estimated progress value
         myWebView?.addObserver(self, forKeyPath: "estimatedProgress", options: .new, context: nil);
-
+        myWebView?.allowsBackForwardNavigationGestures = true
+        
         webProgressBar = UIProgressView(progressViewStyle: .bar)
         webProgressBar?.progressTintColor = UIColor(named: "or_green")
-
+        
+        if #available(macOS 13.3, iOS 16.4, tvOS 16.4, *) {
+            myWebView?.isInspectable = true
+        }
+        
         view.addSubview(myWebView!)
         view.addSubview(webProgressBar!)
         view.bringSubviewToFront(webProgressBar!)
-
+        
         webProgressBar?.translatesAutoresizingMaskIntoConstraints = false
         webProgressBar?.leadingAnchor.constraint(equalTo: myWebView!.leadingAnchor).isActive = true
         webProgressBar?.trailingAnchor.constraint(equalTo: myWebView!.trailingAnchor).isActive = true
         webProgressBar?.topAnchor.constraint(equalTo: myWebView!.topAnchor, constant: -2).isActive = true
         webProgressBar?.heightAnchor.constraint(equalToConstant: 2).isActive = true
     }
-
+    
     public override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "estimatedProgress" {
             if let webView = myWebView {
@@ -121,7 +127,7 @@ open class ORViewcontroller : UIViewController {
             }
         }
     }
-
+    
     func showProgressView() {
         if let progressBar = webProgressBar {
             UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseInOut, animations: {
@@ -129,7 +135,7 @@ open class ORViewcontroller : UIViewController {
             }, completion: nil)
         }
     }
-
+    
     func hideProgressView() {
         if let progressBar = webProgressBar {
             UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseInOut, animations: {
@@ -141,34 +147,34 @@ open class ORViewcontroller : UIViewController {
     public func loadURL(url : URL) {
         _ = self.myWebView?.load(URLRequest(url:url))
     }
-
+    
     internal func handleError(errorCode: Int, description: String, failingUrl: String, isForMainFrame: Bool) {
         print("Error requesting '\(failingUrl)': \(errorCode) (\(description))")
-
+        
         let alertView = UIAlertController(title: "Error", message: "Error requesting '\(failingUrl)': \(errorCode) (\(description))", preferredStyle: .alert)
-
+        
         if self.presentingViewController != nil {
             alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in self.dismiss(animated: true)} ))
         } else {
             alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         }
         self.present(alertView, animated: true, completion: nil)
-
+        
         /*
-        if (false) {
-            //TODO need to have case to return to home url of config or go back to wizard to setup project enviroment
-//            self.myWebView?.load(URLRequest(url: URL(string: url.stringByURLEncoding()!)!))
-        } else {
-            if self.presentingViewController != nil {
-                self.dismiss(animated: true) {
-                    
-                    // TODO: this original code is causing error
-                    // self.presentingViewController!.present(alertView, animated: true, completion: nil)
-                }
-            } else {
-                self.present(alertView, animated: true, completion: nil)
-            }
-        }
+         if (false) {
+         //TODO need to have case to return to home url of config or go back to wizard to setup project enviroment
+         //            self.myWebView?.load(URLRequest(url: URL(string: url.stringByURLEncoding()!)!))
+         } else {
+         if self.presentingViewController != nil {
+         self.dismiss(animated: true) {
+         
+         // TODO: this original code is causing error
+         // self.presentingViewController!.present(alertView, animated: true, completion: nil)
+         }
+         } else {
+         self.present(alertView, animated: true, completion: nil)
+         }
+         }
          */
     }
 }
@@ -192,11 +198,11 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                         self.sendData(data: initalizeData)
                                     })
                                 case Actions.providerEnable:
-                                    if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
-                                        pushProvider?.enable(consoleId: consoleId, callback: { enableData in
-                                            self.sendData(data: enableData)
-                                        })
-                                    }
+                                    let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String
+                                    pushProvider?.enable(consoleId: consoleId, callback: { enableData in
+                                        self.sendData(data: enableData)
+                                    })
+                                    
                                 case Actions.providerDisable:
                                     if let disableData = pushProvider?.disable() {
                                         sendData(data: disableData)
@@ -211,19 +217,19 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                     let initializeData = geofenceProvider!.initialize()
                                     sendData(data: initializeData)
                                 case Actions.providerEnable:
-                                    if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
-                                        if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement){
-                                            let host = userdefaults.string(forKey: DefaultsKey.hostKey) ?? ""
-                                            let realm = userdefaults.string(forKey: DefaultsKey.realmKey) ?? ""
-                                            let baseUrl = host.isEmpty ? "" : host.appending("/api/\(realm)")
-                                            geofenceProvider?.enable(baseUrl: baseUrl, consoleId: consoleId,  callback: { enableData in
-                                                self.sendData(data: enableData)
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
-                                                    self.geofenceProvider?.fetchGeofences()
-                                                }
-                                            })
-                                        }
+                                    let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String
+                                    if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement){
+                                        let host = userdefaults.string(forKey: DefaultsKey.hostKey) ?? ""
+                                        let realm = userdefaults.string(forKey: DefaultsKey.realmKey) ?? ""
+                                        let baseUrl = host.isEmpty ? "" : host.appending("/api/\(realm)")
+                                        geofenceProvider?.enable(baseUrl: baseUrl, consoleId: consoleId,  callback: { enableData in
+                                            self.sendData(data: enableData)
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
+                                                self.geofenceProvider?.fetchGeofences()
+                                            }
+                                        })
                                     }
+                                    
                                 case Actions.providerDisable:
                                     if let disableData = geofenceProvider?.disable() {
                                         sendData(data: disableData)
@@ -282,6 +288,52 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                 default:
                                     print("Wrong action \(action) for \(provider)")
                                 }
+                            case Providers.ble:
+                                switch (action) {
+                                case Actions.providerInit:
+                                    bleProvider = BleProvider()
+                                    bleProvider!.alertBluetoothCallback = {
+                                        let alertController = UIAlertController(title: "Bluetooth disabled", message: "Please turn on bluetooth to scan for devices", preferredStyle: .alert)
+                                        alertController.addAction(UIAlertAction(title: "OK", style: .default) { alertAction in
+                                            let url = URL(string: UIApplication.openSettingsURLString)
+                                            let app = UIApplication.shared
+                                            app.open(url!, options: [:])
+                                        })
+                                        alertController.addAction(UIAlertAction(title: "Not now", style: .cancel))
+                                        self.present(alertController, animated: true)
+                                    }
+                                    self.sendData(data: bleProvider!.initialize())
+                                case Actions.providerEnable:
+                                    bleProvider?.enable(callback: { enableData in
+                                        self.sendData(data: enableData)
+                                    })
+                                case Actions.providerDisable:
+                                    if let disableData = bleProvider?.disable() {
+                                        sendData(data: disableData)
+                                    }
+                                case Actions.scanBleDevices:
+                                    bleProvider?.scanForDevices { scanData in
+                                        self.sendData(data: scanData)
+                                    }
+                                case Actions.connectToBleDevice:
+                                    if let deviceId = postMessageDict["address"] as? String {
+                                        bleProvider?.connectoToDevice(deviceId: deviceId) { connectData in
+                                            self.sendData(data: connectData)
+                                        }
+                                    }
+                                case Actions.sendToBleDevice:
+                                    if let attributeId = postMessageDict["attributeId"] as? String, let value = postMessageDict["value"] {
+                                        if let data = try? JSONSerialization.data(
+                                            withJSONObject: value,
+                                            options: []) {
+                                            bleProvider?.sendToDevice(attributeId: attributeId, value: data) { sendData in
+                                                self.sendData(data: sendData)
+                                            }
+                                        }
+                                    }
+                                default:
+                                    print("Wrong action \(action) for \(provider)")
+                                }
                             default:
                                 print("Unknown provider type: \(provider )")
                             }
@@ -296,11 +348,11 @@ extension ORViewcontroller: WKScriptMessageHandler {
 }
 
 extension ORViewcontroller: WKNavigationDelegate {
-
+    
     public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         showProgressView()
     }
-
+    
     public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if (navigationAction.request.url?.absoluteString.starts(with: "webbrowser"))! {
             if let url = navigationAction.request.url, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
@@ -322,23 +374,23 @@ extension ORViewcontroller: WKNavigationDelegate {
             }
         }
     }
-
+    
     public func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
         if let response = navigationResponse.response as? HTTPURLResponse {
             if response.statusCode != 200 && response.statusCode != 204 {
                 decisionHandler(.cancel)
-
+                
                 handleError(errorCode: response.statusCode, description: "Error in request", failingUrl: response.url?.absoluteString ?? "", isForMainFrame: true)
                 return
             }
         }
         decisionHandler(.allow)
     }
-
+    
     public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
         if let err = error as? URLError {
-
+            
             let httpCode: Int
             switch(err.code) {
             case .cannotFindHost:
@@ -346,21 +398,21 @@ extension ORViewcontroller: WKNavigationDelegate {
             default:
                 httpCode = 500
             }
-
+            
             handleError(errorCode: httpCode, description: err.localizedDescription, failingUrl: err.failureURLString ?? "", isForMainFrame: true)
         } else {
             handleError(errorCode: 0, description: error.localizedDescription, failingUrl: webView.url?.absoluteString ?? "", isForMainFrame: true)
         }
     }
-
+    
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         hideProgressView()
     }
-
+    
     public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
         if let err = error as? URLError {
-
+            
             let httpCode: Int
             switch(err.code) {
             case .cannotFindHost:
@@ -368,7 +420,7 @@ extension ORViewcontroller: WKNavigationDelegate {
             default:
                 httpCode = 500
             }
-
+            
             handleError(errorCode: httpCode, description: err.localizedDescription, failingUrl: err.failureURLString ?? "", isForMainFrame: true)
         } else {
             handleError(errorCode: 0, description: error.localizedDescription, failingUrl: webView.url?.absoluteString ?? "", isForMainFrame: true)

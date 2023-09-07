@@ -17,15 +17,22 @@ dependencies {
     implementation resolveProject(":manager")
 }
 
-// Use demo sourceset for jar
-jar {
+task demoJar(type: Jar) {
     archivesBaseName = "openremote-demo-${project.name}"
     from sourceSets.demo.output
 }
 
+task load1Jar(type: Jar) {
+    archivesBaseName = "openremote-load1-${project.name}"
+    from sourceSets.load1.output
+}
+
+// Use demo setup sourceset by default for jar
 task installDist(type: Copy) {
-    dependsOn jar
+    def setupTask = getTasksByName(project.hasProperty("SETUP_JAR") ? "${project.getProperties().get("SETUP_JAR")}Jar" : "demoJar", false)[0] as org.gradle.jvm.tasks.Jar
+    System.out.println(setupTask.name)
+    dependsOn setupTask
     dependsOn resolveTask(":manager:installDist")
-    from jar.archiveFile
-    into "${resolveProject(":manager").buildDir}/install/manager/extensions"
+    from setupTask.archiveFile
+    into "${resolveProject(":manager").buildDir}/install/manager/deployment/manager/extensions"
 }

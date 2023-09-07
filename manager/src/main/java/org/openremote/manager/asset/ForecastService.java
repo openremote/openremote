@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import jakarta.persistence.TypedQuery;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -44,23 +45,13 @@ import org.openremote.model.value.ForecastConfiguration;
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
 import org.openremote.model.value.MetaItemType;
 
-import jakarta.persistence.TypedQuery;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +61,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
-import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
@@ -144,7 +134,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-            .routeId("ForecastConfigurationPersistenceChanges")
+            .routeId("Persistence-ForecastConfiguration")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
@@ -154,18 +144,16 @@ public class ForecastService extends RouteBuilder implements ContainerService {
     }
 
     protected List<Asset<?>> getForecastAssets() {
-        return withLockReturning(getClass().getSimpleName() + "::getForecastAssets", () -> {
-            return assetStorageService.findAll(
-                new AssetQuery().attributes(
-                    new AttributePredicate().meta(
-                        new NameValuePredicate(
-                            FORECAST,
-                            new StringPredicate(AssetQuery.Match.CONTAINS, true, "type")
-                        )
+        return assetStorageService.findAll(
+            new AssetQuery().attributes(
+                new AttributePredicate().meta(
+                    new NameValuePredicate(
+                        FORECAST,
+                        new StringPredicate(AssetQuery.Match.CONTAINS, true, "type")
                     )
                 )
-            );
-        });
+            )
+        );
     }
 
     protected void processAssetChange(PersistenceEvent<Asset<?>> persistenceEvent) {

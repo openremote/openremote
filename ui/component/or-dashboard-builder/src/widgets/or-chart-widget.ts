@@ -260,7 +260,7 @@ class OrChartWidgetSettings extends LitElement {
     public widget?: DashboardWidget;
 
     // Default values
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('algorithm'), i18next.t('display'), i18next.t('dashboard.chartConfig')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('dataSampling'), i18next.t('display'), i18next.t('dashboard.chartConfig')];
 
 
     static get styles() {
@@ -294,6 +294,9 @@ class OrChartWidgetSettings extends LitElement {
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.MULTI_ATTRIBUTE}" .widgetConfig="${this.widget?.widgetConfig}"
+                                                .attributeFilter="${(attribute: Attribute<any>) => {
+                                                    return ["positiveInteger", "positiveNumber", "number", "long", "integer", "bigInteger", "negativeInteger", "negativeNumber", "bigNumber", "integerByte", "direction", "boolean"]
+                                                      .includes(attribute.type!)}}"
                                                 @updated="${(event: CustomEvent) => { this.updateConfig(this.widget!, event.detail.changes.get('config')) }}"
                     ></or-dashboard-settingspanel>
                 ` : null}
@@ -303,7 +306,7 @@ class OrChartWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('display')) ? html`
-                    <div style="padding: 12px 24px 48px 24px;">
+                    <div class="expanded-panel">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('timeframeDefault')}" style="width: 100%;"
                                           .options="${Array.from(timePresetOptions.keys())}" value="${config.defaultTimePresetKey}"
@@ -313,23 +316,25 @@ class OrChartWidgetSettings extends LitElement {
                                           }}"
                             ></or-mwc-input>
                         </div>
-                        <div class="switchMwcInputContainer" style="margin-top: 16px;">
-                            <span>${i18next.t('dashboard.allowTimerangeSelect')}</span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${config.showTimestampControls}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              config.showTimestampControls = event.detail.value;
-                                              this.updateConfig(this.widget!, config);
-                                          }}"
-                            ></or-mwc-input>
-                        </div>
-                        <div class="switchMwcInputContainer">
-                            <span>${i18next.t('dashboard.showLegend')}</span>
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${config.showLegend}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              config.showLegend = event.detail.value;
-                                              this.updateConfig(this.widget!, config);
-                                          }}"
-                            ></or-mwc-input>
+                        <div>
+                            <div class="switchMwcInputContainer">
+                                <span>${i18next.t('dashboard.allowTimerangeSelect')}</span>
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${config.showTimestampControls}"
+                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                                  config.showTimestampControls = event.detail.value;
+                                                  this.updateConfig(this.widget!, config);
+                                              }}"
+                                ></or-mwc-input>
+                            </div>
+                            <div class="switchMwcInputContainer">
+                                <span>${i18next.t('dashboard.showLegend')}</span>
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${config.showLegend}"
+                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                                  config.showLegend = event.detail.value;
+                                                  this.updateConfig(this.widget!, config);
+                                              }}"
+                                ></or-mwc-input>
+                            </div>
                         </div>
                     </div>
                 ` : null}
@@ -342,7 +347,7 @@ class OrChartWidgetSettings extends LitElement {
                     const min = config.chartOptions.options?.scales?.y?.min;
                     const max = config.chartOptions.options?.scales?.y?.max;
                     return html`
-                        <div style="padding: 12px 24px 48px 24px; display: flex; flex-direction: column; gap: 16px;">
+                        <div class="expanded-panel">
                             <div>
                                 <div style="display: flex;">
                                     ${max != undefined ? html`
@@ -386,15 +391,15 @@ class OrChartWidgetSettings extends LitElement {
                 })}
             </div>
             <div>
-                ${this.generateExpandableHeader(i18next.t('algorithm'))}
+                ${this.generateExpandableHeader(i18next.t('dataSampling'))}
             </div>
             <div>
-                ${this.expandedPanels.includes(i18next.t('algorithm')) ? html`
+                ${this.expandedPanels.includes(i18next.t('dataSampling')) ? html`
                     ${when(config.datapointQuery, () => {
-                        const typeOptions = new Map<string, string>([["Default", 'lttb'], ["With interval", 'interval']]);
+                        const typeOptions = new Map<string, string>([["lttb", 'lttb'], ["withInterval", 'interval']]);
                         const typeValue = Array.from(typeOptions.entries()).find((entry => entry[1] == config.datapointQuery.type))![0]
                         return html`
-                            <div style="padding: 12px 24px 48px 24px;">
+                            <div class="expanded-panel">
                                 <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(typeOptions.keys())}"
                                               .value="${typeValue}" label="${i18next.t('algorithm')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                                   config.datapointQuery.type = typeOptions.get(event.detail.value)! as any;
@@ -404,10 +409,10 @@ class OrChartWidgetSettings extends LitElement {
                                 ${choose(config.datapointQuery.type, [
                                     ['interval', () => {
                                         const intervalQuery = config.datapointQuery as AssetDatapointIntervalQuery;
-                                        const formulaOptions = [AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MAX];
+                                        const formulaOptions = [AssetDatapointIntervalQueryFormula.AVG, AssetDatapointIntervalQueryFormula.MIN, AssetDatapointIntervalQueryFormula.MAX];
                                         return html`
-                                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%; margin-top: 18px;" .options="${formulaOptions}"
-                                                          .value="${intervalQuery.formula}" label="${i18next.t('formula')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${formulaOptions}"
+                                                          .value="${intervalQuery.formula}" label="${i18next.t('algorithmMethod')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                                               intervalQuery.formula = event.detail.value;
                                                               this.updateConfig(this.widget!, config, true);
                                                           }}"
@@ -457,7 +462,7 @@ class OrChartWidgetSettings extends LitElement {
 
     generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
+            <span class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
                 <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
             </span>

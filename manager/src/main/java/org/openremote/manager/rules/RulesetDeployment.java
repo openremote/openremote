@@ -37,13 +37,11 @@ import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import javax.script.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -51,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.concurrent.GlobalLock.withLock;
+import static org.openremote.model.rules.RulesetStatus.*;
 
 public class RulesetDeployment {
 
@@ -120,6 +118,8 @@ public class RulesetDeployment {
         );
     }
 
+    protected static final Pair<Long, Long> ALWAYS_ACTIVE = new Pair<>(0L, Long.MAX_VALUE);
+    protected static final Pair<Long, Long> EXPIRED = new Pair<>(0L, 0L);
     final protected Ruleset ruleset;
     final protected Rules rules = new Rules();
     final protected AssetStorageService assetStorageService;
@@ -131,7 +131,8 @@ public class RulesetDeployment {
     final protected Webhooks webhooksFacade;
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
-    final protected List<ScheduledFuture<?>> scheduledRuleActions = new ArrayList<>();
+    final protected List<ScheduledFuture<?>> scheduledRuleActions = Collections.synchronizedList(new ArrayList<>());
+    protected boolean running;
     protected RulesetStatus status = RulesetStatus.READY;
     protected Throwable error;
     protected JsonRulesBuilder jsonRulesBuilder;
@@ -153,13 +154,33 @@ public class RulesetDeployment {
         this.webhooksFacade = webhooksFacade;
         this.historicDatapointsFacade = historicDatapointsFacade;
         this.predictedDatapointsFacade = predictedDatapointsFacade;
+    }
 
+    protected void init() throws IllegalStateException {
         if (ruleset.getMeta().has(Ruleset.VALIDITY)) {
             validity = ruleset.getValidity();
 
             if (validity == null) {
-                RulesEngine.LOG.log(Level.SEVERE, "Ruleset has invalid validity value '" + ruleset.getMeta().get(Ruleset.VALIDITY) + "'");
+                RulesEngine.LOG.log(Level.WARNING, "Ruleset '" + ruleset.getName() + "' has invalid validity value: " + ruleset.getMeta().get(Ruleset.VALIDITY));
+                status = VALIDITY_PERIOD_ERROR;
+                return;
             }
+        }
+
+        if (TextUtil.isNullOrEmpty(ruleset.getRules())) {
+            RulesEngine.LOG.finest("Ruleset is empty so no rules to deploy: " + ruleset.getName());
+            status = EMPTY;
+            return;
+        }
+
+        if (!ruleset.isEnabled()) {
+            RulesEngine.LOG.finest("Ruleset is disabled: " + ruleset.getName());
+            status = DISABLED;
+        }
+
+        if (!compile()) {
+            RulesEngine.LOG.log(Level.SEVERE, "Ruleset compilation error: " + ruleset.getName(), getError());
+            status = COMPILATION_ERROR;
         }
     }
 
@@ -183,27 +204,35 @@ public class RulesetDeployment {
         return rules;
     }
 
-    public void updateValidity() {
-        if (validity != null && !hasExpired()) {
-            Pair<Long, Long> fromTo = validity.getNextOrActiveFromTo(new Date(timerService.getCurrentTimeMillis()));
-            if (fromTo == null) {
-                nextValidity = new Pair<>(Long.MIN_VALUE, Long.MIN_VALUE);
-            } else {
-                nextValidity = fromTo;
-            }
+    protected void updateValidity() {
+        Pair<Long, Long> fromTo = validity.getNextOrActiveFromTo(new Date(timerService.getCurrentTimeMillis()));
+        if (fromTo == null) {
+            nextValidity = EXPIRED;
+            RulesEngine.LOG.log(Level.INFO, "Ruleset deployment '" + getName() + "' has expired");
+        } else {
+            nextValidity = fromTo;
+            RulesEngine.LOG.log(Level.INFO, "Ruleset deployment '" + getName() + "' paused until: " + new Date(fromTo.key));
         }
     }
 
-    public long getValidFrom() {
-        return nextValidity != null ? nextValidity.key : Long.MIN_VALUE;
-    }
+    /**
+     * Returns the current or next time window in which this rule is active
+     * @return null if deployment has expired
+     */
+    public Pair<Long, Long> getNextOrActiveFromTo() {
+        if (validity == null) {
+            return ALWAYS_ACTIVE;
+        }
 
-    public long getValidTo() {
-        return nextValidity != null ? nextValidity.value : Long.MAX_VALUE;
-    }
+        if (nextValidity == EXPIRED) {
+            return nextValidity;
+        }
 
-    public boolean hasExpired() {
-        return validity != null && nextValidity != null && nextValidity.value == Long.MIN_VALUE;
+        if (nextValidity == null || nextValidity.value <= timerService.getCurrentTimeMillis()) {
+            updateValidity();
+        }
+
+        return nextValidity;
     }
 
     public boolean compile() {
@@ -225,28 +254,49 @@ public class RulesetDeployment {
         return false;
     }
 
+    public boolean canStart() {
+        return status != COMPILATION_ERROR && status != DISABLED && status != RulesetStatus.EXPIRED;
+    }
+
     /**
      * Called when a ruleset is started (allows for initialisation tasks)
      */
-    public void start(RulesFacts facts) {
+    public boolean start(RulesFacts facts) {
+        if (!canStart()) {
+            return false;
+        }
+
         if (jsonRulesBuilder != null) {
             jsonRulesBuilder.start(facts);
         }
+
+        running = true;
+        return true;
     }
 
     /**
      * Called when this deployment is stopped, could be the ruleset is being updated, removed or an error has occurred
      * during execution
      */
-    public void stop(RulesFacts facts) {
-        scheduledRuleActions.removeIf(scheduledFuture -> {
-            scheduledFuture.cancel(true);
-            return true;
-        });
+    public boolean stop(RulesFacts facts) {
+        if (!running) {
+            return false;
+        }
+
+        running = false;
+
+        synchronized (scheduledRuleActions) {
+            scheduledRuleActions.removeIf(scheduledFuture -> {
+                scheduledFuture.cancel(true);
+                return true;
+            });
+        }
 
         if (jsonRulesBuilder != null) {
             jsonRulesBuilder.stop(facts);
         }
+
+        return true;
     }
 
     public void onAssetStatesChanged(RulesFacts facts, RulesEngine.AssetStateChangeEvent event) {
@@ -256,14 +306,11 @@ public class RulesetDeployment {
     }
 
     protected void scheduleRuleAction(Runnable action, long delayMillis) {
-        withLock(toString() + "::scheduleRuleAction", () -> {
-            ScheduledFuture<?> future = executorService.schedule(() ->
-                    withLock(toString() + "::scheduledRuleActionFire", () -> {
-                        scheduledRuleActions.removeIf(Future::isDone);
-                        action.run();
-                    }), delayMillis, TimeUnit.MILLISECONDS);
-            scheduledRuleActions.add(future);
-        });
+        ScheduledFuture<?> future = executorService.schedule(() -> {
+            scheduledRuleActions.removeIf(Future::isDone);
+            action.run();
+        }, delayMillis, TimeUnit.MILLISECONDS);
+        scheduledRuleActions.add(future);
     }
 
     protected boolean compileRulesJson(Ruleset ruleset) {
@@ -482,6 +529,26 @@ public class RulesetDeployment {
     }
 
     public RulesetStatus getStatus() {
+
+        if (isError() || status == DISABLED) {
+            return status;
+        }
+
+        Pair<Long, Long> validity = getNextOrActiveFromTo();
+
+        if (validity == EXPIRED) {
+            return RulesetStatus.EXPIRED;
+        }
+        if (validity != ALWAYS_ACTIVE) {
+            if (validity.key > timerService.getCurrentTimeMillis()) {
+                return RulesetStatus.PAUSED;
+            }
+        }
+
+        if (running) {
+            return DEPLOYED;
+        }
+
         return status;
     }
 
@@ -502,7 +569,7 @@ public class RulesetDeployment {
     }
 
     public boolean isError() {
-        return getStatus() == RulesetStatus.LOOP_ERROR || ((getStatus() == RulesetStatus.EXECUTION_ERROR || getStatus() == RulesetStatus.COMPILATION_ERROR) && !isContinueOnError());
+        return status == RulesetStatus.LOOP_ERROR || status == VALIDITY_PERIOD_ERROR || ((status == RulesetStatus.EXECUTION_ERROR || status == RulesetStatus.COMPILATION_ERROR) && !isContinueOnError());
     }
 
     public boolean isContinueOnError() {
@@ -519,7 +586,7 @@ public class RulesetDeployment {
             "id=" + getId() +
             ", name='" + getName() + '\'' +
             ", version=" + getVersion() +
-            ", status=" + status +
+            ", status=" + getStatus() +
             '}';
     }
 }

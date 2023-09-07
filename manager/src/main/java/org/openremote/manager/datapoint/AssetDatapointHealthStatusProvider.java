@@ -25,7 +25,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
 
-public class AssetDatapointHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class AssetDatapointHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "datapoints";
     protected AssetDatapointService assetDatapointService;

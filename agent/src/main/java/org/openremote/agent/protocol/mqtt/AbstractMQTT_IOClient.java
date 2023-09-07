@@ -261,7 +261,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             LOG.fine("Subscribed to topic '" + topic + "' on client '" + getClientUri() + "'");
             return true;
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to subscribe to topic '" + topic + "' on client '" + getClientUri() + "'", e);
+            LOG.log(Level.WARNING, "Failed to subscribe to topic '" + topic + "' on client '" + getClientUri() + "': " + e.getMessage());
             executorService.execute(() -> onSubscribeFailed(topic));
         }
         return false;
@@ -366,7 +366,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
         completableFutureSend.send().whenComplete((connAck, throwable) -> {
             if (throwable != null) {
-                LOG.log(Level.INFO, "Connection failed:" + getClientUri(), throwable);
+                LOG.log(Level.INFO, "Connection failed:" + getClientUri(), throwable.getMessage());
             } else {
                 synchronized (connected) {
                     connected.set(true);

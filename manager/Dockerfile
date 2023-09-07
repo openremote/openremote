@@ -61,6 +61,9 @@ ENV OR_JAVA_OPTS ${OR_JAVA_OPTS:--Xms500m -Xmx2g \
     -Xlog:all=warning:stdout:uptime,level,tags \
     -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
 
+# OpenMetrics _created series breaks cloudwatch prometheus scraper
+ENV PROMETHEUS_DISABLE_CREATED_SERIES ${PROMETHEUS_DISABLE_CREATED_SERIES:-true}
+
 RUN mkdir -p /deployment/manager/extensions
 
 WORKDIR /opt/app
@@ -68,7 +71,7 @@ WORKDIR /opt/app
 ADD lib /opt/app/lib
 ADD web /opt/web
 ADD map /opt/map
-COPY ./extension[s]/ /deployment/manager/extensions/
+ADD deployment /deployment
 
 EXPOSE 8080
 EXPOSE 1883
