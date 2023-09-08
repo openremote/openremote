@@ -144,11 +144,10 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         Asset<?> asset = assetStorageService.find(deviceUuid);
         // Check if asset was found
-        if(asset == null){
-            UpdateAsset(payloadContent);
-        }else{
-            CreateNewAsset(payloadContent);
-        }
+
+        if (asset == null) CreateNewAsset(payloadContent);
+        else UpdateAsset(payloadContent);
+
 
 
 
