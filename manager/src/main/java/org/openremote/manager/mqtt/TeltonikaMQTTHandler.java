@@ -9,8 +9,12 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.impl.RoomAsset;
+import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.ValueType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -34,7 +38,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     @Override
     protected boolean topicMatches(Topic topic) {
         if ("teltonika".equalsIgnoreCase(topicTokenIndexToString(topic, 2))){
-//            getLogger().info("Matches Teltonika Handler");
+            getLogger().info("Matches Teltonika Handler");
             return true;
         }
         return false;
@@ -53,7 +57,6 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         } else {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
-//            container.getService(MessageBrokerService.class).getContext().addRoutes(new UserAssetProvisioningMQTTHandler.ProvisioningPersistenceRouteBuilder(this));
         }
     }
 
@@ -132,11 +135,13 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * @param topic
      * @param body
      */
+     //TODO: Make this secure using certificates/authentication
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         //  {realmId}/{clientId}/teltonika/{imei}
         String deviceImei = topic.tokens.get(3);
+        String realm = topic.tokens.get(0);
 
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         String deviceUuid = getAssetId(deviceImei);
@@ -145,26 +150,56 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         Asset<?> asset = assetStorageService.find(deviceUuid);
         // Check if asset was found
 
-        if (asset == null) CreateNewAsset(payloadContent);
-        else UpdateAsset(payloadContent);
-
+        // Preexisting asset IMEI: 357073299950291
+        if (asset == null) CreateNewAsset(payloadContent, deviceUuid, deviceImei, realm);
+        else UpdateAsset(payloadContent, asset);
 
 
 
         return;
     }
 
-    private void CreateNewAsset(String payloadContent) {
+    private void CreateNewAsset(String payloadContent, String newDeviceId, String newDeviceImei, String realm) {
+        ThingAsset testAsset = new ThingAsset("Teltonika Asset "+newDeviceImei)
+                .setRealm(realm)
+                .setId(newDeviceId);
+        testAsset.addOrReplaceAttributes(
+                new Attribute<>("IMEI", ValueType.TEXT, newDeviceImei),
+                new Attribute<>("Payload", ValueType.TEXT, payloadContent)
+        );
+//                .setAttributes(Attribute<>)
+//        testAsset = assetResource.create(null, testAsset)357073299950291
+        Asset<?> mergedAsset = assetStorageService.merge(testAsset);
 
+        if(mergedAsset != null){
+            getLogger().info("Created Asset through Teltonika: " + testAsset);
+//            getLogger().info()
+        }else{
+            getLogger().info("Failed to create Asset: " + testAsset);
+        }
     }
 
-    private void UpdateAsset(String payloadContent) {
+    private void UpdateAsset(String payloadContent, Asset<?> asset) {
+
+        asset.addOrReplaceAttributes(
+                new Attribute<>("Payload", ValueType.TEXT, payloadContent)
+        );
+
+        Asset<?> mergedAsset = assetStorageService.merge(asset);
+
+        if(mergedAsset != null){
+            getLogger().info("Updated Asset through Teltonika: " + asset);
+//            getLogger().info()
+        }else{
+            getLogger().info("Failed to update Asset: " + asset);
+        }
 
     }
 
     private String getAssetId(String deviceImei){
         return UniqueIdentifierGenerator.generateId(deviceImei);
     }
+
 
 
 }
