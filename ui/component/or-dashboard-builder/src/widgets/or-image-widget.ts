@@ -1,40 +1,40 @@
-import manager, {DefaultColor5, DefaultColor4, DefaultColor2, DefaultColor3, Util } from "@openremote/core";
-import { 
-    Asset, 
-    AssetModelUtil, 
-    Attribute, 
-    AttributeRef, 
-    DashboardWidget, 
-    WellknownAttributes, 
-    WellknownMetaItems, 
-    WellknownUnitTypes
- } from "@openremote/model";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { i18next } from "@openremote/or-translate";
-import { css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
-import { customElement, property, state, query } from "lit/decorators.js";
+import manager, {DefaultColor2, DefaultColor3, Util} from '@openremote/core';
+import {
+    Asset,
+    AssetModelUtil,
+    Attribute,
+    AttributeRef,
+    DashboardWidget
+} from "@openremote/model";
+import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
+import {i18next} from '@openremote/or-translate';
+import {css, html, LitElement, TemplateResult, unsafeCSS} from 'lit';
+import {customElement, property, state, query} from 'lit/decorators.js';
+import {OrWidgetConfig, OrWidgetEntity} from './or-base-widget';
+import {when} from 'lit/directives/when.js';
 import {map} from 'lit/directives/map.js';
-import { OrWidgetConfig, OrWidgetEntity } from "./or-base-widget";
-import { style } from "../style";
-import {debounce} from "lodash";
-import { SettingsPanelType, widgetSettingsStyling } from "../or-dashboard-settingspanel";
-import { InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {style} from '../style';
+import {debounce} from 'lodash';
+import {SettingsPanelType, widgetSettingsStyling} from '../or-dashboard-settingspanel';
+import {InputType, OrInputChangedEvent} from '@openremote/or-mwc-components/or-mwc-input';
+
+export interface ImageAssetMarker {
+    attributeRef: AttributeRef,
+    coordinates: [number, number]
+}
 
 export interface ImageWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
+    markers: ImageAssetMarker[];
     showTimestampControls: boolean;
-    imageUploaded: boolean;
     imagePath: string;
-    assets: Asset[];
-    //stores the marker coordinates per attributeRef id
-    coordinatesMap: {[key: string]: [number, number]};
 }
 
 export class OrImageWidget implements OrWidgetEntity {
 
-    readonly DISPLAY_MDI_ICON: string = "file-image-marker"; // https://materialdesignicons.com;
-    readonly DISPLAY_NAME: string = "Image";
+    readonly DISPLAY_MDI_ICON: string = 'file-image-marker'; // https://materialdesignicons.com;
+    readonly DISPLAY_NAME: string = 'Image';
     readonly MIN_COLUMN_WIDTH: number = 2;
     readonly MIN_PIXEL_HEIGHT: number = 0;
     readonly MIN_PIXEL_WIDTH: number = 0;
@@ -44,19 +44,19 @@ export class OrImageWidget implements OrWidgetEntity {
             displayName: widget?.displayName,
             attributeRefs: [],
             showTimestampControls: false,
-            imageUploaded: false,
-            imagePath: "",
-            assets: [], //this should be just IDs i think
-            coordinatesMap: {}
+            imagePath: '',
+            markers: [],
         } as unknown as ImageWidgetConfig;
     }
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
-        return html`<or-image-widgetsettings .widget="${widget}" realm="${realm}"></or-image-widgetsettings>`;
+        return html`
+            <or-image-widgetsettings .widget="${widget}" realm="${realm}"></or-image-widgetsettings>`;
     }
 
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
-        return html`<or-image-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-image-widget>`;
+        return html`
+            <or-image-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-image-widget>`;
     }
 
 // Triggered every update to double check if the specification.
@@ -70,7 +70,7 @@ const contentStyling = css`
     #img-container {
         height: 100%;
         display: flex;
-        justify-content: center; 
+        justify-content: center;
         align-items: center;
         position: relative;
         overflow: hidden;
@@ -80,7 +80,7 @@ const contentStyling = css`
     .img-content {
         display: flex;
         flex-direction: column;
-        position: absolute;    /*added to check if elements can stack*/
+        position: absolute; /*added to check if elements can stack*/
         height: 100%;
         width: 100%;
         object-fit: contain;
@@ -91,7 +91,7 @@ const contentStyling = css`
     #overlay {
         position: absolute;
         z-index: 3;
-
+    
         /*additional marker styling*/
         color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
         background-color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
@@ -100,122 +100,117 @@ const contentStyling = css`
         object-fit: contain;
         text-overflow: ellipsis;
     }
-    `
+`;
 
-@customElement("or-image-widget")
+@customElement('or-image-widget')
 export class OrImageWidgetContent extends LitElement {
-    public static styles = contentStyling;
-    @query("#img-container")
-    private _imgSize!: HTMLElement;
-    @state()
-    private assetAttributes: [number, Attribute<any>][] = [];
-    @state()
-    private image?: HTMLInputElement;
-    @state()
-    private imageSize?: { width: number, height: number }
-    @state()
-    private assets: Asset[] = [];
-    @property()
-    public editMode?: boolean;
-    @state()
-    public imageUploaded?: boolean;
+
     @property()
     public realm?: string;
+
     @property()
     public readonly widget?: DashboardWidget;
-    private resizeObserver?: ResizeObserver;
 
-    private getProportionalPosition(propPos: number, maxSize: number){
-        var pos = propPos;
+    @property()
+    public editMode?: boolean;
+
+    @state()
+    protected assets: Asset[] = [];
+
+    @state()
+    protected assetAttributes: [number, Attribute<any>][] = [];
+
+    @state()
+    protected image?: HTMLInputElement;
+
+    @state()
+    protected imageSize?: { width: number, height: number };
+
+    @query('#img-container')
+    private readonly _imgSize!: HTMLElement;
+
+    static styles = contentStyling;
+    protected resizeObserver?: ResizeObserver;
+
+    private getProportionalPosition(propPos: number, maxSize: number) {
+        let pos = propPos;
         if (typeof maxSize !== 'undefined') {
             pos = (propPos / 100) * maxSize;
         }
         return pos;
     }
 
-    private handleContainerSizing(){
+    private handleContainerSizing() {
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
                 const size = entries[0].contentRect;
                 this.imageSize = {
                     width: size.width,
                     height: size.height
-                }
-                this.updateComplete.then(() => {
-                });
-            }, 200))
+                };
+            }, 200));
             this.resizeObserver.observe(this._imgSize);
-        })
-    }
-
-    private getUnits(attribute: Attribute<any>, attributeName: string, assetType: string) {
-        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attributeName, assetType);
-        const units = Util.resolveUnits(Util.getAttributeUnits(attribute, attributeDescriptor, assetType));
-        if (!units) {
-            return "";
-        };
-        return units;
+        });
     }
 
     // method to render and update the markers on the image
     private handleMarkerPlacement(config: ImageWidgetConfig) {
-        var xMax = this.imageSize?.width;
-        var yMax = this.imageSize?.height;
+        const xMax = this.imageSize?.width;
+        const yMax = this.imageSize?.height;
         if (this.assetAttributes.length && config.attributeRefs.length > 0) {
-            
-            console.log(this.assetAttributes);
-            console.log("this.assetAttributes");
-            return config.attributeRefs.map((attribute, index) => 
-            (
-                
-                html`
-                <span id="overlay" style="
-                left: ${
-                    this.getProportionalPosition(config.coordinatesMap[attribute.id!][0], xMax!)
-                }px;
-                top: ${
-                    this.getProportionalPosition(config.coordinatesMap[attribute.id!][1], yMax!)
-                }px;
-                ">
-                ${this.assetAttributes[index!][1].value} 
-                ${this.getUnits(attribute, attribute.name!, config.assets[index].type!)}</span>
-                `
-            ));
+
+            if(config.markers.length === 0) {
+                console.error("No markers found!");
+                return [];
+            }
+            return config.attributeRefs.map((attributeRef, index) => {
+                const marker = config.markers.find(m => m.attributeRef.id === attributeRef.id && m.attributeRef.name === attributeRef.name);
+                const asset = this.assets.find(a => a.id === attributeRef.id);
+                const left = this.getProportionalPosition(marker!.coordinates[0], xMax!);
+                const top = this.getProportionalPosition(marker!.coordinates[1], yMax!);
+                let value: string | undefined;
+                if(asset) {
+                    const attribute = asset.attributes![attributeRef.name!];
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
+                    value = Util.getAttributeValueAsString(attribute, descriptors[0], asset.type, true, "-");
+                }
+                return html`
+                    <span id="overlay" style="left: ${left}px; top: ${top}px">
+                        ${value}
+                    </span>
+                `;
+            });
         }
     }
 
-    
 
     render() {
-        var imagePath = this.widget?.widgetConfig.imagePath;
-        return html
-            `
+        const imagePath = this.widget?.widgetConfig.imagePath;
+        return html`
             <div id="img-container">
                 <img class="img-content" src="${imagePath}" alt=""/>
                 <div>
                     ${this.handleMarkerPlacement(this.widget?.widgetConfig)}
                 </div>
             </div>
-            `;
+        `;
     }
 
     updated(changedProperties: Map<string, any>) {
-        if(changedProperties.has("widget") || changedProperties.has("editMode")) {
-            if(this.assetAttributes.length != this.widget!.widgetConfig.attributeRefs.length) {
-                this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
+        if (changedProperties.has('widget') || changedProperties.has('editMode')) {
+            if (this.assetAttributes.length !== this.widget!.widgetConfig.attributeRefs.length) {
+                this.fetchAssets(this.widget?.widgetConfig).then(assets => {
                     this.assets = assets!;
                     this.assetAttributes = this.widget?.widgetConfig.attributeRefs.map((attrRef: AttributeRef) => {
-                        const assetIndex = assets!.findIndex((asset) => asset.id === attrRef.id);
+                        const assetIndex = assets!.findIndex(asset => asset.id === attrRef.id);
                         const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
                         return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
                     }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
                     this.handleContainerSizing();
-                    console.log(this.widget?.widgetConfig);
                 });
             }
         }
     }
-
 
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
@@ -233,8 +228,7 @@ export class OrImageWidgetContent extends LitElement {
                 }
             }).then(response => {
                 assets = response.data;
-                config.assets = response.data;
-            }).catch((reason) => {
+            }).catch(reason => {
                 console.error(reason);
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
@@ -244,184 +238,200 @@ export class OrImageWidgetContent extends LitElement {
 }
 
 const markerContainerStyling = css`
-    #marker-container {
-        display: flex;
-        justify-content: flex-end;
-    }
+  #marker-container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
 `;
 
-@customElement("or-image-widgetsettings")
+@customElement('or-image-widgetsettings')
 export class OrImageWidgetSettings extends LitElement {
+
     static get styles() {
         return [style, widgetSettingsStyling, markerContainerStyling];
     }
+
     private _fileElem!: HTMLInputElement;
-    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('marker coordinates'), i18next.t('image settings')];
+    private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('dashboard.markerCoordinates'), i18next.t('dashboard.imageSettings')];
+
+    @state()
     private loadedAssets?: Asset[];
+
     @property()
     public readonly widget?: DashboardWidget;
 
+    protected updated(changedProps: Map<string, any>) {
+        if(this.loadedAssets === undefined) {
+            this.fetchAssets(this.widget?.widgetConfig).then((assets) => {
+                if(assets === undefined) {
+                    this.loadedAssets = [];
+                } else {
+                    this.loadedAssets = assets;
+                }
+            });
+        }
+    }
 
-    // same implementation as /or-components/src/or-file-uploader.ts
-    // file explorer dialogue opens with supported file types
-    @property({ attribute: false })
-    public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
+    // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
+    // something here aint right
+    async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
+        if (config.attributeRefs && config.attributeRefs.length > 0) {
+            let assets: Asset[] = [];
+            await manager.rest.api.AssetResource.queryAssets({
+                ids: config.attributeRefs?.map((x: AttributeRef) => x.id) as string[],
+                realm: {
+                    name: manager.displayRealm // TODO: Improve this
+                },
+                select: {
+                    attributes: config.attributeRefs?.map((x: AttributeRef) => x.name) as string[]
+                }
+            }).then(response => {
+                assets = response.data;
+            }).catch((reason) => {
+                console.error(reason);
+                showSnackbar(undefined, i18next.t('errorOccurred'));
+            });
+            return assets;
+        }
+    }
+
     // UI Rendering
     render() {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig; // duplicate to edit, to prevent parent updates. Please trigger updateConfig()
-
-        var output = html`
+        return html`
             <div>
                 ${this.generateExpandableHeader(i18next.t('attributes'))}
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.MULTI_ATTRIBUTE}" .widgetConfig="${this.widget!.widgetConfig}"
-                    @updated="${(event: CustomEvent) => {
-                        this.onAttributesUpdate(event.detail.changes);
-                        this.updateConfig(this.widget!, event.detail.changes.get('config'));
-                }}"
+                                                @updated="${(event: CustomEvent) => {
+                                                    this.onAttributesUpdate(event.detail.changes);
+                                                    this.updateConfig(this.widget!, event.detail.changes.get('config'));
+                                                }}"
                     ></or-dashboard-settingspanel>
                 ` : null}
-        </div>
-        <div>
-            ${this.generateExpandableHeader(i18next.t('marker coordinates'))}
-        </div>
-        <div>
-            ${ this.expandedPanels.includes(i18next.t('marker coordinates')) ? this.draftCoordinateEntries(config, i18next.t('marker coordinates')): null}
-        </div>
-            <div>
-                ${this.generateExpandableHeader(i18next.t('image settings'))}
             </div>
             <div>
-                ${this.expandedPanels.includes(i18next.t('image settings')) ? html`
+                ${this.generateExpandableHeader(i18next.t('dashboard.markerCoordinates'))}
+            </div>
+            <div>
+                ${when(this.expandedPanels.includes(i18next.t('dashboard.markerCoordinates')), () => html`
+                    <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 32px 16px;">
+                        ${map(this.draftCoordinateEntries(config), template => template)}
+                    </div>
+                `)}
+            </div>
+            <div>
+                ${this.generateExpandableHeader(i18next.t('dashboard.imageSettings'))}
+            </div>
+            <div>
+                ${this.expandedPanels.includes(i18next.t('dashboard.imageSettings')) ? html`
                     <div style="padding: 24px 24px 48px 24px;">
-                        <or-mwc-input style="flex: 1;" type="${InputType.URL}" 
-                        required label="${i18next.t('Image URL')}"
-                        .value="${config.imageUploaded}"
-                        @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                    config.imagePath = event.detail.value;
-                                    config.imageUploaded = true;
-                                    this.updateConfig(this.widget!, config);
-                        }}"
+                        <or-mwc-input style="width: 100%;" type="${InputType.TEXT}" label="${i18next.t('dashboard.imageUrl')}" .value="${config.imagePath}"
+                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                          config.imagePath = event.detail.value;
+                                          this.updateConfig(this.widget!, config);
+                                      }}"
                         ></or-mwc-input>
-                        <div>
-                        ${this.showURL(config)}
-                        </div>
                     </div>
                 ` : null}
             </div>
-        `
-        return output;
-    }
-
-    private showURL(config: ImageWidgetConfig) {
-        if (!config.imageUploaded){
-            return;
-        }
-        return html `
-        <span>${'Current URL: '}</span>
-        <span>${config.imagePath}</span>
         `;
     }
-
 
     // old code for uploading file from local user path
     private handleFileInputChange(event: Event) {
         const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
         const input = event.target as HTMLInputElement;
-        if (input.files && input.files[0]) {
+        if (input.files && input?.files[0]) {
             this._fileElem = input;
             config.imagePath = URL.createObjectURL(input.files[0]);
             this.updateConfig(this.widget!, config);
             this.requestUpdate();
         }
     }
-    
 
-    private coordinateEntries(config: ImageWidgetConfig, name: string) {
-        var min = 0;
-        var max = 100;
-        
-        const isCoordinateMapEmpty = Object.keys(config.coordinatesMap).length === 0;
 
-        if (!isCoordinateMapEmpty) {
-            return config.assets.map((attribute) => 
-            (html`
+    private draftCoordinateEntries(config: ImageWidgetConfig): TemplateResult[] {
+        const min = 0;
+        const max = 100;
+
+        if (config.markers.length > 0) {
+            return config.attributeRefs.map((attributeRef) => {
+                const marker = config.markers.find(m => m.attributeRef.id === attributeRef.id && m.attributeRef.name === attributeRef.name);
+                if(marker === undefined) {
+                    console.error("A marker could not be found during drafting coordinate entries.");
+                    return html``;
+                }
+                const index = config.markers.indexOf(marker);
+                const coordinates = marker.coordinates;
+                const asset = this.loadedAssets?.find(a => a.id === attributeRef.id);
+                let label: string | undefined;
+                if(asset) {
+                    const attribute = asset.attributes![attributeRef.name!];
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
+                    label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
+                }
+                return html`
                     <div id="marker-container">
-                    <div style="margin: 5%; font-family: inherit; width: 100%;">${attribute.name}</div>
-                    <or-mwc-input .disableSliderNumberInput="${true}" style="width: 90%; margin-right: 10px; margin-bottom: 10px;"  
-                    .type="${InputType.NUMBER}" .min="${min}" .max="${max}" .value="${config.coordinatesMap[attribute.id!][0]}"
-                    @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        config.coordinatesMap[String(attribute.id!)][0] = event.detail.value;
-                        this.updateConfig(this.widget!, config);
-                        
-                    }}"
-                    ></or-mwc-input>
+                        <div style="flex: 1; display: flex; flex-direction: column;">
+                            <span>${this.loadedAssets?.find(a => a.id === attributeRef.id)?.name}</span>
+                            ${when(label, () => html`
+                                <span style="color: gray;">${label}</span>
+                            `)}
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <or-mwc-input .disableSliderNumberInput="${true}" compact style="max-width: 64px;"
+                                          .type="${InputType.NUMBER}" .min="${min}" .max="${max}" .value="${coordinates[0]}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              config.markers[index].coordinates = [event.detail.value, coordinates[1]];
+                                              this.updateConfig(this.widget!, config);
+                                          }}"
+                            ></or-mwc-input>
 
-                    <or-mwc-input .disableSliderNumberInput="${true}" style="width: 90%; margin-right: 10px; margin-bottom: 10px;"  
-                    .type="${InputType.NUMBER}" .min="${min}" .max="${max}" .value="${config.coordinatesMap[attribute.id!][1]}"
-                    @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        config.coordinatesMap[String(attribute.id!)][1] = event.detail.value;
-                        this.updateConfig(this.widget!, config);
-                    }}"
-                    ></or-mwc-input>
-                    </div>`));
-
-        }
-    }
-
-    private draftCoordinateEntries(config: ImageWidgetConfig, name: string) {
-        var min = 0;
-        var max = 100;
-        
-        const isCoordinateMapEmpty = Object.keys(config.coordinatesMap).length === 0;
-        if (!isCoordinateMapEmpty) {
-            return config.attributeRefs.map((attribute) => 
-            (html`
-                    <div id="marker-container">
-                    <div style="margin: 5%; font-family: inherit; width: 100%;">${attribute.name}</div>
-                    <or-mwc-input .disableSliderNumberInput="${true}" style="width: 90%; margin-right: 10px; margin-bottom: 10px;"  
-                    .type="${InputType.NUMBER}" .min="${min}" .max="${max}" .value="${config.coordinatesMap[attribute.id!][0]}"
-                    @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        config.coordinatesMap[String(attribute.id!)][0] = event.detail.value;
-                        this.updateConfig(this.widget!, config);
-                        
-                    }}"
-                    ></or-mwc-input>
-
-                    <or-mwc-input .disableSliderNumberInput="${true}" style="width: 90%; margin-right: 10px; margin-bottom: 10px;"  
-                    .type="${InputType.NUMBER}" .min="${min}" .max="${max}" .value="${config.coordinatesMap[attribute.id!][1]}"
-                    @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                        config.coordinatesMap[String(attribute.id!)][1] = event.detail.value;
-                        this.updateConfig(this.widget!, config);
-                    }}"
-                    ></or-mwc-input>
-                    </div>`));
-
+                            <or-mwc-input .disableSliderNumberInput="${true}" compact style="max-width: 64px;"
+                                          .type="${InputType.NUMBER}" .min="${min}" .max="${max}" .value="${coordinates[1]}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              config.markers[index].coordinates = [coordinates[0], event.detail.value];
+                                              this.updateConfig(this.widget!, config);
+                                          }}"
+                            ></or-mwc-input>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            return [
+                html`<span>${i18next.t('noAttributeConnected')}</span>`
+            ];
         }
     }
 
     // updates coordinate map according to the attributeRef entries per id
     updateCoordinateMap(config: ImageWidgetConfig) {
-        for (let i=0; i < config.attributeRefs.length; i++) {
-            let key = config.attributeRefs[i].id;
-            if (key == undefined) {
-                console.log("key is undefined");
+        for (let i = 0; i < config.attributeRefs.length; i++) {
+            const attributeRef = config.attributeRefs[i];
+            if (attributeRef === undefined) {
+                console.error('attributeRef is undefined');
                 return;
             }
-            if (!config.coordinatesMap.hasOwnProperty(key)) {
-                config.coordinatesMap[key] = [50,50]
+            const index = config.markers.findIndex(m => m.attributeRef.id === attributeRef.id && m.attributeRef.name === attributeRef.name);
+            if (index === -1) {
+                config.markers.push({
+                    attributeRef: attributeRef,
+                    coordinates: [50, 50]
+                });
             }
         }
-        console.log(config.coordinatesMap);
     }
-    
-    private updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force: boolean = false) {
+
+    private updateConfig(widget: DashboardWidget, config: OrWidgetConfig | any, force = false) {
         const oldWidget = JSON.parse(JSON.stringify(widget)) as DashboardWidget;
         widget.widgetConfig = config;
-        this.requestUpdate("widget", oldWidget);
-        this.forceParentUpdate(new Map<string, any>([["widget", widget]]), force);
+        this.requestUpdate('widget', oldWidget);
+        this.forceParentUpdate(new Map<string, any>([['widget', widget]]), force);
     }
 
 
@@ -432,28 +442,26 @@ export class OrImageWidgetSettings extends LitElement {
         if (changes.has('config')) {
             const config = changes.get('config') as ImageWidgetConfig;
             this.updateCoordinateMap(config);
-            if (config.attributeRefs.length > 0) {
-                this.widget!.displayName = this.loadedAssets![0].name;
-            }
         }
     }
 
-    
 
     // Method to update the Grid. For example after changing a setting.
-    private forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
+    private forceParentUpdate(changes: Map<string, any>, force = false) {
         this.requestUpdate();
-        this.dispatchEvent(new CustomEvent('updated', { detail: { changes: changes, force: force } }));
+        this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }
 
 
     private generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
+            <span class="expandableHeader panel-title" @click="${() => {
+                this.expandPanel(name);
+            }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
                 <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
             </span>
-        `
+        `;
     }
 
 
