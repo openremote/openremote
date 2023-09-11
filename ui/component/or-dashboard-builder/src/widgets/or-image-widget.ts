@@ -121,13 +121,10 @@ export class OrImageWidgetContent extends LitElement {
     protected assetAttributes: [number, Attribute<any>][] = [];
 
     @state()
-    protected image?: HTMLInputElement;
-
-    @state()
     protected imageSize?: { width: number, height: number };
 
     @query('#img-container')
-    private readonly _imgSize!: HTMLElement;
+    private readonly _imageElem!: HTMLElement;
 
     static styles = contentStyling;
     protected resizeObserver?: ResizeObserver;
@@ -149,7 +146,7 @@ export class OrImageWidgetContent extends LitElement {
                     height: size.height
                 };
             }, 200));
-            this.resizeObserver.observe(this._imgSize);
+            this.resizeObserver.observe(this._imageElem);
         });
     }
 
@@ -214,7 +211,6 @@ export class OrImageWidgetContent extends LitElement {
 
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
-    // something here aint right
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             let assets: Asset[] = [];
@@ -252,7 +248,6 @@ export class OrImageWidgetSettings extends LitElement {
         return [style, widgetSettingsStyling, markerContainerStyling];
     }
 
-    private _fileElem!: HTMLInputElement;
     private expandedPanels: string[] = [i18next.t('attributes'), i18next.t('dashboard.markerCoordinates'), i18next.t('dashboard.imageSettings')];
 
     @state()
@@ -274,7 +269,6 @@ export class OrImageWidgetSettings extends LitElement {
     }
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required. TODO: Simplify this to only request data needed for attribute list
-    // something here aint right
     async fetchAssets(config: OrWidgetConfig | any): Promise<Asset[] | undefined> {
         if (config.attributeRefs && config.attributeRefs.length > 0) {
             let assets: Asset[] = [];
@@ -339,18 +333,6 @@ export class OrImageWidgetSettings extends LitElement {
                 ` : null}
             </div>
         `;
-    }
-
-    // old code for uploading file from local user path
-    private handleFileInputChange(event: Event) {
-        const config = JSON.parse(JSON.stringify(this.widget!.widgetConfig)) as ImageWidgetConfig;
-        const input = event.target as HTMLInputElement;
-        if (input.files && input?.files[0]) {
-            this._fileElem = input;
-            config.imagePath = URL.createObjectURL(input.files[0]);
-            this.updateConfig(this.widget!, config);
-            this.requestUpdate();
-        }
     }
 
 
