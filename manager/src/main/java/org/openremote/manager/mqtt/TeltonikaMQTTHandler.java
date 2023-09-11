@@ -17,6 +17,7 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -163,6 +164,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         ThingAsset testAsset = new ThingAsset("Teltonika Asset "+newDeviceImei)
                 .setRealm(realm)
                 .setId(newDeviceId);
+        List<Attribute<?>> attributes = getAttributesFromPayload(payloadContent);
         testAsset.addOrReplaceAttributes(
                 new Attribute<>("IMEI", ValueType.TEXT, newDeviceImei),
                 new Attribute<>("Payload", ValueType.TEXT, payloadContent)
@@ -177,6 +179,20 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         }else{
             getLogger().info("Failed to create Asset: " + testAsset);
         }
+    }
+
+    /**
+     * Returns list of attributes depending on the Teltonika JSON Payload.
+     * Uses the logic and results from parsing the Teltonika Parameter IDs.
+     *
+     * @param payloadContent Payload coming from Teltonika device
+     * @return List of {@link Attribute}s to be assigned to the asset
+     */
+    private List<Attribute<?>> getAttributesFromPayload(String payloadContent) {
+
+
+
+        return null;
     }
 
     private void UpdateAsset(String payloadContent, Asset<?> asset) {
