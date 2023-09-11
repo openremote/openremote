@@ -2,6 +2,7 @@ package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import org.apache.commons.lang3.NotImplementedException;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
@@ -189,10 +190,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * @return List of {@link Attribute}s to be assigned to the asset
      */
     private List<Attribute<?>> getAttributesFromPayload(String payloadContent) {
-
-
-
-        return null;
+        throw new NotImplementedException();
     }
 
     private void UpdateAsset(String payloadContent, Asset<?> asset) {
