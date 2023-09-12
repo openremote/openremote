@@ -185,7 +185,11 @@ export class OrImageWidgetContent extends LitElement {
         const imagePath = this.widget?.widgetConfig.imagePath;
         return html`
             <div id="img-container">
-                <img class="img-content" src="${imagePath}" alt=""/>
+                ${when(imagePath, () => html`
+                    <img class="img-content" src="${imagePath}" alt=""/>
+                `, () => html`
+                    <span>${i18next.t('dashboard.noImageSelected')}</span>
+                `)}
                 <div>
                     ${this.handleMarkerPlacement(this.widget?.widgetConfig)}
                 </div>

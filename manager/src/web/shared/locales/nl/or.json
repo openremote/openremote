@@ -645,7 +645,8 @@
     "showLabels": "Toon labels",
     "zoom": "Zoom",
     "center": "Middelpunt",
-    "imageUrl": "Afbeelding URL"
+    "imageUrl": "Afbeelding URL",
+    "noImageSelected": "Geen afbeelding geselecteerd"
   },
   "south": "Zuid",
   "east": "Oost",

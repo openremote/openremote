@@ -645,7 +645,8 @@
     "showLabels": "Show labels",
     "zoom": "Zoom",
     "center": "Center",
-    "imageUrl": "Image URL"
+    "imageUrl": "Image URL",
+    "noImageSelected": "No image selected"
   },
   "south": "South",
   "east": "East",
