@@ -1,25 +1,29 @@
 package org.openremote.manager.mqtt;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.apache.commons.lang3.NotImplementedException;
 import org.keycloak.KeycloakSecurityContext;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.impl.RoomAsset;
-import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.asset.impl.CarAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.teltonika.TeltonikaParameter;
+import org.openremote.model.teltonika.TeltonikaPayload;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Set;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.API;
@@ -31,6 +35,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     private static final Logger LOG = SyslogCategory.getLogger(API, TeltonikaMQTTHandler.class);
 
     protected AssetStorageService assetStorageService;
+    protected TimerService timerService;
     /**
      * Indicates if this handler will handle the specified topic; independent of whether it is a publish or subscribe.
      * Should generally check the third token (index 2) onwards unless {@link #handlesTopic} has been overridden.
@@ -52,6 +57,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         getLogger().info("Starting Teltonika MQTT Handler");
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        timerService = container.getService(TimerService.class);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -140,8 +146,13 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      //TODO: Make this secure using certificates/authentication
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+
+
         String payloadContent = body.toString(StandardCharsets.UTF_8);
-        //  {realmId}/{clientId}/teltonika/{imei}
+
+        Attribute<?>[] attributes = getAttributesFromPayload(payloadContent);
+//        getLogger().info(String.valueOf(attributes.length));
+        //  {realmId}/{clientId}/Teltonika/{imei}
         String deviceImei = topic.tokens.get(3);
         String realm = topic.tokens.get(0);
 
@@ -151,25 +162,26 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         Asset<?> asset = assetStorageService.find(deviceUuid);
         // Check if asset was found
-
         // Preexisting asset IMEI: 357073299950291
-        if (asset == null) CreateNewAsset(payloadContent, deviceUuid, deviceImei, realm);
-        else UpdateAsset(payloadContent, asset);
+        if (asset == null) CreateNewAsset(payloadContent, deviceUuid, deviceImei, realm, attributes);
+        else UpdateAsset(payloadContent, asset, attributes);
 
 
 
         return;
     }
 
-    private void CreateNewAsset(String payloadContent, String newDeviceId, String newDeviceImei, String realm) {
-        ThingAsset testAsset = new ThingAsset("Teltonika Asset "+newDeviceImei)
+    private void CreateNewAsset(String payloadContent, String newDeviceId, String newDeviceImei, String realm, Attribute<?>[] attributes) {
+        CarAsset testAsset = new CarAsset("Teltonika Asset "+newDeviceImei)
                 .setRealm(realm)
                 .setId(newDeviceId);
-        List<Attribute<?>> attributes = getAttributesFromPayload(payloadContent);
-        testAsset.addOrReplaceAttributes(
-                new Attribute<>("IMEI", ValueType.TEXT, newDeviceImei),
-                new Attribute<>("Payload", ValueType.TEXT, payloadContent)
-        );
+
+        List<Attribute<?>> attributesList = new ArrayList<>(Arrays.stream(attributes).toList());
+
+        attributesList.add(new Attribute<>("IMEI", ValueType.TEXT, newDeviceImei));
+        attributesList.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME, new Date(timerService.getCurrentTimeMillis())));
+
+        testAsset.addOrReplaceAttributes(attributesList.toArray(new Attribute[0]));
 //                .setAttributes(Attribute<>)
 //        testAsset = assetResource.create(null, testAsset)357073299950291
         Asset<?> mergedAsset = assetStorageService.merge(testAsset);
@@ -187,17 +199,45 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * Uses the logic and results from parsing the Teltonika Parameter IDs.
      *
      * @param payloadContent Payload coming from Teltonika device
-     * @return List of {@link Attribute}s to be assigned to the asset
+     * @return Array of {@link Attribute}s to be assigned to the {@link Asset}.
      */
-    private List<Attribute<?>> getAttributesFromPayload(String payloadContent) {
-        throw new NotImplementedException();
+    private Attribute<?>[] getAttributesFromPayload(String payloadContent) {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<Integer, TeltonikaParameter> params = new HashMap<>();
+        try {
+            // Parse file with Parameter details
+            String text = Files.readString(Paths.get("model/src/main/java/org/openremote/model/teltonika/FMC003.json"));
+            TeltonikaParameter[] paramArray = mapper.readValue(text, TeltonikaParameter[].class);
+
+            // Add each element to the HashMap, with the key being the unique parameter ID and the parameter
+            // being the value
+            for (TeltonikaParameter param : paramArray) {
+                params.put(param.getPropertyId(), param);
+            }
+        } catch (Exception e) {
+            getLogger().info(e.toString());
+        }
+
+//        getLogger().info(String.valueOf(params.length));
+        //Parameters parsed, time to understand the payload
+        TeltonikaPayload payload;
+        try {
+            payload = mapper.readValue(payloadContent, TeltonikaPayload.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        String x = payload.toString();
+
+        Attribute<?>[] attrs = payload.payload.state.GetAttributes(params);
+
+        return attrs;
+
+//        throw new NotImplementedException();
     }
 
-    private void UpdateAsset(String payloadContent, Asset<?> asset) {
+    private void UpdateAsset(String payloadContent, Asset<?> asset, Attribute<?>[] attributes) {
 
-        asset.addOrReplaceAttributes(
-                new Attribute<>("Payload", ValueType.TEXT, payloadContent)
-        );
+        asset.addOrReplaceAttributes(attributes);
 
         Asset<?> mergedAsset = assetStorageService.merge(asset);
 
