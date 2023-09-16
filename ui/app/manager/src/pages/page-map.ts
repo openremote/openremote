@@ -342,7 +342,7 @@ export class PageMap extends Page<MapStateKeyed> {
     protected render() {
 
         let currentAssetSelected: boolean = (this._currentAsset != undefined);
-        currentAssetSelected? console.log("render") : console.log("asset unselected");
+        // currentAssetSelected? console.log("render") : console.log("asset unselected");
         return html`
             
             ${currentAssetSelected ? html`
