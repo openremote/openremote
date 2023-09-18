@@ -263,13 +263,15 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         });
 
         // Create internal producer for producing and consuming messages
-        ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0");
-        ClientSessionFactory factory = serverLocator.createSessionFactory();
-        String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
-        internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
-        ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
-        serverSession.disableSecurity();
-        internalSession.start();
+        try (ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0")) {
+            ClientSessionFactory factory = serverLocator.createSessionFactory();
+            String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
+            internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
+            internalSession.addMetaData(ClientSession.JMS_SESSION_IDENTIFIER_PROPERTY, "Internal session");
+            ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
+            serverSession.disableSecurity();
+            internalSession.start();
+        }
 
         // Create producer
         producer = internalSession.createProducer();
