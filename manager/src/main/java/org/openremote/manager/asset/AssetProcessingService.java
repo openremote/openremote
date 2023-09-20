@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.EntityManager;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -282,7 +283,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Process attribute events
         // TODO: Make SENDER much more granular (switch to microservices with RBAC)
-        // TODO: Unify logging of attribute updates
         /* TODO This message consumer should be transactionally consistent with the database, this is currently not the case
 
          Our "if I have not processed this message before" duplicate detection:
@@ -297,6 +297,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
          - Replace at-most-once ClientEventService with at-least-once capable, embeddable message broker/protocol
          - See pseudocode here: http://activemq.apache.org/should-i-use-xa.html
         */
+        // All user authorisation checks MUST have been carried out before events reach this queue
         from(ATTRIBUTE_EVENT_QUEUE)
             .routeId("AttributeEventProcessor")
             .doTry()
@@ -308,16 +309,63 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     event.setTimestamp(timerService.getCurrentTimeMillis());
                 }
 
-                LOG.log(System.Logger.Level.TRACE, () -> "Processing: " + event);
-
+                if (event.getValue().isEmpty())
+                    return; // Ignore events with no value set
                 if (event.getAssetId() == null || event.getAssetId().isEmpty())
-                    return;
+                    return; // Ignore events with no asset ID
                 if (event.getAttributeName() == null || event.getAttributeName().isEmpty())
-                    return;
+                    return; // Ignore events with no attribute name
+
                 Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Source.class);
                 if (source == null) {
                     throw new AssetProcessingException(MISSING_SOURCE);
                 }
+
+                LOG.log(System.Logger.Level.TRACE, () -> "Processing: " + event);
+
+                Asset<?> asset = assetStorageService.find(event.getAssetId(), true);
+
+                if (asset == null) {
+                    throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
+                }
+
+                Attribute<?> oldAttribute = asset.getAttribute(event.getAttributeName()).orElseThrow(() ->
+                    new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
+
+                // For executable attributes, non-sensor sources can set a writable attribute execute status
+                if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
+                    Optional<AttributeExecuteStatus> status = event.getValue()
+                        .flatMap(ValueUtil::getString)
+                        .flatMap(AttributeExecuteStatus::fromString);
+
+                    if (status.isPresent() && !status.get().isWrite()) {
+                        throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
+                    }
+                }
+
+                // Type coercion - event will contain a generic JsonNode that needs coercing to the correct type
+                Object value = event.getValue().map(eventValue -> {
+                    Class<?> attributeValueType = oldAttribute.getType().getType();
+                    return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
+                        LOG.log(System.Logger.Level.INFO, "Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
+                        return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
+                    });
+                }).orElse(null);
+
+                // TODO: Use schema validation
+                // Check if attribute is well known and the value is valid
+//                    AssetModelUtil.getAssetDescriptor(asset.getType()).map(assetDescriptor -> assetDescriptor.get)
+//                    AssetModelUtil.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
+//                        // Check if the value is valid
+//                        wellKnownAttribute.getValueDescriptor()
+//                            .getValidator().flatMap(v -> v.apply(event.getValue().orElse(null)))
+//                            .ifPresent(validationFailure -> {
+//                                throw new AssetProcessingException(
+//                                    INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE
+//                                );
+//                            });
+//                    });
+
 
                 // Process the asset update in a database transaction, this ensures that processors
                 // will see consistent database state and we only commit if no processor failed. This
@@ -334,50 +382,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         throw new AssetProcessingException(ASSET_NOT_FOUND);
                     }
 
-                    Attribute<?> oldAttribute = asset.getAttribute(event.getAttributeName()).orElse(null);
-                    if (oldAttribute == null) {
-                        if (source == SENSOR) {
-                            // Fail silently as a protocol may have queued updates before the attribute was modified/deleted
-                            return;
-                        }
 
-                        throw new AssetProcessingException(ATTRIBUTE_NOT_FOUND);
-                    }
 
-                    // For executable attributes, non-sensor sources can set a writable attribute execute status
-                    if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
-                        Optional<AttributeExecuteStatus> status = event.getValue()
-                            .flatMap(ValueUtil::getString)
-                            .flatMap(AttributeExecuteStatus::fromString);
 
-                        if (status.isPresent() && !status.get().isWrite()) {
-                            throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
-                        }
-                    }
 
-                    // Type coercion
-                    Object value = event.getValue().map(eventValue -> {
-                        Class<?> attributeValueType = oldAttribute.getType().getType();
-                        return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                            LOG.log(System.Logger.Level.INFO, "Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
-                            return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
-                        });
 
-                    }).orElse(null);
 
-                    // TODO: Use schema validation
-                    // Check if attribute is well known and the value is valid
-//                    AssetModelUtil.getAssetDescriptor(asset.getType()).map(assetDescriptor -> assetDescriptor.get)
-//                    AssetModelUtil.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
-//                        // Check if the value is valid
-//                        wellKnownAttribute.getValueDescriptor()
-//                            .getValidator().flatMap(v -> v.apply(event.getValue().orElse(null)))
-//                            .ifPresent(validationFailure -> {
-//                                throw new AssetProcessingException(
-//                                    INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE
-//                                );
-//                            });
-//                    });
 
                     // Either use the timestamp of the event or set event time to processing time or (old event time + 1)
                     // We need a different timestamp for Attribute.equals() check

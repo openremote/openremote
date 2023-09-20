@@ -519,7 +519,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     /**
-     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
+     * @param loadComplete If the whole asset data (including attributes) should be loaded.
      */
     public Asset<?> find(String assetId, boolean loadComplete) {
         if (assetId == null)
