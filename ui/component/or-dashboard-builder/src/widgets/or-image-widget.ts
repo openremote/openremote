@@ -83,6 +83,7 @@ const contentStyling = css`
     }
     
     #img-content {
+      height: 100%;
       max-height: 100%;
       max-width: 100%;
     }
@@ -98,6 +99,7 @@ const contentStyling = css`
         padding: 3px 8px 5px 8px;
         object-fit: contain;
         text-overflow: ellipsis;
+        white-space: nowrap;
     }
 `;
 
