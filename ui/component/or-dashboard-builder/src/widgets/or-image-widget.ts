@@ -80,16 +80,11 @@ const contentStyling = css`
     #img-container {
       position: relative;
       max-height: 100%;
-      overflow: hidden;
-      display: flex;
     }
     
     #img-content {
-      display: block;
       max-height: 100%;
       max-width: 100%;
-      margin: auto;
-      object-fit: contain;
     }
 
     #overlay {
@@ -299,7 +294,7 @@ export class OrImageWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('dashboard.imageSettings')) ? html`
-                    <div style="padding: 24px 24px 48px 24px;">
+                    <div style="padding: 8px 16px 32px 16px;">
                         <or-mwc-input style="width: 100%;" type="${InputType.TEXT}" label="${i18next.t('dashboard.imageUrl')}" .value="${config.imagePath}"
                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                           config.imagePath = event.detail.value;
