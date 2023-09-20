@@ -9,12 +9,11 @@ import {
 import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
 import {i18next} from '@openremote/or-translate';
 import {css, html, LitElement, TemplateResult, unsafeCSS} from 'lit';
-import {customElement, property, state, query} from 'lit/decorators.js';
+import {customElement, property, state} from 'lit/decorators.js';
 import {OrWidgetConfig, OrWidgetEntity} from './or-base-widget';
 import {when} from 'lit/directives/when.js';
 import {map} from 'lit/directives/map.js';
 import {style} from '../style';
-import {debounce} from 'lodash';
 import {SettingsPanelType, widgetSettingsStyling} from '../or-dashboard-settingspanel';
 import {InputType, OrInputChangedEvent} from '@openremote/or-mwc-components/or-mwc-input';
 
@@ -67,25 +66,30 @@ export class OrImageWidget implements OrWidgetEntity {
 }
 
 const contentStyling = css`
-    #img-container {
+    #img-wrapper {
         height: 100%;
+        width: 100%;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        position: relative;
         overflow: hidden;
         z-index: 1;
     }
 
-    .img-content {
-        display: flex;
-        flex-direction: column;
-        position: absolute; /*added to check if elements can stack*/
-        height: 100%;
-        width: 100%;
-        object-fit: contain;
-        flex: 1;
-        z-index: 2;
+    #img-container {
+      position: relative;
+      max-height: 100%;
+      overflow: hidden;
+      display: flex;
+    }
+    
+    #img-content {
+      display: block;
+      max-height: 100%;
+      max-width: 100%;
+      margin: auto;
+      object-fit: contain;
     }
 
     #overlay {
@@ -120,40 +124,10 @@ export class OrImageWidgetContent extends LitElement {
     @state()
     protected assetAttributes: [number, Attribute<any>][] = [];
 
-    @state()
-    protected imageSize?: { width: number, height: number };
-
-    @query('#img-container')
-    private readonly _imageElem!: HTMLElement;
-
     static styles = contentStyling;
-    protected resizeObserver?: ResizeObserver;
-
-    private getProportionalPosition(propPos: number, maxSize: number) {
-        let pos = propPos;
-        if (typeof maxSize !== 'undefined') {
-            pos = (propPos / 100) * maxSize;
-        }
-        return pos;
-    }
-
-    private handleContainerSizing() {
-        this.updateComplete.then(() => {
-            this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-                const size = entries[0].contentRect;
-                this.imageSize = {
-                    width: size.width,
-                    height: size.height
-                };
-            }, 200));
-            this.resizeObserver.observe(this._imageElem);
-        });
-    }
 
     // method to render and update the markers on the image
     private handleMarkerPlacement(config: ImageWidgetConfig) {
-        const xMax = this.imageSize?.width;
-        const yMax = this.imageSize?.height;
         if (this.assetAttributes.length && config.attributeRefs.length > 0) {
 
             if(config.markers.length === 0) {
@@ -163,8 +137,6 @@ export class OrImageWidgetContent extends LitElement {
             return config.attributeRefs.map((attributeRef, index) => {
                 const marker = config.markers.find(m => m.attributeRef.id === attributeRef.id && m.attributeRef.name === attributeRef.name);
                 const asset = this.assets.find(a => a.id === attributeRef.id);
-                const left = this.getProportionalPosition(marker!.coordinates[0], xMax!);
-                const top = this.getProportionalPosition(marker!.coordinates[1], yMax!);
                 let value: string | undefined;
                 if(asset) {
                     const attribute = asset.attributes![attributeRef.name!];
@@ -172,7 +144,7 @@ export class OrImageWidgetContent extends LitElement {
                     value = Util.getAttributeValueAsString(attribute, descriptors[0], asset.type, true, "-");
                 }
                 return html`
-                    <span id="overlay" style="left: ${left}px; top: ${top}px">
+                    <span id="overlay" style="left: ${marker!.coordinates[0]}%; top: ${marker!.coordinates[1]}%">
                         ${value}
                     </span>
                 `;
@@ -184,15 +156,17 @@ export class OrImageWidgetContent extends LitElement {
     render() {
         const imagePath = this.widget?.widgetConfig.imagePath;
         return html`
-            <div id="img-container">
+            <div id="img-wrapper">
                 ${when(imagePath, () => html`
-                    <img class="img-content" src="${imagePath}" alt=""/>
+                    <div id="img-container">
+                        <img id="img-content" src="${imagePath}" alt=""/>
+                        <div>
+                            ${this.handleMarkerPlacement(this.widget?.widgetConfig)}
+                        </div>
+                    </div>
                 `, () => html`
                     <span>${i18next.t('dashboard.noImageSelected')}</span>
                 `)}
-                <div>
-                    ${this.handleMarkerPlacement(this.widget?.widgetConfig)}
-                </div>
             </div>
         `;
     }
@@ -207,7 +181,6 @@ export class OrImageWidgetContent extends LitElement {
                         const foundAsset = assetIndex >= 0 ? assets![assetIndex] : undefined;
                         return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
                     }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                    this.handleContainerSizing();
                 });
             }
         }
