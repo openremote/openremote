@@ -4,7 +4,7 @@ import {
     AssetModelUtil,
     Attribute,
     AttributeRef,
-    DashboardWidget
+    DashboardWidget, WellknownValueTypes
 } from "@openremote/model";
 import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
 import {i18next} from '@openremote/or-translate';
@@ -13,6 +13,7 @@ import {customElement, property, state} from 'lit/decorators.js';
 import {OrWidgetConfig, OrWidgetEntity} from './or-base-widget';
 import {when} from 'lit/directives/when.js';
 import {map} from 'lit/directives/map.js';
+import {styleMap} from 'lit/directives/style-map.js';
 import {style} from '../style';
 import {SettingsPanelType, widgetSettingsStyling} from '../or-dashboard-settingspanel';
 import {InputType, OrInputChangedEvent} from '@openremote/or-mwc-components/or-mwc-input';
@@ -95,7 +96,7 @@ const contentStyling = css`
         /*additional marker styling*/
         color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
         background-color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-        border-radius: 15px;
+        border-radius: 15px; 
         padding: 3px 8px 5px 8px;
         object-fit: contain;
         text-overflow: ellipsis;
@@ -135,13 +136,23 @@ export class OrImageWidgetContent extends LitElement {
                 const marker = config.markers.find(m => m.attributeRef.id === attributeRef.id && m.attributeRef.name === attributeRef.name);
                 const asset = this.assets.find(a => a.id === attributeRef.id);
                 let value: string | undefined;
+                const styles: any = {
+                    "left": `${marker!.coordinates[0]}%`,
+                    "top": `${marker!.coordinates[1]}%`
+                };
                 if(asset) {
                     const attribute = asset.attributes![attributeRef.name!];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
                     value = Util.getAttributeValueAsString(attribute, descriptors[0], asset.type, true, "-");
+                    if(attribute.type === WellknownValueTypes.COLOURRGB && value !== "-") {
+                        styles.backgroundColor = value;
+                        styles.minHeight = "21px";
+                        styles.minWidth = "13px";
+                        value = undefined;
+                    }
                 }
                 return html`
-                    <span id="overlay" style="left: ${marker!.coordinates[0]}%; top: ${marker!.coordinates[1]}%">
+                    <span id="overlay" style="${styleMap(styles)}">
                         ${value}
                     </span>
                 `;
@@ -273,7 +284,7 @@ export class OrImageWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
-                    <or-dashboard-settingspanel .type="${SettingsPanelType.MULTI_ATTRIBUTE}" .widgetConfig="${this.widget!.widgetConfig}"
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.MULTI_ATTRIBUTE}" .onlyDataAttrs="${false}" .widgetConfig="${this.widget!.widgetConfig}"
                                                 @updated="${(event: CustomEvent) => {
                                                     this.onAttributesUpdate(event.detail.changes);
                                                     this.updateConfig(this.widget!, event.detail.changes.get('config'));
