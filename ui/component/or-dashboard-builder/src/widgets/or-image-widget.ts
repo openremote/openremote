@@ -144,7 +144,7 @@ export class OrImageWidgetContent extends LitElement {
                     const attribute = asset.attributes![attributeRef.name!];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
                     value = Util.getAttributeValueAsString(attribute, descriptors[0], asset.type, true, "-");
-                    if(attribute.type === WellknownValueTypes.COLOURRGB && value !== "-") {
+                    if(attribute?.type === WellknownValueTypes.COLOURRGB && value !== "-") {
                         styles.backgroundColor = value;
                         styles.minHeight = "21px";
                         styles.minWidth = "13px";
