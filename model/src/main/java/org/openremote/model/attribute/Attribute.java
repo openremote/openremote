@@ -30,14 +30,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,6 +51,8 @@ import java.util.stream.Stream;
 public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHolder {
 
     public static class AttributeDeserializer extends StdDeserializer<Attribute<?>> {
+
+        public static final System.Logger LOG = System.getLogger(AttributeDeserializer.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES);
 
         protected AttributeDeserializer() {
             super(Attribute.class);
@@ -90,9 +94,16 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                 throw new JsonParseException(jp, "Failed to extract attribute type information");
             }
 
-            // Get inner attribute type or fallback to primitive/JSON type
-            Optional<ValueDescriptor<?>> valueDescriptor = ValueUtil.getValueDescriptor(attributeValueType);
             Attribute attribute = new Attribute<>();
+            Exception valueException = null;
+            AtomicBoolean valueDescriptorNotFound = new AtomicBoolean(false);
+
+            // Get inner attribute type or fallback to primitive/JSON type
+            ValueDescriptor<?> valueDescriptor = ValueUtil.getValueDescriptor(attributeValueType).orElseGet(() -> {
+                valueDescriptorNotFound.set(true);
+                return ValueDescriptor.UNKNOWN;
+            });
+
 
             while (jp3.nextToken() != JsonToken.END_OBJECT) {
                 if (jp3.currentToken() == JsonToken.FIELD_NAME) {
@@ -113,22 +124,23 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                             break;
                         case "value":
                             @SuppressWarnings("unchecked")
-                            Class valueType = valueDescriptor.map(ValueDescriptor::getType)
-                                .orElseGet(() -> (Class) Object.class);
-                            attribute.value = jp3.readValueAs(valueType);
+                            Class valueType = valueDescriptor.getType();
+                            try {
+                                attribute.value = jp3.readValueAs(valueType);
+                            } catch (Exception e) {
+                                valueException = e;
+                            }
                             break;
                     }
                 }
             }
 
-            // Get the value descriptor from the value if it isn't known
-            attribute.type = valueDescriptor.orElseGet(() -> {
-                if (attribute.value == null) {
-                    return ValueDescriptor.UNKNOWN;
-                }
-                Object value = attribute.value;
-                return ValueUtil.getValueDescriptorForValue(value);
-            });
+            if (valueDescriptorNotFound.get()) {
+                LOG.log(System.Logger.Level.WARNING, "No value descriptor found for attribute '" + attribute.name + "' fallen back to " + ValueDescriptor.UNKNOWN.getName());
+            }
+            if (valueException != null) {
+                LOG.log(System.Logger.Level.WARNING, "Failed to deserialise attribute '" + attribute.name + "' value into type '" + valueDescriptor.getType().getName() + "': " + valueException.getMessage());
+            }
 
             return (Attribute<?>) attribute;
         }

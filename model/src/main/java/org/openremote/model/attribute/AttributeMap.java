@@ -71,7 +71,7 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
     }
 
     /**
-     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonTypeDescriptor} uses
+     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonJavaTypeDescriptor} uses
      * {@link Class#getDeclaredMethod} to find it...
      */
     @Override

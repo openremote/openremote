@@ -1,5 +1,9 @@
 package org.openremote.test.assets
 
+import jakarta.validation.constraints.Min
+import org.hibernate.validator.internal.metadata.core.ConstraintHelper
+import org.jboss.resteasy.api.validation.Validation
+import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.setup.SetupService
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -60,9 +64,14 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         assetResource.update(null, testAsset.getId(), testAsset)
 
-        then: "the request should be bad"
+        then: "the request should fail validation and return a validation report indicating the failure(s)"
         WebApplicationException ex = thrown()
         ex.response.status == 400
+        ex.response.getHeaders().getFirst(Validation.VALIDATION_HEADER)
+        def report = new ViolationReport(ex.response.readEntity(String.class))
+        report != null
+        report.propertyViolations.size() == 1
+        report.propertyViolations.get(0).path == "attributes[illegal- Attribute:name&&&].name"
 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())

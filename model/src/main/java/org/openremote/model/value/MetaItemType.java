@@ -164,8 +164,8 @@ public final class MetaItemType {
     public static final MetaItemDescriptor<String[]> UNITS = new MetaItemDescriptor<>("units", ValueType.TEXT.asArray());
 
     /**
-     * {@link ValueConstraint}s to be applied to the {@link Attribute} value; these override any constraints defined on
-     * any of the descriptors associated with the attribute.
+     * {@link ValueConstraint}s to be applied to the {@link Attribute} value; these are added to any constraints defined
+     * on any of the descriptors associated with the attribute.
      */
     public static final MetaItemDescriptor<ValueConstraint[]> CONSTRAINTS = new MetaItemDescriptor<>("constraints", ValueType.VALUE_CONSTRAINT.asArray());
 

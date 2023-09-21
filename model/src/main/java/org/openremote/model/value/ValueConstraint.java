@@ -205,6 +205,17 @@ public abstract class ValueConstraint implements Serializable {
             this.message = message;
             return this;
         }
+
+        @Override
+        public boolean evaluate(Object value) {
+            Need to deal with all possible data types here!!
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return NotEmpty.class.getSimpleName() + "{}";
+        }
     }
 
     @JsonTypeName("notBlank")
@@ -213,6 +224,16 @@ public abstract class ValueConstraint implements Serializable {
         public NotBlank setMessage(String message) {
             this.message = message;
             return this;
+        }
+
+        @Override
+        public boolean evaluate(Object value) {
+            return value instanceof CharSequence && !value.toString().trim().isEmpty();
+        }
+
+        @Override
+        public String toString() {
+            return NotBlank.class.getSimpleName();
         }
     }
 
@@ -223,9 +244,21 @@ public abstract class ValueConstraint implements Serializable {
             this.message = message;
             return this;
         }
+
+        @Override
+        public boolean evaluate(Object value) {
+            return value != null;
+        }
+
+        @Override
+        public String toString() {
+            return NotNull.class.getSimpleName();
+        }
     }
 
     protected String message;
+
+    public abstract boolean evaluate(Object value);
 
     public Optional<String> getMessage() {
         return Optional.ofNullable(message);

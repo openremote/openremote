@@ -19,6 +19,7 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -85,7 +86,7 @@ public final class ValueType {
 
     public static final ValueDescriptor<ArrayNode> JSON_ARRAY = new ValueDescriptor<>("JSONArray", ArrayNode.class);
 
-    public static final ValueDescriptor<BaseJsonNode> JSON = new ValueDescriptor<>("JSON", BaseJsonNode.class);
+    public static final ValueDescriptor<JsonNode> JSON = new ValueDescriptor<>("JSON", JsonNode.class);
 
     public static final ValueDescriptor<Integer> POSITIVE_INTEGER = new ValueDescriptor<>("positiveInteger", Integer.class,
         new ValueConstraint.Min(0)

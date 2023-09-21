@@ -315,6 +315,9 @@ plugins.withType(JavaPlugin).whenPluginAdded {
         options.encoding = 'UTF-8'
     }
 
+    // Allow dependencyInsight checks across all projects
+    task allDependencyInsight(type: DependencyInsightReportTask) {}
+
     // JAR/ZIP base name is the fully qualified subproject name
     archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"
 }

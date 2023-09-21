@@ -207,7 +207,7 @@ public interface AssetResource {
     @Path("{assetId}")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @Valid Asset<?> asset);
+    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset<?> asset);
 
     /**
      * Updates an attribute of an asset. Regular users can only update assets in their authenticated realm, the
@@ -253,7 +253,7 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    Asset<?> create(@BeanParam RequestParams requestParams, @Valid Asset<?> asset);
+    Asset<?> create(@BeanParam RequestParams requestParams, Asset<?> asset);
 
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm, the superuser can delete

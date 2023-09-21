@@ -20,6 +20,8 @@
 package org.openremote.manager.asset;
 
 import com.fasterxml.jackson.databind.node.NullNode;
+import org.jboss.resteasy.api.validation.ResteasyViolationException;
+import org.jboss.resteasy.plugins.validation.ResteasyViolationExceptionImpl;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.event.ClientEventService;
@@ -408,7 +410,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, FORBIDDEN);
         } catch (ConstraintViolationException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations());
         } catch (OptimisticLockException opEx) {
             throw new WebApplicationException("Refresh the asset from the server and try to update the changes again", opEx, CONFLICT);
         }
@@ -484,7 +486,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
-            if (asset.getRealm() == null || asset.getRealm().length() == 0) {
+            if (asset.getRealm() == null || asset.getRealm().isEmpty()) {
                 asset.setRealm(getAuthenticatedRealm().getName());
             } else if (!isRealmActiveAndAccessible(asset.getRealm())) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "', can't create: " + asset);
@@ -498,39 +500,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 newAsset.setId(asset.getId());
             }
 
-            // TODO: Decide on the below - clients should ensure the asset conforms to the asset descriptor and we shouldn't do any 'magic' here
-//            AssetModelUtil.getAssetDescriptor(asset.getType()).ifPresent(assetDescriptor -> {
-//
-//                // Add meta items to well known attributes if not present
-//                newAsset.getAttributes().stream().forEach(assetAttribute -> {
-//                    if (assetDescriptor.getAttributeDescriptors() != null) {
-//                        Arrays.stream(assetDescriptor.getAttributeDescriptors())
-//                                .filter(attrDescriptor -> attrDescriptor.getAttributeName().equals(assetAttribute.getName()))
-//                                .findFirst()
-//                                .ifPresent(defaultAttribute -> {
-//                                    if (defaultAttribute.getMetaItemDescriptors() != null) {
-//                                        assetAttribute.addMeta(
-//                                                Arrays.stream(defaultAttribute.getMetaItemDescriptors())
-//                                                        .filter(metaItemDescriptor -> !assetAttribute.hasMetaItem(metaItemDescriptor))
-//                                                        .map(MetaItem::new)
-//                                                        .toArray(MetaItem[]::new)
-//                                        );
-//                                    }
-//                                });
-//                    }
-//                });
-//
-//                // Add attributes for this well known asset if not present
-//                if (assetDescriptor.getAttributeDescriptors() != null) {
-//                    newAsset.addAttributes(
-//                            Arrays.stream(assetDescriptor.getAttributeDescriptors()).filter(attributeDescriptor ->
-//                                    !newAsset.hasAttribute(attributeDescriptor.getAttributeName())).map(Attribute::new).toArray(Attribute[]::new)
-//                    );
-//                }
-//            });
-
             return assetStorageService.merge(newAsset);
 
+        } catch (ConstraintViolationException ex) {
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations());
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }

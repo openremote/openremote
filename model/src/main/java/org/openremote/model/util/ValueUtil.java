@@ -30,6 +30,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.kjetland.jackson.jsonSchema.JsonSchemaGenerator;
+import jakarta.validation.ConstraintValidatorContext;
 import org.hibernate.internal.util.SerializationHelper;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.ModelDescriptor;
@@ -62,6 +63,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -846,6 +848,32 @@ public class ValueUtil {
         }
 
         return validator;
+    }
+
+    /**
+     * Provides a function to evaluate the validity of a value dynamically by extracting {@link ValueConstraint}s from
+     * the supplied parameters; each found constraint is then evaluated against the value supplied to the function.
+     *
+     * Unfortunately JSR-380 can't be used (even Hibernate validator's programmatic API) because validators are type
+     * centric but here the type (e.g. {@link Attribute} or {@link org.openremote.model.rules.AssetState}) is fixed
+     * but the constraints to be applied are dynamic, would be nice if there was a solution to this problem but this
+     * works for now.
+     */
+    public static BiFunction<ConstraintValidatorContext, Object, Boolean> getValueValidator(MetaHolder metaHolder, ValueDescriptor<?> valueDescriptor, AttributeDescriptor<?> attributeDescriptor) {
+        // TODO: Implement some sort of caching if performance warrants it
+
+        if (valueDescriptor != null && valueDescriptor.getConstraints() != null) {
+            Arrays.stream(valueDescriptor.getConstraints()).map()
+        }
+    }
+
+    protected static BiFunction<ConstraintValidatorContext, Object, Boolean> getConstraintValidator(ValueConstraint valueConstraint) {
+        return (context, value) -> {
+            if (!valueConstraint.evaluate(value)) {
+                valueConstraint.getMessage()
+            }
+            return true;
+        };
     }
 
     /**

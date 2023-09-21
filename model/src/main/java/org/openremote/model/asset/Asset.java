@@ -211,14 +211,12 @@ import static org.openremote.model.Constants.*;
 @Check(constraints = "ID != PARENT_ID")
 @JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = ThingAsset.class)
 @JsonTypeIdResolver(AssetTypeIdResolver.class)
-@AssetValid(groups = Asset.AssetSave.class)
+@AssetValid
+@Valid
 @DynamicUpdate
 @TsIgnoreTypeParams
 @SuppressWarnings("unchecked")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T> {
-
-    @TsIgnore
-    public interface AssetSave {}
 
     /*
      * ATTRIBUTE DESCRIPTORS DESCRIBING FIXED NAME ATTRIBUTES AND THEIR VALUE TYPE - ALL SUB TYPES OF THIS ASSET TYPE
