@@ -140,6 +140,17 @@ export class PageMap extends Page<MapStateKeyed> {
                 width: 100vw;
                 z-index: 3;
             }
+
+           or-map-attribute-chart {
+               position: absolute;
+               /*bottom: 10px;*/
+               /*width: 100%;*/
+               /*margin: 0;*/
+               /*height: 400px; !* fallback for IE *!*/
+               /*height: 100%;*/
+               z-index: 4;
+               /*max-height: calc(100vh - 150px);*/
+           }
         
             or-map {
                 display: block;
@@ -157,6 +168,24 @@ export class PageMap extends Page<MapStateKeyed> {
                     height: 400px; /* fallback for IE */
                     height: max-content;
                     max-height: calc(100vh - 150px);
+                }
+                or-map-attribute-chart {
+                    display: flex;
+                    /*max-height: 300px;*/
+                    box-sizing: border-box;
+                    background-clip: content-box;
+                    bottom: 0;
+                    width: 100%;
+                    padding: 20px;
+                    padding-right: 30px;
+                    background-color: white;
+                    height: 100%;
+                    border-radius: 10px;
+                    
+                    max-height: 30%;
+                    
+                    
+                    /*max-height: calc(100vh - 150px);*/
                 }
             }
         `;
@@ -349,12 +378,14 @@ export class PageMap extends Page<MapStateKeyed> {
                 <or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"
                                    .markerconfig="${this.config?.markers}" .map="${this._map}"></or-map-asset-card>
                 <or-map-location-history-overlay .assetId="${this._currentAsset.id}" .map="${this._map}" ></or-map-location-history-overlay>
+                <or-map-attribute-chart .assetId="${this._currentAsset.id}" .asset="${this._currentAsset}"></or-map-attribute-chart>
             ` : ``}
 
             <or-map id="map" class="or-map" showGeoCodingControl
                     @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {
                         this._setCenter(ev.detail.geocode);
-                    }}">
+                    }}"
+            >
                 ${
                         this._assets.filter((asset) => {
                             if (!asset.attributes) {
@@ -379,7 +410,10 @@ export class PageMap extends Page<MapStateKeyed> {
                                     `;
                                 })
                 }
+                
             </or-map>
+            
+            
         `;
     }
 

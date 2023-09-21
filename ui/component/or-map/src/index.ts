@@ -28,6 +28,7 @@ export * from "./markers/or-map-marker-asset";
 export {Control, IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 export * from "./orMapLocationHistoryOverlay"
+// export * from "./or-map-attribute-chart"
 
 export interface ViewSettings {
     center: LngLatLike;
