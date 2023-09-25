@@ -297,7 +297,7 @@ export class OrImageWidgetSettings extends LitElement {
             </div>
             <div>
                 ${when(this.expandedPanels.includes(i18next.t('dashboard.markerCoordinates')), () => html`
-                    <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 32px 16px;">
+                    <div class="expanded-panel" style="gap: 8px;">
                         ${map(this.draftCoordinateEntries(config), template => template)}
                     </div>
                 `)}
@@ -307,7 +307,7 @@ export class OrImageWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('dashboard.imageSettings')) ? html`
-                    <div style="padding: 8px 16px 32px 16px;">
+                    <div class="expanded-panel">
                         <or-mwc-input style="width: 100%;" type="${InputType.TEXT}" label="${i18next.t('dashboard.imageUrl')}" .value="${config.imagePath}"
                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                           config.imagePath = event.detail.value;
@@ -422,7 +422,7 @@ export class OrImageWidgetSettings extends LitElement {
 
     private generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => {
+            <span class="expandableHeader" @click="${() => {
                 this.expandPanel(name);
             }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
