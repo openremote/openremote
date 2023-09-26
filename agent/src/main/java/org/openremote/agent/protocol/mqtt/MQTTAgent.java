@@ -19,13 +19,12 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.fasterxml.jackson.databind.node.BaseJsonNode;
+import jakarta.persistence.Entity;
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import jakarta.persistence.Entity;
 import java.util.Optional;
 
 @Entity
@@ -40,7 +39,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     public static final AttributeDescriptor<String> WEBSOCKET_PATH = new AttributeDescriptor<>("websocketPath", ValueType.TEXT);
     public static final AttributeDescriptor<String> WEBSOCKET_QUERY = new AttributeDescriptor<>("websocketQuery", ValueType.TEXT);
     public static final AttributeDescriptor<String> LAST_WILL_TOPIC = new AttributeDescriptor<>("lastWillTopic", ValueType.TEXT);
-    public static final AttributeDescriptor<BaseJsonNode> LAST_WILL_PAYLOAD = new AttributeDescriptor<>("lastWillPayload", ValueType.JSON);
+    public static final AttributeDescriptor<String> LAST_WILL_PAYLOAD = new AttributeDescriptor<>("lastWillPayload", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> LAST_WILL_RETAIN = new AttributeDescriptor<>("lastWillRetain", ValueType.BOOLEAN);
 
     public static final AgentDescriptor<MQTTAgent, MQTTProtocol, MQTTAgentLink> DESCRIPTOR = new AgentDescriptor<>(
@@ -125,11 +124,11 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
         return this;
     }
 
-    public Optional<BaseJsonNode> getLastWillPayload() {
+    public Optional<String> getLastWillPayload() {
         return getAttributes().getValue(LAST_WILL_PAYLOAD);
     }
 
-    public MQTTAgent setLastWillPayload(BaseJsonNode lastWillPayload) {
+    public MQTTAgent setLastWillPayload(String lastWillPayload) {
         getAttributes().getOrCreate(LAST_WILL_PAYLOAD).setValue(lastWillPayload);
         return this;
     }

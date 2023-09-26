@@ -82,11 +82,7 @@ public final class ValueType {
 
     public static final ValueDescriptor<MultivaluedStringMap> MULTIVALUED_TEXT_MAP = new ValueDescriptor<>("multivaluedTextMap", MultivaluedStringMap.class);
 
-    public static final ValueDescriptor<ObjectNode> JSON_OBJECT = new ValueDescriptor<>("JSONObject", ObjectNode.class);
-
-    public static final ValueDescriptor<ArrayNode> JSON_ARRAY = new ValueDescriptor<>("JSONArray", ArrayNode.class);
-
-    public static final ValueDescriptor<JsonNode> JSON = new ValueDescriptor<>("JSON", JsonNode.class);
+    public static final ValueDescriptor<Object> ANY = new ValueDescriptor<>("Any", Object.class);
 
     public static final ValueDescriptor<Integer> POSITIVE_INTEGER = new ValueDescriptor<>("positiveInteger", Integer.class,
         new ValueConstraint.Min(0)

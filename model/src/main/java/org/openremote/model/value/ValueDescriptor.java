@@ -68,7 +68,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 
         @Override
         public ValueDescriptor<?> convert(String value) {
-            return ValueUtil.getValueDescriptor(value).orElse(ValueDescriptor.UNKNOWN);
+            return ValueUtil.getValueDescriptor(value).orElse(ValueType.ANY);
         }
     }
 
@@ -112,7 +112,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 //            // Look for an existing value descriptor with this name
 //            MetaMap finalMeta = meta;
 //            return AssetModelUtil.getValueDescriptor(name).orElseGet(() -> {
-//                Class<?> typeClass = ValueType.JSON_OBJECT.type;
+//                Class<?> typeClass = ValueType.ANY.type;
 //                boolean isArray = name.endsWith("[]");
 //
 //                switch (type) {
@@ -135,8 +135,6 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 //            });
 //        }
 //    }
-
-    public static final ValueDescriptor<Object> UNKNOWN = new ValueDescriptor<>("Unknown", Object.class);
 
     protected String name;
     @JsonSerialize(converter = ValueDescriptor.ValueTypeStringConverter.class)

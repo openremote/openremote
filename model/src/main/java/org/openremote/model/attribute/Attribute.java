@@ -98,12 +98,13 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             Exception valueException = null;
             AtomicBoolean valueDescriptorNotFound = new AtomicBoolean(false);
 
-            // Get inner attribute type or fallback to primitive/JSON type
+            // Get inner attribute type or fallback to any type
             ValueDescriptor<?> valueDescriptor = ValueUtil.getValueDescriptor(attributeValueType).orElseGet(() -> {
                 valueDescriptorNotFound.set(true);
-                return ValueDescriptor.UNKNOWN;
+                return ValueType.ANY;
             });
 
+            attribute.type = valueDescriptor;
 
             while (jp3.nextToken() != JsonToken.END_OBJECT) {
                 if (jp3.currentToken() == JsonToken.FIELD_NAME) {
@@ -113,30 +114,23 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                         continue;
                     }
                     switch (propName) {
-                        case "meta":
-                            attribute.meta = jp3.readValueAs(MetaMap.class);
-                            break;
-                        case "name":
-                            attribute.name = jp3.readValueAs(String.class);
-                            break;
-                        case "timestamp":
-                            attribute.timestamp = jp3.readValueAs(Long.class);
-                            break;
-                        case "value":
-                            @SuppressWarnings("unchecked")
+                        case "meta" -> attribute.meta = jp3.readValueAs(MetaMap.class);
+                        case "name" -> attribute.name = jp3.readValueAs(String.class);
+                        case "timestamp" -> attribute.timestamp = jp3.readValueAs(Long.class);
+                        case "value" -> {
                             Class valueType = valueDescriptor.getType();
                             try {
                                 attribute.value = jp3.readValueAs(valueType);
                             } catch (Exception e) {
                                 valueException = e;
                             }
-                            break;
+                        }
                     }
                 }
             }
 
             if (valueDescriptorNotFound.get()) {
-                LOG.log(System.Logger.Level.WARNING, "No value descriptor found for attribute '" + attribute.name + "' fallen back to " + ValueDescriptor.UNKNOWN.getName());
+                LOG.log(System.Logger.Level.WARNING, "No value descriptor found for attribute '" + attribute.name + "' fallen back to " + ValueType.ANY.getName());
             }
             if (valueException != null) {
                 LOG.log(System.Logger.Level.WARNING, "Failed to deserialise attribute '" + attribute.name + "' value into type '" + valueDescriptor.getType().getName() + "': " + valueException.getMessage());

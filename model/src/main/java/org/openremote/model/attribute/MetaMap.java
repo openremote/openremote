@@ -72,8 +72,8 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
 
                     // Get the value descriptor from the value if it isn't known
                     metaItem.setTypeInternal(valueDescriptor.orElseGet(() -> {
-                        if (!metaItem.getValue().isPresent()) {
-                            return ValueDescriptor.UNKNOWN;
+                        if (metaItem.getValue().isEmpty()) {
+                            return ValueType.ANY;
                         }
                         Object value = metaItem.getValue().orElse(null);
                         return ValueUtil.getValueDescriptorForValue(value);

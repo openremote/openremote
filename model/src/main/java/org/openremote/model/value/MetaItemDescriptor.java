@@ -60,7 +60,7 @@ public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> 
         }
     }
 
-    public static final MetaItemDescriptor<Object> UNKNOWN = new MetaItemDescriptor<>("unkown", ValueDescriptor.UNKNOWN);
+    public static final MetaItemDescriptor<Object> UNKNOWN = new MetaItemDescriptor<>("unkown", ValueType.ANY);
 
     MetaItemDescriptor() {}
 

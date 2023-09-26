@@ -661,7 +661,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Do standard JSR-380 validation on the asset (includes custom validation)
-            Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset, Default.class, Asset.AssetSave.class);
+            Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset);
 
             if (validationFailures.size() > 0) {
                 String msg = "Asset merge failed as asset has failed constraint validation: asset=" + asset;

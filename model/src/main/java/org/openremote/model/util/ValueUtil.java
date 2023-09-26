@@ -24,13 +24,19 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.fasterxml.jackson.databind.node.*;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.kjetland.jackson.jsonSchema.JsonSchemaGenerator;
+import jakarta.persistence.Entity;
 import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.internal.util.SerializationHelper;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.ModelDescriptor;
@@ -51,15 +57,11 @@ import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 
-import jakarta.persistence.Entity;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -153,6 +155,7 @@ public class ValueUtil {
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true)
             .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
             .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
@@ -226,10 +229,9 @@ public class ValueUtil {
             return Optional.empty();
         }
 
-        if (value instanceof Optional) {
-            Optional opt = (Optional)value;
-            if (!opt.isPresent()) {
-                return opt;
+        if (value instanceof Optional opt) {
+            if (opt.isEmpty()) {
+                return Optional.empty();
             }
             value = opt.get();
         }
@@ -238,7 +240,11 @@ public class ValueUtil {
             return Optional.of((T) value);
         }
 
-        if (value instanceof String && !coerce) {
+        if (value instanceof CharSequence && String.class.isAssignableFrom(type)) {
+            return Optional.of((T) String.valueOf(value));
+        }
+
+        if (value instanceof CharSequence && !coerce) {
             return Optional.empty();
         }
 
@@ -261,7 +267,8 @@ public class ValueUtil {
                     return Optional.of((T) Short.valueOf(node.shortValue()));
                 }
             }
-            if (String.class == type) {
+            if (CharSequence.class.isAssignableFrom(type)) {
+
                 if (node.isTextual()) {
                     return Optional.of((T) node.asText());
                 }
@@ -377,14 +384,6 @@ public class ValueUtil {
         return getValueCoerced(value, Long.class);
     }
 
-    public static Optional<ObjectNode> asJSONObject(Object value) {
-        return getValue(value, ObjectNode.class);
-    }
-
-    public static Optional<ArrayNode> asJSONArray(Object value) {
-        return getValue(value, ArrayNode.class);
-    }
-
     public static ObjectNode createJsonObject() {
         return ValueUtil.JSON.createObjectNode();
     }
@@ -411,27 +410,30 @@ public class ValueUtil {
     }
 
     public static boolean isArray(Class<?> clazz) {
-        return clazz.isArray() || clazz == ArrayNode.class;
+        return clazz.isArray();
     }
 
     public static boolean isBoolean(Class<?> clazz) {
-        return clazz == Boolean.class || clazz == BooleanNode.class;
+        return clazz == Boolean.class;
     }
 
     public static boolean isNumber(Class<?> clazz) {
-        return Number.class.isAssignableFrom(clazz) || NumericNode.class.isAssignableFrom(clazz);
+        return Number.class.isAssignableFrom(clazz);
     }
 
     public static boolean isString(Class<?> clazz) {
-        return String.class.isAssignableFrom(clazz) || TextNode.class.isAssignableFrom(clazz) || BinaryNode.class.isAssignableFrom(clazz);
+        return CharSequence.class.isAssignableFrom(clazz);
+    }
+
+    public static boolean isMap(Class<?> clazz) {
+        return Map.class.isAssignableFrom(clazz);
     }
 
     public static boolean isObject(Class<?> clazz) {
-        return !isArray(clazz) && !isBoolean(clazz) && !isNumber(clazz) && !isString(clazz);
+        return isMap(clazz) || (!isArray(clazz) && !isBoolean(clazz) && !isNumber(clazz) && !isString(clazz));
     }
 
     public static Class<?> getArrayClass(Class<?> componentType) throws ClassNotFoundException {
-        ClassLoader classLoader = componentType.getClassLoader();
         String name;
         if (componentType.isArray()) {
             // just add a leading "["
@@ -627,13 +629,13 @@ public class ValueUtil {
 
     public static ValueDescriptor<?> getValueDescriptorForValue(Object value) {
         if (value == null) {
-            return ValueDescriptor.UNKNOWN;
+            return ValueType.ANY;
         }
 
         Class<?> valueClass = value.getClass();
         boolean isArray = valueClass.isArray();
         valueClass = isArray ? valueClass.getComponentType() : valueClass;
-        ValueDescriptor<?> valueDescriptor = ValueDescriptor.UNKNOWN;
+        ValueDescriptor<?> valueDescriptor = ValueType.ANY;
 
         if (valueClass == Boolean.class) valueDescriptor = ValueType.BOOLEAN;
         else if (valueClass == String.class) valueDescriptor = ValueType.TEXT;
@@ -643,7 +645,6 @@ public class ValueUtil {
         else if (valueClass == BigInteger.class) valueDescriptor = ValueType.BIG_INTEGER;
         else if (valueClass == BigDecimal.class) valueDescriptor = ValueType.BIG_NUMBER;
         else if (valueClass == Byte.class) valueDescriptor = ValueType.BYTE;
-        else if (Map.class.isAssignableFrom(valueClass)) valueDescriptor = ValueType.JSON_OBJECT;
 
         return isArray ? valueDescriptor.asArray() : valueDescriptor;
     }
@@ -790,7 +791,7 @@ public class ValueUtil {
         // Check each value type implements serializable interface
         List<ValueDescriptor<?>> nonSerializableValueDescriptors = new ArrayList<>();
         valueDescriptors.forEach(vd -> {
-            if (!Serializable.class.isAssignableFrom(vd.getType())) {
+            if (!Serializable.class.isAssignableFrom(vd.getType()) && vd != ValueType.ANY) {
                 nonSerializableValueDescriptors.add(vd);
             }
         });
@@ -859,21 +860,21 @@ public class ValueUtil {
      * but the constraints to be applied are dynamic, would be nice if there was a solution to this problem but this
      * works for now.
      */
-    public static BiFunction<ConstraintValidatorContext, Object, Boolean> getValueValidator(MetaHolder metaHolder, ValueDescriptor<?> valueDescriptor, AttributeDescriptor<?> attributeDescriptor) {
+    public static BiFunction<ConstraintValidatorContext, Object, Boolean> getValueValidator(MetaHolder metaHolder, ValueDescriptor<?> valueDescriptor, AttributeDescriptor<?> attributeDescriptor, Instant now) {
         // TODO: Implement some sort of caching if performance warrants it
-
-        if (valueDescriptor != null && valueDescriptor.getConstraints() != null) {
-            Arrays.stream(valueDescriptor.getConstraints()).map()
-        }
+        return (context, value) -> {
+            if (valueDescriptor != null && valueDescriptor.getConstraints() != null) {
+                Arrays.stream(valueDescriptor.getConstraints()).map(constraint -> getConstraintValidator(context, now, constraint, value));
+            }
+            return false;
+        };
     }
 
-    protected static BiFunction<ConstraintValidatorContext, Object, Boolean> getConstraintValidator(ValueConstraint valueConstraint) {
-        return (context, value) -> {
-            if (!valueConstraint.evaluate(value)) {
-                valueConstraint.getMessage()
-            }
-            return true;
-        };
+    protected static boolean getConstraintValidator(ConstraintValidatorContext context, Instant now, ValueConstraint valueConstraint, Object value) {
+        if (!valueConstraint.evaluate(value, now)) {
+            valueConstraint.getMessage();
+        }
+        return true;
     }
 
     /**

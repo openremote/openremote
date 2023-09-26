@@ -6,6 +6,7 @@ import org.jboss.resteasy.api.validation.Validation
 import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.util.ValueUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.AssetResource

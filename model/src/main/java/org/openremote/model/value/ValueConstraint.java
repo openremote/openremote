@@ -23,9 +23,16 @@ import com.fasterxml.jackson.annotation.*;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
+// TODO: Switch to JSONSchema with a validator that supports POJOs (something like
+//  https://github.com/java-json-tools/json-schema-validator which is no longer maintained) or find a JSR-380
+//  implementation that supports dynamic validators
 /**
  * Represents a constraint to apply to a value; these are based on JSR-380 validation.
  */
@@ -74,6 +81,31 @@ public abstract class ValueConstraint implements Serializable {
             this.message = message;
             return this;
         }
+
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
+        }
     }
 
     @JsonTypeName("min")
@@ -92,6 +124,31 @@ public abstract class ValueConstraint implements Serializable {
         public Min setMessage(String message) {
             this.message = message;
             return this;
+        }
+
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
         }
     }
 
@@ -112,6 +169,31 @@ public abstract class ValueConstraint implements Serializable {
             this.message = message;
             return this;
         }
+
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
+        }
     }
 
     @JsonTypeName("pattern")
@@ -130,6 +212,31 @@ public abstract class ValueConstraint implements Serializable {
         public Pattern setMessage(String message) {
             this.message = message;
             return this;
+        }
+
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
         }
     }
 
@@ -156,6 +263,31 @@ public abstract class ValueConstraint implements Serializable {
             return allowedValueNames;
         }
 
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
+        }
+
         public static AllowedValues fromEnum(Class<Enum<?>> enumClass) {
             Object[] allowedValues = Arrays.stream(enumClass.getEnumConstants()).map(enm -> ValueUtil.getStringCoerced(enm).orElse(null)).toArray(String[]::new);
             return new AllowedValues(allowedValues);
@@ -169,6 +301,31 @@ public abstract class ValueConstraint implements Serializable {
             this.message = message;
             return this;
         }
+
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
+        }
     }
 
     @JsonTypeName("pastOrPresent")
@@ -177,6 +334,31 @@ public abstract class ValueConstraint implements Serializable {
         public PastOrPresent setMessage(String message) {
             this.message = message;
             return this;
+        }
+
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
         }
     }
 
@@ -187,6 +369,31 @@ public abstract class ValueConstraint implements Serializable {
             this.message = message;
             return this;
         }
+
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
+        }
     }
 
     @JsonTypeName("futureOrPresent")
@@ -195,6 +402,35 @@ public abstract class ValueConstraint implements Serializable {
         public FutureOrPresent setMessage(String message) {
             this.message = message;
             return this;
+        }
+
+        @Override
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+            Instant valueInstant = ValueUtil.getValueCoerced(value, Instant.class).orElse(null);
+
+            if (valueInstant != null) {
+                int result = valueInstant.compareTo(now);
+                return result >= 0;
+            } else if (Map.class.isAssignableFrom(clazz)) {
+
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+
+            } else if (ValueUtil.isArray(clazz)) {
+
+            } else if (ValueUtil.isString(clazz)) {
+
+            } else if (ValueUtil.isNumber(clazz)) {
+
+            } else if (ValueUtil.isBoolean(clazz)) {
+
+            }
+
+            return false;
         }
     }
 
@@ -207,8 +443,23 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
-        public boolean evaluate(Object value) {
-            Need to deal with all possible data types here!!
+        public boolean evaluate(Object value, Instant now) {
+            if (value == null) {
+                return false;
+            }
+
+            Class<?> clazz = value.getClass();
+
+            if (Map.class.isAssignableFrom(clazz)) {
+                return !((Map<?, ?>)value).isEmpty();
+            } else if (Collection.class.isAssignableFrom(clazz)) {
+                return !((Collection<?>) value).isEmpty();
+            } else if (ValueUtil.isArray(clazz)) {
+                return Array.getLength(value) > 0;
+            } else if (ValueUtil.isString(clazz)) {
+                return !((CharSequence) value).isEmpty();
+            }
+
             return false;
         }
 
@@ -227,7 +478,7 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
-        public boolean evaluate(Object value) {
+        public boolean evaluate(Object value, Instant now) {
             return value instanceof CharSequence && !value.toString().trim().isEmpty();
         }
 
@@ -246,7 +497,7 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
-        public boolean evaluate(Object value) {
+        public boolean evaluate(Object value, Instant now) {
             return value != null;
         }
 
@@ -258,7 +509,7 @@ public abstract class ValueConstraint implements Serializable {
 
     protected String message;
 
-    public abstract boolean evaluate(Object value);
+    public abstract boolean evaluate(Object value, Instant now);
 
     public Optional<String> getMessage() {
         return Optional.ofNullable(message);

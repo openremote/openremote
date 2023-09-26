@@ -828,7 +828,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         agentLink.setPollingMillis((int)halfHourInMillis);
 
         weather.getAttributes().addOrReplace(
-                new Attribute<>("currentWeather", ValueType.JSON_OBJECT)
+                new Attribute<>("currentWeather", ValueType.ANY)
                         .addMeta(
                                 new MetaItem<>(MetaItemType.AGENT_LINK, agentLink),
                                 new MetaItem<>(MetaItemType.LABEL, "Open Weather Map API weather end point"),

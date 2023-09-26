@@ -59,14 +59,11 @@ class AssetValidator implements ConstraintValidator<AssetValid, Asset<?>> {
                     if (foundAttribute == null) {
                         context.buildConstraintViolationWithTemplate(ASSET_ATTRIBUTE_MISSING).addPropertyNode("attributes").addPropertyNode(requiredAttributeDescriptor.getName()).addConstraintViolation();
                         valid.set(false);
-                    } else if (foundAttribute.getValue().isEmpty()) {
-                        context.buildConstraintViolationWithTemplate(ASSET_ATTRIBUTE_VALUE_MISSING).addPropertyNode("attributes").addPropertyNode(requiredAttributeDescriptor.getName()).addConstraintViolation();
-                        valid.set(false);
                     }
                 });
         }
 
-        // Check attribute types match descriptors
+        // Check attribute types match descriptors and value constraints are met
         asset.getAttributes().values().forEach(attribute -> {
             AttributeDescriptor<?> descriptor = assetModelInfo == null ? null : Arrays.stream(assetModelInfo.getAttributeDescriptors())
                 .filter(attributeDescriptor -> attributeDescriptor.getName().equals(attribute.getName()))

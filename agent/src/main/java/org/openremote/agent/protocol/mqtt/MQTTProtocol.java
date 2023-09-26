@@ -104,7 +104,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 
         if (agent.getLastWillTopic().isPresent()) {
             String topic = agent.getLastWillTopic().get();
-            BaseJsonNode payload = agent.getLastWillPayload().orElse(null);
+            String payload = agent.getLastWillPayload().orElse(null);
             boolean retain = agent.isLastWillRetain().orElse(false);
             lastWill = new MQTTLastWill(topic, payload, retain);
         }
