@@ -62,16 +62,18 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         assert asset2.id != null
 
         when: "attributes from one asset is linked to attributes on the other"
-        def converterOnOff = ValueUtil.createJsonObject()
-        converterOnOff.put("PRESSED", "@TOGGLE")
-        converterOnOff.put("RELEASED", "@IGNORE")
-        converterOnOff.put("LONG_PRESSED", "@IGNORE")
+        def converterOnOff = Map.of(
+                "PRESSED", "@TOGGLE",
+                "RELEASED", "@IGNORE",
+                "LONG_PRESSED", "@IGNORE"
+        )
         def attributeLinkOnOff = new AttributeLink(new AttributeRef(asset2.id, "lightOnOff"), converterOnOff, null)
 
-        def converterCounter = ValueUtil.createJsonObject()
-        converterCounter.put("PRESSED", "@INCREMENT")
-        converterCounter.put("RELEASED", "@DECREMENT")
-        converterCounter.put("LONG_PRESSED", "@IGNORE")
+        def converterCounter = Map.of(
+                "PRESSED", "@INCREMENT",
+                "RELEASED", "@DECREMENT",
+                "LONG_PRESSED", "@IGNORE"
+        )
         def attributeLinkCounter = new AttributeLink(new AttributeRef(asset2.id, "counter"), converterCounter, null)
 
         def attributeLinkProp = new AttributeLink(new AttributeRef(asset2.id, "item2Prop1"), null, [

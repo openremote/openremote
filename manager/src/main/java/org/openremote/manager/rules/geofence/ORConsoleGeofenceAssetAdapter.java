@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.rules.geofence;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.PersistenceEvent;
@@ -247,7 +246,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         }
 
         List<String> ids = new ArrayList<>(assetIds);
-        ObjectNode data = ValueUtil.JSON.createObjectNode();
+        Map<String, Object> data = new HashMap<>();
         data.put("action", "GEOFENCE_REFRESH");
 
         // Break into batches of 10 sent every 10s to avoid consoles bombarding the backend

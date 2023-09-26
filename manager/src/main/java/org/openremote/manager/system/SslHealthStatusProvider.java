@@ -19,12 +19,10 @@
  */
 package org.openremote.manager.system;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
 
 import javax.net.ssl.*;
 import java.io.IOException;
@@ -32,6 +30,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -100,9 +99,7 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
             Date date = serverCert.getNotAfter();
             long validDays = DAYS.between(Instant.now(), date.toInstant());
-            ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
-            objectValue.put("validDays", validDays);
-            return objectValue;
+            return Map.<String, Object>of("validDays", validDays);
         } catch (IOException e) {
             LOG.log(Level.WARNING, "Failed to connect to SSL port " + SSLPort + " on host: " + host);
             return null;

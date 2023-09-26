@@ -25,6 +25,8 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
 
+import java.util.Map;
+
 public class AssetDatapointHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "datapoints";
@@ -57,8 +59,6 @@ public class AssetDatapointHealthStatusProvider implements HealthStatusProvider 
 
     @Override
     public Object getHealthStatus() {
-        ObjectNode value = ValueUtil.JSON.createObjectNode();
-        value.put("totalDatapoints", assetDatapointService.getDatapointsCount());
-        return value;
+        return Map.of("totalDatapoints", assetDatapointService.getDatapointsCount());
     }
 }

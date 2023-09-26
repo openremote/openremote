@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class FlowRulesBuilder {
     private AssetStorageService assetStorageService;
-    private Map<String, Long> triggerMap = new LinkedHashMap<>();
+    private Map<String, Long> triggerMap = new HashMap<>();
     private List<NodeCollection> nodeCollections = new ArrayList<>();
     private Assets assetsFacade;
     private Users usersFacade;

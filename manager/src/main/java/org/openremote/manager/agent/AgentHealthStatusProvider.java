@@ -19,14 +19,14 @@
  */
 package org.openremote.manager.agent;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class AgentHealthStatusProvider implements HealthStatusProvider {
@@ -66,7 +66,7 @@ public class AgentHealthStatusProvider implements HealthStatusProvider {
         AtomicInteger errorCount = new AtomicInteger(0);
         AtomicInteger otherCount = new AtomicInteger(0);
 
-        ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
+        Map<String, Object> objectValue = new HashMap<>();
         objectValue.put("agents", agentService.getAgents().size());
         objectValue.put("protocols", agentService.protocolInstanceMap.size());
 
@@ -96,11 +96,11 @@ public class AgentHealthStatusProvider implements HealthStatusProvider {
                 otherCount.incrementAndGet();
             }
 
-            ObjectNode agentValue = ValueUtil.JSON.createObjectNode();
+            Map<String, Object> agentValue = new HashMap<>();
             agentValue.put("name", agent.getName());
             agentValue.put("status", status != null ? status.name() : "null");
             agentValue.put("type", agent.getType());
-            objectValue.set(agent.getId(), agentValue);
+            objectValue.put(agent.getId(), agentValue);
         }
 
         objectValue.put("totalAgents", agentService.getAgents().size());

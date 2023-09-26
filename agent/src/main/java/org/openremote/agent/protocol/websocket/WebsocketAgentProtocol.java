@@ -147,7 +147,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
         Optional<ValueType.MultivaluedStringMap> headers = agent.getConnectHeaders();
         Optional<WebsocketSubscription[]> subscriptions = agent.getConnectSubscriptions();
 
-        if (!oAuthGrant.isPresent() && usernameAndPassword.isPresent()) {
+        if (oAuthGrant.isEmpty() && usernameAndPassword.isPresent()) {
             String authValue = BasicAuthHelper.createHeader(usernameAndPassword.get().getUsername(), usernameAndPassword.get().getPassword());
             headers = Optional.of(headers.map(h -> {
                 h.remove(HttpHeaders.AUTHORIZATION);

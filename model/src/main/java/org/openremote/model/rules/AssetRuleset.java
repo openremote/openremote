@@ -19,15 +19,14 @@
  */
 package org.openremote.model.rules;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.hibernate.annotations.Formula;
-import org.openremote.model.attribute.MetaMap;
-import org.openremote.model.calendar.CalendarEvent;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Formula;
+import org.openremote.model.calendar.CalendarEvent;
+
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Rules that can only be triggered by asset modifications in a particular
@@ -131,7 +130,7 @@ public class AssetRuleset extends Ruleset {
     }
 
     @Override
-    public AssetRuleset setMeta(ObjectNode meta) {
+    public AssetRuleset setMeta(Map<String, Object> meta) {
         super.setMeta(meta);
         return this;
     }

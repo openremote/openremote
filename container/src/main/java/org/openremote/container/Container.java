@@ -211,7 +211,7 @@ public class Container implements org.openremote.model.Container {
     @Override
     public ContainerService[] getServices() {
         synchronized (services) {
-            return services.values().toArray(new ContainerService[services.size()]);
+            return services.values().toArray(new ContainerService[0]);
         }
     }
 
@@ -231,7 +231,7 @@ public class Container implements org.openremote.model.Container {
 
     @Override
     public <T extends ContainerService> boolean hasService(Class<T> type) {
-        return getServices(type).size() > 0;
+        return !getServices(type).isEmpty();
     }
 
     @Override

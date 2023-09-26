@@ -11,8 +11,6 @@ import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import cz.habarta.typescript.generator.*;
 import cz.habarta.typescript.generator.compiler.ModelCompiler;
-import cz.habarta.typescript.generator.compiler.ModelTransformer;
-import cz.habarta.typescript.generator.compiler.SymbolTable;
 import cz.habarta.typescript.generator.compiler.TsModelTransformer;
 import cz.habarta.typescript.generator.emitter.*;
 import cz.habarta.typescript.generator.util.Pair;
@@ -259,12 +257,12 @@ public class EnumWithInterfacesExtension extends Extension {
                 fieldsStr = TMPL_ENUM_FIELD_SEPARATOR + fieldsStr;
             }
 
-            final Map<String, String> replacements = new LinkedHashMap<>();
-            replacements.put("\"", settings.quotes);
-            replacements.put("/*export*/ ", exportKeyword ? "export " : "");
-            replacements.put(TMPL_ENUM_NAME, tsEnum.getName().getSimpleName());
-            replacements.put(TMPL_ENUM_IMPLEMENTS, implementsStr);
-            replacements.put(TMPL_ENUM_FIELDS, fieldsStr);
+            final Map<String, String> replacements = Map.of(
+            "\"", settings.quotes,
+            "/*export*/ ", exportKeyword ? "export " : "",
+            TMPL_ENUM_NAME, tsEnum.getName().getSimpleName(),
+            TMPL_ENUM_IMPLEMENTS, implementsStr,
+            TMPL_ENUM_FIELDS, fieldsStr);
             Emitter.writeTemplate(writer, settings, ENUM_CLASS_HEADER_TEMPLATE, replacements);
 
             enumInterfaceModel.getMemberModels().forEach(enumInterfaceMemberModel -> {

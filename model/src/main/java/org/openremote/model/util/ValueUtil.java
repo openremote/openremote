@@ -175,12 +175,12 @@ public class ValueUtil {
 
     public static final String NULL_LITERAL = "null";
 
-    public static Optional<JsonNode> parse(String jsonString) {
+    public static Optional<Object> parse(String jsonString) {
         if (TextUtil.isNullOrEmpty(jsonString) || NULL_LITERAL.equals(jsonString)) {
             return Optional.empty();
         }
         try {
-            return Optional.of(JSON.readTree(jsonString));
+            return Optional.of(JSON.readValue(jsonString, Object.class));
         } catch (Exception e) {
             LOG.log(Level.INFO, "Failed to parse JSON string: " + jsonString, e);
         }
@@ -384,10 +384,6 @@ public class ValueUtil {
         return getValueCoerced(value, Long.class);
     }
 
-    public static ObjectNode createJsonObject() {
-        return ValueUtil.JSON.createObjectNode();
-    }
-
     public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
         Set<Object> seen = ConcurrentHashMap.newKeySet();
         return t -> seen.add(keyExtractor.apply(t));
@@ -427,6 +423,10 @@ public class ValueUtil {
 
     public static boolean isMap(Class<?> clazz) {
         return Map.class.isAssignableFrom(clazz);
+    }
+
+    public static boolean isList(Class<?> clazz) {
+        return List.class.isAssignableFrom(clazz);
     }
 
     public static boolean isObject(Class<?> clazz) {

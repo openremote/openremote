@@ -19,9 +19,6 @@
  */
 package org.openremote.manager.rules;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -761,6 +758,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             .collect(Collectors.toList());
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     protected RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade) {
 
         if (ruleAction instanceof RuleActionNotification notificationAction) {
@@ -958,59 +956,63 @@ public class JsonRulesBuilder extends RulesBuilder {
                     Class<?> valueType = assetState.getType().getType();
                     boolean isArray = ValueUtil.isArray(valueType);
 
-                    if (!isArray && !ValueUtil.isObject(valueType)) {
+                    if (!isArray && !ValueUtil.isMap(valueType)) {
                         log(Level.WARNING, "Rule action target asset cannot determine value type or incompatible value type for attribute: " + assetState);
                     } else {
+                        if (isArray) {
+                            List<Object> list = new ArrayList<>();
+                            if (value != null) {
+                                Collections.addAll(list, value);
+                            }
 
-                        // Convert value to JSON Node to easily manipulate it
-                        value = isArray ? ValueUtil.convert(value, ArrayNode.class) : ValueUtil.convert(value, ObjectNode.class);
-
-                        switch (attributeUpdateAction.updateAction) {
-                            case ADD:
-                                if (isArray) {
-                                    value = value == null ? ValueUtil.JSON.createArrayNode() : value;
-                                    ((ArrayNode)value).add(ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
-                                } else {
-                                    value = value == null ? ValueUtil.JSON.createObjectNode() : value;
-                                    ((ObjectNode) value).set(attributeUpdateAction.key, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
+                            switch (attributeUpdateAction.updateAction) {
+                                case ADD -> {
+                                    list.add(attributeUpdateAction.value);
                                 }
-                                break;
-                            case ADD_OR_REPLACE:
-                            case REPLACE:
-                                if (isArray) {
-                                    value = value == null ? ValueUtil.JSON.createArrayNode() : value;
-                                    ArrayNode arrayValue = (ArrayNode) value;
-
-                                    if (attributeUpdateAction.index != null && arrayValue.size() >= attributeUpdateAction.index) {
-                                        arrayValue.set(attributeUpdateAction.index, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
+                                case ADD_OR_REPLACE, REPLACE -> {
+                                    if (attributeUpdateAction.index != null && list.size() >= attributeUpdateAction.index) {
+                                        list.set(attributeUpdateAction.index, attributeUpdateAction.value);
                                     } else {
-                                        arrayValue.add(ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
+                                        list.add(attributeUpdateAction.value);
                                     }
-                                } else {
-                                    value = value == null ? ValueUtil.JSON.createObjectNode() : value;
+                                }
+                                case DELETE -> {
+                                    if (attributeUpdateAction.index != null && list.size() >= attributeUpdateAction.index) {
+                                        list.remove(attributeUpdateAction.index);
+                                    }
+                                }
+                                case CLEAR -> {
+                                    value = Collections.emptyList();
+                                }
+                            }
+
+                            value = list;
+                        } else {
+                            Map map = new HashMap();
+                            if (value != null) {
+                                map.putAll((Map)value);
+                            }
+
+                            switch (attributeUpdateAction.updateAction) {
+                                case ADD -> {
+                                    map.put(attributeUpdateAction.key, attributeUpdateAction.value);
+                                }
+                                case ADD_OR_REPLACE, REPLACE -> {
                                     if (!TextUtil.isNullOrEmpty(attributeUpdateAction.key)) {
-                                        ((ObjectNode) value).set(attributeUpdateAction.key, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
+                                        map.put(attributeUpdateAction.key, attributeUpdateAction.value);
                                     } else {
                                         log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + ValueUtil.asJSON(attributeUpdateAction));
                                     }
                                 }
-                                break;
-                            case DELETE:
-                                if(value != null) {
-                                    if (isArray) {
-                                        ((ArrayNode) value).remove(attributeUpdateAction.index);
-                                    } else {
-                                        ((ObjectNode) value).remove(attributeUpdateAction.key);
-                                    }
+                                case DELETE -> {
+                                    map.remove(attributeUpdateAction.key);
                                 }
-                                break;
-                            case CLEAR:
-                                if (isArray) {
-                                    value = ValueUtil.JSON.createArrayNode();
-                                } else {
-                                    value = ValueUtil.JSON.createObjectNode();
+                                case CLEAR -> {
+                                    map = Collections.emptyMap();
                                 }
-                                break;
+                            }
+
+                            value = map;
                         }
 
                         log(Level.FINE, "Updating attribute for rule action: " + rule.name + " '" + actionsName + "' action index " + index + ": " + assetState);

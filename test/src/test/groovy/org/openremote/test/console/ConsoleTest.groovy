@@ -152,7 +152,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                            (ObjectNode)parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                            (Map)parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                         ))
                     }
                 },
@@ -180,7 +180,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
 
         and: "the console should have been linked to the authenticated user"
         def userAssets = assetStorageService.findUserAssetLinks(keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id, consoleId)
@@ -219,7 +219,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
         assert consoleTestProvider != null
         assert consoleTestProvider.version == "Test 1.0"
         assert !consoleTestProvider.requiresPermission
@@ -248,7 +248,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
         assert consoleTestProvider != null
         assert consoleTestProvider.version == "Test 1.0"
         assert !consoleTestProvider.requiresPermission
@@ -289,7 +289,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
 
         when: "an invalid console registration is registered"
         def invalidRegistration = new ConsoleRegistration(null, null, "1.0", null, null, null, null)
@@ -326,7 +326,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
 
         and: "the console should not have been linked to any users"
         assert userAssets.isEmpty()
@@ -354,7 +354,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         then: "each created consoles should have been sent notifications to refresh their geofences"
         conditions.eventually {
             assert notificationIds.size() == 3
-            assert messages.count { ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH" } == 3
+            assert messages.count { ((PushNotificationMessage) it).data.get("action") == "GEOFENCE_REFRESH" } == 3
         }
 
         ////////////////////////////////////////////////////
@@ -546,8 +546,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         then: "a push notification should have been sent to the two remaining consoles telling them to refresh their geofences"
         conditions.eventually {
             assert notificationIds.size() == 2
-            assert ((PushNotificationMessage) messages[0]).data.get("action").asText() == "GEOFENCE_REFRESH"
-            assert ((PushNotificationMessage) messages[1]).data.get("action").asText() == "GEOFENCE_REFRESH"
+            assert ((PushNotificationMessage) messages[0]).data.get("action") == "GEOFENCE_REFRESH"
+            assert ((PushNotificationMessage) messages[1]).data.get("action") == "GEOFENCE_REFRESH"
         }
 
         then: "the geofences of testUser3Console1 should contain the welcome home geofence and new radial geofence (but not the rectangular and duplicate predicates)"
@@ -589,7 +589,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert messages.stream()
                     .filter({ it instanceof PushNotificationMessage })
                     .filter({
-                        ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH"
+                        ((PushNotificationMessage) it).data.get("action") == "GEOFENCE_REFRESH"
                     }).count() == 2
         }
 
@@ -643,7 +643,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert messages.stream()
                     .filter({ it instanceof PushNotificationMessage })
                     .filter({
-                ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH"
+                ((PushNotificationMessage) it).data.get("action") == "GEOFENCE_REFRESH"
             }).count() == 2
         }
 
@@ -667,7 +667,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert messages.stream()
                     .filter({it instanceof PushNotificationMessage})
-                    .filter({((PushNotificationMessage)it).data.get("action").asText() == "GEOFENCE_REFRESH"})
+                    .filter({((PushNotificationMessage)it).data.get("action") == "GEOFENCE_REFRESH"})
                     .count() == 10
         }
 
@@ -684,7 +684,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert messages.stream()
                     .filter({ it instanceof PushNotificationMessage })
                     .filter({
-                ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH"
+                ((PushNotificationMessage) it).data.get("action") == "GEOFENCE_REFRESH"
             })
                     .count() == 12
         }

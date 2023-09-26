@@ -158,7 +158,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                                (ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                (Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                         ))
                     }
                 },
@@ -333,7 +333,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notificationIds.clear()
         notificationTargetIds.clear()
         def testUser3Console1Asset = assetStorageService.find(testuser3Console1.id) as ConsoleAsset
-        testUser3Console1Asset.getConsoleProviders().map{it.get(PushNotificationMessage.TYPE)}.get().getData().set("token", null)
+        testUser3Console1Asset.getConsoleProviders().map{it.get(PushNotificationMessage.TYPE)}.get().getData().put("token", null)
         testUser3Console1Asset = assetStorageService.merge(testUser3Console1Asset)
 
         then: "the cached FCM token should be removed from the handler"

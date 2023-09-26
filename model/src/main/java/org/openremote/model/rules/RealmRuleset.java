@@ -27,6 +27,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Rules that can only be triggered by asset modifications in a particular
@@ -118,7 +119,7 @@ public class RealmRuleset extends Ruleset {
     }
 
     @Override
-    public RealmRuleset setMeta(ObjectNode meta) {
+    public RealmRuleset setMeta(Map<String, Object> meta) {
         super.setMeta(meta);
         return this;
     }

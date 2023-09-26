@@ -187,7 +187,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert livingroomAsset.getAttribute("lightSwitch", Boolean.class).get().value.get()
             assert livingroomAsset.getAttribute("lightSwitchTriggerTimes", String[].class).get().value.get().length == 2
-            assert livingroomAsset.getAttribute("plantsWaterLevels", ObjectNode.class).get().value.get().get("cactus").asDouble() == 0.8d
+            assert livingroomAsset.getAttribute("plantsWaterLevels", ValueType.ANY.getType()).get().getValueAs(Map.class).get().get("cactus") == 0.8d
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
             assert bathRoomAsset.getAttribute("lightSwitch", Boolean.class).get().value.get()
         }
@@ -234,7 +234,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                (Map<String, Object>)(parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                                 )))
                     }
                 },
@@ -266,7 +266,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                (Map<String, Object>)(parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                                 )))
                     }
                 },
@@ -326,7 +326,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert !livingroomAsset.getAttribute("lightSwitch").get().value.get()
             assert livingroomAsset.getAttribute("lightSwitchTriggerTimes", String[].class).flatMap{it.value}.map{it.length}.orElse(0) == 2
-            assert livingroomAsset.getAttribute("plantsWaterLevels", ObjectNode.class).get().getValue().map{it.get("cactus").asDouble()}.orElse(null) == 0.8
+            assert livingroomAsset.getAttribute("plantsWaterLevels", ValueType.ANY.getType()).get().getValueAs(Map.class).get().get("cactus") == 0.8
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
             assert !bathRoomAsset.getAttribute("lightSwitch").get().value.get()
         }

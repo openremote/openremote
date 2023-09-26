@@ -113,7 +113,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         } else if (webhook.getOAuthGrant() != null) {
             builder.setOAuthAuthentication(webhook.getOAuthGrant());
         }
-        if (webhook.getHeaders() != null && webhook.getHeaders().size() > 0) {
+        if (webhook.getHeaders() != null && !webhook.getHeaders().isEmpty()) {
             builder.setInjectHeaders(webhook.getHeaders());
         }
         return builder.build();

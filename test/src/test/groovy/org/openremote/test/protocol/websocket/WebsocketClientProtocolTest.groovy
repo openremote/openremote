@@ -105,9 +105,11 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     break
                 case "https://mockapi/targetTemperature":
                     attribute1SubscriptionDone = true
+                    requestContext.abortWith(Response.ok().build())
                     break
                 case "https://mockapi/co2Level":
                     attribute2SubscriptionDone = true
+                    requestContext.abortWith(Response.ok().build())
                     break
             }
 

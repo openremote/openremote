@@ -161,7 +161,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                                 true,
                                 true,
                                 false,
-                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                ((Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                         )))
                     }
                 },

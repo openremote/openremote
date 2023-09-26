@@ -319,7 +319,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath('value/{$value}/set')
-                            .setWriteValueConverter((ObjectNode)ValueUtil.parse("{\n" +
+                            .setWriteValueConverter((Map)ValueUtil.parse("{\n" +
                                 "    \"TRUE\": \"on\",\n" +
                                 "    \"FALSE\": \"off\"\n" +
                                 "}").get())
@@ -363,9 +363,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                                     new SubStringValueFilter(22, 24)
                                 ] as ValueFilter[]
                             )
-                            .setValueConverter(ValueUtil.JSON.createObjectNode()
-                                    .put("00", "OFF")
-                                    .put("01", "ON")
+                            .setValueConverter(Map.of(
+                                    "00", "OFF",
+                                    "01", "ON")
                             )
                         )
                     ),
@@ -381,9 +381,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                                     new SubStringValueFilter(4, 6)
                                 ] as ValueFilter[]
                             )
-                            .setValueConverter(ValueUtil.JSON.createObjectNode()
-                                    .put("00", "OFF")
-                                    .put("01", "ON")
+                            .setValueConverter(Map.of(
+                                    "00", "OFF",
+                                    "01", "ON")
                             )
                         )
                     )
