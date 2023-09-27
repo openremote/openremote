@@ -905,7 +905,10 @@ public class ValueUtil {
     public static boolean validateValueConstraint(ConstraintValidatorContext context, Instant now, ValueConstraint valueConstraint, Object value) {
         if (!valueConstraint.evaluate(value, now)) {
             if (context instanceof HibernateConstraintValidatorContext hibernateContext) {
-                hibernateContext.addMessageParameter()
+                Map<String, Object> messageParams = valueConstraint.getParameters();
+                if (messageParams != null) {
+                    messageParams.forEach(hibernateContext::addMessageParameter);
+                }
             }
             context.buildConstraintViolationWithTemplate(valueConstraint.getMessage().orElse(ValueConstraint.VALUE_CONSTRAINT_INVALID)).addPropertyNode("value").addConstraintViolation();
         }
