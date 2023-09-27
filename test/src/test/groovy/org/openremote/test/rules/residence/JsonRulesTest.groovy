@@ -1,7 +1,6 @@
 package org.openremote.test.rules.residence
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.ObjectNode
+
 import com.google.firebase.messaging.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.ws.rs.client.ClientRequestContext
@@ -42,7 +41,6 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -88,10 +86,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                     break
                 case "https://basicserver/webhookjson":
                     if (requestContext.method == "POST" && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') == "test-value" && requestContext.hasEntity()) {
-                        Optional<JsonNode> jsonBody = parse(requestContext.entity.toString())
-                        if (jsonBody.isPresent() && jsonBody.get().size() == 1
-                                && jsonBody.get().iterator().next().get(0).get("assetName").asText() == "TestThing"
-                                && jsonBody.get().iterator().next().get(0).get("value").asText() == "test_message") {
+                        def jsonBody = parse(requestContext.entity.toString()).get() as Map
+                        if (jsonBody.size() == 1
+                                && ((Map)((Object[])jsonBody.values()[0])[0]).get("assetName") == "TestThing"
+                                && ((Map)((Object[])jsonBody.values()[0])[0]).get("value") == "test_message") {
                             successCount++
                             requestContext.abortWith(Response.ok().build()); return
                         }

@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.PatternSyntaxException;
 
 // TODO: Switch to JSONSchema with a validator that supports POJOs (something like
 //  https://github.com/java-json-tools/json-schema-validator which is no longer maintained) or find a JSR-380
@@ -53,6 +55,7 @@ import java.util.Optional;
 })
 public abstract class ValueConstraint implements Serializable {
 
+    public static final String VALUE_CONSTRAINT_INVALID = "{ValueConstraint.Invalid}";
     public static ValueConstraint[] constraints(ValueConstraint...constraints) {
         return constraints;
     }
@@ -65,6 +68,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public Size(@JsonProperty("min") Integer min, @JsonProperty("max") Integer max) {
+            super("{org.openremote.model.value.ValueConstraint.Size.message}");
             this.min = min;
             this.max = max;
         }
@@ -83,25 +87,33 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return Map.of(
+                "min", min,
+                "max", max);
+        }
+
+        @SuppressWarnings("rawtypes")
+        @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
-                return false;
+                return true; // Same behaviour as JSR-380
             }
 
             Class<?> clazz = value.getClass();
 
             if (Map.class.isAssignableFrom(clazz)) {
-
+                int size = ((Map)value).size();
+                return size >= min && size <= max;
             } else if (Collection.class.isAssignableFrom(clazz)) {
-
+                int size = ((Collection)value).size();
+                return size >= min && size <= max;
             } else if (ValueUtil.isArray(clazz)) {
-
+                int size = Array.getLength(value);
+                return size >= min && size <= max;
             } else if (ValueUtil.isString(clazz)) {
-
-            } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
+                int size = ((CharSequence)value).length();
+                return size >= min && size <= max;
             }
 
             return false;
@@ -114,6 +126,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public Min(@JsonProperty("min") Number min) {
+            super("{org.openremote.model.value.ValueConstraint.Min.message}");
             this.min = min;
         }
 
@@ -127,25 +140,56 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return Map.of("value", min);
+        }
+
+        @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
-                return false;
+                return true;
             }
 
             Class<?> clazz = value.getClass();
 
-            if (Map.class.isAssignableFrom(clazz)) {
+            if (!ValueUtil.isNumber(clazz)) {
+                return false;
+            }
 
-            } else if (Collection.class.isAssignableFrom(clazz)) {
-
-            } else if (ValueUtil.isArray(clazz)) {
-
-            } else if (ValueUtil.isString(clazz)) {
-
-            } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
+            if (min instanceof Integer minInt) {
+                if (value instanceof Long longValue) {
+                    return minInt.compareTo(longValue.intValue()) <= 0;
+                }
+                if (value instanceof Double doubleValue) {
+                    return minInt.compareTo(doubleValue.intValue()) <= 0;
+                }
+                if (value instanceof Integer intValue) {
+                    return minInt.compareTo(intValue) <= 0;
+                }
+                return false;
+            }
+            if (min instanceof Double minDouble) {
+                if (value instanceof Long longValue) {
+                    return minDouble.compareTo(longValue.doubleValue()) <= 0;
+                }
+                if (value instanceof Double doubleValue) {
+                    return minDouble.compareTo(doubleValue) <= 0;
+                }
+                if (value instanceof Integer intValue) {
+                    return minDouble.compareTo(intValue.doubleValue()) <= 0;
+                }
+                return false;
+            }
+            if (min instanceof Long minLong) {
+                if (value instanceof Long longValue) {
+                    return minLong.compareTo(longValue) <= 0;
+                }
+                if (value instanceof Double doubleValue) {
+                    return minLong.compareTo(doubleValue.longValue()) <= 0;
+                }
+                if (value instanceof Integer intValue) {
+                    return minLong.compareTo(intValue.longValue()) <= 0;
+                }
             }
 
             return false;
@@ -158,6 +202,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public Max(@JsonProperty("max") Number max) {
+            super("{org.openremote.model.value.ValueConstraint.Max.message}");
             this.max = max;
         }
 
@@ -171,25 +216,56 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return Map.of("value", max);
+        }
+
+        @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
-                return false;
+                return true;
             }
 
             Class<?> clazz = value.getClass();
 
-            if (Map.class.isAssignableFrom(clazz)) {
+            if (!ValueUtil.isNumber(clazz)) {
+                return false;
+            }
 
-            } else if (Collection.class.isAssignableFrom(clazz)) {
-
-            } else if (ValueUtil.isArray(clazz)) {
-
-            } else if (ValueUtil.isString(clazz)) {
-
-            } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
+            if (max instanceof Integer maxInt) {
+                if (value instanceof Long longValue) {
+                    return maxInt.compareTo(longValue.intValue()) >= 0;
+                }
+                if (value instanceof Double doubleValue) {
+                    return maxInt.compareTo(doubleValue.intValue()) >= 0;
+                }
+                if (value instanceof Integer intValue) {
+                    return maxInt.compareTo(intValue) >= 0;
+                }
+                return false;
+            }
+            if (max instanceof Double maxDouble) {
+                if (value instanceof Long longValue) {
+                    return maxDouble.compareTo(longValue.doubleValue()) >= 0;
+                }
+                if (value instanceof Double doubleValue) {
+                    return maxDouble.compareTo(doubleValue) >= 0;
+                }
+                if (value instanceof Integer intValue) {
+                    return maxDouble.compareTo(intValue.doubleValue()) >= 0;
+                }
+                return false;
+            }
+            if (max instanceof Long maxLong) {
+                if (value instanceof Long longValue) {
+                    return maxLong.compareTo(longValue) >= 0;
+                }
+                if (value instanceof Double doubleValue) {
+                    return maxLong.compareTo(doubleValue.longValue()) >= 0;
+                }
+                if (value instanceof Integer intValue) {
+                    return maxLong.compareTo(intValue.longValue()) >= 0;
+                }
             }
 
             return false;
@@ -198,15 +274,23 @@ public abstract class ValueConstraint implements Serializable {
 
     @JsonTypeName("pattern")
     public static class Pattern extends ValueConstraint {
+        private static final java.util.regex.Pattern ESCAPE_MESSAGE_PARAMETER_PATTERN = java.util.regex.Pattern.compile("([\\\\{}$])");
         protected String regexp;
+        protected jakarta.validation.constraints.Pattern.Flag[] flags;
 
         @JsonCreator
-        public Pattern(@JsonProperty("regexp") String regexp) {
+        public Pattern(String regexp, jakarta.validation.constraints.Pattern.Flag[] flags) {
+            super("{org.openremote.model.value.ValueConstraint.Pattern.message}");
             this.regexp = regexp;
+            this.flags = flags;
         }
 
         public String getRegexp() {
             return regexp;
+        }
+
+        public jakarta.validation.constraints.Pattern.Flag[] getFlags() {
+            return flags;
         }
 
         public Pattern setMessage(String message) {
@@ -215,25 +299,34 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            String escapedRegexp = regexp != null ? ESCAPE_MESSAGE_PARAMETER_PATTERN.matcher(regexp).replaceAll( Matcher.quoteReplacement("\\") + "$1" ) : "null";
+            return Map.of("value", escapedRegexp);
+        }
+
+        @SuppressWarnings("MagicConstant")
+        @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
-                return false;
+                return true;
             }
 
             Class<?> clazz = value.getClass();
 
-            if (Map.class.isAssignableFrom(clazz)) {
+            if (CharSequence.class.isAssignableFrom(clazz)) {
+                int intFlag = 0;
+                if (flags != null) {
+                    for (jakarta.validation.constraints.Pattern.Flag flag : flags) {
+                        intFlag = intFlag | flag.getValue();
+                    }
+                }
 
-            } else if (Collection.class.isAssignableFrom(clazz)) {
-
-            } else if (ValueUtil.isArray(clazz)) {
-
-            } else if (ValueUtil.isString(clazz)) {
-
-            } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
+                try {
+                    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regexp, intFlag);
+                    Matcher m = pattern.matcher((CharSequence)value);
+                    return m.matches();
+                }
+                catch (PatternSyntaxException ignored) {}
             }
 
             return false;
@@ -243,15 +336,10 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("allowedValues")
     public static class AllowedValues extends ValueConstraint {
         Object[] allowedValues;
-        String[] allowedValueNames;
 
         @JsonCreator
-        public AllowedValues(@JsonProperty("allowedValueNames") String[] allowedValueNames, @JsonProperty("allowedValues") Object...allowedValues) {
-            this.allowedValueNames = allowedValueNames;
-            this.allowedValues = allowedValues;
-        }
-
         public AllowedValues(@JsonProperty("allowedValues") Object...allowedValues) {
+            super("{org.openremote.model.value.ValueConstraint.AllowedValues.message}");
             this.allowedValues = allowedValues;
         }
 
@@ -259,33 +347,32 @@ public abstract class ValueConstraint implements Serializable {
             return allowedValues;
         }
 
-        public String[] getAllowedValueNames() {
-            return allowedValueNames;
+        @Override
+        public Map<String, Object> getParameters() {
+            return Map.of("values", Arrays.toString(allowedValues));
         }
 
         @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
+                return true;
+            }
+            if (allowedValues == null || allowedValues.length == 0) {
                 return false;
             }
 
             Class<?> clazz = value.getClass();
+            String valueStr = null;
 
-            if (Map.class.isAssignableFrom(clazz)) {
-
-            } else if (Collection.class.isAssignableFrom(clazz)) {
-
-            } else if (ValueUtil.isArray(clazz)) {
-
+            if (Enum.class.isAssignableFrom(clazz)) {
+                valueStr = ((Enum<?>) value).name();
             } else if (ValueUtil.isString(clazz)) {
-
+                valueStr = ((CharSequence)value).toString();
             } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
+                valueStr = value.toString();
             }
 
-            return false;
+            return Arrays.asList(allowedValues).contains(valueStr);
         }
 
         public static AllowedValues fromEnum(Class<Enum<?>> enumClass) {
@@ -297,31 +384,31 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("past")
     public static class Past extends ValueConstraint {
 
+        public Past() {
+            super("{org.openremote.model.value.ValueConstraint.Past.message}");
+        }
+
         public Past setMessage(String message) {
             this.message = message;
             return this;
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return null;
+        }
+
+        @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
-                return false;
+                return true;
             }
 
-            Class<?> clazz = value.getClass();
+            Instant valueInstant = ValueUtil.getValueCoerced(value, Instant.class).orElse(null);
 
-            if (Map.class.isAssignableFrom(clazz)) {
-
-            } else if (Collection.class.isAssignableFrom(clazz)) {
-
-            } else if (ValueUtil.isArray(clazz)) {
-
-            } else if (ValueUtil.isString(clazz)) {
-
-            } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
+            if (valueInstant != null) {
+                int result = valueInstant.compareTo(now);
+                return result < 0;
             }
 
             return false;
@@ -331,31 +418,31 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("pastOrPresent")
     public static class PastOrPresent extends ValueConstraint {
 
+        public PastOrPresent() {
+            super("{org.openremote.model.value.ValueConstraint.PastOrPresent.message}");
+        }
+
         public PastOrPresent setMessage(String message) {
             this.message = message;
             return this;
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return null;
+        }
+
+        @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
-                return false;
+                return true;
             }
 
-            Class<?> clazz = value.getClass();
+            Instant valueInstant = ValueUtil.getValueCoerced(value, Instant.class).orElse(null);
 
-            if (Map.class.isAssignableFrom(clazz)) {
-
-            } else if (Collection.class.isAssignableFrom(clazz)) {
-
-            } else if (ValueUtil.isArray(clazz)) {
-
-            } else if (ValueUtil.isString(clazz)) {
-
-            } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
+            if (valueInstant != null) {
+                int result = valueInstant.compareTo(now);
+                return result <= 0;
             }
 
             return false;
@@ -365,31 +452,31 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("future")
     public static class Future extends ValueConstraint {
 
+        public Future() {
+            super("{org.openremote.model.value.ValueConstraint.Future.message}");
+        }
+
         public Future setMessage(String message) {
             this.message = message;
             return this;
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return null;
+        }
+
+        @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
-                return false;
+                return true;
             }
 
-            Class<?> clazz = value.getClass();
+            Instant valueInstant = ValueUtil.getValueCoerced(value, Instant.class).orElse(null);
 
-            if (Map.class.isAssignableFrom(clazz)) {
-
-            } else if (Collection.class.isAssignableFrom(clazz)) {
-
-            } else if (ValueUtil.isArray(clazz)) {
-
-            } else if (ValueUtil.isString(clazz)) {
-
-            } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
+            if (valueInstant != null) {
+                int result = valueInstant.compareTo(now);
+                return result > 0;
             }
 
             return false;
@@ -399,35 +486,31 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("futureOrPresent")
     public static class FutureOrPresent extends ValueConstraint {
 
+        public FutureOrPresent() {
+            super("{org.openremote.model.value.ValueConstraint.FutureOrPresent.message}");
+        }
+
         public FutureOrPresent setMessage(String message) {
             this.message = message;
             return this;
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return null;
+        }
+
+        @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
-                return false;
+                return true;
             }
 
-            Class<?> clazz = value.getClass();
             Instant valueInstant = ValueUtil.getValueCoerced(value, Instant.class).orElse(null);
 
             if (valueInstant != null) {
                 int result = valueInstant.compareTo(now);
                 return result >= 0;
-            } else if (Map.class.isAssignableFrom(clazz)) {
-
-            } else if (Collection.class.isAssignableFrom(clazz)) {
-
-            } else if (ValueUtil.isArray(clazz)) {
-
-            } else if (ValueUtil.isString(clazz)) {
-
-            } else if (ValueUtil.isNumber(clazz)) {
-
-            } else if (ValueUtil.isBoolean(clazz)) {
-
             }
 
             return false;
@@ -437,9 +520,18 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("notEmpty")
     public static class NotEmpty extends ValueConstraint {
 
+        public NotEmpty() {
+            super("{org.openremote.model.value.ValueConstraint.NotEmpty.message}");
+        }
+
         public NotEmpty setMessage(String message) {
             this.message = message;
             return this;
+        }
+
+        @Override
+        public Map<String, Object> getParameters() {
+            return null;
         }
 
         @Override
@@ -471,6 +563,9 @@ public abstract class ValueConstraint implements Serializable {
 
     @JsonTypeName("notBlank")
     public static class NotBlank extends ValueConstraint {
+        public NotBlank() {
+            super("{org.openremote.model.value.ValueConstraint.NotBlank.message}");
+        }
 
         public NotBlank setMessage(String message) {
             this.message = message;
@@ -483,6 +578,11 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return null;
+        }
+
+        @Override
         public String toString() {
             return NotBlank.class.getSimpleName();
         }
@@ -490,6 +590,10 @@ public abstract class ValueConstraint implements Serializable {
 
     @JsonTypeName("notNull")
     public static class NotNull extends ValueConstraint {
+
+        public NotNull() {
+            super("{org.openremote.model.value.ValueConstraint.NotNull.message}");
+        }
 
         public NotNull setMessage(String message) {
             this.message = message;
@@ -502,6 +606,11 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         @Override
+        public Map<String, Object> getParameters() {
+            return null;
+        }
+
+        @Override
         public String toString() {
             return NotNull.class.getSimpleName();
         }
@@ -509,7 +618,13 @@ public abstract class ValueConstraint implements Serializable {
 
     protected String message;
 
+    protected ValueConstraint(String message) {
+        this.message = message;
+    }
+
     public abstract boolean evaluate(Object value, Instant now);
+
+    public abstract Map<String, Object> getParameters();
 
     public Optional<String> getMessage() {
         return Optional.ofNullable(message);

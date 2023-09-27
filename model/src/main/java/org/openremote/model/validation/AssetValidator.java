@@ -1,7 +1,10 @@
 package org.openremote.model.validation;
 
-import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ClockProvider;
 import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.metadata.ConstraintDescriptor;
+import org.hibernate.validator.constraintvalidation.HibernateConstraintValidator;
+import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorInitializationContext;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.attribute.Attribute;
@@ -26,13 +29,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @TsIgnore
 public
-class AssetValidator implements ConstraintValidator<AssetValid, Asset<?>> {
+class AssetValidator implements HibernateConstraintValidator<AssetValid, Asset<?>> {
 
     public static final String ASSET_TYPE_INVALID = "{Asset.type.Invalid}";
     public static final String ASSET_ATTRIBUTE_MISSING = "{Asset.attribute.Missing}";
-    public static final String ASSET_ATTRIBUTE_VALUE_MISSING = "{Asset.attribute.value.Missing}";
     public static final String ASSET_ATTRIBUTE_TYPE_MISMATCH = "{Asset.attribute.type.Mismatch}";
     public static final System.Logger LOG = System.getLogger(AssetValidator.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES.name());
+    protected ClockProvider clockProvider;
+    @Override
+    public void initialize(ConstraintDescriptor<AssetValid> constraintDescriptor, HibernateConstraintValidatorInitializationContext initializationContext) {
+        clockProvider = initializationContext.getClockProvider();
+        HibernateConstraintValidator.super.initialize(constraintDescriptor, initializationContext);
+    }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Override
@@ -86,6 +94,10 @@ class AssetValidator implements ConstraintValidator<AssetValid, Asset<?>> {
                 }
             }
 
+            // Validate the value against the various constraints
+            if (!ValueUtil.validateValue(descriptor, attribute.getType(), attribute, clockProvider.getClock().instant(), context, attribute.getValue().orElse(null))) {
+                valid.set(false);
+            }
         });
 
         return valid.get();

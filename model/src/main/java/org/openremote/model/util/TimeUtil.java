@@ -78,7 +78,7 @@ public class TimeUtil {
      * Parses ISO8601 strings with optional time and/or offset; if no zone is provided then UTC is assumed if no
      * time is provided then 00:00:00 is assumed.
      */
-    public static long parseTimeIso8601(String datetime) {
+    public static long parseTimeIso8601(CharSequence datetime) {
         DateTimeFormatter formatter = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
             .append(ISO_LOCAL_DATE)

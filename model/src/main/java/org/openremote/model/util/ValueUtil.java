@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -38,6 +37,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.internal.util.SerializationHelper;
+import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.ModelDescriptor;
 import org.openremote.model.ModelDescriptors;
@@ -65,7 +65,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -242,6 +241,25 @@ public class ValueUtil {
 
         if (value instanceof CharSequence && String.class.isAssignableFrom(type)) {
             return Optional.of((T) String.valueOf(value));
+        }
+
+        if (Instant.class.isAssignableFrom(type)) {
+            if (value instanceof Date dateValue) {
+                return Optional.of((T) dateValue.toInstant());
+            }
+            if (value instanceof Long longValue) {
+                return Optional.of((T) Instant.ofEpochMilli(longValue));
+            }
+            if (value instanceof Calendar calendarValue) {
+                return Optional.of((T) calendarValue.toInstant());
+            }
+            if (value instanceof CharSequence charSequence) {
+                try {
+                    return Optional.of((T) Instant.ofEpochMilli(TimeUtil.parseTimeIso8601(charSequence)));
+                } catch (Exception e) {
+                    LOG.info("Failed to parse char sequence as Instant: " + e.getMessage());
+                }
+            }
         }
 
         if (value instanceof CharSequence && !coerce) {
@@ -852,27 +870,44 @@ public class ValueUtil {
     }
 
     /**
-     * Provides a function to evaluate the validity of a value dynamically by extracting {@link ValueConstraint}s from
-     * the supplied parameters; each found constraint is then evaluated against the value supplied to the function.
-     *
+     * Evaluate the validity of a value dynamically by extracting {@link ValueConstraint}s from the supplied parameters;
+     * each found constraint is then evaluated against the value supplied to the function.
+     * <p>
      * Unfortunately JSR-380 can't be used (even Hibernate validator's programmatic API) because validators are type
      * centric but here the type (e.g. {@link Attribute} or {@link org.openremote.model.rules.AssetState}) is fixed
      * but the constraints to be applied are dynamic, would be nice if there was a solution to this problem but this
      * works for now.
      */
-    public static BiFunction<ConstraintValidatorContext, Object, Boolean> getValueValidator(MetaHolder metaHolder, ValueDescriptor<?> valueDescriptor, AttributeDescriptor<?> attributeDescriptor, Instant now) {
-        // TODO: Implement some sort of caching if performance warrants it
-        return (context, value) -> {
-            if (valueDescriptor != null && valueDescriptor.getConstraints() != null) {
-                Arrays.stream(valueDescriptor.getConstraints()).map(constraint -> getConstraintValidator(context, now, constraint, value));
+    // TODO: Implement some sort of caching if performance warrants it
+    public static boolean validateValue(AttributeDescriptor<?> attributeDescriptor, ValueDescriptor<?> valueDescriptor, MetaHolder metaHolder, Instant now, ConstraintValidatorContext validatorContext, Object value) {
+        boolean valid = true;
+
+        if (valueDescriptor != null && valueDescriptor.getConstraints() != null) {
+            if (Arrays.stream(valueDescriptor.getConstraints()).map(constraint -> validateValueConstraint(validatorContext, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+                valid = false;
             }
-            return false;
-        };
+        }
+        if (attributeDescriptor != null && attributeDescriptor.getConstraints() != null) {
+            if (Arrays.stream(attributeDescriptor.getConstraints()).map(constraint -> validateValueConstraint(validatorContext, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+                valid = false;
+            }
+        }
+        if (metaHolder != null && metaHolder.getMeta() != null) {
+            if (metaHolder.getMeta().get(MetaItemType.CONSTRAINTS).flatMap(ValueHolder::getValue).map(constraints ->
+                Arrays.stream(constraints).map(constraint -> validateValueConstraint(validatorContext, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)
+            ).orElse(false)) {
+                valid = false;
+            }
+        }
+        return valid;
     }
 
-    protected static boolean getConstraintValidator(ConstraintValidatorContext context, Instant now, ValueConstraint valueConstraint, Object value) {
+    public static boolean validateValueConstraint(ConstraintValidatorContext context, Instant now, ValueConstraint valueConstraint, Object value) {
         if (!valueConstraint.evaluate(value, now)) {
-            valueConstraint.getMessage();
+            if (context instanceof HibernateConstraintValidatorContext hibernateContext) {
+                hibernateContext.addMessageParameter()
+            }
+            context.buildConstraintViolationWithTemplate(valueConstraint.getMessage().orElse(ValueConstraint.VALUE_CONSTRAINT_INVALID)).addPropertyNode("value").addConstraintViolation();
         }
         return true;
     }
