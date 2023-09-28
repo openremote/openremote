@@ -1068,12 +1068,12 @@ export class OrChart extends translate(i18next)(LitElement) {
             query.fromTimestamp = this._startOfPeriod;
             query.toTimestamp = this._endOfPeriod;
 
-            if(query.type == 'lttb' && query.amountOfPoints === undefined) {
+            if(query.type == 'lttb' && !query.amountOfPoints) {
                 if(this._chartElem.clientWidth == 0) {
                     console.error("Could not grab width of the Chart for estimating amount of datapoints. Using 10 points instead.")
                 }
                 query.amountOfPoints = (this._chartElem.clientWidth == 0) ? 100 : Math.round(this._chartElem.clientWidth / 10); // set amount of datapoints based on current chart width.
-            } else if(query.type == 'interval' && query.interval === undefined) {
+            } else if(query.type == 'interval' && !query.interval) {
                 const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
                 const intervalArr = this._getInterval(diffInHours);
                 query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
