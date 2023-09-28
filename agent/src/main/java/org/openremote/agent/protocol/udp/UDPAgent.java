@@ -29,8 +29,8 @@ import jakarta.persistence.Entity;
 @Entity
 public class UDPAgent extends IOAgent<UDPAgent, UDPProtocol, DefaultAgentLink> {
 
-    public static final AttributeDescriptor<String> UDP_HOST = HOST.withOptional(false);
-    public static final AttributeDescriptor<Integer> UDP_PORT = PORT.withOptional(false);
+    public static final AttributeDescriptor<String> UDP_HOST = HOST.withRequired(true);
+    public static final AttributeDescriptor<Integer> UDP_PORT = PORT.withRequired(true);
 
     public static final AgentDescriptor<UDPAgent, UDPProtocol, DefaultAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         UDPAgent.class, UDPProtocol.class, DefaultAgentLink.class

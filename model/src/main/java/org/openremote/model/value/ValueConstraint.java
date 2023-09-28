@@ -56,9 +56,18 @@ import java.util.regex.PatternSyntaxException;
 public abstract class ValueConstraint implements Serializable {
 
     public static final String VALUE_CONSTRAINT_INVALID = "{ValueConstraint.Invalid}";
-    public static ValueConstraint[] constraints(ValueConstraint...constraints) {
-        return constraints;
-    }
+    public static final String SIZE_MESSAGE_TEMPLATE = "{ValueConstraint.Size.message}";
+    public static final String MIN_MESSAGE_TEMPLATE = "{ValueConstraint.Min.message}";
+    public static final String MAX_MESSAGE_TEMPLATE = "{ValueConstraint.Max.message}";
+    public static final String PATTERN_MESSAGE_TEMPLATE = "{ValueConstraint.Pattern.message}";
+    public static final String ALLOWED_VALUES_MESSAGE_TEMPLATE = "{ValueConstraint.AllowedValues.message}";
+    public static final String PAST_MESSAGE_TEMPLATE = "{ValueConstraint.Past.message}";
+    public static final String PAST_OR_PRESENT_MESSAGE_TEMPLATE = "{ValueConstraint.PastOrPresent.message}";
+    public static final String FUTURE_MESSAGE_TEMPLATE = "{ValueConstraint.Future.message}";
+    public static final String FUTURE_OR_PRESENT_MESSAGE_TEMPLATE = "{ValueConstraint.FutureOrPresent.message}";
+    public static final String NOT_EMPTY_MESSAGE_TEMPLATE = "{ValueConstraint.NotEmpty.message}";
+    public static final String NOT_BLANK_MESSAGE_TEMPLATE = "{ValueConstraint.NotBlank.message}";
+    public static final String NOT_NULL_MESSAGE_TEMPLATE = "{ValueConstraint.NotNull.message}";
 
     @JsonTypeName("size")
     public static class Size extends ValueConstraint {
@@ -68,7 +77,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public Size(@JsonProperty("min") Integer min, @JsonProperty("max") Integer max) {
-            super("{org.openremote.model.value.ValueConstraint.Size.message}");
+            super(SIZE_MESSAGE_TEMPLATE);
             this.min = min;
             this.max = max;
         }
@@ -126,7 +135,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public Min(@JsonProperty("min") Number min) {
-            super("{org.openremote.model.value.ValueConstraint.Min.message}");
+            super(MIN_MESSAGE_TEMPLATE);
             this.min = min;
         }
 
@@ -202,7 +211,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public Max(@JsonProperty("max") Number max) {
-            super("{org.openremote.model.value.ValueConstraint.Max.message}");
+            super(MAX_MESSAGE_TEMPLATE);
             this.max = max;
         }
 
@@ -280,9 +289,13 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public Pattern(String regexp, jakarta.validation.constraints.Pattern.Flag[] flags) {
-            super("{org.openremote.model.value.ValueConstraint.Pattern.message}");
+            super(PATTERN_MESSAGE_TEMPLATE);
             this.regexp = regexp;
             this.flags = flags;
+        }
+
+        public Pattern(String regexp) {
+            this(regexp, null);
         }
 
         public String getRegexp() {
@@ -339,7 +352,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public AllowedValues(@JsonProperty("allowedValues") Object...allowedValues) {
-            super("{org.openremote.model.value.ValueConstraint.AllowedValues.message}");
+            super(ALLOWED_VALUES_MESSAGE_TEMPLATE);
             this.allowedValues = allowedValues;
         }
 
@@ -362,21 +375,21 @@ public abstract class ValueConstraint implements Serializable {
             }
 
             Class<?> clazz = value.getClass();
-            String valueStr = null;
+            Object compareValue = null;
 
             if (Enum.class.isAssignableFrom(clazz)) {
-                valueStr = ((Enum<?>) value).name();
+                compareValue = ((Enum<?>) value).name();
             } else if (ValueUtil.isString(clazz)) {
-                valueStr = ((CharSequence)value).toString();
+                compareValue = ((CharSequence)value).toString();
             } else if (ValueUtil.isNumber(clazz)) {
-                valueStr = value.toString();
+                compareValue = value;
             }
 
-            return Arrays.asList(allowedValues).contains(valueStr);
+            return Arrays.asList(allowedValues).contains(compareValue);
         }
 
-        public static AllowedValues fromEnum(Class<Enum<?>> enumClass) {
-            Object[] allowedValues = Arrays.stream(enumClass.getEnumConstants()).map(enm -> ValueUtil.getStringCoerced(enm).orElse(null)).toArray(String[]::new);
+        public static <T extends Enum<T>> AllowedValues fromEnumValues(T[] enumValues) {
+            Object[] allowedValues = Arrays.stream(enumValues).map(enm -> ValueUtil.getStringCoerced(enm).orElse(null)).toArray(String[]::new);
             return new AllowedValues(allowedValues);
         }
     }
@@ -385,7 +398,7 @@ public abstract class ValueConstraint implements Serializable {
     public static class Past extends ValueConstraint {
 
         public Past() {
-            super("{org.openremote.model.value.ValueConstraint.Past.message}");
+            super(PAST_MESSAGE_TEMPLATE);
         }
 
         public Past setMessage(String message) {
@@ -419,7 +432,7 @@ public abstract class ValueConstraint implements Serializable {
     public static class PastOrPresent extends ValueConstraint {
 
         public PastOrPresent() {
-            super("{org.openremote.model.value.ValueConstraint.PastOrPresent.message}");
+            super(PAST_OR_PRESENT_MESSAGE_TEMPLATE);
         }
 
         public PastOrPresent setMessage(String message) {
@@ -453,7 +466,7 @@ public abstract class ValueConstraint implements Serializable {
     public static class Future extends ValueConstraint {
 
         public Future() {
-            super("{org.openremote.model.value.ValueConstraint.Future.message}");
+            super(FUTURE_MESSAGE_TEMPLATE);
         }
 
         public Future setMessage(String message) {
@@ -487,7 +500,7 @@ public abstract class ValueConstraint implements Serializable {
     public static class FutureOrPresent extends ValueConstraint {
 
         public FutureOrPresent() {
-            super("{org.openremote.model.value.ValueConstraint.FutureOrPresent.message}");
+            super(FUTURE_OR_PRESENT_MESSAGE_TEMPLATE);
         }
 
         public FutureOrPresent setMessage(String message) {
@@ -521,7 +534,7 @@ public abstract class ValueConstraint implements Serializable {
     public static class NotEmpty extends ValueConstraint {
 
         public NotEmpty() {
-            super("{org.openremote.model.value.ValueConstraint.NotEmpty.message}");
+            super(NOT_EMPTY_MESSAGE_TEMPLATE);
         }
 
         public NotEmpty setMessage(String message) {
@@ -564,7 +577,7 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("notBlank")
     public static class NotBlank extends ValueConstraint {
         public NotBlank() {
-            super("{org.openremote.model.value.ValueConstraint.NotBlank.message}");
+            super(NOT_BLANK_MESSAGE_TEMPLATE);
         }
 
         public NotBlank setMessage(String message) {
@@ -592,7 +605,7 @@ public abstract class ValueConstraint implements Serializable {
     public static class NotNull extends ValueConstraint {
 
         public NotNull() {
-            super("{org.openremote.model.value.ValueConstraint.NotNull.message}");
+            super(NOT_NULL_MESSAGE_TEMPLATE);
         }
 
         public NotNull setMessage(String message) {
@@ -628,5 +641,9 @@ public abstract class ValueConstraint implements Serializable {
 
     public Optional<String> getMessage() {
         return Optional.ofNullable(message);
+    }
+
+    public static ValueConstraint[] constraints(ValueConstraint...constraints) {
+        return constraints;
     }
 }

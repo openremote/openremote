@@ -40,14 +40,14 @@ public class DoorAsset extends Asset<DoorAsset> {
 
     public static final AttributeDescriptor<Boolean> LOCKED = new AttributeDescriptor<>("locked", ValueType.BOOLEAN,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withOptional(true);
+    );
 
     public static final AttributeDescriptor<String> LAST_ACCESS = new AttributeDescriptor<>("lastAccess", ValueType.TEXT,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withOptional(true);
+    );
 
     public static final AttributeDescriptor<AttributeExecuteStatus> UNLOCK = new AttributeDescriptor<>("unlock", ValueType.EXECUTION_STATUS)
-        .withOptional(true);
+        ;
 
     public static final AssetDescriptor<DoorAsset> DESCRIPTOR = new AssetDescriptor<>("door", "ae2eb6", DoorAsset.class);
 

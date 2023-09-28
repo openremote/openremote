@@ -27,7 +27,7 @@ import jakarta.persistence.Entity;
 @Entity
 public class VelbusSerialAgent extends VelbusAgent<VelbusSerialAgent, VelbusSerialProtocol> {
 
-    public static final AttributeDescriptor<String> VELBUS_SERIAL_PORT = SERIAL_PORT.withOptional(false);
+    public static final AttributeDescriptor<String> VELBUS_SERIAL_PORT = SERIAL_PORT.withRequired(true);
 
     public static final AgentDescriptor<VelbusSerialAgent, VelbusSerialProtocol, VelbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         VelbusSerialAgent.class, VelbusSerialProtocol.class, VelbusAgentLink.class

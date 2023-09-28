@@ -30,8 +30,8 @@ import java.util.Optional;
 @Entity
 public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
 
-    public static final AttributeDescriptor<String> MQTT_HOST = HOST.withOptional(false);
-    public static final AttributeDescriptor<Integer> MQTT_PORT = PORT.withOptional(false);
+    public static final AttributeDescriptor<String> MQTT_HOST = HOST.withRequired(true);
+    public static final AttributeDescriptor<Integer> MQTT_PORT = PORT.withRequired(true);
     public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> SECURE_MODE = new AttributeDescriptor<>("secureMode", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> RESUME_SESSION = new AttributeDescriptor<>("resumeSession", ValueType.BOOLEAN);

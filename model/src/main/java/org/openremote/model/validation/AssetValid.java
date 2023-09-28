@@ -39,7 +39,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @TsIgnore
 public @interface AssetValid {
 
-    String message() default "{org.openremote.model.validation.AssetValid.message}";
+    String MESSAGE_TEMPLATE = "{Asset.invalid.message}";
+
+    String message() default MESSAGE_TEMPLATE;
 
     Class<?>[] groups() default { };
 

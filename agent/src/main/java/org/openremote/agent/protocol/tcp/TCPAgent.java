@@ -29,8 +29,8 @@ import jakarta.persistence.Entity;
 @Entity
 public class TCPAgent extends IOAgent<TCPAgent, TCPProtocol, DefaultAgentLink> {
 
-    public static final AttributeDescriptor<String> TCP_HOST = HOST.withOptional(false);
-    public static final AttributeDescriptor<Integer> TCP_PORT = PORT.withOptional(false);
+    public static final AttributeDescriptor<String> TCP_HOST = HOST.withRequired(true);
+    public static final AttributeDescriptor<Integer> TCP_PORT = PORT.withRequired(true);
 
     public static final AgentDescriptor<TCPAgent, TCPProtocol, DefaultAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         TCPAgent.class, TCPProtocol.class, DefaultAgentLink.class

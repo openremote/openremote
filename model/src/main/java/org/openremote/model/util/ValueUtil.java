@@ -910,7 +910,9 @@ public class ValueUtil {
                     messageParams.forEach(hibernateContext::addMessageParameter);
                 }
             }
+            // Include attribute name in the violation
             context.buildConstraintViolationWithTemplate(valueConstraint.getMessage().orElse(ValueConstraint.VALUE_CONSTRAINT_INVALID)).addPropertyNode("value").addConstraintViolation();
+            return false;
         }
         return true;
     }
@@ -929,7 +931,7 @@ public class ValueUtil {
         AssetTypeInfo assetInfo = getAssetInfo(asset.getType()).orElseThrow(() -> new IllegalStateException("Cannot get asset model info for requested asset type: " + asset.getType()));
         asset.getAttributes().addOrReplace(
             Arrays.stream(assetInfo.getAttributeDescriptors())
-            .filter(attributeDescriptor -> !attributeDescriptor.isOptional())
+            .filter(AttributeDescriptor::isRequired)
             .map(Attribute::new)
             .collect(Collectors.toList())
         );

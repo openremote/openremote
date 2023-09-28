@@ -20,7 +20,15 @@
 package org.openremote.manager.asset;
 
 import com.fasterxml.jackson.databind.node.NullNode;
-import org.jboss.resteasy.api.validation.ResteasyViolationException;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.plugins.validation.ResteasyViolationExceptionImpl;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
@@ -39,15 +47,6 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import jakarta.persistence.OptimisticLockException;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,7 +54,6 @@ import java.util.stream.IntStream;
 
 import static jakarta.ws.rs.core.Response.Status.*;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.value.MetaItemType.*;
@@ -410,7 +408,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, FORBIDDEN);
         } catch (ConstraintViolationException ex) {
-            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations());
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
         } catch (OptimisticLockException opEx) {
             throw new WebApplicationException("Refresh the asset from the server and try to update the changes again", opEx, CONFLICT);
         }
@@ -503,7 +501,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             return assetStorageService.merge(newAsset);
 
         } catch (ConstraintViolationException ex) {
-            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations());
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }

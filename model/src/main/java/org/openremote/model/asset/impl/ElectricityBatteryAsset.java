@@ -33,7 +33,7 @@ public class ElectricityBatteryAsset extends ElectricityStorageAsset {
 
     public static final AttributeDescriptor<Integer> CHARGE_CYCLES = new AttributeDescriptor<>("chargeCycles", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withOptional(true);
+    );
 
     public static final AssetDescriptor<ElectricityBatteryAsset> DESCRIPTOR = new AssetDescriptor<>("battery-charging", "1B7C89", ElectricityBatteryAsset.class);
 

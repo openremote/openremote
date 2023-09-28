@@ -1,12 +1,22 @@
 package org.openremote.test.model
 
 import com.fasterxml.jackson.databind.node.ObjectNode
+import jakarta.validation.ConstraintViolationException
+import jakarta.ws.rs.WebApplicationException
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.HttpHeaders
+import jakarta.ws.rs.core.MediaType
+import org.jboss.resteasy.api.validation.ViolationReport
+import org.jboss.resteasy.client.jaxrs.ProxyConfig
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.manager.asset.AssetModelService
+import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetModelResource
+import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.agent.AgentDescriptor
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.DefaultAgentLink
@@ -17,6 +27,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetState
 import org.openremote.model.asset.AssetTypeInfo
+import org.openremote.model.validation.AssetValid
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.ValueConstraint
@@ -24,12 +35,18 @@ import org.openremote.model.value.ValueFilter
 import org.openremote.model.value.ValueType
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.impl.ColourRGB
+import org.openremote.setup.integration.model.asset.ModelTestAsset
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
 import spock.lang.Shared
 import spock.lang.Specification
 
+import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
+import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import static org.openremote.model.value.ValueType.BIG_NUMBER
 
 // TODO: Define new asset model tests (setValue - equality checking etc.)
@@ -43,6 +60,83 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def assetModelService = container.getService(AssetModelService.class)
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
     }
+
+    def "Serialise/Deserialise asset and attribute events and test validation"() {
+
+        given: "an authenticated admin user"
+        def accessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
+        and: "the asset resource"
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).register(
+                new ClientRequestFilter() {
+                    @Override
+                    void filter(ClientRequestContext requestContext) throws IOException {
+                        requestContext.getHeaders().get(HttpHeaders.ACCEPT).clear()
+                        requestContext.getHeaders().get(HttpHeaders.ACCEPT).add(MediaType.APPLICATION_JSON)
+                    }
+                }
+        )
+                .proxy(AssetResource.class)
+
+        and: "A well known asset is instantiated"
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def modelTestAsset = new ModelTestAsset("Test Asset")
+        modelTestAsset.setRealm("master")
+
+        when: "try to save the asset without meeting constraints on required attributes"
+        assetResource.create(null, modelTestAsset)
+
+        then: "a constraint violation exception should be thrown"
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+        def report = ex.response.readEntity(ViolationReport)
+        report.propertyViolations.size() == 1
+        report.propertyViolations.get(0).path == "value"
+        report.propertyViolations.get(0).message == "must not be null"
+        report.classViolations.size() == 1
+        report.classViolations.get(0).path == ""
+        report.classViolations.get(0).message == "Asset is not valid"
+
+        when: "the issue is fixed"
+        modelTestAsset.getAttribute(ModelTestAsset.)
+
+//        ex.constraintViolations != null
+//        ex.constraintViolations.size() == 2
+//        // Violation for required attribute with no value
+//        ex.constraintViolations.any {it.propertyPath.any {it.name == "value"} && it.messageTemplate == ValueConstraint.NOT_NULL_MESSAGE_TEMPLATE}
+//        // Violation for the overall AssetValid
+//        ex.constraintViolations.any {it.messageTemplate == AssetValid.MESSAGE_TEMPLATE}
+    }
+
+    def "Test value constraints"() {
+
+
+    }
+//    Well known asset type with well known attribute with constraints (value type and attr descriptor):Check serialisation/deserialisationExpect attribute to be validated correctly
+//
+//
+//
+//
+//    Add constraints to the attribute meta:Expect additional constraints to be applied
+//
+//
+//
+//
+//    Custom number attribute with well known value type and object attribute with well known value type:Check serialisation/deserialisationExpect attributes to be validated correctly
+//    Expect values to be hydrated correctly
+//    Change values of above attributes to not be correct type:Check validationCheck deserialisation (should be null values) 
+//
+//    Change value types of above attributes (simulate removed value types):Check serialisation/deserialisationExpect attribute to be validated correctly
+//
+//
+//    Simulate removed value descriptor:Expect asset to deserialiseExpect attributes to be presentExpect attribute value type to be unknown with primitive type (number or string) Expect descriptor and attribute constraints to be applied
+
 
     def "Retrieving all asset model info"() {
 
@@ -60,7 +154,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         thingAssetInfo2.isPresent()
         thingAssetInfo2.get().getAssetDescriptor().type == ThingAsset.class
         thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) } != null
-        !thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.optional
+        thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.required
         thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.type == ValueType.GEO_JSON_POINT
 
         when: "the asset type value descriptor is retrieved"
@@ -81,8 +175,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetInfos.size() == ValueUtil.assetTypeMap.size()
         def velbusTcpAgent = assetInfos.find {it.assetDescriptor.type == VelbusTCPAgent.class}
         velbusTcpAgent != null
-        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_HOST && !it.optional}
-        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_PORT && !it.optional}
+        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_HOST && it.required}
+        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_PORT && it.required}
     }
 
     def "Retrieving a specific asset model info"() {

@@ -60,7 +60,7 @@ class AssetValidator implements HibernateConstraintValidator<AssetValid, Asset<?
         // Check for required attributes
         if (assetModelInfo != null) {
             Arrays.stream(assetModelInfo.getAttributeDescriptors())
-                .filter(attributeDescriptor -> !attributeDescriptor.isOptional())
+                .filter(AttributeDescriptor::isRequired)
                 .forEach(requiredAttributeDescriptor -> {
                     Attribute<?> foundAttribute = asset.getAttribute(requiredAttributeDescriptor).orElse(null);
 

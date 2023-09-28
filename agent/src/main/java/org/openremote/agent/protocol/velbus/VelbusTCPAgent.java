@@ -27,8 +27,8 @@ import jakarta.persistence.Entity;
 @Entity
 public class VelbusTCPAgent extends VelbusAgent<VelbusTCPAgent, VelbusTCPProtocol> {
 
-    public static final AttributeDescriptor<String> VELBUS_HOST = HOST.withOptional(false);
-    public static final AttributeDescriptor<Integer> VELBUS_PORT = PORT.withOptional(false);
+    public static final AttributeDescriptor<String> VELBUS_HOST = HOST.withRequired(true);
+    public static final AttributeDescriptor<Integer> VELBUS_PORT = PORT.withRequired(true);
 
     public static final AgentDescriptor<VelbusTCPAgent, VelbusTCPProtocol, VelbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         VelbusTCPAgent.class, VelbusTCPProtocol.class, VelbusAgentLink.class
