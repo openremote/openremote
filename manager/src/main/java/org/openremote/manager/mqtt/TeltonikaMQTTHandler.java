@@ -30,7 +30,7 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class TeltonikaMQTTHandler extends MQTTHandler {
 
-    private static final String TOKEN_TELTONIKA_DEVICE = "Teltonika";
+    private static final String TOKEN_TELTONIKA_DEVICE = "teltonika";
 
     private static final Logger LOG = SyslogCategory.getLogger(API, TeltonikaMQTTHandler.class);
 
@@ -45,7 +45,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     @Override
     protected boolean topicMatches(Topic topic) {
         if ("teltonika".equalsIgnoreCase(topicTokenIndexToString(topic, 2))){
-            getLogger().info("Matches Teltonika Handler");
+            getLogger().info("Topic Matches Teltonika Handler");
             return true;
         }
         return false;
@@ -60,7 +60,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         timerService = container.getService(TimerService.class);
 
         if (!identityService.isKeycloakEnabled()) {
-            LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
+            getLogger().warning("MQTT connections are not supported when not using Keycloak identity provider");
             isKeycloak = false;
         } else {
             isKeycloak = true;
@@ -83,7 +83,19 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      */
     @Override
     public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
-        getLogger().fine("canSubscribe");
+        getLogger().info("Topic "+topic.toString()+" is not subscribe-able");
+        return false;
+    }
+
+    /**
+     * Overrides MQTTHandler.checkCanPublish for this specific Handler,
+     * until secure Authentication and Auto-provisioning
+     * of Teltonika Devices is created.
+     *
+     * To be removed after implementation is complete.
+     */
+    @Override
+    public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         return true;
     }
 
@@ -97,7 +109,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      */
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
-        getLogger().fine("canPublish");
+        getLogger().info("Teltonika device will publish to Topic "+topic.toString()+" to transmit payload");
         return true;
     }
 
@@ -125,13 +137,13 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * Get the set of topics this handler wants to subscribe to for incoming publish messages; messages that match
      * these topics will be passed to {@link #onPublish}.
      *
-     * The listener topics are defined as <code>{realmID}/{userID}/{@value TOKEN_TELTONIKA_DEVICE}/{IMEI}#</code>
+     * The listener topics are defined as <code>{realmID}/{userID}/{@value TOKEN_TELTONIKA_DEVICE}/{IMEI}</code>
      */
     @Override
     public Set<String> getPublishListenerTopics() {
         getLogger().fine("getPublishListenerTopics");
         return Set.of(
-                TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_TELTONIKA_DEVICE + "/" + TOKEN_MULTI_LEVEL_WILDCARD
+                TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_TELTONIKA_DEVICE + "/" + TOKEN_SINGLE_LEVEL_WILDCARD
         );
     }
 
@@ -143,7 +155,6 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * @param topic
      * @param body
      */
-     //TODO: Make this secure using certificates/authentication
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
 
@@ -151,14 +162,13 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
 
         Attribute<?>[] attributes = getAttributesFromPayload(payloadContent);
-//        getLogger().info(String.valueOf(attributes.length));
-        //  {realmId}/{clientId}/Teltonika/{imei}
+
         String deviceImei = topic.tokens.get(3);
         String realm = topic.tokens.get(0);
 
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         String deviceUuid = getAssetId(deviceImei);
-        LOG.fine(deviceUuid);
+        getLogger().info("IMEI Linked to Asset ID:"+ deviceUuid);
 
         Asset<?> asset = assetStorageService.find(deviceUuid);
         // Check if asset was found
@@ -172,6 +182,9 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     }
 
     private void CreateNewAsset(String payloadContent, String newDeviceId, String newDeviceImei, String realm, Attribute<?>[] attributes) {
+        getLogger().info("Creating CarAsset with IMEI "+newDeviceImei+" and payload:");
+        getLogger().info(payloadContent);
+
         CarAsset testAsset = new CarAsset("Teltonika Asset "+newDeviceImei)
                 .setRealm(realm)
                 .setId(newDeviceId);
@@ -236,6 +249,11 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     }
 
     private void UpdateAsset(String payloadContent, Asset<?> asset, Attribute<?>[] attributes) {
+
+        String imei = asset.getAttribute("IMEI").toString();
+
+        getLogger().info("Creating CarAsset with IMEI "+imei+" and payload:");
+        getLogger().info(payloadContent);
 
         asset.addOrReplaceAttributes(attributes);
 
