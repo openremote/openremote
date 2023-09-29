@@ -45,6 +45,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,11 +78,7 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
             try {
                 SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 
-                schemaFactory.setResourceResolver(new CatalogResourceResolver(
-                    new HashMap<URI, URL>() {{
-                        put(DOM.XML_SCHEMA_NAMESPACE, DOM.XML_SCHEMA_RESOURCE);
-                    }}
-                ));
+                schemaFactory.setResourceResolver(new CatalogResourceResolver(Map.of(DOM.XML_SCHEMA_NAMESPACE, DOM.XML_SCHEMA_RESOURCE)));
 
                 if (schemaSources != null) {
                     schema = schemaFactory.newSchema(schemaSources);

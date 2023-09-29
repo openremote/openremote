@@ -55,7 +55,7 @@ public final class ValueType {
     public static class StringMap extends HashMap<String, String> {}
     public static class IntegerMap extends HashMap<String, Integer> {}
     public static class DoubleMap extends HashMap<String, Double> {}
-    public static class BooleanMap extends HashMap<String, Double> {}
+    public static class BooleanMap extends HashMap<String, Boolean> {}
     public static class MultivaluedStringMap extends HashMap<String, List<String>> {}
 
     public static final ValueDescriptor<Boolean> BOOLEAN = new ValueDescriptor<>("boolean", Boolean.class);

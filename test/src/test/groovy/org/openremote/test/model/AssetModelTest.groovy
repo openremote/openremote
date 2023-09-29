@@ -1,22 +1,18 @@
 package org.openremote.test.model
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import jakarta.validation.ConstraintViolationException
 import jakarta.ws.rs.WebApplicationException
-import jakarta.ws.rs.client.ClientRequestContext
-import jakarta.ws.rs.client.ClientRequestFilter
-import jakarta.ws.rs.core.HttpHeaders
-import jakarta.ws.rs.core.MediaType
 import org.jboss.resteasy.api.validation.ViolationReport
-import org.jboss.resteasy.client.jaxrs.ProxyConfig
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetModelResource
 import org.openremote.model.asset.AssetResource
+import org.openremote.model.asset.AssetTypeInfo
 import org.openremote.model.asset.agent.AgentDescriptor
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.DefaultAgentLink
@@ -26,27 +22,22 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetState
-import org.openremote.model.asset.AssetTypeInfo
-import org.openremote.model.validation.AssetValid
-import org.openremote.model.value.MetaItemType
-import org.openremote.model.value.SubStringValueFilter
-import org.openremote.model.value.ValueConstraint
-import org.openremote.model.value.ValueFilter
-import org.openremote.model.value.ValueType
+import org.openremote.model.util.TimeUtil
 import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.*
 import org.openremote.model.value.impl.ColourRGB
 import org.openremote.setup.integration.model.asset.ModelTestAsset
-import org.openremote.test.ManagerContainerTrait
 import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
+
+import java.time.format.DateTimeFormatter
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.Constants.MASTER_REALM
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.model.Constants.*
 import static org.openremote.model.value.ValueType.BIG_NUMBER
 
 // TODO: Define new asset model tests (setValue - equality checking etc.)
@@ -73,19 +64,11 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         ).token
 
         and: "the asset resource"
-        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).register(
-                new ClientRequestFilter() {
-                    @Override
-                    void filter(ClientRequestContext requestContext) throws IOException {
-                        requestContext.getHeaders().get(HttpHeaders.ACCEPT).clear()
-                        requestContext.getHeaders().get(HttpHeaders.ACCEPT).add(MediaType.APPLICATION_JSON)
-                    }
-                }
-        )
-                .proxy(AssetResource.class)
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         and: "A well known asset is instantiated"
         def assetStorageService = container.getService(AssetStorageService.class)
+        def timerService = container.getService(TimerService.class)
         def modelTestAsset = new ModelTestAsset("Test Asset")
         modelTestAsset.setRealm("master")
 
@@ -97,14 +80,77 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 400
         def report = ex.response.readEntity(ViolationReport)
         report.propertyViolations.size() == 1
-        report.propertyViolations.get(0).path == "value"
+        report.propertyViolations.get(0).path == "attributes[positiveInt].value"
         report.propertyViolations.get(0).message == "must not be null"
         report.classViolations.size() == 1
         report.classViolations.get(0).path == ""
         report.classViolations.get(0).message == "Asset is not valid"
 
-        when: "the issue is fixed"
-        modelTestAsset.getAttribute(ModelTestAsset.)
+        when: "the issue is fixed and the asset is saved again"
+        modelTestAsset.getAttribute(ModelTestAsset.REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR).map(attr -> attr.setValue(1))
+        modelTestAsset = assetResource.create(null, modelTestAsset)
+
+        then: "the save should succeed"
+        modelTestAsset != null
+        modelTestAsset.getAttribute(ModelTestAsset.REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == 1
+
+        when: "other optional attributes are added with valid values"
+        modelTestAsset.addAttributes(
+                new Attribute<>(ModelTestAsset.NEGATIVE_INT_ATTRIBUTE_DESCRIPTOR, -1),
+                new Attribute<>(ModelTestAsset.SIZE_STRING_ATTRIBUTE_DESCRIPTOR, "abcde"),
+                new Attribute<>(ModelTestAsset.SIZE_MAP_ATTRIBUTE_DESCRIPTOR, [
+                        ("key1"): 1d,
+                        ("key2"): 2d,
+                        ("key3"): 3d
+                ] as ValueType.DoubleMap
+            ),
+                new Attribute<>(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR, [
+                        "arrayValue1",
+                        "arrayValue2"
+                ] as String[]),
+                new Attribute<>(ModelTestAsset.ALLOWED_VALUES_ENUM_ATTRIBUTE_DESCRIPTOR, ModelTestAsset.TestValue.ENUM_2),
+                new Attribute<>(ModelTestAsset.ALLOWED_VALUES_STRING_ATTRIBUTE_DESCRIPTOR, "Allowed1"),
+                new Attribute<>(ModelTestAsset.ALLOWED_VALUES_NUMBER_ATTRIBUTE_DESCRIPTOR, 1.5d),
+                new Attribute<>(ModelTestAsset.PAST_TIMESTAMP_ATTRIBUTE_DESCRIPTOR, timerService.getCurrentTimeMillis()-1000L),
+                new Attribute<>(ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR, timerService.getNow().toDate()),
+                new Attribute<>(ModelTestAsset.FUTURE_ISO8601_ATTRIBUTE_DESCRIPTOR, DateTimeFormatter.ISO_INSTANT.format(timerService.getNow().plusMillis(100000))),
+                new Attribute<>(ModelTestAsset.FUTURE_OR_PRESENT_TIMESTAMP_ATTRIBUTE_DESCRIPTOR, timerService.getCurrentTimeMillis()+100000),
+                new Attribute<>(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR, "abcde"),
+                new Attribute<>(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR, [1] as Integer[]),
+                new Attribute<>(ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR, [
+                        ("key1"): true
+                ] as ValueType.BooleanMap),
+                new Attribute<>(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR, "abcde")
+        )
+        //Why value constraint is deserialised as BigDecimal - serialise ValueConstraint and see what it deserialises as
+        def asset = ValueUtil.asJSON(modelTestAsset).flatMap(str -> ValueUtil.parse(str, Asset))
+        assetResource.update(null, modelTestAsset.id, modelTestAsset)
+
+        then: "the save should succeed"
+        modelTestAsset != null
+        modelTestAsset.getAttribute(ModelTestAsset.REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == 1
+        modelTestAsset.getAttribute(ModelTestAsset.NEGATIVE_INT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == -1
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "abcde"
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_MAP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).size() == 3
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_MAP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).get("key1") == 1d
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_MAP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).get("key2") == 2d
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_MAP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).get("key3") == 3d
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).size() == 2
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[0] == "arrayValue1"
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[0] == "arrayValue2"
+        modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_ENUM_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == ModelTestAsset.TestValue.ENUM_2
+        modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "Allowed1"
+        modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_NUMBER_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == 1.5d
+        modelTestAsset.getAttribute(ModelTestAsset.PAST_TIMESTAMP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) < timerService.getCurrentTimeMillis()
+        modelTestAsset.getAttribute(ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).getTime() <= timerService.getCurrentTimeMillis()
+        modelTestAsset.getAttribute(ModelTestAsset.FUTURE_ISO8601_ATTRIBUTE_DESCRIPTOR).flatMap { TimeUtil.parseTimeIso8601(it.value.orElse(null))}.orElse(null) > timerService.getCurrentTimeMillis()
+        modelTestAsset.getAttribute(ModelTestAsset.FUTURE_OR_PRESENT_TIMESTAMP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) >= timerService.getCurrentTimeMillis()
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "abcde"
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).size() == 1
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).get("key1") == true
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).length == 1
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[0] == 1
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "abcde"
 
 //        ex.constraintViolations != null
 //        ex.constraintViolations.size() == 2

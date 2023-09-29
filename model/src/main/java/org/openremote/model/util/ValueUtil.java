@@ -89,6 +89,17 @@ import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
 public class ValueUtil {
 
     /**
+     * A {@link FunctionalInterface} for populating the {@link ConstraintViolation#getPropertyPath()} for the value being
+     * validated (e.g. for the value of an {@link Attribute} called 'customAttribute' the path provided should be
+     * attributes["customAttribute"].value
+     */
+    @TsIgnore
+    @FunctionalInterface
+    public interface ConstraintViolationPathProvider {
+        void accept(ConstraintValidatorContext.ConstraintViolationBuilder constraintViolationBuilder);
+    }
+
+    /**
      * Copied from: https://puredanger.github.io/tech.puredanger.com/2006/11/29/writing-a-class-hierarchy-comparator/
      */
     protected static class ClassHierarchyComparator implements Comparator<Class<?>> {
@@ -155,6 +166,7 @@ public class ValueUtil {
             .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true)
+            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, false)
             .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
             .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
@@ -255,7 +267,7 @@ public class ValueUtil {
             }
             if (value instanceof CharSequence charSequence) {
                 try {
-                    return Optional.of((T) Instant.ofEpochMilli(TimeUtil.parseTimeIso8601(charSequence)));
+                    return Optional.of((T) TimeUtil.parseTimeIso8601(charSequence));
                 } catch (Exception e) {
                     LOG.info("Failed to parse char sequence as Instant: " + e.getMessage());
                 }
@@ -879,22 +891,29 @@ public class ValueUtil {
      * works for now.
      */
     // TODO: Implement some sort of caching if performance warrants it
-    public static boolean validateValue(AttributeDescriptor<?> attributeDescriptor, ValueDescriptor<?> valueDescriptor, MetaHolder metaHolder, Instant now, ConstraintValidatorContext validatorContext, Object value) {
+    public static boolean validateValue(AttributeDescriptor<?> attributeDescriptor, ValueDescriptor<?> valueDescriptor, MetaHolder metaHolder, Instant now, ConstraintValidatorContext context, ConstraintViolationPathProvider constraintBuilderProvider, Object value) {
         boolean valid = true;
 
         if (valueDescriptor != null && valueDescriptor.getConstraints() != null) {
-            if (Arrays.stream(valueDescriptor.getConstraints()).map(constraint -> validateValueConstraint(validatorContext, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+            if (Arrays.stream(valueDescriptor.getConstraints()).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
                 valid = false;
             }
         }
         if (attributeDescriptor != null && attributeDescriptor.getConstraints() != null) {
-            if (Arrays.stream(attributeDescriptor.getConstraints()).map(constraint -> validateValueConstraint(validatorContext, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+            if (Arrays.stream(attributeDescriptor.getConstraints()).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)) {
+                valid = false;
+            }
+        }
+        if (attributeDescriptor != null && attributeDescriptor.getMeta() != null) {
+            if (attributeDescriptor.getMeta().get(MetaItemType.CONSTRAINTS).flatMap(ValueHolder::getValue).map(constraints ->
+                Arrays.stream(constraints).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)
+            ).orElse(false)) {
                 valid = false;
             }
         }
         if (metaHolder != null && metaHolder.getMeta() != null) {
             if (metaHolder.getMeta().get(MetaItemType.CONSTRAINTS).flatMap(ValueHolder::getValue).map(constraints ->
-                Arrays.stream(constraints).map(constraint -> validateValueConstraint(validatorContext, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)
+                Arrays.stream(constraints).map(constraint -> validateValueConstraint(context, constraintBuilderProvider, now, constraint, value)).anyMatch(constraintValid -> !constraintValid)
             ).orElse(false)) {
                 valid = false;
             }
@@ -902,7 +921,7 @@ public class ValueUtil {
         return valid;
     }
 
-    public static boolean validateValueConstraint(ConstraintValidatorContext context, Instant now, ValueConstraint valueConstraint, Object value) {
+    public static boolean validateValueConstraint(ConstraintValidatorContext context, ConstraintViolationPathProvider constraintViolationPathProvider, Instant now, ValueConstraint valueConstraint, Object value) {
         if (!valueConstraint.evaluate(value, now)) {
             if (context instanceof HibernateConstraintValidatorContext hibernateContext) {
                 Map<String, Object> messageParams = valueConstraint.getParameters();
@@ -910,8 +929,9 @@ public class ValueUtil {
                     messageParams.forEach(hibernateContext::addMessageParameter);
                 }
             }
-            // Include attribute name in the violation
-            context.buildConstraintViolationWithTemplate(valueConstraint.getMessage().orElse(ValueConstraint.VALUE_CONSTRAINT_INVALID)).addPropertyNode("value").addConstraintViolation();
+            ConstraintValidatorContext.ConstraintViolationBuilder constraintBuilder = context.buildConstraintViolationWithTemplate(valueConstraint.getMessage().orElse(ValueConstraint.VALUE_CONSTRAINT_INVALID));
+            constraintViolationPathProvider.accept(constraintBuilder);
+            constraintBuilder.addConstraintViolation();
             return false;
         }
         return true;

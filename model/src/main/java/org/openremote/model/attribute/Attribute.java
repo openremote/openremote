@@ -156,6 +156,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     public Attribute(AttributeDescriptor<T> attributeDescriptor, T value) {
         this(attributeDescriptor.getName(), attributeDescriptor.getType(), value);
 
+        // TODO: We should not do this attribute descriptor meta should be read from the descriptor even for DB queries
         // Auto merge meta from attribute descriptor
         if (attributeDescriptor.getMeta() != null) {
             getMeta().addOrReplace(attributeDescriptor.getMeta());

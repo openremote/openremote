@@ -18,12 +18,14 @@ package org.openremote.model.util;
 
 import org.openremote.model.Constants;
 
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +40,23 @@ public class TimeUtil {
 
     // Simple syntax
     protected static final Pattern SIMPLE = Pattern.compile(Constants.ISO8601_DURATION_REGEXP);
+    protected static final DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+        .parseCaseInsensitive()
+        .append(ISO_LOCAL_DATE)
+        .optionalStart()           // time made optional
+        .appendLiteral('T')
+        .append(ISO_LOCAL_TIME)
+        .optionalStart()           // zone and offset made optional
+        .appendOffsetId()
+        .optionalStart()
+        .appendLiteral('[')
+        .parseCaseSensitive()
+        .appendZoneRegionId()
+        .appendLiteral(']')
+        .optionalEnd()
+        .optionalEnd()
+        .optionalEnd()
+        .toFormatter();
 
     /**
      * Parses the given time duration String and returns the corresponding number of milliseconds.
@@ -78,25 +97,7 @@ public class TimeUtil {
      * Parses ISO8601 strings with optional time and/or offset; if no zone is provided then UTC is assumed if no
      * time is provided then 00:00:00 is assumed.
      */
-    public static long parseTimeIso8601(CharSequence datetime) {
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .append(ISO_LOCAL_DATE)
-            .optionalStart()           // time made optional
-            .appendLiteral('T')
-            .append(ISO_LOCAL_TIME)
-            .optionalStart()           // zone and offset made optional
-            .appendOffsetId()
-            .optionalStart()
-            .appendLiteral('[')
-            .parseCaseSensitive()
-            .appendZoneRegionId()
-            .appendLiteral(']')
-            .optionalEnd()
-            .optionalEnd()
-            .optionalEnd()
-            .toFormatter();
-
+    public static Instant parseTimeIso8601(CharSequence datetime) {
         TemporalAccessor temporalAccessor = formatter.parseBest(datetime, ZonedDateTime::from, LocalDateTime::from, LocalDate::from);
         ZonedDateTime zonedDateTime;
 
@@ -107,6 +108,6 @@ public class TimeUtil {
         } else {
             zonedDateTime = ((LocalDate) temporalAccessor).atStartOfDay(ZoneOffset.UTC);
         }
-        return zonedDateTime.toInstant().toEpochMilli();
+        return zonedDateTime.toInstant();
     }
 }

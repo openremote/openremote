@@ -45,8 +45,9 @@ public class ModelTestAsset extends Asset<ModelTestAsset> {
     );
 
     public static final AttributeDescriptor<Long> PAST_TIMESTAMP_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("pastTimestamp", ValueType.TIMESTAMP,
-        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Past()))
-    );
+        new MetaItem<>(MetaItemType.CONSTRAINTS)
+    ).withConstraints(ValueConstraint.constraints(new ValueConstraint.Past()));
+
     public static final AttributeDescriptor<Date> PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("pastOrPresentDate", ValueType.DATE_AND_TIME,
         new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.PastOrPresent()))
     );
@@ -57,10 +58,10 @@ public class ModelTestAsset extends Asset<ModelTestAsset> {
         new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.FutureOrPresent()))
     );
     public static final AttributeDescriptor<String> NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("notEmptyString", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints())
+        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotEmpty()))
     );
-    public static final AttributeDescriptor<Integer[]> NOT_EMPTY_INT_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("notEmptyArray", ValueType.INTEGER.asArray(),
-        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints())
+    public static final AttributeDescriptor<Integer[]> NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("notEmptyArray", ValueType.INTEGER.asArray(),
+        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotEmpty()))
     );
     public static final AttributeDescriptor<ValueType.BooleanMap> NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("notEmptyMap", ValueType.BOOLEAN_MAP,
         new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotEmpty()))
@@ -68,10 +69,6 @@ public class ModelTestAsset extends Asset<ModelTestAsset> {
 
     public static final AttributeDescriptor<String> NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("notBlankString", ValueType.TEXT,
         new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotBlank().setMessage("Not blank custom message")))
-    );
-
-    public static final AttributeDescriptor<String> NOT_NULL_STRING_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("notNullString", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotBlank()))
     );
 
     public static final AssetDescriptor<ModelTestAsset> MODEL_TEST_ASSET_DESCRIPTOR = new AssetDescriptor<>("", "", ModelTestAsset.class);

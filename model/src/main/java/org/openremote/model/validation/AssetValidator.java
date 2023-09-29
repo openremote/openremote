@@ -8,12 +8,14 @@ import org.hibernate.validator.constraintvalidation.HibernateConstraintValidator
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -95,7 +97,14 @@ class AssetValidator implements HibernateConstraintValidator<AssetValid, Asset<?
             }
 
             // Validate the value against the various constraints
-            if (!ValueUtil.validateValue(descriptor, attribute.getType(), attribute, clockProvider.getClock().instant(), context, attribute.getValue().orElse(null))) {
+            ValueUtil.ConstraintViolationPathProvider pathProvider = (constraintViolationBuilder) ->
+                constraintViolationBuilder
+                    .addPropertyNode("attributes")
+                    .addPropertyNode("value")
+                    .inContainer(Map.class, 1)
+                    .inIterable().atKey(attribute.getName());
+
+            if (!ValueUtil.validateValue(descriptor, attribute.getType(), attribute, clockProvider.getClock().instant(), context, pathProvider, attribute.getValue().orElse(null))) {
                 valid.set(false);
             }
         });
