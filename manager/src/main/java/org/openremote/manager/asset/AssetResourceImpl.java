@@ -282,7 +282,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void update(RequestParams requestParams, String assetId, Asset<?> asset) {
+    public Asset<?> update(RequestParams requestParams, String assetId, Asset<?> asset) {
 
         LOG.fine("Updating asset: assetID=" + assetId);
 
@@ -403,7 +403,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 //            });
 
             // Store the result
-            assetStorageService.merge(storageAsset, isRestrictedUser ? getUsername() : null);
+            return assetStorageService.merge(storageAsset, isRestrictedUser ? getUsername() : null);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, FORBIDDEN);

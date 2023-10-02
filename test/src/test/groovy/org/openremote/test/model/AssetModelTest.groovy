@@ -21,6 +21,7 @@ import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.rules.AssetState
 import org.openremote.model.util.TimeUtil
 import org.openremote.model.util.ValueUtil
@@ -32,7 +33,9 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.lang.reflect.Array
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
@@ -62,6 +65,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
+        stopPseudoClock()
 
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
@@ -108,7 +112,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                         "arrayValue1",
                         "arrayValue2"
                 ] as String[]),
-                new Attribute<>(ModelTestAsset.ALLOWED_VALUES_ENUM_ATTRIBUTE_DESCRIPTOR, ModelTestAsset.TestValue.ENUM_2),
+                new Attribute<>(ModelTestAsset.ALLOWED_VALUES_ENUM_ATTRIBUTE_DESCRIPTOR, ModelTestAsset.TestValue.ENUM_2).addMeta(
+                        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotNull()))
+                ),
                 new Attribute<>(ModelTestAsset.ALLOWED_VALUES_STRING_ATTRIBUTE_DESCRIPTOR, "Allowed1"),
                 new Attribute<>(ModelTestAsset.ALLOWED_VALUES_NUMBER_ATTRIBUTE_DESCRIPTOR, 1.5d),
                 new Attribute<>(ModelTestAsset.PAST_TIMESTAMP_ATTRIBUTE_DESCRIPTOR, timerService.getCurrentTimeMillis()-1000L),
@@ -120,13 +126,16 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR, [
                         ("key1"): true
                 ] as ValueType.BooleanMap),
-                new Attribute<>(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR, "abcde")
+                new Attribute<>(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR, "abcde"),
+                // A custom attribute is added
+                new Attribute<>("custom1"),
+                new Attribute<>("custom2", ValueType.GEO_JSON_POINT, new GeoJSONPoint(1.234, 5.678)).addMeta(
+                        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotNull()))
+                )
         )
-        //Why value constraint is deserialised as BigDecimal - serialise ValueConstraint and see what it deserialises as
-        def asset = ValueUtil.asJSON(modelTestAsset).flatMap(str -> ValueUtil.parse(str, Asset))
-        assetResource.update(null, modelTestAsset.id, modelTestAsset)
+        def updatedModelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
 
-        then: "the save should succeed"
+        then: "the save should succeed and correct values should be stored"
         modelTestAsset != null
         modelTestAsset.getAttribute(ModelTestAsset.REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == 1
         modelTestAsset.getAttribute(ModelTestAsset.NEGATIVE_INT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == -1
@@ -137,13 +146,13 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.getAttribute(ModelTestAsset.SIZE_MAP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).get("key3") == 3d
         modelTestAsset.getAttribute(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).size() == 2
         modelTestAsset.getAttribute(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[0] == "arrayValue1"
-        modelTestAsset.getAttribute(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[0] == "arrayValue2"
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[1] == "arrayValue2"
         modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_ENUM_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == ModelTestAsset.TestValue.ENUM_2
         modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "Allowed1"
         modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_NUMBER_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == 1.5d
         modelTestAsset.getAttribute(ModelTestAsset.PAST_TIMESTAMP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) < timerService.getCurrentTimeMillis()
         modelTestAsset.getAttribute(ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).getTime() <= timerService.getCurrentTimeMillis()
-        modelTestAsset.getAttribute(ModelTestAsset.FUTURE_ISO8601_ATTRIBUTE_DESCRIPTOR).flatMap { TimeUtil.parseTimeIso8601(it.value.orElse(null))}.orElse(null) > timerService.getCurrentTimeMillis()
+        modelTestAsset.getAttribute(ModelTestAsset.FUTURE_ISO8601_ATTRIBUTE_DESCRIPTOR).map { TimeUtil.parseTimeIso8601(it.value.orElse(null)).toEpochMilli()}.orElse(null) > timerService.getCurrentTimeMillis()
         modelTestAsset.getAttribute(ModelTestAsset.FUTURE_OR_PRESENT_TIMESTAMP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) >= timerService.getCurrentTimeMillis()
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "abcde"
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).size() == 1
@@ -151,38 +160,108 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).length == 1
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[0] == 1
         modelTestAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "abcde"
+        modelTestAsset.getAttribute("custom1").flatMap {it.value}.orElse(null) == null
+        modelTestAsset.getAttribute("custom2", ValueType.GEO_JSON_POINT.type).flatMap {it.value}.orElse(null).x == 1.234d
+        modelTestAsset.getAttribute("custom2", ValueType.GEO_JSON_POINT.type).flatMap {it.value}.orElse(null).y == 5.678d
 
-//        ex.constraintViolations != null
-//        ex.constraintViolations.size() == 2
-//        // Violation for required attribute with no value
-//        ex.constraintViolations.any {it.propertyPath.any {it.name == "value"} && it.messageTemplate == ValueConstraint.NOT_NULL_MESSAGE_TEMPLATE}
-//        // Violation for the overall AssetValid
-//        ex.constraintViolations.any {it.messageTemplate == AssetValid.MESSAGE_TEMPLATE}
+        when: "The attribute values violate the constraints"
+        modelTestAsset.getAttribute(ModelTestAsset.REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = -1}
+        modelTestAsset.getAttribute(ModelTestAsset.NEGATIVE_INT_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = 1}
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_STRING_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = "abc"}
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_MAP_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = [
+                ("key1"): 1d
+        ] as ValueType.DoubleMap}
+        modelTestAsset.getAttribute(ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = [
+                "arrayValue1"
+        ] as String[]}
+        modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_ENUM_ATTRIBUTE_DESCRIPTOR).ifPresent {
+            it.value = null
+        }
+        modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_STRING_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = "NotAllowed"}
+        modelTestAsset.getAttribute(ModelTestAsset.ALLOWED_VALUES_NUMBER_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = 3.0d}
+        modelTestAsset.getAttribute(ModelTestAsset.PAST_TIMESTAMP_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = timerService.getCurrentTimeMillis() + 100000}
+        modelTestAsset.getAttribute(ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = timerService.getNow().plusMillis(100000).toDate()}
+        modelTestAsset.getAttribute(ModelTestAsset.FUTURE_ISO8601_ATTRIBUTE_DESCRIPTOR).ifPresent { it.value = DateTimeFormatter.ISO_INSTANT.format(timerService.getNow().minus(1, ChronoUnit.DAYS))}
+        modelTestAsset.getAttribute(ModelTestAsset.FUTURE_OR_PRESENT_TIMESTAMP_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = timerService.getNow().minus(1, ChronoUnit.DAYS).toEpochMilli()}
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = ""}
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = [] as ValueType.BooleanMap}
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = [] as Integer[]}
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = "      "}
+        modelTestAsset.getAttribute("custom1").ifPresent {it.value = 123}
+        modelTestAsset.getAttribute("custom2", ValueType.GEO_JSON_POINT.type).ifPresent {it.value = null}
+        modelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
+
+        then: "a constraint violation exception should be thrown"
+        ex = thrown()
+        ex.response.status == 400
+
+        when: "the report is extracted"
+        report = ex.response.readEntity(ViolationReport)
+
+        then: "it should contain all the errors"
+        report.propertyViolations.size() == 17
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be greater than or equal to 0"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NEGATIVE_INT_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be less than or equal to 0"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.SIZE_STRING_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "size must be between 5 and 10"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.SIZE_MAP_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "size must be between 2 and 3"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.SIZE_ARRAY_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "size must be between 2 and 3"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.ALLOWED_VALUES_ENUM_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must not be null"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.ALLOWED_VALUES_STRING_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be one of [Allowed1, Allowed2]"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.ALLOWED_VALUES_NUMBER_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be one of [1.5, 2.5]"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.PAST_TIMESTAMP_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be a past date"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be a date in the past or in the present"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.FUTURE_ISO8601_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be a future date"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.FUTURE_OR_PRESENT_TIMESTAMP_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be a date in the present or in the future"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must not be empty"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must not be empty"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must not be empty"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "Not blank custom message"}
+        report.classViolations.size() == 1
+        report.classViolations.get(0).path == ""
+        report.classViolations.get(0).message == "Asset is not valid"
+
+        when: "we convert the asset to JSON object so we can manipulate it"
+        modelTestAsset = updatedModelTestAsset // Reset attributes to valid values
+        def assetObjectNode = ValueUtil.convert(modelTestAsset, ObjectNode) as ObjectNode
+
+        and: "we simulate an attribute descriptor being removed (by changing the attribute name)"
+        def noDescriptorAttr = ((ObjectNode)assetObjectNode.get("attributes")).remove("pastTimestamp") as ObjectNode
+        noDescriptorAttr.put("name", "missingAttr")
+        ((ObjectNode)assetObjectNode.get("attributes")).set("missingAttr", noDescriptorAttr)
+
+        and: "we simulate a value descriptor being removed (by changing the type name)"
+        def noValueTypeAttr = ((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get("custom2")).put("type", "missingValueType")
+
+        and: "we deserialise the object back into an Asset"
+        modelTestAsset = ValueUtil.parse(assetObjectNode.toString(), Asset).orElse(null) as ModelTestAsset
+
+        then: "the attribute with the missing descriptor should still have the correct value type"
+        modelTestAsset.getAttribute("missingAttr").map {it.type}.orElse(null) == ValueType.TIMESTAMP
+
+        and: "the attribute with the missing value type should now have ANY value type"
+        modelTestAsset.getAttribute("custom2").map {it.type}.orElse(null) == ValueType.ANY
+
+        when: "the attribute with the missing attribute descriptor now violates its' previous constraint"
+        modelTestAsset.getAttribute("missingAttr").ifPresent {it.value = timerService.getCurrentTimeMillis() + 100000}
+
+        and: "this asset is now merged"
+        modelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
+
+        then: "it should succeed and attribute value should be correct"
+        modelTestAsset != null
+        modelTestAsset.getAttribute("missingAttr").flatMap {it.value}.orElse(null) == timerService.getCurrentTimeMillis() + 100000
+
+        and: "the custom attribute with the missing value type should now just be a number array"
+        modelTestAsset.getAttribute("custom2").get().type == ValueType.ANY
+        modelTestAsset.getAttribute("custom2").get().value.isPresent()
+        modelTestAsset.getAttribute("custom2").get().value.get() instanceof Map
+        (modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("type") == "Point"
+        (modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates") != null
+        (modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates").class.isArray()
+        Array.getLength((modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates")) == 2
+        Array.get((modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates"), 0) == 1.234
+        Array.get((modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates"), 1) == 5.678
     }
-
-    def "Test value constraints"() {
-
-
-    }
-//    Well known asset type with well known attribute with constraints (value type and attr descriptor):Check serialisation/deserialisationExpect attribute to be validated correctly
-//
-//
-//
-//
-//    Add constraints to the attribute meta:Expect additional constraints to be applied
-//
-//
-//
-//
-//    Custom number attribute with well known value type and object attribute with well known value type:Check serialisation/deserialisationExpect attributes to be validated correctly
-//    Expect values to be hydrated correctly
-//    Change values of above attributes to not be correct type:Check validationCheck deserialisation (should be null values) 
-//
-//    Change value types of above attributes (simulate removed value types):Check serialisation/deserialisationExpect attribute to be validated correctly
-//
-//
-//    Simulate removed value descriptor:Expect asset to deserialiseExpect attributes to be presentExpect attribute value type to be unknown with primitive type (number or string) Expect descriptor and attribute constraints to be applied
-
 
     def "Retrieving all asset model info"() {
 

@@ -187,7 +187,7 @@ public final class MetaItemType {
 
     /**
      * Indicates that the button input should send the true/on/pressed/closed value when pressed; and then send the
-     * false/off/released/open value when released.
+     * false/off/released/open value when released (for use by UIs)
      */
     public static final MetaItemDescriptor<Boolean> MOMENTARY = new MetaItemDescriptor<>("momentary", ValueType.BOOLEAN);
 

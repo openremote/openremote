@@ -666,7 +666,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (!validationFailures.isEmpty()) {
                 String msg = "Asset merge failed as asset has failed constraint validation: asset=" + asset;
                 ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
-                LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage(), ex);
+                LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
                 throw ex;
             }
 

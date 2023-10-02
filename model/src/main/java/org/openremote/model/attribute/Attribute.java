@@ -148,7 +148,6 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     Attribute() {
     }
-
     public Attribute(AttributeDescriptor<T> attributeDescriptor) {
         this(attributeDescriptor, null);
     }
@@ -180,6 +179,14 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     public Attribute(String name, ValueDescriptor<T> valueDescriptor, T value, long timestamp) {
         this(name, valueDescriptor, value);
         setTimestamp(timestamp);
+    }
+
+    public Attribute(String name, Object value) {
+        this(name, (ValueDescriptor<T>) ValueType.ANY, (T) value);
+    }
+
+    public Attribute(String name) {
+        this(name, ValueType.ANY);
     }
 
     /**

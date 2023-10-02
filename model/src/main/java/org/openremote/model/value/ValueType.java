@@ -19,10 +19,6 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.BaseJsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -162,11 +158,11 @@ public final class ValueType {
         new ValueConstraint.Pattern(Constants.IP_REGEXP)
     );
 
-    public static final ValueDescriptor<AttributeLink> ATTRIBUTE_LINK = new ValueDescriptor<>("attributeLink", AttributeLink.class);
+    public static final ValueDescriptor<AttributeLink> ATTRIBUTE_LINK = new ValueDescriptor<>("attributeLink", AttributeLink.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<AttributeRef> ATTRIBUTE_REF = new ValueDescriptor<>("attributeReference", AttributeRef.class);
+    public static final ValueDescriptor<AttributeRef> ATTRIBUTE_REF = new ValueDescriptor<>("attributeReference", AttributeRef.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<AttributeState> ATTRIBUTE_STATE = new ValueDescriptor<>("attributeState", AttributeState.class);
+    public static final ValueDescriptor<AttributeState> ATTRIBUTE_STATE = new ValueDescriptor<>("attributeState", AttributeState.class).forMetaUseOnly();
 
     public static final ValueDescriptor<GeoJSONPoint> GEO_JSON_POINT = new ValueDescriptor<>("GEO_JSONPoint", GeoJSONPoint.class);
 
@@ -184,11 +180,11 @@ public final class ValueType {
 
     public static final ValueDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = new ValueDescriptor<>("usernameAndPassword", UsernamePassword.class);
 
-    public static final ValueDescriptor<ValueFormat> VALUE_FORMAT = new ValueDescriptor<>("valueFormat", ValueFormat.class);
+    public static final ValueDescriptor<ValueFormat> VALUE_FORMAT = new ValueDescriptor<>("valueFormat", ValueFormat.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<ValueConstraint> VALUE_CONSTRAINT = new ValueDescriptor<>("valueConstraint", ValueConstraint.class);
+    public static final ValueDescriptor<ValueConstraint> VALUE_CONSTRAINT = new ValueDescriptor<>("valueConstraint", ValueConstraint.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("agentLink", AgentLink.class);
+    public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("agentLink", AgentLink.class).forMetaUseOnly();
 
     public static final ValueDescriptor<CronExpressionParser> CRON_EXPRESSION = new ValueDescriptor<>("CRONExpression", CronExpressionParser.class);
 
@@ -200,9 +196,9 @@ public final class ValueType {
         new ValueConstraint.Pattern(Constants.WS_URL_REGEXP)
     );
 
-    public static final ValueDescriptor<AssetQuery> ASSET_QUERY = new ValueDescriptor<>("assetQuery", AssetQuery.class);
+    public static final ValueDescriptor<AssetQuery> ASSET_QUERY = new ValueDescriptor<>("assetQuery", AssetQuery.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<ForecastConfiguration> FORECAST_CONFIGURATION = new ValueDescriptor<>("forecastConfiguration", ForecastConfiguration.class);
+    public static final ValueDescriptor<ForecastConfiguration> FORECAST_CONFIGURATION = new ValueDescriptor<>("forecastConfiguration", ForecastConfiguration.class).forMetaUseOnly();
 
     protected ValueType() {
     }

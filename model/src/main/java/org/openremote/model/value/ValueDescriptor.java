@@ -30,7 +30,9 @@ import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Objects;
 
 /**
  * A simple wrapper around a {@link Class} that describes a value that can be used by {@link Attribute}s and
@@ -143,6 +145,11 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
     protected ValueConstraint[] constraints;
     protected ValueFormat format;
     protected String[] units;
+    /**
+     * A flag to indicate that this {@link ValueDescriptor} is intended for use in a {@link MetaItem}; this can be used
+     * for UI purposes but nothing actually stops the values being used in an {@link Attribute} also.
+     */
+    protected Boolean metaUseOnly;
 
     @SuppressWarnings("unchecked")
     public ValueDescriptor(String name, Class<T> type, ValueConstraint...constraints) {
@@ -235,6 +242,12 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         return new ValueDescriptor<>(name, type, constraints, format, units, arrayDimensions);
     }
 
+    public ValueDescriptor<T> forMetaUseOnly() {
+        ValueDescriptor<T> newValueDescriptor = new ValueDescriptor<>(name, type, constraints, format, units, arrayDimensions);
+        newValueDescriptor.metaUseOnly = true;
+        return newValueDescriptor;
+    }
+
     public void updateConstraints(ValueConstraint...valueConstraints) {
         constraints = valueConstraints;
     }
@@ -257,6 +270,10 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 
     public boolean isArray() {
         return arrayDimensions != null && arrayDimensions > 0;
+    }
+
+    public boolean isMetaUseOnly() {
+        return metaUseOnly != null ? metaUseOnly : false;
     }
 
     @Override
@@ -306,6 +323,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
             ", arrayDimensions=" + arrayDimensions +
             ", constraints=" + Arrays.toString(constraints) +
             ", format=" + format +
+            ", metaUseOnly=" + isMetaUseOnly() +
             ", units=" + Arrays.toString(units) +
             '}';
     }

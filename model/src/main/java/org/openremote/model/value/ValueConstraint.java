@@ -349,9 +349,12 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("allowedValues")
     public static class AllowedValues extends ValueConstraint {
         Object[] allowedValues;
-
         @JsonCreator
-        public AllowedValues(@JsonProperty("allowedValues") Object...allowedValues) {
+        protected AllowedValues() {
+            super(ALLOWED_VALUES_MESSAGE_TEMPLATE);
+        }
+
+        public AllowedValues(Object...allowedValues) {
             super(ALLOWED_VALUES_MESSAGE_TEMPLATE);
             this.allowedValues = allowedValues;
         }

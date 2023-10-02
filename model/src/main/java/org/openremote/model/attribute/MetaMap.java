@@ -67,7 +67,7 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
                     Optional<ValueDescriptor<?>> valueDescriptor = ValueUtil.getMetaItemDescriptor(metaItemName)
                         .map(MetaItemDescriptor::getType);
 
-                    Class valueType = valueDescriptor.map(ValueDescriptor::getType).orElseGet(() -> (Class) JsonNode.class);
+                    Class valueType = valueDescriptor.map(ValueDescriptor::getType).orElseGet(() -> (Class) Object.class);
                     metaItem.setValue(jp.readValueAs(valueType));
 
                     // Get the value descriptor from the value if it isn't known
