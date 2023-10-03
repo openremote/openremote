@@ -279,7 +279,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         thingAssetInfo2.isPresent()
         thingAssetInfo2.get().getAssetDescriptor().type == ThingAsset.class
         thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) } != null
-        thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.required
+        !thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.optional
         thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.type == ValueType.GEO_JSON_POINT
 
         when: "the asset type value descriptor is retrieved"
@@ -300,8 +300,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetInfos.size() == ValueUtil.assetTypeMap.size()
         def velbusTcpAgent = assetInfos.find {it.assetDescriptor.type == VelbusTCPAgent.class}
         velbusTcpAgent != null
-        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_HOST && it.required}
-        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_PORT && it.required}
+        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.HOST && !it.optional}
+        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.PORT && !it.optional}
     }
 
     def "Retrieving a specific asset model info"() {

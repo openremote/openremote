@@ -347,12 +347,39 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         throw new AssetProcessingException(ATTRIBUTE_NOT_FOUND);
                     }
 
+                    // Either use the timestamp of the event or set event time to processing time or (old event time + 1)
+                    // We need a different timestamp for Attribute.equals() check
+                    long oldEventTime = oldAttribute.getTimestamp().orElse(0L);
+                    long eventTime = event.getTimestamp();
+                    long processingTime = timerService.getCurrentTimeMillis();
+
+                    if (eventTime > 0) {
+                        // If it's less than previous event but within 10ms then just bump the time to old+1
+                        if (oldEventTime - eventTime > 0 && oldEventTime - eventTime < 10) {
+                            eventTime = oldEventTime + 1;
+                        }
+                    } else {
+                        eventTime = Math.max(oldEventTime + 1, processingTime);
+                    }
+
+                    // Check the last update timestamp of the attribute, ignoring any event that is older than last update
+                    long finalEventTime = eventTime;
+                    oldAttribute.getTimestamp().filter(t -> t >= 0 && finalEventTime < t).ifPresent(
+                        lastStateTime -> {
+                            throw new AssetProcessingException(
+                                EVENT_OUTDATED,
+                                "last asset state time: " + new Date(lastStateTime) + "/" + lastStateTime
+                                    + ", event time: " + new Date(finalEventTime) + "/" + finalEventTime);
+                        }
+                    );
+
                     // For executable attributes, non-sensor sources can set a writable attribute execute status
                     if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
                         Optional<AttributeExecuteStatus> status = event.getValue()
                             .flatMap(ValueUtil::getString)
                             .flatMap(AttributeExecuteStatus::fromString);
 
+                        // TODO: Make this mechanism more generic with an interface
                         if (status.isPresent() && !status.get().isWrite()) {
                             throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
                         }
@@ -381,32 +408,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 //                                );
 //                            });
 //                    });
-
-                    // Either use the timestamp of the event or set event time to processing time or (old event time + 1)
-                    // We need a different timestamp for Attribute.equals() check
-                    long oldEventTime = oldAttribute.getTimestamp().orElse(0L);
-                    long eventTime = event.getTimestamp();
-                    long processingTime = timerService.getCurrentTimeMillis();
-
-                    if (eventTime > 0) {
-                        // If it's less than previous event but within 10ms then just bump the time to old+1
-                        if (oldEventTime - eventTime > 0 && oldEventTime - eventTime < 10) {
-                            eventTime = oldEventTime + 1;
-                        }
-                    } else {
-                        eventTime = Math.max(oldEventTime + 1, processingTime);
-                    }
-
-                    // Check the last update timestamp of the attribute, ignoring any event that is older than last update
-                    long finalEventTime = eventTime;
-                    oldAttribute.getTimestamp().filter(t -> t >= 0 && finalEventTime < t).ifPresent(
-                        lastStateTime -> {
-                            throw new AssetProcessingException(
-                                EVENT_OUTDATED,
-                                "last asset state time: " + new Date(lastStateTime) + "/" + lastStateTime
-                                    + ", event time: " + new Date(finalEventTime) + "/" + finalEventTime);
-                        }
-                    );
 
                     // Create a copy of the attribute and set the new value and timestamp
                     Attribute updatedAttribute = ValueUtil.clone(oldAttribute);

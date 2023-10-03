@@ -44,7 +44,7 @@ import java.util.Collection;
 public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T> implements MetaHolder {
 
     protected MetaMap meta;
-    protected boolean required;
+    protected Boolean optional;
 
     AttributeDescriptor() {}
 
@@ -75,20 +75,20 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
-        newDescriptor.required = required;
+        newDescriptor.optional = optional;
         return newDescriptor;
     }
 
-    public boolean isRequired() {
-        return required;
+    public boolean isOptional() {
+        return optional != null ? optional : false;
     }
 
-    public AttributeDescriptor<T> withRequired(boolean required) {
+    public AttributeDescriptor<T> withOptional(boolean optional) {
         AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<>(name, type, meta);
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
-        newDescriptor.required = required;
+        newDescriptor.optional = optional;
         return newDescriptor;
     }
 
@@ -97,7 +97,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
-        newDescriptor.required = required;
+        newDescriptor.optional = optional;
         return newDescriptor;
     }
 
@@ -106,7 +106,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
-        newDescriptor.required = required;
+        newDescriptor.optional = optional;
         return newDescriptor;
     }
 
@@ -115,7 +115,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
-        newDescriptor.required = required;
+        newDescriptor.optional = optional;
         return newDescriptor;
     }
 
@@ -127,7 +127,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
     public String toString() {
         return AttributeDescriptor.class.getSimpleName() + "{" +
             super.toString() +
-            ", optional=" + required +
+            ", optional=" + optional +
             "}";
     }
 }

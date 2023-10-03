@@ -8,7 +8,6 @@ import org.hibernate.validator.constraintvalidation.HibernateConstraintValidator
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
@@ -62,7 +61,7 @@ class AssetValidator implements HibernateConstraintValidator<AssetValid, Asset<?
         // Check for required attributes
         if (assetModelInfo != null) {
             Arrays.stream(assetModelInfo.getAttributeDescriptors())
-                .filter(AttributeDescriptor::isRequired)
+                .filter(attributeDescriptor -> !attributeDescriptor.isOptional())
                 .forEach(requiredAttributeDescriptor -> {
                     Attribute<?> foundAttribute = asset.getAttribute(requiredAttributeDescriptor).orElse(null);
 

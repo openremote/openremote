@@ -53,88 +53,88 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      * Can be used by protocols that support it to indicate that string values should be converted to/from bytes from/to
      * HEX string representation (e.g. 34FD87)
      */
-    public static final AttributeDescriptor<Boolean> MESSAGE_CONVERT_HEX = new AttributeDescriptor<>("messageConvertHex", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> MESSAGE_CONVERT_HEX = new AttributeDescriptor<>("messageConvertHex", ValueType.BOOLEAN).withOptional(true);
 
     /**
      * Can be used by protocols that support it to indicate that string values should be converted to/from bytes from/to
      * binary string representation (e.g. 1001010111)
      */
-    public static final AttributeDescriptor<Boolean> MESSAGE_CONVERT_BINARY = new AttributeDescriptor<>("messageConvertBinary", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> MESSAGE_CONVERT_BINARY = new AttributeDescriptor<>("messageConvertBinary", ValueType.BOOLEAN).withOptional(true);
 
     /**
      * Charset to use when converting byte[] to a string (should default to UTF8 if not specified); values must be
      * string that matches a charset as defined in {@link java.nio.charset.Charset}
      */
-    public static final AttributeDescriptor<String> MESSAGE_CHARSET = new AttributeDescriptor<>("messageCharset", ValueType.TEXT);
+    public static final AttributeDescriptor<String> MESSAGE_CHARSET = new AttributeDescriptor<>("messageCharset", ValueType.TEXT).withOptional(true);
 
     /**
      * Max length of messages received by a {@link Protocol}; what this actually means will be protocol specific i.e.
      * for {@link String} protocols it could be the number of characters but for {@link Byte} protocols it could be the
      * number of bytes. This is typically used for I/O based {@link Protocol}s.
      */
-    public static final AttributeDescriptor<Integer> MESSAGE_MAX_LENGTH = new AttributeDescriptor<>("messageMaxLength", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<Integer> MESSAGE_MAX_LENGTH = new AttributeDescriptor<>("messageMaxLength", ValueType.POSITIVE_INTEGER).withOptional(true);
 
     /**
      * Defines a set of delimiters for messages received by a {@link Protocol}; the first matched delimiter should be
      * used to generate the shortest possible match(This is typically used for I/O based {@link Protocol}s.
      */
-    public static final AttributeDescriptor<String[]> MESSAGE_DELIMITERS = new AttributeDescriptor<>("messageDelimiters", ValueType.TEXT.asArray());
+    public static final AttributeDescriptor<String[]> MESSAGE_DELIMITERS = new AttributeDescriptor<>("messageDelimiters", ValueType.TEXT.asArray()).withOptional(true);
 
     /**
      * For protocols that use {@link #MESSAGE_DELIMITERS}, this indicates whether or not the matched delimiter should be
      * stripped from the message.
      */
-    public static final AttributeDescriptor<Boolean> MESSAGE_STRIP_DELIMITER = new AttributeDescriptor<>("messageStripDelimiter", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> MESSAGE_STRIP_DELIMITER = new AttributeDescriptor<>("messageStripDelimiter", ValueType.BOOLEAN).withOptional(true);
 
     /**
      * {@link OAuthGrant} for connecting to services that require OAuth authentication
      */
-    public static final AttributeDescriptor<OAuthGrant> OAUTH_GRANT = new AttributeDescriptor<>("oAuthGrant", ValueType.OAUTH_GRANT);
+    public static final AttributeDescriptor<OAuthGrant> OAUTH_GRANT = new AttributeDescriptor<>("oAuthGrant", ValueType.OAUTH_GRANT).withOptional(true);
 
     /**
      * Basic authentication username and password
      */
-    public static final AttributeDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = new AttributeDescriptor<>("usernamePassword", ValueType.USERNAME_AND_PASSWORD);
+    public static final AttributeDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = new AttributeDescriptor<>("usernamePassword", ValueType.USERNAME_AND_PASSWORD).withOptional(true);
 
     /**
      * TCP/IP network host name/IP address
      */
-    public static final AttributeDescriptor<String> HOST = new AttributeDescriptor<>("host", ValueType.HOSTNAME_OR_IP_ADDRESS);
+    public static final AttributeDescriptor<String> HOST = new AttributeDescriptor<>("host", ValueType.HOSTNAME_OR_IP_ADDRESS).withOptional(true);
 
     /**
      * TCP/IP network port number
      */
-    public static final AttributeDescriptor<Integer> PORT = new AttributeDescriptor<>("port", ValueType.PORT);
+    public static final AttributeDescriptor<Integer> PORT = new AttributeDescriptor<>("port", ValueType.PORT).withOptional(true);
 
     /**
      * Local TCP/IP network port number to bind to
      */
-    public static final AttributeDescriptor<Integer> BIND_PORT = new AttributeDescriptor<>("bindPort", ValueType.PORT);
+    public static final AttributeDescriptor<Integer> BIND_PORT = new AttributeDescriptor<>("bindPort", ValueType.PORT).withOptional(true);
 
     /**
      * Local TCP/IP network host name/IP address to bind to
      */
-    public static final AttributeDescriptor<String> BIND_HOST = new AttributeDescriptor<>("bindHost", ValueType.HOSTNAME_OR_IP_ADDRESS);
+    public static final AttributeDescriptor<String> BIND_HOST = new AttributeDescriptor<>("bindHost", ValueType.HOSTNAME_OR_IP_ADDRESS).withOptional(true);
 
     /**
      * Serial port name/address
      */
-    public static final AttributeDescriptor<String> SERIAL_PORT = new AttributeDescriptor<>("serialPort", ValueType.TEXT);
+    public static final AttributeDescriptor<String> SERIAL_PORT = new AttributeDescriptor<>("serialPort", ValueType.TEXT).withOptional(true);
 
     /**
      * Serial baudrate to use for connection
      */
-    public static final AttributeDescriptor<Integer> SERIAL_BAUDRATE = new AttributeDescriptor<>("serialBaudrate", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<Integer> SERIAL_BAUDRATE = new AttributeDescriptor<>("serialBaudrate", ValueType.POSITIVE_INTEGER).withOptional(true);
 
     /**
      * Default polling frequency (milliseconds)
      */
-    public static final AttributeDescriptor<Integer> POLLING_MILLIS = new AttributeDescriptor<>("pollingMillis", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<Integer> POLLING_MILLIS = new AttributeDescriptor<>("pollingMillis", ValueType.POSITIVE_INTEGER).withOptional(true);
 
     /**
      * Don't expect a response from the protocol just update the attribute immediately on write
      */
-    public static final AttributeDescriptor<Boolean> UPDATE_ON_WRITE = new AttributeDescriptor<>("updateOnWrite", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> UPDATE_ON_WRITE = new AttributeDescriptor<>("updateOnWrite", ValueType.BOOLEAN).withOptional(true);
 
     protected Agent() {
     }

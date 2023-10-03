@@ -41,7 +41,7 @@ public class BuildingAsset extends CityAsset {
     public static final AttributeDescriptor<Integer> AREA = new AttributeDescriptor<>("area", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_METRE, UNITS_SQUARED);
     public static final AttributeDescriptor<String> COUNTRY = CityAsset.COUNTRY;
-    public static final AttributeDescriptor<String> CITY = CityAsset.CITY.withRequired(true);
+    public static final AttributeDescriptor<String> CITY = new AttributeDescriptor<>("city", ValueType.TEXT).withOptional(false);
 
     public static final AssetDescriptor<BuildingAsset> DESCRIPTOR = new AssetDescriptor<>("office-building", "4b5966", BuildingAsset.class);
 

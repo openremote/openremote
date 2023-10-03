@@ -951,7 +951,7 @@ public class ValueUtil {
         AssetTypeInfo assetInfo = getAssetInfo(asset.getType()).orElseThrow(() -> new IllegalStateException("Cannot get asset model info for requested asset type: " + asset.getType()));
         asset.getAttributes().addOrReplace(
             Arrays.stream(assetInfo.getAttributeDescriptors())
-            .filter(AttributeDescriptor::isRequired)
+            .filter(attributeDescriptor -> !attributeDescriptor.isOptional())
             .map(Attribute::new)
             .collect(Collectors.toList())
         );

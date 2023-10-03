@@ -68,8 +68,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the request should fail validation and return a validation report indicating the failure(s)"
         WebApplicationException ex = thrown()
         ex.response.status == 400
-        ex.response.getHeaders().getFirst(Validation.VALIDATION_HEADER)
-        def report = new ViolationReport(ex.response.readEntity(String.class))
+        def report = ex.response.readEntity(ViolationReport)
         report != null
         report.propertyViolations.size() == 1
         report.propertyViolations.get(0).path == "attributes[illegal- Attribute:name&&&].name"

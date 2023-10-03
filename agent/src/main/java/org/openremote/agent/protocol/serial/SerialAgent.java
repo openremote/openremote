@@ -30,7 +30,7 @@ import jakarta.persistence.Entity;
 @Entity
 public class SerialAgent extends IOAgent<SerialAgent, SerialProtocol, DefaultAgentLink> {
 
-    public static final AttributeDescriptor<String> SERIAL_PORT = Agent.SERIAL_PORT.withRequired(true);
+    public static final AttributeDescriptor<String> SERIAL_PORT = Agent.SERIAL_PORT.withOptional(false);
 
     public static final AgentDescriptor<SerialAgent, SerialProtocol, DefaultAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         SerialAgent.class, SerialProtocol.class, DefaultAgentLink.class

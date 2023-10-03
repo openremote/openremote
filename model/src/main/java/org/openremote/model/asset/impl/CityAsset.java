@@ -31,10 +31,10 @@ import java.util.Optional;
 public class CityAsset extends Asset<CityAsset> {
 
     public static final AttributeDescriptor<String> REGION = new AttributeDescriptor<>("region", ValueType.TEXT)
-        ;
+        .withOptional(true);
     public static final AttributeDescriptor<String> COUNTRY = new AttributeDescriptor<>("country", ValueType.TEXT);
     public static final AttributeDescriptor<String> CITY = new AttributeDescriptor<>("city", ValueType.TEXT)
-        ;
+        .withOptional(true);
 
     public static final AssetDescriptor<CityAsset> DESCRIPTOR = new AssetDescriptor<>("city", null, CityAsset.class);
 
@@ -46,10 +46,6 @@ public class CityAsset extends Asset<CityAsset> {
 
     public CityAsset(String name) {
         super(name);
-    }
-
-    public Optional<String> getCity() {
-        return getAttributes().getValue(CITY);
     }
 
     public Optional<String> getRegion() { 
