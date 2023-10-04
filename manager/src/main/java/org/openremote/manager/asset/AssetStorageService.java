@@ -20,9 +20,11 @@
 package org.openremote.manager.asset;
 
 import com.vladmihalcea.hibernate.type.array.StringArrayType;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.validation.groups.Default;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
+import org.hibernate.dialect.PostgreSQLJsonbJdbcType;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -1159,7 +1161,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      */
     public void deleteUserAssetLinks(String userId) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?1");
+            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userIód = ?1");
             query.setParameter(1, userId);
             int deleteCount = query.executeUpdate();
             LOG.fine("Deleted all user asset links for user: user ID=" + userId + ", count=" + deleteCount);
@@ -1330,59 +1332,35 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * This does a low level JDBC update so hibernate event interceptor doesn't get called and we 'manually'
      * generate the {@link AttributeEvent}
      */
+    @SuppressWarnings("unchecked")
     protected boolean updateAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) {
 
+        long timestamp = attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis);
+
         try {
+            PGobject valueTimestampJSON = new PGobject();
+            valueTimestampJSON.setType("jsonb");
+            valueTimestampJSON.setValue("{\"value\":" + ValueUtil.asJSON(attribute.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}");
 
-            // Detach the asset from the em so we can manually update the attribute
-            em.detach(asset);
-            String attributeName = attribute.getName();
-            Object value = attribute.getValue();
-            long timestamp = attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis);
+            // TODO: Use jsonb type directly to optimise over wire data (couldn't get this to work even after seeing https://stackoverflow.com/questions/53847917/postgresql-throws-column-is-of-type-jsonb-but-expression-is-of-type-bytea-with)
+            Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ?")
+                .setParameter(1, attribute.getName())
+                .setParameter(2, attribute.getName())
+                .setParameter(3, "{\"value\":" + ValueUtil.asJSON(attribute.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
+                .setParameter(4, asset.getId());
 
-            boolean success = em.unwrap(Session.class).doReturningWork(connection -> {
-                String jpql = "update Asset" +
-                    " set attributes = jsonb_set(jsonb_set(attributes, ?, ?, true), ?, ?, true)" +
-                    " where id = ? and attributes -> ? is not null";
+            int affectedRows = query.executeUpdate();
+            boolean success = affectedRows == 1;
 
-                try (PreparedStatement statement = connection.prepareStatement(jpql)) {
-                    Array attributeValuePath = connection.createArrayOf(
-                        "text",
-                        new String[]{attributeName, "value"}
-                    );
-                    statement.setArray(1, attributeValuePath);
-
-                    PGobject pgJsonValue = new PGobject();
-                    pgJsonValue.setType("jsonb");
-                    // Careful, do not set Java null here! It will erase your whole SQL column!
-                    pgJsonValue.setValue(ValueUtil.asJSON(value).orElse(ValueUtil.NULL_LITERAL));
-                    statement.setObject(2, pgJsonValue);
-
-                    // Bind the value timestamp
-                    Array attributeValueTimestampPath = connection.createArrayOf(
-                        "text",
-                        new String[]{attributeName, "timestamp"}
-                    );
-                    statement.setArray(3, attributeValueTimestampPath);
-                    PGobject pgJsonValueTimestamp = new PGobject();
-                    pgJsonValueTimestamp.setType("jsonb");
-                    pgJsonValueTimestamp.setValue(Long.toString(timestamp));
-                    statement.setObject(4, pgJsonValueTimestamp);
-
-                    // Bind asset ID and attribute name
-                    statement.setString(5, asset.getId());
-                    statement.setString(6, attributeName);
-
-                    int updatedRows = statement.executeUpdate();
-                    if (LOG.isLoggable(Level.FINEST)) {
-                        LOG.finest("Stored asset '" + asset.getId()
-                            + "' attribute '" + attributeName
-                            + "' (affected rows: " + updatedRows + ") value: "
-                            + (value != null ? ValueUtil.asJSON(value).orElse("null") : "null"));
-                    }
-                    return updatedRows == 1;
+            if (success) {
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("Updated attribute value assetID=" + asset.getId() + ", attributeName=" + attribute.getName() + ", timestamp=" + timestamp);
                 }
-            });
+            } else {
+                if (LOG.isLoggable(Level.FINE)) {
+                    LOG.fine("Failed to update attribute value assetID=" + asset.getId() + ", attributeName=" + attribute.getName() + ", timestamp=" + timestamp);
+                }
+            }
 
             if (success) {
                 publishAttributeEvent(asset, attribute);
