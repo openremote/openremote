@@ -21,25 +21,29 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.ser.ResolvableSerializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
+import jakarta.annotation.Nonnull;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,97 +56,138 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     public static class AttributeDeserializer extends StdDeserializer<Attribute<?>> {
 
+        protected static final JavaType META_MAP_TYPE = TypeFactory.defaultInstance().constructType(MetaMap.class);
+        protected static final JavaType OBJECT_TYPE = TypeFactory.defaultInstance().constructType(Object.class);
+
         public static final System.Logger LOG = System.getLogger(AttributeDeserializer.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES);
 
         protected AttributeDeserializer() {
             super(Attribute.class);
         }
 
+        public static Object deserialiseValue(ValueDescriptor<?> valueDescriptor, JsonParser jp, DeserializationContext ctxt) throws IOException {
+            JsonDeserializer<Object> valueTypeDeserializer;
+            if (valueDescriptor != null) {
+                valueTypeDeserializer = ctxt.findRootValueDeserializer(TypeFactory.defaultInstance().constructType(valueDescriptor.getType()));
+            } else {
+                valueTypeDeserializer = ctxt.findRootValueDeserializer(OBJECT_TYPE);
+            }
+            return valueTypeDeserializer.deserialize(jp, ctxt);
+        }
+
         @SuppressWarnings({"unchecked", "rawtypes"})
         @Override
         public Attribute<?> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-            // Need to find the type field to know how to deserialise the value
-            TokenBuffer tokenBuffer = new TokenBuffer(jp);
-            tokenBuffer.copyCurrentStructure(jp);
-            JsonParser jp2 = tokenBuffer.asParser();
-            JsonParser jp3 = tokenBuffer.asParser();
-            String attributeValueType = null;
-            int level = 1;
-            jp2.nextToken();
-
-            while (level > 0) {
-                JsonToken nextToken = jp2.nextToken();
-
-                if (nextToken == JsonToken.START_OBJECT) {
-                    level++;
-                    continue;
-                }
-
-                if (nextToken == JsonToken.END_OBJECT) {
-                    level--;
-                    continue;
-                }
-
-                if (level == 1 && jp2.currentName().equals("type")) {
-                    jp2.nextToken();
-                    attributeValueType = jp2.getValueAsString();
-                    break;
-                }
+            if (!jp.isExpectedStartObjectToken()) {
+                throw new InvalidFormatException(jp, "Attribute must be an object", jp.nextValue(), Attribute.class);
             }
 
-            if (attributeValueType == null) {
-                throw new JsonParseException(jp, "Failed to extract attribute type information");
+            AssetTypeInfo assetTypeInfo = (AssetTypeInfo) ctxt.getAttribute(Asset.AssetDeserializer.ASSET_TYPE_INFO_ATTRIBUTE);
+            String attributeName = jp.getCurrentName();
+            AttributeDescriptor<?> attributeDescriptor = assetTypeInfo != null ? assetTypeInfo.getAttributeDescriptors().get(attributeName) : null;
+            Attribute attribute;
+
+            if (attributeDescriptor != null) {
+                attribute = new Attribute<>(attributeName, attributeDescriptor.getType());
+            } else {
+                attribute = new Attribute<>(attributeName);
             }
 
-            Attribute attribute = new Attribute<>();
-            Exception valueException = null;
-            AtomicBoolean valueDescriptorNotFound = new AtomicBoolean(false);
-
-            // Get inner attribute type or fallback to any type
-            ValueDescriptor<?> valueDescriptor = ValueUtil.getValueDescriptor(attributeValueType).orElseGet(() -> {
-                valueDescriptorNotFound.set(true);
-                return ValueType.ANY;
-            });
-
-            attribute.type = valueDescriptor;
-
-            while (jp3.nextToken() != JsonToken.END_OBJECT) {
-                if (jp3.currentToken() == JsonToken.FIELD_NAME) {
-                    String propName = jp3.currentName();
-                    JsonToken token = jp3.nextToken();
-                    if (token == JsonToken.VALUE_NULL) {
-                        continue;
+            while (jp.nextToken() != JsonToken.END_OBJECT) {
+                String propName = jp.currentName();
+                if (jp.currentToken() == JsonToken.FIELD_NAME) {
+                    jp.nextToken();
+                }
+                if (jp.currentToken() == JsonToken.VALUE_NULL) {
+                    continue;
+                }
+                switch (propName) {
+                    case "type" -> {
+                        // No longer used
+//                        typeFound = true;
+//                        String valueType = jp.getValueAsString();
+//                        // Try and find matching value descriptor
+//                        attribute.setTypeFromString(valueType);
                     }
-                    switch (propName) {
-                        case "meta" -> attribute.meta = jp3.readValueAs(MetaMap.class);
-                        case "name" -> attribute.name = jp3.readValueAs(String.class);
-                        case "timestamp" -> attribute.timestamp = jp3.readValueAs(Long.class);
-                        case "value" -> {
-                            Class valueType = valueDescriptor.getType();
-                            try {
-                                attribute.value = jp3.readValueAs(valueType);
-                            } catch (Exception e) {
-                                valueException = e;
-                            }
+                    case "meta" -> {
+                        JsonDeserializer<Object> metaDeserializer = ctxt.findNonContextualValueDeserializer(META_MAP_TYPE);
+                        attribute.meta = (MetaMap) metaDeserializer.deserialize(jp, ctxt);
+                    }
+                    case "name" -> {
+                        String name = jp.getValueAsString();
+                        if (!name.equals(attribute.name)) {
+                            throw new JsonParseException("Attribute name doesn't match attribute map key");
+                        }
+                    }
+                    case "timestamp" -> attribute.timestamp = jp.getValueAsLong();
+                    case "value" -> {
+//                        // Can only deserialise value once we know its' type
+//                        if (!typeFound) {
+//                            valueBuffer = new TokenBuffer(jp, ctxt);
+//                            valueBuffer.copyCurrentStructure(jp);
+//                            continue;
+//                        }
+                        if (attributeDescriptor == null) {
+                            // We don't know the type so store the value as a string and hydrate on demand when value type
+                            // may be known
+                            attribute.valueStr = jp.getCodec().readTree(jp).toString();
+                        } else {
+                            attribute.value = deserialiseValue(attribute.getType(), jp, ctxt);
                         }
                     }
                 }
             }
 
-            if (valueDescriptorNotFound.get()) {
-                LOG.log(System.Logger.Level.WARNING, "No value descriptor found for attribute '" + attribute.name + "' fallen back to " + ValueType.ANY.getName());
-            }
-            if (valueException != null) {
-                LOG.log(System.Logger.Level.WARNING, "Failed to deserialise attribute '" + attribute.name + "' value into type '" + valueDescriptor.getType().getName() + "': " + valueException.getMessage());
-            }
+//            if (valueBuffer != null) {
+//                if (!typeFound) {
+//                    throw new JsonParseException("Asset type is missing");
+//                }
+//
+//                attribute.value = deserialiseValue(attribute.getType(), valueBuffer.asParser(), ctxt);
+//            }
+            return attribute;
+        }
+    }
 
-            return (Attribute<?>) attribute;
+    @SuppressWarnings("rawtypes")
+    public static class AttributeSerializer extends StdSerializer<Attribute> implements ResolvableSerializer {
+
+        protected JsonSerializer<Attribute> defaultSerializer;
+
+        public AttributeSerializer(JsonSerializer<Attribute> defaultSerializer) {
+            super(Attribute.class);
+            this.defaultSerializer = defaultSerializer;
+        }
+
+        @Override
+        public void resolve(SerializerProvider provider) throws JsonMappingException {
+            if (defaultSerializer instanceof ResolvableSerializer resolvableSerializer) {
+                resolvableSerializer.resolve(provider);
+            }
+        }
+
+        @Override
+        public void serialize(Attribute value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeStartObject();
+            gen.writeFieldName("name");
+            gen.writeString(value.getName());
+            provider.defaultSerializeField("meta", value.meta, gen);
+            if (value.valueStr != null) {
+                gen.writeFieldName("value");
+                gen.writeRawValue(value.valueStr);
+            } else {
+                provider.defaultSerializeField("value", value.value, gen);
+            }
+            if (value.timestamp > 0) {
+                gen.writeFieldName("timestamp");
+                gen.writeNumber(value.timestamp);
+            }
+            gen.writeEndObject();
         }
     }
 
     @Valid
     protected MetaMap meta;
-    @JsonProperty
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     protected long timestamp;
 
@@ -179,10 +224,6 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     public Attribute(String name, ValueDescriptor<T> valueDescriptor, T value, long timestamp) {
         this(name, valueDescriptor, value);
         setTimestamp(timestamp);
-    }
-
-    public Attribute(String name, Object value) {
-        this(name, (ValueDescriptor<T>) ValueType.ANY, (T) value);
     }
 
     public Attribute(String name) {
@@ -290,10 +331,6 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         return getMeta().getValue(metaItemDescriptor);
     }
 
-    public <U> U getMetaValueOrDefault(MetaItemDescriptor<U> metaItemDescriptor) {
-        return getMeta().getValueOrDefault(metaItemDescriptor);
-    }
-
     public boolean hasMeta(MetaItemDescriptor<?> metaItemDescriptor) {
         return getMeta().has(metaItemDescriptor);
     }
@@ -304,6 +341,22 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     public <U> Optional<MetaItem<U>> getMetaItem(MetaItemDescriptor<U> metaItemDescriptor) {
         return getMeta().get(metaItemDescriptor);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Optional<T> getValue() {
+        if (value == null && valueStr != null) {
+            value = (T)ValueUtil.parse(valueStr, getTypeClass()).orElse(null);
+            valueStr = null;
+        }
+        return Optional.ofNullable(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
+        return getValue().map(v -> (U)ValueUtil.getValueCoerced(v, valueType));
     }
 
     @Override
@@ -329,6 +382,11 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     public boolean hasExplicitTimestamp() {
         return timestamp > 0;
+    }
+
+    // TODO: Restructure packages so this can be package visible
+    public void setTypeInternal(ValueDescriptor<T> type) {
+        this.type = type;
     }
 
     @Override

@@ -63,7 +63,7 @@ public class AssetModelInfoExtension extends Extension {
             assetMap.put(assetDescriptorName.toUpperCase(Locale.ROOT), assetDescriptorName);
 
             // Store attributes
-            Arrays.stream(assetModelInfo.getAttributeDescriptors()).forEach(attributeDescriptor -> {
+            assetModelInfo.getAttributeDescriptors().values().forEach(attributeDescriptor -> {
                 String attributeName = attributeDescriptor.getName();
                 otherMap.put(attributeName.toUpperCase(Locale.ROOT), attributeName);
             });

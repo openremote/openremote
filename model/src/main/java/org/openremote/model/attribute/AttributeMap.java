@@ -42,6 +42,7 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
 
     // This works around the crappy type system and avoids the need for a type witness
     public <S> Optional<Attribute<S>> get(AttributeDescriptor<S> attributeDescriptor) {
+
         return super.get(attributeDescriptor);
     }
 

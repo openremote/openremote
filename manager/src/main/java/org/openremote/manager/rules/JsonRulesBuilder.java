@@ -953,7 +953,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 matchingAssetStates.forEach(assetState -> {
                     Object value = assetState.getValue().orElse(null);
-                    Class<?> valueType = assetState.getType().getType();
+                    Class<?> valueType = assetState.getTypeClass();
                     boolean isArray = ValueUtil.isArray(valueType);
 
                     if (!isArray && !ValueUtil.isMap(valueType)) {

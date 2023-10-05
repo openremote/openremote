@@ -336,7 +336,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     String updatedAttributeName = updatedAttribute.getName();
 
                     // Check if attribute is present on the asset in storage
-                    Optional<Attribute<?>> serverAttribute = storageAsset.getAttribute(updatedAttributeName);
+                    Optional<Attribute<Object>> serverAttribute = storageAsset.getAttribute(updatedAttributeName);
                     if (serverAttribute.isPresent()) {
                         Attribute<?> existingAttribute = serverAttribute.get();
 

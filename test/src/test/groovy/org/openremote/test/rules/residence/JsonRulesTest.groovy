@@ -183,11 +183,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "the room lights in an apartment to be on"
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
-            assert livingroomAsset.getAttribute("lightSwitch", Boolean.class).get().value.get()
-            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes", String[].class).get().value.get().length == 2
-            assert livingroomAsset.getAttribute("plantsWaterLevels", ValueType.ANY.getType()).get().getValueAs(Map.class).get().get("cactus") == 0.8d
+            assert livingroomAsset.getAttribute("lightSwitch").get().value.get()
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().value.get().length == 2
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().getValue(Map.class).get().get("cactus") == 0.8d
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
-            assert bathRoomAsset.getAttribute("lightSwitch", Boolean.class).get().value.get()
+            assert bathRoomAsset.getAttribute("lightSwitch").get().value.get()
         }
 
         when: "a user authenticates"
@@ -311,8 +311,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             def assetState = realmBuildingEngine.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
             assert assetState != null
             assert assetState.getValue().isPresent()
-            assert assetState.getValueAs(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
-            assert assetState.getValueAs(GeoJSONPoint.class).map{it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y}.orElse(false)
+            assert assetState.getValue(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
+            assert assetState.getValue(GeoJSONPoint.class).map{it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y}.orElse(false)
         }
 
         when: "the console device moves outside the home geofence (as defined in the rule)"
@@ -323,8 +323,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert !livingroomAsset.getAttribute("lightSwitch").get().value.get()
-            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes", String[].class).flatMap{it.value}.map{it.length}.orElse(0) == 2
-            assert livingroomAsset.getAttribute("plantsWaterLevels", ValueType.ANY.getType()).get().getValueAs(Map.class).get().get("cactus") == 0.8
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").flatMap{it.value}.map{it.length}.orElse(0) == 2
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().getValue(Map.class).get().get("cactus") == 0.8
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
             assert !bathRoomAsset.getAttribute("lightSwitch").get().value.get()
         }

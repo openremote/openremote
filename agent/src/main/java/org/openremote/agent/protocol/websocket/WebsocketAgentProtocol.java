@@ -118,7 +118,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     @Override
     protected String createWriteMessage(Attribute<?> attribute, WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-        if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
+        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
             boolean isRequestStart = event.getValue()
                 .flatMap(v -> ValueUtil.getValue(v, AttributeExecuteStatus.class))
                 .map(status -> status == AttributeExecuteStatus.REQUEST_START)

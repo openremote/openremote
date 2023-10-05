@@ -81,7 +81,7 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         this.value = attribute.getValue().orElse(null);
         this.timestamp = attribute.getTimestamp().orElse(-1L);
         this.source = source;
-        this.oldValue = asset.getAttribute(attributeName, attribute.getType().getType()).flatMap(Attribute::getValue).orElse(null);
+        this.oldValue = asset.getAttribute(attributeName).flatMap(attr -> attr.getValue(this.attributeValueType != null ? this.attributeValueType.getType() : null)).orElse(null);
         this.oldValueTimestamp = asset.getAttributes().get(attributeName).flatMap(Attribute::getTimestamp).orElse(-1L);
         this.id = asset.getId();
         this.assetName = asset.getName();
@@ -105,13 +105,18 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         return attributeValueType;
     }
 
+    @Override
+    public Class<?> getTypeClass() {
+        return getType() != null ? getType().getType() : Object.class;
+    }
+
     @JsonProperty
     public Optional<T> getValue() {
         return Optional.ofNullable(value);
     }
 
     @Override
-    public <U> Optional<U> getValueAs(Class<U> valueType) {
+    public <U> Optional<U> getValue(Class<U> valueType) {
         return ValueUtil.getValueCoerced(value, valueType);
     }
 

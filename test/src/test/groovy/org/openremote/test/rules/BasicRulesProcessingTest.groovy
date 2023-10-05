@@ -184,7 +184,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         then: "the attribute event should have been processed"
         conditions.eventually {
             def apartment2LivingRoom = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
-            assert apartment2LivingRoom.getAttribute("windowOpen").flatMap{it.getValueAs(Boolean.class)}.orElse(false)
+            assert apartment2LivingRoom.getAttribute("windowOpen").flatMap{it.getValue(Boolean.class)}.orElse(false)
         }
 
         then: "the rules engines should not have fired"

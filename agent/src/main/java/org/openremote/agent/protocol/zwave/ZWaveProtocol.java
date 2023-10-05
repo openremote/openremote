@@ -104,7 +104,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
         String linkName = agentLink.getDeviceValue().orElse("");
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
-        Class<?> clazz = (attribute == null ? null : attribute.getType().getType());
+        Class<?> clazz = attribute.getTypeClass();
         Consumer<Value> sensorValueConsumer = value ->
             updateLinkedAttribute(new AttributeState(attributeRef, toAttributeValue(value, clazz)));
 

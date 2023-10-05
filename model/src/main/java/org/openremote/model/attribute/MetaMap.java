@@ -22,13 +22,13 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.*;
+import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
 import java.util.*;
@@ -49,38 +49,36 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
         @Override
         public MetaMap deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
             if (!jp.isExpectedStartObjectToken()) {
-                throw new InvalidFormatException(jp, "Expected an object but got something else", jp.nextValue(), MetaMap.class);
+                throw new InvalidFormatException(jp, "MetaMap must be an object", jp.nextValue(), MetaMap.class);
             }
 
             List<MetaItem<?>> list = new ArrayList<>();
 
             while(jp.nextToken() != JsonToken.END_OBJECT) {
                 if(jp.currentToken() == JsonToken.FIELD_NAME) {
-                    String metaItemName = jp.getCurrentName();
                     jp.nextToken();
-
-                    MetaItem metaItem = new MetaItem<>();
-                    metaItem.setNameInternal(metaItemName);
-
-                    // Find the meta descriptor for this meta item as this will give us value type also; fallback to
-                    // OBJECT type meta item to allow deserialization of meta that doesn't exist in the current asset model
-                    Optional<ValueDescriptor<?>> valueDescriptor = ValueUtil.getMetaItemDescriptor(metaItemName)
-                        .map(MetaItemDescriptor::getType);
-
-                    Class valueType = valueDescriptor.map(ValueDescriptor::getType).orElseGet(() -> (Class) Object.class);
-                    metaItem.setValue(jp.readValueAs(valueType));
-
-                    // Get the value descriptor from the value if it isn't known
-                    metaItem.setTypeInternal(valueDescriptor.orElseGet(() -> {
-                        if (metaItem.getValue().isEmpty()) {
-                            return ValueType.ANY;
-                        }
-                        Object value = metaItem.getValue().orElse(null);
-                        return ValueUtil.getValueDescriptorForValue(value);
-                    }));
-
-                    list.add(metaItem);
                 }
+                if (jp.currentToken() == JsonToken.VALUE_NULL) {
+                    continue;
+                }
+
+                String metaItemName = jp.getCurrentName();
+
+                // Find the meta descriptor for this meta item as this will give us value type also; fallback to
+                // OBJECT type meta item to allow deserialization of meta that doesn't exist in the current asset model
+                ValueDescriptor<?> valueDescriptor = ValueUtil.getMetaItemDescriptor(metaItemName)
+                    .map(MetaItemDescriptor::getType).orElse(null);
+
+                MetaItem metaItem;
+                if (valueDescriptor != null) {
+                    metaItem = new MetaItem(metaItemName, valueDescriptor);
+                } else {
+                    metaItem = new MetaItem(metaItemName);
+                }
+
+                metaItem.setValue(Attribute.AttributeDeserializer.deserialiseValue(valueDescriptor, jp, ctxt));
+
+                list.add(metaItem);
             }
 
             MetaMap metaMap = new MetaMap();
@@ -116,7 +114,7 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
     }
 
     /**
-     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonTypeDescriptor} uses
+     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonJavaTypeDescriptor} uses
      * {@link Class#getDeclaredMethod} to find it...
      */
     @Override

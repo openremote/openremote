@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.ValueType;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -56,6 +57,19 @@ public class MetaItem<T> extends AbstractNameValueHolder<T> {
     MetaItem() {
     }
 
+    public MetaItem(String name) {
+        this(name, ValueType.ANY);
+    }
+
+    @SuppressWarnings("unchecked")
+    public MetaItem(String name, ValueDescriptor<?> valueDescriptor) {
+        this(name, (ValueDescriptor<T>) valueDescriptor, null);
+    }
+
+    public MetaItem(String name, ValueDescriptor<T> valueDescriptor, T value) {
+        super(name, valueDescriptor, value);
+    }
+
     @SuppressWarnings("unchecked")
     public MetaItem(MetaItemDescriptor<T> metaDescriptor) {
         // If it's a boolean meta descriptor assume the caller wants it to be true as a default
@@ -64,15 +78,6 @@ public class MetaItem<T> extends AbstractNameValueHolder<T> {
 
     public MetaItem(MetaItemDescriptor<T> metaDescriptor, T value) {
         super(metaDescriptor.getName(), metaDescriptor.getType(), value);
-    }
-
-    // For JPA/Hydrators
-    protected void setNameInternal(String name) {
-        this.name = name;
-    }
-
-    protected void setTypeInternal(ValueDescriptor<T> type) {
-        this.type = type;
     }
 
     @Override

@@ -30,7 +30,6 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
@@ -278,12 +277,11 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
         // and it's not the status attribute (or we'll end up in a loop)
         return !attributeName.equals(Agent.STATUS.getName())
             && ValueUtil.getAssetInfo(getType())
-            .map(info ->
-                Arrays.stream(info.getAttributeDescriptors())
-                    .anyMatch(ad -> ad.getName().equals(attributeName)))
+            .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
             .orElse(false)
+            // Exclude attributes that have a descriptor from the base Asset class
             && ValueUtil.getAssetInfo(Asset.class)
-            .map(typeInfo -> Arrays.stream(typeInfo.getAttributeDescriptors()).noneMatch(ad -> ad.getName().equals(attributeName)))
+            .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
             .orElse(false);
     }
 }

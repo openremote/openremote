@@ -387,27 +387,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                     // Type coercion
                     Object value = event.getValue().map(eventValue -> {
-                        Class<?> attributeValueType = oldAttribute.getType().getType();
+                        Class<?> attributeValueType = oldAttribute.getTypeClass();
                         return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
                             LOG.info("Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
                             return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
                         });
 
                     }).orElse(null);
-
-                    // TODO: Use schema validation
-                    // Check if attribute is well known and the value is valid
-//                    AssetModelUtil.getAssetDescriptor(asset.getType()).map(assetDescriptor -> assetDescriptor.get)
-//                    AssetModelUtil.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
-//                        // Check if the value is valid
-//                        wellKnownAttribute.getValueDescriptor()
-//                            .getValidator().flatMap(v -> v.apply(event.getValue().orElse(null)))
-//                            .ifPresent(validationFailure -> {
-//                                throw new AssetProcessingException(
-//                                    INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE
-//                                );
-//                            });
-//                    });
 
                     // Create a copy of the attribute and set the new value and timestamp
                     Attribute updatedAttribute = ValueUtil.clone(oldAttribute);

@@ -95,7 +95,7 @@ public final class ProtocolUtil {
         Pair<Boolean, Object> ignoreAndConvertedValue;
 
         // Check if attribute type is executable
-        if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
+        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
             AttributeExecuteStatus status = ValueUtil.getValueCoerced(value, AttributeExecuteStatus.class).orElse(null);
 
             if (status == AttributeExecuteStatus.REQUEST_START && writeValue != null) {
@@ -173,7 +173,7 @@ public final class ProtocolUtil {
         }
 
         // built in value conversion
-        Class<?> toType = attribute.getType().getType();
+        Class<?> toType = attribute.getTypeClass();
         Class<?> fromType = valRef.get().getClass();
 
         if (toType != fromType) {

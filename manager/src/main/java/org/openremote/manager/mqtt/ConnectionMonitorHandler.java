@@ -43,6 +43,8 @@ import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.AbstractNameValueHolder;
+import org.openremote.model.value.ValueHolder;
 import org.openremote.model.value.ValueType;
 
 import java.util.*;
@@ -106,12 +108,9 @@ public class ConnectionMonitorHandler extends MQTTHandler {
 
                                 if (oldAttributes != null) {
                                     oldAttributes.stream().filter(ConnectionMonitorHandler::attributeMatches)
-                                        .forEach(attr -> {
-                                            String userID = attr.getMetaValueOrDefault(USER_CONNECTED);
-                                            if (userID != null) {
-                                                removeSessionAttribute(userID, new AttributeRef(asset.getId(), attr.getName()));
-                                            }
-                                        });
+                                        .forEach(attr -> attr.getMetaItem(USER_CONNECTED)
+                                            .flatMap(ValueHolder::getValue)
+                                            .ifPresent(userID -> removeSessionAttribute(userID, new AttributeRef(asset.getId(), attr.getName()))));
                                 }
 
                                 if (newAttributes != null) {

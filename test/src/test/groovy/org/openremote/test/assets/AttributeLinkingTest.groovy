@@ -100,7 +100,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         then: "the linked attribute value should be toggled on"
         conditions.eventually {
             asset2 = assetStorageService.find(asset2.id, true)
-            assert asset2.getAttribute("lightOnOff", Boolean.class).flatMap{it.value}.orElse(false)
+            assert asset2.getAttribute("lightOnOff").flatMap{it.value}.orElse(false)
         }
 
         when: "the button is pressed again for a short period"
@@ -117,7 +117,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         then: "the linked attribute value should be toggled off"
         conditions.eventually {
             asset2 = assetStorageService.find(asset2.id, true)
-            assert !asset2.getAttribute("lightOnOff", Boolean.class).flatMap{it.value}.orElse(false)
+            assert !asset2.getAttribute("lightOnOff").flatMap{it.value}.orElse(false)
         }
         when: "a long button press occurs"
         def buttonLongPressed = new AttributeEvent(

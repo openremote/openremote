@@ -127,7 +127,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                         ("key1"): true
                 ] as ValueType.BooleanMap),
                 new Attribute<>(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR, "abcde"),
-                // A custom attribute is added
+                new Attribute<>(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR, new ModelTestAsset.TestObject(110, true)),
+                // Custom attributes
                 new Attribute<>("custom1"),
                 new Attribute<>("custom2", ValueType.GEO_JSON_POINT, new GeoJSONPoint(1.234, 5.678)).addMeta(
                         new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotNull()))
@@ -161,8 +162,13 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[0] == 1
         modelTestAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "abcde"
         modelTestAsset.getAttribute("custom1").flatMap {it.value}.orElse(null) == null
-        modelTestAsset.getAttribute("custom2", ValueType.GEO_JSON_POINT.type).flatMap {it.value}.orElse(null).x == 1.234d
-        modelTestAsset.getAttribute("custom2", ValueType.GEO_JSON_POINT.type).flatMap {it.value}.orElse(null).y == 5.678d
+        modelTestAsset.getAttribute("custom2").flatMap {it.value}.orElse(null).x == 1.234d
+        modelTestAsset.getAttribute("custom2").flatMap {it.value}.orElse(null).y == 5.678d
+        modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value} != null
+        modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) != null
+        modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.get().range == 110
+        modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.get().active != null
+        modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.get().active.booleanValue()
 
         when: "The attribute values violate the constraints"
         modelTestAsset.getAttribute(ModelTestAsset.REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = -1}
@@ -187,8 +193,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = [] as ValueType.BooleanMap}
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = [] as Integer[]}
         modelTestAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = "      "}
+        modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = new ModelTestAsset.TestObject(90, null)}
         modelTestAsset.getAttribute("custom1").ifPresent {it.value = 123}
-        modelTestAsset.getAttribute("custom2", ValueType.GEO_JSON_POINT.type).ifPresent {it.value = null}
+        modelTestAsset.getAttribute("custom2").ifPresent {it.value = null}
         modelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
 
         then: "a constraint violation exception should be thrown"
@@ -199,7 +206,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         report = ex.response.readEntity(ViolationReport)
 
         then: "it should contain all the errors"
-        report.propertyViolations.size() == 17
+        report.propertyViolations.size() == 19
         report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be greater than or equal to 0"}
         report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NEGATIVE_INT_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must be less than or equal to 0"}
         report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.SIZE_STRING_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "size must be between 5 and 10"}
@@ -216,6 +223,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NOT_EMPTY_MAP_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must not be empty"}
         report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "must not be empty"}
         report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR.name}].value" && it.message == "Not blank custom message"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR.name}].value.range" && it.message == "must be greater than or equal to 100"}
+        report.propertyViolations.any {it.path == "attributes[${ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR.name}].value.active" && it.message == "must not be null"}
         report.classViolations.size() == 1
         report.classViolations.get(0).path == ""
         report.classViolations.get(0).message == "Asset is not valid"
@@ -224,22 +233,30 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset = updatedModelTestAsset // Reset attributes to valid values
         def assetObjectNode = ValueUtil.convert(modelTestAsset, ObjectNode) as ObjectNode
 
-        and: "we simulate an attribute descriptor being removed (by changing the attribute name)"
+        and: "we simulate an attribute descriptor being removed or changed (by changing the attribute name)"
         def noDescriptorAttr = ((ObjectNode)assetObjectNode.get("attributes")).remove("pastTimestamp") as ObjectNode
         noDescriptorAttr.put("name", "missingAttr")
         ((ObjectNode)assetObjectNode.get("attributes")).set("missingAttr", noDescriptorAttr)
 
-        and: "we simulate a value descriptor being removed (by changing the type name)"
-        def noValueTypeAttr = ((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get("custom2")).put("type", "missingValueType")
+        and: "we simulate a meta item descriptor being removed or changed (by changing the meta item name)"
+        def noDescriptorMeta = ((ObjectNode)((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR.name)).get("meta")).remove(MetaItemType.CONSTRAINTS.name)
+        ((ObjectNode)((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR.name)).get("meta")).set("invalid", noDescriptorMeta)
 
         and: "we deserialise the object back into an Asset"
         modelTestAsset = ValueUtil.parse(assetObjectNode.toString(), Asset).orElse(null) as ModelTestAsset
 
-        then: "the attribute with the missing descriptor should still have the correct value type"
-        modelTestAsset.getAttribute("missingAttr").map {it.type}.orElse(null) == ValueType.TIMESTAMP
+        then: "the attribute with the missing descriptor should now have an ANY value type"
+        modelTestAsset.getAttribute("missingAttr").map {it.type}.orElse(null) == ValueType.ANY
 
-        and: "the attribute with the missing value type should now have ANY value type"
-        modelTestAsset.getAttribute("custom2").map {it.type}.orElse(null) == ValueType.ANY
+        and: "it should still contain the value"
+        modelTestAsset.getAttribute("missingAttr").flatMap {it.value}.orElse(null) instanceof Long
+
+        and: "the meta item with the missing descriptor should now have an ANY value type and the value should be an array of generic maps representing the value constraints"
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.orElse(null) != null
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.orElse(null).type == ValueType.ANY
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null).getClass().isArray()
+        Array.getLength(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null)) == 1
+        Array.get(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null), 0) instanceof Map
 
         when: "the attribute with the missing attribute descriptor now violates its' previous constraint"
         modelTestAsset.getAttribute("missingAttr").ifPresent {it.value = timerService.getCurrentTimeMillis() + 100000}
@@ -393,9 +410,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         asset2.getColourRGB().map{it.getR()}.orElse(null) == asset.getColourRGB().map{it.getR()}.orElse(null)
         asset2.getColourRGB().map{it.getG()}.orElse(null) == asset.getColourRGB().map{it.getG()}.orElse(null)
         asset2.getColourRGB().map{it.getB()}.orElse(null) == asset.getColourRGB().map{it.getB()}.orElse(null)
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.orElse(null) instanceof HTTPAgentLink
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgentLink)it}.flatMap{it.path}.orElse("") == "test_path"
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgentLink)it}.flatMap{it.pagingMode}.orElse(false)
+        asset2.getAttribute("testAttribute").flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.orElse(null) instanceof HTTPAgentLink
+        asset2.getAttribute("testAttribute").flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgentLink)it}.flatMap{it.path}.orElse("") == "test_path"
+        asset2.getAttribute("testAttribute").flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgentLink)it}.flatMap{it.pagingMode}.orElse(false)
 
         when: "an attribute is cloned"
         def attribute = asset2.getAttribute(LightAsset.COLOUR_RGB).get()

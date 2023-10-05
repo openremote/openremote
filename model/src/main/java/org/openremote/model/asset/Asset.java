@@ -20,9 +20,22 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.*;
 import org.openremote.model.Constants;
 import org.openremote.model.IdentifiableEntity;
@@ -33,7 +46,6 @@ import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
 import org.openremote.model.persistence.LTreeType;
-import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AssetValid;
@@ -41,14 +53,13 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
-import jakarta.persistence.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static jakarta.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
+import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 // @formatter:off
 
@@ -218,6 +229,39 @@ import static org.openremote.model.Constants.*;
 @SuppressWarnings("unchecked")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T> {
 
+    /**
+     * The purpose of this is to provide {@link org.openremote.model.attribute.Attribute.AttributeDeserializer} access
+     * to the asset type so the {@link AttributeDescriptor} can be looked up to control value deserialization; this
+     * isn't used when hydrating from the DB as JPA uses its' own hydration mechanism so we also have a lazy loading
+     * of attribute value mechanism.
+     */
+    public static class AssetDeserializer extends StdDeserializer<Asset<?>> implements ResolvableDeserializer {
+        public static final String ASSET_TYPE_INFO_ATTRIBUTE = "assetTypeInfo";
+        protected final JsonDeserializer<Asset<?>> defaultDeserializer;
+        public AssetDeserializer(JsonDeserializer<Asset<?>> defaultDeserializer, Class<?> clazz) {
+            super(clazz);
+            this.defaultDeserializer = defaultDeserializer;
+        }
+
+        @Override
+        public Asset<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            JavaType jType = getValueType(ctxt);
+            if (jType != null) {
+                // Make the asset type info available to the attribute deserialiser
+                ctxt.setAttribute(ASSET_TYPE_INFO_ATTRIBUTE, ValueUtil.getAssetInfo(jType.getRawClass().getSimpleName()).orElse(null));
+            }
+            return defaultDeserializer.deserialize(p, ctxt);
+        }
+
+        // The wrapped deserializer might need some post-processing so check whether it implements it or not
+        @Override
+        public void resolve(DeserializationContext ctxt) throws JsonMappingException {
+            if (defaultDeserializer instanceof ResolvableDeserializer resolvableDeserializer) {
+                resolvableDeserializer.resolve(ctxt);
+            }
+        }
+    }
+
     /*
      * ATTRIBUTE DESCRIPTORS DESCRIBING FIXED NAME ATTRIBUTES AND THEIR VALUE TYPE - ALL SUB TYPES OF THIS ASSET TYPE
      * WILL INHERIT THESE DESCRIPTORS ALSO; IT IS REQUIRED THAT EACH DESCRIPTOR HAS CORRESPONDING GETTER WITH OPTIONAL
@@ -277,6 +321,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Column(name = "ATTRIBUTES", columnDefinition = PERSISTENCE_JSON_VALUE_TYPE)
     @org.hibernate.annotations.Type(JsonBinaryType.class)
     @Valid
+    @Access(AccessType.PROPERTY)
     protected AttributeMap attributes;
 
     /**
@@ -324,7 +369,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return name;
     }
 
-    public T setName(@NotNull String name) throws IllegalArgumentException {
+    public T setName(String name) throws IllegalArgumentException {
         Objects.requireNonNull(name);
         this.name = name;
         return (T) this;
@@ -394,9 +439,20 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return attributes;
     }
 
+    @SuppressWarnings("rawtypes")
     public T setAttributes(AttributeMap attributes) {
         if (attributes == null) {
             attributes = new AttributeMap();
+        } else {
+            // Make sure the attribute types are correctly set based on asset descriptor
+            AttributeMap finalAttributes = attributes;
+            ValueUtil.getAssetInfo(getType()).ifPresent(assetTypeInfo ->
+                finalAttributes.values().forEach(attribute -> {
+                    AttributeDescriptor<?> attributeDescriptor = assetTypeInfo.getAttributeDescriptors().get(attribute.getName());
+                    if (attributeDescriptor != null) {
+                        ((Attribute)attribute).setTypeInternal(attributeDescriptor.getType());
+                    }
+            }));
         }
         this.attributes = attributes;
         return (T) this;
@@ -415,18 +471,8 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return getAttributes().get(descriptor);
     }
 
-    public Optional<Attribute<?>> getAttribute(String attributeName) {
-        return getAttributes().get(attributeName);
-    }
-
-    public <U> Optional<Attribute<U>> getAttribute(String attributeName, Class<U> valueType) {
-        return getAttributes().get(attributeName).map(attribute -> {
-            if (attribute.getType().getType() == valueType) {
-                return (Attribute<U>) attribute;
-            } else {
-                return null;
-            }
-        });
+    public <U> Optional<Attribute<U>> getAttribute(String attributeName) {
+        return getAttributes().get(attributeName).map(attribute -> (Attribute<U>) attribute);
     }
 
     public boolean hasAttribute(AttributeDescriptor<?> attributeDescriptor) {
@@ -436,7 +482,6 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public boolean hasAttribute(String attributeName) {
         return getAttributes().has(attributeName);
     }
-
 
     public T addAttributes(Attribute<?>... attributes) {
         getAttributes().addAll(attributes);

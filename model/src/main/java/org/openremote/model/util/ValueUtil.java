@@ -23,8 +23,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
+import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -172,7 +175,26 @@ public class ValueUtil {
             .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
             .registerModule(new Jdk8Module())
             .registerModule(new JavaTimeModule())
-            .registerModule(new ParameterNamesModule(JsonCreator.Mode.DEFAULT));
+            .registerModule(new ParameterNamesModule(JsonCreator.Mode.DEFAULT))
+            .registerModule(new SimpleModule()
+                .setDeserializerModifier(new BeanDeserializerModifier() {
+                @Override
+                public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
+                    if (Asset.class.isAssignableFrom(beanDesc.getBeanClass())) {
+                        return new Asset.AssetDeserializer((JsonDeserializer<Asset<?>>) deserializer, beanDesc.getBeanClass());
+                    }
+                    return deserializer;
+                }})
+                .setSerializerModifier(new BeanSerializerModifier() {
+                    @SuppressWarnings("rawtypes")
+                    @Override
+                    public JsonSerializer<?> modifySerializer(SerializationConfig config, BeanDescription beanDesc, JsonSerializer<?> serializer) {
+                        if (Attribute.class.isAssignableFrom(beanDesc.getBeanClass())) {
+                            return new Attribute.AttributeSerializer((JsonSerializer<Attribute>) serializer);
+                        }
+                        return serializer;
+                    }
+                }));
 
         objectMapper.configOverride(Map.class)
             .setInclude(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
@@ -455,8 +477,8 @@ public class ValueUtil {
         return Map.class.isAssignableFrom(clazz);
     }
 
-    public static boolean isList(Class<?> clazz) {
-        return List.class.isAssignableFrom(clazz);
+    public static boolean isCollection(Class<?> clazz) {
+        return Collection.class.isAssignableFrom(clazz);
     }
 
     public static boolean isObject(Class<?> clazz) {
@@ -950,7 +972,7 @@ public class ValueUtil {
     public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {
         AssetTypeInfo assetInfo = getAssetInfo(asset.getType()).orElseThrow(() -> new IllegalStateException("Cannot get asset model info for requested asset type: " + asset.getType()));
         asset.getAttributes().addOrReplace(
-            Arrays.stream(assetInfo.getAttributeDescriptors())
+            assetInfo.getAttributeDescriptors().values().stream()
             .filter(attributeDescriptor -> !attributeDescriptor.isOptional())
             .map(Attribute::new)
             .collect(Collectors.toList())

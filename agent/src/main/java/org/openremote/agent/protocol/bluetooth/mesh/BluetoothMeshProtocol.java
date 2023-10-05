@@ -19,37 +19,24 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import com.welie.blessed.BluetoothCentralManager;
-import com.welie.blessed.BluetoothCentralManagerCallback;
-import com.welie.blessed.BluetoothCommandStatus;
-import com.welie.blessed.BluetoothPeripheral;
-import com.welie.blessed.ScanResult;
+import com.welie.blessed.*;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueFormat;
-import org.openremote.model.value.ValueType;
 
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +44,6 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, BluetoothMeshAgentLink> {
 
@@ -299,7 +285,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             "Linking Bluetooth Mesh attribute: [address: '" + String.format("0x%04X", address) + "', model: '" +
                  modelName + "', appKeyIndex: '" + appKeyIndex + "'] - " + attributeRef
         );
-        Class<?> clazz = (attribute == null ? null : attribute.getType().getType());
+        Class<?> clazz = attribute.getTypeClass();
         Consumer<Object> sensorValueConsumer = value -> updateLinkedAttribute(new AttributeState(attributeRef, toAttributeValue(value, clazz)));
         sensorValueConsumerMap.put(attributeRef, sensorValueConsumer);
 

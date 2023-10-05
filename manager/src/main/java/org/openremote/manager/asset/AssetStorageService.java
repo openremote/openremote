@@ -57,6 +57,7 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.validation.AssetStateStore;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
 
@@ -1333,9 +1334,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * generate the {@link AttributeEvent}
      */
     @SuppressWarnings("unchecked")
-    protected boolean updateAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) {
+    protected boolean updateAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) throws ConstraintViolationException {
 
         long timestamp = attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis);
+
+        // TODO: Reuse AssetState and change validator over to that class
+        // Do standard JSR-380 validation on the new value (needs attribute descriptor to do this)
+        Set<ConstraintViolation<AssetStateStore>> validationFailures = ValueUtil.validate(new AssetStateStore(asset.getType(), attribute));
+
+        if (!validationFailures.isEmpty()) {
+            String msg = "Attribute update failed as value failed constraint validation: attribute=" + attribute;
+            ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
+            LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
+            throw ex;
+        }
 
         try {
             PGobject valueTimestampJSON = new PGobject();

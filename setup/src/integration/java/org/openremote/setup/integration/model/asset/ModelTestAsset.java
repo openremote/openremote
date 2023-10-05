@@ -1,11 +1,15 @@
 package org.openremote.setup.integration.model.asset;
 
 import jakarta.persistence.Entity;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.*;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Entity
@@ -18,7 +22,29 @@ public class ModelTestAsset extends Asset<ModelTestAsset> {
         ENUM_4
     }
 
+    public static class TestObject implements Serializable {
+        @Min(100)
+        @Max(200)
+        protected int range;
+        @NotNull
+        protected Boolean active;
+
+        public TestObject(int range, Boolean active) {
+            this.range = range;
+            this.active = active;
+        }
+
+        public int getRange() {
+            return range;
+        }
+
+        public Boolean getActive() {
+            return active;
+        }
+    }
+
     public static final ValueDescriptor<TestValue> TEST_VALUE_DESCRIPTOR = new ValueDescriptor<>("testValue", TestValue.class);
+    public static final ValueDescriptor<TestObject> TEST_OBJECT_VALUE_DESCRIPTOR = new ValueDescriptor<>("testObjectValue", TestObject.class);
 
     public static final AttributeDescriptor<Integer> REQUIRED_POSITIVE_INT_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("positiveInt", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotNull()))
@@ -37,6 +63,7 @@ public class ModelTestAsset extends Asset<ModelTestAsset> {
     ).withOptional(true);
 
     public static final AttributeDescriptor<TestValue> ALLOWED_VALUES_ENUM_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("allowedValuesEnum", TEST_VALUE_DESCRIPTOR).withOptional(true);
+    public static final AttributeDescriptor<TestObject> OBJECT_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("object", TEST_OBJECT_VALUE_DESCRIPTOR).withOptional(true);
     public static final AttributeDescriptor<String> ALLOWED_VALUES_STRING_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("allowedValuesString", ValueType.TEXT,
         new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.AllowedValues("Allowed1", "Allowed2")))
     ).withOptional(true);
