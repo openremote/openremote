@@ -228,6 +228,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             // Parse file with Parameter details
             TeltonikaParameter[] paramArray = mapper.readValue(getParameterFileString(), TeltonikaParameter[].class);
 
+            getLogger().info("Parsed "+paramArray.length+" Teltonika Parameters");
+
             // Add each element to the HashMap, with the key being the unique parameter ID and the parameter
             // being the value
             for (TeltonikaParameter param : paramArray) {

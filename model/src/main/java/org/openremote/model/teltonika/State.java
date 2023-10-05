@@ -50,7 +50,7 @@ public class State {
             try {
                 parsedEntryId = Integer.parseInt(entryId);
             }catch (Exception e){
-                break;
+                continue;
             }
 
             if (params.containsKey(parsedEntryId)){
