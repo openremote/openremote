@@ -73,6 +73,7 @@ services:
       OR_EMAIL_X_HEADERS:
       OR_EMAIL_FROM:
       OR_EMAIL_ADMIN:
+      OR_MAP_TILES_PATH: '/efs/europe.mbtiles'
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
       OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
