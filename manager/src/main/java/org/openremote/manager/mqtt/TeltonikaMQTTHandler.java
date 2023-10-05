@@ -241,7 +241,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         }
         String x = payload.toString();
 
-        Attribute<?>[] attrs = payload.payload.state.GetAttributes(params);
+        Attribute<?>[] attrs = payload.state.GetAttributes(params);
 
         return attrs;
 
