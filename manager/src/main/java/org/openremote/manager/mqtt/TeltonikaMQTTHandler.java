@@ -20,8 +20,10 @@ import org.openremote.model.teltonika.TeltonikaPayload;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
@@ -36,6 +38,11 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     protected AssetStorageService assetStorageService;
     protected TimerService timerService;
+    protected Path DeviceParameterPath;
+
+
+
+
     /**
      * Indicates if this handler will handle the specified topic; independent of whether it is a publish or subscribe.
      * Should generally check the third token (index 2) onwards unless {@link #handlesTopic} has been overridden.
@@ -58,7 +65,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
-
+        DeviceParameterPath = Paths.get("manager/app/FMC003.json");
         if (!identityService.isKeycloakEnabled()) {
             getLogger().warning("MQTT connections are not supported when not using Keycloak identity provider");
             isKeycloak = false;
@@ -219,7 +226,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         Map<Integer, TeltonikaParameter> params = new HashMap<>();
         try {
             // Parse file with Parameter details
-            TeltonikaParameter[] paramArray = mapper.readValue(TeltonikaParameter.getParams(), TeltonikaParameter[].class);
+            TeltonikaParameter[] paramArray = mapper.readValue(getParameterFileString(), TeltonikaParameter[].class);
 
             // Add each element to the HashMap, with the key being the unique parameter ID and the parameter
             // being the value
@@ -245,6 +252,16 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         return attrs;
 
 //        throw new NotImplementedException();
+    }
+
+    private String getParameterFileString() {
+        try {
+            return Files.readString(DeviceParameterPath);
+        } catch (IOException e) {
+            getLogger().warning("Couldn't find FMC003.json, couldn't parse parameters");
+            throw new RuntimeException(e);
+        }
+
     }
 
     private void UpdateAsset(String payloadContent, Asset<?> asset, Attribute<?>[] attributes) {
