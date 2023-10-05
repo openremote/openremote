@@ -67,7 +67,6 @@ services:
     environment:
       OR_SETUP_TYPE:
       OR_ADMIN_PASSWORD:
-      OR_SETUP_RUN_ON_RESTART:
       OR_EMAIL_HOST:
       OR_EMAIL_USER:
       OR_EMAIL_PASSWORD:
