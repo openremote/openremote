@@ -219,8 +219,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         Map<Integer, TeltonikaParameter> params = new HashMap<>();
         try {
             // Parse file with Parameter details
-            String text = Files.readString(Paths.get("model/src/main/java/org/openremote/model/teltonika/FMC003.json"));
-            TeltonikaParameter[] paramArray = mapper.readValue(text, TeltonikaParameter[].class);
+            TeltonikaParameter[] paramArray = mapper.readValue(TeltonikaParameter.getParams(), TeltonikaParameter[].class);
 
             // Add each element to the HashMap, with the key being the unique parameter ID and the parameter
             // being the value
