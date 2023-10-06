@@ -3,16 +3,19 @@ package org.openremote.model.teltonika;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import org.apache.commons.lang3.StringUtils;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.*;
+import org.w3c.dom.Attr;
 
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.openremote.model.value.MetaItemType.CONSTRAINTS;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
@@ -55,9 +58,34 @@ public class State {
 
             if (params.containsKey(parsedEntryId)){
                 TeltonikaParameter parameter = params.get( Integer.valueOf(entry.getKey()));
-                MetaItem<String> meta = new MetaItem<>(MetaItemType.LABEL);
-                meta.setValue(parameter.propertyName);
-                attributes.add(new Attribute<>(parameter.getPropertyId().toString(),ValueType.TEXT,entry.getValue().toString()).addMeta(meta));
+
+                List<MetaItem<?>> metas = new ArrayList<>();
+
+                ValueDescriptor<?> attributeType = GetAttributeType(parameter);
+
+                try {
+                    MetaItem<String[]> units = new MetaItem<>(MetaItemType.UNITS);
+                    units.setValue(new String[]{parameter.units});
+                    metas.add(units);
+
+                    MetaItem<ValueConstraint[]> constraints = new MetaItem<>(CONSTRAINTS);
+                    constraints.setValue(ValueConstraint.constraints(new ValueConstraint.Min(Long.parseLong(parameter.min)), new ValueConstraint.Max(Long.parseLong(parameter.max))));
+                    metas.add(constraints);
+                }catch (Exception ignored){
+
+                }
+
+                MetaItem<String> label = new MetaItem<>(MetaItemType.LABEL);
+                label.setValue(parameter.propertyName);
+                metas.add(label);
+
+
+
+//                Does not work at the moment, rerun it with using the Text ValueType
+//                Attribute<?> attr = new Attribute(parameter.getPropertyId().toString(),attributeType, ValueUtil.getValue(entry.getValue().toString(),attributeType.getType(), true));
+                Attribute<?> attr = new Attribute(parameter.getPropertyId().toString(),ValueType.TEXT, entry.getValue().toString());
+                attr.addMeta(label);
+                attributes.add(attr);
 
             }
         }
@@ -69,6 +97,18 @@ public class State {
         }
 
         return attributes.toArray(new Attribute[0]);
+    }
+
+    private ValueDescriptor<?> GetAttributeType(TeltonikaParameter parameter) {
+        switch (parameter.type){
+            case "Unsigned":
+            case "Signed":
+            case "unsigned":
+            case "UNSIGNED LONG INT":
+                return ValueType.LONG;
+            default:
+                return ValueType.TEXT;
+        }
     }
 
     private GeoJSONPoint ParseLatLngToGeoJSONObject(String latlngString) {
