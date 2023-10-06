@@ -82,7 +82,8 @@ public class State {
             String longitude = m.group(4);
             // Since the regex pattern was validated, there is no way for parsing these to throw a NumberFormatException.
 
-            return new GeoJSONPoint(Double.parseDouble(latitude), Double.parseDouble(longitude));
+            // GeoJSON requires the points in long-lat form, not lat-long
+            return new GeoJSONPoint(Double.parseDouble(longitude), Double.parseDouble(latitude));
 
         } else {
             return null;
