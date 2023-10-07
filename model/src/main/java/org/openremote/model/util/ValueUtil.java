@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -165,6 +164,7 @@ public class ValueUtil {
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false) // see https://github.com/FasterXML/jackson-databind/issues/1547
             .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+            .configure(SerializationFeature.INDENT_OUTPUT, false)
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -184,17 +184,7 @@ public class ValueUtil {
                         return new Asset.AssetDeserializer((JsonDeserializer<Asset<?>>) deserializer, beanDesc.getBeanClass());
                     }
                     return deserializer;
-                }})
-                .setSerializerModifier(new BeanSerializerModifier() {
-                    @SuppressWarnings("rawtypes")
-                    @Override
-                    public JsonSerializer<?> modifySerializer(SerializationConfig config, BeanDescription beanDesc, JsonSerializer<?> serializer) {
-                        if (Attribute.class.isAssignableFrom(beanDesc.getBeanClass())) {
-                            return new Attribute.AttributeSerializer((JsonSerializer<Attribute>) serializer);
-                        }
-                        return serializer;
-                    }
-                }));
+                }}));
 
         objectMapper.configOverride(Map.class)
             .setInclude(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
@@ -681,13 +671,13 @@ public class ValueUtil {
 
     public static ValueDescriptor<?> getValueDescriptorForValue(Object value) {
         if (value == null) {
-            return ValueType.ANY;
+            return null;
         }
 
         Class<?> valueClass = value.getClass();
         boolean isArray = valueClass.isArray();
         valueClass = isArray ? valueClass.getComponentType() : valueClass;
-        ValueDescriptor<?> valueDescriptor = ValueType.ANY;
+        ValueDescriptor<?> valueDescriptor = null;
 
         if (valueClass == Boolean.class) valueDescriptor = ValueType.BOOLEAN;
         else if (valueClass == String.class) valueDescriptor = ValueType.TEXT;
@@ -698,7 +688,7 @@ public class ValueUtil {
         else if (valueClass == BigDecimal.class) valueDescriptor = ValueType.BIG_NUMBER;
         else if (valueClass == Byte.class) valueDescriptor = ValueType.BYTE;
 
-        return isArray ? valueDescriptor.asArray() : valueDescriptor;
+        return isArray && valueDescriptor != null ? valueDescriptor.asArray() : valueDescriptor;
     }
 
     public static List<AssetModelProvider> getModelProviders() {
@@ -843,7 +833,7 @@ public class ValueUtil {
         // Check each value type implements serializable interface
         List<ValueDescriptor<?>> nonSerializableValueDescriptors = new ArrayList<>();
         valueDescriptors.forEach(vd -> {
-            if (!Serializable.class.isAssignableFrom(vd.getType()) && vd != ValueType.ANY) {
+            if (!Serializable.class.isAssignableFrom(vd.getType())) {
                 nonSerializableValueDescriptors.add(vd);
             }
         });
@@ -1005,43 +995,55 @@ public class ValueUtil {
     }
 
     public static boolean objectsEquals(Object a, Object b) {
-        if (!Objects.equals(a, b)) {
-            Object subject = a != null ? a : b;
-            Object subordinate = a != null ? b : a;
-            if (subject.getClass().isArray()) {
-                Class<?> arrayType = subject.getClass().getComponentType();
-                if (arrayType.isPrimitive()) {
-                    if (arrayType == boolean.class) {
-                        return Arrays.equals((boolean[]) subject, (boolean[]) subordinate);
-                    }
-                    if (arrayType == int.class) {
-                        return Arrays.equals((int[]) subject, (int[]) subordinate);
-                    }
-                    if (arrayType == double.class) {
-                        return Arrays.equals((double[]) subject, (double[]) subordinate);
-                    }
-                    if (arrayType == float.class) {
-                        return Arrays.equals((float[]) subject, (float[]) subordinate);
-                    }
-                    if (arrayType == long.class) {
-                        return Arrays.equals((long[]) subject, (long[]) subordinate);
-                    }
-                    if (arrayType == short.class) {
-                        return Arrays.equals((short[]) subject, (short[]) subordinate);
-                    }
-                    if (arrayType == byte.class) {
-                        return Arrays.equals((byte[]) subject, (byte[]) subordinate);
-                    }
-                    if (arrayType == char.class) {
-                        return Arrays.equals((char[]) subject, (char[]) subordinate);
-                    }
-                    return false;
-                }
-                return Arrays.deepEquals((Object[])subject,(Object[])subordinate);
-            }
-            return false;
+        if (a == b) return true;
+        if (a == null || b == null || a.getClass() != b.getClass()) return false;
+
+        if (Objects.equals(a, b)) {
+            return true;
         }
-        return true;
+
+        if (a.getClass().isArray()) {
+            Class<?> arrayType = a.getClass().getComponentType();
+            if (arrayType.isPrimitive()) {
+                if (arrayType == boolean.class) {
+                    return Arrays.equals((boolean[]) a, (boolean[]) b);
+                }
+                if (arrayType == int.class) {
+                    return Arrays.equals((int[]) a, (int[]) b);
+                }
+                if (arrayType == double.class) {
+                    return Arrays.equals((double[]) a, (double[]) b);
+                }
+                if (arrayType == float.class) {
+                    return Arrays.equals((float[]) a, (float[]) b);
+                }
+                if (arrayType == long.class) {
+                    return Arrays.equals((long[]) a, (long[]) b);
+                }
+                if (arrayType == short.class) {
+                    return Arrays.equals((short[]) a, (short[]) b);
+                }
+                if (arrayType == byte.class) {
+                    return Arrays.equals((byte[]) a, (byte[]) b);
+                }
+                if (arrayType == char.class) {
+                    return Arrays.equals((char[]) a, (char[]) b);
+                }
+                return false;
+            }
+            return Arrays.deepEquals((Object[]) a,(Object[]) b);
+        }
+        return false;
+    }
+
+    public static boolean objectsEqualsWithJSONFallback(Object a, Object b) {
+        return objectsEquals(a, b) || objectsEqualsUsingJSON(a, b);
+    }
+
+    public static boolean objectsEqualsUsingJSON(Object a, Object b) {
+        if (a == b) return true;
+        if (a == null || b == null || a.getClass() != b.getClass()) return false;
+        return Objects.equals(ValueUtil.convert(a, JsonNode.class), ValueUtil.convert(b, JsonNode.class));
     }
 
     protected static boolean isGetter(Method method) {

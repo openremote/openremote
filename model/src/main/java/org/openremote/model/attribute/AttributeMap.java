@@ -19,10 +19,11 @@
  */
 package org.openremote.model.attribute;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import javax.annotation.CheckForNull;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -72,11 +73,10 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
     }
 
     /**
-     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonJavaTypeDescriptor} uses
-     * {@link Class#getDeclaredMethod} to find it...
+     * This is mainly used by JPA for dirty checking so we'll use JSON comparison as that is how the data is stored
      */
     @Override
-    public boolean equals(@Nullable Object object) {
-        return super.equals(object);
+    public boolean equals(@CheckForNull Object object) {
+        return ValueUtil.objectsEqualsUsingJSON(this, object);
     }
 }

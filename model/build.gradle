@@ -10,7 +10,6 @@ dependencies {
 
     api "org.hibernate.orm:hibernate-core:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
-    api "com.vladmihalcea:hibernate-types-60:$hibernateTypesVersion"
     api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
     api "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
 

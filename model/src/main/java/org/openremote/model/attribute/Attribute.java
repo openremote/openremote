@@ -27,13 +27,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.fasterxml.jackson.databind.ser.ResolvableSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.fasterxml.jackson.databind.util.TokenBuffer;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.Asset;
@@ -52,8 +52,13 @@ import java.util.stream.Stream;
  * Stores a named value with associated {@link MetaItem}s.
  */
 @JsonDeserialize(using = Attribute.AttributeDeserializer.class)
+@JsonSerialize(using = Attribute.AttributeSerializer.class)
 public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHolder {
 
+    /**
+     * Custom deserializer that can use asset type info from deserialization context when it is passed in from the asset
+     * deserializer
+     */
     public static class AttributeDeserializer extends StdDeserializer<Attribute<?>> {
 
         protected static final JavaType META_MAP_TYPE = TypeFactory.defaultInstance().constructType(MetaMap.class);
@@ -85,7 +90,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             AssetTypeInfo assetTypeInfo = (AssetTypeInfo) ctxt.getAttribute(Asset.AssetDeserializer.ASSET_TYPE_INFO_ATTRIBUTE);
             String attributeName = jp.getCurrentName();
             AttributeDescriptor<?> attributeDescriptor = assetTypeInfo != null ? assetTypeInfo.getAttributeDescriptors().get(attributeName) : null;
-            Attribute attribute;
+            Attribute<?> attribute;
 
             if (attributeDescriptor != null) {
                 attribute = new Attribute<>(attributeName, attributeDescriptor.getType());
@@ -112,6 +117,10 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                     case "meta" -> {
                         JsonDeserializer<Object> metaDeserializer = ctxt.findNonContextualValueDeserializer(META_MAP_TYPE);
                         attribute.meta = (MetaMap) metaDeserializer.deserialize(jp, ctxt);
+                        if (attributeDescriptor == null) {
+                            // Look for value type meta item
+                            attribute.getMetaValue(MetaItemType.VALUE_TYPE).ifPresent(attribute::setTypeInternal);
+                        }
                     }
                     case "name" -> {
                         String name = jp.getValueAsString();
@@ -127,12 +136,13 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 //                            valueBuffer.copyCurrentStructure(jp);
 //                            continue;
 //                        }
-                        if (attributeDescriptor == null) {
+                        ValueDescriptor<?> valueDescriptor = attribute.getType();
+                        if (valueDescriptor == null) {
                             // We don't know the type so store the value as a string and hydrate on demand when value type
                             // may be known
                             attribute.valueStr = jp.getCodec().readTree(jp).toString();
                         } else {
-                            attribute.value = deserialiseValue(attribute.getType(), jp, ctxt);
+                            ((Attribute)attribute).value = deserialiseValue(valueDescriptor, jp, ctxt);
                         }
                     }
                 }
@@ -149,21 +159,14 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         }
     }
 
+    /**
+     * Custom serializer that can serialize valueStr (for attributes that haven't been fully hydrated)
+     */
     @SuppressWarnings("rawtypes")
-    public static class AttributeSerializer extends StdSerializer<Attribute> implements ResolvableSerializer {
+    public static class AttributeSerializer extends StdSerializer<Attribute> {
 
-        protected JsonSerializer<Attribute> defaultSerializer;
-
-        public AttributeSerializer(JsonSerializer<Attribute> defaultSerializer) {
+        public AttributeSerializer() {
             super(Attribute.class);
-            this.defaultSerializer = defaultSerializer;
-        }
-
-        @Override
-        public void resolve(SerializerProvider provider) throws JsonMappingException {
-            if (defaultSerializer instanceof ResolvableSerializer resolvableSerializer) {
-                resolvableSerializer.resolve(provider);
-            }
         }
 
         @Override
@@ -198,7 +201,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     }
 
     public Attribute(AttributeDescriptor<T> attributeDescriptor, T value) {
-        this(attributeDescriptor.getName(), attributeDescriptor.getType(), value);
+        super(attributeDescriptor.getName(), attributeDescriptor.getType(), value);
 
         // TODO: We should not do this attribute descriptor meta should be read from the descriptor even for DB queries
         // Auto merge meta from attribute descriptor
@@ -219,15 +222,19 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     public Attribute(String name, ValueDescriptor<T> valueDescriptor, T value) {
         super(name, valueDescriptor, value);
+        // Create valueType meta item for this custom attribute
+        if (valueDescriptor != null) {
+            addMeta(new MetaItem<>(MetaItemType.VALUE_TYPE, valueDescriptor));
+        }
     }
 
     public Attribute(String name, ValueDescriptor<T> valueDescriptor, T value, long timestamp) {
-        this(name, valueDescriptor, value);
+        super(name, valueDescriptor, value);
         setTimestamp(timestamp);
     }
 
     public Attribute(String name) {
-        this(name, ValueType.ANY);
+        this(name, null);
     }
 
     /**
@@ -353,10 +360,9 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         return Optional.ofNullable(value);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
-        return getValue().map(v -> (U)ValueUtil.getValueCoerced(v, valueType));
+        return getValue().flatMap(v -> ValueUtil.getValueCoerced(v, valueType));
     }
 
     @Override
@@ -368,6 +374,18 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     public void setValue(T value, long timestamp) {
         super.setValue(value);
         this.timestamp = timestamp;
+    }
+
+    @Override
+    public Class<?> getTypeClass() {
+        return getType() != null ? getType().getType() : Object.class;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    @Override
+    public ValueDescriptor<T> getType() {
+        return type != null ? type : getMetaValue(MetaItemType.VALUE_TYPE).orElse(null);
     }
 
     @JsonIgnore
@@ -384,6 +402,8 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         return timestamp > 0;
     }
 
+    // type is effectively transient so don't use in equality checks as JPA will think the entity is dirty just because
+    // the type has been injected PostLoad
     // TODO: Restructure packages so this can be package visible
     public void setTypeInternal(ValueDescriptor<T> type) {
         this.type = type;
@@ -395,6 +415,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         valStr = valStr != null && valStr.length() > 100 ? valStr.substring(0, 100) : valStr;
         return getClass().getSimpleName() + "{" +
             "name='" + name + '\'' +
+            ", type='" + (type != null ? type.getName() : "null") + '\'' +
             ", value='" + valStr + '\'' +
             ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
             "} ";
@@ -403,6 +424,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     public String toStringAll() {
         return getClass().getSimpleName() + "{" +
             "name='" + name + '\'' +
+            ", type='" + (type != null ? type.getName() : "null") + '\'' +
             ", value='" + value + '\'' +
             ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
             ", meta='" + (meta == null ? "" : getMeta().values().stream().map(MetaItem::toString).collect(Collectors.joining(","))) + '\'' +
@@ -411,48 +433,24 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     @Override
     public int hashCode() {
-        return super.hashCode() + Objects.hash(timestamp) + Objects.hash(meta);
+        return Objects.hash(value, name, timestamp, meta);
     }
 
     /**
-     * Super fast equality checking using the name, type and timestamp; when an {@link Attribute} value is updated then
-     * the timestamp must be greater than the existing value timestamp; and also when merging an {@link Asset} any
-     * modified {@link Attribute} should have a newer timestamp; the backend should take care to update the {@link
-     * Attribute} timestamp when merging an {@link Asset} by using {@link #deepEquals}.
+     * {@link #type} is transient so don't use it for equality checks
      */
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null)
-            return false;
-        if (!(obj instanceof Attribute))
-            return false;
-        Attribute<?> that = (Attribute<?>) obj;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Attribute<?> that = (Attribute<?>) o;
 
         return Objects.equals(timestamp, that.timestamp)
             && Objects.equals(name, that.name)
-            && Objects.equals(type, that.type);
-    }
-
-    /**
-     * Deep equality check looking at value and meta; this is needed when merging an {@link Asset} as the {@link
-     * Attribute} meta and value can be modified without the timestamp being updated; the backend should take care to
-     * update timestamps when meta or value is updated during a merge so that the standard {@link #equals} logic can be
-     * used in all other cases. Meta value and value equality checking is done by converting value to {@link JsonNode}
-     * as all {@link Attribute} and {@link MetaItem} values must be serializable but this doesn't mean that the value
-     * type has an equality override so this is the safest mechanism.
-     */
-    public boolean deepEquals(Object obj) {
-        if (obj == null)
-            return false;
-        if (!(obj instanceof Attribute))
-            return false;
-        Attribute<?> that = (Attribute<?>) obj;
-
-        boolean timestampMatches = Objects.equals(timestamp, that.timestamp);
-        boolean metaMatches = (meta == null && that.meta != null && that.meta.isEmpty()) || (that.meta == null && meta != null && meta.isEmpty()) || Objects.equals(meta, that.meta);
-        boolean superMatches = super.equals(obj);
-        boolean result = timestampMatches && metaMatches && superMatches;
-        return result;
+            // Use uninitialized json value if available
+            && (valueStr != null && that.valueStr != null ? Objects.equals(valueStr, that.valueStr) : ValueUtil.objectsEqualsWithJSONFallback(value, that.value))
+            // null or empty meta are considered equal
+            && (meta == null && that.meta != null && that.meta.isEmpty()) || (that.meta == null && meta != null && meta.isEmpty()) || Objects.equals(meta, that.meta);
     }
 
     public boolean equals(Object obj, Comparator<Attribute<?>> comparator) {
@@ -465,5 +463,15 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             return false;
         Attribute<?> that = (Attribute<?>) obj;
         return comparator.compare(this, that) == 0;
+    }
+
+    public Attribute<T> shallowClone() {
+        Attribute<T> cloned = new Attribute<>();
+        cloned.name = name;
+        cloned.meta = meta;
+        cloned.type = type;
+        cloned.timestamp = timestamp;
+        cloned.value = value;
+        return cloned;
     }
 }

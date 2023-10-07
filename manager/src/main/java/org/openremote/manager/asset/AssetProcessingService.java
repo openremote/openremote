@@ -396,7 +396,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }).orElse(null);
 
                     // Create a copy of the attribute and set the new value and timestamp
-                    Attribute updatedAttribute = ValueUtil.clone(oldAttribute);
+                    Attribute updatedAttribute = oldAttribute.shallowClone();
                     updatedAttribute.setValue(value, eventTime);
 
                     // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp

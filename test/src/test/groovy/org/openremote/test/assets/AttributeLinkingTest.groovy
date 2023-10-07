@@ -43,7 +43,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         asset1.setRealm(Constants.MASTER_REALM)
         asset1.addOrReplaceAttributes(
             new Attribute<>("button", TEXT, "RELEASED"),
-            new Attribute<>("array", ANY.asArray(), null),
+            new Attribute<>("array", null, null),
             new Attribute<>("crossRealm", TEXT, null)
         )
         asset1 = assetStorageService.merge(asset1)

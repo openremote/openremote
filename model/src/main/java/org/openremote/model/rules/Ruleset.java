@@ -22,10 +22,11 @@ package org.openremote.model.rules;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.util.ValueUtil;
 
@@ -98,8 +99,8 @@ public abstract class Ruleset {
     @Column(name = "RULES_LANG", nullable = false)
     protected Lang lang = Lang.GROOVY;
 
-    @Column(name = "META", columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(JsonBinaryType.class)
+    @Column(name = "META")
+    @JdbcTypeCode(SqlTypes.JSON)
     protected Map<String, Object> meta;
 
     @Transient

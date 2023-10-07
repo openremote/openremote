@@ -292,6 +292,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             );
         }
 
+        persistenceUnitProperties.put(AvailableSettings.JSON_FORMAT_MAPPER, JsonFormatMapper.class.getName());
+        // Disable JPA validation as it triggers on select for entities with JSON columns - we do our own validation
+        persistenceUnitProperties.put(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
+
         persistenceUnitProperties.put(AvailableSettings.DEFAULT_SCHEMA, dbSchema);
 
         // Add custom integrator so we can register a custom flush entity event listener

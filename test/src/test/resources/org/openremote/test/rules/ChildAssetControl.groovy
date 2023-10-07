@@ -55,7 +55,7 @@ rules.add()
 
                         // Get all child assets, create attribute events and bind these for the then trigger
                         facts.matchAssetState(new AssetQuery().parents(parentAssetId).attributeName(changedState.name))
-                        .filter(childState -> childState.type == changedState.type)
+                        .filter(childState -> childState.typeClass == changedState.typeClass)
                         .map{childState -> new AttributeEvent(childState.id, childState.name, changedState.value, changedState.timestamp)}
                     }.toList()
 

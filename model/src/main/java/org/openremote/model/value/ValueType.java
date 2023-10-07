@@ -78,8 +78,6 @@ public final class ValueType {
 
     public static final ValueDescriptor<MultivaluedStringMap> MULTIVALUED_TEXT_MAP = new ValueDescriptor<>("multivaluedTextMap", MultivaluedStringMap.class);
 
-    public static final ValueDescriptor<Object> ANY = new ValueDescriptor<>("Any", Object.class);
-
     public static final ValueDescriptor<Integer> POSITIVE_INTEGER = new ValueDescriptor<>("positiveInteger", Integer.class,
         new ValueConstraint.Min(0)
     );
@@ -199,6 +197,8 @@ public final class ValueType {
     public static final ValueDescriptor<AssetQuery> ASSET_QUERY = new ValueDescriptor<>("assetQuery", AssetQuery.class).forMetaUseOnly();
 
     public static final ValueDescriptor<ForecastConfiguration> FORECAST_CONFIGURATION = new ValueDescriptor<>("forecastConfiguration", ForecastConfiguration.class).forMetaUseOnly();
+
+    public static final ValueDescriptor<ValueDescriptor> VALUE_DESCRIPTOR_VALUE_DESCRIPTOR = new ValueDescriptor<>("valueDescriptor", ValueDescriptor.class).forMetaUseOnly();
 
     protected ValueType() {
     }

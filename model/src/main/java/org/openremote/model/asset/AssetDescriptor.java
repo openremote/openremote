@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.TsIgnoreTypeParams;
@@ -76,6 +77,7 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
         }
     }
 
+    @Pattern(regexp = "^\\w+$")
     protected String name;
     @JsonIgnore
     protected Class<T> type;

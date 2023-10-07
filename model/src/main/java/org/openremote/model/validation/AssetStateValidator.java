@@ -48,43 +48,6 @@ public class AssetStateValidator implements HibernateConstraintValidator<AssetSt
         String type = assetState.getAssetType();
         AssetTypeInfo assetModelInfo = ValueUtil.getAssetInfo(type).orElse(null);
 
-        return validateAttribute(assetModelInfo, assetState.getAttribute(), context, clockProvider.getClock().instant());
-    }
-
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
-    public static boolean validateAttribute(AssetTypeInfo assetModelInfo, Attribute<?> attribute, ConstraintValidatorContext context, Instant now) {
-        boolean valid = true;
-
-        AttributeDescriptor<?> descriptor = assetModelInfo == null ? null : assetModelInfo.getAttributeDescriptors().get(attribute.getName());
-
-        // Compare descriptor to the attribute value
-        if (descriptor != null) {
-            if (!Objects.equals(attribute.getType(), descriptor.getType())) {
-                context.buildConstraintViolationWithTemplate(ASSET_ATTRIBUTE_TYPE_MISMATCH).addPropertyNode("attributes").addPropertyNode(attribute.getName()).addConstraintViolation();
-                valid = false;
-            }
-
-            // Attribute value type must match the attributes value descriptor
-            if (attribute.getValue().isPresent()) {
-                if (!descriptor.getType().getType().isAssignableFrom(attribute.getValue().map(Object::getClass).get())) {
-                    context.buildConstraintViolationWithTemplate(ASSET_ATTRIBUTE_TYPE_MISMATCH).addPropertyNode("attributes").addPropertyNode(attribute.getName()).addConstraintViolation();
-                    valid = false;
-                }
-            }
-        }
-
-        // Validate the value against the various constraints
-        ValueUtil.ConstraintViolationPathProvider pathProvider = (constraintViolationBuilder) ->
-            constraintViolationBuilder
-                .addPropertyNode("attributes")
-                .addPropertyNode("value")
-                .inContainer(Map.class, 1)
-                .inIterable().atKey(attribute.getName());
-
-        if (!ValueUtil.validateValue(descriptor, attribute.getType(), attribute, now, context, pathProvider, attribute.getValue().orElse(null))) {
-            valid = false;
-        }
-
-        return valid;
+        return AssetValidator.validateAttribute(assetModelInfo, assetState.getAttribute(), context, clockProvider.getClock().instant());
     }
 }

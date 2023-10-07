@@ -19,10 +19,8 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
@@ -35,7 +33,6 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-@JsonFilter("excludeNameFilter")
 public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, Serializable {
     @JsonIgnore
     protected ValueDescriptor<T> type;
@@ -46,13 +43,13 @@ public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, 
     protected String valueStr; // This is for lazy value initialisation when deserialising
     @NotBlank(message = "{Asset.valueHolder.name.NotBlank}")
     @Pattern(regexp = "^\\w+$")
-    @JsonIgnore
+    @JsonProperty
     protected String name;
 
     protected AbstractNameValueHolder() {
     }
 
-    public AbstractNameValueHolder(@Nonnull String name, @Nonnull ValueDescriptor<T> type, T value) {
+    public AbstractNameValueHolder(@Nonnull String name, ValueDescriptor<T> type, T value) {
         if (TextUtil.isNullOrEmpty(name)) {
             throw new IllegalArgumentException("name cannot be null or empty");
         }
@@ -96,29 +93,29 @@ public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, 
         this.value = value;
     }
 
-    @JsonProperty
     @Override
     public String getName() {
         return name;
     }
 
-    @JsonProperty
     protected void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * {@link #type} is transient so don't use it for equality checks
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AbstractNameValueHolder<?> that = (AbstractNameValueHolder<?>) o;
         return name.equals(that.name)
-            && Objects.equals(type, that.type)
-            && Objects.equals(ValueUtil.convert(value, JsonNode.class), ValueUtil.convert(that.value, JsonNode.class));
+            && ValueUtil.objectsEqualsWithJSONFallback(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(value, type, name);
+        return Objects.hash(value, name);
     }
 }

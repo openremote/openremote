@@ -24,6 +24,5 @@ import org.openremote.model.attribute.MetaMap;
 
 public interface MetaHolder {
 
-    @JsonProperty
     MetaMap getMeta();
 }

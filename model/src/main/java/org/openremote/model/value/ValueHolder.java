@@ -32,7 +32,6 @@ public interface ValueHolder<T> {
 
     Class<?> getTypeClass();
 
-    @JsonProperty
     Optional<T> getValue();
 
     /**

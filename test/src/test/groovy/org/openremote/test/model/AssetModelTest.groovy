@@ -6,9 +6,11 @@ import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
+import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetModelResource
 import org.openremote.model.asset.AssetResource
@@ -20,6 +22,7 @@ import org.openremote.model.asset.impl.GroupAsset
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.AttributeMap
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.rules.AssetState
@@ -27,8 +30,10 @@ import org.openremote.model.util.TimeUtil
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.*
 import org.openremote.model.value.impl.ColourRGB
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.setup.integration.model.asset.ModelTestAsset
 import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
+import org.openremote.test.ContainerTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -50,9 +55,23 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     static AssetModelResource assetModelResource
 
     def setupSpec() {
-        def container = startContainer(defaultConfig(), defaultServices())
-        def assetModelService = container.getService(AssetModelService.class)
+        startContainer(defaultConfig(), defaultServices())
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
+    }
+
+    def "Check AttributeMap equality checking"() {
+        given: "required services"
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+
+        when: "we take the AttributeMap of an asset and serialize it then deserialize it"
+        def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id)
+        def attributeMapJson = ValueUtil.asJSON(apartment1.attributes).orElseThrow()
+        def attributes1 = ValueUtil.parse(attributeMapJson, AttributeMap).orElse(null)
+        def attributes2 = ValueUtil.parse(attributeMapJson, AttributeMap).orElse(null)
+
+        then: "attributes should be equal"
+        Objects.equals(attributes1, attributes2)
     }
 
     def "Serialise/Deserialise asset and attribute events and test validation"() {
@@ -245,15 +264,15 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         and: "we deserialise the object back into an Asset"
         modelTestAsset = ValueUtil.parse(assetObjectNode.toString(), Asset).orElse(null) as ModelTestAsset
 
-        then: "the attribute with the missing descriptor should now have an ANY value type"
-        modelTestAsset.getAttribute("missingAttr").map {it.type}.orElse(null) == ValueType.ANY
+        then: "the attribute with the missing descriptor should now have no value type"
+        modelTestAsset.getAttribute("missingAttr").map {it.type}.orElse(null) == null
 
         and: "it should still contain the value"
         modelTestAsset.getAttribute("missingAttr").flatMap {it.value}.orElse(null) instanceof Long
 
-        and: "the meta item with the missing descriptor should now have an ANY value type and the value should be an array of generic maps representing the value constraints"
+        and: "the meta item with the missing descriptor should now have no value type and the value should be an array of generic maps representing the value constraints"
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.orElse(null) != null
-        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.orElse(null).type == ValueType.ANY
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.orElse(null).type == null
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null).getClass().isArray()
         Array.getLength(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null)) == 1
         Array.get(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null), 0) instanceof Map
@@ -267,17 +286,6 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "it should succeed and attribute value should be correct"
         modelTestAsset != null
         modelTestAsset.getAttribute("missingAttr").flatMap {it.value}.orElse(null) == timerService.getCurrentTimeMillis() + 100000
-
-        and: "the custom attribute with the missing value type should now just be a number array"
-        modelTestAsset.getAttribute("custom2").get().type == ValueType.ANY
-        modelTestAsset.getAttribute("custom2").get().value.isPresent()
-        modelTestAsset.getAttribute("custom2").get().value.get() instanceof Map
-        (modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("type") == "Point"
-        (modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates") != null
-        (modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates").class.isArray()
-        Array.getLength((modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates")) == 2
-        Array.get((modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates"), 0) == 1.234
-        Array.get((modelTestAsset.getAttribute("custom2").get().value.get() as Map).get("coordinates"), 1) == 5.678
     }
 
     def "Retrieving all asset model info"() {
@@ -295,9 +303,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "it should have been successfully deserialised"
         thingAssetInfo2.isPresent()
         thingAssetInfo2.get().getAssetDescriptor().type == ThingAsset.class
-        thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) } != null
-        !thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.optional
-        thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.type == ValueType.GEO_JSON_POINT
+        thingAssetInfo2.get().attributeDescriptors.get(Asset.LOCATION.name) != null
+        !thingAssetInfo2.get().attributeDescriptors.get(Asset.LOCATION.name).optional
+        thingAssetInfo2.get().attributeDescriptors.get(Asset.LOCATION.name).type == ValueType.GEO_JSON_POINT
 
         when: "the asset type value descriptor is retrieved"
         def assetValueType = ValueUtil.getValueDescriptor(ValueType.ASSET_TYPE.getName())
@@ -317,8 +325,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetInfos.size() == ValueUtil.assetTypeMap.size()
         def velbusTcpAgent = assetInfos.find {it.assetDescriptor.type == VelbusTCPAgent.class}
         velbusTcpAgent != null
-        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.HOST && !it.optional}
-        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.PORT && !it.optional}
+        !velbusTcpAgent.attributeDescriptors.get(VelbusTCPAgent.HOST.name).optional
+        !velbusTcpAgent.attributeDescriptors.get(VelbusTCPAgent.PORT.name).optional
     }
 
     def "Retrieving a specific asset model info"() {
@@ -331,7 +339,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         thingAssetInfo.attributeDescriptors != null
         thingAssetInfo.metaItemDescriptors != null
         thingAssetInfo.valueDescriptors != null
-        thingAssetInfo.attributeDescriptors.contains(Asset.LOCATION)
+        thingAssetInfo.attributeDescriptors.get(Asset.LOCATION.name) == Asset.LOCATION
         thingAssetInfo.metaItemDescriptors.contains(MetaItemType.AGENT_LINK)
         ValueUtil.getAssetDescriptor(ThingAsset.class) != null
         ValueUtil.getAgentDescriptor(SimulatorAgent.class) != null

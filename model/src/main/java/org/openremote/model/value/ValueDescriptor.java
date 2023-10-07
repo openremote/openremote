@@ -20,14 +20,24 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.util.StdConverter;
+import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -48,29 +58,32 @@ import java.util.Objects;
  * <p>
  * {@link ValueDescriptor#getName} must be globally unique within the context of the manager it is registered with.
  */
-//@JsonDeserialize(using = ValueDescriptor.ValueDescriptorDeserialiser.class)
 @TsIgnoreTypeParams
+@JsonDeserialize(using = ValueDescriptor.ValueDescriptorDeserializer.class)
+@JsonSerialize(using = ValueDescriptor.ValueDescriptorSerializer.class)
 public class ValueDescriptor<T> implements NameHolder, Serializable {
 
-    /**
-     * This class handles serialising {@link ValueDescriptor}s as strings
-     */
-    public static class ValueDescriptorStringConverter extends StdConverter<ValueDescriptor<?>, String> {
+    public static class ValueDescriptorDeserializer extends StdDeserializer<ValueDescriptor<?>> {
+
+        public ValueDescriptorDeserializer() {
+            super(ValueDescriptor.class);
+        }
 
         @Override
-        public String convert(ValueDescriptor<?> value) {
-            return value.getName();
+        public ValueDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+            String name = p.getText();
+            return name != null ? ValueUtil.getValueDescriptor(name).orElse(null) : null;
         }
     }
 
-    /**
-     * This class handles deserialising value descriptor names to {@link ValueDescriptor}s
-     */
-    public static class StringValueDescriptorConverter extends StdConverter<String, ValueDescriptor<?>> {
+    public static class ValueDescriptorSerializer extends StdSerializer<ValueDescriptor> {
+        public ValueDescriptorSerializer() {
+            super(ValueDescriptor.class);
+        }
 
         @Override
-        public ValueDescriptor<?> convert(String value) {
-            return ValueUtil.getValueDescriptor(value).orElse(ValueType.ANY);
+        public void serialize(ValueDescriptor value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeString(value.name);
         }
     }
 
@@ -85,59 +98,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         }
     }
 
-//    public static class ValueDescriptorDeserialiser extends StdDeserializer<ValueDescriptor<?>> {
-//
-//        public ValueDescriptorDeserialiser() {
-//            super(ValueDescriptor.class);
-//        }
-//
-//        @Override
-//        public ValueDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-//
-//            String name;
-//            String type;
-//            MetaMap meta = null;
-//            JsonNode node = p.getCodec().readTree(p);
-//
-//            if (!node.isObject()) {
-//                throw MismatchedInputException.from(p, ValueDescriptor.class, "Expected object but got: " + node.getNodeType());
-//            }
-//
-//            name = node.get("name").asText();
-//            type = node.get("type").asText();
-//            if (node.has("meta")) {
-//                JsonParser metaParser = node.get("meta").traverse(p.getCodec());
-//                metaParser.nextToken();
-//                meta = ctxt.readValue(metaParser, MetaMap.class);
-//            }
-//
-//            // Look for an existing value descriptor with this name
-//            MetaMap finalMeta = meta;
-//            return AssetModelUtil.getValueDescriptor(name).orElseGet(() -> {
-//                Class<?> typeClass = ValueType.ANY.type;
-//                boolean isArray = name.endsWith("[]");
-//
-//                switch (type) {
-//                    case "boolean":
-//                        typeClass = ValueType.BOOLEAN.type;
-//                        break;
-//                    case "number":
-//                        typeClass = ValueType.NUMBER.type;
-//                        break;
-//                    case "string":
-//                        typeClass = ValueType.STRING.type;
-//                        break;
-//                    case "array":
-//                        typeClass = Object[].class;
-//                        break;
-//                }
-//
-//                ValueDescriptor<?> valueDescriptor = new ValueDescriptor<>(name, typeClass, finalMeta);
-//                return isArray ? valueDescriptor.asArray() : valueDescriptor;
-//            });
-//        }
-//    }
-
+    @Pattern(regexp =  "^\\w+(\\[\\])?$")
     protected String name;
     @JsonSerialize(converter = ValueDescriptor.ValueTypeStringConverter.class)
     protected Class<T> type;
@@ -179,6 +140,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         this.units = units;
     }
 
+    @Pattern(regexp =  "^\\w+(\\[\\])?$")
     public String getName() {
         return name;
     }

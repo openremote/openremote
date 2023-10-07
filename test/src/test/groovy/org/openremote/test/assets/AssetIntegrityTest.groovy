@@ -1,24 +1,20 @@
 package org.openremote.test.assets
 
-import jakarta.validation.constraints.Min
-import org.hibernate.validator.internal.metadata.core.ConstraintHelper
-import org.jboss.resteasy.api.validation.Validation
+
+import jakarta.ws.rs.WebApplicationException
 import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.util.ValueUtil
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.value.ValueType
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
-import jakarta.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD

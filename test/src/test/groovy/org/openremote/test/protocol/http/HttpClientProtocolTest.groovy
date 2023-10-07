@@ -294,7 +294,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             .setParent(agent)
             .addOrReplaceAttributes(
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
-                new Attribute<>("putRequestWithHeaders", ANY)
+                new Attribute<>("putRequestWithHeaders")
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath("put_request_with_headers")

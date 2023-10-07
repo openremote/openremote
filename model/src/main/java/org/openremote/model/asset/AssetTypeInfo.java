@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -41,14 +42,10 @@ public class AssetTypeInfo {
     @JsonSerialize(contentConverter = MetaItemDescriptor.MetaItemDescriptorStringConverter.class)
     @JsonDeserialize(contentConverter = MetaItemDescriptor.StringMetaItemDescriptorConverter.class)
     protected MetaItemDescriptor<?>[] metaItemDescriptors;
-    @JsonSerialize(contentConverter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(contentConverter = ValueDescriptor.StringValueDescriptorConverter.class)
     protected ValueDescriptor<?>[] valueDescriptors;
 
-    AssetTypeInfo() {
-    }
-
-    public AssetTypeInfo(AssetDescriptor<?> assetDescriptor, AttributeDescriptor<?>[] attributeDescriptors, MetaItemDescriptor<?>[] metaItemDescriptors, ValueDescriptor<?>[] valueDescriptors) {
+    @JsonCreator
+    public AssetTypeInfo(AssetDescriptor<?> assetDescriptor, @JsonProperty("attributeDescriptors") AttributeDescriptor<?>[] attributeDescriptors, MetaItemDescriptor<?>[] metaItemDescriptors, ValueDescriptor<?>[] valueDescriptors) {
         this.assetDescriptor = assetDescriptor;
         this.attributeDescriptors = Arrays.stream(attributeDescriptors).collect(Collectors.toMap(AbstractNameValueDescriptorHolder::getName, ad -> ad));
         this.metaItemDescriptors = metaItemDescriptors;
@@ -59,7 +56,7 @@ public class AssetTypeInfo {
         return assetDescriptor;
     }
 
-    @JsonProperty
+    @JsonProperty("attributeDescriptors")
     protected Collection<AttributeDescriptor<?>> getAttributeDescriptorsInternal() {
         return attributeDescriptors.values();
     }

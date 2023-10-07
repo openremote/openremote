@@ -145,7 +145,7 @@ public class ManagerTestSetup extends ManagerSetup {
         lobby.setParent(groundFloor);
         lobby.getAttributes().addOrReplace(
             new Attribute<>(Asset.LOCATION, SMART_OFFICE_LOCATION),
-            new Attribute<>("lobbyLocations", ANY.asArray())
+            new Attribute<>("lobbyLocations")
         );
         lobby = assetStorageService.merge(lobby);
         lobbyId = lobby.getId();
@@ -508,7 +508,7 @@ public class ManagerTestSetup extends ManagerSetup {
                                 new MetaItem<>(LABEL, "Lightswitch Trigger Times"),
                                 new MetaItem<>(RULE_STATE, true)
                         ),
-                new Attribute<>("plantsWaterLevels", ANY, objectMap)
+                new Attribute<>("plantsWaterLevels", null, objectMap)
                         .addMeta(
                                 new MetaItem<>(LABEL, "Water levels of the plants"),
                                 new MetaItem<>(RULE_STATE, true)

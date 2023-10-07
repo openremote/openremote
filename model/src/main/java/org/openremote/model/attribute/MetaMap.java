@@ -112,13 +112,4 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
         addOrReplace(metaItem);
         return metaItem;
     }
-
-    /**
-     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonJavaTypeDescriptor} uses
-     * {@link Class#getDeclaredMethod} to find it...
-     */
-    @Override
-    public boolean equals(@Nullable Object object) {
-        return super.equals(object);
-    }
 }

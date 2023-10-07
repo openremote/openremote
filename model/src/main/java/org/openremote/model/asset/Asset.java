@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Table;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
@@ -37,6 +36,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.*;
+import org.hibernate.type.SqlTypes;
 import org.openremote.model.Constants;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.asset.impl.ThingAsset;
@@ -58,7 +58,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static jakarta.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 // @formatter:off
@@ -318,10 +317,9 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Generated(GenerationTime.ALWAYS)
     protected String[] path;
 
-    @Column(name = "ATTRIBUTES", columnDefinition = PERSISTENCE_JSON_VALUE_TYPE)
-    @org.hibernate.annotations.Type(JsonBinaryType.class)
+    @Column(name = "ATTRIBUTES")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Valid
-    @Access(AccessType.PROPERTY)
     protected AttributeMap attributes;
 
     /**
@@ -439,21 +437,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return attributes;
     }
 
-    @SuppressWarnings("rawtypes")
     public T setAttributes(AttributeMap attributes) {
-        if (attributes == null) {
-            attributes = new AttributeMap();
-        } else {
-            // Make sure the attribute types are correctly set based on asset descriptor
-            AttributeMap finalAttributes = attributes;
-            ValueUtil.getAssetInfo(getType()).ifPresent(assetTypeInfo ->
-                finalAttributes.values().forEach(attribute -> {
-                    AttributeDescriptor<?> attributeDescriptor = assetTypeInfo.getAttributeDescriptors().get(attribute.getName());
-                    if (attributeDescriptor != null) {
-                        ((Attribute)attribute).setTypeInternal(attributeDescriptor.getType());
-                    }
-            }));
-        }
         this.attributes = attributes;
         return (T) this;
     }
@@ -599,5 +583,19 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public T setModel(String model) {
         getAttributes().getOrCreate(MODEL).setValue(model);
         return (T) this;
+    }
+
+    @PostLoad
+    protected void postLoadCallback() {
+        if (attributes != null) {
+            // Make sure the attribute types are correctly set based on asset descriptor
+            ValueUtil.getAssetInfo(getType()).ifPresent(assetTypeInfo ->
+                attributes.values().forEach(attribute -> {
+                    AttributeDescriptor<?> attributeDescriptor = assetTypeInfo.getAttributeDescriptors().get(attribute.getName());
+                    if (attributeDescriptor != null) {
+                        ((Attribute)attribute).setTypeInternal(attributeDescriptor.getType());
+                    }
+                }));
+        }
     }
 }

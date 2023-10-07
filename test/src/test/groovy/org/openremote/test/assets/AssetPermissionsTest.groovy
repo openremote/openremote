@@ -1,5 +1,7 @@
 package org.openremote.test.assets
 
+import jakarta.ws.rs.ForbiddenException
+import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
@@ -9,14 +11,11 @@ import org.openremote.model.attribute.*
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.ParentPredicate
 import org.openremote.model.query.filter.RealmPredicate
-import org.openremote.test.ManagerContainerTrait
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
-import jakarta.ws.rs.ForbiddenException
-import jakarta.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -642,13 +641,15 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         !currentTemperatureAttr.getValue().isPresent()
 
         MetaMap resultMeta = currentTemperatureAttr.getMeta()
-        resultMeta.size() == 8
+        resultMeta.size() == 9
         resultMeta.get(LABEL).flatMap {it.value}.orElse(null) == "Current temperature"
         resultMeta.getValue(READ_ONLY).orElse(false)
         resultMeta.has(AGENT_LINK)
         resultMeta.getValue(ACCESS_RESTRICTED_READ).orElse(false)
         resultMeta.getValue(UNITS).isPresent()
         resultMeta.getValue(UNITS).get()[0] == UNITS_CELSIUS
+        resultMeta.getValue(VALUE_TYPE).isPresent()
+        resultMeta.getValue(VALUE_TYPE).get() == NUMBER
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerTestSetup.thingId)

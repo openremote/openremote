@@ -26,10 +26,8 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
-import org.openremote.model.value.ValueType;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * A named value whose name must match the name of a {@link MetaItemDescriptor} and whose value must match the value
@@ -58,7 +56,7 @@ public class MetaItem<T> extends AbstractNameValueHolder<T> {
     }
 
     public MetaItem(String name) {
-        this(name, ValueType.ANY);
+        this(name, null);
     }
 
     @SuppressWarnings("unchecked")
@@ -78,11 +76,6 @@ public class MetaItem<T> extends AbstractNameValueHolder<T> {
 
     public MetaItem(MetaItemDescriptor<T> metaDescriptor, T value) {
         super(metaDescriptor.getName(), metaDescriptor.getType(), value);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getName(), getValue());
     }
 
     @Override

@@ -40,13 +40,13 @@ import java.util.Optional;
  * are equal if they have the same asset ID and attribute name (the same attribute
  * reference).
  */
+// TODO: Cleanup JSON annotations
 public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder<T>, MetaHolder {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     final protected String attributeName;
 
     @JsonProperty(value = "type", access = JsonProperty.Access.WRITE_ONLY)
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
     final protected ValueDescriptor<T> attributeValueType;
 
     final protected T value;
@@ -81,7 +81,7 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         this.value = attribute.getValue().orElse(null);
         this.timestamp = attribute.getTimestamp().orElse(-1L);
         this.source = source;
-        this.oldValue = asset.getAttribute(attributeName).flatMap(attr -> attr.getValue(this.attributeValueType != null ? this.attributeValueType.getType() : null)).orElse(null);
+        this.oldValue = asset.<T>getAttribute(attributeName).flatMap(Attribute::getValue).orElse(null);
         this.oldValueTimestamp = asset.getAttributes().get(attributeName).flatMap(Attribute::getTimestamp).orElse(-1L);
         this.id = asset.getId();
         this.assetName = asset.getName();
@@ -93,13 +93,13 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         this.meta = attribute.getMeta();
     }
 
+    @JsonProperty
     @Override
     public String getName() {
         return attributeName;
     }
 
     @JsonProperty
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
     @Override
     public ValueDescriptor<T> getType() {
         return attributeValueType;
@@ -110,7 +110,6 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         return getType() != null ? getType().getType() : Object.class;
     }
 
-    @JsonProperty
     public Optional<T> getValue() {
         return Optional.ofNullable(value);
     }

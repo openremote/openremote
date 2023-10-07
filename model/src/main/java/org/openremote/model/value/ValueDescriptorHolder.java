@@ -30,17 +30,11 @@ import org.openremote.model.util.TsIgnoreTypeParams;
 @TsIgnoreTypeParams
 public interface ValueDescriptorHolder<T> {
 
-    @JsonProperty
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
     ValueDescriptor<T> getType();
 
-    @JsonProperty
     ValueFormat getFormat();
 
-    @JsonProperty
     ValueConstraint[] getConstraints();
 
-    @JsonProperty
     String[] getUnits();
 }

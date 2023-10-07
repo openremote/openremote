@@ -77,18 +77,4 @@ public class FlushEntityEventListener extends DefaultFlushEntityEventListener {
             .getInterceptor()
             .onFlushDirty(entity, entry.getId(), dirtyPropertiesValues, loadedPropertiesValues, dirtyPropertiesNames, dirtyPropertiesTypes);
     }
-
-    /**
-     * This method was replaced with the invokeInterceptor(SessionImplementor session, FlushEntityEvent event)
-     * method.
-     *
-     * @deprecated
-     */
-    @Deprecated
-    @Override
-    protected boolean invokeInterceptor(SessionImplementor session, Object entity, EntityEntry entry,
-                                        final Object[] values, EntityPersister persister) {
-        throw new UnsupportedOperationException(
-            "Since this method was replaced with another one it was not suppose to be invoked.");
-    }
 }

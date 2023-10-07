@@ -145,6 +145,12 @@ public final class MetaItemType {
     /* FORMATTING / DISPLAY META */
 
     /**
+     * Can be used by a custom {@link Attribute} to indicate what the value type of data stored in the {@link Attribute} will be; this will be used in
+     * validation and de-serialisation.
+     */
+    public static final MetaItemDescriptor<ValueDescriptor> VALUE_TYPE = new MetaItemDescriptor<>("valueType", ValueType.VALUE_DESCRIPTOR_VALUE_DESCRIPTOR);
+
+    /**
      * A human-friendly string that can be displayed in UI instead of the raw attribute name.
      */
     public static final MetaItemDescriptor<String> LABEL = new MetaItemDescriptor<>("label", ValueType.TEXT);

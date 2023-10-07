@@ -56,11 +56,9 @@ public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> 
 
         @Override
         public MetaItemDescriptor<?> convert(String value) {
-            return ValueUtil.getMetaItemDescriptor(value).orElse(MetaItemDescriptor.UNKNOWN);
+            return ValueUtil.getMetaItemDescriptor(value).orElse(null);
         }
     }
-
-    public static final MetaItemDescriptor<Object> UNKNOWN = new MetaItemDescriptor<>("unkown", ValueType.ANY);
 
     MetaItemDescriptor() {}
 

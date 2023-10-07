@@ -19,13 +19,16 @@
  */
 package org.openremote.manager.asset;
 
-import com.vladmihalcea.hibernate.type.array.StringArrayType;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import jakarta.validation.groups.Default;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
-import org.hibernate.dialect.PostgreSQLJsonbJdbcType;
 import org.hibernate.jdbc.AbstractReturningWork;
+import org.hibernate.jpa.AvailableHints;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -61,12 +64,6 @@ import org.openremote.model.validation.AssetStateStore;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -694,7 +691,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 asset.getAttributes().stream().forEach(attr ->
                     existingAsset.getAttribute(attr.getName()).ifPresent(existingAttr -> {
                         // If attribute is modified make sure the timestamp is also updated to allow simple equality
-                        if (!attr.deepEquals(existingAttr) && attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
+                        if (!attr.equals(existingAttr) && attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
                             // In the unlikely situation that we are in the same millisecond as last update
                             // we will always ensure a delta of >= 1ms
                             attr.setTimestamp(Math.max(existingAttr.getTimestamp().orElse(0L)+1, timerService.getCurrentTimeMillis()));
@@ -1252,6 +1249,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @SuppressWarnings("unchecked")
     protected List<Asset<?>> findAll(EntityManager em, AssetQuery query) {
+
         long startMillis = System.currentTimeMillis();
 
         if (query.access == null)
@@ -1313,8 +1311,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 //            return asset;
 //        });
 
-        org.hibernate.query.Query<Object[]> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class);
-
+        org.hibernate.query.Query<Object[]> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class)
+            .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
         querySql.apply(em, jpql);
         List<Asset<?>> assets = (List<Asset<?>>)(Object)jpql.getResultList();
 
@@ -1579,7 +1577,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 .append("?")
                 .append(pos)
                 .append(")");
-            binders.add((em, st) -> st.setParameter(pos, select.attributes, StringArrayType.INSTANCE));
+            binders.add((em, st) -> st.setParameter(pos, select.attributes));
         }
 
         if (query.access != PRIVATE) {
@@ -1661,7 +1659,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(" and A.ID = ANY(?")
                 .append(pos)
                 .append(")");
-            binders.add((em, st) -> st.setParameter(pos, query.ids, StringArrayType.INSTANCE));
+            binders.add((em, st) -> st.setParameter(pos, query.ids));
         }
 
         if (level == 1 && query.names != null) {
@@ -1736,7 +1734,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(" and UA.USER_ID = ANY(?")
                     .append(pos)
                     .append(")");
-                binders.add((em, st) -> st.setParameter(pos, query.userIds, StringArrayType.INSTANCE));
+                binders.add((em, st) -> st.setParameter(pos, query.userIds));
             }
 
             if (level == 1 && query.access == Access.PUBLIC) {
@@ -1749,7 +1747,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(" and A.TYPE = ANY(?")
                     .append(pos)
                     .append(")");
-                binders.add((em, st) -> st.setParameter(pos, resolvedTypes, StringArrayType.INSTANCE));
+                binders.add((em, st) -> st.setParameter(pos, resolvedTypes));
             }
 
             if (query.attributes != null) {
@@ -1911,7 +1909,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 valuePathInserter = (sb, b) -> {
                     final int pos = binders.size() + 1;
                     sb.append("(").append(jsonObjName).append(".VALUE ").append(operator).append(" ?").append(pos).append(")");
-                    binders.add((em, st) -> st.setParameter(pos, paths.toArray(new String[0]), StringArrayType.INSTANCE));
+                    binders.add((em, st) -> st.setParameter(pos, paths.toArray(new String[0])));
                 };
             }
 
