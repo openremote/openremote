@@ -14,6 +14,22 @@ import org.jetbrains.gradle.ext.JUnit
 // subproject, not for its children!)
 version = hasProperty("openremoteVersion") ? openremoteVersion : "0.0.0"
 
+configurations.all {
+    resolutionStrategy {
+
+        //failOnVersionConflict()
+
+        // This has been replaced with eclipse angus implementation
+        exclude group: "com.sun.activation", module: "jakarta.activation"
+
+        eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'org.eclipse.angus' && details.requested.name == 'angus-activation' && details.requested.version == '1.0.0') {
+                details.useVersion '2.0.0'
+            }
+        }
+    }
+}
+
 // Ensure git hook creation task is executed
 if (project == rootProject) {
 

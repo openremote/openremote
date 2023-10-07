@@ -353,7 +353,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     @SuppressWarnings("unchecked")
     @Override
     public Optional<T> getValue() {
-        if (value == null && valueStr != null) {
+        if (valueStr != null) {
             value = (T)ValueUtil.parse(valueStr, getTypeClass()).orElse(null);
             valueStr = null;
         }

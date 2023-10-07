@@ -22,6 +22,7 @@ package org.openremote.container.persistence;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.JdbcSettings;
 import org.openremote.container.concurrent.ContainerThreadFactory;
 
 import java.util.Properties;

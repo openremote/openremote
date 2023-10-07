@@ -154,9 +154,9 @@ public interface ManagerIdentityProvider extends IdentityProvider {
             sb.append(" AND ua.asset_id IN (?").append(parameters.size() + 1).append(")");
             parameters.add(Arrays.asList(userQuery.assets));
         }
-        if (userQuery.pathPredicate != null) {
-            sb.append(" AND ?").append(parameters.size() + 1).append(" <@ get_asset_tree_path(ua.asset_id)");
-            parameters.add(userQuery.pathPredicate.path);
+        if (userQuery.pathPredicate != null && userQuery.pathPredicate.path != null && userQuery.pathPredicate.path.length > 0) {
+            sb.append(" AND ?").append(parameters.size() + 1).append("\\:\\:text[] <@ get_asset_tree_path(ua.asset_id)");
+            parameters.add("{" + String.join(",", userQuery.pathPredicate.path) + "}");
         }
         if (userQuery.ids != null && userQuery.ids.length > 0) {
             sb.append(" AND u.id IN (?").append(parameters.size() + 1).append(")");
@@ -268,8 +268,6 @@ public interface ManagerIdentityProvider extends IdentityProvider {
             }
 
             List<User> userList = sqlQuery.getResultList();
-            // TODO: Remove this once migrated to hibernate 6.2.x+
-            userList.forEach(u -> u.getAttributes().size());
             return userList;
         });
 
