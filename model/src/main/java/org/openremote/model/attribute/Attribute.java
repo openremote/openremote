@@ -136,8 +136,8 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 //                        }
                         ValueDescriptor<?> valueDescriptor = attribute.getType();
                         if (valueDescriptor == null) {
-                            // We don't know the type so store the value as a string and hydrate on demand when value type
-                            // may be known (this occurs when hydrating assets from the DB)
+                            // We don't know the type so store the value as a string and hydrate on demand when value
+                            // type may be known (this occurs when hydrating assets from the DB)
                             attribute.valueStr = jp.getCodec().readTree(jp).toString();
                         } else {
                             try {
