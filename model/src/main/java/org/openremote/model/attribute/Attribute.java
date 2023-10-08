@@ -459,9 +459,6 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             && Objects.equals(type, that.type);
     }
 
-    /**
-     * {@link #type} is transient so don't use it for equality checks
-     */
     public boolean deepEquals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -469,10 +466,11 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
         return Objects.equals(timestamp, that.timestamp)
             && Objects.equals(name, that.name)
+            && Objects.equals(type, that.type)
             // Use uninitialized json value if available
             && (valueStr != null && that.valueStr != null ? Objects.equals(valueStr, that.valueStr) : ValueUtil.objectsEqualsWithJSONFallback(value, that.value))
             // null or empty meta are considered equal
-            && (meta == null && that.meta != null && that.meta.isEmpty()) || (that.meta == null && meta != null && meta.isEmpty()) || Objects.equals(meta, that.meta);
+            && ((meta == null && that.meta != null && that.meta.isEmpty()) || (that.meta == null && meta != null && meta.isEmpty()) || Objects.equals(meta, that.meta));
     }
 
     public boolean equals(Object obj, Comparator<Attribute<?>> comparator) {

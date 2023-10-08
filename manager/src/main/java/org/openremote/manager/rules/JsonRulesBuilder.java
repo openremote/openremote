@@ -159,7 +159,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     // If occurrence is before requested time then advance the sun calculator to either reset occurrence or 5 mins before requested time (whichever is later)
                     if (nextMillis < time) {
-                        ZonedDateTime resetOccurrence = useRiseTime ? sunTimes.get().getSet() : sunTimes.get().getRise();
+                        ZonedDateTime resetOccurrence = sunTimes.get().getSet().isBefore(sunTimes.get().getRise()) ? sunTimes.get().getRise() : sunTimes.get().getSet();
                         sunTimes.set(sunCalculator.on(new Date(Math.max(resetOccurrence.toInstant().toEpochMilli(), time - 300000))).execute());
                     }
 

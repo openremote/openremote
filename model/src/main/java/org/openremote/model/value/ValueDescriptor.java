@@ -19,16 +19,9 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.Asset;
@@ -37,7 +30,6 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -59,38 +51,34 @@ import java.util.Objects;
  * {@link ValueDescriptor#getName} must be globally unique within the context of the manager it is registered with.
  */
 @TsIgnoreTypeParams
-@JsonDeserialize(using = ValueDescriptor.ValueDescriptorDeserializer.class)
-@JsonSerialize(using = ValueDescriptor.ValueDescriptorSerializer.class)
 public class ValueDescriptor<T> implements NameHolder, Serializable {
 
-    public static class ValueDescriptorDeserializer extends StdDeserializer<ValueDescriptor<?>> {
-
-        public ValueDescriptorDeserializer() {
-            super(ValueDescriptor.class);
-        }
+    /**
+     * This class handles serialising {@link ValueDescriptor}s as strings
+     */
+    public static class ValueDescriptorStringConverter extends StdConverter<ValueDescriptor<?>, String> {
 
         @Override
-        public ValueDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
-            String name = p.getText();
-            return name != null ? ValueUtil.getValueDescriptor(name).orElse(null) : null;
+        public String convert(ValueDescriptor<?> value) {
+            return value.getName();
         }
     }
 
-    public static class ValueDescriptorSerializer extends StdSerializer<ValueDescriptor> {
-        public ValueDescriptorSerializer() {
-            super(ValueDescriptor.class);
-        }
+    /**
+     * This class handles deserialising value descriptor names to {@link ValueDescriptor}s
+     */
+    public static class StringValueDescriptorConverter extends StdConverter<String, ValueDescriptor<?>> {
 
         @Override
-        public void serialize(ValueDescriptor value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            gen.writeString(value.name);
+        public ValueDescriptor<?> convert(String value) {
+            return ValueUtil.getValueDescriptor(value).orElse(null);
         }
     }
 
     /**
      * Just outputs simple class name for compactness but can still prove useful for discrimination purposes on UIs
      */
-    public static class ValueTypeStringConverter extends StdConverter<Class<?>, String> {
+    public static class ClassStringConverter extends StdConverter<Class<?>, String> {
         
         @Override
         public String convert(Class<?> clazz) {
@@ -98,9 +86,8 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         }
     }
 
-    @Pattern(regexp =  "^\\w+(\\[\\])?$")
+    @Pattern(regexp = "^\\w+(\\[\\])?$")
     protected String name;
-    @JsonSerialize(converter = ValueDescriptor.ValueTypeStringConverter.class)
     protected Class<T> type;
     protected Integer arrayDimensions;
     protected ValueConstraint[] constraints;
@@ -131,6 +118,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         this.constraints = constraints;
     }
 
+    @JsonCreator
     protected ValueDescriptor(String name, Class<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units, Integer arrayDimensions) {
         this.name = name;
         this.type = type;
@@ -140,7 +128,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         this.units = units;
     }
 
-    @Pattern(regexp =  "^\\w+(\\[\\])?$")
+    @Pattern(regexp = "^\\w+(\\[\\])?$")
     public String getName() {
         return name;
     }
@@ -243,15 +231,12 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         return Objects.hashCode(name);
     }
 
-    /**
-     * Value descriptor names are unique identifiers so can use this for equality purposes
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || !(ValueDescriptor.class.isAssignableFrom(obj.getClass()))) return false;
         ValueDescriptor<?> that = (ValueDescriptor<?>)obj;
-        return Objects.equals(name, that.name);
+        return Objects.equals(name, that.name) && Objects.equals(type, that.type);
     }
 
     /**

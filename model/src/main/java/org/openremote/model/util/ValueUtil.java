@@ -147,8 +147,8 @@ public class ValueUtil {
     protected static Map<Class<? extends Asset<?>>, AssetTypeInfo> assetInfoMap;
     protected static Map<String, Class<? extends Asset<?>>> assetTypeMap;
     protected static Map<String, Class<? extends AgentLink<?>>> agentLinkMap;
-    protected static List<MetaItemDescriptor<?>> metaItemDescriptors;
-    protected static List<ValueDescriptor<?>> valueDescriptors;
+    protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors;
+    protected static Map<String, ValueDescriptor<?>> valueDescriptors;
     protected static Validator validator;
     protected static JsonSchemaGenerator generator;
 
@@ -617,8 +617,8 @@ public class ValueUtil {
             .map(assetDescriptor -> assetDescriptor instanceof AgentDescriptor ? (AgentDescriptor<?, ?, ?>)assetDescriptor : null);
     }
 
-    public static MetaItemDescriptor<?>[] getMetaItemDescriptors() {
-        return metaItemDescriptors.toArray(new MetaItemDescriptor<?>[0]);
+    public static Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors() {
+        return metaItemDescriptors;
     }
 
     public static <T extends Asset<?>> Optional<MetaItemDescriptor<?>[]> getMetaItemDescriptors(Class<T> assetType) {
@@ -631,12 +631,11 @@ public class ValueUtil {
 
     public static Optional<MetaItemDescriptor<?>> getMetaItemDescriptor(String name) {
         if (TextUtil.isNullOrEmpty(name)) return Optional.empty();
-
-        return metaItemDescriptors.stream().filter(mid -> mid.getName().equals(name)).findFirst();
+        return Optional.ofNullable(metaItemDescriptors.get(name));
     }
 
-    public static ValueDescriptor<?>[] getValueDescriptors() {
-        return valueDescriptors.toArray(new ValueDescriptor<?>[0]);
+    public static Map<String, ValueDescriptor<?>> getValueDescriptors() {
+        return valueDescriptors;
     }
 
     public static <T extends Asset<?>> Optional<ValueDescriptor<?>[]> getValueDescriptors(Class<T> assetType) {
@@ -657,12 +656,11 @@ public class ValueUtil {
             arrayDimensions++;
         }
 
-        String finalName = name;
         int finalArrayDimensions = arrayDimensions;
-        return valueDescriptors.stream().filter(vd -> vd.getName().equals(finalName)).findFirst().map(vd -> {
+        return Optional.ofNullable(valueDescriptors.get(name)).map(vd -> {
             int dims = finalArrayDimensions;
             while(dims > 0) {
-                vd = vd.asArray();
+                vd = (ValueDescriptor) vd.asArray();
                 dims--;
             }
             return vd;
@@ -712,8 +710,8 @@ public class ValueUtil {
         assetInfoMap = new HashMap<>();
         assetTypeMap = new HashMap<>();
         agentLinkMap = new HashMap<>();
-        metaItemDescriptors = new ArrayList<>();
-        valueDescriptors = new ArrayList<>();
+        metaItemDescriptors = new HashMap<>();
+        valueDescriptors = new HashMap<>();
         generator = null;
 
         // Provide basic Object Mapper and enhance once asset model is initialised
@@ -832,7 +830,7 @@ public class ValueUtil {
 
         // Check each value type implements serializable interface
         List<ValueDescriptor<?>> nonSerializableValueDescriptors = new ArrayList<>();
-        valueDescriptors.forEach(vd -> {
+        valueDescriptors.values().forEach(vd -> {
             if (!Serializable.class.isAssignableFrom(vd.getType())) {
                 nonSerializableValueDescriptors.add(vd);
             }
@@ -1155,28 +1153,25 @@ public class ValueUtil {
                                 attributeDescriptors.remove(existingDescriptor);
                             });
                         attributeDescriptors.add((AttributeDescriptor<?>) descriptor);
-                    } else if (descriptor instanceof MetaItemDescriptor) {
-                        int index = ValueUtil.metaItemDescriptors.indexOf(descriptor);
-                        if (index >= 0 && ValueUtil.metaItemDescriptors.get(index) != descriptor) {
-                            throw new IllegalStateException("Duplicate meta item descriptor found: asset type=" + assetClass +", descriptor=" + metaItemDescriptors.get(index) + ", duplicate descriptor=" + descriptor);
+                    } else if (descriptor instanceof MetaItemDescriptor metaItemDescriptor) {
+                        MetaItemDescriptor<?> existing = ValueUtil.metaItemDescriptors.get(descriptor.getName());
+                        if (existing != null && !existing.equals(descriptor)) {
+                            throw new IllegalStateException("Duplicate meta item descriptor found: asset type=" + assetClass +", descriptor=" + existing + ", duplicate descriptor=" + descriptor);
                         }
-                        metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
-                        if (!ValueUtil.metaItemDescriptors.contains(descriptor)) {
-                            ValueUtil.metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
+                        metaItemDescriptors.add(metaItemDescriptor);
+                        if (existing == null) {
+                            ValueUtil.metaItemDescriptors.put(metaItemDescriptor.getName(), metaItemDescriptor);
                         }
-                    } else if (descriptor instanceof ValueDescriptor) {
-                        ValueDescriptor<?> valueDescriptor = (ValueDescriptor<?>)descriptor;
+                    } else if (descriptor instanceof ValueDescriptor valueDescriptor) {
                         // Only store basic value type ignore array type for value descriptor as any value descriptor can be an array value descriptor
-
                         valueDescriptor = valueDescriptor.asNonArray();
-
-                        int index = valueDescriptors.indexOf(descriptor);
-                        if (index >= 0 && valueDescriptors.get(index).getType() != valueDescriptor.getType()) {
-                            throw new IllegalStateException("Duplicate value descriptor found: asset type=" + assetClass +", descriptor=" + valueDescriptors.get(index) + ", duplicate descriptor=" + descriptor);
+                        ValueDescriptor<?> existing = ValueUtil.valueDescriptors.get(descriptor.getName());
+                        if (existing != null && !existing.equals(descriptor)) {
+                            throw new IllegalStateException("Duplicate value descriptor found: asset type=" + assetClass +", descriptor=" + existing + ", duplicate descriptor=" + descriptor);
                         }
                         valueDescriptors.add(valueDescriptor);
-                        if (!ValueUtil.valueDescriptors.contains(descriptor)) {
-                            ValueUtil.valueDescriptors.add((ValueDescriptor<?>) descriptor);
+                        if (existing == null) {
+                            ValueUtil.valueDescriptors.put(valueDescriptor.getName(), valueDescriptor);
                         }
                     }
                 });

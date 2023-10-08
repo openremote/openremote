@@ -75,7 +75,7 @@ public class AssetModelInfoExtension extends Extension {
         emitEnum(writer, "WellknownAttributes", otherMap);
 
         otherMap.clear();
-        Arrays.stream(ValueUtil.getMetaItemDescriptors()).forEach(metaItemDescriptor -> {
+        ValueUtil.getMetaItemDescriptors().values().forEach(metaItemDescriptor -> {
             String metaName = metaItemDescriptor.getName();
             otherMap.put(metaName.toUpperCase(Locale.ROOT), metaName);
         });
@@ -83,7 +83,7 @@ public class AssetModelInfoExtension extends Extension {
         emitEnum(writer, "WellknownMetaItems", otherMap);
 
         otherMap.clear();
-        Arrays.stream(ValueUtil.getValueDescriptors()).forEach(valueDescriptor -> {
+        ValueUtil.getValueDescriptors().values().forEach(valueDescriptor -> {
             String valueTypeName = valueDescriptor.getName();
             otherMap.put(valueTypeName.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", ""), valueTypeName);
         });

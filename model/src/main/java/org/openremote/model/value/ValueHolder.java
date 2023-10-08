@@ -19,8 +19,6 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Optional;
 
 /**

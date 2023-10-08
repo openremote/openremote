@@ -35,6 +35,8 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import java.util.Map;
+
 // TODO: Implement model client event support
 /**
  * A service for abstracting {@link org.openremote.model.util.ValueUtil} and handling local model requests vs
@@ -122,21 +124,21 @@ public class AssetModelService extends RouteBuilder implements ContainerService 
         return ValueUtil.getAssetDescriptors(parentType);
     }
 
-    public ValueDescriptor<?>[] getValueDescriptors(String parentId) {
+    public Map<String, ValueDescriptor<?>> getValueDescriptors(String parentId) {
 
         if (!TextUtil.isNullOrEmpty(parentId) && gatewayService.getLocallyRegisteredGatewayId(parentId, null) != null) {
             // TODO: Asset is on a gateway so need to get model info from the gateway instance
-            return new ValueDescriptor<?>[0];
+            return null;
         }
 
         return ValueUtil.getValueDescriptors();
     }
 
-    public MetaItemDescriptor<?>[] getMetaItemDescriptors(String parentId) {
+    public Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(String parentId) {
 
         if (!TextUtil.isNullOrEmpty(parentId) && gatewayService.getLocallyRegisteredGatewayId(parentId, null) != null) {
             // TODO: Asset is on a gateway so need to get model info from the gateway instance
-            return new MetaItemDescriptor<?>[0];
+            return null;
         }
 
         return ValueUtil.getMetaItemDescriptors();

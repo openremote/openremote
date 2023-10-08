@@ -641,15 +641,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         !currentTemperatureAttr.getValue().isPresent()
 
         MetaMap resultMeta = currentTemperatureAttr.getMeta()
-        resultMeta.size() == 9
+        resultMeta.size() == 8
         resultMeta.get(LABEL).flatMap {it.value}.orElse(null) == "Current temperature"
         resultMeta.getValue(READ_ONLY).orElse(false)
         resultMeta.has(AGENT_LINK)
         resultMeta.getValue(ACCESS_RESTRICTED_READ).orElse(false)
         resultMeta.getValue(UNITS).isPresent()
         resultMeta.getValue(UNITS).get()[0] == UNITS_CELSIUS
-        resultMeta.getValue(VALUE_TYPE).isPresent()
-        resultMeta.getValue(VALUE_TYPE).get() == NUMBER
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerTestSetup.thingId)

@@ -42,6 +42,8 @@ public class AssetTypeInfo {
     @JsonSerialize(contentConverter = MetaItemDescriptor.MetaItemDescriptorStringConverter.class)
     @JsonDeserialize(contentConverter = MetaItemDescriptor.StringMetaItemDescriptorConverter.class)
     protected MetaItemDescriptor<?>[] metaItemDescriptors;
+    @JsonSerialize(contentConverter = ValueDescriptor.ValueDescriptorStringConverter.class)
+    @JsonDeserialize(contentConverter = ValueDescriptor.StringValueDescriptorConverter.class)
     protected ValueDescriptor<?>[] valueDescriptors;
 
     @JsonCreator

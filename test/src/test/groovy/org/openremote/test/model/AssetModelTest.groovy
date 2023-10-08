@@ -6,9 +6,7 @@ import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
-import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.Asset
@@ -33,7 +31,6 @@ import org.openremote.model.value.impl.ColourRGB
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.setup.integration.model.asset.ModelTestAsset
 import org.openremote.setup.integration.protocol.http.HTTPServerTestAgent
-import org.openremote.test.ContainerTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -253,29 +250,30 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def assetObjectNode = ValueUtil.convert(modelTestAsset, ObjectNode) as ObjectNode
 
         and: "we simulate an attribute descriptor being removed or changed (by changing the attribute name)"
-        def noDescriptorAttr = ((ObjectNode)assetObjectNode.get("attributes")).remove("pastTimestamp") as ObjectNode
+        def noDescriptorAttr = ((ObjectNode)assetObjectNode.get("attributes")).remove(ModelTestAsset.PAST_TIMESTAMP_ATTRIBUTE_DESCRIPTOR.name) as ObjectNode
         noDescriptorAttr.put("name", "missingAttr")
         ((ObjectNode)assetObjectNode.get("attributes")).set("missingAttr", noDescriptorAttr)
 
         and: "we simulate a meta item descriptor being removed or changed (by changing the meta item name)"
         def noDescriptorMeta = ((ObjectNode)((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR.name)).get("meta")).remove(MetaItemType.CONSTRAINTS.name)
-        ((ObjectNode)((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR.name)).get("meta")).set("invalid", noDescriptorMeta)
+        ((ObjectNode)((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR.name)).get("meta")).set("missingMeta", noDescriptorMeta)
+
+        and: "we simulate a value descriptor being removed or changed (by changing the type name of an attribute)"
+        ((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get(ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR.name)).put("type", "missingType")
 
         and: "we deserialise the object back into an Asset"
         modelTestAsset = ValueUtil.parse(assetObjectNode.toString(), Asset).orElse(null) as ModelTestAsset
 
-        then: "the attribute with the missing descriptor should now have no value type"
-        modelTestAsset.getAttribute("missingAttr").map {it.type}.orElse(null) == null
-
-        and: "it should still contain the value"
+        then: "the attribute with the missing attribute descriptor should still have the correct value type and value should have deserialised correctly"
+        modelTestAsset.getAttribute("missingAttr").map {it.type}.orElse(null) == ValueType.TIMESTAMP
         modelTestAsset.getAttribute("missingAttr").flatMap {it.value}.orElse(null) instanceof Long
 
-        and: "the meta item with the missing descriptor should now have no value type and the value should be an array of generic maps representing the value constraints"
-        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.orElse(null) != null
-        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.orElse(null).type == null
-        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null).getClass().isArray()
-        Array.getLength(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null)) == 1
-        Array.get(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("invalid")}.flatMap {it.value}.orElse(null), 0) instanceof Map
+        and: "the meta item with the missing meta item descriptor should now have no value type and the value should be an array of generic maps representing the value constraints"
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("missingMeta")}.orElse(null) != null
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("missingMeta")}.orElse(null).type == null
+        modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("missingMeta")}.flatMap {it.value}.orElse(null).getClass().isArray()
+        Array.getLength(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("missingMeta")}.flatMap {it.value}.orElse(null)) == 1
+        Array.get(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("missingMeta")}.flatMap {it.value}.orElse(null), 0) instanceof Map
 
         when: "the attribute with the missing attribute descriptor now violates its' previous constraint"
         modelTestAsset.getAttribute("missingAttr").ifPresent {it.value = timerService.getCurrentTimeMillis() + 100000}
@@ -317,7 +315,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         (assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues).allowedValues.length == ValueUtil.getAssetInfos().length
         (assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues).allowedValues.any { (it == GroupAsset.class.getSimpleName()) }
 
-        when: "All asset model infos are retrieved"
+        when: "all asset model infos are retrieved"
         def assetInfos = assetModelResource.getAssetInfos(null, null, null);
 
         then: "the asset model infos should be available"
@@ -327,6 +325,39 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         velbusTcpAgent != null
         !velbusTcpAgent.attributeDescriptors.get(VelbusTCPAgent.HOST.name).optional
         !velbusTcpAgent.attributeDescriptors.get(VelbusTCPAgent.PORT.name).optional
+
+        when: "all value descriptors are retrieved"
+        def valueDescriptors = assetModelResource.getValueDescriptors(null, null)
+
+        then: "the value descriptors should be correctly serialised/deserialised"
+        valueDescriptors.size() > 0
+        valueDescriptors.every {it.value.name == it.key && it.value.type != null & it.value.jsonType != null}
+        valueDescriptors.get(ValueType.ASSET_QUERY.name) == ValueType.ASSET_QUERY
+        valueDescriptors.get(ValueType.ASSET_QUERY.name).jsonType == ValueType.ASSET_QUERY.jsonType
+
+        when: "represented as JSON"
+        def valueDescriptorsJSON = ValueUtil.parse(ValueUtil.asJSON(valueDescriptors).orElse(null), Object).get()
+
+        then: "should be a map of objects"
+        valueDescriptorsJSON instanceof Map
+        ((Map)valueDescriptorsJSON).size() == valueDescriptors.size()
+        ((Map)valueDescriptorsJSON).get(ValueType.TIMESTAMP.name) instanceof Map
+
+        when: "all meta item descriptors are retrieved"
+        def metaItemDescriptors = assetModelResource.getMetaItemDescriptors(null, null)
+
+        then: "the meta item descriptors should be correctly serialised/deserialised"
+        metaItemDescriptors.size() > 0
+
+        when: "represented as JSON"
+        def metaItemDescriptorsJSON = ValueUtil.parse(ValueUtil.asJSON(metaItemDescriptors).orElse(null), Object).get()
+
+        then: "should be an array of string values"
+        metaItemDescriptorsJSON instanceof Map
+        ((Map)metaItemDescriptorsJSON).size() == metaItemDescriptors.size()
+        ((Map)metaItemDescriptorsJSON).get(MetaItemType.ATTRIBUTE_LINKS.name) instanceof Map
+        ((Map)((Map)metaItemDescriptorsJSON).get(MetaItemType.ATTRIBUTE_LINKS.name)).get("name") == MetaItemType.ATTRIBUTE_LINKS.name
+        ((Map)((Map)metaItemDescriptorsJSON).get(MetaItemType.ATTRIBUTE_LINKS.name)).get("type") == "${ValueType.ATTRIBUTE_LINK.name}[]"
     }
 
     def "Retrieving a specific asset model info"() {
@@ -440,11 +471,5 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetStateObjectNode.get("name").asText() == LightAsset.COLOUR_RGB.name
         assetStateObjectNode.get("value").isTextual()
         assetStateObjectNode.get("value").asText() == "#3264C8"
-    }
-
-    def "Value and meta item descriptor retrieval"() {
-        Get value descriptors
-
-        Get meta item descriptors
     }
 }

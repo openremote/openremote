@@ -21,6 +21,8 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
@@ -34,6 +36,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, Serializable {
+    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
+    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
     protected ValueDescriptor<T> type;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Valid
@@ -42,7 +46,6 @@ public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, 
     protected String valueStr; // This is for lazy value initialisation when deserialising
     @NotBlank(message = "{Asset.valueHolder.name.NotBlank}")
     @Pattern(regexp = "^\\w+$")
-    @JsonProperty
     protected String name;
 
     protected AbstractNameValueHolder() {

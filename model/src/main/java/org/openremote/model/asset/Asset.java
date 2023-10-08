@@ -36,6 +36,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.*;
+import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
 import org.openremote.model.Constants;
 import org.openremote.model.IdentifiableEntity;
@@ -314,7 +315,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
     @Column(name = "PATH", updatable = false, insertable = false, columnDefinition = LTreeType.TYPE)
     @Type(LTreeType.class)
-    @Generated(GenerationTime.ALWAYS)
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
     protected String[] path;
 
     @Column(name = "ATTRIBUTES")
