@@ -34,7 +34,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, Serializable {
-    @JsonIgnore
     protected ValueDescriptor<T> type;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Valid

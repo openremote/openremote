@@ -441,4 +441,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetStateObjectNode.get("value").isTextual()
         assetStateObjectNode.get("value").asText() == "#3264C8"
     }
+
+    def "Value and meta item descriptor retrieval"() {
+        Get value descriptors
+
+        Get meta item descriptors
+    }
 }

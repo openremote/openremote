@@ -174,6 +174,10 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             gen.writeStartObject();
             gen.writeFieldName("name");
             gen.writeString(value.getName());
+            if (value.getType() != null) {
+                gen.writeFieldName("type");
+                gen.writeString(value.getType().getName());
+            }
             provider.defaultSerializeField("meta", value.meta, gen);
             if (value.valueStr != null) {
                 gen.writeFieldName("value");
@@ -384,7 +388,6 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
-    @JsonProperty
     public ValueDescriptor<T> getType() {
         return type;
     }
