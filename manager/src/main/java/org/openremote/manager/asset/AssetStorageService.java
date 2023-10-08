@@ -691,7 +691,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 asset.getAttributes().stream().forEach(attr ->
                     existingAsset.getAttribute(attr.getName()).ifPresent(existingAttr -> {
                         // If attribute is modified make sure the timestamp is also updated to allow simple equality
-                        if (!attr.equals(existingAttr) && attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
+                        if (!attr.deepEquals(existingAttr) && attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
                             // In the unlikely situation that we are in the same millisecond as last update
                             // we will always ensure a delta of >= 1ms
                             attr.setTimestamp(Math.max(existingAttr.getTimestamp().orElse(0L)+1, timerService.getCurrentTimeMillis()));

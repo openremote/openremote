@@ -21,6 +21,7 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
@@ -108,19 +109,16 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                 }
                 switch (propName) {
                     case "type" -> {
-                        // No longer used
-//                        typeFound = true;
-//                        String valueType = jp.getValueAsString();
-//                        // Try and find matching value descriptor
-//                        attribute.setTypeFromString(valueType);
+                        // Attribute descriptor value type takes priority
+                        if (attributeDescriptor == null) {
+                            String valueType = jp.getValueAsString();
+                            // Try and find matching value descriptor
+                            ValueUtil.getValueDescriptor(valueType).ifPresent(vd -> ((Attribute) attribute).setTypeInternal(vd));
+                        }
                     }
                     case "meta" -> {
                         JsonDeserializer<Object> metaDeserializer = ctxt.findNonContextualValueDeserializer(META_MAP_TYPE);
                         attribute.meta = (MetaMap) metaDeserializer.deserialize(jp, ctxt);
-                        if (attributeDescriptor == null) {
-                            // Look for value type meta item
-                            attribute.getMetaValue(MetaItemType.VALUE_TYPE).ifPresent(attribute::setTypeInternal);
-                        }
                     }
                     case "name" -> {
                         String name = jp.getValueAsString();
@@ -139,10 +137,12 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                         ValueDescriptor<?> valueDescriptor = attribute.getType();
                         if (valueDescriptor == null) {
                             // We don't know the type so store the value as a string and hydrate on demand when value type
-                            // may be known
+                            // may be known (this occurs when hydrating assets from the DB)
                             attribute.valueStr = jp.getCodec().readTree(jp).toString();
                         } else {
-                            ((Attribute)attribute).value = deserialiseValue(valueDescriptor, jp, ctxt);
+                            try {
+                                ((Attribute) attribute).value = deserialiseValue(valueDescriptor, jp, ctxt);
+                            } catch (Exception ignored) {}
                         }
                     }
                 }
@@ -384,8 +384,9 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
+    @JsonProperty
     public ValueDescriptor<T> getType() {
-        return type != null ? type : getMetaValue(MetaItemType.VALUE_TYPE).orElse(null);
+        return type;
     }
 
     @JsonIgnore
@@ -406,7 +407,11 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     // the type has been injected PostLoad
     // TODO: Restructure packages so this can be package visible
     public void setTypeInternal(ValueDescriptor<T> type) {
+        boolean doValueCheck = type != null && this.type != type;
         this.type = type;
+        if (doValueCheck) {
+
+        }
     }
 
     @Override
@@ -437,10 +442,28 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     }
 
     /**
-     * {@link #type} is transient so don't use it for equality checks
+     * Super fast equality checking using the name, type and timestamp; when an {@link Attribute} value is updated then
+     * the timestamp must be greater than the existing value timestamp; and also when merging an {@link Asset} any
+     * modified {@link Attribute} should have a newer timestamp; the backend should take care to update the {@link
+     * Attribute} timestamp when merging an {@link Asset} by using {@link #deepEquals}.
      */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+        if (!(obj instanceof Attribute))
+            return false;
+        Attribute<?> that = (Attribute<?>) obj;
+
+        return Objects.equals(timestamp, that.timestamp)
+            && Objects.equals(name, that.name)
+            && Objects.equals(type, that.type);
+    }
+
+    /**
+     * {@link #type} is transient so don't use it for equality checks
+     */
+    public boolean deepEquals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Attribute<?> that = (Attribute<?>) o;
