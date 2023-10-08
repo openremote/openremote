@@ -222,10 +222,6 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     public Attribute(String name, ValueDescriptor<T> valueDescriptor, T value) {
         super(name, valueDescriptor, value);
-        // Create valueType meta item for this custom attribute
-        if (valueDescriptor != null) {
-            addMeta(new MetaItem<>(MetaItemType.VALUE_TYPE, valueDescriptor));
-        }
     }
 
     public Attribute(String name, ValueDescriptor<T> valueDescriptor, T value, long timestamp) {
@@ -360,8 +356,12 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         return Optional.ofNullable(value);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
+        if (valueType.isAssignableFrom(getTypeClass())) {
+            return (Optional<U>) getValue();
+        }
         return getValue().flatMap(v -> ValueUtil.getValueCoerced(v, valueType));
     }
 
@@ -407,11 +407,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     // the type has been injected PostLoad
     // TODO: Restructure packages so this can be package visible
     public void setTypeInternal(ValueDescriptor<T> type) {
-        boolean doValueCheck = type != null && this.type != type;
         this.type = type;
-        if (doValueCheck) {
-
-        }
     }
 
     @Override

@@ -71,12 +71,4 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
     public <T> void setValue(AttributeDescriptor<T> descriptor, T value) {
         getOrCreate(descriptor).setValue(value);
     }
-
-    /**
-     * This is mainly used by JPA for dirty checking so we'll use JSON comparison as that is how the data is stored
-     */
-    @Override
-    public boolean equals(@CheckForNull Object object) {
-        return ValueUtil.objectsEqualsUsingJSON(this, object);
-    }
 }
