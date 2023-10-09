@@ -34,6 +34,7 @@ import {OrChartWidget} from "./widgets/or-chart-widget";
 import { OrKpiWidget } from "./widgets/or-kpi-widget";
 import { OrGaugeWidget } from "./widgets/or-gauge-widget";
 import {OrMapWidget} from "./widgets/or-map-widget";
+import {OrImageWidget} from "./widgets/or-image-widget";
 
 // language=CSS
 const styling = css`
@@ -214,6 +215,7 @@ export function registerWidgetTypes() {
     widgetTypes.set("kpi", new OrKpiWidget());
     widgetTypes.set("gauge", new OrGaugeWidget());
     widgetTypes.set("map", new OrMapWidget());
+    widgetTypes.set("image", new OrImageWidget());
 }
 
 @customElement("or-dashboard-builder")
