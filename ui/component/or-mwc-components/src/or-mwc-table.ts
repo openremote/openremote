@@ -344,7 +344,7 @@ export class OrMwcTable extends LitElement {
                                                                     <td class="mdc-data-table__cell mdc-data-table__cell--checkbox ${classMap(classes)}" title="${cell}">
                                                                         <div class="">
                                                                             <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
-                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value,"single", item)}" 
+                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value,"single",item)}" 
                                                                                           .value="${this.selectedRows?.includes(item)}"
                                                                             ></or-mwc-input>
                                                                             <span>${cell}</span>
@@ -462,29 +462,36 @@ export class OrMwcTable extends LitElement {
     }
 
     protected onCheckChanged(checked: boolean, type: "all" | "single", item?: any) {
+        let rowCount = (this.config.pagination?.enable && this.rows!.length > this.paginationSize ? this.paginationSize : this.rows!.length);
         if (type === "all") {
             if(checked) {
                 this.selectedRows! = this.rows ? (this.rows as any[])
                     .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize))) : [];
+                this.indeterminate = false;
                 this.allSelected = true;
+
             }
             else {
                 this.selectedRows! = [];
                 this.allSelected = false;
+                this.indeterminate = false;
             }
         }
         else {
             if(checked) {
                 if(this.selectedRows!.indexOf(item) === -1) {
                     this.selectedRows!.push(item);
+                    this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
+                    this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
                     this.requestUpdate("selectedRows");
                 }
             }
             else {
-                this.selectedRows! = this.selectedRows!.filter((e: TableRow) => e !== type);
+                this.selectedRows! = this.selectedRows!.filter((e: TableRow) => e !== item);
             }
-            this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? this.paginationSize : this.rows!.length) && this.selectedRows!.length > 0);
-            this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? this.paginationSize : this.rows!.length) && this.selectedRows!.length > 0);
+
+            this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
+            this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
         }
     }
 
