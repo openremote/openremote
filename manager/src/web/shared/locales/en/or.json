@@ -154,7 +154,9 @@
   "ending": "Ending",
   "timeframe": "Timeframe",
   "timeframeDefault": "Default timeframe",
+  "dataSampling": "Data sampling",
   "algorithm": "Algorithm",
+  "algorithmMethod": "Method per interval",
   "addAttribute": "Add attribute",
   "selectAttributes": "Select attributes",
   "selectAttribute": "Select attribute",
@@ -462,6 +464,8 @@
   "addMetaItems": "Add configuration items",
   "loseChanges": "Discard changes?",
   "confirmContinueAssetModified": "Asset has been modified, discard changes?",
+  "assetModified": "Asset modified",
+  "assetModifiedMustRefresh": "The asset was modified by another source and the page needs to refresh. You will lose your changes.",
   "saveAssetFailed": "Failed to save asset",
   "noCommand": "No command",
   "start": "Start",
@@ -598,6 +602,8 @@
     "widget-kpi": "KPI",
     "widget-linechart": "Line Chart",
     "chartConfig": "Chart Configuration",
+    "markerCoordinates": "Marker Coordinates",
+    "imageSettings": "Image Settings",
     "presets.wrap_to_single_column": "Wrap to single column",
     "presets.keep_layout": "Keep layout",
     "presets.block_device": "Block this device",
@@ -638,7 +644,9 @@
     "showUnits": "Show units",
     "showLabels": "Show labels",
     "zoom": "Zoom",
-    "center": "Center"
+    "center": "Center",
+    "imageUrl": "Image URL",
+    "noImageSelected": "No image selected"
   },
   "south": "South",
   "east": "East",
@@ -697,5 +705,10 @@
   "saveRealmFailed": "Save realm failed",
   "saveRealmSucceeded": "Saved realm successfully!",
   "userDisconnected": "Disconnected successfully!",
-  "userDisconnectFailed": "Disconnect failed"
+  "userDisconnectFailed": "Disconnect failed",
+  "lttb": "Default (LTTB)",
+  "withInterval": "With interval",
+  "AVG": "Average (mean)",
+  "MIN": "Minimum",
+  "MAX": "Maximum"
 }

@@ -160,7 +160,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     protected mapConfigChanged = false;
 
     @query("#managerConfig-panel")
-    protected realmCardElem?: OrConfPanel;
+    protected realmConfigPanel?: OrConfPanel;
 
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
@@ -308,11 +308,14 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         // Save the images to the server that have been uploaded by the user.
         // TODO: Optimize code so it only saves images that have been changed.
         const imagePromises = [];
-        if(this.realmCardElem !== undefined) {
-            const elem = this.realmCardElem?.getCardElement() as OrConfRealmCard;
-            Object.entries(elem?.getFiles()).forEach(async ([x, y]) => {
-                imagePromises.push(manager.rest.api.ConfigurationResource.fileUpload(y, {path: x}));
-            });
+        if(this.realmConfigPanel !== undefined) {
+            const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
+            elems.forEach((elem, index) => {
+                const files = elem?.getFiles();
+                Object.entries(files).forEach(async ([x, y]) => {
+                    imagePromises.push(manager.rest.api.ConfigurationResource.fileUpload(y, {path: x}));
+                });
+            })
         }
 
         // Wait for all requests to complete, then finish loading.
