@@ -262,13 +262,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public User createUpdateUser(String realm, final User user, String passwordSecret, boolean allowUpdate) throws WebApplicationException {
         return getRealms(realmsResource -> {
-
-            if (user.getUsername() == null) {
+            if (getRealm(realm).getRegistrationEmailAsUsername() && !user.isServiceAccount() ? user.getEmail() == null : user.getUsername() == null) {
                 throw new BadRequestException("Attempt to create/update user but no username provided: User=" + user);
             }
 
             // Force lowercase username
-            user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
+            if (!getRealm(realm).getRegistrationEmailAsUsername()) user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
 
             boolean isUpdate = false;
             User existingUser = user.getId() != null ? getUser(user.getId()) : getUserByUsername(realm, user.getUsername());
