@@ -44,6 +44,8 @@ import java.util.ServiceLoader;
 @TsIgnore
 public interface AssetModelProvider {
 
+    default void init(Container container) {}
+
     /**
      * Indicates if the containing JAR of this {@link AssetModelProvider} should be auto scanned for {@link Asset}
      * implementations; descriptors are then extracted using reflection from these classes.
@@ -92,5 +94,12 @@ public interface AssetModelProvider {
      * Called when the full Asset model has been initialised which gives {@link AssetModelProvider}s the chance to do
      * additional work (e.g. add constraints such as allowed values based on available asset types).
      */
-    void onAssetModelFinished();
+    default void onAssetModelFinished() {}
+
+    /**
+     * Indicates that this model provider is dynamic and can be refreshed when needed.
+     */
+    default boolean isDynamic() {
+        return false;
+    }
 }

@@ -6,9 +6,11 @@ import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetModelResource
 import org.openremote.model.asset.AssetResource
@@ -19,6 +21,7 @@ import org.openremote.model.asset.agent.DefaultAgentLink
 import org.openremote.model.asset.impl.GroupAsset
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.asset.impl.UnknownAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeMap
 import org.openremote.model.attribute.MetaItem
@@ -87,7 +90,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         and: "A well known asset is instantiated"
-        def assetStorageService = container.getService(AssetStorageService.class)
+        def persistenceService = container.getService(PersistenceService.class)
         def timerService = container.getService(TimerService.class)
         def modelTestAsset = new ModelTestAsset("Test Asset")
         modelTestAsset.setRealm("master")
@@ -284,6 +287,55 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "it should succeed and attribute value should be correct"
         modelTestAsset != null
         modelTestAsset.getAttribute("missingAttr").flatMap {it.value}.orElse(null) == timerService.getCurrentTimeMillis() + 100000
+
+        when: "we simulate a missing asset type"
+        def updateResult = persistenceService.doReturningTransaction {em ->
+            def query = em.createNativeQuery("update asset set type = 'MissingAssetType' where id = '" + modelTestAsset.id + "';")
+            return query.executeUpdate()
+        }
+
+        then: "it should have succeeded"
+        updateResult == 1
+
+        when: "the model test asset is now fetched"
+        def missingAssetTypeAsset = assetResource.get(null, modelTestAsset.id)
+
+        then: "the missing type string should still be present"
+        missingAssetTypeAsset != null
+        missingAssetTypeAsset.type == "MissingAssetType"
+
+        when: "an attribute value violates one of the original asset type attribute descriptor constraints"
+        missingAssetTypeAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).ifPresent { it.value = "    "}
+        missingAssetTypeAsset = assetResource.update(null, missingAssetTypeAsset.id, missingAssetTypeAsset)
+
+        then: "the update should succeed because the descriptor is no longer associated with the asset"
+        missingAssetTypeAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "    "
+
+        when: "a custom asset type is persisted"
+        def customAsset = new ThingAsset("Custom asset").setRealm(MASTER_REALM)
+            .addAttributes(
+                    new Attribute<>("attr1", ValueType.TIMESTAMP, getClockTimeOf(container)),
+                    new Attribute<>("attr2", ValueType.POSITIVE_INTEGER, 3)
+            )
+        customAsset.type = "CustomAsset"
+        customAsset = assetResource.create(null, customAsset)
+
+        then: "it should have been persisted"
+        customAsset != null
+        customAsset.type == "CustomAsset"
+        customAsset.getAttribute("attr1").get().type == ValueType.TIMESTAMP
+        customAsset.getAttribute("attr2").get().type == ValueType.POSITIVE_INTEGER
+        customAsset.getAttribute("attr2").get().value.orElse(0) == 3
+
+        when: "we fetch the custom asset again directly from the DB"
+        customAsset = assetResource.get(null, customAsset.id)
+
+        then: "it should still have the correct custom type"
+        customAsset != null
+        customAsset.type == "CustomAsset"
+        customAsset.getAttribute("attr1").get().type == ValueType.TIMESTAMP
+        customAsset.getAttribute("attr2").get().type == ValueType.POSITIVE_INTEGER
+        customAsset.getAttribute("attr2").get().value.orElse(0) == 3
     }
 
     def "Retrieving all asset model info"() {

@@ -95,8 +95,9 @@ public class ModelTestAsset extends Asset<ModelTestAsset> {
     ).withOptional(true);
 
     public static final AttributeDescriptor<String> NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR = new AttributeDescriptor<>("notBlankString", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotBlank().setMessage("Not blank custom message")))
-    ).withOptional(true);
+        new MetaItem<>(MetaItemType.CONSTRAINTS)
+    ).withConstraints(ValueConstraint.constraints(new ValueConstraint.NotBlank().setMessage("Not blank custom message")))
+        .withOptional(true);
 
     public static final AssetDescriptor<ModelTestAsset> MODEL_TEST_ASSET_DESCRIPTOR = new AssetDescriptor<>("", "", ModelTestAsset.class);
 

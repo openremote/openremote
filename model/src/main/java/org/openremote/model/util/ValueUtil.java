@@ -40,10 +40,7 @@ import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.internal.util.SerializationHelper;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
-import org.openremote.model.AssetModelProvider;
-import org.openremote.model.ModelDescriptor;
-import org.openremote.model.ModelDescriptors;
-import org.openremote.model.StandardModelProvider;
+import org.openremote.model.*;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetTypeInfo;
@@ -143,7 +140,7 @@ public class ValueUtil {
     // Preload the Standard model provider so it takes priority over others
     public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, ValueUtil.class);
     public static ObjectMapper JSON;
-    protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>(Collections.singletonList(new StandardModelProvider()));
+    protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>();
     protected static Map<Class<? extends Asset<?>>, AssetTypeInfo> assetInfoMap;
     protected static Map<String, Class<? extends Asset<?>>> assetTypeMap;
     protected static Map<String, Class<? extends AgentLink<?>>> agentLinkMap;
@@ -151,12 +148,6 @@ public class ValueUtil {
     protected static Map<String, ValueDescriptor<?>> valueDescriptors;
     protected static Validator validator;
     protected static JsonSchemaGenerator generator;
-
-    static {
-        // Find all service loader registered asset model providers
-        ServiceLoader.load(AssetModelProvider.class).forEach(ValueUtil.assetModelProviders::add);
-        initialise();
-    }
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
         objectMapper
@@ -693,7 +684,21 @@ public class ValueUtil {
         return assetModelProviders;
     }
 
-    public static void initialise() throws IllegalStateException {
+    public static void initialise(Container container) throws IllegalStateException {
+        assetModelProviders.clear();
+
+        // Load in default model provider
+        assetModelProviders.add(new StandardModelProvider());
+
+        // Find all service loader registered asset model providers
+        ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
+
+        // Look for any container services that implement model provider
+        assetModelProviders.addAll(Arrays.stream(container.getServices())
+            .filter(service -> service instanceof AssetModelProvider)
+            .map(service -> (AssetModelProvider)service)
+            .collect(Collectors.toSet()));
+
         try {
             doInitialise();
         } catch (IllegalStateException e) {

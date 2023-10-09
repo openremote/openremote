@@ -42,13 +42,12 @@ public class CamelHealthStatusProvider implements HealthStatusProvider {
     @Override
     public void init(Container container) throws Exception {
         brokerService = container.getService(MessageBrokerService.class);
-        // Add mixin for health check results
-        ValueUtil.JSON.addMixIn(HealthCheck.Result.class, HealthCheckResultMixin.class);
     }
 
     @Override
     public void start(Container container) throws Exception {
-
+        // Add mixin for health check results
+        ValueUtil.JSON.addMixIn(HealthCheck.Result.class, HealthCheckResultMixin.class);
     }
 
     @Override

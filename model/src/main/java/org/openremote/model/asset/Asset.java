@@ -589,7 +589,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @PostLoad
     protected void postLoadCallback() {
         if (attributes != null) {
-            // Make sure the attribute types are correctly set based on asset descriptor
+            // Make sure the attribute types are correctly set based on current asset descriptor not what is in the DB
             ValueUtil.getAssetInfo(getType()).ifPresent(assetTypeInfo ->
                 attributes.values().forEach(attribute -> {
                     AttributeDescriptor<?> attributeDescriptor = assetTypeInfo.getAttributeDescriptors().get(attribute.getName());

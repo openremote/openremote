@@ -327,7 +327,19 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
         prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema);
+    }
 
+    protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
+        PersistenceUnitInfo persistenceUnitInfo = new PersistenceUnitInfo(classNames, properties);
+
+        return new EntityManagerFactoryBuilderImpl(
+            new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
+            .build();
+    }
+
+
+    @Override
+    public void start(Container container) throws Exception {
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
         entityClasses.add(Asset.class.getName());
@@ -368,20 +380,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         this.entityManagerFactory = getEntityManagerFactory(persistenceUnitProperties, entityClasses);
         //Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
-    }
-
-    protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
-        PersistenceUnitInfo persistenceUnitInfo = new PersistenceUnitInfo(classNames, properties);
-
-        return new EntityManagerFactoryBuilderImpl(
-            new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
-            .build();
-    }
-
-
-    @Override
-    public void start(Container container) throws Exception {
-
     }
 
     @Override

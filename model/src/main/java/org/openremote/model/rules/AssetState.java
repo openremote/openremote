@@ -43,10 +43,11 @@ import java.util.Optional;
 // TODO: Cleanup JSON annotations
 public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder<T>, MetaHolder {
 
-    @JsonProperty(value = "name", access = JsonProperty.Access.WRITE_ONLY)
+    @JsonProperty(value = "name")
     final protected String attributeName;
 
-    @JsonProperty(value = "type", access = JsonProperty.Access.WRITE_ONLY)
+    @JsonProperty(value = "type")
+    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
     @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
     final protected ValueDescriptor<T> attributeValueType;
 

@@ -45,6 +45,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.impl.GroupAsset;
+import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
@@ -824,6 +825,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (user != null) {
                 createUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
+            }
+
+            if (existingAsset == null && updatedAsset instanceof ThingAsset && !ThingAsset.DESCRIPTOR.getName().equals(updatedAsset.getType())) {
+                // When an asset is first saved then any custom type is not persisted as JPA will set it to ThingAsset so we need to override
+                // We don't need to do this when updating an existing asset as JPA doesn't overwrite the type - if this changes in future it
+                // should be detected by tests
+                em.createNativeQuery("update ASSET set type = ? where id = ?;")
+                    .setParameter(1, updatedAsset.getType())
+                    .setParameter(2, updatedAsset.getId())
+                    .executeUpdate();
             }
 
             return updatedAsset;
