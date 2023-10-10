@@ -47,6 +47,14 @@ public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescr
         this.constraints = constraints;
     }
 
+    public AbstractNameValueDescriptorHolder(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units) {
+        this.name = name;
+        this.type = type;
+        this.constraints = constraints;
+        this.format = format;
+        this.units = units;
+    }
+
     @Override
     public String getName() {
         return name;

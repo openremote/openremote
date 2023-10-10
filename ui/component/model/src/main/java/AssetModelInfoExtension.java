@@ -41,7 +41,7 @@ public class AssetModelInfoExtension extends Extension {
         // Service loader doesn't seem to work so manually load the agent model provider
         ValueUtil.getModelProviders().add(new AgentModelProvider());
         // Ensure the asset model is initialised
-        ValueUtil.initialise();
+        ValueUtil.initialise(null);
     }
 
     @Override

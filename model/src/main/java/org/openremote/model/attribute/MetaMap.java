@@ -25,13 +25,13 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 
 @JsonDeserialize(using = MetaMap.MetaObjectDeserializer.class)
 public class MetaMap extends NamedMap<MetaItem<?>> {
@@ -39,52 +39,55 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
      * Deserialise a {@link MetaMap} that is represented as a JSON object where each key is the name of a
      * {@link MetaItemDescriptor}
      */
-    public static class MetaObjectDeserializer extends StdDeserializer<MetaMap> {
+    protected static class MetaObjectDeserializer extends StdDeserializer<MetaMap> {
 
         public MetaObjectDeserializer() {
             super(MetaMap.class);
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
         @Override
         public MetaMap deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-            if (!jp.isExpectedStartObjectToken()) {
-                throw new InvalidFormatException(jp, "MetaMap must be an object", jp.nextValue(), MetaMap.class);
-            }
-
-            List<MetaItem<?>> list = new ArrayList<>();
-
-            while(jp.nextToken() != JsonToken.END_OBJECT) {
-                if(jp.currentToken() == JsonToken.FIELD_NAME) {
-                    jp.nextToken();
-                }
-                if (jp.currentToken() == JsonToken.VALUE_NULL) {
-                    continue;
-                }
-
-                String metaItemName = jp.getCurrentName();
-
-                // Find the meta descriptor for this meta item as this will give us value type also; fallback to
-                // OBJECT type meta item to allow deserialization of meta that doesn't exist in the current asset model
-                ValueDescriptor<?> valueDescriptor = ValueUtil.getMetaItemDescriptor(metaItemName)
-                    .map(MetaItemDescriptor::getType).orElse(null);
-
-                MetaItem metaItem;
-                if (valueDescriptor != null) {
-                    metaItem = new MetaItem(metaItemName, valueDescriptor);
-                } else {
-                    metaItem = new MetaItem(metaItemName);
-                }
-
-                metaItem.setValue(Attribute.AttributeDeserializer.deserialiseValue(valueDescriptor, jp, ctxt));
-
-                list.add(metaItem);
-            }
+            List<MetaItem<?>> list = deserialiseMetaMap(jp, ctxt, (metaItemName) -> ValueUtil.getMetaItemDescriptor(metaItemName)
+                .map(MetaItemDescriptor::getType).orElse(null));
 
             MetaMap metaMap = new MetaMap();
-            metaMap.putAllSilent(list);
+            metaMap.putAll(list);
             return metaMap;
         }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static List<MetaItem<?>> deserialiseMetaMap(JsonParser jp, DeserializationContext ctxt, Function<String, ValueDescriptor<?>> metaNameToValueDescriptorFunction) throws IOException {
+        if (!jp.isExpectedStartObjectToken()) {
+            throw new InvalidFormatException(jp, "MetaMap must be an object", jp.nextValue(), MetaMap.class);
+        }
+
+        List<MetaItem<?>> list = new ArrayList<>();
+
+        while(jp.nextToken() != JsonToken.END_OBJECT) {
+            if(jp.currentToken() == JsonToken.FIELD_NAME) {
+                jp.nextToken();
+            }
+            if (jp.currentToken() == JsonToken.VALUE_NULL) {
+                continue;
+            }
+
+            String metaItemName = jp.getCurrentName();
+            ValueDescriptor<?> valueDescriptor = metaNameToValueDescriptorFunction.apply(metaItemName);
+
+            MetaItem metaItem;
+            if (valueDescriptor != null) {
+                metaItem = new MetaItem(metaItemName, valueDescriptor);
+            } else {
+                metaItem = new MetaItem(metaItemName);
+            }
+
+            metaItem.setValue(Attribute.AttributeDeserializer.deserialiseValue(valueDescriptor, jp, ctxt));
+
+            list.add(metaItem);
+        }
+
+        return list;
     }
 
     public MetaMap() {

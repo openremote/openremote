@@ -28,11 +28,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.TsIgnoreTypeParams;
-import org.openremote.model.value.NameHolder;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.NameHolder;
 
 import java.io.IOException;
 
@@ -81,17 +80,14 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
     protected Class<T> type;
     protected String icon;
     protected String colour;
-    protected Boolean removable;
 
     AssetDescriptor() {}
 
     @JsonCreator
-    protected AssetDescriptor(String icon, String colour, String name) {
+    protected AssetDescriptor(String name, String icon, String colour) {
         this.name = name;
         this.icon = icon;
         this.colour = colour;
-        this.type = (Class<T>) ThingAsset.class;
-        this.removable = true;
     }
 
     /**
@@ -123,5 +119,9 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
 
     public String getColour() {
         return colour;
+    }
+
+    public Boolean isDynamic() {
+        return type != null ? null : true;
     }
 }

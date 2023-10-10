@@ -69,17 +69,13 @@ public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMa
         return super.put(key, value);
     }
 
-    protected T putSilent(T value) {
-        return super.put(value.getName(), value);
-    }
-
     @Override
     public void putAll(Map<? extends String, ? extends T> map) {
         addAll(map.values());
     }
 
-    protected void putAllSilent(Collection<? extends T> c) {
-        c.forEach(this::putSilent);
+    public void putAll(Collection<? extends T> c) {
+        c.forEach(this::put);
     }
 
     public void add(@NotNull T t) {
@@ -104,7 +100,7 @@ public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMa
     }
 
     public void addOrReplace(T item) {
-        putSilent(item);
+        put(item);
     }
 
     @SafeVarargs

@@ -43,28 +43,8 @@ public class StandardModelProvider implements AssetModelProvider {
     protected static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, StandardModelProvider.class);
 
     @Override
-    public AssetDescriptor<?>[] getAssetDescriptors() {
-        return null;
-    }
-
-    @Override
     public boolean useAutoScan() {
         return true;
-    }
-
-    @Override
-    public Map<Class<? extends Asset<?>>, List<AttributeDescriptor<?>>> getAttributeDescriptors() {
-        return null;
-    }
-
-    @Override
-    public Map<Class<? extends Asset<?>>, List<MetaItemDescriptor<?>>> getMetaItemDescriptors() {
-        return null;
-    }
-
-    @Override
-    public Map<Class<? extends Asset<?>>, List<ValueDescriptor<?>>> getValueDescriptors() {
-        return null;
     }
 
     @Override

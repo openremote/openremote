@@ -66,6 +66,10 @@ public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> 
         super(name, valueDescriptor, constraints);
     }
 
+    public MetaItemDescriptor(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units) {
+        super(name, type, constraints, format, units);
+    }
+
     public MetaItemDescriptor<T> setFormat(ValueFormat format) {
         this.format = format;
         return this;

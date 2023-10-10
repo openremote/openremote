@@ -54,7 +54,7 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
     public <S> Attribute<S> getOrCreate(AttributeDescriptor<S> attributeDescriptor) {
         return get(attributeDescriptor).orElseGet(() -> {
             Attribute<S> attr = new Attribute<>(attributeDescriptor);
-            putSilent(attr);
+            put(attr);
             return attr;
         });
     }
@@ -63,7 +63,7 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
     public <S> Attribute<S> getOrCreate(String attributeName, ValueDescriptor<S> valueDescriptor) {
         return (Attribute<S>) get(attributeName).orElseGet(() -> {
             Attribute<S> attr = new Attribute<>(attributeName, valueDescriptor);
-            putSilent(attr);
+            put(attr);
             return attr;
         });
     }

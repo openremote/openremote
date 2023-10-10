@@ -99,7 +99,7 @@ public class ValueUtil {
     }
 
     /**
-     * Copied from: https://puredanger.github.io/tech.puredanger.com/2006/11/29/writing-a-class-hierarchy-comparator/
+     * Copied from: <a href="https://puredanger.github.io/tech.puredanger.com/2006/11/29/writing-a-class-hierarchy-comparator/">https://puredanger.github.io/tech.puredanger.com/2006/11/29/writing-a-class-hierarchy-comparator</a>
      */
     protected static class ClassHierarchyComparator implements Comparator<Class<?>> {
 
@@ -139,7 +139,7 @@ public class ValueUtil {
 
     // Preload the Standard model provider so it takes priority over others
     public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, ValueUtil.class);
-    public static ObjectMapper JSON;
+    public static ObjectMapper JSON = configureObjectMapper(new ObjectMapper());
     protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>();
     protected static Map<Class<? extends Asset<?>>, AssetTypeInfo> assetInfoMap;
     protected static Map<String, Class<? extends Asset<?>>> assetTypeMap;
@@ -693,11 +693,13 @@ public class ValueUtil {
         // Find all service loader registered asset model providers
         ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
 
-        // Look for any container services that implement model provider
-        assetModelProviders.addAll(Arrays.stream(container.getServices())
-            .filter(service -> service instanceof AssetModelProvider)
-            .map(service -> (AssetModelProvider)service)
-            .collect(Collectors.toSet()));
+        if (container != null) {
+            // Look for any container services that implement model provider
+            assetModelProviders.addAll(Arrays.stream(container.getServices())
+                .filter(service -> service instanceof AssetModelProvider)
+                .map(service -> (AssetModelProvider) service)
+                .collect(Collectors.toSet()));
+        }
 
         try {
             doInitialise();
@@ -719,13 +721,13 @@ public class ValueUtil {
         valueDescriptors = new HashMap<>();
         generator = null;
 
-        // Provide basic Object Mapper and enhance once asset model is initialised
-        JSON = configureObjectMapper(new ObjectMapper());
-
         LOG.info("Initialising asset model...");
-        Map<Class<? extends Asset<?>>, List<NameHolder>> assetDescriptorProviders = new TreeMap<>(new ClassHierarchyComparator());
+        Set<Class<? extends Asset<?>>> assetClasses = new TreeSet<>(new ClassHierarchyComparator());
+        Map<String, List<NameHolder>> assetDescriptorsMap = new HashMap<>();
+
         //noinspection RedundantCast
-        assetDescriptorProviders.put((Class<? extends Asset<?>>)(Class<?>)Asset.class, new ArrayList<>(getDescriptorFields(Asset.class)));
+        assetClasses.add((Class<? extends Asset<?>>)(Class<?>)Asset.class);
+        assetDescriptorsMap.put(Asset.class.getSimpleName(), new ArrayList<>(getDescriptorFields(Asset.class)));
 
         getModelProviders().forEach(assetModelProvider -> {
             LOG.fine("Processing asset model provider: " + assetModelProvider.getClass().getSimpleName());
@@ -733,19 +735,22 @@ public class ValueUtil {
 
             if (assetModelProvider.useAutoScan()) {
 
-                Set<Class<? extends Asset<?>>> assetClasses = getAssetClasses(assetModelProvider);
-                LOG.fine("Found " + assetClasses.size() + " asset class(es)");
+                Set<Class<? extends Asset<?>>> providerAssetClasses = getAssetClasses(assetModelProvider);
+                LOG.fine("Found " + providerAssetClasses.size() + " asset class(es)");
 
-                assetClasses.forEach(assetClass ->
-                    assetDescriptorProviders.computeIfAbsent(assetClass, aClass ->
-                        new ArrayList<>(getDescriptorFields(aClass))));
+                providerAssetClasses.forEach(assetClass -> {
+                    assetClasses.add(assetClass);
+                    assetDescriptorsMap.computeIfAbsent(assetClass.getSimpleName(), name ->
+                        new ArrayList<>(getDescriptorFields(assetClass)));
+                });
 
                 ModelDescriptors modelDescriptors = assetModelProvider.getClass().getAnnotation(ModelDescriptors.class);
                 if (modelDescriptors != null) {
                     for (ModelDescriptor modelDescriptor : modelDescriptors.value()) {
                         Class<? extends Asset<?>> assetClass = (Class<? extends Asset<?>>)modelDescriptor.assetType();
 
-                        assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                        assetClasses.add(assetClass);
+                        assetDescriptorsMap.compute(assetClass.getSimpleName(), (name, list) -> {
                             if (list == null) {
                                 list = new ArrayList<>();
                             }
@@ -760,8 +765,10 @@ public class ValueUtil {
             if (assetModelProvider.getAssetDescriptors() != null) {
                 for (AssetDescriptor<?> assetDescriptor : assetModelProvider.getAssetDescriptors()) {
                     Class<? extends Asset<?>> assetClass = assetDescriptor.getType();
-
-                    assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                    if (assetClass != null) {
+                        assetClasses.add(assetClass);
+                    }
+                    assetDescriptorsMap.compute(assetDescriptor.getName(), (name, list) -> {
                         if (list == null) {
                             list = new ArrayList<>();
                         }
@@ -773,61 +780,77 @@ public class ValueUtil {
             }
 
             if (assetModelProvider.getAttributeDescriptors() != null) {
-                assetModelProvider.getAttributeDescriptors().forEach((assetClass, attributeDescriptors) ->
-                    assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                assetModelProvider.getAttributeDescriptors().forEach((name, attributeDescriptors) -> {
+                    assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
+                    assetDescriptorsMap.compute(name, (n, list) -> {
                         if (list == null) {
                             list = new ArrayList<>();
                         }
 
                         list.addAll(attributeDescriptors);
                         return list;
-                    }));
+                    });
+                });
             }
 
             if (assetModelProvider.getMetaItemDescriptors() != null) {
-                assetModelProvider.getMetaItemDescriptors().forEach((assetClass, metaDescriptors) ->
-                    assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                assetModelProvider.getMetaItemDescriptors().forEach((name, metaDescriptors) -> {
+                    assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
+                    assetDescriptorsMap.compute(name, (n, list) -> {
                         if (list == null) {
                             list = new ArrayList<>();
                         }
 
                         list.addAll(metaDescriptors);
                         return list;
-                    }));
+                    });
+                });
             }
 
             if (assetModelProvider.getValueDescriptors() != null) {
-                assetModelProvider.getValueDescriptors().forEach((assetClass, valueDescriptors) ->
-                    assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                assetModelProvider.getValueDescriptors().forEach((name, valueDescriptors) -> {
+                    assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
+                    assetDescriptorsMap.compute(name, (n, list) -> {
                         if (list == null) {
                             list = new ArrayList<>();
                         }
 
                         list.addAll(valueDescriptors);
                         return list;
-                    }));
+                    });
+                });
             }
         });
 
         // Build each asset info checking that no conflicts occur
-        Map<Class<? extends Asset<?>>, List<NameHolder>> copy = new HashMap<>(assetDescriptorProviders);
-        assetDescriptorProviders.forEach((assetClass, descriptors) -> {
+        Map<String, List<NameHolder>> copy = new HashMap<>(assetDescriptorsMap);
+        assetDescriptorsMap.forEach((name, descriptors) -> {
+            Class<? extends Asset<?>> assetClass = assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().orElse(null);
 
-            // Skip abstract classes as a start point - they should be in the class hierarchy of concrete class
-            if (!Modifier.isAbstract(assetClass.getModifiers())) {
-
-                AssetTypeInfo assetInfo = buildAssetInfo(assetClass, copy);
+            if (assetClass == null) {
+                AssetTypeInfo assetInfo = buildAssetInfoFromName(name, copy);
 
                 if (assetInfo != null) {
                     assetInfoMap.put(assetClass, assetInfo);
                     assetTypeMap.put(assetInfo.getAssetDescriptor().getName(), assetClass);
+                }
+            } else {
+                // Skip abstract classes as a start point - they should be in the class hierarchy of concrete class
+                if (!Modifier.isAbstract(assetClass.getModifiers())) {
 
-                    if (assetInfo.getAssetDescriptor() instanceof AgentDescriptor<?, ?, ?> agentDescriptor) {
-                        String agentLinkName = agentDescriptor.getAgentLinkClass().getSimpleName();
-                        if (agentLinkMap.containsKey(agentLinkName) && agentLinkMap.get(agentLinkName) != agentDescriptor.getAgentLinkClass()) {
-                            throw new IllegalStateException("AgentLink simple class name must be unique, duplicate found for: " + agentDescriptor.getAgentLinkClass());
+                    AssetTypeInfo assetInfo = buildAssetInfoFromClass(assetClass, copy);
+
+                    if (assetInfo != null) {
+                        assetInfoMap.put(assetClass, assetInfo);
+                        assetTypeMap.put(assetInfo.getAssetDescriptor().getName(), assetClass);
+
+                        if (assetInfo.getAssetDescriptor() instanceof AgentDescriptor<?, ?, ?> agentDescriptor) {
+                            String agentLinkName = agentDescriptor.getAgentLinkClass().getSimpleName();
+                            if (agentLinkMap.containsKey(agentLinkName) && agentLinkMap.get(agentLinkName) != agentDescriptor.getAgentLinkClass()) {
+                                throw new IllegalStateException("AgentLink simple class name must be unique, duplicate found for: " + agentDescriptor.getAgentLinkClass());
+                            }
+                            agentLinkMap.put(agentLinkName, agentDescriptor.getAgentLinkClass());
                         }
-                        agentLinkMap.put(agentLinkName, agentDescriptor.getAgentLinkClass());
                     }
                 }
             }
@@ -1109,7 +1132,68 @@ public class ValueUtil {
             .collect(Collectors.toList());
     }
 
-    protected static AssetTypeInfo buildAssetInfo(Class<? extends Asset<?>> assetClass, Map<Class<? extends Asset<?>>, List<NameHolder>> classDescriptorMap) throws IllegalStateException {
+    protected static AssetTypeInfo buildAssetInfoFromName(String name, Map<String, List<NameHolder>> classDescriptorMap) throws IllegalStateException {
+        List<NameHolder> descriptors = classDescriptorMap.get(name);
+        if (descriptors == null) {
+            return null;
+        }
+
+        AtomicReference<AssetDescriptor<?>> assetDescriptor = new AtomicReference<>();
+        Set<AttributeDescriptor<?>> attributeDescriptors = new HashSet<>(10);
+        List<MetaItemDescriptor<?>> metaItemDescriptors = new ArrayList<>(50);
+        List<ValueDescriptor<?>> valueDescriptors = new ArrayList<>(50);
+
+        descriptors.forEach(descriptor -> {
+            if (descriptor instanceof AssetDescriptor<?> ad) {
+                if (assetDescriptor.get() != null) {
+                    throw new IllegalStateException("Duplicate asset descriptor found: asset type=" + name +", descriptor=" + assetDescriptor.get() + ", duplicate descriptor=" + descriptor);
+                }
+                assetDescriptor.set(ad);
+            } else if (descriptor instanceof AttributeDescriptor) {
+                attributeDescriptors.stream().filter(d -> d.equals(descriptor)).findFirst()
+                    .ifPresent(existingDescriptor -> {
+                        if (!existingDescriptor.getType().equals(((AttributeDescriptor<?>) descriptor).getType())) {
+                            throw new IllegalStateException("Attribute descriptor override cannot change the value type found: asset type=" + name + ", descriptor=" + existingDescriptor + ", duplicate descriptor=" + descriptor);
+                        }
+                        attributeDescriptors.remove(existingDescriptor);
+                    });
+                attributeDescriptors.add((AttributeDescriptor<?>) descriptor);
+            } else if (descriptor instanceof MetaItemDescriptor metaItemDescriptor) {
+                MetaItemDescriptor<?> existing = ValueUtil.metaItemDescriptors.get(descriptor.getName());
+                if (existing != null && !existing.equals(descriptor)) {
+                    throw new IllegalStateException("Duplicate meta item descriptor found: asset type=" + name + ", descriptor=" + existing + ", duplicate descriptor=" + descriptor);
+                }
+                metaItemDescriptors.add(metaItemDescriptor);
+                if (existing == null) {
+                    ValueUtil.metaItemDescriptors.put(metaItemDescriptor.getName(), metaItemDescriptor);
+                }
+            } else if (descriptor instanceof ValueDescriptor valueDescriptor) {
+                // Only store basic value type ignore array type for value descriptor as any value descriptor can be an array value descriptor
+                valueDescriptor = valueDescriptor.asNonArray();
+                ValueDescriptor<?> existing = ValueUtil.valueDescriptors.get(descriptor.getName());
+                if (existing != null && !existing.equals(descriptor)) {
+                    throw new IllegalStateException("Duplicate value descriptor found: asset type=" + name +", descriptor=" + existing + ", duplicate descriptor=" + descriptor);
+                }
+                valueDescriptors.add(valueDescriptor);
+                if (existing == null) {
+                    ValueUtil.valueDescriptors.put(valueDescriptor.getName(), valueDescriptor);
+                }
+            }
+        });
+
+        if (assetDescriptor.get() == null) {
+            LOG.log(Level.WARNING, "Asset descriptor not found for this asset type: asset type=" + name);
+            return null;
+        }
+
+        return new AssetTypeInfo(
+            assetDescriptor.get(),
+            attributeDescriptors.toArray(new AttributeDescriptor<?>[0]),
+            metaItemDescriptors.toArray(new MetaItemDescriptor<?>[0]),
+            valueDescriptors.toArray(new ValueDescriptor<?>[0]));
+    }
+
+    protected static AssetTypeInfo buildAssetInfoFromClass(Class<? extends Asset<?>> assetClass, Map<String, List<NameHolder>> classDescriptorMap) throws IllegalStateException {
 
         if (assetClass == UnknownAsset.class) {
             return null;
@@ -1141,7 +1225,7 @@ public class ValueUtil {
         List<ValueDescriptor<?>> valueDescriptors = new ArrayList<>(50);
 
         classTree.forEach(aClass -> {
-            List<NameHolder> descriptors = classDescriptorMap.get(aClass);
+            List<NameHolder> descriptors = classDescriptorMap.get(aClass.getSimpleName());
             if (descriptors != null) {
                 descriptors.forEach(descriptor -> {
                     if (aClass == assetClass && descriptor instanceof AssetDescriptor) {
