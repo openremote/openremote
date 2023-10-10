@@ -95,7 +95,8 @@ public class State {
                     if(!Objects.equals(parameter.units, "-")){
                         MetaItem<String[]> units = new MetaItem<>(MetaItemType.UNITS);
                             units.setValue(Constants.units(parameter.units));
-                            metaMap.add(units);
+//                            Error when deploying: https://i.imgur.com/4IihWC3.png
+//                            metaMap.add(units);
                         }
                     }
                     //Add on its constraints (min, max)
