@@ -45,6 +45,7 @@ import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -159,7 +160,9 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     // If occurrence is before requested time then advance the sun calculator to either reset occurrence or 5 mins before requested time (whichever is later)
                     if (nextMillis < time) {
-                        ZonedDateTime resetOccurrence = sunTimes.get().getSet().isBefore(sunTimes.get().getRise()) ? sunTimes.get().getRise() : sunTimes.get().getSet();
+                        // Move to the next day
+                        ZonedDateTime resetOccurrence = sunTimes.get().getSet().isBefore(sunTimes.get().getRise()) ? sunTimes.get().getSet() : sunTimes.get().getRise();
+                        resetOccurrence = resetOccurrence.truncatedTo(ChronoUnit.DAYS).plusDays(1);
                         sunTimes.set(sunCalculator.on(new Date(Math.max(resetOccurrence.toInstant().toEpochMilli(), time - 300000))).execute());
                     }
 
