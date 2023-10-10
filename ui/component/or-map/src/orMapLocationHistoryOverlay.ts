@@ -1,4 +1,4 @@
-import {LitElement} from "lit";
+import {LitElement, html, css} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import manager, {subscribe} from "@openremote/core";
 import moment from "moment";
@@ -6,7 +6,9 @@ import {OrMap} from "./index";
 import {
     ValueDatapoint, GeoJSONPoint
 } from '@openremote/model';
-import {GeoJSONSource} from "maplibre-gl"
+import {GeoJSONSource, MapLayerMouseEvent} from "maplibre-gl"
+import "./or-map-location-history-markers"
+import maplibregl from "maplibre-gl";
 @customElement("or-map-location-history-overlay")
 export class OrMapLocationHistoryOverlay extends subscribe(manager)(LitElement) {
 
@@ -33,11 +35,13 @@ export class OrMapLocationHistoryOverlay extends subscribe(manager)(LitElement) 
         // and if it has, remove the GeoJSON elements, and load the new Asset's layers.
         if (changedProperties.has("assetId")){
             // checks if the assetId is actually updated, because this is fired when the element is constructed.
-            if(changedProperties.get("assetId") != undefined) {
+            if(changedProperties.get("assetId") == undefined) {
                 this.removeLayers();
 
                 await this._loadData();
                 this._addGeoJSONLayer();
+            }else{
+                this.removeLayers();
             }
         }
     }
@@ -45,15 +49,26 @@ export class OrMapLocationHistoryOverlay extends subscribe(manager)(LitElement) 
     async connectedCallback() {
         super.connectedCallback();
 
+        if (this.assetId == undefined || this.map == undefined) return
+
         await this._loadData();
         this._addGeoJSONLayer();
 
 
     }
 
+    render(){
+        if (this.assetId == undefined || this.map == undefined) return html``;
+        return html`
+        <or-map-location-history-markers id="${this.assetId}" .assetId="${this.assetId}" .map="${this.map}"></or-map-location-history-markers>
+        `;
+    }
+
 
 
     async _loadData(): Promise<void> {
+
+        if(this.assetId == null || this.map == undefined) return;
         console.log("loaded")
 
         const now = moment();
@@ -73,6 +88,7 @@ export class OrMapLocationHistoryOverlay extends subscribe(manager)(LitElement) 
     }
     private _addGeoJSONLayer() {
         if(this.map == undefined) return;
+        if(this.assetId == undefined) return;
         if (this.history?.length == 0 || this.history == undefined) return;
         //grab the points we want to use
 
@@ -124,10 +140,24 @@ export class OrMapLocationHistoryOverlay extends subscribe(manager)(LitElement) 
         const PointSourceData = this.map._map!.addGeoJSONSource(PointsSource);
         const LineSourceData = this.map._map!.addGeoJSONSource(LineSource);
 
-        this.SourceIds!.push(PointSourceData!.sourceId, LineSourceData!.sourceId)
+        this.SourceIds!.push(LineSourceData!.sourceId)
+        this.SourceIds!.push(PointSourceData!.sourceId)
 
-        this.layerIds.push(<string>this.map._map!.addGeoJSONLayer("MultiPoint", PointSourceData!.sourceId!))
-        this.layerIds.push(<string>this.map._map!.addGeoJSONLayer("MultiLineString", LineSourceData!.sourceId!))
+        const lineLayerId:string = (<string>this.map._map!.addGeoJSONLayer("MultiLineString", LineSourceData!.sourceId!))
+        this.layerIds.push(lineLayerId);
+
+
+        // const pointLayerId:string =(<string>this.map._map!.addGeoJSONLayer("MultiPoint", PointSourceData!.sourceId!))
+        // this.layerIds.push(pointLayerId)
+        // this.map!._map!._mapGl!.on('click', pointLayerId, (e: MapLayerMouseEvent) => {
+        //     e.originalEvent.stopPropagation();
+        //     e.preventDefault();
+        //     const popup = new maplibregl.Popup()
+        //         .setLngLat(e.lngLat)
+        //         .setText("Location of time "+e.features![0].id)
+        //         .addTo(this.map!._map!._mapGl!)
+        //     console.log(e)
+        // })
     }
 
 

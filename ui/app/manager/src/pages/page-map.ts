@@ -1,7 +1,7 @@
 import {css, html} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
-import "@openremote/or-map";
+// import "@openremote/or-map";
 import {
     MapAssetCardConfig,
     OrMap,
@@ -371,20 +371,36 @@ export class PageMap extends Page<MapStateKeyed> {
     protected render() {
 
         let currentAssetSelected: boolean = (this._currentAsset != undefined);
+        let isMouseAPointer = false;
+        if(this._map?._map?._mapGl != undefined){
+            isMouseAPointer = this._map._map._mapGl.getCanvas().style.cursor == '';
+        }
         // currentAssetSelected? console.log("render") : console.log("asset unselected");
-        return html`
-            
-            ${currentAssetSelected ? html`
+            return html`
+<!--                
+                <or-map-location-history-markers .assetId="${this._currentAsset?.id}" .map="${this._map}"></or-map-location-history-markers>
+            -->
+                <or-map-location-history-overlay .assetId="${this._currentAsset?.id}" .map="${this._map}" ></or-map-location-history-overlay>
+${currentAssetSelected ? html`
                 <or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"
                                    .markerconfig="${this.config?.markers}" .map="${this._map}"></or-map-asset-card>
+<!--                
                 <or-map-location-history-overlay .assetId="${this._currentAsset.id}" .map="${this._map}" ></or-map-location-history-overlay>
-                <or-map-attribute-chart .assetId="${this._currentAsset.id}" .asset="${this._currentAsset}"></or-map-attribute-chart>
+                -->
+${!isMouseAPointer && currentAssetSelected ? 
+            html`
+            
+            `: `
+            `}
+                
+<!--                <or-map-attribute-chart .assetId="${this._currentAsset.id}" .asset="${this._currentAsset}"></or-map-attribute-chart>-->
             ` : ``}
+            
 
             <or-map id="map" class="or-map" showGeoCodingControl
                     @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {
                         this._setCenter(ev.detail.geocode);
-                    }}"
+                    }}" 
             >
                 ${
                         this._assets.filter((asset) => {
