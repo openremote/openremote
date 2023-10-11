@@ -31,9 +31,6 @@ import java.util.Objects;
 @TsIgnore
 public class AssetStateValidator implements HibernateConstraintValidator<AssetStateValid, AssetStateStore> {
 
-    public static final String ASSET_TYPE_INVALID = "{Asset.type.Invalid}";
-    public static final String ASSET_ATTRIBUTE_MISSING = "{Asset.attribute.Missing}";
-    public static final String ASSET_ATTRIBUTE_TYPE_MISMATCH = "{Asset.attribute.type.Mismatch}";
     public static final System.Logger LOG = System.getLogger(AssetStateValidator.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES.name());
     protected ClockProvider clockProvider;
     @Override

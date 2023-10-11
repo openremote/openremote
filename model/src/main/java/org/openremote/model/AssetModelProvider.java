@@ -44,8 +44,6 @@ import java.util.ServiceLoader;
 @TsIgnore
 public interface AssetModelProvider {
 
-    default void init(Container container) {}
-
     /**
      * Indicates if the containing JAR of this {@link AssetModelProvider} should be auto scanned for {@link Asset}
      * implementations; descriptors are then extracted using reflection from these classes.

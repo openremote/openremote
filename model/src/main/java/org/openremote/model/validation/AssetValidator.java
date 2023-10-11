@@ -49,7 +49,7 @@ public class AssetValidator implements HibernateConstraintValidator<AssetValid, 
         AssetTypeInfo assetModelInfo = ValueUtil.getAssetInfo(type).orElse(null);
 
         // Check the type of the asset matches the descriptor
-        if (assetModelInfo != null && asset.getClass() != assetModelInfo.getAssetDescriptor().getType()) {
+        if (assetModelInfo != null && !assetModelInfo.getAssetDescriptor().isDynamic() && asset.getClass() != assetModelInfo.getAssetDescriptor().getType()) {
             context.buildConstraintViolationWithTemplate(ASSET_TYPE_INVALID).addConstraintViolation();
             return false;
         }

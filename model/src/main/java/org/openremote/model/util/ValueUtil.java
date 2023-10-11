@@ -141,7 +141,7 @@ public class ValueUtil {
     public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, ValueUtil.class);
     public static ObjectMapper JSON = configureObjectMapper(new ObjectMapper());
     protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>();
-    protected static Map<Class<? extends Asset<?>>, AssetTypeInfo> assetInfoMap;
+    protected static Map<String, AssetTypeInfo> assetInfoMap;
     protected static Map<String, Class<? extends Asset<?>>> assetTypeMap;
     protected static Map<String, Class<? extends AgentLink<?>>> agentLinkMap;
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors;
@@ -578,11 +578,11 @@ public class ValueUtil {
     }
 
     public static <T extends Asset<?>> Optional<AssetTypeInfo> getAssetInfo(Class<T> assetType) {
-        return Optional.ofNullable(assetInfoMap.get(assetType));
+        return Optional.ofNullable(assetInfoMap.get(assetType.getSimpleName()));
     }
 
     public static Optional<AssetTypeInfo> getAssetInfo(String assetType) {
-        return getAssetClass(assetType).map(assetClass -> assetInfoMap.get(assetClass));
+        return Optional.ofNullable(assetInfoMap.get(assetType));
     }
 
     // TODO: Implement ability to restrict which asset types are allowed to be added to a given parent type
@@ -755,39 +755,31 @@ public class ValueUtil {
                                 list = new ArrayList<>();
                             }
 
-                            list.addAll(getDescriptorFields(modelDescriptor.provider()));
+                            List<NameHolder> descriptors = getDescriptorFields(modelDescriptor.provider());
+                            list.addAll(descriptors);
+                            // Push value descriptors straight in so they are accessible to asset model providers
+                            descriptors.forEach(d -> {
+                                if (d instanceof ValueDescriptor vd) {
+                                    ValueUtil.valueDescriptors.put(vd.getName(), vd);
+                                }
+                            });
                             return list;
                         });
                     }
                 }
             }
 
-            if (assetModelProvider.getAssetDescriptors() != null) {
-                for (AssetDescriptor<?> assetDescriptor : assetModelProvider.getAssetDescriptors()) {
-                    Class<? extends Asset<?>> assetClass = assetDescriptor.getType();
-                    if (assetClass != null) {
-                        assetClasses.add(assetClass);
-                    }
-                    assetDescriptorsMap.compute(assetDescriptor.getName(), (name, list) -> {
-                        if (list == null) {
-                            list = new ArrayList<>();
-                        }
-
-                        list.add(assetDescriptor);
-                        return list;
-                    });
-                }
-            }
-
-            if (assetModelProvider.getAttributeDescriptors() != null) {
-                assetModelProvider.getAttributeDescriptors().forEach((name, attributeDescriptors) -> {
+            if (assetModelProvider.getValueDescriptors() != null) {
+                assetModelProvider.getValueDescriptors().forEach((name, valueDescriptors) -> {
                     assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
                     assetDescriptorsMap.compute(name, (n, list) -> {
                         if (list == null) {
                             list = new ArrayList<>();
                         }
 
-                        list.addAll(attributeDescriptors);
+                        list.addAll(valueDescriptors);
+                        // Push value descriptors straight in so they are accessible to asset model providers
+                        valueDescriptors.forEach(vd -> ValueUtil.valueDescriptors.put(vd.getName(), vd));
                         return list;
                     });
                 });
@@ -807,18 +799,35 @@ public class ValueUtil {
                 });
             }
 
-            if (assetModelProvider.getValueDescriptors() != null) {
-                assetModelProvider.getValueDescriptors().forEach((name, valueDescriptors) -> {
+            if (assetModelProvider.getAttributeDescriptors() != null) {
+                assetModelProvider.getAttributeDescriptors().forEach((name, attributeDescriptors) -> {
                     assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
                     assetDescriptorsMap.compute(name, (n, list) -> {
                         if (list == null) {
                             list = new ArrayList<>();
                         }
 
-                        list.addAll(valueDescriptors);
+                        list.addAll(attributeDescriptors);
                         return list;
                     });
                 });
+            }
+
+            if (assetModelProvider.getAssetDescriptors() != null) {
+                for (AssetDescriptor<?> assetDescriptor : assetModelProvider.getAssetDescriptors()) {
+                    Class<? extends Asset<?>> assetClass = assetDescriptor.getType();
+                    if (assetClass != null) {
+                        assetClasses.add(assetClass);
+                    }
+                    assetDescriptorsMap.compute(assetDescriptor.getName(), (name, list) -> {
+                        if (list == null) {
+                            list = new ArrayList<>();
+                        }
+
+                        list.add(assetDescriptor);
+                        return list;
+                    });
+                }
             }
         });
 
@@ -831,8 +840,7 @@ public class ValueUtil {
                 AssetTypeInfo assetInfo = buildAssetInfoFromName(name, copy);
 
                 if (assetInfo != null) {
-                    assetInfoMap.put(assetClass, assetInfo);
-                    assetTypeMap.put(assetInfo.getAssetDescriptor().getName(), assetClass);
+                    assetInfoMap.put(name, assetInfo);
                 }
             } else {
                 // Skip abstract classes as a start point - they should be in the class hierarchy of concrete class
@@ -841,7 +849,7 @@ public class ValueUtil {
                     AssetTypeInfo assetInfo = buildAssetInfoFromClass(assetClass, copy);
 
                     if (assetInfo != null) {
-                        assetInfoMap.put(assetClass, assetInfo);
+                        assetInfoMap.put(assetClass.getSimpleName(), assetInfo);
                         assetTypeMap.put(assetInfo.getAssetDescriptor().getName(), assetClass);
 
                         if (assetInfo.getAssetDescriptor() instanceof AgentDescriptor<?, ?, ?> agentDescriptor) {
@@ -856,18 +864,19 @@ public class ValueUtil {
             }
         });
 
-        // Check each value type implements serializable interface
-        List<ValueDescriptor<?>> nonSerializableValueDescriptors = new ArrayList<>();
-        valueDescriptors.values().forEach(vd -> {
-            if (!Serializable.class.isAssignableFrom(vd.getType())) {
-                nonSerializableValueDescriptors.add(vd);
-            }
-        });
-
-        if (!nonSerializableValueDescriptors.isEmpty()) {
-            String vds = nonSerializableValueDescriptors.stream().map(ValueDescriptor::toString).collect(Collectors.joining(",\n"));
-            throw new IllegalStateException("One or more value types do not implement java.io.Serializable: " + vds);
-        }
+        // RT: Think this as needed for hibernate-types lib that is no longer used
+//        // Check each value type implements serializable interface
+//        List<ValueDescriptor<?>> nonSerializableValueDescriptors = new ArrayList<>();
+//        valueDescriptors.values().forEach(vd -> {
+//            if (!Serializable.class.isAssignableFrom(vd.getType())) {
+//                nonSerializableValueDescriptors.add(vd);
+//            }
+//        });
+//
+//        if (!nonSerializableValueDescriptors.isEmpty()) {
+//            String vds = nonSerializableValueDescriptors.stream().map(ValueDescriptor::toString).collect(Collectors.joining(",\n"));
+//            throw new IllegalStateException("One or more value types do not implement java.io.Serializable: " + vds);
+//        }
 
         // Call on finished on each provider
         assetModelProviders.forEach(AssetModelProvider::onAssetModelFinished);

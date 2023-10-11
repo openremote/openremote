@@ -368,7 +368,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(UnknownAsset.class.getName()); // This doesn't have an asset descriptor which is why it is specifically added
         Arrays.stream(ValueUtil.getAssetDescriptors(null))
             .map(AssetDescriptor::getType)
-            .filter(assetClass -> assetClass.getAnnotation(Entity.class) != null)
+            .filter(assetClass -> assetClass != null && assetClass.getAnnotation(Entity.class) != null)
             .map(Class::getName)
             .forEach(entityClasses::add);
 

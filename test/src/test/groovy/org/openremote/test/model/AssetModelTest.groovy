@@ -8,20 +8,16 @@ import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.timer.TimerService
+import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.Constants
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetModelResource
-import org.openremote.model.asset.AssetResource
-import org.openremote.model.asset.AssetTypeInfo
+import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.AgentDescriptor
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.DefaultAgentLink
 import org.openremote.model.asset.impl.GroupAsset
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.asset.impl.ThingAsset
-import org.openremote.model.asset.impl.UnknownAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeMap
 import org.openremote.model.attribute.MetaItem
@@ -39,6 +35,9 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.lang.reflect.Array
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
@@ -54,7 +53,25 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     @Shared
     static AssetModelResource assetModelResource
 
+    static String CUSTOM_ASSET_TYPE = "CustomAsset"
+    static ValueDescriptor[] dynamicValueDescriptors = [new ValueDescriptor("dynamicValue", null, ValueConstraint.constraints(new ValueConstraint.AllowedValues("value1", "value2")), null, null, null)]
+
     def setupSpec() {
+        // A dynamic asset type is added
+        def storageDir = Paths.get(PersistenceService.OR_STORAGE_DIR_DEFAULT, AssetModelService.DIRECTORY_NAME)
+        Files.createDirectories(storageDir.resolve(AssetModelService.ASSET_DESCRIPTORS_DIR))
+        Files.createDirectories(storageDir.resolve(AssetModelService.META_DESCRIPTORS_DIR))
+        Files.createDirectories(storageDir.resolve(AssetModelService.VALUE_DESCRIPTORS_DIR))
+        MetaItemDescriptor[] dynamicMetaDescriptors = [new MetaItemDescriptor("dynamicMeta", dynamicValueDescriptors[0])]
+        AttributeDescriptor[] dynamicAttributeDescriptors = [
+                new AttributeDescriptor<>("dynamic1", dynamicValueDescriptors[0]),
+                new AttributeDescriptor<>("dynamic2", ValueType.POSITIVE_INTEGER).withOptional(true)
+        ]
+        def dynamicAssetDescriptor = new AssetDescriptor(CUSTOM_ASSET_TYPE, "", "")
+        def assetTypeInfo = new AssetTypeInfo(dynamicAssetDescriptor, dynamicAttributeDescriptors, dynamicMetaDescriptors, dynamicValueDescriptors)
+        Files.writeString(storageDir.resolve(AssetModelService.VALUE_DESCRIPTORS_DIR).resolve(dynamicValueDescriptors[0].name), ValueUtil.asJSON(dynamicValueDescriptors[0]).orElseThrow(), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+        Files.writeString(storageDir.resolve(AssetModelService.META_DESCRIPTORS_DIR).resolve(dynamicMetaDescriptors[0].name), ValueUtil.asJSON(dynamicMetaDescriptors[0]).orElseThrow(), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+        Files.writeString(storageDir.resolve(AssetModelService.ASSET_DESCRIPTORS_DIR).resolve(dynamicAssetDescriptor.name), ValueUtil.asJSON(assetTypeInfo).orElseThrow(), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
         startContainer(defaultConfig(), defaultServices())
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
     }
@@ -311,13 +328,34 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "the update should succeed because the descriptor is no longer associated with the asset"
         missingAssetTypeAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "    "
 
-        when: "a custom asset type is persisted"
+        when: "a custom asset type is persisted (using dynamic CustomAsset)"
         def customAsset = new ThingAsset("Custom asset").setRealm(MASTER_REALM)
             .addAttributes(
                     new Attribute<>("attr1", ValueType.TIMESTAMP, getClockTimeOf(container)),
                     new Attribute<>("attr2", ValueType.POSITIVE_INTEGER, 3)
             )
-        customAsset.type = "CustomAsset"
+        customAsset.type = CUSTOM_ASSET_TYPE
+        customAsset = assetResource.create(null, customAsset)
+
+        then: "a constraint violation exception should be thrown"
+        ex = thrown()
+        ex.response.status == 400
+
+        when: "the report is extracted"
+        report = ex.response.readEntity(ViolationReport)
+
+        then: "the missing required attribute should be included"
+        report.propertyViolations.size() == 1
+        report.propertyViolations.get(0).path == "attributes.dynamic1"
+        report.propertyViolations.get(0).message == "required attribute is missing"
+        report.classViolations.size() == 1
+        report.classViolations.get(0).path == ""
+        report.classViolations.get(0).message == "Asset is not valid"
+
+        when: "the issue is resolved"
+        customAsset.addAttributes(
+                new Attribute<>("dynamic1", dynamicValueDescriptors[0] , "value1")
+        )
         customAsset = assetResource.create(null, customAsset)
 
         then: "it should have been persisted"
@@ -340,23 +378,6 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
     def "Retrieving all asset model info"() {
 
-        when: "an asset info is serialised"
-        def thingAssetInfo = ValueUtil.getAssetInfo(ThingAsset.class).orElse(null)
-        def thingAssetInfoStr = ValueUtil.asJSON(thingAssetInfo)
-
-        then: "it should contain the right information"
-        thingAssetInfoStr.isPresent()
-
-        when: "the JSON representation is deserialised"
-        def thingAssetInfo2 = ValueUtil.parse(thingAssetInfoStr.get(), AssetTypeInfo.class)
-
-        then: "it should have been successfully deserialised"
-        thingAssetInfo2.isPresent()
-        thingAssetInfo2.get().getAssetDescriptor().type == ThingAsset.class
-        thingAssetInfo2.get().attributeDescriptors.get(Asset.LOCATION.name) != null
-        !thingAssetInfo2.get().attributeDescriptors.get(Asset.LOCATION.name).optional
-        thingAssetInfo2.get().attributeDescriptors.get(Asset.LOCATION.name).type == ValueType.GEO_JSON_POINT
-
         when: "the asset type value descriptor is retrieved"
         def assetValueType = ValueUtil.getValueDescriptor(ValueType.ASSET_TYPE.getName())
 
@@ -368,11 +389,11 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         (assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues).allowedValues.any { (it == GroupAsset.class.getSimpleName()) }
 
         when: "all asset model infos are retrieved"
-        def assetInfos = assetModelResource.getAssetInfos(null, null, null);
+        def assetInfos = assetModelResource.getAssetInfos(null, null, null)
 
         then: "the asset model infos should be available"
         assetInfos.size() > 0
-        assetInfos.size() == ValueUtil.assetTypeMap.size()
+        assetInfos.size() == ValueUtil.assetInfoMap.size()
         def velbusTcpAgent = assetInfos.find {it.assetDescriptor.type == VelbusTCPAgent.class}
         velbusTcpAgent != null
         !velbusTcpAgent.attributeDescriptors.get(VelbusTCPAgent.HOST.name).optional

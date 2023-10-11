@@ -79,6 +79,7 @@ public interface Database {
 
             hikariDataSource = new HikariDataSource(hikariConfig);
 
+            // TODO: Change when hikariCP is updated to look for new property
             properties.put(AvailableSettings.DATASOURCE, hikariDataSource);
         }
 

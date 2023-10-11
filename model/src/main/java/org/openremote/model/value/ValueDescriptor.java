@@ -133,15 +133,16 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         return name;
     }
 
+    @SuppressWarnings("unchecked")
     public Class<T> getType() {
-        return type;
+        return type != null ? type : (Class<T>)Object.class;
     }
 
     /**
      * If this descriptor is an array type then this will get the inner type of the array(s)
      */
     public Class<?> getBaseType() {
-        Class<?> clazz = type;
+        Class<?> clazz = getType();
         while (clazz.isArray()) {
             clazz = clazz.getComponentType();
         }

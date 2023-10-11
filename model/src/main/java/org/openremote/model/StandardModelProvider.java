@@ -51,7 +51,7 @@ public class StandardModelProvider implements AssetModelProvider {
     public void onAssetModelFinished() {
         // Inject allowed asset types into GroupAsset
         List<ValueConstraint> constraints = ValueType.ASSET_TYPE.getConstraints() != null ? new ArrayList<>(Arrays.asList(ValueType.ASSET_TYPE.getConstraints())): new ArrayList<>();
-        constraints.add(new ValueConstraint.AllowedValues(Arrays.stream(ValueUtil.getAssetClasses(null)).map(Class::getSimpleName).toArray()));
+        constraints.add(new ValueConstraint.AllowedValues(Arrays.stream(ValueUtil.getAssetInfos(null)).map(ati -> ati.getAssetDescriptor().getName()).toArray()));
         ValueType.ASSET_TYPE.updateConstraints(constraints.toArray(new ValueConstraint[0]));
     }
 }

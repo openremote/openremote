@@ -62,15 +62,19 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
 
         @Override
         public AssetDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            String name = null;
             JsonNode node = p.getCodec().readTree(p);
+            String name = node.get("name").asText();
 
-            if (node.isTextual()) {
-                name = node.asText();
-            } else if (node.isObject()) {
-                name = node.get("name").asText();
+            // Try and lookup instance in type registry
+            AssetDescriptor<?> existing = ValueUtil.getAssetDescriptor(name).orElse(null);
+
+            if (existing != null) {
+                return existing;
             }
-            return ValueUtil.getAssetDescriptor(name).orElse(null);
+
+            String icon = node.get("icon").asText();
+            String colour = node.get("colour").asText();
+            return new AssetDescriptor<>(name, icon, colour);
         }
     }
 
@@ -121,7 +125,12 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
         return colour;
     }
 
-    public Boolean isDynamic() {
+    @JsonProperty("dynamic")
+    protected Boolean isDynamicInternal() {
         return type != null ? null : true;
+    }
+
+    public boolean isDynamic() {
+        return type == null;
     }
 }
