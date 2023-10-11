@@ -21,7 +21,6 @@ package org.openremote.container.persistence;
 
 import com.zaxxer.hikari.HikariPoolMXBean;
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 
 import javax.management.JMX;
@@ -40,11 +39,6 @@ public class PersistenceHealthStatusProvider implements HealthStatusProvider {
     private static final Logger LOG = Logger.getLogger(PersistenceHealthStatusProvider.class.getName());
     public static final String NAME = "db";
     protected PersistenceService persistenceService;
-
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
 
     @Override
     public void init(Container container) throws Exception {

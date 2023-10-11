@@ -19,7 +19,6 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.attribute.MetaMap;
 
 public interface MetaHolder {

@@ -211,7 +211,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                             .count() == 0;
                     })
                     .map(attr -> new ForecastAttribute(asset, attr))
-                    .collect(Collectors.toList())
+                    .toList()
                 );
 
                 forecastTaskManager.delete(attributesToDelete);

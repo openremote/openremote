@@ -23,7 +23,6 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
-import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
 import java.io.InputStream;

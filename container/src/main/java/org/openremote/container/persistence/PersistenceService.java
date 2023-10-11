@@ -465,13 +465,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         Field[] propertyFields = getEntityPropertyFields(clazz, includeFields, excludeFields);
 
         switch (cause) {
-            case CREATE:
-                publishPersistenceEvent(cause, currentEntity, null, null, null);
-                break;
-            case DELETE:
-                publishPersistenceEvent(cause, previousEntity, null, null, null);
-                break;
-            case UPDATE:
+            case CREATE -> publishPersistenceEvent(cause, currentEntity, null, null, null);
+            case DELETE -> publishPersistenceEvent(cause, previousEntity, null, null, null);
+            case UPDATE -> {
                 List<String> propertyNames = new ArrayList<>(propertyFields.length);
                 List<Object> currentState = new ArrayList<>(propertyFields.length);
                 List<Object> previousState = new ArrayList<>(propertyFields.length);
@@ -485,7 +481,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
                     }
                 });
                 publishPersistenceEvent(cause, currentEntity, propertyNames.toArray(new String[0]), currentState.toArray(), previousState.toArray());
-                break;
+            }
         }
     }
 

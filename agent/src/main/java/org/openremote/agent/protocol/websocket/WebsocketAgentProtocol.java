@@ -261,8 +261,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     }
 
     protected void doSubscription(Map<String, List<String>> headers, WebsocketSubscription subscription) {
-        if (subscription instanceof WebsocketHTTPSubscription) {
-            WebsocketHTTPSubscription httpSubscription = (WebsocketHTTPSubscription)subscription;
+        if (subscription instanceof WebsocketHTTPSubscription httpSubscription) {
 
             if (TextUtil.isNullOrEmpty(httpSubscription.uri)) {
                 LOG.warning("Websocket subscription missing or empty URI so skipping: " + subscription);

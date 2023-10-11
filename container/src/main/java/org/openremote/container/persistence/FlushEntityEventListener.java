@@ -28,7 +28,7 @@ import org.hibernate.type.Type;
 
 /**
  * This listener will only push the dirty properties through to the interceptor's onFlushDirty.
- *
+ * <p>
  * Unfortunately there are internal and private dependencies which makes extending not ideal but it is fine for our
  * use case.
  */

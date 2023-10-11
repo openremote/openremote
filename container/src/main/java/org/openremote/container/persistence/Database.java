@@ -22,7 +22,6 @@ package org.openremote.container.persistence;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.JdbcSettings;
 import org.openremote.container.concurrent.ContainerThreadFactory;
 
 import java.util.Properties;
@@ -53,8 +52,7 @@ public interface Database {
 
         @Override
         public Properties createProperties() {
-            Properties properties = new Properties();
-            return properties;
+            return new Properties();
         }
 
         @Override
@@ -72,8 +70,8 @@ public interface Database {
             hikariConfig.addDataSourceProperty("url", connectionUrl);
             hikariConfig.setUsername(username);
             hikariConfig.setPassword(password);
-            hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000);
-            hikariConfig.setInitializationFailTimeout(connectionTimeoutSeconds * 1000);
+            hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000L);
+            hikariConfig.setInitializationFailTimeout(connectionTimeoutSeconds * 1000L);
             hikariConfig.setMinimumIdle(minIdle);
             hikariConfig.setMaximumPoolSize(maxPoolSize);
 

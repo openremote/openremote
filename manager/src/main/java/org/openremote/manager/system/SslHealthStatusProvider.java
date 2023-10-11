@@ -21,7 +21,6 @@ package org.openremote.manager.system;
 
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 
 import javax.net.ssl.*;
@@ -47,11 +46,6 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
     protected SSLContext SSLContext;
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
         
         int SSLPort = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1);
@@ -63,7 +57,7 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
         if (SSLPort > 0 && SSLPort <= 65536) {
             this.SSLPort = SSLPort;
             host = getString(container.getConfig(), Constants.OR_HOSTNAME, null);
-            SSLContext = SSLContext.getInstance("TLS");
+            SSLContext = javax.net.ssl.SSLContext.getInstance("TLS");
             SSLContext.init(null, new TrustManager[]{this}, null);
         }
     }
@@ -90,8 +84,7 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
         SSLSocketFactory ssf = SSLContext.getSocketFactory();
 
-        try {
-            SSLSocket socket = (SSLSocket) ssf.createSocket(host, SSLPort);
+        try (SSLSocket socket = (SSLSocket) ssf.createSocket(host, SSLPort)) {
             socket.startHandshake();
 
             X509Certificate[] peerCertificates = (X509Certificate[]) socket.getSession().getPeerCertificates();

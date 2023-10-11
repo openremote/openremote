@@ -19,7 +19,6 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;

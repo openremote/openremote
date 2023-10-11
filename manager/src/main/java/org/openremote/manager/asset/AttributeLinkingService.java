@@ -234,7 +234,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                                                               AttributeLink.ConverterType converter,
                                                               AttributeRef linkedAttributeRef) throws AssetProcessingException {
         switch (converter) {
-            case TOGGLE:
+            case TOGGLE -> {
                 // Look up current value of the linked attribute within the same database session
                 try {
                     Attribute<?> currentAttribute = getAttribute(em, assetStorageService, asset.getRealm(), linkedAttributeRef).orElseThrow(
@@ -249,13 +249,13 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                             "cannot toggle value as attribute is not of type BOOLEAN: " + linkedAttributeRef
                         );
                     }
-                    return new Pair<>(false, !(Boolean)currentAttribute.getValue(Boolean.class).orElse(false));
+                    return new Pair<>(false, !(Boolean) currentAttribute.getValue(Boolean.class).orElse(false));
                 } catch (NoSuchElementException e) {
                     LOG.fine("The attribute doesn't exist so ignoring toggle value request: " + linkedAttributeRef);
                     return new Pair<>(true, null);
                 }
-            case INCREMENT:
-            case DECREMENT:
+            }
+            case INCREMENT, DECREMENT -> {
                 // Look up current value of the linked attribute within the same database session
                 try {
                     Attribute<?> currentAttribute = getAttribute(em, assetStorageService, asset.getRealm(), linkedAttributeRef).orElseThrow(
@@ -276,11 +276,11 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                     LOG.fine("The attribute doesn't exist so ignoring increment/decrement value request: " + linkedAttributeRef);
                     return new Pair<>(true, null);
                 }
-            default:
-                throw new AssetProcessingException(
-                    AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
-                    "converter is not supported: " + converter
-                );
+            }
+            default -> throw new AssetProcessingException(
+                AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
+                "converter is not supported: " + converter
+            );
         }
     }
 

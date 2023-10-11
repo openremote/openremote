@@ -30,11 +30,6 @@ public class AssetPredictedDatapointHealthStatusProvider implements HealthStatus
     protected AssetPredictedDatapointService assetPredictedDatapointService;
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
     }

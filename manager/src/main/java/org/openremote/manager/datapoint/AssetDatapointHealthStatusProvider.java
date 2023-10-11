@@ -19,11 +19,9 @@
  */
 package org.openremote.manager.datapoint;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.Map;
 

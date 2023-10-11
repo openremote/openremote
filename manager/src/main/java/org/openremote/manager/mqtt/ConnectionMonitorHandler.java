@@ -43,7 +43,6 @@ import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.ValueHolder;
 import org.openremote.model.value.ValueType;
 
@@ -55,8 +54,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;

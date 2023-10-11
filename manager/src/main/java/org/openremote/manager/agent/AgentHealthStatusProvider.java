@@ -35,11 +35,6 @@ public class AgentHealthStatusProvider implements HealthStatusProvider {
     protected AgentService agentService;
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
         agentService = container.getService(AgentService.class);
     }
@@ -75,22 +70,10 @@ public class AgentHealthStatusProvider implements HealthStatusProvider {
 
             if (status != null) {
                 switch (status) {
-
-                    case DISCONNECTED:
-                    case CONNECTING:
-                    case DISCONNECTING:
-                    case WAITING:
-                        otherCount.incrementAndGet();
-                        break;
-                    case CONNECTED:
-                        connectedCount.incrementAndGet();
-                        break;
-                    case DISABLED:
-                        disabledCount.incrementAndGet();
-                        break;
-                    case ERROR:
-                        errorCount.incrementAndGet();
-                        break;
+                    case DISCONNECTED, CONNECTING, DISCONNECTING, WAITING -> otherCount.incrementAndGet();
+                    case CONNECTED -> connectedCount.incrementAndGet();
+                    case DISABLED -> disabledCount.incrementAndGet();
+                    case ERROR -> errorCount.incrementAndGet();
                 }
             } else {
                 otherCount.incrementAndGet();

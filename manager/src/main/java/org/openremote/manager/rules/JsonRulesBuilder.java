@@ -213,15 +213,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                 } else {
                     // Replace or remove asset state as required
                     switch (event.cause) {
-                        case UPDATE:
+                        case UPDATE -> {
                             // Only insert if fact was already in there (i.e. it matches the asset type constraints)
                             if (unfilteredAssetStates.remove(event.assetState)) {
                                 unfilteredAssetStates.add(event.assetState);
                             }
-                            break;
-                        case DELETE:
-                            unfilteredAssetStates.remove(event.assetState);
-                            break;
+                        }
+                        case DELETE -> unfilteredAssetStates.remove(event.assetState);
                     }
                 }
 
@@ -306,7 +304,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     .filter(matchedAssetState -> Objects.equals(previousAssetState, matchedAssetState))
                     .findFirst();
 
-                boolean noLongerMatches = !matched.isPresent();
+                boolean noLongerMatches = matched.isEmpty();
 
                 if (!noLongerMatches) {
                     noLongerMatches = matched.map(matchedAssetState -> {
@@ -349,8 +347,8 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Filter out unmatched asset ids that are in the matched list
                 unmatchedAssetIds = unmatchedAssetStateStream
-                        .filter(assetState -> !matchedAssetIds.contains(assetState.getId()))
                         .map(AssetState::getId)
+                        .filter(id -> !matchedAssetIds.contains(id))
                         .collect(Collectors.toList());
             }
 
@@ -618,7 +616,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         add().name(rule.name)
                 .description(rule.description)
                 .priority(rule.priority)
-                .when(condition::evaluate)
+                .when(condition)
                 .then(action);
 
         return this;
@@ -626,7 +624,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected void addRuleConditionStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, AtomicInteger index, Map<String, RuleConditionState> triggerStateMap) throws Exception {
         if (ruleConditionGroup != null) {
-            if (ruleConditionGroup.getItems().size() > 0) {
+            if (!ruleConditionGroup.getItems().isEmpty()) {
                 for (RuleCondition ruleCondition : ruleConditionGroup.getItems()) {
                     if (TextUtil.isNullOrEmpty(ruleCondition.tag)) {
                         ruleCondition.tag = index.toString();
@@ -636,7 +634,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     index.incrementAndGet();
                 }
             }
-            if (ruleConditionGroup.groups != null && ruleConditionGroup.groups.size() > 0) {
+            if (ruleConditionGroup.groups != null && !ruleConditionGroup.groups.isEmpty()) {
                 for (LogicGroup<RuleCondition> childRuleTriggerCondition : ruleConditionGroup.groups) {
                     addRuleConditionStates(childRuleTriggerCondition, trackUnmatched, index, triggerStateMap);
                 }

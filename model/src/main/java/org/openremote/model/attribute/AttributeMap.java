@@ -19,11 +19,9 @@
  */
 package org.openremote.model.attribute;
 
-import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
-import javax.annotation.CheckForNull;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;

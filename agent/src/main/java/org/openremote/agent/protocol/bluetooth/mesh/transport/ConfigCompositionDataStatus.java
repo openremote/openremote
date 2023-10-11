@@ -28,7 +28,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;

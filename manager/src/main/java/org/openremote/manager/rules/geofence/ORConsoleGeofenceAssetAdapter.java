@@ -21,13 +21,13 @@ package org.openremote.manager.rules.geofence;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.attribute.AttributeRef;
@@ -38,7 +38,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 import java.util.concurrent.*;

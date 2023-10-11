@@ -21,7 +21,6 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.Asset;

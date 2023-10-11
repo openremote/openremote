@@ -1,13 +1,15 @@
 // Common configuration applied to all projects
-import java.nio.file.*
-import java.nio.file.attribute.*
-import java.util.Set
+
+import org.jetbrains.gradle.ext.JUnit
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFileAttributes
+import java.nio.file.attribute.PosixFilePermission
+
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
-import org.jetbrains.gradle.ext.Application
-import org.jetbrains.gradle.ext.JUnit
-
 
 // Configure versions in gradle.properties (putting a gradle.properties file
 // in a subproject only overrides root properties of same name for the actual

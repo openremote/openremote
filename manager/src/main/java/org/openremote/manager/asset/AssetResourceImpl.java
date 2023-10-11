@@ -434,25 +434,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         AttributeWriteResult result = doAttributeWrite(event);
 
         if (result.getFailure() != null) {
-            switch (result.getFailure()) {
-                case ILLEGAL_SOURCE:
-                case INSUFFICIENT_ACCESS:
-                case INVALID_REALM:
-                    status = FORBIDDEN;
-                    break;
-                case ASSET_NOT_FOUND:
-                case ATTRIBUTE_NOT_FOUND:
-                    status = NOT_FOUND;
-                    break;
-                case INVALID_AGENT_LINK:
-                case ILLEGAL_AGENT_UPDATE:
-                case INVALID_ATTRIBUTE_EXECUTE_STATUS:
-                case INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE:
-                    status = NOT_ACCEPTABLE;
-                    break;
-                default:
-                    status = BAD_REQUEST;
-            }
+            status = switch (result.getFailure()) {
+                case ILLEGAL_SOURCE, INSUFFICIENT_ACCESS, INVALID_REALM -> FORBIDDEN;
+                case ASSET_NOT_FOUND, ATTRIBUTE_NOT_FOUND -> NOT_FOUND;
+                case INVALID_AGENT_LINK, ILLEGAL_AGENT_UPDATE, INVALID_ATTRIBUTE_EXECUTE_STATUS, INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE ->
+                    NOT_ACCEPTABLE;
+                default -> BAD_REQUEST;
+            };
         }
 
         return Response.status(status).entity(result).type(MediaType.APPLICATION_JSON_TYPE).build();
@@ -596,7 +584,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         List<Asset<?>> assets = this.assetStorageService.findAll(query);
         LOG.fine("Updating parent for assets: count=" + assets.size() + ", newParentID=" + parentId);
 
-        for (Asset asset : assets) {
+        for (Asset<?> asset : assets) {
             asset.setParentId(parentId);
             LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + parentId);
             assetStorageService.merge(asset);

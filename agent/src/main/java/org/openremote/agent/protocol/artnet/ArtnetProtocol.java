@@ -1,7 +1,6 @@
 package org.openremote.agent.protocol.artnet;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.agent.protocol.udp.UDPIOClient;

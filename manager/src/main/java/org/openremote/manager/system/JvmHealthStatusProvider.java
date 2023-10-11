@@ -35,11 +35,6 @@ public class JvmHealthStatusProvider implements HealthStatusProvider {
     public static final String NAME = "jvm";
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
 
     }

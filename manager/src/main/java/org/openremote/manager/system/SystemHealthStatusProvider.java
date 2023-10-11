@@ -33,11 +33,6 @@ public class SystemHealthStatusProvider implements HealthStatusProvider {
     public static final String NAME = "system";
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
 
     }

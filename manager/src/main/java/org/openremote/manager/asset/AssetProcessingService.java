@@ -154,8 +154,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             // TODO Better exception handling - dead letter queue?
-            if (exception instanceof AssetProcessingException) {
-                AssetProcessingException processingException = (AssetProcessingException) exception;
+            if (exception instanceof AssetProcessingException processingException) {
                 error.append(" - ").append(processingException.getMessage());
                 error.append(": ").append(event.toString());
                 logger.warning(error.toString());

@@ -28,9 +28,6 @@ import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Source;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
-import java.net.URI;
-import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
