@@ -19,7 +19,6 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.util.TsIgnoreTypeParams;
@@ -32,8 +31,7 @@ public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescr
 
     @Pattern(regexp = "^\\w+$")
     protected String name;
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
+    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
     protected ValueDescriptor<T> type;
     protected ValueConstraint[] constraints;
     protected ValueFormat format;

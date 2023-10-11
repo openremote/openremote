@@ -39,18 +39,7 @@ import org.openremote.model.util.ValueUtil;
 public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> {
 
     /**
-     * This class handles serialising {@link MetaItemDescriptor}s as strings
-     */
-    public static class MetaItemDescriptorStringConverter extends StdConverter<MetaItemDescriptor<?>, String> {
-
-        @Override
-        public String convert(MetaItemDescriptor<?> value) {
-            return value.getName();
-        }
-    }
-
-    /**
-     * This class handles deserialising meta item descriptor names to {@link MetaItemDescriptor}s
+     * This class handles deserialising meta item descriptor names to {@link MetaItemDescriptor}s; to reuse instances
      */
     public static class StringMetaItemDescriptorConverter extends StdConverter<String, MetaItemDescriptor<?>> {
 

@@ -22,12 +22,11 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
-import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
 import java.util.*;
@@ -39,16 +38,25 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
      * Deserialise a {@link MetaMap} that is represented as a JSON object where each key is the name of a
      * {@link MetaItemDescriptor}
      */
-    protected static class MetaObjectDeserializer extends StdDeserializer<MetaMap> {
+    public static class MetaObjectDeserializer extends StdDeserializer<MetaMap> {
+
+        public static final String META_DESCRIPTOR_PROVIDER = "meta-descriptor-provider";
+        protected static Function<String, MetaItemDescriptor<?>> DEFAULT_META_DESCRIPTOR_PROVIDER = (name) -> ValueUtil.getMetaItemDescriptor(name).orElse(null);
 
         public MetaObjectDeserializer() {
             super(MetaMap.class);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public MetaMap deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-            List<MetaItem<?>> list = deserialiseMetaMap(jp, ctxt, (metaItemName) -> ValueUtil.getMetaItemDescriptor(metaItemName)
-                .map(MetaItemDescriptor::getType).orElse(null));
+
+            Function<String, MetaItemDescriptor<?>> metaDescriptorProvider = (Function<String, MetaItemDescriptor<?>>)ctxt.getAttribute(META_DESCRIPTOR_PROVIDER);
+            if (metaDescriptorProvider == null) {
+                metaDescriptorProvider = DEFAULT_META_DESCRIPTOR_PROVIDER;
+            }
+
+            List<MetaItem<?>> list = deserialiseMetaMap(jp, ctxt, metaDescriptorProvider);
 
             MetaMap metaMap = new MetaMap();
             metaMap.putAll(list);
@@ -57,9 +65,9 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static List<MetaItem<?>> deserialiseMetaMap(JsonParser jp, DeserializationContext ctxt, Function<String, ValueDescriptor<?>> metaNameToValueDescriptorFunction) throws IOException {
+    public static List<MetaItem<?>> deserialiseMetaMap(JsonParser jp, DeserializationContext ctxt, Function<String, MetaItemDescriptor<?>> metaDescriptorProvider) throws IOException {
         if (!jp.isExpectedStartObjectToken()) {
-            throw new InvalidFormatException(jp, "MetaMap must be an object", jp.nextValue(), MetaMap.class);
+            throw JsonMappingException.from(jp, "MetaMap must be an object");
         }
 
         List<MetaItem<?>> list = new ArrayList<>();
@@ -73,16 +81,16 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
             }
 
             String metaItemName = jp.getCurrentName();
-            ValueDescriptor<?> valueDescriptor = metaNameToValueDescriptorFunction.apply(metaItemName);
+            MetaItemDescriptor<?> metaItemDescriptor = metaDescriptorProvider.apply(metaItemName);
 
             MetaItem metaItem;
-            if (valueDescriptor != null) {
-                metaItem = new MetaItem(metaItemName, valueDescriptor);
+            if (metaItemDescriptor != null) {
+                metaItem = new MetaItem(metaItemDescriptor.getName(), metaItemDescriptor.getType());
             } else {
                 metaItem = new MetaItem(metaItemName);
             }
 
-            metaItem.setValue(Attribute.AttributeDeserializer.deserialiseValue(valueDescriptor, jp, ctxt));
+            metaItem.setValue(Attribute.AttributeDeserializer.deserialiseValue(metaItem.getType(), jp, ctxt));
 
             list.add(metaItem);
         }

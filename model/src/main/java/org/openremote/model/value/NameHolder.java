@@ -19,11 +19,24 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.databind.util.StdConverter;
+
 /**
  * Identifies an item that holds a named property, the name should be very simple, as we use them in SQL path
  * expressions, etc. and must manually escape. The name should be immutable to aid in tracking.
  */
 public interface NameHolder {
+
+    /**
+     * This class handles serialising {@link ValueDescriptor}s as strings
+     */
+    class NameHolderToStringConverter extends StdConverter<NameHolder, String> {
+
+        @Override
+        public String convert(NameHolder value) {
+            return value.getName();
+        }
+    }
 
     String getName();
 }

@@ -20,7 +20,6 @@
 package org.openremote.model.rules;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
@@ -47,8 +46,7 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
     final protected String attributeName;
 
     @JsonProperty(value = "type")
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
+    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
     final protected ValueDescriptor<T> attributeValueType;
 
     final protected T value;

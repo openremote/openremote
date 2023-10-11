@@ -25,10 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.value.AbstractNameValueDescriptorHolder;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemDescriptor;
-import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.*;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,11 +36,10 @@ public class AssetTypeInfo {
     protected AssetDescriptor<?> assetDescriptor;
     @JsonIgnore
     protected Map<String, AttributeDescriptor<?>> attributeDescriptors;
-    @JsonSerialize(contentConverter = MetaItemDescriptor.MetaItemDescriptorStringConverter.class)
+    @JsonSerialize(contentConverter = NameHolder.NameHolderToStringConverter.class)
     @JsonDeserialize(contentConverter = MetaItemDescriptor.StringMetaItemDescriptorConverter.class)
     protected MetaItemDescriptor<?>[] metaItemDescriptors;
-    @JsonSerialize(contentConverter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(contentConverter = ValueDescriptor.StringValueDescriptorConverter.class)
+    @JsonSerialize(contentConverter = ValueDescriptor.NameHolderToStringConverter.class)
     protected ValueDescriptor<?>[] valueDescriptors;
 
     @JsonCreator

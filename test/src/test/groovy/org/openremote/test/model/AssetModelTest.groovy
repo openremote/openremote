@@ -59,9 +59,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     def setupSpec() {
         // A dynamic asset type is added
         def storageDir = Paths.get(PersistenceService.OR_STORAGE_DIR_DEFAULT, AssetModelService.DIRECTORY_NAME)
-        Files.createDirectories(storageDir.resolve(AssetModelService.ASSET_DESCRIPTORS_DIR))
-        Files.createDirectories(storageDir.resolve(AssetModelService.META_DESCRIPTORS_DIR))
-        Files.createDirectories(storageDir.resolve(AssetModelService.VALUE_DESCRIPTORS_DIR))
+        Files.createDirectories(storageDir)
         MetaItemDescriptor[] dynamicMetaDescriptors = [new MetaItemDescriptor("dynamicMeta", dynamicValueDescriptors[0])]
         AttributeDescriptor[] dynamicAttributeDescriptors = [
                 new AttributeDescriptor<>("dynamic1", dynamicValueDescriptors[0]),
@@ -69,9 +67,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         ]
         def dynamicAssetDescriptor = new AssetDescriptor(CUSTOM_ASSET_TYPE, "", "")
         def assetTypeInfo = new AssetTypeInfo(dynamicAssetDescriptor, dynamicAttributeDescriptors, dynamicMetaDescriptors, dynamicValueDescriptors)
-        Files.writeString(storageDir.resolve(AssetModelService.VALUE_DESCRIPTORS_DIR).resolve(dynamicValueDescriptors[0].name), ValueUtil.asJSON(dynamicValueDescriptors[0]).orElseThrow(), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-        Files.writeString(storageDir.resolve(AssetModelService.META_DESCRIPTORS_DIR).resolve(dynamicMetaDescriptors[0].name), ValueUtil.asJSON(dynamicMetaDescriptors[0]).orElseThrow(), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-        Files.writeString(storageDir.resolve(AssetModelService.ASSET_DESCRIPTORS_DIR).resolve(dynamicAssetDescriptor.name), ValueUtil.asJSON(assetTypeInfo).orElseThrow(), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+        def assetTypeInfoStr = AssetModelService.JSON.writeValueAsString(assetTypeInfo)
+        Files.writeString(storageDir.resolve("CustomAsset"), assetTypeInfoStr, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
         startContainer(defaultConfig(), defaultServices())
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
     }

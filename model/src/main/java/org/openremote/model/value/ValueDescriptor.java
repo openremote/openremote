@@ -21,7 +21,15 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
@@ -29,11 +37,13 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * A simple wrapper around a {@link Class} that describes a value that can be used by {@link Attribute}s and
@@ -53,35 +63,50 @@ import java.util.Objects;
 public class ValueDescriptor<T> implements NameHolder, Serializable {
 
     /**
-     * This class handles serialising {@link ValueDescriptor}s as strings
+     * Custom deserialiser that will return the same instance of {@link ValueDescriptor} using the
+     * {@link #VALUE_DESCRIPTOR_PROVIDER} attribute; otherwise it will construct a new instance
      */
-    public static class ValueDescriptorStringConverter extends StdConverter<ValueDescriptor<?>, String> {
+    public static class ValueDescriptorDeserializer extends StdDeserializer<ValueDescriptor<?>> implements ResolvableDeserializer {
 
-        @Override
-        public String convert(ValueDescriptor<?> value) {
-            return value.getName();
+        public static final String VALUE_DESCRIPTOR_PROVIDER = "value-descriptor-provider";
+        protected static Function<String, ValueDescriptor<?>> DEFAULT_VALUE_DESCRIPTOR_PROVIDER = (name) -> ValueUtil.getValueDescriptor(name).orElse(null);
+        protected JsonDeserializer<ValueDescriptor<?>> defaultDeserializer;
+
+        public ValueDescriptorDeserializer(JsonDeserializer<ValueDescriptor<?>> deserializer) {
+            super(ValueDescriptor.class);
+            this.defaultDeserializer = deserializer;
         }
-    }
 
-    /**
-     * This class handles deserialising value descriptor names to {@link ValueDescriptor}s
-     */
-    public static class StringValueDescriptorConverter extends StdConverter<String, ValueDescriptor<?>> {
-
+        @SuppressWarnings("unchecked")
         @Override
-        public ValueDescriptor<?> convert(String value) {
-            return ValueUtil.getValueDescriptor(value).orElse(null);
+        public ValueDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+            Function<String, ValueDescriptor<?>> valueDescriptorProvider = (Function<String, ValueDescriptor<?>>)ctxt.getAttribute(VALUE_DESCRIPTOR_PROVIDER);
+            if (valueDescriptorProvider == null) {
+                valueDescriptorProvider = DEFAULT_VALUE_DESCRIPTOR_PROVIDER;
+            }
+
+            if (p.currentToken() == JsonToken.VALUE_NULL) {
+                return null;
+            }
+
+            if (p.currentToken() == JsonToken.VALUE_STRING) {
+                String name = p.getText();
+                return valueDescriptorProvider.apply(name);
+            }
+
+            if (!p.isExpectedStartObjectToken()) {
+                throw JsonMappingException.from(p, "Value descriptor must be a string or object");
+            }
+
+            return defaultDeserializer.deserialize(p, ctxt);
         }
-    }
 
-    /**
-     * Just outputs simple class name for compactness but can still prove useful for discrimination purposes on UIs
-     */
-    public static class ClassStringConverter extends StdConverter<Class<?>, String> {
-        
+        // The wrapped deserializer might need some post-processing so check whether it implements it or not
         @Override
-        public String convert(Class<?> clazz) {
-            return clazz.getSimpleName();
+        public void resolve(DeserializationContext ctxt) throws JsonMappingException {
+            if (defaultDeserializer instanceof ResolvableDeserializer resolvableDeserializer) {
+                resolvableDeserializer.resolve(ctxt);
+            }
         }
     }
 

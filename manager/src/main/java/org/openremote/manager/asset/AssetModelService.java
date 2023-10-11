@@ -19,12 +19,16 @@
  */
 package org.openremote.manager.asset;
 
-import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.util.StdConverter;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -38,12 +42,10 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.AbstractNameValueDescriptorHolder;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
@@ -52,6 +54,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -66,104 +70,138 @@ import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
  * org.openremote.model.asset.AssetModelResource} and provides support for model requests via the client event bus.
  * <p>
  * Also implements an {@link AssetModelProvider} that loads descriptors from the file system; specifically in
- * {@link PersistenceService#OR_STORAGE_DIR}/{@link #DIRECTORY_NAME}; files can be updated at runtime to provide a
- * dynamic element to the asset model. File structure:
- * <ul>
- *     <li>{@link #ASSET_DESCRIPTORS_DIR} - {@link AssetTypeInfo} files with filename set to {@link AssetDescriptor#getName()}</li>
- *     <li>{@link #META_DESCRIPTORS_DIR} - {@link MetaItemDescriptor} files with filename set to {@link MetaItemDescriptor#getName()}</li>
- *     <li>{@link #VALUE_DESCRIPTORS_DIR} - {@link ValueDescriptor} files with filename set to {@link ValueDescriptor#getName()}</li>
- * </ul>
+ * {@link PersistenceService#OR_STORAGE_DIR}/{@link #DIRECTORY_NAME}; file structure should be a JSON representation
+ * of {@link AssetTypeInfo}.
  */
 public class AssetModelService extends RouteBuilder implements ContainerService, AssetModelProvider {
-    protected ObjectMapper JSON;
+    protected static ObjectMapper JSON = ValueUtil.JSON.copy()
+            .addMixIn(AssetTypeInfo.class, AssetTypeInfoMixin.class);
 
-
-    private class AssetTypeInfoMixin {
-        @JsonDeserialize(contentConverter = StringMetaItemDescriptorConverter.class)
+    @JsonDeserialize(using = AssetTypeInfoDeserializer.class)
+    private static final class AssetTypeInfoMixin {
+        @JsonDeserialize
+        @JsonSerialize
         MetaItemDescriptor<?>[] metaItemDescriptors;
-        @JsonDeserialize(contentConverter = StringValueDescriptorConverter.class)
+        @JsonDeserialize
+        @JsonSerialize
         ValueDescriptor<?>[] valueDescriptors;
-    }
 
-    private class AbstractNameValueDescriptorHolderMixin<T> {
-        @JsonDeserialize(converter = StringValueDescriptorConverter.class)
-        ValueDescriptor<T> type;
-    }
-
-    @JsonDeserialize(using = MetaObjectDeserializer.class)
-    private interface MetaMapMixin {}
-
-    private static class StringMetaItemDescriptorConverter extends StdConverter<String, MetaItemDescriptor<?>> {
-        @Override
-        public MetaItemDescriptor<?> convert(String value) {
-            return dynamicMetaDescriptors != null ? dynamicMetaDescriptors.get(value) : null;
-        }
-    }
-
-    private static class StringValueDescriptorConverter extends StdConverter<String, ValueDescriptor<?>> {
-        @Override
-        public ValueDescriptor<?> convert(String value) {
-            return getValueDescriptor(value).orElse(null);
-        }
-    }
-
-    private static class MetaObjectDeserializer extends StdDeserializer<MetaMap> {
-
-        public MetaObjectDeserializer() {
-            super(MetaMap.class);
-        }
-
-        @Override
-        public MetaMap deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-            List<MetaItem<?>> list = MetaMap.deserialiseMetaMap(jp, ctxt, (metaItemName) -> getMetaItemDescriptor(metaItemName)
-                .map(MetaItemDescriptor::getType).orElse(null));
-
-            MetaMap metaMap = new MetaMap();
-            metaMap.putAll(list);
-            return metaMap;
-        }
+        //AttributeDescriptor<?>[] getAttributeDescriptors() { return null; }
     }
 
     /**
-     * This is needed as {@link MetaItemDescriptor}s from this model provider aren't yet available from
-     * {@link ValueUtil#getMetaItemDescriptor}
+     * Extracts the {@link ValueDescriptor}s then {@link MetaItemDescriptor}s then {@link AttributeDescriptor}
+     * making each available to the next during deserialization.
      */
-    protected static Optional<MetaItemDescriptor<?>> getMetaItemDescriptor(String name) {
-        if (dynamicMetaDescriptors != null) {
-            MetaItemDescriptor<?> descriptor = dynamicMetaDescriptors.get(name);
-            if (descriptor != null) {
-                return Optional.of(descriptor);
-            }
-        }
-        return ValueUtil.getMetaItemDescriptor(name);
-    }
+    private static final class AssetTypeInfoDeserializer extends StdDeserializer<AssetTypeInfo> {
 
-    /**
-     * This is needed as {@link ValueDescriptor}s from this model provider aren't yet available from
-     * {@link ValueUtil#getValueDescriptor}
-     */
-    protected static Optional<ValueDescriptor<?>> getValueDescriptor(String name) {
-        if (dynamicValueDescriptors != null) {
-            ValueDescriptor<?> descriptor = dynamicValueDescriptors.get(name);
-            if (descriptor != null) {
-                return Optional.of(descriptor);
-            }
+        private static final JavaType VALUE_DESCRIPTOR_TYPE = TypeFactory.defaultInstance().constructType(ValueDescriptor[].class);
+        private static final JavaType META_ITEM_DESCRIPTOR_TYPE = TypeFactory.defaultInstance().constructType(MetaItemDescriptor[].class);
+        private static final JavaType ATTRIBUTE_DESCRIPTOR_TYPE = TypeFactory.defaultInstance().constructType(AttributeDescriptor[].class);
+        private static final JavaType ASSET_DESCRIPTOR_TYPE = TypeFactory.defaultInstance().constructType(AssetDescriptor.class);
+
+        private AssetTypeInfoDeserializer() {
+            super(AssetTypeInfo.class);
         }
 
-        return ValueUtil.getValueDescriptor(name);
+        @SuppressWarnings("unchecked")
+        @Override
+        public AssetTypeInfo deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JacksonException {
+            if (!jp.isExpectedStartObjectToken()) {
+                throw JsonMappingException.from(jp, "Must be an object");
+            }
+
+            TokenBuffer attributeDescriptorBuffer = null;
+            TokenBuffer metaItemDescriptorBuffer = null;
+            AssetDescriptor<?> assetDescriptor = null;
+            AttributeDescriptor<?>[] attributeDescriptors = null;
+            final AtomicReference<ValueDescriptor[]> valueDescriptors = new AtomicReference<>();
+            final AtomicReference<MetaItemDescriptor[]> metaItemDescriptors = new AtomicReference<>();
+
+            Function<String, ValueDescriptor<?>> valueDescriptorProvider = (name) -> {
+                ValueDescriptor<?> found = null;
+                if (valueDescriptors.get() != null) {
+                    found = Arrays.stream(valueDescriptors.get()).filter(vd -> vd.getName().equals(name)).findFirst().orElse(null);
+                }
+                if (found == null) {
+                    found = ValueUtil.getValueDescriptor(name).orElse(null);
+                }
+                return found;
+            };
+
+            Function<String, MetaItemDescriptor<?>> metaDescriptorProvider = (name) -> {
+                if (metaItemDescriptors.get() != null) {
+                    return Arrays.stream(metaItemDescriptors.get()).filter(mid -> mid.getName().equals(name)).findFirst().orElse(null);
+                }
+                return null;
+            };
+            ctxt.setAttribute(ValueDescriptor.ValueDescriptorDeserializer.VALUE_DESCRIPTOR_PROVIDER, valueDescriptorProvider);
+            ctxt.setAttribute(MetaMap.MetaObjectDeserializer.META_DESCRIPTOR_PROVIDER, metaDescriptorProvider);
+
+            while (jp.nextToken() != JsonToken.END_OBJECT) {
+                String propName = jp.currentName();
+                if (jp.currentToken() == JsonToken.FIELD_NAME) {
+                    jp.nextToken();
+                }
+                if (jp.currentToken() == JsonToken.VALUE_NULL) {
+                    continue;
+                }
+
+                switch (propName) {
+                    case "attributeDescriptors" -> {
+                        if (metaItemDescriptors.get() == null) {
+                            attributeDescriptorBuffer = new TokenBuffer(jp, ctxt);
+                            attributeDescriptorBuffer.copyCurrentStructure(jp);
+                        } else {
+                            attributeDescriptors = (AttributeDescriptor<?>[])ctxt.findRootValueDeserializer(ATTRIBUTE_DESCRIPTOR_TYPE).deserialize(jp, ctxt);
+                        }
+                    }
+                    case "metaItemDescriptors" -> {
+                        if (valueDescriptors.get() == null) {
+                            metaItemDescriptorBuffer = new TokenBuffer(jp, ctxt);
+                            metaItemDescriptorBuffer.copyCurrentStructure(jp);
+                        } else {
+                            metaItemDescriptors.set((MetaItemDescriptor<?>[])ctxt.findRootValueDeserializer(META_ITEM_DESCRIPTOR_TYPE).deserialize(jp, ctxt));
+                        }
+                    }
+                    case "valueDescriptors" -> {
+                        valueDescriptors.set((ValueDescriptor<?>[]) ctxt.findRootValueDeserializer(VALUE_DESCRIPTOR_TYPE).deserialize(jp, ctxt));
+                    }
+                    case "assetDescriptor" -> {
+                        assetDescriptor = (AssetDescriptor<?>) ctxt.findRootValueDeserializer(ASSET_DESCRIPTOR_TYPE).deserialize(jp, ctxt);
+                    }
+                }
+            }
+
+            if (metaItemDescriptorBuffer != null) {
+                JsonParser parser = metaItemDescriptorBuffer.asParser();
+                parser.nextToken();
+                metaItemDescriptors.set((MetaItemDescriptor<?>[])ctxt.findRootValueDeserializer(META_ITEM_DESCRIPTOR_TYPE).deserialize(parser, ctxt));
+            }
+            if (attributeDescriptorBuffer != null) {
+                JsonParser parser = attributeDescriptorBuffer.asParser();
+                parser.nextToken();
+                attributeDescriptors = (AttributeDescriptor<?>[])ctxt.findRootValueDeserializer(ATTRIBUTE_DESCRIPTOR_TYPE).deserialize(parser, ctxt);
+            }
+
+            if (assetDescriptor == null) {
+                throw new JsonParseException(jp, "Must contain an asset descriptor");
+            }
+            return new AssetTypeInfo(
+                assetDescriptor,
+                attributeDescriptors,
+                metaItemDescriptors.get() != null ? metaItemDescriptors.get() : new MetaItemDescriptor[0],
+                valueDescriptors.get() != null ? valueDescriptors.get() : new ValueDescriptor[0]
+            );
+        }
     }
 
     protected static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, AssetModelService.class);
+    public static final String DIRECTORY_NAME = "asset_model";
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
     protected PersistenceService persistenceService;
-    public static final String DIRECTORY_NAME = "model";
-    public static final String ASSET_DESCRIPTORS_DIR = "asset";
-    public static final String META_DESCRIPTORS_DIR = "meta";
-    public static final String VALUE_DESCRIPTORS_DIR = "value";
-    protected static Map<String, ValueDescriptor<?>> dynamicValueDescriptors; // This is needed for deserialisation - This class is a singleton so it's ok
-    protected static Map<String, MetaItemDescriptor<?>> dynamicMetaDescriptors; // This is needed for deserialisation - This class is a singleton so it's ok
     protected Map<String, AssetTypeInfo> dynamicAssetTypeInfos;
     protected Path storageDir;
 
@@ -205,39 +243,26 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
     }
 
     protected void initDynamicModel() {
-        if (JSON == null) {
-            JSON = ValueUtil.JSON.copy()
-                .addMixIn(AssetTypeInfo.class, AssetTypeInfoMixin.class)
-                .addMixIn(AbstractNameValueDescriptorHolder.class, AbstractNameValueDescriptorHolderMixin.class)
-                .addMixIn(MetaMap.class, MetaMapMixin.class);
-        }
+        try {
+            Path rootStorageDir = persistenceService.getStorageDir();
+            storageDir = rootStorageDir.resolve(DIRECTORY_NAME);
 
-        Path rootStorageDir = persistenceService.getStorageDir();
-        storageDir = rootStorageDir.resolve(DIRECTORY_NAME);
-
-        Stream.of(rootStorageDir.resolve(ASSET_DESCRIPTORS_DIR), storageDir.resolve(META_DESCRIPTORS_DIR), storageDir.resolve(VALUE_DESCRIPTORS_DIR))
-            .forEach(modelPath -> {
-                if (!Files.exists(modelPath)) {
-                    try {
-                        Files.createDirectories(modelPath);
-                    } catch (IOException e) {
-                        LOG.log(Level.SEVERE, "Failed to create asset model storage directory", e);
-                        throw new RuntimeException(e);
-                    }
-                } else if (!Files.isDirectory(modelPath)) {
-                    throw new IllegalStateException("Asset model storage directory is not a directory: " + modelPath);
+            if (!Files.exists(storageDir)) {
+                try {
+                    Files.createDirectories(storageDir);
+                } catch (IOException e) {
+                    LOG.log(Level.SEVERE, "Failed to create asset model storage directory", e);
+                    throw new RuntimeException(e);
                 }
-            });
+            } else if (!Files.isDirectory(storageDir)) {
+                throw new IllegalStateException("Asset model storage directory is not a directory: " + storageDir);
+            }
 
-        // Load value descriptors first
-        dynamicValueDescriptors = loadDescriptors(ValueDescriptor.class, storageDir.resolve(VALUE_DESCRIPTORS_DIR))
-            .collect(Collectors.toMap(ValueDescriptor::getName, vd -> (ValueDescriptor<?>) vd));
-        // Then meta item descriptors
-        dynamicMetaDescriptors = loadDescriptors(MetaItemDescriptor.class, storageDir.resolve(META_DESCRIPTORS_DIR))
-            .collect(Collectors.toMap(MetaItemDescriptor::getName, md -> (MetaItemDescriptor<?>) md));
-        // Then attribute and asset descriptors
-        dynamicAssetTypeInfos = loadDescriptors(AssetTypeInfo.class, storageDir.resolve(ASSET_DESCRIPTORS_DIR))
-            .collect(Collectors.toMap(ati -> ati.getAssetDescriptor().getName(), ati -> ati));
+            dynamicAssetTypeInfos = loadDescriptors(AssetTypeInfo.class, storageDir)
+                .collect(Collectors.toMap(ati -> ati.getAssetDescriptor().getName(), ati -> ati));
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to load custom asset types from '" + storageDir + "':" + e.getMessage());
+        }
     }
 
     @Override
@@ -346,31 +371,24 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return ValueUtil.getMetaItemDescriptors();
     }
 
-    protected <T> Optional<T> parse(String jsonString, Class<T> type) {
-        try {
-            return Optional.of(JSON.readValue(jsonString, JSON.constructType(type)));
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to parse JSON", e);
-        }
-        return Optional.empty();
+    protected <T> T parse(String jsonString, Class<T> type) throws JsonProcessingException {
+        return JSON.readValue(jsonString, JSON.constructType(type));
     }
 
     protected <T> Stream<T> loadDescriptors(Class<T> descriptorClazz, Path descriptorPath) {
         try {
             return Files.list(descriptorPath).map(descriptorFile -> {
-                LOG.log(Level.FINE, "Reading meta item descriptors from: " + descriptorFile);
-                String descriptorStr = null;
+                LOG.log(Level.FINE, "Reading descriptor from: " + descriptorFile);
+                String descriptorStr;
                 try {
                     descriptorStr = Files.readString(descriptorFile);
+                    if (descriptorStr != null) {
+                        return parse(descriptorStr, descriptorClazz);
+                    }
+                } catch (JsonProcessingException e) {
+                    LOG.log(Level.SEVERE, "Failed to parse descriptor file '" + descriptorFile + "': " + e.getMessage());
                 } catch (IOException e) {
-                    LOG.log(Level.SEVERE, "Failed to read " + descriptorClazz.getSimpleName() + " from file: " + descriptorFile, e);
-                }
-                if (descriptorStr != null) {
-                    return parse(descriptorStr, descriptorClazz).orElseGet(() -> {
-                        String msg = "Failed to parse descriptor(s) from file: " + descriptorFile;
-                        LOG.log(Level.SEVERE, msg);
-                        return null;
-                    });
+                    LOG.log(Level.SEVERE, "Failed to read descriptor file '" + descriptorFile + "': " + e.getMessage());
                 }
                 return null;
             }).filter(Objects::nonNull);

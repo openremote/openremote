@@ -141,11 +141,11 @@ public class ValueUtil {
     public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, ValueUtil.class);
     public static ObjectMapper JSON = configureObjectMapper(new ObjectMapper());
     protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>();
-    protected static Map<String, AssetTypeInfo> assetInfoMap;
-    protected static Map<String, Class<? extends Asset<?>>> assetTypeMap;
-    protected static Map<String, Class<? extends AgentLink<?>>> agentLinkMap;
-    protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors;
-    protected static Map<String, ValueDescriptor<?>> valueDescriptors;
+    protected static Map<String, AssetTypeInfo> assetInfoMap = new HashMap<>();
+    protected static Map<String, Class<? extends Asset<?>>> assetTypeMap = new HashMap<>();
+    protected static Map<String, Class<? extends AgentLink<?>>> agentLinkMap = new HashMap<>();
+    protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
+    protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
     protected static Validator validator;
     protected static JsonSchemaGenerator generator;
 
@@ -173,6 +173,9 @@ public class ValueUtil {
                 public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
                     if (Asset.class.isAssignableFrom(beanDesc.getBeanClass())) {
                         return new Asset.AssetDeserializer((JsonDeserializer<Asset<?>>) deserializer, beanDesc.getBeanClass());
+                    }
+                    if (ValueDescriptor.class.isAssignableFrom(beanDesc.getBeanClass())) {
+                        return new ValueDescriptor.ValueDescriptorDeserializer((JsonDeserializer<ValueDescriptor<?>>) deserializer);
                     }
                     return deserializer;
                 }}));
@@ -714,11 +717,6 @@ public class ValueUtil {
      * can be called by applications at startup to fail hard and fast if the asset model is un-usable
      */
     protected static void doInitialise() throws IllegalStateException {
-        assetInfoMap = new HashMap<>();
-        assetTypeMap = new HashMap<>();
-        agentLinkMap = new HashMap<>();
-        metaItemDescriptors = new HashMap<>();
-        valueDescriptors = new HashMap<>();
         generator = null;
 
         LOG.info("Initialising asset model...");
@@ -769,8 +767,9 @@ public class ValueUtil {
                 }
             }
 
-            if (assetModelProvider.getValueDescriptors() != null) {
-                assetModelProvider.getValueDescriptors().forEach((name, valueDescriptors) -> {
+            Map<String, Collection<ValueDescriptor<?>>> valueDescriptors1 = assetModelProvider.getValueDescriptors();
+            if (valueDescriptors1 != null) {
+                valueDescriptors1.forEach((name, valueDescriptors) -> {
                     assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
                     assetDescriptorsMap.compute(name, (n, list) -> {
                         if (list == null) {
@@ -785,8 +784,9 @@ public class ValueUtil {
                 });
             }
 
-            if (assetModelProvider.getMetaItemDescriptors() != null) {
-                assetModelProvider.getMetaItemDescriptors().forEach((name, metaDescriptors) -> {
+            Map<String, Collection<MetaItemDescriptor<?>>> metaItemDescriptors = assetModelProvider.getMetaItemDescriptors();
+            if (metaItemDescriptors != null) {
+                metaItemDescriptors.forEach((name, metaDescriptors) -> {
                     assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
                     assetDescriptorsMap.compute(name, (n, list) -> {
                         if (list == null) {
@@ -799,8 +799,9 @@ public class ValueUtil {
                 });
             }
 
-            if (assetModelProvider.getAttributeDescriptors() != null) {
-                assetModelProvider.getAttributeDescriptors().forEach((name, attributeDescriptors) -> {
+            Map<String, Collection<AttributeDescriptor<?>>> attributeDescriptors1 = assetModelProvider.getAttributeDescriptors();
+            if (attributeDescriptors1 != null) {
+                attributeDescriptors1.forEach((name, attributeDescriptors) -> {
                     assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
                     assetDescriptorsMap.compute(name, (n, list) -> {
                         if (list == null) {
@@ -813,8 +814,9 @@ public class ValueUtil {
                 });
             }
 
-            if (assetModelProvider.getAssetDescriptors() != null) {
-                for (AssetDescriptor<?> assetDescriptor : assetModelProvider.getAssetDescriptors()) {
+            AssetDescriptor<?>[] assetDescriptors = assetModelProvider.getAssetDescriptors();
+            if (assetDescriptors != null) {
+                for (AssetDescriptor<?> assetDescriptor : assetDescriptors) {
                     Class<? extends Asset<?>> assetClass = assetDescriptor.getType();
                     if (assetClass != null) {
                         assetClasses.add(assetClass);
