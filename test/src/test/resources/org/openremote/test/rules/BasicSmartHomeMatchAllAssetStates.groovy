@@ -3,8 +3,7 @@ package org.openremote.setup.integration.rules
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.query.AssetQuery
-
-import static org.openremote.model.value.ValueType.TEXT
+import static org.openremote.model.value.ValueType.*
 
 RulesBuilder rules = binding.rules
 
@@ -38,7 +37,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("Kitchen Number Attributes").isPresent() &&
                     facts.matchAssetState(new AssetQuery().names("Kitchen 1"))
-                            .filter({ assetState -> assetState.typeClass == Double })
+                            .filter({ assetState -> assetState.type == NUMBER })
                             .findFirst().isPresent()
         })
         .then(
@@ -52,7 +51,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("Boolean attributes").isPresent() &&
                     facts.matchAssetState(new AssetQuery())
-                            .filter({ assetState -> assetState.typeClass == Boolean })
+                            .filter({ assetState -> assetState.type == BOOLEAN })
                             .findFirst().isPresent()
         })
         .then(

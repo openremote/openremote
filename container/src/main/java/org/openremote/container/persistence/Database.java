@@ -60,6 +60,7 @@ public interface Database {
             return "postgresql";
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         public void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
             hikariConfig = new HikariConfig();
