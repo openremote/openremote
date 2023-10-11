@@ -20,7 +20,6 @@
 package org.openremote.manager.system;
 
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 
 import java.lang.management.ManagementFactory;
