@@ -63,6 +63,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -774,6 +775,7 @@ public class ValueUtil {
 
             Map<String, Collection<ValueDescriptor<?>>> valueDescriptors1 = assetModelProvider.getValueDescriptors();
             if (valueDescriptors1 != null) {
+                AtomicInteger count = new AtomicInteger(0);
                 valueDescriptors1.forEach((name, valueDescriptors) -> {
                     assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
                     assetDescriptorsMap.compute(name, (n, list) -> {
@@ -782,15 +784,18 @@ public class ValueUtil {
                         }
 
                         list.addAll(valueDescriptors);
+                        count.addAndGet(valueDescriptors.size());
                         // Push value descriptors straight in so they are accessible to asset model providers
                         valueDescriptors.forEach(vd -> ValueUtil.valueDescriptors.put(vd.getName(), vd));
                         return list;
                     });
                 });
+                LOG.fine("Found " + count.get() + " value descriptors");
             }
 
             Map<String, Collection<MetaItemDescriptor<?>>> metaItemDescriptors = assetModelProvider.getMetaItemDescriptors();
             if (metaItemDescriptors != null) {
+                AtomicInteger count = new AtomicInteger(0);
                 metaItemDescriptors.forEach((name, metaDescriptors) -> {
                     assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
                     assetDescriptorsMap.compute(name, (n, list) -> {
@@ -799,13 +804,16 @@ public class ValueUtil {
                         }
 
                         list.addAll(metaDescriptors);
+                        count.addAndGet(metaDescriptors.size());
                         return list;
                     });
                 });
+                LOG.fine("Found " + count.get() + " meta item descriptors");
             }
 
             Map<String, Collection<AttributeDescriptor<?>>> attributeDescriptors1 = assetModelProvider.getAttributeDescriptors();
             if (attributeDescriptors1 != null) {
+                AtomicInteger count = new AtomicInteger(0);
                 attributeDescriptors1.forEach((name, attributeDescriptors) -> {
                     assetClasses.stream().filter(c -> c.getSimpleName().equals(name)).findFirst().ifPresent(assetClasses::add);
                     assetDescriptorsMap.compute(name, (n, list) -> {
@@ -814,13 +822,16 @@ public class ValueUtil {
                         }
 
                         list.addAll(attributeDescriptors);
+                        count.addAndGet(attributeDescriptors.size());
                         return list;
                     });
                 });
+                LOG.fine("Found " + count.get() + " attribute descriptors");
             }
 
             AssetDescriptor<?>[] assetDescriptors = assetModelProvider.getAssetDescriptors();
             if (assetDescriptors != null) {
+                LOG.fine("Found " + assetDescriptors.length + " asset descriptors");
                 for (AssetDescriptor<?> assetDescriptor : assetDescriptors) {
                     Class<? extends Asset<?>> assetClass = assetDescriptor.getType();
                     if (assetClass != null) {
