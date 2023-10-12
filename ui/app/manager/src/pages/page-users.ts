@@ -323,7 +323,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         this._loading = false;
     }
 
-    private async _createUpdateUser(user: UserModel, action: 'update' | 'create') {
+    private async _createUpdateUser(user: UserModel, action: 'update' | 'create'): Promise<boolean> {
         if ((this._registrationEmailAsUsername && !user.serviceAccount) ? !user.email : !user.username) {
             showSnackbar(undefined, i18next.t((this._registrationEmailAsUsername && !user.serviceAccount) ? "noEmailSet" : "noUsernameSet"), i18next.t("dismiss"));
             return false;
@@ -968,6 +968,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           let error: { status?: number, text: string };
                                           this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then((result) => {
+                                              // Return to the users page on successful user create/update
                                               if (result) {                                              
                                                   showSnackbar(undefined, i18next.t("saveUserSucceeded"));
                                                   this.reset();
