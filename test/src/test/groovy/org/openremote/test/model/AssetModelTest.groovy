@@ -110,10 +110,17 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.setRealm("master")
 
         when: "try to save the asset without meeting constraints on required attributes"
-        assetResource.create(null, modelTestAsset)
+
+        // thrown doesn't work reliably for some reason
+        WebApplicationException ex
+        try {
+            assetResource.create(null, modelTestAsset)
+        } catch (Exception e) {
+            ex = e
+        }
 
         then: "a constraint violation exception should be thrown"
-        WebApplicationException ex = thrown()
+        ex != null
         ex.response.status == 400
         def report = ex.response.readEntity(ViolationReport)
         report.propertyViolations.size() == 1
@@ -229,10 +236,16 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = new ModelTestAsset.TestObject(90, null)}
         modelTestAsset.getAttribute("custom1").ifPresent {it.value = 123}
         modelTestAsset.getAttribute("custom2").ifPresent {it.value = null}
-        modelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
+        // thrown doesn't work reliably for some reason
+        try {
+            ex = null
+            modelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
+        } catch (Exception e) {
+            ex = e
+        }
 
         then: "a constraint violation exception should be thrown"
-        ex = thrown()
+        ex != null
         ex.response.status == 400
 
         when: "the report is extracted"
