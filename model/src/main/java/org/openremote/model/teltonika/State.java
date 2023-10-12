@@ -10,6 +10,7 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.util.ValueUtil;
+
 import org.openremote.model.value.*;
 
 import java.util.*;
@@ -17,7 +18,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.openremote.model.value.MetaItemType.*;
-
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
         "reported"
@@ -106,13 +106,9 @@ public class State {
 
                         if(min.isPresent() || max.isPresent()){
                             MetaItem<ValueConstraint[]> constraintsMeta = new MetaItem<>(CONSTRAINTS);
-                            List<ValueConstraint> constraintValues = new ArrayList<ValueConstraint>();
-                            if(min.isPresent()){
-                                constraintValues.add(new ValueConstraint.Min((Number) min.get()));
-                            }
-                            if(max.isPresent()){
-                                constraintValues.add(new ValueConstraint.Max((Number) max.get()));
-                            }
+                            List<ValueConstraint> constraintValues = new ArrayList<>();
+                            min.ifPresent(o -> constraintValues.add(new ValueConstraint.Min((Number) o)));
+                            max.ifPresent(o -> constraintValues.add(new ValueConstraint.Max((Number) o)));
 
                             ValueConstraint[] constraints = constraintValues.toArray(new ValueConstraint[0]);
 
@@ -157,26 +153,19 @@ public class State {
         //TODO: Figure out what the parameters: pr, alt, ang, sat, sp, and evt do and implement their functionality
 
         // Store data points, allow use for rules, and don't allow user parameter transmission, for every attribute parsed
-        attributes.forEach(attribute -> {
-            attribute.addOrReplaceMeta(
-                    new MetaItem<>(STORE_DATA_POINTS, true),
-                    new MetaItem<>(RULE_STATE, true),
-                    new MetaItem<>(READ_ONLY, true));
-        });
+        attributes.forEach(attribute -> attribute.addOrReplaceMeta(
+                new MetaItem<>(STORE_DATA_POINTS, true),
+                new MetaItem<>(RULE_STATE, true),
+                new MetaItem<>(READ_ONLY, true)));
 
         return attributes;
     }
 
     private ValueDescriptor<?> GetAttributeType(TeltonikaParameter parameter) {
-        switch (parameter.type){
-            case "Unsigned":
-            case "Signed":
-            case "unsigned":
-            case "UNSIGNED LONG INT":
-                return ValueType.LONG;
-            default:
-                return ValueType.TEXT;
-        }
+        return switch (parameter.type) {
+            case "Unsigned", "Signed", "unsigned", "UNSIGNED LONG INT" -> ValueType.LONG;
+            default -> ValueType.TEXT;
+        };
     }
 
     private GeoJSONPoint ParseLatLngToGeoJSONObject(String latlngString) {

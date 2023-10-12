@@ -3,7 +3,10 @@ package org.openremote.manager.mqtt;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.mqtt.MqttQoS;
+import net.fortuna.ical4j.model.property.Tel;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import org.apache.tools.ant.taskdefs.optional.windows.Attrib;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -12,14 +15,21 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.impl.CarAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.teltonika.TeltonikaParameter;
 import org.openremote.model.teltonika.TeltonikaPayload;
+import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
+import org.w3c.dom.Attr;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -27,12 +37,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class TeltonikaMQTTHandler extends MQTTHandler {
+    private class TeltonikaDevice {
+        String clientId;
+        String commandTopic;
+
+        public TeltonikaDevice(Topic topic) {
+            this.clientId = topic.tokens.get(1);
+            this.commandTopic = String.format("%s/%s/teltonika/%s/commands", topicRealm(topic), this.clientId, topic.tokens.get(3));
+        }
+    }
 
     private static final String TOKEN_TELTONIKA_DEVICE = "teltonika";
 
@@ -41,6 +63,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     protected AssetStorageService assetStorageService;
     protected TimerService timerService;
     protected Path DeviceParameterPath;
+
+    protected final ConcurrentMap<String, TeltonikaDevice> connectionSubscriberInfoMap = new ConcurrentHashMap<>();
 
 
 
@@ -74,6 +98,41 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
         }
+
+        clientEventService.addInternalSubscription(
+                AttributeEvent.class,
+                null,
+                this::handleAttributeMessage);
+    }
+
+    private void handleAttributeMessage(AttributeEvent event) {
+        getLogger().info(event.toString());
+        List<Asset<?>> assetsWithAttribute = assetStorageService.findAll(new AssetQuery().types(CarAsset.class).attributeName("sendToDevice"));
+
+        for (Asset<?> asset : assetsWithAttribute) {
+            if(asset.hasAttribute("sendToDevice")){
+                if(Objects.equals(event.getAssetId(), asset.getId())){
+//                    new AttributeRef(asset.getId(), "sendToDevice")
+                    Attribute<String> imei = asset.getAttribute("IMEI", String.class).get();
+                    String imeiString = imei.getValue().get();
+                    TeltonikaDevice deviceInfo = connectionSubscriberInfoMap.get(imeiString);
+                    if(deviceInfo == null) {
+                        getLogger().info(String.format("Device %s is not subscribed to topic, not posting message", imeiString));
+                        return;
+                    } else{
+                        this.sendCommandToTeltonikaDevice((String)event.getValue().get(), deviceInfo);
+                    }
+
+                }
+            }
+        }
+
+
+        getLogger().info("fired");
+    }
+
+    private void sendCommandToTeltonikaDevice(String command, TeltonikaDevice device) {
+        mqttBrokerService.publishMessage(device.commandTopic, command, MqttQoS.EXACTLY_ONCE);
     }
 
     @Override
@@ -81,10 +140,16 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         return LOG;
     }
 
-   @Override
+    //Users should be able to subscribe for now
+    @Override
+    public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+        return true;
+    }
+
+    @Override
     public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         getLogger().info("Topic "+topic.toString()+" is not subscribe-able");
-        return false;
+        return true;
     }
 
     /**
@@ -105,10 +170,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     }
 
     public void onSubscribe(RemotingConnection connection, Topic topic) {
+        getLogger().info("device "+topic.tokens.get(1)+" connected to topic "+topic.toString()+".");
+        connectionSubscriberInfoMap.put(topic.tokens.get(3), new TeltonikaDevice(topic));
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
+        getLogger().info("device "+topic.tokens.get(1)+" disconnected from topic "+topic.toString()+".");
+        connectionSubscriberInfoMap.remove(topic.tokens.get(3));
     }
 
     /**
@@ -116,6 +185,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * these topics will be passed to {@link #onPublish}.
      * The listener topics are defined as <code>{realmID}/{userID}/{@value TOKEN_TELTONIKA_DEVICE}/{IMEI}</code>
      */
+
     @Override
     public Set<String> getPublishListenerTopics() {
         getLogger().fine("getPublishListenerTopics");
@@ -127,11 +197,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
-
-
         String payloadContent = body.toString(StandardCharsets.UTF_8);
-
-
+        getLogger().info(payloadContent);
         String deviceImei = topic.tokens.get(3);
         String realm = topic.tokens.get(0);
 
@@ -228,4 +295,6 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                     .asyncSend();
         });
     }
+
+
 }
