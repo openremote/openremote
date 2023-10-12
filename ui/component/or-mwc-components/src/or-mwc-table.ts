@@ -1,10 +1,11 @@
-import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
+import {css, html, LitElement, TemplateResult, unsafeCSS, PropertyValues} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {classMap} from "lit/directives/class-map.js";
 import {until} from 'lit/directives/until.js';
 import {MDCDataTable} from "@material/data-table";
+import {MDCCheckbox} from "@material/checkbox";
 import {when} from 'lit/directives/when.js';
-import {DefaultColor3, DefaultColor2, DefaultColor1} from "@openremote/core";
+import {DefaultColor3, DefaultColor2, DefaultColor1, manager} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "./or-mwc-input";
 
@@ -87,6 +88,21 @@ const style = css`
         cursor: pointer;
     }
     
+    .sort-button {
+        border: none;
+        background-color: ${unsafeCSS(DefaultColor1)};
+        color: ${unsafeCSS(DefaultColor3)};
+        cursor: pointer;
+    }
+    
+    .sortable {
+        cursor: pointer;
+    }
+    
+    .hidden {
+        visibility: hidden;
+    }
+    
     #column-1 {
         width: var(--or-mwc-table-column-width-1, unset);
     }    
@@ -131,12 +147,14 @@ interface TableConfig {
     pagination?: {
         enable?: boolean
     }
+    multiSelect?: boolean;
 }
 
 export interface TableColumn {
     title?: string,
     isNumeric?: boolean,
-    hideMobile?: boolean
+    hideMobile?: boolean,
+    isSortable?: boolean
 }
 
 export interface TableRow {
@@ -203,6 +221,20 @@ export class OrMwcTable extends LitElement {
     @state()
     protected _dataTable?: MDCDataTable;
 
+    @property({ type: String })
+    protected sortDirection?: 'ASC' | 'DESC' = 'ASC';
+
+    @property({type: Number})
+    protected sortIndex?: number = -1;
+
+    @property({type: Array})
+    public selectedRows?: TableRow[] | string[][] | any[] = [];
+
+    @property()
+    protected indeterminate?: boolean = false;
+
+    @property()
+    protected allSelected?: boolean = false;
 
     /* ------------------- */
 
@@ -221,6 +253,11 @@ export class OrMwcTable extends LitElement {
                 observer.unobserve(entries[0].target);
             })
             observer.observe(elem!);
+
+            // Reset selected rows properties
+            this.selectedRows = [];
+            this.indeterminate = false;
+            this.allSelected = false;
         }
     }
 
@@ -240,19 +277,36 @@ export class OrMwcTable extends LitElement {
                                 <thead>
                                 <tr class="mdc-data-table__header-row">
                                     ${this.columns.map((column: TableColumn | string, index: number) => {
+                                        if(index == 0 && this.config.multiSelect){
+                                            return html` 
+                                            <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
+                                                role="columnheader" scope="col">
+                                                <div class="">
+                                                    <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
+                                                                  class="${classMap({'mdi-checkbox-intermediate': this.indeterminate!})}"
+                                                                  .indeterminate="${this.indeterminate}"
+                                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value, "all")}" .value="${this.allSelected}">
+                                                    </or-mwc-input>
+                                                </div>
+                                            </th>
+                                            `
+                                        }
                                         return (typeof column == "string") ? html`
-                                            <th class="mdc-data-table__header-cell" id="column-${index+1}" role="columnheader" scope="col"
-                                                title="${column}">${column}
+                                            <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell mdc-data-table__header-cell--checkbox" : ''}" id="column-${index+1}" role="columnheader" scope="col"
+                                                title="${column}">
+                                                column
                                             </th>
                                         ` : html`
                                             <th class="mdc-data-table__header-cell ${classMap({
                                                 'mdc-data-table__cell--numeric': !!column.isNumeric,
-                                                'hide-mobile': !!column.hideMobile
+                                                'hide-mobile': !!column.hideMobile,
+                                                'mdc-data-table__header-cell--with-sort': !!column.isSortable,
                                             })}"
-                                                role="columnheader" scope="col" title="${column.title}">
-                                                ${column.title}
+                                                role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
+                                                @click="${(ev: MouseEvent) => !!column.isSortable ? this.sortRows(ev, index, this.sortDirection!) : ''}">
+                                                ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))}
                                             </th>
-                                        `;
+                                        `
                                     })}
                                 </tr>
                                 </thead>
@@ -278,8 +332,7 @@ export class OrMwcTable extends LitElement {
                                             .map((item: TableRow | string[]) => {
                                                 const content: (string | number | TemplateResult)[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
                                                 return html`
-                                                    <tr class="mdc-data-table__row"
-                                                        @click="${(ev: MouseEvent) => this.dispatchEvent(new OrMwcTableRowClickEvent((this.rows as any[]).indexOf(item)))}">
+                                                    <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.onRowClick(ev, item)}">
                                                         ${content?.map((cell: string | number | TemplateResult, index: number) => {
                                                             const classes = {
                                                                 "mdc-data-table__cell": true,
@@ -287,11 +340,22 @@ export class OrMwcTable extends LitElement {
                                                                 "mdc-data-table__cell--clickable": (!Array.isArray(item) && (item as TableRow).clickable)!,
                                                                 "hide-mobile": (this.columns && typeof this.columns[index] != "string" && (this.columns[index] as TableColumn).hideMobile)!
                                                             }
+                                                            if(index == 0 && this.config.multiSelect){
+                                                                return html`
+                                                                    <td class="mdc-data-table__cell mdc-data-table__cell--checkbox" >
+                                                                        <div class="">
+                                                                            <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
+                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value,"single",item)}" 
+                                                                                          .value="${this.selectedRows?.includes(item)}"
+                                                                            ></or-mwc-input>
+                                                                        </div>
+                                                                    </td> `
+                                                            }
                                                             return html`
                                                                 <td class="${classMap(classes)}" title="${cell}">
                                                                     <span>${cell}</span>
                                                                 </td>
-                                                            `;
+                                                            `
                                                         })}
                                                     </tr>
                                                 `
@@ -327,6 +391,116 @@ export class OrMwcTable extends LitElement {
             </div>
         `;
     }
+
+    protected onRowClick(ev: MouseEvent, item: TableRow | string[]) {
+        if(this.config.multiSelect) {
+            const elem = ev.target as HTMLElement;
+            if(elem.nodeName === "OR-MWC-INPUT" && elem.id.includes('checkbox')) {
+                return; // if checkbox is clicked, the regular "click on row" should not trigger.
+            }
+        }
+        this.dispatchEvent(new OrMwcTableRowClickEvent((this.rows as any[]).indexOf(item)))
+    }
+
+
+    async getSortHeader(index: number, title: string, sortDirection: 'ASC' | 'DESC'): Promise<TemplateResult> {
+        this.sortIndex == -1 ? this.sortIndex = index : '';
+        return html`
+            <div class="mdc-data-table__header-cell-wrapper sortable" >
+                <div class="mdc-data-table__header-cell-label">
+                    ${title}
+                </div>
+                <button class="mdc-icon-button material-icons sort-button ${this.sortIndex === index ? '' : 'hidden'}"
+                        aria-label="Sort by ${title}" aria-describedby="${title}-status-label" aria-hidden="${!(this.sortIndex === index)}">
+                    <or-icon icon="${ sortDirection == 'ASC' ? "arrow-up" : "arrow-down"}"></or-icon>
+                </button>
+                <div class="mdc-data-table__sort-status-label" aria-hidden="true" id="${title}-status-label">
+                </div>
+            </div>
+        `;
+    }
+
+    async sortRows(ev: MouseEvent, index: number, sortDirection: 'ASC' | 'DESC'){
+        if(this.config.multiSelect) {
+            const elem = ev.target as HTMLElement;
+            if(elem.nodeName === "OR-MWC-INPUT" && elem.id.includes('checkbox')) {
+                return; // if checkbox is clicked, sort should not trigger.
+            }
+        }
+        sortDirection == 'ASC' ? this.sortDirection = 'DESC' : this.sortDirection = 'ASC';
+        sortDirection = this.sortDirection;
+        this.sortIndex = index;
+        if(this.rows!){
+            if('content' in this.rows[0]) {
+                (this.rows as TableRow[]).sort((a : TableRow, b : TableRow) => {
+                    return this.customSort(a.content, b.content, index, sortDirection);
+                });
+
+            } else {
+                (this.rows as string[][]).sort((a : string[], b : string[]) => {
+                    return this.customSort(a, b, index, sortDirection);
+                });
+            }
+            return;
+        }
+        return;
+    }
+
+    protected customSort(a: any, b: any, index: number, sortDirection: 'ASC' | 'DESC'): number{
+        if (!a[index] && !b[index]) {
+            return 0;
+        }
+
+        if (!a[index]) {
+            return 1;
+        }
+
+        if (!b[index]) {
+            return -1;
+        }
+        if(typeof a[index] === 'string' && typeof b[index] === 'string'){
+            return sortDirection == 'DESC' ? b[index].localeCompare(a[index], 'en', {numeric: true}) : a[index].localeCompare(b[index], 'en', {numeric: true});
+        }
+        else {
+            return sortDirection == 'DESC' ? (a[index] > b[index] ? -1 : 1) : (a[index] < b[index] ? -1 : 1);
+        }
+    }
+
+    protected onCheckChanged(checked: boolean, type: "all" | "single", item?: any) {
+        let rowCount = (this.config.pagination?.enable && this.rows!.length > this.paginationSize ? this.paginationSize : this.rows!.length);
+        if (type === "all") {
+            if(checked) {
+                this.selectedRows! = this.rows ? (this.rows as any[])
+                    .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize))) : [];
+                this.indeterminate = false;
+                this.allSelected = true;
+
+            }
+            else {
+                this.selectedRows! = [];
+                this.allSelected = false;
+                this.indeterminate = false;
+            }
+        }
+        else {
+            if(checked) {
+                if(this.selectedRows!.indexOf(item) === -1) {
+                    this.selectedRows!.push(item);
+                    this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
+                    this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
+                    this.requestUpdate("selectedRows");
+                }
+            }
+            else {
+                this.selectedRows! = this.selectedRows!.filter((e: TableRow) => e !== item);
+            }
+
+            this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
+            this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
+        }
+    }
+
+
 
     // HTML for the controls on the bottom of the table.
     // Includes basic pagination for browsing pages, with calculations of where to go.

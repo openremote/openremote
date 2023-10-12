@@ -207,6 +207,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected _roles: Role[] = [];
     @state()
     protected _realmRoles: Role[] = [];
+    @state()
+    protected _registrationEmailAsUsername: boolean = false;
 
     @state()
     protected _compositeRoles: Role[] = [];
@@ -314,20 +316,22 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
+        this._registrationEmailAsUsername = realmResponse.data.registrationEmailAsUsername;
         this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._loading = false;
     }
 
-    private async _createUpdateUser(user: UserModel, action: 'update' | 'create') {
-        if (!user.username) {
-            return;
+    private async _createUpdateUser(user: UserModel, action: 'update' | 'create'): Promise<boolean> {
+        if ((this._registrationEmailAsUsername && !user.serviceAccount) ? !user.email : !user.username) {
+            showSnackbar(undefined, i18next.t((this._registrationEmailAsUsername && !user.serviceAccount) ? "noEmailSet" : "noUsernameSet"), i18next.t("dismiss"));
+            return false;
         }
 
         if (user.password === "") {
             // Means a validation failure shouldn't get here
-            return;
+            return false;
         }
 
         const isUpdate = !!user.id;
@@ -362,6 +366,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         } finally {
             await this.loadUsers();
+            return true;
         }
     }
 
@@ -786,21 +791,26 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("details")}</h5>
                     <!-- user details -->
-                    <or-mwc-input id="username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id}"
+                    <or-mwc-input id="username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id || (!isServiceUser && this._registrationEmailAsUsername)}"
                                   .label="${i18next.t("username")}"
-                                  .type="${InputType.TEXT}" minLength="3" maxLength="255" required
-                                  pattern="[a-zA-Z0-9-_]+"
+                                  .type="${InputType.TEXT}" minLength="3" maxLength="255" 
+                                  ?required="${isServiceUser || !this._registrationEmailAsUsername}"
+                                  pattern="[A-Za-z0-9\\-_]+"
                                   .value="${user.username}"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.username = e.detail.value;
                                       this.onUserChanged(e, suffix)
                                   }}"></or-mwc-input>
-                    <or-mwc-input ?readonly="${readonly}"
+                    <!-- if identity provider is set to use email as username, make it required -->
+                    <or-mwc-input ?readonly="${(!!user.id && this._registrationEmailAsUsername) || readonly}"
+                                  .disabled="${!!user.id && this._registrationEmailAsUsername}"
                                   class="${isServiceUser ? "hidden" : ""}"
                                   .label="${i18next.t("email")}"
                                   .type="${InputType.EMAIL}"
                                   .value="${user.email}"
+                                  ?required="${!isServiceUser && this._registrationEmailAsUsername}"
+                                  pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
                                   .validationMessage="${i18next.t("invalidEmail")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.email = e.detail.value;
@@ -951,14 +961,18 @@ export class PageUsers extends Page<AppStateKeyed> {
                         ></or-mwc-input>
                     `)}
                     <div style="display: flex; align-items: center; gap: 16px; margin: 0 0 0 auto;">
-                        <or-mwc-input id="savebtn-${suffix}" style="margin: 0;" raised ?disabled="${readonly}"
+                        <!-- Button disabled until an input has input, and by that a valid check is done -->
+                        <or-mwc-input id="savebtn-${suffix}" style="margin: 0;" raised disabled
                                       .label="${i18next.t(user.id ? "save" : "create")}"
                                       .type="${InputType.BUTTON}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           let error: { status?: number, text: string };
-                                          this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then(() => {
-                                              showSnackbar(undefined, i18next.t("saveUserSucceeded"));
-                                              this.reset();
+                                          this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then((result) => {
+                                              // Return to the users page on successful user create/update
+                                              if (result) {                                              
+                                                  showSnackbar(undefined, i18next.t("saveUserSucceeded"));
+                                                  this.reset();
+                                              }
                                           }).catch((ex) => {
                                               if (isAxiosError(ex)) {
                                                   error = {

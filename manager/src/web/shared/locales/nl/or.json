@@ -545,6 +545,8 @@
     }
   },
   "rowsPerPage": "Rijen per pagina",
+  "noEmailSet": "Gebruiker aanmaken mislukt, geen email ingevuld.",
+  "noUsernameSet": "Gebruiker aanmaken mislukt, geen gebruikersnaam ingevuld.",
   "createUserFailed": "Aanmaken gebruiker mislukt",
   "saveUserFailed": "Opslaan gebruiker mislukt",
   "saveUserSucceeded": "Gebruiker succesvol opgeslagen!",
