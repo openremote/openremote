@@ -332,10 +332,16 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                     new Attribute<>("attr2", ValueType.POSITIVE_INTEGER, 3)
             )
         customAsset.type = CUSTOM_ASSET_TYPE
-        customAsset = assetResource.create(null, customAsset)
+        // thrown doesn't work reliably for some reason
+        try {
+            ex = null
+            customAsset = assetResource.create(null, customAsset)
+        } catch (Exception e) {
+            ex = e
+        }
 
         then: "a constraint violation exception should be thrown"
-        ex = thrown()
+        ex != null
         ex.response.status == 400
 
         when: "the report is extracted"
