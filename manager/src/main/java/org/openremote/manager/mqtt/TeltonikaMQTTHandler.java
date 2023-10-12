@@ -106,6 +106,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     }
 
     private void handleAttributeMessage(AttributeEvent event) {
+        if (!Objects.equals(event.getAttributeName(), "sendToDevice")) return;
+
         getLogger().info(event.toString());
         List<Asset<?>> assetsWithAttribute = assetStorageService.findAll(new AssetQuery().types(CarAsset.class).attributeName("sendToDevice"));
 
