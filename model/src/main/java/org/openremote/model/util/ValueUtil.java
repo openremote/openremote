@@ -143,7 +143,7 @@ public class ValueUtil {
     protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>();
     protected static Map<String, AssetTypeInfo> assetInfoMap = new HashMap<>();
     protected static Map<String, Class<? extends Asset<?>>> assetTypeMap = new HashMap<>();
-    protected static Map<String, Class<? extends AgentLink<?>>> agentLinkMap = new HashMap<>();
+    protected static Map<String, Class<? extends AgentLink<?>>> agentTypeMap = new HashMap<>();
     protected static Map<String, MetaItemDescriptor<?>> metaItemDescriptors = new HashMap<>();
     protected static Map<String, ValueDescriptor<?>> valueDescriptors = new HashMap<>();
     protected static Validator validator;
@@ -718,6 +718,11 @@ public class ValueUtil {
      */
     protected static void doInitialise() throws IllegalStateException {
         generator = null;
+        assetInfoMap.clear();
+        assetTypeMap.clear();
+        agentTypeMap.clear();
+        metaItemDescriptors.clear();
+        valueDescriptors.clear();
 
         LOG.info("Initialising asset model...");
         Set<Class<? extends Asset<?>>> assetClasses = new TreeSet<>(new ClassHierarchyComparator());
@@ -856,10 +861,10 @@ public class ValueUtil {
 
                         if (assetInfo.getAssetDescriptor() instanceof AgentDescriptor<?, ?, ?> agentDescriptor) {
                             String agentLinkName = agentDescriptor.getAgentLinkClass().getSimpleName();
-                            if (agentLinkMap.containsKey(agentLinkName) && agentLinkMap.get(agentLinkName) != agentDescriptor.getAgentLinkClass()) {
+                            if (agentTypeMap.containsKey(agentLinkName) && agentTypeMap.get(agentLinkName) != agentDescriptor.getAgentLinkClass()) {
                                 throw new IllegalStateException("AgentLink simple class name must be unique, duplicate found for: " + agentDescriptor.getAgentLinkClass());
                             }
-                            agentLinkMap.put(agentLinkName, agentDescriptor.getAgentLinkClass());
+                            agentTypeMap.put(agentLinkName, agentDescriptor.getAgentLinkClass());
                         }
                     }
                 }

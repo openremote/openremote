@@ -70,6 +70,8 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def assetTypeInfoStr = AssetModelService.JSON.writeValueAsString(assetTypeInfo)
         Files.writeString(storageDir.resolve("CustomAsset"), assetTypeInfoStr, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
         startContainer(defaultConfig(), defaultServices())
+        // Ensure the asset model is re-initialised (just in case container is reused)
+        ValueUtil.doInitialise()
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
     }
 
@@ -110,17 +112,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.setRealm("master")
 
         when: "try to save the asset without meeting constraints on required attributes"
-
-        // thrown doesn't work reliably for some reason
-        WebApplicationException ex
-        try {
-            assetResource.create(null, modelTestAsset)
-        } catch (Exception e) {
-            ex = e
-        }
+        assetResource.create(null, modelTestAsset)
 
         then: "a constraint violation exception should be thrown"
-        ex != null
+        WebApplicationException ex = thrown()
         ex.response.status == 400
         def report = ex.response.readEntity(ViolationReport)
         report.propertyViolations.size() == 1
@@ -236,16 +231,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).ifPresent {it.value = new ModelTestAsset.TestObject(90, null)}
         modelTestAsset.getAttribute("custom1").ifPresent {it.value = 123}
         modelTestAsset.getAttribute("custom2").ifPresent {it.value = null}
-        // thrown doesn't work reliably for some reason
-        try {
-            ex = null
-            modelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
-        } catch (Exception e) {
-            ex = e
-        }
+        modelTestAsset = assetResource.update(null, modelTestAsset.id, modelTestAsset)
 
         then: "a constraint violation exception should be thrown"
-        ex != null
+        ex = thrown()
         ex.response.status == 400
 
         when: "the report is extracted"
@@ -345,16 +334,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                     new Attribute<>("attr2", ValueType.POSITIVE_INTEGER, 3)
             )
         customAsset.type = CUSTOM_ASSET_TYPE
-        // thrown doesn't work reliably for some reason
-        try {
-            ex = null
-            customAsset = assetResource.create(null, customAsset)
-        } catch (Exception e) {
-            ex = e
-        }
+        customAsset = assetResource.create(null, customAsset)
 
         then: "a constraint violation exception should be thrown"
-        ex != null
+        ex = thrown()
         ex.response.status == 400
 
         when: "the report is extracted"
