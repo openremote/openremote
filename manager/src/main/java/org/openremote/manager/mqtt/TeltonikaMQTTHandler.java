@@ -132,7 +132,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     }
 
     private void sendCommandToTeltonikaDevice(String command, TeltonikaDevice device) {
-        mqttBrokerService.publishMessage(device.commandTopic, command, MqttQoS.EXACTLY_ONCE);
+        String commandSource = String.format("{'CMD': '%s'}", command);
+        mqttBrokerService.publishMessage(device.commandTopic, commandSource, MqttQoS.EXACTLY_ONCE);
     }
 
     @Override
