@@ -91,6 +91,7 @@ const style = css`
     .sort-button {
         border: none;
         background-color: ${unsafeCSS(DefaultColor1)};
+        color: ${unsafeCSS(DefaultColor3)};
         cursor: pointer;
     }
     
@@ -227,7 +228,7 @@ export class OrMwcTable extends LitElement {
     protected sortIndex?: number = -1;
 
     @property({type: Array})
-    protected selectedRows?: TableRow[] | string[][] | any[] = [];
+    public selectedRows?: TableRow[] | string[][] | any[] = [];
 
     @property()
     protected indeterminate?: boolean = false;
@@ -276,36 +277,36 @@ export class OrMwcTable extends LitElement {
                                 <thead>
                                 <tr class="mdc-data-table__header-row">
                                     ${this.columns.map((column: TableColumn | string, index: number) => {
+                                        if(index == 0 && this.config.multiSelect){
+                                            return html` 
+                                            <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
+                                                role="columnheader" scope="col">
+                                                <div class="">
+                                                    <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
+                                                                  class="${classMap({'mdi-checkbox-intermediate': this.indeterminate!})}"
+                                                                  .indeterminate="${this.indeterminate}"
+                                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value, "all")}" .value="${this.allSelected}">
+                                                    </or-mwc-input>
+                                                </div>
+                                            </th>
+                                            `
+                                        }
                                         return (typeof column == "string") ? html`
                                             <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell mdc-data-table__header-cell--checkbox" : ''}" id="column-${index+1}" role="columnheader" scope="col"
                                                 title="${column}">
-                                                ${(index == 0 && this.config.multiSelect) ?
-                                                html` <div class="">
-                                                          <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-all" class="mdi-checkbox-intermediate"
-                                                                        @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value, "all")}" 
-                                                                        .value="${this.allSelected}"
-                                                                        .indeterminate="${this.indeterminate}"></or-mwc-input>
-                                                          <span>${column}</span>
-                                                      </div>`: column}
+                                                column
                                             </th>
                                         ` : html`
                                             <th class="mdc-data-table__header-cell ${classMap({
                                                 'mdc-data-table__cell--numeric': !!column.isNumeric,
                                                 'hide-mobile': !!column.hideMobile,
                                                 'mdc-data-table__header-cell--with-sort': !!column.isSortable,
-                                                'mdc-data-table__header-cell--checkbox': !!this.config.multiSelect
                                             })}"
-                                                role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}">
-                                                ${(index == 0 && this.config.multiSelect) ?
-                                                        html` <div class="">
-                                                          <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
-                                                                        class="${classMap({'mdi-checkbox-intermediate': this.indeterminate!})}"
-                                                                        .indeterminate="${this.indeterminate}"
-                                                                        @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value, "all")}" .value="${this.allSelected}"></or-mwc-input>
-                                                          <span>${!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`)}</span> 
-                                                      </div>`: (!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))} 
+                                                role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
+                                                @click="${(ev: MouseEvent) => !!column.isSortable ? this.sortRows(ev, index, this.sortDirection!) : ''}">
+                                                ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))}
                                             </th>
-                                        `;
+                                        `
                                     })}
                                 </tr>
                                 </thead>
@@ -341,22 +342,20 @@ export class OrMwcTable extends LitElement {
                                                             }
                                                             if(index == 0 && this.config.multiSelect){
                                                                 return html`
-                                                                    <td class="mdc-data-table__cell mdc-data-table__cell--checkbox ${classMap(classes)}" title="${cell}">
+                                                                    <td class="mdc-data-table__cell mdc-data-table__cell--checkbox" >
                                                                         <div class="">
                                                                             <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
                                                                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value,"single",item)}" 
                                                                                           .value="${this.selectedRows?.includes(item)}"
                                                                             ></or-mwc-input>
-                                                                            <span>${cell}</span>
                                                                         </div>
                                                                     </td> `
                                                             }
-                                                            else {
-                                                                return html`
+                                                            return html`
                                                                 <td class="${classMap(classes)}" title="${cell}">
                                                                     <span>${cell}</span>
                                                                 </td>
-                                                            `}
+                                                            `
                                                         })}
                                                     </tr>
                                                 `
@@ -407,7 +406,7 @@ export class OrMwcTable extends LitElement {
     async getSortHeader(index: number, title: string, sortDirection: 'ASC' | 'DESC'): Promise<TemplateResult> {
         this.sortIndex == -1 ? this.sortIndex = index : '';
         return html`
-            <div class="mdc-data-table__header-cell-wrapper sortable" @click="${() => this.sortRows(index, this.sortDirection!)}">
+            <div class="mdc-data-table__header-cell-wrapper sortable" >
                 <div class="mdc-data-table__header-cell-label">
                     ${title}
                 </div>
@@ -421,10 +420,16 @@ export class OrMwcTable extends LitElement {
         `;
     }
 
-    async sortRows(index: number, sortDirection: 'ASC' | 'DESC'){
+    async sortRows(ev: MouseEvent, index: number, sortDirection: 'ASC' | 'DESC'){
+        if(this.config.multiSelect) {
+            const elem = ev.target as HTMLElement;
+            if(elem.nodeName === "OR-MWC-INPUT" && elem.id.includes('checkbox')) {
+                return; // if checkbox is clicked, sort should not trigger.
+            }
+        }
         sortDirection == 'ASC' ? this.sortDirection = 'DESC' : this.sortDirection = 'ASC';
         sortDirection = this.sortDirection;
-        this.sortIndex = index; console.log(this.sortIndex);
+        this.sortIndex = index;
         if(this.rows!){
             if('content' in this.rows[0]) {
                 (this.rows as TableRow[]).sort((a : TableRow, b : TableRow) => {
