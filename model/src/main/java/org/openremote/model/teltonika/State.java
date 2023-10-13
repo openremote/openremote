@@ -101,8 +101,14 @@ public class State {
                     }
                     //Add on its constraints (min, max)
                     if(ValueUtil.isNumber(attributeType.getType())){
-                        Optional<?> min = ValueUtil.getValueCoerced(parameter.min, attributeType.getType());
-                        Optional<?> max = ValueUtil.getValueCoerced(parameter.max, attributeType.getType());
+                        Optional<?> min = null;
+                        Optional<?> max = null;
+                        try {
+                            min = ValueUtil.getValue(parameter.min, attributeType.getType());
+                            max = ValueUtil.getValue(parameter.max, attributeType.getType());
+                        } catch (Exception ignored){
+                            //ignored
+                        }
 
                         if(min.isPresent() || max.isPresent()){
                             MetaItem<ValueConstraint[]> constraintsMeta = new MetaItem<>(CONSTRAINTS);

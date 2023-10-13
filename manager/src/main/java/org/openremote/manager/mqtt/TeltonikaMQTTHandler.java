@@ -1,12 +1,15 @@
 package org.openremote.manager.mqtt;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import groovy.json.JsonBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import net.fortuna.ical4j.model.property.Tel;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.apache.tools.ant.taskdefs.optional.windows.Attrib;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
@@ -15,21 +18,18 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.impl.CarAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.shared.EventFilter;
-import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.teltonika.State;
+import org.openremote.model.teltonika.TeltonikaMessageResponse;
 import org.openremote.model.teltonika.TeltonikaParameter;
 import org.openremote.model.teltonika.TeltonikaPayload;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
-import org.w3c.dom.Attr;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,20 +39,40 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
+import static org.keycloak.util.JsonSerialization.mapper;
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class TeltonikaMQTTHandler extends MQTTHandler {
-    private class TeltonikaDevice {
+    private static class TeltonikaDevice {
         String clientId;
         String commandTopic;
 
         public TeltonikaDevice(Topic topic) {
             this.clientId = topic.tokens.get(1);
             this.commandTopic = String.format("%s/%s/teltonika/%s/commands", topicRealm(topic), this.clientId, topic.tokens.get(3));
+        }
+    }
+    private class Response {
+        @JsonProperty("RSP")
+        public String RSP;
+
+        // Getter and setter
+        public String getRSP() {
+            return RSP;
+        }
+
+        public void setRSP(String RSP) {
+            this.RSP = RSP;
+        }
+
+        @Override
+        public String toString() {
+            return "Response{" +
+                    "RSP='" + RSP + '\'' +
+                    '}';
         }
     }
 
@@ -90,7 +110,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
-        DeviceParameterPath = Paths.get("/deployment/manager/fleet/FMC003.json");
+        DeviceParameterPath = Paths.get("deployment/manager/fleet/FMC003.json");
         if (!identityService.isKeycloakEnabled()) {
             getLogger().warning("MQTT connections are not supported when not using Keycloak identity provider");
             isKeycloak = false;
@@ -105,6 +125,13 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                 this::handleAttributeMessage);
     }
 
+
+    //TODO:
+
+
+
+    //Sending a message to master/teltonikaDevice1/teltonika/864636060373301/commands
+    //with payload {"CMD":"getstatus"} seems to work. Maybe the quotes are the issue?
     private void handleAttributeMessage(AttributeEvent event) {
         if (!Objects.equals(event.getAttributeName(), "sendToDevice")) return;
 
@@ -122,7 +149,12 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                         getLogger().info(String.format("Device %s is not subscribed to topic, not posting message", imeiString));
                         return;
                     } else{
-                        this.sendCommandToTeltonikaDevice((String)event.getValue().get(), deviceInfo);
+                        if(event.getValue().isPresent()){
+                            this.sendCommandToTeltonikaDevice((String)event.getValue().get(), deviceInfo);
+                        }
+                        else{
+                            getLogger().warning("Attribute sendToDevice was empty");
+                        }
                     }
 
                 }
@@ -134,8 +166,10 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     }
 
     private void sendCommandToTeltonikaDevice(String command, TeltonikaDevice device) {
-        String commandSource = String.format("{'CMD': '%s'}", command);
-        mqttBrokerService.publishMessage(device.commandTopic, commandSource, MqttQoS.EXACTLY_ONCE);
+        HashMap<String, String> cmdtest = new HashMap<>();
+        cmdtest.put("CMD", command);
+
+        mqttBrokerService.publishMessage(device.commandTopic, cmdtest, MqttQoS.EXACTLY_ONCE);
     }
 
     @Override
@@ -209,10 +243,15 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         getLogger().info("IMEI Linked to Asset ID:"+ deviceUuid);
 
         Asset<?> asset = assetStorageService.find(deviceUuid);
-        AttributeMap attributes = getAttributesFromPayload(payloadContent);
+        try {
+            AttributeMap attributes = getAttributesFromPayload(payloadContent);
+            if (asset == null) CreateNewAsset(payloadContent, deviceUuid, deviceImei, realm, attributes);
+            else UpdateAsset(payloadContent, asset, attributes,topic, connection);
+
+        } catch (Exception Ignored){
+
+        }
         // Check if asset was found
-        if (asset == null) CreateNewAsset(payloadContent, deviceUuid, deviceImei, realm, attributes);
-        else UpdateAsset(payloadContent, asset, attributes,topic, connection);
     }
 
     private void CreateNewAsset(String payloadContent, String newDeviceId, String newDeviceImei, String realm, AttributeMap attributes) {
@@ -244,7 +283,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * @param payloadContent Payload coming from Teltonika device
      * @return Map of {@link Attribute}s to be assigned to the {@link Asset}.
      */
-    private AttributeMap getAttributesFromPayload(String payloadContent) {
+    private AttributeMap getAttributesFromPayload(String payloadContent) throws JsonProcessingException {
         HashMap<Integer, TeltonikaParameter> params = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -262,14 +301,20 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             getLogger().info(e.toString());
         }
         //Parameters parsed, time to understand the payload
-        TeltonikaPayload payload;
+        TeltonikaPayload payload = null;
         try {
             payload = mapper.readValue(payloadContent, TeltonikaPayload.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            return payload.state.GetAttributes(params);
+        } catch (Exception e) {
+//            getLogger().info("Couldn't parse payload: "+e.getMessage());
+            mapper = new ObjectMapper();
+            TeltonikaMessageResponse response = mapper.readValue(payloadContent, TeltonikaMessageResponse.class);
+            getLogger().info(response.rsp);
+            AttributeMap map = new AttributeMap();
+            map.add(new Attribute<String>(new AttributeDescriptor<String>("response", ValueType.TEXT), response.rsp));
+            return map;
         }
 
-        return payload.state.GetAttributes(params);
     }
 
     private String getParameterFileString() {
