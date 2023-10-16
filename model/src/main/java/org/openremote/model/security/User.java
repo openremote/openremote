@@ -120,7 +120,7 @@ public class User {
     }
 
     @Size(min = 3, max = 255, message = "{User.username.Size}")
-    @Pattern(regexp = "[A-Za-z0-9\\-_]+", message = "{User.username.Pattern}")
+    @Pattern(regexp = "[A-Za-z0-9\\-_@.]+", message = "{User.username.Pattern}")
     @JsonProperty
     public String getUsername() {
         return username == null ? null : username.replace(SERVICE_ACCOUNT_PREFIX, "");
