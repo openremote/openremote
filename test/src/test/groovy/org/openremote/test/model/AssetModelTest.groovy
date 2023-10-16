@@ -72,7 +72,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         startContainer(defaultConfig(), defaultServices())
         // Ensure the asset model is re-initialised (just in case container is reused)
         container.getService(AssetModelService).initDynamicModel()
+        System.out.print(ValueUtil.asJSON(container.getService(AssetModelService).getAssetDescriptors()).get())
         ValueUtil.doInitialise()
+        System.out.print(ValueUtil.asJSON(container.getService(AssetModelService).dynamicAssetTypeInfos).get())
         assetModelResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetModelResource.class)
     }
 
