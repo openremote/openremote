@@ -689,20 +689,20 @@ public class ValueUtil {
     }
 
     public static void initialise(Container container) throws IllegalStateException {
-        if (assetModelProviders.isEmpty()) {
-            // Load in default model provider
-            assetModelProviders.add(new StandardModelProvider());
+        assetModelProviders.clear();
 
-            // Find all service loader registered asset model providers
-            ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
+        // Load in default model provider
+        assetModelProviders.add(new StandardModelProvider());
 
-            if (container != null) {
-                // Look for any container services that implement model provider
-                assetModelProviders.addAll(Arrays.stream(container.getServices())
-                    .filter(service -> service instanceof AssetModelProvider)
-                    .map(service -> (AssetModelProvider) service)
-                    .collect(Collectors.toSet()));
-            }
+        // Find all service loader registered asset model providers
+        ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
+
+        if (container != null) {
+            // Look for any container services that implement model provider
+            assetModelProviders.addAll(Arrays.stream(container.getServices())
+                .filter(service -> service instanceof AssetModelProvider)
+                .map(service -> (AssetModelProvider) service)
+                .collect(Collectors.toSet()));
         }
 
         try {
@@ -717,7 +717,7 @@ public class ValueUtil {
      * Initialise the asset model and throw an {@link IllegalStateException} exception if a problem is detected; this
      * can be called by applications at startup to fail hard and fast if the asset model is un-usable
      */
-    protected static void doInitialise() throws IllegalStateException {
+    static void doInitialise() throws IllegalStateException {
         generator = null;
         assetInfoMap.clear();
         assetTypeMap.clear();

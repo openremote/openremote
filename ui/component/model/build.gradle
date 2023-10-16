@@ -68,7 +68,7 @@ generateTypeScript {
         "com.fasterxml.jackson.module.paramnames.ParameterNamesModule"
     ]
     extensions = [
-        "AssetModelInfoExtension",
+        "org.openremote.model.util.AssetModelInfoExtension",
         "CustomExtension",
         "JsonSerializeExtension"
     ]
