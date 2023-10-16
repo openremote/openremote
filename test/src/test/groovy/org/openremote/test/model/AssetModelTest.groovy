@@ -106,13 +106,16 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
 
-        and: "A well known asset is instantiated"
+        expect: "the custom asset type to be loaded"
+        ValueUtil.getAssetDescriptor("CustomAsset").isPresent()
+
+        when: "A well known asset is instantiated"
         def persistenceService = container.getService(PersistenceService.class)
         def timerService = container.getService(TimerService.class)
         def modelTestAsset = new ModelTestAsset("Test Asset")
         modelTestAsset.setRealm("master")
 
-        when: "try to save the asset without meeting constraints on required attributes"
+        and: "try to save the asset without meeting constraints on required attributes"
         assetResource.create(null, modelTestAsset)
 
         then: "a constraint violation exception should be thrown"

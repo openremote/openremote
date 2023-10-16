@@ -108,6 +108,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
                 new AttributeState(new AttributeRef(asset1.id, "button"), "PRESSED")
         )
         assetProcessingService.sendAttributeEvent(buttonPressed)
+        Thread.sleep(200)
         advancePseudoClock(1, TimeUnit.SECONDS, container)
         buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
