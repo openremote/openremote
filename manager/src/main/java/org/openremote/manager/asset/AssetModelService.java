@@ -260,6 +260,8 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
 
             dynamicAssetTypeInfos = loadDescriptors(AssetTypeInfo.class, storageDir)
                 .collect(Collectors.toMap(ati -> ati.getAssetDescriptor().getName(), ati -> ati));
+
+            LOG.fine("Loaded asset type infos from '" + storageDir + "': count = " + dynamicAssetTypeInfos.size());
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to load custom asset types from '" + storageDir + "':" + e.getMessage());
         }
