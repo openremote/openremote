@@ -19,6 +19,8 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.util.TsIgnoreTypeParams;
 
 /**
@@ -27,11 +29,15 @@ import org.openremote.model.util.TsIgnoreTypeParams;
 @TsIgnoreTypeParams
 public interface ValueDescriptorHolder<T> {
 
+    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
     ValueDescriptor<T> getType();
 
+    @JsonProperty
     ValueFormat getFormat();
 
+    @JsonProperty
     ValueConstraint[] getConstraints();
 
+    @JsonProperty
     String[] getUnits();
 }

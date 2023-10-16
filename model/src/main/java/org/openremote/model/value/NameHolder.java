@@ -19,6 +19,7 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.util.StdConverter;
 
 /**
@@ -38,5 +39,6 @@ public interface NameHolder {
         }
     }
 
+    @JsonProperty
     String getName();
 }

@@ -25,6 +25,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaMap;
+import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
@@ -39,7 +40,7 @@ import java.util.Optional;
  * are equal if they have the same asset ID and attribute name (the same attribute
  * reference).
  */
-// TODO: Cleanup JSON annotations
+@TsIgnore
 public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder<T>, MetaHolder {
 
     @JsonProperty(value = "name")

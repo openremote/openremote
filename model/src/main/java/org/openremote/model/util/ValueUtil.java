@@ -689,20 +689,20 @@ public class ValueUtil {
     }
 
     public static void initialise(Container container) throws IllegalStateException {
-        assetModelProviders.clear();
+        if (assetModelProviders.isEmpty()) {
+            // Load in default model provider
+            assetModelProviders.add(new StandardModelProvider());
 
-        // Load in default model provider
-        assetModelProviders.add(new StandardModelProvider());
+            // Find all service loader registered asset model providers
+            ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
 
-        // Find all service loader registered asset model providers
-        ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
-
-        if (container != null) {
-            // Look for any container services that implement model provider
-            assetModelProviders.addAll(Arrays.stream(container.getServices())
-                .filter(service -> service instanceof AssetModelProvider)
-                .map(service -> (AssetModelProvider) service)
-                .collect(Collectors.toSet()));
+            if (container != null) {
+                // Look for any container services that implement model provider
+                assetModelProviders.addAll(Arrays.stream(container.getServices())
+                    .filter(service -> service instanceof AssetModelProvider)
+                    .map(service -> (AssetModelProvider) service)
+                    .collect(Collectors.toSet()));
+            }
         }
 
         try {

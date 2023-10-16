@@ -520,8 +520,8 @@ export class Manager implements EventProviderFactory {
             const valueDescriptorResponse = await rest.api.AssetModelResource.getValueDescriptors();
 
             AssetModelUtil._assetTypeInfos = assetInfosResponse.data;
-            AssetModelUtil._metaItemDescriptors = metaItemDescriptorResponse.data;
-            AssetModelUtil._valueDescriptors = valueDescriptorResponse.data;
+            AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptorResponse.data);
+            AssetModelUtil._valueDescriptors = Object.values(valueDescriptorResponse.data);
         } catch (e) {
             console.error(e);
             return false;

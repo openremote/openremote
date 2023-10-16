@@ -19,6 +19,7 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
@@ -43,6 +44,7 @@ import java.util.Collection;
 @TsIgnoreTypeParams
 public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T> implements MetaHolder {
 
+    @JsonIgnore
     protected MetaMap meta;
     protected Boolean optional;
 

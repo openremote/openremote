@@ -36,7 +36,6 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.openremote.model.asset.Asset;
@@ -195,6 +194,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         }
     }
 
+    @JsonIgnore
     @Valid
     protected MetaMap meta;
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
@@ -382,19 +382,6 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         this.timestamp = timestamp;
     }
 
-    @Override
-    public Class<?> getTypeClass() {
-        return getType() != null ? getType().getType() : Object.class;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    @Override
-    public ValueDescriptor<T> getType() {
-        return type;
-    }
-
-    @JsonIgnore
     public Optional<Long> getTimestamp() {
         return hasExplicitTimestamp() ? Optional.of(Math.abs(timestamp)) : Optional.empty();
     }
