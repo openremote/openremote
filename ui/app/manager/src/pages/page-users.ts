@@ -207,6 +207,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected _roles: Role[] = [];
     @state()
     protected _realmRoles: Role[] = [];
+    @state()
+    protected _registrationEmailAsUsername: boolean = false;
 
     @state()
     protected _compositeRoles: Role[] = [];
@@ -314,20 +316,24 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
+        this._registrationEmailAsUsername = realmResponse.data.registrationEmailAsUsername;
         this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._loading = false;
     }
 
-    private async _createUpdateUser(user: UserModel, action: 'update' | 'create') {
-        if (!user.username) {
-            return;
+    private async _createUpdateUser(user: UserModel, action: 'update' | 'create'): Promise<boolean> {
+        let result = false;
+
+        if ((this._registrationEmailAsUsername && !user.serviceAccount) ? !user.email : !user.username) {
+            showSnackbar(undefined, i18next.t((this._registrationEmailAsUsername && !user.serviceAccount) ? "noEmailSet" : "noUsernameSet"), i18next.t("dismiss"));
+            return false;
         }
 
         if (user.password === "") {
             // Means a validation failure shouldn't get here
-            return;
+            return false;
         }
 
         const isUpdate = !!user.id;
@@ -348,20 +354,22 @@ export class PageUsers extends Page<AppStateKeyed> {
             await this._updateRoles(user, false);
             await this._updateRoles(user, true);
             await this._updateUserAssetLinks(user);
+            result = true;
         } catch (e) {
             if (isAxiosError(e)) {
                 console.error((isUpdate ? "save user failed" : "create user failed") + ": response = " + e.response.statusText);
-
                 if (e.response.status === 400) {
                     showSnackbar(undefined, i18next.t(isUpdate ? "saveUserFailed" : "createUserFailed"), i18next.t("dismiss"));
                 } else if (e.response.status === 403) {
                     showSnackbar(undefined, i18next.t('userAlreadyExists'))
                 }
             }
+            result = false;
             throw e; // Throw exception anyhow to handle individual cases
 
         } finally {
             await this.loadUsers();
+            return result;
         }
     }
 
@@ -607,7 +615,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         this.requestUpdate();
     }
 
-    protected _openAssetSelector(ev: MouseEvent, user: UserModel, readonly: boolean) {
+    protected _openAssetSelector(ev: MouseEvent, user: UserModel, readonly: boolean, suffix: string) {
         const openBtn = ev.target as OrMwcInput;
         openBtn.disabled = true;
         user.previousAssetLinks = [...user.userAssetLinks];
@@ -658,6 +666,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     content: i18next.t("ok"),
                     action: () => {
                         openBtn.disabled = false;
+                        this.onUserChanged(suffix);
                         this.requestUpdate();
                     }
                 }
@@ -672,15 +681,12 @@ export class PageUsers extends Page<AppStateKeyed> {
             }));
     }
 
-    protected onUserChanged(e: OrInputChangedEvent | OrMwcInput, suffix: string) {
+    protected onUserChanged(suffix: string) {
         // Don't have form-associated custom element support in lit at time of writing which would be the way to go here
-        const formElement = e instanceof OrInputChangedEvent ? (e.target as HTMLElement).parentElement : e.parentElement;
+        const validateArray = this.shadowRoot.querySelectorAll(".validate");
         const saveBtn = this.shadowRoot.getElementById("savebtn-" + suffix) as OrMwcInput;
-
-        if (formElement) {
-            const saveDisabled = Array.from(formElement.children).filter(e => e instanceof OrMwcInput).some(input => !(input as OrMwcInput).valid);
-            saveBtn.disabled = saveDisabled;
-        }
+        const saveDisabled = Array.from(validateArray).filter(e => e instanceof OrMwcInput).some(input => !(input as OrMwcInput).valid);
+        saveBtn.disabled = saveDisabled;
     }
 
     protected _onPasswordChanged(user: UserModel, suffix: string) {
@@ -786,43 +792,49 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("details")}</h5>
                     <!-- user details -->
-                    <or-mwc-input id="username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id}"
+                    <or-mwc-input id="username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id || (!isServiceUser && this._registrationEmailAsUsername)}"
+                                  class = "validate"
                                   .label="${i18next.t("username")}"
-                                  .type="${InputType.TEXT}" minLength="3" maxLength="255" required
-                                  pattern="[a-zA-Z0-9-_]+"
+                                  .type="${InputType.TEXT}" minLength="3" maxLength="255" 
+                                  ?required="${isServiceUser || !this._registrationEmailAsUsername}"
+                                  pattern="[A-Za-z0-9\\-_]+"
                                   .value="${user.username}"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.username = e.detail.value;
-                                      this.onUserChanged(e, suffix)
+                                      this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
-                    <or-mwc-input ?readonly="${readonly}"
-                                  class="${isServiceUser ? "hidden" : ""}"
+                    <!-- if identity provider is set to use email as username, make it required -->
+                    <or-mwc-input ?readonly="${(!!user.id && this._registrationEmailAsUsername) || readonly}"
+                                  .disabled="${!!user.id && this._registrationEmailAsUsername}"
+                                  class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("email")}"
                                   .type="${InputType.EMAIL}"
                                   .value="${user.email}"
+                                  ?required="${!isServiceUser && this._registrationEmailAsUsername}"
+                                  pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
                                   .validationMessage="${i18next.t("invalidEmail")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.email = e.detail.value;
-                                      this.onUserChanged(e, suffix)
+                                      this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
-                                  class="${isServiceUser ? "hidden" : ""}"
+                                  class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("firstName")}"
                                   .type="${InputType.TEXT}" minLength="1"
                                   .value="${user.firstName}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.firstName = e.detail.value;
-                                      this.onUserChanged(e, suffix)
+                                      this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
-                                  class="${isServiceUser ? "hidden" : ""}"
+                                  class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("surname")}"
                                   .type="${InputType.TEXT}" minLength="1"
                                   .value="${user.lastName}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.lastName = e.detail.value;
-                                      this.onUserChanged(e, suffix)
+                                      this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
 
                     <!-- password -->
@@ -830,24 +842,29 @@ export class PageUsers extends Page<AppStateKeyed> {
                     ${isServiceUser ? html`
                         ${when(user.secret, () => html`
                             <or-mwc-input id="password-${suffix}" readonly
+                                          class = "validate"
                                           .label="${i18next.t("secret")}"
                                           .value="${user.secret}"
                                           .type="${InputType.TEXT}"></or-mwc-input>
                             <or-mwc-input ?readonly="${!user.id || readonly}"
                                           .label="${i18next.t("regenerateSecret")}"
                                           .type="${InputType.BUTTON}"
-                                          @or-mwc-input-changed="${(ev) => this._regenerateSecret(ev, user, "password-" + suffix)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(ev) => {
+                                              this._regenerateSecret(ev, user, "password-" + suffix);
+                                              this.onUserChanged(suffix);
+                                          }}"></or-mwc-input>
                         `, () => html`
                             <span>${i18next.t("generateSecretInfo")}</span>
                         `)}
                     ` : html`
                         <or-mwc-input id="password-${suffix}"
                                       ?readonly="${readonly}"
+                                      class = "validate"
                                       .label="${i18next.t("password")}"
                                       .type="${InputType.PASSWORD}" min="1"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           this._onPasswordChanged(user, suffix);
-                                          this.onUserChanged(e, suffix);
+                                          this.onUserChanged(suffix);
                                       }}"
                         ></or-mwc-input>
                         <or-mwc-input id="repeatPassword-${suffix}"
@@ -856,7 +873,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       .type="${InputType.PASSWORD}" min="1"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           this._onPasswordChanged(user, suffix);
-                                          this.onUserChanged(e, suffix);
+                                          this.onUserChanged(suffix);
                                       }}"
                         ></or-mwc-input>
                     `}
@@ -866,10 +883,14 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <h5>${i18next.t("settings")}</h5>
                     <!-- enabled -->
                     <or-mwc-input ?readonly="${readonly}"
+                                  class="validate"
                                   .label="${i18next.t("active")}"
                                   .type="${InputType.CHECKBOX}"
                                   .value="${user.enabled}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      user.enabled = e.detail.value;
+                                      this.onUserChanged(suffix);
+                                  }}"
                                   style="height: 56px;"
                     ></or-mwc-input>
 
@@ -877,11 +898,13 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <or-mwc-input
                             ?readonly="${readonly}"
                             ?disabled="${isSameUser}"
+                            class = "validate"
                             .value="${user.realmRoles && user.realmRoles.length > 0 ? user.realmRoles.filter(r => Util.realmRoleFilter(r)).map(r => r.name) : undefined}"
                             .type="${InputType.SELECT}" multiple
                             .options="${realmRoleOptions}"
                             .label="${i18next.t("realm_role_plural")}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                this.onUserChanged(suffix);
                                 const roleNames = e.detail.value as string[];
                                 const excludedAndCompositeRoles = user.realmRoles.filter(r => !Util.realmRoleFilter(r));
                                 const selectedRoles = this._realmRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {
@@ -894,6 +917,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <or-mwc-input
                             ?readonly="${readonly}"
                             ?disabled="${isSameUser}"
+                            class = "validate"
                             .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
                             .type="${InputType.SELECT}" multiple
                             .options="${compositeRoleOptions}"
@@ -904,6 +928,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                     return {...r, assigned: true};
                                 });
                                 this._updateUserSelectedRoles(user, suffix);
+                                this.onUserChanged(suffix);
                             }}"></or-mwc-input>
 
                     <!-- roles -->
@@ -914,6 +939,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                 <or-mwc-input
                                         ?readonly="${readonly}"
                                         ?disabled="${implicitRoleNames.find(name => r.name === name)}"
+                                        class = "validate"
                                         .value="${!!user.roles.find(userRole => userRole.name === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}"
                                         .type="${InputType.CHECKBOX}"
                                         .label="${r.name}"
@@ -924,18 +950,19 @@ export class PageUsers extends Page<AppStateKeyed> {
                                             } else {
                                                 user.roles = user.roles.filter(e => e.name !== r.name);
                                             }
+                                            this.onUserChanged(suffix);
                                         }}"></or-mwc-input>
                             `
                         })}
                     </div>
 
-                    <!-- restricted access -->
+                    <!-- Asset-User links -->
                     <div>
                         <span>${i18next.t("linkedAssets")}:</span>
                         <or-mwc-input outlined ?disabled="${readonly}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
                                       .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
-                                      @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly)}"></or-mwc-input>
+                                      @or-mwc-input-changed="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly, suffix)}"></or-mwc-input>
                     </div>
                 </div>
             </div>
@@ -951,14 +978,18 @@ export class PageUsers extends Page<AppStateKeyed> {
                         ></or-mwc-input>
                     `)}
                     <div style="display: flex; align-items: center; gap: 16px; margin: 0 0 0 auto;">
-                        <or-mwc-input id="savebtn-${suffix}" style="margin: 0;" raised ?disabled="${readonly}"
+                        <!-- Button disabled until an input has input, and by that a valid check is done -->
+                        <or-mwc-input id="savebtn-${suffix}" style="margin: 0;" raised disabled
                                       .label="${i18next.t(user.id ? "save" : "create")}"
                                       .type="${InputType.BUTTON}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           let error: { status?: number, text: string };
-                                          this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then(() => {
-                                              showSnackbar(undefined, i18next.t("saveUserSucceeded"));
-                                              this.reset();
+                                          this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then((result) => {
+                                              // Return to the users page on successful user create/update
+                                              if (result) {                                              
+                                                  showSnackbar(undefined, i18next.t("saveUserSucceeded"));
+                                                  this.reset();
+                                              }
                                           }).catch((ex) => {
                                               if (isAxiosError(ex)) {
                                                   error = {
@@ -975,7 +1006,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                                           const elem = this.shadowRoot.getElementById('username-' + suffix) as OrMwcInput;
                                                           elem.setCustomValidity(error.text);
                                                           (elem.shadowRoot.getElementById("elem") as HTMLInputElement).reportValidity(); // manually reporting was required since we're not editing the username at all.
-                                                          this.onUserChanged(elem, suffix); // onUserChanged to trigger validation of all fields again.
+                                                          this.onUserChanged(suffix); // onUserChanged to trigger validation of all fields again.
                                                       }
                                                   })
                                               }

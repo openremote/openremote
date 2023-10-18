@@ -227,6 +227,8 @@ export class OrAttributeCard extends LitElement {
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart<"line", ScatterDataPoint[]>;
+    protected _startOfPeriod?: number;
+    protected _endOfPeriod?: number;
     private resizeObserver?: ResizeObserver;
 
     static get styles() {
@@ -319,6 +321,8 @@ export class OrAttributeCard extends LitElement {
                         },
                         x: {
                             type: "time",
+                            min: this._startOfPeriod,
+                            max: this._endOfPeriod,
                             display: false,
                         }
                     }
@@ -716,8 +720,8 @@ export class OrAttributeCard extends LitElement {
         }
 
         const lowerCaseInterval = interval.toLowerCase();
-        const startOfPeriod = moment().startOf(this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime(); moment().clone().subtract(1, this.period).toDate().getTime();
-        const endOfPeriod = moment().endOf(this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+        this._startOfPeriod = moment().subtract(1, this.period).toDate().getTime();
+        this._endOfPeriod = moment().toDate().getTime();
         this.mainValue = undefined;
         this.formattedMainValue = undefined;
         const assetId = this.assets[0].id!;
@@ -741,8 +745,8 @@ export class OrAttributeCard extends LitElement {
             attributeName,
             {
                 type: "lttb",
-                fromTimestamp: startOfPeriod,
-                toTimestamp: endOfPeriod,
+                fromTimestamp: this._startOfPeriod,
+                toTimestamp: this._endOfPeriod,
                 amountOfPoints: 20,
             } as AssetDatapointLTTBQuery
         );
