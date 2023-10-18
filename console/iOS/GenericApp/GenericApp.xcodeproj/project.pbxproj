@@ -7,8 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4C1B50DE2ACDA75400918211 /* ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C1B50DD2ACDA75400918211 /* ORLib.framework */; };
 		4C1B50E22ACDA75A00918211 /* ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C1B50E12ACDA75A00918211 /* ORLib.framework */; };
+		4C2A6F5C2ADFFC41007954C0 /* ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C1B50DD2ACDA75400918211 /* ORLib.framework */; };
+		4C2A6F5D2ADFFC41007954C0 /* ORLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4C1B50DD2ACDA75400918211 /* ORLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4CEDA25D25405B1E00C47E3B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */; };
 		4CEDA2A7254074D100C47E3B /* Storyboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA2A6254074D100C47E3B /* Storyboard.storyboard */; };
 		4CEDA2CE254075D400C47E3B /* SplashViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2CD254075D400C47E3B /* SplashViewController.swift */; };
@@ -38,6 +39,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		4C2A6F5E2ADFFC42007954C0 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				4C2A6F5D2ADFFC41007954C0 /* ORLib.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		878D2D2C249A498900011484 /* Embed App Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -91,7 +103,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				756FA8BF24545CB0CC18CA6E /* Pods_GenericApp.framework in Frameworks */,
-				4C1B50DE2ACDA75400918211 /* ORLib.framework in Frameworks */,
+				4C2A6F5C2ADFFC41007954C0 /* ORLib.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -221,6 +233,7 @@
 				878D2D07249A490300011484 /* Resources */,
 				878D2D2C249A498900011484 /* Embed App Extensions */,
 				1916A4B7304981F2A7B97168 /* [CP] Embed Pods Frameworks */,
+				4C2A6F5E2ADFFC42007954C0 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -542,7 +555,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 41;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
@@ -568,7 +581,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 41;
+				CURRENT_PROJECT_VERSION = 42;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
