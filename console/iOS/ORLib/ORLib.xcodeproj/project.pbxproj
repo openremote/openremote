@@ -55,9 +55,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		00E2F1C1D04B6576AE83F054 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "../../../michael/Documents/Projects/OR/k2/console/iOS/K2/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
+		00E2F1C1D04B6576AE83F054 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "../../../Users/michael/Documents/Projects/OR/openremote/console/iOS/GenericApp/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
 		38A2074B5ACA112DAAEE17DD /* Pods-ORLibb.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLibb.debug.xcconfig"; path = "../../../michael/Documents/Projects/OR/k2/console/iOS/K2/Pods/Target Support Files/Pods-ORLibb/Pods-ORLibb.debug.xcconfig"; sourceTree = "<group>"; };
-		39617E7CE27B653F072B33C8 /* Pods-ORLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.debug.xcconfig"; path = "../../../michael/Documents/Projects/OR/k2/console/iOS/K2/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.debug.xcconfig"; sourceTree = "<group>"; };
+		39617E7CE27B653F072B33C8 /* Pods-ORLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.debug.xcconfig"; path = "../../../Users/michael/Documents/Projects/OR/openremote/console/iOS/GenericApp/Pods/Target Support Files/Pods-ORLib/Pods-ORLib.debug.xcconfig"; sourceTree = "<group>"; };
 		4C0E4A0F274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerOverlayPreviewLayer.swift; sourceTree = "<group>"; };
 		4C0E4A11274BE411008CB352 /* QrScannerProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScannerProvider.swift; sourceTree = "<group>"; };
 		4C2CE793274BB48500416B1A /* QrScannerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScannerViewController.swift; sourceTree = "<group>"; };
@@ -481,7 +481,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 14.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -514,7 +514,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 14.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
