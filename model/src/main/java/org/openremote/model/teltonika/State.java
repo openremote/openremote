@@ -48,9 +48,13 @@ public class State {
 
 
     //DONE: Add timestamp reported by device
-    //TODO: Add description of each attribute
-    //TODO: Multiply value by multiplier
+    //TODO: Add description of each attribute (No idea where to put that yet)
+    //DONE: Multiply value by multiplier
     //TODO: Improve storage by using bytes variable?
+    //DONE: If location is 0,0, don't overwrite location
+    //TODO: Move any function from here; it's a model (POJO).
+    //TODO: Figure out what the parameters: pr, alt, ang, sat, sp, and evt do
+    // and implement their functionality (I can guess but I want to know exactly).
     public AttributeMap GetAttributes(Map<Integer, TeltonikaParameter> params){
         AttributeMap attributes = new AttributeMap();
         for (Map.Entry<String,Object> entry : reported.entrySet()){
@@ -75,22 +79,33 @@ public class State {
                 ValueDescriptor<?> attributeType = GetAttributeType(parameter);
 
                 //Retrieve its coerced value
-                Optional<?> value = ValueUtil.getValueCoerced(entry.getValue().toString(), attributeType.getType());
+                Optional<?> value = Optional.empty();
+                try {
+                    //Inner method returns Optional.empty, but still throws and prints exception. A lot of clutter, but the exception is handled.
+                    value = ValueUtil.getValueCoerced(entry.getValue(), attributeType.getType());
+                    if (!value.isPresent()){
+                        attributeType = ValueType.TEXT;
+                        value = Optional.of(entry.getValue().toString());
+                    }
+                } catch (Exception ignored){
+
+                }
 
 
                 //If value was parsed correctly,
                 if(value.isPresent()){
                     // Multiply the value with its multiplier if given
                     if(!Objects.equals(parameter.multiplier, "-")){
-                        Optional<?> multiplier = ValueUtil.getValueCoerced(parameter.multiplier, attributeType.getType());
+                        Optional<?> multiplier = ValueUtil.parse(parameter.multiplier, attributeType.getType());
                         if(multiplier.isPresent()){
-                            long valueNumber = (long) multiplier.get();
-                            long multiplierNumber = (long) multiplier.get();
+                            double valueNumber = (double) value.get();
+                            double multiplierNumber = (double) multiplier.get();
 
                             value = Optional.of(valueNumber * multiplierNumber);
                         }
 
                     //TODO: Fix frontend to be able to display even custom units, not just the predefined ones
+//                        possibly prepend the unit with the string "custom."? So that it matches the predefined format
                     //Add on its units
                     if(!Objects.equals(parameter.units, "-")){
                         MetaItem<String[]> units = new MetaItem<>(MetaItemType.UNITS);
@@ -101,15 +116,18 @@ public class State {
                     }
                     //Add on its constraints (min, max)
                     if(ValueUtil.isNumber(attributeType.getType())){
-                        Optional<?> min = null;
-                        Optional<?> max = null;
-                        try {
-                            min = ValueUtil.getValue(parameter.min, attributeType.getType());
-                            max = ValueUtil.getValue(parameter.max, attributeType.getType());
-                        } catch (Exception ignored){
-                            //ignored
-                        }
+                        Optional<?> min;
+                        Optional<?> max;
 
+                        try{
+                                //Try to parse Hex in case it is hex
+                                max = Optional.of(Double.longBitsToDouble(Long.parseLong(parameter.max.substring(2), 16)));
+                                min = Optional.of(Double.longBitsToDouble(Long.parseLong(parameter.min.substring(2), 16)));
+                        }catch (Exception ignored){
+                            // ValueUtil.getValue actually logs the exceptions. I can't catch em to then ignore them.
+                            min = ValueUtil.getValueCoerced(parameter.min, attributeType.getType());
+                            max = ValueUtil.getValueCoerced(parameter.max, attributeType.getType());
+                        }
                         if(min.isPresent() || max.isPresent()){
                             MetaItem<ValueConstraint[]> constraintsMeta = new MetaItem<>(CONSTRAINTS);
                             List<ValueConstraint> constraintValues = new ArrayList<>();
@@ -138,14 +156,16 @@ public class State {
             }
         }
         //Special parameter definitions without being defined in the AVL Parameter List, thanks Teltonika
-        if (reported.containsKey("latlng")){
+
+        //latlng are the latitude-longitude coordinates, also check if it's 0,0, if it is, don't update.
+        if (reported.containsKey("latlng") && !Objects.equals(reported.get("latlng"), "0.000000,0.000000")){
             String latlngString = reported.get("latlng").toString();
             GeoJSONPoint point = ParseLatLngToGeoJSONObject(latlngString);
             Attribute<?> attr = new Attribute<>("location", ValueType.GEO_JSON_POINT, point);
 
             attributes.add(attr);
         }
-        //TimeStamp
+        //Timestamp grabbed from the device.
         if (reported.containsKey("ts")){
             String updateTime = reported.get("ts").toString();
             Date update = new java.util.Date(Long.parseLong(updateTime));
@@ -156,9 +176,8 @@ public class State {
                 attribute.setTimestamp(update.getTime());
             });
         }
-        //TODO: Figure out what the parameters: pr, alt, ang, sat, sp, and evt do and implement their functionality
 
-        // Store data points, allow use for rules, and don't allow user parameter transmission, for every attribute parsed
+        // Store data points, allow use for rules, and don't allow user parameter modification, for every attribute parsed
         attributes.forEach(attribute -> attribute.addOrReplaceMeta(
                 new MetaItem<>(STORE_DATA_POINTS, true),
                 new MetaItem<>(RULE_STATE, true),
@@ -168,10 +187,16 @@ public class State {
     }
 
     private ValueDescriptor<?> GetAttributeType(TeltonikaParameter parameter) {
-        return switch (parameter.type) {
-            case "Unsigned", "Signed", "unsigned", "UNSIGNED LONG INT" -> ValueType.LONG;
-            default -> ValueType.TEXT;
-        };
+        try{
+            Double.valueOf(parameter.min);
+            Double.valueOf(parameter.max);
+            return ValueType.NUMBER;
+        }catch (NumberFormatException e){
+            return switch (parameter.type) {
+                case "Unsigned", "Signed", "unsigned", "UNSIGNED LONG INT" -> ValueType.NUMBER;
+                default -> ValueType.TEXT;
+            };
+        }
     }
 
     private GeoJSONPoint ParseLatLngToGeoJSONObject(String latlngString) {
