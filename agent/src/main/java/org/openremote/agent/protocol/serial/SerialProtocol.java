@@ -96,7 +96,7 @@ public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, Seria
     @Override
     protected String createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-        if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
+        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
             AttributeExecuteStatus status = event.getValue()
                 .flatMap(ValueUtil::getString)
                 .flatMap(AttributeExecuteStatus::fromString)

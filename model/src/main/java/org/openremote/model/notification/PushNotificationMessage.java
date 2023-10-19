@@ -21,9 +21,9 @@ package org.openremote.model.notification;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.List;
+import java.util.Map;
 
 public class PushNotificationMessage extends AbstractNotificationMessage {
 
@@ -44,7 +44,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
     protected String body;
     protected PushNotificationAction action;
     protected List<PushNotificationButton> buttons;
-    protected ObjectNode data;
+    protected Map<String, Object> data;
     protected MessagePriority priority;
     protected TargetType targetType;
     protected String target;
@@ -55,7 +55,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
                                    @JsonProperty("body") String body,
                                    @JsonProperty("action") PushNotificationAction action,
                                    @JsonProperty("buttons") List<PushNotificationButton> buttons,
-                                   @JsonProperty("data") ObjectNode data,
+                                   @JsonProperty("data") Map<String, Object> data,
                                    @JsonProperty("priority") MessagePriority priority,
                                    @JsonProperty("targetType") TargetType targetType,
                                    @JsonProperty("target") String target,
@@ -76,7 +76,7 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
                                    String body,
                                    PushNotificationAction action,
                                    List<PushNotificationButton> buttons,
-                                   ObjectNode data) {
+                                   Map<String, Object> data) {
         super(TYPE);
         this.title = title;
         this.body = body;
@@ -125,11 +125,11 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         return this;
     }
 
-    public ObjectNode getData() {
+    public Map<String, Object> getData() {
         return data;
     }
 
-    public PushNotificationMessage setData(ObjectNode data) {
+    public PushNotificationMessage setData(Map<String, Object> data) {
         this.data = data;
         return this;
     }

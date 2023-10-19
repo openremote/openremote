@@ -194,7 +194,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         messageBrokerService.getContext().addRoutes(this);
 
         // Add pending internal subscriptions
-        if (!pendingInternalSubscriptions.isEmpty()) {
+        if (pendingInternalSubscriptions != null && !pendingInternalSubscriptions.isEmpty()) {
             pendingInternalSubscriptions.forEach(subscription ->
                 eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, subscription));
         }

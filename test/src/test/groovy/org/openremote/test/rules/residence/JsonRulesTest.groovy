@@ -1,7 +1,6 @@
 package org.openremote.test.rules.residence
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.ObjectNode
+
 import com.google.firebase.messaging.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.ws.rs.client.ClientRequestContext
@@ -42,7 +41,6 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -88,10 +86,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                     break
                 case "https://basicserver/webhookjson":
                     if (requestContext.method == "POST" && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') == "test-value" && requestContext.hasEntity()) {
-                        Optional<JsonNode> jsonBody = parse(requestContext.entity.toString())
-                        if (jsonBody.isPresent() && jsonBody.get().size() == 1
-                                && jsonBody.get().iterator().next().get(0).get("assetName").asText() == "TestThing"
-                                && jsonBody.get().iterator().next().get(0).get("value").asText() == "test_message") {
+                        def jsonBody = parse(requestContext.entity.toString()).get() as Map
+                        if (jsonBody.size() == 1
+                                && ((Map)((Object[])jsonBody.values()[0])[0]).get("assetName") == "TestThing"
+                                && ((Map)((Object[])jsonBody.values()[0])[0]).get("value") == "test_message") {
                             successCount++
                             requestContext.abortWith(Response.ok().build()); return
                         }
@@ -185,11 +183,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "the room lights in an apartment to be on"
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
-            assert livingroomAsset.getAttribute("lightSwitch", Boolean.class).get().value.get()
-            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes", String[].class).get().value.get().length == 2
-            assert livingroomAsset.getAttribute("plantsWaterLevels", ObjectNode.class).get().value.get().get("cactus").asDouble() == 0.8d
+            assert livingroomAsset.getAttribute("lightSwitch").get().value.get()
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().value.get().length == 2
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().getValue(Map.class).get().get("cactus") == 0.8d
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
-            assert bathRoomAsset.getAttribute("lightSwitch", Boolean.class).get().value.get()
+            assert bathRoomAsset.getAttribute("lightSwitch").get().value.get()
         }
 
         when: "a user authenticates"
@@ -234,7 +232,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                (Map<String, Object>)(parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                                 )))
                     }
                 },
@@ -266,7 +264,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                (Map<String, Object>)(parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                                 )))
                     }
                 },
@@ -313,8 +311,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             def assetState = realmBuildingEngine.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
             assert assetState != null
             assert assetState.getValue().isPresent()
-            assert assetState.getValueAs(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
-            assert assetState.getValueAs(GeoJSONPoint.class).map{it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y}.orElse(false)
+            assert assetState.getValue(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
+            assert assetState.getValue(GeoJSONPoint.class).map{it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y}.orElse(false)
         }
 
         when: "the console device moves outside the home geofence (as defined in the rule)"
@@ -325,8 +323,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert !livingroomAsset.getAttribute("lightSwitch").get().value.get()
-            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes", String[].class).flatMap{it.value}.map{it.length}.orElse(0) == 2
-            assert livingroomAsset.getAttribute("plantsWaterLevels", ObjectNode.class).get().getValue().map{it.get("cactus").asDouble()}.orElse(null) == 0.8
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").flatMap{it.value}.map{it.length}.orElse(0) == 2
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().getValue(Map.class).get().get("cactus") == 0.8
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
             assert !bathRoomAsset.getAttribute("lightSwitch").get().value.get()
         }

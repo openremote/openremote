@@ -4,17 +4,22 @@ import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.core.RuleBuilder;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.rules.facade.NotificationsFacade;
-import org.openremote.manager.rules.flow.*;
+import org.openremote.manager.rules.flow.NodeExecutionRequestInfo;
+import org.openremote.manager.rules.flow.NodeModel;
+import org.openremote.manager.rules.flow.NodeTriggerFunction;
+import org.openremote.manager.rules.flow.NodeTriggerParameters;
 import org.openremote.model.rules.*;
-import org.openremote.model.rules.flow.*;
+import org.openremote.model.rules.flow.Node;
+import org.openremote.model.rules.flow.NodeCollection;
+import org.openremote.model.rules.flow.NodeSocket;
+import org.openremote.model.rules.flow.NodeType;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class FlowRulesBuilder {
     private AssetStorageService assetStorageService;
-    private Map<String, Long> triggerMap = new LinkedHashMap<>();
+    private Map<String, Long> triggerMap = new HashMap<>();
     private List<NodeCollection> nodeCollections = new ArrayList<>();
     private Assets assetsFacade;
     private Users usersFacade;

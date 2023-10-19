@@ -118,7 +118,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     @Override
     protected String createWriteMessage(Attribute<?> attribute, WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-        if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
+        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
             boolean isRequestStart = event.getValue()
                 .flatMap(v -> ValueUtil.getValue(v, AttributeExecuteStatus.class))
                 .map(status -> status == AttributeExecuteStatus.REQUEST_START)
@@ -147,7 +147,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
         Optional<ValueType.MultivaluedStringMap> headers = agent.getConnectHeaders();
         Optional<WebsocketSubscription[]> subscriptions = agent.getConnectSubscriptions();
 
-        if (!oAuthGrant.isPresent() && usernameAndPassword.isPresent()) {
+        if (oAuthGrant.isEmpty() && usernameAndPassword.isPresent()) {
             String authValue = BasicAuthHelper.createHeader(usernameAndPassword.get().getUsername(), usernameAndPassword.get().getPassword());
             headers = Optional.of(headers.map(h -> {
                 h.remove(HttpHeaders.AUTHORIZATION);
@@ -261,8 +261,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     }
 
     protected void doSubscription(Map<String, List<String>> headers, WebsocketSubscription subscription) {
-        if (subscription instanceof WebsocketHTTPSubscription) {
-            WebsocketHTTPSubscription httpSubscription = (WebsocketHTTPSubscription)subscription;
+        if (subscription instanceof WebsocketHTTPSubscription httpSubscription) {
 
             if (TextUtil.isNullOrEmpty(httpSubscription.uri)) {
                 LOG.warning("Websocket subscription missing or empty URI so skipping: " + subscription);

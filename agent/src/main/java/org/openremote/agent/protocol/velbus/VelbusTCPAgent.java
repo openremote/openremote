@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.velbus;
 
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 
@@ -27,8 +28,8 @@ import jakarta.persistence.Entity;
 @Entity
 public class VelbusTCPAgent extends VelbusAgent<VelbusTCPAgent, VelbusTCPProtocol> {
 
-    public static final AttributeDescriptor<String> VELBUS_HOST = HOST.withOptional(false);
-    public static final AttributeDescriptor<Integer> VELBUS_PORT = PORT.withOptional(false);
+    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
+    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
 
     public static final AgentDescriptor<VelbusTCPAgent, VelbusTCPProtocol, VelbusAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         VelbusTCPAgent.class, VelbusTCPProtocol.class, VelbusAgentLink.class

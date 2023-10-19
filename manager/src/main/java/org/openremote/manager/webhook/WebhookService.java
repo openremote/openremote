@@ -65,11 +65,6 @@ public class WebhookService extends RouteBuilder implements ContainerService {
     }
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void configure() throws Exception {
         // empty
     }
@@ -85,9 +80,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
     }
 
     public void sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
-        Response response = null;
-        try {
-            response = this.buildRequest(target, webhook.getHttpMethod(), mediaType, webhook.getPayload());
+        try (Response response = this.buildRequest(target, webhook.getHttpMethod(), mediaType, webhook.getPayload())) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 RulesEngine.LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
             } else {
@@ -95,10 +88,6 @@ public class WebhookService extends RouteBuilder implements ContainerService {
             }
         } catch (Exception e) {
             LOG.warning(e.getMessage());
-        } finally {
-            if (response != null) {
-                response.close();
-            }
         }
     }
 
@@ -113,7 +102,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         } else if (webhook.getOAuthGrant() != null) {
             builder.setOAuthAuthentication(webhook.getOAuthGrant());
         }
-        if (webhook.getHeaders() != null && webhook.getHeaders().size() > 0) {
+        if (webhook.getHeaders() != null && !webhook.getHeaders().isEmpty()) {
             builder.setInjectHeaders(webhook.getHeaders());
         }
         return builder.build();

@@ -28,7 +28,7 @@ import org.hibernate.type.Type;
 
 /**
  * This listener will only push the dirty properties through to the interceptor's onFlushDirty.
- *
+ * <p>
  * Unfortunately there are internal and private dependencies which makes extending not ideal but it is fine for our
  * use case.
  */
@@ -76,19 +76,5 @@ public class FlushEntityEventListener extends DefaultFlushEntityEventListener {
         return session
             .getInterceptor()
             .onFlushDirty(entity, entry.getId(), dirtyPropertiesValues, loadedPropertiesValues, dirtyPropertiesNames, dirtyPropertiesTypes);
-    }
-
-    /**
-     * This method was replaced with the invokeInterceptor(SessionImplementor session, FlushEntityEvent event)
-     * method.
-     *
-     * @deprecated
-     */
-    @Deprecated
-    @Override
-    protected boolean invokeInterceptor(SessionImplementor session, Object entity, EntityEntry entry,
-                                        final Object[] values, EntityPersister persister) {
-        throw new UnsupportedOperationException(
-            "Since this method was replaced with another one it was not suppose to be invoked.");
     }
 }

@@ -167,7 +167,7 @@ public class MessageBrokerService implements ContainerService {
         checkRegistry.register(new RoutesHealthCheckRepository());
         checkRegistry.register(new ConsumersHealthCheckRepository());
         checkRegistry.register(new ContextHealthCheck());
-        context.setExtension(HealthCheckRegistry.class, checkRegistry);
+        context.getCamelContextExtension().addContextPlugin(HealthCheckRegistry.class, checkRegistry);
 
         // Force a quick shutdown of routes with in-flight exchanges
         context.getShutdownStrategy().setTimeout(5);
@@ -178,7 +178,7 @@ public class MessageBrokerService implements ContainerService {
         streamCachingStrategy.setSpoolThreshold(524288); // Half megabyte
         context.setStreamCachingStrategy(streamCachingStrategy);
 
-        context.setErrorHandlerFactory(new DefaultErrorHandlerBuilder());
+        context.getCamelContextExtension().setErrorHandlerFactory(new DefaultErrorHandlerBuilder());
 
         if (container.isDevMode()) {
             context.setMessageHistory(true);

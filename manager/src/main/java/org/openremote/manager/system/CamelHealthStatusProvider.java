@@ -19,8 +19,6 @@
  */
 package org.openremote.manager.system;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.camel.Endpoint;
 import org.apache.camel.component.seda.SedaEndpoint;
 import org.apache.camel.health.HealthCheck;
@@ -28,11 +26,12 @@ import org.apache.camel.health.HealthCheckHelper;
 import org.apache.camel.support.service.BaseService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CamelHealthStatusProvider implements HealthStatusProvider {
@@ -43,13 +42,12 @@ public class CamelHealthStatusProvider implements HealthStatusProvider {
     @Override
     public void init(Container container) throws Exception {
         brokerService = container.getService(MessageBrokerService.class);
-        // Add mixin for health check results
-        ValueUtil.JSON.addMixIn(HealthCheck.Result.class, HealthCheckResultMixin.class);
     }
 
     @Override
     public void start(Container container) throws Exception {
-
+        // Add mixin for health check results
+        ValueUtil.JSON.addMixIn(HealthCheck.Result.class, HealthCheckResultMixin.class);
     }
 
     @Override
@@ -65,10 +63,10 @@ public class CamelHealthStatusProvider implements HealthStatusProvider {
     @Override
     public Object getHealthStatus() {
         Map<String, Object> result = new HashMap<>();
-        ArrayNode endpointInfos = ValueUtil.JSON.createArrayNode();
+        List<Map<String, Object>> endpointInfos = new ArrayList<>();
 
         for (Endpoint endpoint : brokerService.getContext().getEndpoints()) {
-            ObjectNode endpointInfo = ValueUtil.createJsonObject();
+            Map<String, Object> endpointInfo = new HashMap<>();
             endpointInfo.put("uri", endpoint.getEndpointUri());
             if (endpoint instanceof BaseService baseService) {
                 endpointInfo.put("status", baseService.getStatus().name());

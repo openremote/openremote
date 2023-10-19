@@ -157,7 +157,7 @@ public class RulesetDeployment {
     }
 
     protected void init() throws IllegalStateException {
-        if (ruleset.getMeta().has(Ruleset.VALIDITY)) {
+        if (ruleset.getMeta().containsKey(Ruleset.VALIDITY)) {
             validity = ruleset.getValidity();
 
             if (validity == null) {

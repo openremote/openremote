@@ -164,8 +164,8 @@ public final class MetaItemType {
     public static final MetaItemDescriptor<String[]> UNITS = new MetaItemDescriptor<>("units", ValueType.TEXT.asArray());
 
     /**
-     * {@link ValueConstraint}s to be applied to the {@link Attribute} value; these override any constraints defined on
-     * any of the descriptors associated with the attribute.
+     * {@link ValueConstraint}s to be applied to the {@link Attribute} value; these are added to any constraints defined
+     * on any of the descriptors associated with the attribute.
      */
     public static final MetaItemDescriptor<ValueConstraint[]> CONSTRAINTS = new MetaItemDescriptor<>("constraints", ValueType.VALUE_CONSTRAINT.asArray());
 
@@ -187,7 +187,7 @@ public final class MetaItemType {
 
     /**
      * Indicates that the button input should send the true/on/pressed/closed value when pressed; and then send the
-     * false/off/released/open value when released.
+     * false/off/released/open value when released (for use by UIs)
      */
     public static final MetaItemDescriptor<Boolean> MOMENTARY = new MetaItemDescriptor<>("momentary", ValueType.BOOLEAN);
 

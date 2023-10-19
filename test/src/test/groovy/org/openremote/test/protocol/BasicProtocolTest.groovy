@@ -235,13 +235,13 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def mockAsset = assetStorageService.find(mockThing.id, true)
             // Check all valid linked attributes have the new values
-            assert mockAsset.getAttributes().<Boolean>getValue("lightToggle1").orElse(false)
-            assert mockAsset.getAttribute("tempTarget1", Double.class).flatMap{it.getValue()}.orElse(0d) == 25.5d
+            assert mockAsset.getAttribute("lightToggle1").flatMap{it.getValue()}.orElse(false)
+            assert mockAsset.getAttribute("tempTarget1").flatMap{it.getValue()}.orElse(0d) == 25.5d
             // Check invalid attributes don't have the new values
-            assert !mockAsset.getAttribute("lightToggle2", Boolean.class).get().getValue().isPresent()
-            assert !mockAsset.getAttribute("tempTarget2", Double.class).get().getValue().isPresent()
-            assert !mockAsset.getAttribute("lightToggle3", Boolean.class).get().getValue().isPresent()
-            assert !mockAsset.getAttribute("tempTarget3", Double.class).get().getValue().isPresent()
+            assert !mockAsset.getAttribute("lightToggle2").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("tempTarget2").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("lightToggle3").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("tempTarget3").get().getValue().isPresent()
         }
 
         when: "the disabled agent is enabled"
@@ -314,7 +314,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the target temp attributes value should be updated"
         conditions.eventually {
             mockThing = assetStorageService.find(mockThing.id, true) as ThingAsset
-            assert mockThing.getAttribute("tempTarget1").get().getValueAs(Double.class).orElse(0d) == 30d
+            assert mockThing.getAttribute("tempTarget1").get().getValue(Double.class).orElse(0d) == 30d
         }
 
         when: "a sensor value is received that links to an attribute using a regex filter"
@@ -324,7 +324,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the linked attributes value should be updated with the filtered result"
         conditions.eventually {
             mockThing = assetStorageService.find(mockThing.id, true) as ThingAsset
-            assert mockThing.getAttribute("filterRegex").get().getValueAs(Double.class).orElse(0d) == 1212d
+            assert mockThing.getAttribute("filterRegex").get().getValue(Double.class).orElse(0d) == 1212d
         }
 
         when: "the same attribute receives a sensor value that doesn't match the regex filter (match index invalid)"

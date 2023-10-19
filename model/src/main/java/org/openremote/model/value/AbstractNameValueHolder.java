@@ -19,110 +19,105 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-@JsonFilter("excludeNameFilter")
 public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, Serializable {
-
     @JsonIgnore
     protected ValueDescriptor<T> type;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Valid
-    @JsonIgnore
     protected T value;
+    @JsonIgnore
+    protected String valueStr; // This is for lazy value initialisation when deserialising
     @NotBlank(message = "{Asset.valueHolder.name.NotBlank}")
     @Pattern(regexp = "^\\w+$")
-    @JsonIgnore
     protected String name;
 
     protected AbstractNameValueHolder() {
     }
 
-    public AbstractNameValueHolder(@NotNull String name, @NotNull ValueDescriptor<T> type, T value) {
+    public AbstractNameValueHolder(@Nonnull String name, ValueDescriptor<T> type, T value) {
         if (TextUtil.isNullOrEmpty(name)) {
             throw new IllegalArgumentException("name cannot be null or empty");
-        }
-        if (type == null) {
-            throw new IllegalArgumentException("type cannot be null");
         }
         this.name = name;
         this.type = type;
         this.value = value;
     }
 
-    @JsonProperty
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
+    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
     @Override
+    @Nullable
     public ValueDescriptor<T> getType() {
         return type;
     }
 
-    @JsonProperty
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
-    protected void setType(ValueDescriptor<T> type) {
-        this.type = type;
+    @Override
+    public Class<?> getTypeClass() {
+        return getType() != null ? getType().getType() : Object.class;
     }
 
+    @SuppressWarnings("unchecked")
     @JsonProperty
     @Override
     public Optional<T> getValue() {
-        return Optional.ofNullable(value);
+        return (Optional<T>)getValue(getTypeClass());
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <U> Optional<U> getValueAs(Class<U> valueType) {
-        if (valueType.isAssignableFrom(getType().getType())) {
-            return Optional.ofNullable((U)value);
+    public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
+        if (value == null) {
+            return Optional.empty();
         }
-        return Optional.empty();
+        if (valueType.isAssignableFrom(value.getClass())) {
+            return Optional.of((U)value);
+        }
+        return ValueUtil.getValueCoerced(value, valueType);
     }
 
     @JsonProperty
     public void setValue(T value) {
         this.value = value;
+        valueStr = null;
     }
 
-    @JsonProperty
     @Override
     public String getName() {
         return name;
     }
 
-    @JsonProperty
     protected void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * {@link #type} is transient so don't use it for equality checks
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AbstractNameValueHolder<?> that = (AbstractNameValueHolder<?>) o;
         return name.equals(that.name)
-            && Objects.equals(type, that.type)
-            && Objects.equals(ValueUtil.convert(value, JsonNode.class), ValueUtil.convert(that.value, JsonNode.class));
+            && ValueUtil.objectsEqualsWithJSONFallback(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(value, type, name);
+        return Objects.hash(value, name);
     }
 }

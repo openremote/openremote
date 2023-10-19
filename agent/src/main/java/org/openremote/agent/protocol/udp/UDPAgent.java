@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.udp;
 
 import org.openremote.agent.protocol.io.IOAgent;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.value.AttributeDescriptor;
@@ -29,8 +30,8 @@ import jakarta.persistence.Entity;
 @Entity
 public class UDPAgent extends IOAgent<UDPAgent, UDPProtocol, DefaultAgentLink> {
 
-    public static final AttributeDescriptor<String> UDP_HOST = HOST.withOptional(false);
-    public static final AttributeDescriptor<Integer> UDP_PORT = PORT.withOptional(false);
+    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
+    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
 
     public static final AgentDescriptor<UDPAgent, UDPProtocol, DefaultAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         UDPAgent.class, UDPProtocol.class, DefaultAgentLink.class

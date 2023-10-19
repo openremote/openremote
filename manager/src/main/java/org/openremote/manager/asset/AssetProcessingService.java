@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.asset;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.EntityManager;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -153,8 +152,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             // TODO Better exception handling - dead letter queue?
-            if (exception instanceof AssetProcessingException) {
-                AssetProcessingException processingException = (AssetProcessingException) exception;
+            if (exception instanceof AssetProcessingException processingException) {
                 error.append(" - ").append(processingException.getMessage());
                 error.append(": ").append(event.toString());
                 LOG.log(System.Logger.Level.WARNING, error::toString);
@@ -415,8 +413,30 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         }
                     );
 
+                    // For executable attributes, non-sensor sources can set a writable attribute execute status
+                    if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
+                        Optional<AttributeExecuteStatus> status = event.getValue()
+                            .flatMap(ValueUtil::getString)
+                            .flatMap(AttributeExecuteStatus::fromString);
+
+                        // TODO: Make this mechanism more generic with an interface
+                        if (status.isPresent() && !status.get().isWrite()) {
+                            throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
+                        }
+                    }
+
+                    // Type coercion
+                    Object value = event.getValue().map(eventValue -> {
+                        Class<?> attributeValueType = oldAttribute.getTypeClass();
+                        return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
+                            LOG.info("Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
+                            return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
+                        });
+
+                    }).orElse(null);
+
                     // Create a copy of the attribute and set the new value and timestamp
-                    Attribute updatedAttribute = ValueUtil.clone(oldAttribute);
+                    Attribute updatedAttribute = oldAttribute.shallowClone();
                     updatedAttribute.setValue(value, eventTime);
 
                     // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp

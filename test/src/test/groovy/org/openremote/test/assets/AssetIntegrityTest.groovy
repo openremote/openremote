@@ -1,19 +1,20 @@
 package org.openremote.test.assets
 
+
+import jakarta.ws.rs.WebApplicationException
+import org.jboss.resteasy.api.validation.ViolationReport
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.value.ValueType
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
-import jakarta.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -60,9 +61,13 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         assetResource.update(null, testAsset.getId(), testAsset)
 
-        then: "the request should be bad"
+        then: "the request should fail validation and return a validation report indicating the failure(s)"
         WebApplicationException ex = thrown()
         ex.response.status == 400
+        def report = ex.response.readEntity(ViolationReport)
+        report != null
+        report.propertyViolations.size() == 1
+        report.propertyViolations.get(0).path == "attributes[illegal- Attribute:name&&&].name"
 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
