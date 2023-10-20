@@ -141,6 +141,10 @@ public class RulesFacts extends Facts implements RuleListener {
                 ).parallel();
     }
 
+    public long getFactCount() {
+        return getNamedFacts().size() + getAnonymousFacts().size() + getAssetStates().size() + getAssetEvents().size();
+    }
+
     @SuppressWarnings("unchecked")
     public Map<String, Object> getVars() {
         return get(EXECUTION_VARS);

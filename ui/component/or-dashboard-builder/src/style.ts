@@ -84,6 +84,14 @@ export const style = css`
         border-radius: 0;
         width: 100%;
         cursor: pointer;
+        font-weight: 700;
+        line-height: 1em;
+        color: var(--internal-or-asset-viewer-title-text-color);
+        flex: 0 0 auto;
+    }
+    .expandableHeader > or-icon {
+        --or-icon-height: 20px;
+        --or-icon-width: 20px;
     }
     .panel-title {
         text-transform: uppercase;

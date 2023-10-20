@@ -39,7 +39,11 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
@@ -50,6 +54,17 @@ import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
 import static org.openremote.model.util.ValueUtil.parse
 
 class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
+
+    def getOccurrenceFromTo(long baseTime, int occurrence) {
+        def tomorrowMidnight = LocalDateTime.ofInstant(Instant.ofEpochMilli(baseTime).truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS), ZoneId.systemDefault())
+        def from = LocalDateTime.of(tomorrowMidnight.get(ChronoField.YEAR), tomorrowMidnight.get(ChronoField.MONTH_OF_YEAR), tomorrowMidnight.get(ChronoField.DAY_OF_MONTH), 6, 0, 0)
+        from = from.plus(occurrence, ChronoUnit.WEEKS)
+        def to = from.plus(2, ChronoUnit.HOURS)
+        return [
+                from.atZone(ZoneId.systemDefault()).toDate(),
+                to.atZone(ZoneId.systemDefault()).toDate()
+        ]
+    }
 
     def "Trigger notification when presence is detected and alarm enabled"() {
 
@@ -245,11 +260,10 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         when: "a validity period is added to the ruleset that enables the ruleset for the next day of the week repeating for 2 weeks"
         stopPseudoClock()
-        def tomorrowMidnight = Instant.ofEpochMilli(getClockTimeOf(container)).truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS)
-        def from = tomorrowMidnight.plus(6, ChronoUnit.HOURS)
-        def to = tomorrowMidnight.plus(8, ChronoUnit.HOURS)
+        def baseTime = getClockTimeOf(container)
+        def fromTo = getOccurrenceFromTo(baseTime, 0)
         def recur = new Recur(Recur.WEEKLY, 2)
-        def validity = new CalendarEvent(from.atZone(ZoneOffset.UTC).toDate(), to.atZone(ZoneOffset.UTC).toDate(), recur)
+        def validity = new CalendarEvent(fromTo[0], fromTo[1], recur)
         ruleset.setValidity(validity)
         rulesetStorageService.merge(ruleset)
         ruleset = rulesetStorageService.find(AssetRuleset.class, ruleset.id)
@@ -257,11 +271,9 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         then: "the ruleset should have saved successfully and the validity should also have been stored"
         assert ruleset != null
         assert ruleset.getValidity() != null
-        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).key == from.toEpochMilli()
-        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).value == to.toEpochMilli()
+        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).key == fromTo[0].getTime()
+        assert ruleset.getValidity().getNextOrActiveFromTo(new Date(getClockTimeOf(container))).value == fromTo[1].getTime()
         assert ruleset.getValidity().getRecurrence() != null
-        def recurrenceList = ruleset.getValidity().getRecurrence().getDates(new net.fortuna.ical4j.model.Date(getClockTimeOf(container)), new net.fortuna.ical4j.model.Period(new net.fortuna.ical4j.model.DateTime(new Date(getClockTimeOf(container))), new net.fortuna.ical4j.model.DateTime(tomorrowMidnight.plus(30, ChronoUnit.DAYS).toDate())), Value.DATE)
-        assert recurrenceList.size() == 2
 
         and: "the ruleset state should be deployed and paused"
         RulesetDeployment rulesetDeployment
@@ -273,66 +285,39 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             rulesetDeployment = apartment1Engine.deployments.get(ruleset.getId())
             assert rulesetDeployment != null
             assert rulesetDeployment.status == RulesetStatus.PAUSED
-            assert apartment1Engine.pauseTimers.size() == 0
-            assert apartment1Engine.unpauseTimers.size() == 1
-            // Assert scheduled future delay is correct
-            assert from.toEpochMilli() - getClockTimeOf(container) - apartment1Engine.unpauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
         }
 
         when: "time advances to within the first valid time period"
-        advancePseudoClock((from.toEpochMilli()-getClockTimeOf(container))+10000, TimeUnit.MILLISECONDS, container)
-        apartment1Engine.unPauseRuleset(rulesetDeployment)
+        advancePseudoClock(fromTo[0].getTime()-getClockTimeOf(container)+10000, TimeUnit.MILLISECONDS, container)
 
-        then: "the ruleset status should be un-paused"
+        then: "the ruleset status should become un-paused"
         conditions.eventually {
             assert rulesetDeployment.status == RulesetStatus.DEPLOYED
         }
 
-        and: "the next pause of the ruleset should be scheduled"
-        assert apartment1Engine.pauseTimers.size() == 1
-        assert apartment1Engine.unpauseTimers.size() == 0
-        // Assert scheduled future delay is correct
-        assert to.toEpochMilli() - getClockTimeOf(container) - apartment1Engine.pauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
-
         when: "time advances past the first expiry the ruleset is paused again"
-        advancePseudoClock((to.toEpochMilli()-getClockTimeOf(container))+10000, TimeUnit.MILLISECONDS, container)
-        apartment1Engine.pauseRuleset(rulesetDeployment)
+        advancePseudoClock((fromTo[1].getTime()-getClockTimeOf(container))+10000, TimeUnit.MILLISECONDS, container)
 
         then: "the ruleset status should be paused"
         conditions.eventually {
             assert rulesetDeployment.status == RulesetStatus.PAUSED
         }
 
-        and: "the next unpause of the ruleset should be scheduled"
-        assert apartment1Engine.pauseTimers.size() == 0
-        assert apartment1Engine.unpauseTimers.size() == 1
-        // Assert scheduled future delay is correct
-        assert from.plus(7, ChronoUnit.DAYS).toEpochMilli() - getClockTimeOf(container) - apartment1Engine.unpauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
-
         when: "time advances to within the next valid time period"
-        advancePseudoClock((from.plus(7, ChronoUnit.DAYS).plus(61, ChronoUnit.MINUTES).toEpochMilli() - getClockTimeOf(container)), TimeUnit.MILLISECONDS, container)
-        apartment1Engine.unPauseRuleset(rulesetDeployment)
+        fromTo = getOccurrenceFromTo(baseTime, 1)
+        advancePseudoClock(fromTo[0].getTime() - getClockTimeOf(container) + (61*60000), TimeUnit.MILLISECONDS, container)
 
         then: "the ruleset status should be un-paused"
         conditions.eventually {
             assert rulesetDeployment.status == RulesetStatus.DEPLOYED
         }
 
-        and: "the next pause of the ruleset should be scheduled"
-        assert apartment1Engine.pauseTimers.size() == 1
-        assert apartment1Engine.unpauseTimers.size() == 0
-        // Assert scheduled future delay is correct
-        assert to.plus(7, ChronoUnit.DAYS).toEpochMilli() - getClockTimeOf(container) - apartment1Engine.pauseTimers.get(ruleset.getId()).getDelay(TimeUnit.MILLISECONDS) <= 10000
-
         when: "time advances past the second expiry the ruleset is paused again"
-        advancePseudoClock((to.plus(7, ChronoUnit.DAYS).plus(61, ChronoUnit.MINUTES).toEpochMilli()-getClockTimeOf(container)), TimeUnit.MILLISECONDS, container)
-        apartment1Engine.pauseRuleset(rulesetDeployment)
+        advancePseudoClock(fromTo[1].getTime() - getClockTimeOf(container) + (45*60000), TimeUnit.MILLISECONDS, container)
 
         then: "the ruleset status should be expired"
         conditions.eventually {
             assert rulesetDeployment.status == RulesetStatus.EXPIRED
-            assert apartment1Engine.pauseTimers.size() == 0
-            assert apartment1Engine.unpauseTimers.size() == 0
         }
 
         cleanup: "the mock is removed"

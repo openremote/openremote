@@ -6,7 +6,7 @@ import { html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "@openremote/or-gauge";
 import { i18next } from "@openremote/or-translate";
-import manager from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import { when } from "lit/directives/when.js";
@@ -40,8 +40,15 @@ export class OrGaugeWidget implements OrWidgetEntity {
             valueType: 'number',
         } as GaugeWidgetConfig;
     }
+
+    // Triggered every update to double check if the specification.
+    // It will merge missing values, or you can add custom logic to process here.
+    verifyConfigSpec(widget: DashboardWidget): GaugeWidgetConfig {
+        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as GaugeWidgetConfig;
+    }
+
     getWidgetHTML(widget: DashboardWidget, editMode: boolean, realm: string) {
-        return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}" style="height: 100%; overflow: hidden;"></or-gauge-widget>`;
+        return html`<or-gauge-widget .widget="${widget}" .editMode="${editMode}" realm="${realm}"></or-gauge-widget>`;
     }
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
@@ -75,11 +82,13 @@ export class OrGaugeWidgetContent extends LitElement {
                 return html`
                     <or-gauge .asset="${this.assets[0]}" .assetAttribute="${this.assetAttributes[0]}" .thresholds="${this.widget?.widgetConfig.thresholds}"
                               .decimals="${this.widget?.widgetConfig.decimals}" .min="${this.widget?.widgetConfig.min}" .max="${this.widget?.widgetConfig.max}"
-                              style="height: 100%;"></or-gauge>
+                              style="height: 100%; overflow: hidden;"></or-gauge>
                 `;
             }, () => {
                 return html`
-                    <span>No attributes selected.</span>
+                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                        <span>${i18next.t('noAttributeConnected')}</span>
+                    </div>
                 `
             })}
             <!--<or-gauge .attrRef="${this.widget?.widgetConfig.attributeRefs[0]}"></or-gauge>-->
@@ -116,8 +125,6 @@ export class OrGaugeWidgetContent extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else {
-            console.error("Error: attributeRefs are not present in widget config!");
         }
     }
 }
@@ -147,7 +154,10 @@ export class OrGaugeWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
-                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .onlyDataAttrs="${false}" .widgetConfig="${this.widget?.widgetConfig}"
+                    <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .onlyDataAttrs="${false}" .widgetConfig="${this.widget?.widgetConfig}" 
+                                                .attributeFilter="${(attribute: Attribute<any>) => {
+                                                    return ["positiveInteger", "positiveNumber", "number", "long", "integer", "bigInteger", "negativeInteger", "negativeNumber", "bigNumber", "integerByte", "direction"]
+                                                      .includes(attribute.type!)}}"
                                                 @updated="${(event: CustomEvent) => {
                                                     this.updateConfig(this.widget!, event.detail.changes.get('config'));
                                                     this.onAttributesUpdate(event.detail.changes);
@@ -160,7 +170,7 @@ export class OrGaugeWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('values')) ? html`
-                    <div style="padding: 12px 24px 48px 24px; display: flex; flex-direction: column; gap: 16px;">
+                    <div class="expanded-panel">
                         <div style="display: flex; gap: 8px;">
                             <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('min')}" .max="${this.widget?.widgetConfig.max}" .value="${this.widget?.widgetConfig.min}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
@@ -183,7 +193,7 @@ export class OrGaugeWidgetSettings extends LitElement {
                             ></or-mwc-input>
                         </div>
                         <div>
-                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
+                            <or-mwc-input type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}" .min="${0}"
                                           @or-mwc-input-changed="${(event: CustomEvent) => {
                                               config.decimals = event.detail.value;
                                               this.updateConfig(this.widget!, config);
@@ -235,7 +245,7 @@ export class OrGaugeWidgetSettings extends LitElement {
 
     generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
+            <span class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
                 <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
             </span>

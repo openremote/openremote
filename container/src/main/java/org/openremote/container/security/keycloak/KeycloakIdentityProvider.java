@@ -28,9 +28,12 @@ import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
@@ -50,9 +53,6 @@ import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 
 import javax.security.auth.Subject;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.security.Principal;
 import java.util.Arrays;
@@ -66,9 +66,9 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static jakarta.ws.rs.core.Response.Status.Family.REDIRECTION;
+import static jakarta.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
-import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
@@ -172,8 +172,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
-        ResteasyClientBuilder clientBuilder =
-            new ResteasyClientBuilder()
+        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
                 .connectTimeout(
                     getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS

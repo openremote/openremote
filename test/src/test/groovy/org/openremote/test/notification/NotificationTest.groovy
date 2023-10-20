@@ -1,8 +1,11 @@
 package org.openremote.test.notification
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
-import com.google.firebase.messaging.Message
+import jakarta.mail.Message
+import jakarta.mail.internet.InternetAddress
+import jakarta.ws.rs.WebApplicationException
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.console.ConsoleResourceImpl
@@ -13,6 +16,7 @@ import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.web.ManagerWebService
+import org.openremote.model.asset.impl.ConsoleAsset
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
@@ -21,14 +25,12 @@ import org.openremote.model.notification.*
 import org.openremote.model.query.UserQuery
 import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.util.TextUtil
-import org.openremote.test.ManagerContainerTrait
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
-import org.simplejavamail.email.Email
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.WebApplicationException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -56,41 +58,42 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
         def consoleResource = (ConsoleResourceImpl)container.getService(ManagerWebService.class).apiSingletons.find {it instanceof ConsoleResourceImpl}
 
         and: "a mock push notification handler"
         PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
         mockPushNotificationHandler.isValid() >> true
         mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
-                id, source, sourceId, target, message ->
-                    notificationIds << id
-                    notificationTargetTypes << target.type
-                    notificationTargetIds << target.id
-                    notificationMessages << message
-                    callRealMethod()
-            }
+            id, source, sourceId, target, message ->
+                notificationIds << id
+                notificationTargetTypes << target.type
+                notificationTargetIds << target.id
+                notificationMessages << message
+                callRealMethod()
+        }
         // Assume sent to FCM
-        mockPushNotificationHandler.sendMessage(_ as Message) >> {
-                message -> return NotificationSendResult.success()
-            }
+        mockPushNotificationHandler.sendMessage(_ as com.google.firebase.messaging.Message) >> {
+            message -> return NotificationSendResult.success()
+        }
 
         notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), mockPushNotificationHandler)
 
         and: "an authenticated test user"
         def realm = keycloakTestSetup.realmBuilding.name
         def testuser1AccessToken = authenticate(
-            container,
-            MASTER_REALM,
-            KEYCLOAK_CLIENT_ID,
-            "testuser1",
-            "testuser1"
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                "testuser1",
+                "testuser1"
         ).token
         def testuser2AccessToken = authenticate(
-            container,
-            realm,
-            KEYCLOAK_CLIENT_ID,
-            "testuser2",
-            "testuser2"
+                container,
+                realm,
+                KEYCLOAK_CLIENT_ID,
+                "testuser2",
+                "testuser2"
         ).token
         def testuser3AccessToken = authenticate(
                 container,
@@ -326,6 +329,30 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert notificationTargetIds.contains(testuser3Console2.id)
         }
 
+        when: "the FCM token is set to null for a console asset"
+        notificationIds.clear()
+        notificationTargetIds.clear()
+        def testUser3Console1Asset = assetStorageService.find(testuser3Console1.id) as ConsoleAsset
+        testUser3Console1Asset.getConsoleProviders().map{it.get(PushNotificationMessage.TYPE)}.get().getData().set("token", null)
+        testUser3Console1Asset = assetStorageService.merge(testUser3Console1Asset)
+
+        then: "the cached FCM token should be removed from the handler"
+        conditions.eventually {
+            assert pushNotificationHandler.consoleFCMTokenMap.get(testUser3Console1Asset.id) == null
+        }
+
+        when: "the admin user sends a notification to a user linked to the console without an FCM token"
+        notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser3Id)]
+        advancePseudoClock(1, TimeUnit.HOURS, container)
+        adminNotificationResource.sendNotification(null, notification)
+
+        then: "the notification should have been sent"
+        conditions.eventually {
+            assert notificationIds.size() == 1
+            assert notificationTargetIds.contains(testuser3Console2.id)
+            assert !notificationTargetIds.contains(testuser3Console1.id)
+        }
+
         // -----------------------------------------------
         //    Check notification resource
         // -----------------------------------------------
@@ -343,7 +370,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                         n.deliveredOn == null &&
                         n.acknowledgedOn == null
             }
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 6
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 7
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id).length == 4
         }
 
@@ -457,16 +484,16 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "a repeat frequency is set and a notification is sent"
         // Move clock to beginning of next hour
         def advancement = Instant.ofEpochMilli(getClockTimeOf(container))
-                                       .truncatedTo(ChronoUnit.HOURS)
-                                       .plus(59, ChronoUnit.MINUTES)
+                .truncatedTo(ChronoUnit.HOURS)
+                .plus(59, ChronoUnit.MINUTES)
 
         advancePseudoClock(ChronoUnit.MILLIS.between(Instant.ofEpochMilli(getClockTimeOf(container)), advancement), TimeUnit.MILLISECONDS, container)
+        notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser3Console2.id)]
         notification.setRepeatFrequency(RepeatFrequency.HOURLY)
         testuser3NotificationResource.sendNotification(null, notification)
 
-        then: "the notifications should have been sent (to testuser3 consoles)"
+        then: "the notification should have been sent to the console"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 1
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 1
         }
 
@@ -475,7 +502,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 1
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 1
         }
 
@@ -484,7 +510,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 2
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 2
         }
 
@@ -494,7 +519,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 2
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 2
         }
 
@@ -504,7 +528,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 3
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 3
         }
 
@@ -515,7 +538,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "no new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 3
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 3
         }
 
@@ -525,19 +547,16 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "new notifications should have been sent"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id).length == 4
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 4
         }
 
         and: "notifications are retrieved only for the past day only the relevant notifications should have been returned"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000*24), null, null, null, testuser3Console1.id).length == 1
             assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000*24), null, null, null, testuser3Console2.id).length == 1
         }
 
         and: "notifications are retrieved only for the past 40 days only the relevant notifications should have been returned"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000L*24*40), null, null, null, testuser3Console1.id).length == 4
             assert adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000L*24*40), null, null, null, testuser3Console2.id).length == 4
         }
 
@@ -547,7 +566,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
     def "Check email notification functionality"() {
 
-        List<Email> sentEmails = []
+        List<Message> sentEmails = []
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -565,8 +584,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         mockEmailNotificationHandler.isValid() >> true
 
         // Log email and assume sent to SMTP Server
-        mockEmailNotificationHandler.sendMessage(_ as Email) >> {
-            Email email ->
+        mockEmailNotificationHandler.sendMessage(_ as Message) >> {
+            Message email ->
                 sentEmails << email
                 return NotificationSendResult.success()
         }
@@ -574,7 +593,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         expect: "the demo users to be created"
         conditions.eventually {
-            def users = identityService.getIdentityProvider().queryUsers(new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)).select(new UserQuery.Select().excludeServiceUsers(true)))
+            def users = identityService.getIdentityProvider().queryUsers(new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name)).serviceUsers(false))
             assert users.size() == 3
             assert users.count { !TextUtil.isNullOrEmpty(it.email)} == 3
         }
@@ -589,12 +608,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         then: "the email should have been sent to the realm users"
         conditions.eventually {
             assert sentEmails.size() == 2
-            assert sentEmails.every {it.getPlainText() == "Hello world!"}
-            assert sentEmails.every {it.getSubject() == "Test"}
-            assert sentEmails.every {it.getHeaders() != null && it.getHeaders().size() == 2 && it.getHeaders().get("Test 1") == "Hello World 1" && it.getHeaders().get("Test2") == "Hello World 2" }
-            assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser2@openremote.local"}
-            assert !sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser3@openremote.local"}
-            assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "building@openremote.local"}
+            assert sentEmails.every {it.content == "Hello world!"}
+            assert sentEmails.every { it.getSubject() == "Test"}
+            assert sentEmails.every { it.allHeaders != null && it.getHeader("Test 1")[0] == "Hello World 1" && it.getHeader("Test2")[0] == "Hello World 2" }
+            assert sentEmails.any { it.allRecipients.length == 1 && (it.allRecipients[0] as InternetAddress).address == "testuser2@openremote.local"}
+            assert !sentEmails.any { it.allRecipients.length == 1 && (it.allRecipients[0] as InternetAddress).address == "testuser3@openremote.local"}
+            assert sentEmails.any { it.allRecipients.length == 1 && (it.allRecipients[0] as InternetAddress).address == "building@openremote.local"}
         }
 
         when: "an email attribute is added to an asset"
@@ -612,7 +631,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert sentEmails.size() == 1
             assert sentEmails.any { it.getSubject() == "Test 2"}
-            assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "kitchen@openremote.local"}
+            assert sentEmails.any { it.allRecipients.length == 1 && (it.allRecipients[0] as InternetAddress).address == "kitchen@openremote.local"}
         }
 
         when: "an email is sent to a custom target"
@@ -624,11 +643,11 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         then: "the email should have been sent to all custom recipients"
         conditions.eventually {
             assert sentEmails.size() == 1
-            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().size() == 4}
-            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.TO && it.address == "custom1@openremote.local"}}
-            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.TO && it.address == "custom2@openremote.local"}}
-            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.CC && it.address == "custom3@openremote.local"}}
-            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.BCC && it.address == "custom4@openremote.local"}}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.allRecipients.length == 4}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients(Message.RecipientType.TO).any{(it as InternetAddress).address == "custom1@openremote.local"}}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients(Message.RecipientType.TO).any{(it as InternetAddress).address == "custom2@openremote.local"}}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients(Message.RecipientType.CC).any{(it as InternetAddress).address == "custom3@openremote.local"}}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients(Message.RecipientType.BCC).any{(it as InternetAddress).address == "custom4@openremote.local"}}
         }
 
         cleanup: "the mock is removed"

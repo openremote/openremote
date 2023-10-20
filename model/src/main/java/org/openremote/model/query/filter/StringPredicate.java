@@ -63,6 +63,25 @@ public class StringPredicate extends ValuePredicate {
         this.value = value;
     }
 
+    public static String toSQLParameter(StringPredicate predicate, int pos, boolean ignoreNegation) {
+        switch (predicate.match) {
+            case BEGIN:
+            case END:
+            case CONTAINS:
+                if (!ignoreNegation && predicate.negate) {
+                    return predicate.caseSensitive ? " not like ?" + pos : " not like upper(?" + pos + ")";
+                }
+                return predicate.caseSensitive ? " like ?" + pos : " like upper(?" + pos + ")";
+            case EXACT:
+                if (!ignoreNegation && predicate.negate) {
+                    return predicate.caseSensitive ? " <> ?" + pos : " <> upper(?" + pos + ")";
+                }
+                return predicate.caseSensitive ? " = ?" + pos : " = upper(?" + pos + ")";
+            default:
+                throw new UnsupportedOperationException("Unsupported match type" + predicate.match);
+        }
+    }
+
     public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
         return obj -> {
 
@@ -111,10 +130,7 @@ public class StringPredicate extends ValuePredicate {
     }
 
     public String prepareValue() {
-        String s = match.prepare(this.value);
-        if (!caseSensitive)
-            s = s.toUpperCase(Locale.ROOT);
-        return s;
+        return match.prepare(this.value);
     }
 
     @Override

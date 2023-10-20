@@ -1,12 +1,12 @@
 package org.openremote.model.dashboard;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.WebApplicationException;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.WebApplicationException;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 
 public class DashboardScreenPreset {
 
@@ -26,6 +26,14 @@ public class DashboardScreenPreset {
 
 
     /* -------------------------------- */
+
+    public DashboardScreenPreset() {
+    }
+    public DashboardScreenPreset(String displayName, DashboardScalingPreset scalingPreset) {
+        this.displayName = displayName;
+        this.breakpoint = 1;
+        this.scalingPreset = scalingPreset;
+    }
 
     public void setId(@NotNull @NotEmpty String id) { this.id = id; }
     public void setDisplayName(@NotNull @NotEmpty String displayName) { this.displayName = displayName; }

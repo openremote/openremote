@@ -60,6 +60,9 @@ public enum Actions {
     public static let store = "STORE"
     public static let retrieve = "RETRIEVE"
     public static let scanQr = "SCAN_QR"
+    public static let scanBleDevices = "SCAN_BLE_DEVICES"
+    public static let connectToBleDevice = "CONNECT_TO_DEVICE"
+    public static let sendToBleDevice = "SEND_TO_DEVICE"
 }
 
 public enum Providers {
@@ -67,6 +70,7 @@ public enum Providers {
     public static let geofence = "geofence"
     public static let storage = "storage"
     public static let qr = "qr"
+    public static let ble = "ble"
 }
 
 public enum NotificationsNames {

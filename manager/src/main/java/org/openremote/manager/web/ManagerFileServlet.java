@@ -29,8 +29,8 @@ import org.openremote.model.Container;
 import org.openremote.container.web.file.FileServlet;
 import org.openremote.container.web.file.GzipResponseFilter;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;

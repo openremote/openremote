@@ -22,7 +22,7 @@ package org.openremote.model.asset;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.value.MetaItemType;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;

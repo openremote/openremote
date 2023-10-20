@@ -22,6 +22,7 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
+    Role,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
@@ -633,9 +634,8 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
                         value = !!value;
                     } else if (format.asDate) {
                         // Assume UNIX timestamp in ms
-                        const offset = (new Date()).getTimezoneOffset() * 60000;
-                        value = new Date(value - offset);
-                    } 
+                        value = new Date(value);
+                    }
                 } else if (typeof(value) === "boolean" && format.asNumber) {
                     value = value ? 1 : 0;
                 }
@@ -801,11 +801,11 @@ function mergeObjectKey(destination: object, path: string[], key: string, value:
         if (value === undefined || value === null) {
             delete dest[key];
         } else if (Array.isArray(dest[key])) {
-                if (mergeArrays) {
-                    dest[key] = [...dest[key], ...value];
-                } else {
-                    dest[key] = [...value];
-                }
+            if (mergeArrays) {
+                dest[key] = [...dest[key], ...value];
+            } else {
+                dest[key] = [...value];
+            }
         } else if (typeof(value) === "object") {
             dest[key] = mergeObjects({...dest[key]}, value, mergeArrays);
         } else {
@@ -834,7 +834,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
         matched = JSON.parse(str) as T;
         if (matched) {
             if (lookup === WellknownMetaItems.FORMAT) {
-                formats.push(matched);
+                formats.push(matched as ValueFormat);
             } else {
                 return matched;
             }
@@ -847,7 +847,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
 
         if (matched) {
             if (lookup === WellknownMetaItems.FORMAT) {
-                formats.push(matched);
+                formats.push(matched as ValueFormat);
             } else {
                 return matched;
             }
@@ -857,7 +857,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
     if (descriptor && typeof(descriptor) !== "string" && (descriptor as any).hasOwnProperty(lookup)) {
         matched = (descriptor as any)[lookup] as T;
         if (lookup === WellknownMetaItems.FORMAT) {
-            formats.push(matched);
+            formats.push(matched as ValueFormat);
         } else {
             return matched;
         }
@@ -867,7 +867,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
         const valueDescriptor = AssetModelUtil.getValueDescriptor((descriptor as AbstractNameValueDescriptorHolder).type);
         matched = (valueDescriptor as any)[lookup] as T;
         if (lookup === WellknownMetaItems.FORMAT) {
-            formats.push(matched);
+            formats.push(matched as ValueFormat);
         } else {
             return matched;
         }
@@ -1070,4 +1070,8 @@ export function blobToBase64(blob:Blob) {
             reject(error);
         };
     });
+}
+
+export function realmRoleFilter(role: Role) {
+    return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name!) && !role.name!.startsWith("default-roles"));
 }

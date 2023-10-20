@@ -21,10 +21,10 @@
     "lit": "^2.0.2"
   },
   "devDependencies": {
-    "@mdi/font": "^6.5.95",
+    "@mdi/font": "latest",
     "terser-webpack-plugin": "^5.2.5",
     "typescript": ">=4.5.2",
-    "webpack": "^5.64.3",
+    "webpack": "^5.76.0",
     "webpack-cli": "^4.9.1"
   },
   "publishConfig": {

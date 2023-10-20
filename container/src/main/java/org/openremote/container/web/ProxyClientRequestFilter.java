@@ -19,8 +19,8 @@
  */
 package org.openremote.container.web;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
 
 import static org.openremote.container.web.WebClient.*;

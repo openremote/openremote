@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset.console;
 
+import jakarta.ws.rs.BadRequestException;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -29,7 +30,6 @@ import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.asset.impl.GroupAsset;
-import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.console.ConsoleProviders;
 import org.openremote.model.console.ConsoleRegistration;
 import org.openremote.model.console.ConsoleResource;
@@ -37,25 +37,20 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.ParentPredicate;
-import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.Realm;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
 
-import javax.ws.rs.BadRequestException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
-import static org.openremote.model.value.MetaItemType.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleResource {
 
     public static final String CONSOLE_PARENT_ASSET_NAME = "Consoles";
-    protected Map<String, String> realmConsoleParentMap = new HashMap<>();
+    protected Map<String, String> realmConsoleParentMap = new ConcurrentHashMap<>();
     protected AssetStorageService assetStorageService;
 
     public ConsoleResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetStorageService assetStorageService, ClientEventService clientEventService) {
@@ -148,17 +143,15 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     }
 
     public String getConsoleParentAssetId(String realm) {
-        return withLockReturning(getClass().getSimpleName() + "::getConsoleParentAssetId", () -> {
-            String id = realmConsoleParentMap.get(realm);
+        String id = realmConsoleParentMap.get(realm);
 
-            if (TextUtil.isNullOrEmpty(id)) {
-                Asset<?> consoleParent = getConsoleParentAsset(assetStorageService, getRequestRealm());
-                id = consoleParent.getId();
-                realmConsoleParentMap.put(realm, id);
-            }
+        if (TextUtil.isNullOrEmpty(id)) {
+            Asset<?> consoleParent = getConsoleParentAsset(assetStorageService, getRequestRealm());
+            id = consoleParent.getId();
+            realmConsoleParentMap.put(realm, id);
+        }
 
-            return id;
-        });
+        return id;
     }
 
     public static Asset<?> getConsoleParentAsset(AssetStorageService assetStorageService, Realm realm) {

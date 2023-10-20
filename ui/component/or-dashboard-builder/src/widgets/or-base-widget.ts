@@ -13,6 +13,7 @@ export interface OrWidgetEntity {
     MIN_PIXEL_HEIGHT: number;
 
     getDefaultConfig: (widget: DashboardWidget) => OrWidgetConfig;
+    verifyConfigSpec: (widget: DashboardWidget) => OrWidgetConfig;
 
     getWidgetHTML: (widget: DashboardWidget, editMode: boolean, realm: string) => TemplateResult;
     getSettingsHTML: (widget: DashboardWidget, realm: string) => TemplateResult;

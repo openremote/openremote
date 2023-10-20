@@ -55,6 +55,6 @@ public class NotificationsFacade<T extends Ruleset> extends Notifications {
             sourceId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ruleset must have an asset ID"));
         }
 
-        notificationService.sendNotification(notification, source, sourceId);
+        notificationService.sendNotificationAsync(notification, source, sourceId);
     }
 }

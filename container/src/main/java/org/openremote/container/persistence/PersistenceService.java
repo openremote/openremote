@@ -19,13 +19,16 @@
  */
 package org.openremote.container.persistence;
 
-import org.apache.camel.ExchangePattern;
+import jakarta.persistence.*;
+import jakarta.persistence.spi.ClassTransformer;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.ws.rs.core.UriBuilder;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.Predicate;
-import org.apache.camel.ProducerTemplate;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.output.MigrateResult;
+import org.flywaydb.core.internal.sqlscript.FlywaySqlScriptException;
 import org.hibernate.Session;
 import org.hibernate.annotations.Formula;
 import org.hibernate.cfg.AvailableSettings;
@@ -33,7 +36,10 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.*;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.EntityClassProvider;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -41,9 +47,9 @@ import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.datapoint.AssetDatapoint;
+import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.notification.SentNotification;
-import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.rules.AssetRuleset;
@@ -56,13 +62,14 @@ import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
 
-import javax.persistence.*;
-import javax.persistence.spi.ClassTransformer;
-import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.sql.DataSource;
-import javax.ws.rs.core.UriBuilder;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -77,7 +84,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     /**
      * Programmatic definition of OpenRemotePU for hibernate
      */
-    public static class PersistenceUnitInfo implements javax.persistence.spi.PersistenceUnitInfo {
+    public static class PersistenceUnitInfo implements jakarta.persistence.spi.PersistenceUnitInfo {
 
         List<String> managedClassNames;
         Properties properties;
@@ -91,7 +98,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             props.put(AvailableSettings.SCANNER_DISCOVERY, "none");
             //props.put(AvailableSettings.SHOW_SQL, "true");
             props.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "thread");
-            props.put(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.openremote.container.persistence.EnhancedImportSqlCommandExtractor");
+            props.put(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.openremote.container.persistence.EnhancedSqlScriptExtractor");
 
             // Add custom properties
             props.putAll(properties);
@@ -223,6 +230,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     public static final int OR_DB_MAX_POOL_SIZE_DEFAULT = 20;
     public static final String OR_DB_CONNECTION_TIMEOUT_SECONDS = "OR_DB_CONNECTION_TIMEOUT_SECONDS";
     public static final int OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
+    public static final String OR_STORAGE_DIR = "OR_STORAGE_DIR";
+    public static final String OR_STORAGE_DIR_DEFAULT = "tmp";
+    public static final String OR_DB_FLYWAY_OUT_OF_ORDER = "OR_DB_FLYWAY_OUT_OF_ORDER";
     public static final int PRIORITY = Integer.MIN_VALUE + 100;
 
     protected MessageBrokerService messageBrokerService;
@@ -234,6 +244,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     protected boolean forceClean;
     protected Set<String> defaultSchemaLocations = new HashSet<>();
     protected Set<String> schemas = new HashSet<>();
+    protected Path storageDir;
 
     public static Predicate isPersistenceEventForEntityType(Class<?> type) {
         return exchange -> {
@@ -290,8 +301,28 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         forceClean = getBoolean(container.getConfig(), OR_SETUP_RUN_ON_RESTART, container.isDevMode());
 
+        storageDir = Paths.get(getString(container.getConfig(), OR_STORAGE_DIR, OR_STORAGE_DIR_DEFAULT));
+        LOG.log(Level.INFO, "Setting storage directory to '" + storageDir.toAbsolutePath() + "'");
+
+        if (!Files.exists(storageDir)) {
+            Files.createDirectories(storageDir);
+        }
+
+        if (!Files.isDirectory(storageDir)) {
+            String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' is not a folder";
+            LOG.log(Level.SEVERE, msg);
+            throw new FileSystemNotFoundException(msg);
+        }
+
+        File testFile = storageDir.toFile();
+        if (!testFile.canRead() || !testFile.canWrite()) {
+            String msg = "Specified OR_STORAGE_DIR '" + storageDir.toAbsolutePath() + "' is not writable";
+            LOG.log(Level.SEVERE, msg);
+            throw new FileSystemNotFoundException(msg);
+        }
+
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
-        prepareSchema(connectionUrl, dbUsername, dbPassword, dbSchema);
+        prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema);
 
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
@@ -315,7 +346,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(X509ProvisioningConfig.class.getName());
 
         // Add packages with package-info (don't think this is JPA spec but hibernate specific)
-        entityClasses.add("org.openremote.container.persistence");
         entityClasses.add("org.openremote.container.util");
 
         // Get asset sub type entities from asset model
@@ -478,7 +508,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
     }
 
-    protected void prepareSchema(String connectionUrl, String databaseUsername, String databasePassword, String schemaName) {
+    protected void prepareSchema(Container container, String connectionUrl, String databaseUsername, String databasePassword, String schemaName) {
+
+        boolean outOfOrder = getBoolean(container.getConfig(), OR_DB_FLYWAY_OUT_OF_ORDER, false);
+
         LOG.fine("Preparing database schema");
         List<String> locations = new ArrayList<>();
         List<String> schemas = new ArrayList<>();
@@ -486,16 +519,33 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         appendSchemas(schemas);
         appendSchemaLocations(locations);
 
+        // Adding timescaledb extension to make sure it has been initialized. Flyway clean caused issues with relations to timescaledb tables.
+        // Excluding the extension(s) in the cleanup process will not be added soon https://github.com/flyway/flyway/issues/2271
+        // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
+        StringBuilder initSql = new StringBuilder();
+        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb SCHEMA public cascade;");
+        initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit SCHEMA public cascade;");
+
         flyway = Flyway.configure()
             .cleanDisabled(false)
             .validateMigrationNaming(true)
             .dataSource(connectionUrl, databaseUsername, databasePassword)
             .schemas(schemas.toArray(new String[0]))
             .locations(locations.toArray(new String[0]))
+            .initSql(initSql.toString())
             .baselineOnMigrate(true)
+            .outOfOrder(outOfOrder)
             .load();
 
-        MigrationInfo currentMigration = flyway.info().current();
+        MigrationInfo currentMigration;
+        try {
+            currentMigration = flyway.info().current();
+        } catch (FlywaySqlScriptException fssex) {
+            if(fssex.getStatement().contains("CREATE EXTENSION IF NOT EXISTS timescaledb")) { // ... SCHEMA public cascade;
+                LOG.severe("Timescale DB extension not found; please ensure you are using a postgres image with timescale DB extension included.");
+            }
+            throw fssex;
+        }
 
         if (currentMigration == null && !forceClean) {
             LOG.warning("DB is empty so changing forceClean to true");
@@ -545,6 +595,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             "database=" + database +
             ", persistenceUnitName='" + persistenceUnitName + '\'' +
             '}';
+    }
+
+    public Path getStorageDir() {
+        return storageDir;
     }
 
     public static Field[] getEntityPropertyFields(Class<?> clazz, List<String> includeFields, List<String> excludeFields) {

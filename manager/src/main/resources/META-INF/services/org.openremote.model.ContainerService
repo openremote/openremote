@@ -11,7 +11,7 @@ org.openremote.manager.datapoint.AssetDatapointService
 org.openremote.manager.asset.AttributeLinkingService
 org.openremote.manager.asset.AssetProcessingService
 org.openremote.container.message.MessageBrokerService
-org.openremote.manager.system.HealthStatusService
+org.openremote.manager.system.HealthService
 org.openremote.manager.agent.AgentService
 org.openremote.manager.simulator.SimulatorService
 org.openremote.manager.map.MapService
@@ -33,3 +33,4 @@ org.openremote.manager.provisioning.ProvisioningService
 org.openremote.manager.dashboard.DashboardStorageService
 org.openremote.manager.security.AuthorisationService
 org.openremote.manager.app.ConfigurationService
+org.openremote.manager.asset.ForecastService

@@ -27,7 +27,7 @@ import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.util.TsIgnore;
 
-import javax.validation.constraints.Pattern;
+import jakarta.validation.constraints.Pattern;
 import java.util.Date;
 
 @TsIgnore
@@ -98,6 +98,10 @@ public final class MetaItemType {
     // TODO: Re-evaluate this can this info be retrieved automatically using prediction service
     public static final MetaItemDescriptor<Boolean> HAS_PREDICTED_DATA_POINTS = new MetaItemDescriptor<>("hasPredictedDataPoints", ValueType.BOOLEAN);
 
+    /**
+     * The forecast service calculates predicted data points based on the forecast configuration.
+     */
+    public static final MetaItemDescriptor<ForecastConfiguration> FORECAST = new MetaItemDescriptor<>("forecast", ValueType.FORECAST_CONFIGURATION);
 
 
     /* RULE META */

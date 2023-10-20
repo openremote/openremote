@@ -30,7 +30,7 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 
-public class JvmHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class JvmHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "jvm";
 

@@ -20,7 +20,7 @@
 
 package org.openremote.model.flow;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 

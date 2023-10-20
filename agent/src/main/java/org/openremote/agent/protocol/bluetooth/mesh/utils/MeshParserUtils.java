@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.text.SimpleDateFormat;

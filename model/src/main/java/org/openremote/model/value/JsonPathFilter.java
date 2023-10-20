@@ -33,7 +33,7 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * This filter works on any type of data; when applying the filter the data should be converted to JSON representation

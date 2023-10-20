@@ -19,23 +19,23 @@
  */
 package org.openremote.container.web;
 
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.jboss.resteasy.client.jaxrs.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient43Engine;
+import org.jboss.resteasy.client.jaxrs.internal.BasicAuthentication;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.model.auth.OAuthGrant;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -44,15 +44,16 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
- * This is a factory for creating JAX-RS {@link javax.ws.rs.client.WebTarget} instances. The instances share a common
- * {@link javax.ws.rs.client.Client} that uses a connection pool and has the following
- * {@link javax.ws.rs.ext.ContextResolver}s registered (additional filters etc. should be registered on the
+ * This is a factory for creating JAX-RS {@link WebTarget} instances. The instances share a common
+ * {@link jakarta.ws.rs.client.Client} that uses a connection pool and has the following
+ * {@link jakarta.ws.rs.ext.ContextResolver}s registered (additional filters etc. should be registered on the
  * {@link WebTargetBuilder} instances):
  * <ul>
  * <li>{@link org.openremote.container.json.JacksonConfig}.</li>
  * </ul>
  */
-// TODO: This should probably be amalgamated with WebClient somehow to provide a unified JAX-RS Client API
+// TODO: This should probably be amalgamated with WebClient somehow to provide a unified JAX-RS Client API and a default
+//  client should be made available on the Container
 public class WebTargetBuilder {
 
     public static final int CONNECTION_POOL_SIZE = 10;
@@ -178,7 +179,7 @@ public class WebTargetBuilder {
         return createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLISECONDS, null);
     }
 
-    public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilder> builderConfigurator) {
+    public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator) {
 
         //Create all of this config code in order to deal with expires cookies in responses
         RequestConfig requestConfig = RequestConfig.custom()
@@ -192,7 +193,7 @@ public class WebTargetBuilder {
             .build();
         ApacheHttpClient43Engine engine = new ApacheHttpClient43Engine(apacheClient);
 
-        ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
+        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
             .httpEngine(engine)
             .connectionPoolSize(connectionPoolSize)
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)

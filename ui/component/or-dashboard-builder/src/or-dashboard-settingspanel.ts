@@ -1,8 +1,6 @@
 import manager, {DefaultColor5, Util} from "@openremote/core";
 import {
-    Asset, AssetModelUtil, AttributeRef, AssetQuery, WellknownAssets,
-    AssetDescriptor, WellknownMetaItems, GeoJSONPoint, WellknownAttributes,
-    Attribute, AssetQueryOrderBy$Property, AssetTypeInfo,
+    Asset, Attribute, AssetModelUtil, AttributeRef, AssetDescriptor, AssetTypeInfo,
 } from "@openremote/model";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -34,7 +32,6 @@ export const widgetSettingsStyling = css`
     #attribute-list {
         overflow: auto;
         flex: 1 1 0;
-        min-height: 150px;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -90,8 +87,26 @@ export const widgetSettingsStyling = css`
     .button-clear:hover {
         --or-icon-fill: var(--or-app-color4);
     }
+    
+    .expanded-panel {
+        padding: 6px 16px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
 
     /* ---------------------------- */
+    
+    .threshold-list-item {
+        display: flex; 
+        flex-direction: row; 
+        align-items: center;
+    }
+    
+    .threshold-list-item-colour {
+        height: 100%; 
+        padding: 0 4px 0 0;
+    }
 
     .threshold-list-item:hover .button-clear {
         visibility: visible;
@@ -116,6 +131,9 @@ export class OrDashboardSettingsPanel extends LitElement {
     @property({type: Boolean}) // used for SINGLE_ATTRIBUTE and MULTI_ATTRIBUTE types.
     private readonly onlyDataAttrs: boolean = true;
 
+    @property() // used to specify the attribute valuetype that can be used in the widget.
+    public attributeFilter?: ((attribute: Attribute<any>) => boolean) | undefined;
+
     @state()
     private loadedAssets?: Asset[];
 
@@ -136,7 +154,7 @@ export class OrDashboardSettingsPanel extends LitElement {
     // and fetching assets if any of the AttributeRefs are not pulled yet.
     willUpdate(changedProperties: Map<string, any>) {
         if (changedProperties.has("widgetConfig")) {
-            if (!this._config || (changedProperties.get("widgetConfig") != this._config) && this.widgetConfig.attributeRefs) {
+            if (this.widgetConfig.attributeRefs != undefined && (!this._config || (changedProperties.get("widgetConfig") != this._config))) {
                 const loadedRefs: AttributeRef[] = this.widgetConfig.attributeRefs.filter((attrRef: AttributeRef) => this.isAttributeRefLoaded(attrRef));
                 if (loadedRefs.length != this.widgetConfig.attributeRefs.length) {
                     this.fetchAssets(this.widgetConfig).then(assets => {
@@ -160,7 +178,7 @@ export class OrDashboardSettingsPanel extends LitElement {
                     return html`<span>${i18next.t('errorOccurred')}</span>`;
                 } else {
                     return html`
-                        ${until(this.getAttributeHTML(this._config, (this.type == SettingsPanelType.MULTI_ATTRIBUTE), this.onlyDataAttrs), html`${i18next.t('loading')}`)}
+                        ${until(this.getAttributeHTML(this._config, (this.type == SettingsPanelType.MULTI_ATTRIBUTE), this.onlyDataAttrs, this.attributeFilter), html`${i18next.t('loading')}`)}
                     `;
                 }
             }
@@ -197,11 +215,11 @@ export class OrDashboardSettingsPanel extends LitElement {
         this.dispatchEvent(new CustomEvent('updated', {detail: {changes: changes, force: force}}));
     }
 
-    async getAttributeHTML(config: any, multi: boolean, onlyDataAttrs: boolean = true) {
+    async getAttributeHTML(config: any, multi: boolean, onlyDataAttrs: boolean = true, attributeFilter?: (attribute: Attribute<any>) => boolean) {
         return html`
             <div style="padding: 0 14px 12px 14px;">
                 ${(config.attributeRefs == null || config.attributeRefs.length == 0) ? html`
-                    <span>${i18next.t('noAttributesConnected')}</span>
+                    <span style="padding: 14px 0; display: block;">${i18next.t('noAttributesConnected')}</span>
                 ` : undefined}
                 <div id="attribute-list">
                     ${(config.attributeRefs != null && this.loadedAssets != null) ? config.attributeRefs.map((attributeRef: AttributeRef) => {
@@ -230,9 +248,9 @@ export class OrDashboardSettingsPanel extends LitElement {
                         }
                     }) : undefined}
                 </div>
-                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('attribute')}" icon="plus"
-                              style="margin-top: 24px; margin-left: -7px;"
-                              @or-mwc-input-changed="${() => this.openDialog(config.attributeRefs, multi, onlyDataAttrs)}">
+                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('attribute')}" icon="${(multi || config.attributeRefs.length == 0) ? "plus" : "swap-horizontal"}"
+                              style="margin-top: 8px;"
+                              @or-mwc-input-changed="${() => this.openDialog(config.attributeRefs, multi, onlyDataAttrs, attributeFilter)}">
                 </or-mwc-input>
             </div>
         `
@@ -258,8 +276,6 @@ export class OrDashboardSettingsPanel extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else {
-            console.error("Error: attributeRefs are not present in widget config!");
         }
     }
 
@@ -283,10 +299,10 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     // Opening the attribute picker dialog, and listening to its result. (UI related)
-    openDialog(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs: boolean = true) {
+    openDialog(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs: boolean = true, attributeFilter?: (attribute: Attribute<any>) => boolean) {
         let dialog: OrAttributePicker;
         if (attributeRefs != null) {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs));
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setSelectedAttributes(attributeRefs).setShowOnlyDatapointAttrs(onlyDataAttrs).setAttributeFilter(attributeFilter));
         } else {
             dialog = showDialog(new OrAttributePicker().setMultiSelect(multi).setShowOnlyDatapointAttrs(onlyDataAttrs))
         }
@@ -301,15 +317,14 @@ export class OrDashboardSettingsPanel extends LitElement {
     async getThresholdsHTML(config: OrWidgetConfig | any) {
         if (config.thresholds && config.valueType) {
             return html`
-                <div id="thresholds-list" style="padding: 0 14px 12px 14px;">
+                <div id="thresholds-list" class="expanded-panel">
                     ${(config.valueType === 'number' || config.valueType === 'positiveInteger'
                             || config.valueType === 'positiveNumber' || config.valueType === 'negativeInteger'
                             || config.valueType === 'negativeNumber') ? html`
                         ${(config.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {
                             return html`
-                                <div class="threshold-list-item"
-                                     style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
-                                    <div style="height: 100%; padding: 8px 14px 8px 0;">
+                                <div class="threshold-list-item">
+                                    <div class="threshold-list-item-colour">
                                         <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
                                                       @or-mwc-input-changed="${(event: CustomEvent) => {
                                                           this._config.thresholds[index][1] = event.detail.value;
@@ -327,25 +342,30 @@ export class OrDashboardSettingsPanel extends LitElement {
                                                       }
                                                   }}"
                                     ></or-mwc-input>
-                                    <button class="button-clear"
-                                            style="margin-left: 8px; ${index == 0 ? 'visibility: hidden;' : undefined}"
-                                            @click="${() => {
-                                                this.removeThreshold(this._config, threshold);
-                                            }}">
-                                        <or-icon icon="close-circle"></or-icon>
-                                    </button>
+                                    ${index == 0 ? html`
+                                        <button class="button-clear"
+                                                style="margin-left: 8px;">
+                                            <or-icon icon="lock" style="--or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});"></or-icon>
+                                        </button>
+                                    ` : html`
+                                        <button class="button-clear"
+                                                style="margin-left: 8px;"
+                                                @click="${() => {
+                                                    this.removeThreshold(this._config, threshold);
+                                                }}">
+                                            <or-icon icon="close-circle"></or-icon>
+                                        </button>
+                                    `}
                                 </div>
                             `
                         })}
                         <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('threshold')}" icon="plus"
-                                      style="margin-top: 24px; margin-left: -7px;"
                                       @or-mwc-input-changed="${() => this.addNewThreshold(this._config)}">
                         </or-mwc-input>
                     ` : null}
                     ${(config.valueType === 'boolean') ? html`
-                        <div class="threshold-list-item"
-                             style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
-                            <div style="height: 100%; padding: 8px 14px 8px 0;">
+                        <div class="threshold-list-item">
+                            <div class="threshold-list-item-colour">
                                 <or-mwc-input type="${InputType.COLOUR}" value="${config.boolColors.true}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   this._config.boolColors.true = event.detail.value;
@@ -356,9 +376,8 @@ export class OrDashboardSettingsPanel extends LitElement {
                             <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'True'}" .readonly="${true}"
                             ></or-mwc-input>
                         </div>
-                        <div class="threshold-list-item"
-                             style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
-                            <div style="height: 100%; padding: 8px 14px 8px 0;">
+                        <div class="threshold-list-item">
+                            <div class="threshold-list-item-colour">
                                 <or-mwc-input type="${InputType.COLOUR}" value="${config.boolColors.false}"
                                               @or-mwc-input-changed="${(event: CustomEvent) => {
                                                   this._config.boolColors.false = event.detail.value;
@@ -373,9 +392,8 @@ export class OrDashboardSettingsPanel extends LitElement {
                     ${(config.valueType === 'text' && config.textColors) ? html`
                         ${(config.textColors as [string, string][]).map((threshold, index) => {
                             return html`
-                                <div class="threshold-list-item"
-                                     style="padding: 8px 0; display: flex; flex-direction: row; align-items: center;">
-                                    <div style="height: 100%; padding: 8px 14px 8px 0;">
+                                <div class="threshold-list-item">
+                                    <div class="threshold-list-item-colour">
                                         <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
                                                       @or-mwc-input-changed="${(event: CustomEvent) => {
                                                           this._config.textColors[index][1] = event.detail.value;
@@ -390,18 +408,24 @@ export class OrDashboardSettingsPanel extends LitElement {
                                                   }}"
 
                                     ></or-mwc-input>
-                                    <button class="button-clear"
-                                            style="margin-left: 8px; ${index == 0 ? 'visibility: hidden;' : undefined}"
-                                            @click="${() => {
-                                                this.removeThreshold(this._config, threshold);
-                                            }}">
-                                        <or-icon icon="close-circle"></or-icon>
-                                    </button>
+                                    ${index == 0 ? html`
+                                        <button class="button-clear"
+                                                style="margin-left: 8px;">
+                                            <or-icon icon="lock" style="--or-icon-fill: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});"></or-icon>
+                                        </button>
+                                    ` : html`
+                                        <button class="button-clear"
+                                                style="margin-left: 8px;"
+                                                @click="${() => {
+                                                    this.removeThreshold(this._config, threshold);
+                                                }}">
+                                            <or-icon icon="close-circle"></or-icon>
+                                        </button>
+                                    `}
                                 </div>
                             `
                         })}
                         <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('threshold')}" icon="plus"
-                                      style="margin-top: 24px; margin-left: -7px;"
                                       @or-mwc-input-changed="${() => this.addNewThreshold(this._config)}">
                         </or-mwc-input>                                                                                                                        </div>
                     ` : null}
@@ -450,32 +474,22 @@ export class OrDashboardSettingsPanel extends LitElement {
 
     /* ---------------------------------------------------- */
 
-    async getAssetTypes(config: OrWidgetConfig | any) {
-        const response = await manager.rest.api.AssetResource.queryAssets({
-            realm: {
-                name: manager.displayRealm
-            },
-            select: {
-                attributes: []
-            },
-        });
-        if (response && response.data) {
-            const types: string[] = response.data.map(asset => asset.type!).filter((type, index, asset) => asset.indexOf(type) === index).sort();
-            return types.map((type) => AssetModelUtil.getAssetDescriptor(type)!).filter((t) => t.descriptorType === "asset");
-        }
+    async getAssetTypes() {
+        return AssetModelUtil.getAssetDescriptors().filter((t) => t.descriptorType == "asset");
     }
 
     getAttributesByType(type: string) {
         const descriptor: AssetDescriptor = (AssetModelUtil.getAssetDescriptor(type) as AssetDescriptor);
-        const typeInfo: AssetTypeInfo = (AssetModelUtil.getAssetTypeInfo(descriptor) as AssetTypeInfo);
-
-        if (typeInfo.attributeDescriptors) {
-            return typeInfo.attributeDescriptors.filter((ad) => {
-                return this._allowedValueTypes.indexOf(ad.type!) > -1;
-            }).map((ad) => {
-                const label = Util.getAttributeLabel(ad, undefined, type, false);
-                return [ad.name!, label];
-            }).sort(Util.sortByString((attr) => attr[1]));
+        if(descriptor) {
+            const typeInfo: AssetTypeInfo = (AssetModelUtil.getAssetTypeInfo(descriptor) as AssetTypeInfo);
+            if (typeInfo?.attributeDescriptors) {
+                return typeInfo.attributeDescriptors.filter((ad) => {
+                    return this._allowedValueTypes.indexOf(ad.type!) > -1;
+                }).map((ad) => {
+                    const label = Util.getAttributeLabel(ad, undefined, type, false);
+                    return [ad.name!, label];
+                }).sort(Util.sortByString((attr) => attr[1]));
+            }
         }
     }
 
@@ -530,7 +544,7 @@ export class OrDashboardSettingsPanel extends LitElement {
     protected handleTypeSelect(value: string) {
         if (this._config.assetType !== value) {
             this._config.attributeName = undefined;
-            this._config.assets = [];
+            this._config.assetIds = [];
             this._config.showLabels = false;
             this._config.showUnits = false;
             this._config.boolColors = {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'};
@@ -553,8 +567,8 @@ export class OrDashboardSettingsPanel extends LitElement {
             },
             types: [this._config.assetType],
         }).then(response => {
-            this._config.assets = response.data;
-            this._config.valueType = response.data[0].attributes![value].type;
+            this._config.assetIds = response.data.map((a) => a.id);
+            this._config.valueType = (response.data.length > 0) ? response.data[0].attributes![value].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
         }).catch((reason) => {
             console.error(reason);
             showSnackbar(undefined, i18next.t('errorOccurred'));
@@ -564,67 +578,61 @@ export class OrDashboardSettingsPanel extends LitElement {
     }
 
     async getAssettypesHTML(config: OrWidgetConfig | any) {
-        if (config.assetTypes) {
-            if (this._loadedAssetTypes.length === 0) {
-                this._loadedAssetTypes = await this.getAssetTypes(config) as AssetDescriptor[]
-            }
-            return html`
-                <div style="padding: 12px 24px 24px 24px; display: flex; flex-direction: column; gap: 16px;">
-                    ${(config.assetType) ? html`
-                        ${this._loadedAssetTypes.length > 0 ? getContentWithMenuTemplate(
-                                this.assetTypeSelect(),
-                                this.mapDescriptors(this._loadedAssetTypes, {
-                                    text: i18next.t("filter.assetTypeMenuNone"),
-                                    value: "",
-                                    icon: "selection-ellipse"
-                                }) as ListItem[],
-                                undefined,
-                                (v: string[] | string) => {
-                                    this.handleTypeSelect(v as string);
-                                },
-                                undefined,
-                                false,
-                                true,
-                                true) : html``
-                        }
-
-                        <div>
-                            <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;"
-                                          .options="${this._config.attributes}"
-                                          .value="${config.attributeName}" label="${i18next.t('filter.attributeLabel')}"
-                                          @or-mwc-input-changed="${(event: CustomEvent) => {
-                                              this.handleAttributeSelect(event.detail.value);
-                                          }}"
-                            ></or-mwc-input>
-                        </div>
-                        <div style="padding: 0 10px 12px 10px;">
-                            <div class="switchMwcInputContainer">
-                                <span>${i18next.t('dashboard.showLabels')}</span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
-                                              .value="${config.showLabels}"
-                                              @or-mwc-input-changed="${(event: CustomEvent) => {
-                                                  this._config.showLabels = event.detail.value;
-                                                  this.updateParent(new Map<string, any>([["config", this._config]]));
-                                              }}"
-                                ></or-mwc-input>
-                            </div>
-                            <div class="switchMwcInputContainer">
-                                <span>${i18next.t('dashboard.showUnits')}</span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
-                                              .value="${config.showUnits}"
-                                              .disabled="${!config.showLabels}"
-                                              @or-mwc-input-changed="${(event: CustomEvent) => {
-                                                  this._config.showUnits = event.detail.value;
-                                                  this.updateParent(new Map<string, any>([["config", this._config]]));
-                                              }}"
-                                ></or-mwc-input>
-                            </div>
-
-                        </div>
-
-                    ` : undefined}
-                </div>
-            `
+        if (this._loadedAssetTypes.length === 0) {
+            this._loadedAssetTypes = await this.getAssetTypes() as AssetDescriptor[]
         }
+        return html`
+            <div class="expanded-panel">
+                ${this._loadedAssetTypes.length > 0 ? getContentWithMenuTemplate(
+                        this.assetTypeSelect(),
+                        this.mapDescriptors(this._loadedAssetTypes, {
+                            text: i18next.t("filter.assetTypeMenuNone"),
+                            value: "",
+                            icon: "selection-ellipse"
+                        }) as ListItem[],
+                        undefined,
+                        (v: string[] | string) => {
+                            this.handleTypeSelect(v as string);
+                        },
+                        undefined,
+                        false,
+                        true,
+                        true,
+                        true) : html``
+                }
+                <div>
+                    <or-mwc-input .type="${InputType.SELECT}" .disabled="${config.assetType == undefined || config.assetType == ''}" style="width: 100%;"
+                                  .options="${this._config.attributes}"
+                                  .value="${config.attributeName}" label="${i18next.t('filter.attributeLabel')}"
+                                  @or-mwc-input-changed="${(event: CustomEvent) => {
+                                      this.handleAttributeSelect(event.detail.value);
+                                  }}"
+                    ></or-mwc-input>
+                </div>
+                <div>
+                    <div class="switchMwcInputContainer">
+                        <span>${i18next.t('dashboard.showLabels')}</span>
+                        <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                      .value="${config.showLabels}" .disabled="${config.assetType == undefined || config.assetType == ''}"
+                                      @or-mwc-input-changed="${(event: CustomEvent) => {
+                                          this._config.showLabels = event.detail.value;
+                                          this.updateParent(new Map<string, any>([["config", this._config]]));
+                                      }}"
+                        ></or-mwc-input>
+                    </div>
+                    <div class="switchMwcInputContainer">
+                        <span>${i18next.t('dashboard.showUnits')}</span>
+                        <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                      .value="${config.showUnits}" .disabled="${!config.showLabels || config.assetType == undefined || config.assetType == ''}"
+                                      @or-mwc-input-changed="${(event: CustomEvent) => {
+                                          this._config.showUnits = event.detail.value;
+                                          this.updateParent(new Map<string, any>([["config", this._config]]));
+                                      }}"
+                        ></or-mwc-input>
+                    </div>
+
+                </div>
+            </div>
+        `
     }
 }

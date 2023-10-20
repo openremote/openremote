@@ -1,10 +1,11 @@
 package org.openremote.model.dashboard;
 
-import javax.persistence.*;
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.Date;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
@@ -48,45 +49,101 @@ public class Dashboard {
 
     @NotNull(message = "{Dashboard.template.NotNull}")
     @Column(name = "TEMPLATE", columnDefinition = PERSISTENCE_JSON_VALUE_TYPE, nullable = false)
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    @org.hibernate.annotations.Type(JsonBinaryType.class)
     @Valid
     protected DashboardTemplate template;
 
 
     /* ----------------------------- */
 
-    public void setId(String id) {
-        this.id = id;
+    public Dashboard() {
     }
-    public void setCreatedOn(Date createdOn) {
-        this.createdOn = createdOn;
-    }
-    public void setRealm(String realm) {
+
+    public Dashboard(String realm, String displayName, DashboardScreenPreset[] screenPresets) {
         this.realm = realm;
-    }
-    public void setVersion(long version) {
-        this.version = version;
-    }
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
-    }
-    public void setViewAccess(DashboardAccess access) { this.viewAccess = access; }
-    public void setEditAccess(DashboardAccess access) { this.editAccess = access; }
-    public void setDisplayName(String displayName) {
+        this.template = new DashboardTemplate(screenPresets);
         this.displayName = displayName;
     }
-    public void setTemplate(@Valid DashboardTemplate template) {
+
+    public Dashboard setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public Dashboard setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
+        return this;
+    }
+
+    public Dashboard setRealm(String realm) {
+        this.realm = realm;
+        return this;
+    }
+
+    public Dashboard setVersion(long version) {
+        this.version = version;
+        return this;
+    }
+
+    public Dashboard setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+        return this;
+    }
+
+    public Dashboard setViewAccess(DashboardAccess access) {
+        this.viewAccess = access;
+        return this;
+    }
+
+    public Dashboard setEditAccess(DashboardAccess access) {
+        this.editAccess = access;
+        return this;
+    }
+
+    public Dashboard setDisplayName(String displayName) {
+        this.displayName = displayName;
+        return this;
+    }
+
+    public Dashboard setTemplate(@Valid DashboardTemplate template) {
         this.template = template;
+        return this;
     }
 
 
-    public String getId() { return this.id; }
-    public Date getCreatedOn() { return this.createdOn; }
-    public String getRealm() { return this.realm; }
-    public long getVersion() { return this.version; }
-    public String getOwnerId() { return this.ownerId; }
-    public DashboardAccess getViewAccess() { return this.viewAccess; }
-    public DashboardAccess getEditAccess() { return this.editAccess; }
-    public String getDisplayName() { return this.displayName; }
-    public DashboardTemplate getTemplate() { return this.template; }
+    public String getId() {
+        return this.id;
+    }
+
+    public Date getCreatedOn() {
+        return this.createdOn;
+    }
+
+    public String getRealm() {
+        return this.realm;
+    }
+
+    public long getVersion() {
+        return this.version;
+    }
+
+    public String getOwnerId() {
+        return this.ownerId;
+    }
+
+    public DashboardAccess getViewAccess() {
+        return this.viewAccess;
+    }
+
+    public DashboardAccess getEditAccess() {
+        return this.editAccess;
+    }
+
+    public String getDisplayName() {
+        return this.displayName;
+    }
+
+    public DashboardTemplate getTemplate() {
+        return this.template;
+    }
 }

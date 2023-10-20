@@ -38,8 +38,10 @@ generateTypeScript {
         "org.openremote.model.event.shared.*Filter**",
         "org.openremote.model.util.**",
         "org.openremote.model.flow.**",
-        "java.io.Serializable",
-        "java.lang.Comparable"
+        "java.io.**",
+        "org.hibernate.**",
+        "com.vladmihalcea.**",
+        "jakarta.**"
     ]
     customTypeProcessor = "CustomTypeProcessor"
     customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"

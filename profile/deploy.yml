@@ -23,9 +23,8 @@ version: '2.4'
 
 volumes:
 #  postgresql-data: # Needed if you want to persist postgres data outside of container
-  temp-data: # Needed to share temp export data between postgres and manager containers
+  manager-data: # A storage volume for file persistence in the manager (can be used by services and protocols)
   proxy-data: #Needed to persist SSL certificates to avoid excessive requests to Letsencrypt
-  btmesh-data: #Needed to persist Bluetooth mesh data (if using Bluetooth mesh)
 
 services:
 
@@ -102,6 +101,7 @@ services:
       - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
       - "${OR_SSL_PORT:-443}:443" # HTTPS /auth directs to keycloak and other paths direct to manager
       - "8883:8883" # MQTTS
+      - "127.0.0.1:8404:8404" # Localhost metrics access
 
   # The OpenRemote Manager
   manager:
@@ -115,9 +115,10 @@ services:
     #   /deployment/map/mapdata.mbtiles - map tile data
     #   /deployment/map/mapsettings.json - map styling
     volumes:
-      - temp-data:/tmp
+      - manager-data:/storage
     #  - deployment-data:/deployment
     #  - postgresql-data:/postgres
+    #  - /var/run/dbus:/var/run/dbus # EXPOSE DBUS
     # Expose any devices required by agents
     #devices:
     #  - /dev/ttyACM0
@@ -125,6 +126,7 @@ services:
     #  - "8080:8080" # Web server port
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
+    #  - "127.0.0.1:8405:8404" # Localhost metrics access
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -164,6 +166,7 @@ services:
       OR_EMAIL_PORT: ${OR_EMAIL_PORT}
       OR_EMAIL_TLS: ${OR_EMAIL_TLS}
       OR_EMAIL_X_HEADERS: ${OR_EMAIL_X_HEADERS:-} # Headers to set on all outbound emails
+      OR_EMAIL_PROTOCOL: ${OR_EMAIL_PROTOCOL} # smtp or smtps for SSL (if TLS not set or is true then smtp is assumed)
 
       # Where to send admin emails to
       OR_EMAIL_ADMIN: ${OR_EMAIL_ADMIN}
@@ -212,6 +215,8 @@ services:
       OR_DB_MIN_POOL_SIZE: ${OR_DB_MIN_POOL_SIZE:-5}
       OR_DB_MAX_POOL_SIZE: ${OR_DB_MAX_POOL_SIZE:-20}
       OR_DB_CONNECTION_TIMEOUT_SECONDS: ${OR_DB_CONNECTION_TIMEOUT_SECONDS:-300}
+      # Allow migration scripts to be applied out of order (see flyway DB docs)
+      OR_DB_FLYWAY_OUT_OF_ORDER: ${OR_DB_FLYWAY_OUT_OF_ORDER}
 
       # The service-internal host name and port of the keycloak identity provider; defaults:
       OR_KEYCLOAK_HOST: ${OR_KEYCLOAK_HOST:-keycloak}
@@ -283,6 +288,11 @@ services:
       # processing push notifications) and will therefore fail silently until the user logs in again.
       OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: ${OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES:-2628000}
 
+      # Enable/disable Prometheus metrics collection
+      OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
+      # Web server port used to host metrics endpoint
+      OR_METRICS_PORT: ${OR_METRICS_PORT:-8404}
+
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # OR_DATA_POINTS_MAX_AGE_DAYS = 30
@@ -309,8 +319,8 @@ services:
   #  -Dcom.sun.management.jmxremote.rmi.port=8085
   #  -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
 
-# Custom JVM tool options (for remote debugging)
-#JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n'
+  # Custom JVM tool options (for remote debugging)
+  #JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:8000,server=y,suspend=n'
 
   # Keycloak identity provider
   keycloak:
@@ -366,7 +376,8 @@ services:
     restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
-      - temp-data:/tmp
+      # Needs to be available on the same path as the manager for data exports to work
+      - manager-data:/storage
 #      - postgresql-data:/var/lib/postgresql/data
     #ports:
     #  - "5432:5432" # DB server
@@ -381,6 +392,11 @@ services:
       POSTGRES_DB: ${OR_DB_NAME:-openremote}
       POSTGRES_USER: ${OR_DB_USER:-postgres}
       POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+
+      # When a newer POSTGRESQL image is used with a higher OR_REINDEX_COUNTER and PGDATA is
+      # preserved then the container will REINDEX the DB automatically unless the following
+      # is set to false
+      #OR_DISABLE_REINDEX=${OR_DISABLE_REINDEX:-false}
 
   # Map tile server
   tileserver:

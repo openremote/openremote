@@ -105,7 +105,8 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
 
         if (query.attributes != null) {
             // TODO: LogicGroup AND doesn't make much sense when applying to a single asset state
-            if (!asPredicate(timerService::getCurrentTimeMillis, query.attributes).test(assetState)) {
+            Set<AssetState<?>> matches = asAssetStateMatcher(timerService::getCurrentTimeMillis, query.attributes).apply(Collections.singleton(assetState));
+            if (matches == null) {
                 return false;
             }
         }
@@ -179,21 +180,26 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
             && valuePredicate.test(valueExtractor.get().apply(nameValueHolder));
     }
 
+    /**
+     * A function for matching {@link AssetState}s of an asset; the states must be related to the same asset to allow
+     * {@link LogicGroup.Operator#AND} to be applied.
+     * @return The matched asset states or null if there is no match
+     */
     @SuppressWarnings("unchecked")
-    public static Predicate<AssetState<?>> asPredicate(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
+    public static Function<Collection<AssetState<?>>, Set<AssetState<?>>> asAssetStateMatcher(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
         if (groupIsEmpty(condition)) {
-            return as -> true;
+            return as -> Collections.EMPTY_SET;
         }
 
         LogicGroup.Operator operator = condition.operator == null ? LogicGroup.Operator.AND : condition.operator;
-
-        List<Predicate<AssetState<?>>> assetStatePredicates = new ArrayList<>();
+        List<Function<Collection<AssetState<?>>, Set<AssetState<?>>>> assetStateMatchers = new ArrayList<>();
+        List<Predicate<AssetState<?>>> attributePredicates = new ArrayList<>();
 
         if (condition.getItems().size() > 0) {
 
             condition.getItems().stream()
                 .forEach(p -> {
-                    assetStatePredicates.add((Predicate<AssetState<?>>)(Predicate)asPredicate(currentMillisProducer, p));
+                    attributePredicates.add((Predicate<AssetState<?>>)(Predicate)asPredicate(currentMillisProducer, p));
 
                     AtomicReference<Predicate<AssetState<?>>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
                     AtomicReference<Predicate<AssetState<?>>> oldValuePredicate = new AtomicReference<>(value -> true);
@@ -209,55 +215,80 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
                                 innerMetaPredicate.test(assetState)
                             );
                         });
-                        assetStatePredicates.add(metaPredicate.get());
+                        attributePredicates.add(metaPredicate.get());
                     }
 
                     if (p.previousValue != null) {
                         Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
                         oldValuePredicate.set(nameValueHolder -> innerOldValuePredicate.test((nameValueHolder).getOldValue()));
-                        assetStatePredicates.add(oldValuePredicate.get());
+                        attributePredicates.add(oldValuePredicate.get());
                     }
                 });
         }
 
+        if (operator == LogicGroup.Operator.AND) {
+            // All predicates must match at least one of the asset's state
+            assetStateMatchers.add(assetStates -> {
+                Set<AssetState<?>> matchedAssetStates = new HashSet<>();
+                boolean allPredicatesMatch = attributePredicates.stream().allMatch(attributePredicate -> {
+                    // Find the first match as an attribute predicate shouldn't match more than one asset state
+                    return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
+                        matchedAssetStates.add(matchedAssetState);
+                        return true;
+                    }).orElse(false);
+                });
+                return allPredicatesMatch ? matchedAssetStates : null;
+            });
+        } else {
+            // Any of the predicates must match at least one of the asset's state
+            assetStateMatchers.add(assetStates -> {
+                AtomicReference<AssetState<?>> firstMatch = new AtomicReference<>();
+                boolean anyPredicateMatch = attributePredicates.stream().anyMatch(attributePredicate -> {
+                    // Find the first match as an attribute predicate shouldn't match more than one asset state
+                    return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
+                        firstMatch.set(matchedAssetState);
+                        return true;
+                    }).orElse(false);
+                });
+                return anyPredicateMatch ? Collections.singleton(firstMatch.get()) : null;
+            });
+        }
+
+
+
         if (condition.groups != null && condition.groups.size() > 0) {
-            assetStatePredicates.addAll(
+            assetStateMatchers.addAll(
                 condition.groups.stream()
-                            .map(c -> asPredicate(currentMillisProducer, c)).collect(Collectors.toList())
+                    .map(c -> asAssetStateMatcher(currentMillisProducer, c)).toList()
             );
         }
 
-        return asPredicate(assetStatePredicates, operator);
+        return assetStates ->  {
+            Set<AssetState<?>> matchedStates = new HashSet<>();
+
+            for (Function<Collection<AssetState<?>>, Set<AssetState<?>>> matcher : assetStateMatchers) {
+                Set<AssetState<?>> matcherMatchedStates = matcher.apply(assetStates);
+
+                if (matcherMatchedStates != null) {
+                    // We have a match
+                    if (operator == LogicGroup.Operator.OR) {
+                        return matcherMatchedStates;
+                    }
+                    matchedStates.addAll(matcherMatchedStates);
+                } else {
+                    // No match
+                    if (operator == LogicGroup.Operator.AND) {
+                        return null;
+                    }
+                }
+            }
+
+            return operator == LogicGroup.Operator.OR ? null : matchedStates;
+        };
     }
 
     protected static boolean groupIsEmpty(LogicGroup<?> condition) {
         return condition.getItems().size() == 0
             && (condition.groups == null || condition.groups.isEmpty());
     }
-
-    protected static <T> Predicate<T> asPredicate(Collection<Predicate<T>> predicates, LogicGroup.Operator operator) {
-        return in -> {
-            boolean matched = false;
-
-            for (Predicate<T> p : predicates) {
-
-                if (p.test(in)) {
-                    matched = true;
-
-                    if (operator == LogicGroup.Operator.OR) {
-                        break;
-                    }
-                } else {
-                    matched = false;
-
-                    if (operator == LogicGroup.Operator.AND) {
-                        break;
-                    }
-                }
-            }
-
-            return matched;
-        };
-    }
-
 }

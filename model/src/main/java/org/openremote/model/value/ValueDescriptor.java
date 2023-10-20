@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
@@ -46,6 +47,7 @@ import java.util.*;
  * {@link ValueDescriptor#getName} must be globally unique within the context of the manager it is registered with.
  */
 //@JsonDeserialize(using = ValueDescriptor.ValueDescriptorDeserialiser.class)
+@TsIgnoreTypeParams
 public class ValueDescriptor<T> implements NameHolder, Serializable {
 
     /**

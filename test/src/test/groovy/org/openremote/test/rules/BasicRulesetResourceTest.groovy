@@ -9,7 +9,7 @@ import org.openremote.model.rules.*
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-import javax.ws.rs.WebApplicationException
+import jakarta.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -142,6 +142,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
+            assert rulesService.globalEngine != null
             def deployment = rulesService.globalEngine.deployments.get(rulesetId)
             assert deployment == null
         }

@@ -19,49 +19,38 @@
  */
 package org.openremote.model.persistence;
 
-import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.internal.util.compare.ComparableComparator;
-import org.hibernate.type.AbstractSingleColumnStandardBasicType;
-import org.hibernate.type.LiteralType;
-import org.hibernate.type.VersionType;
-import org.hibernate.type.descriptor.java.InstantJavaDescriptor;
-import org.hibernate.type.descriptor.sql.BigIntTypeDescriptor;
+import com.vladmihalcea.hibernate.type.MutableType;
+import com.vladmihalcea.hibernate.type.util.Configuration;
+import org.hibernate.type.descriptor.java.InstantJavaType;
+import org.hibernate.type.descriptor.jdbc.BigIntJdbcType;
 
 import java.time.Instant;
-import java.util.Comparator;
 
-public class EpochMillisInstantType extends AbstractSingleColumnStandardBasicType<Instant>
-    implements VersionType<Instant>, LiteralType<Instant> {
+public class EpochMillisInstantType extends MutableType<Instant, BigIntJdbcType, InstantJavaType> {
 
     public static final String TYPE_NAME = "epoch-millis-instant";
 
     public EpochMillisInstantType() {
-        super( BigIntTypeDescriptor.INSTANCE, InstantJavaDescriptor.INSTANCE );
+        super(
+            Instant.class,
+            BigIntJdbcType.INSTANCE,
+            InstantJavaType.INSTANCE
+        );
     }
 
-    @Override
-    public String objectToSQLString(Instant value, Dialect dialect) throws Exception {
-        return Long.toString(value.toEpochMilli());
+    public EpochMillisInstantType(Configuration configuration) {
+        super(
+            Instant.class,
+            BigIntJdbcType.INSTANCE,
+            InstantJavaType.INSTANCE,
+            configuration
+        );
     }
 
-    @Override
-    public Instant seed(SharedSessionContractImplementor session) {
-        return Instant.now();
+    public EpochMillisInstantType(org.hibernate.type.spi.TypeBootstrapContext typeBootstrapContext) {
+        this(new Configuration(typeBootstrapContext.getConfigurationSettings()));
     }
 
-    @Override
-    public Instant next(Instant current, SharedSessionContractImplementor session) {
-        return Instant.now();
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public Comparator<Instant> getComparator() {
-        return ComparableComparator.INSTANCE;
-    }
-
-    @Override
     public String getName() {
         return TYPE_NAME;
     }

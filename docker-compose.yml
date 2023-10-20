@@ -9,9 +9,8 @@ version: '2.4'
 
 volumes:
   proxy-data:
-  temp-data:
+  manager-data:
   postgresql-data:
-#  btmesh-data:
 
 services:
 
@@ -22,9 +21,10 @@ services:
       manager:
         condition: service_healthy
     ports:
-      - "80:80"
+      - "80:80" # Needed for SSL generation using letsencrypt
       - "${OR_SSL_PORT:-443}:443"
       - "8883:8883"
+      #- "127.0.0.1:8404:8404" # Localhost metrics access
     volumes:
       - proxy-data:/deployment
     environment:
@@ -39,7 +39,7 @@ services:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-      - temp-data:/tmp
+      - manager-data:/storage
 
   keycloak:
     restart: always
@@ -62,6 +62,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+    #ports:
+    #  - "127.0.0.1:8405:8404" # Localhost metrics access
     environment:
       OR_SETUP_TYPE:
       OR_ADMIN_PASSWORD:
@@ -83,9 +85,4 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_KNX:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
-      - temp-data:/tmp
-#      - /var/run/dbus:/var/run/dbus
-#      # Bluetooth mesh volume
-#      - btmesh-data:/btmesh
-#   devices:
-#     - /dev/ttyACM0:/dev/ttyS0
+      - manager-data:/storage

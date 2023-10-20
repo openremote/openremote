@@ -33,7 +33,7 @@ import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
 import org.openremote.model.util.Pair;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

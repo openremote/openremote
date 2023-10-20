@@ -20,7 +20,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -128,7 +128,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-                .routeId("ForecastWindAssetPersistenceChanges")
+                .routeId("Persistence-ForecastWind")
                 .filter(isPersistenceEventForEntityType(ElectricityProducerWindAsset.class))
                 .filter(isNotForGateway(gatewayService))
                 .process(exchange -> processAssetChange((PersistenceEvent<ElectricityProducerWindAsset>) exchange.getIn().getBody(PersistenceEvent.class)));

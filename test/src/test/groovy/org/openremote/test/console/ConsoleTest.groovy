@@ -36,7 +36,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.WebApplicationException
+import jakarta.ws.rs.WebApplicationException
 import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
 
@@ -590,7 +590,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                     .filter({ it instanceof PushNotificationMessage })
                     .filter({
                         ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH"
-                    }).count() == 4
+                    }).count() == 2
         }
 
         then: "the geofences of testUser3Console1 should still contain two geofences but the location of the second should have been updated"

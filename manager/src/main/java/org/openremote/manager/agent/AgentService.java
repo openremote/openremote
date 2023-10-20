@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.agent;
 
+import jakarta.persistence.EntityManager;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -34,6 +34,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.Agent;
@@ -53,8 +54,8 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.EntityManager;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
@@ -66,11 +67,9 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
-import static org.openremote.container.concurrent.GlobalLock.withLock;
-import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.asset.AssetProcessingService.ASSET_QUEUE;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.asset.agent.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.model.asset.agent.Protocol.SENSOR_QUEUE;
@@ -97,9 +96,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected GatewayService gatewayService;
     protected ScheduledExecutorService executorService;
     protected Map<String, Agent<?, ?, ?>> agentMap;
-    protected final Map<String, Future<Void>> agentDiscoveryImportFutureMap = new HashMap<>();
-    protected final Map<String, Protocol<?>> protocolInstanceMap = new HashMap<>();
-    protected final Map<String, List<Consumer<PersistenceEvent<Asset<?>>>>> childAssetSubscriptions = new HashMap<>();
+    protected final Map<String, Future<Void>> agentDiscoveryImportFutureMap = new ConcurrentHashMap<>();
+    protected final Map<String, Protocol<?>> protocolInstanceMap = new ConcurrentHashMap<>();
+    protected final Map<String, Set<Consumer<PersistenceEvent<Asset<?>>>>> childAssetSubscriptions = new ConcurrentHashMap<>();
     protected boolean initDone;
     protected Container container;
 
@@ -150,9 +149,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void stop(Container container) throws Exception {
-        List<Agent<?,?,?>> agents = new ArrayList<>(agentMap.values());
-        agents.forEach(agent -> this.stopAgent(agent.getId()));
-        agentMap.clear();
+        if (agentMap != null) {
+            List<Agent<?, ?, ?>> agents = new ArrayList<>(agentMap.values());
+            agents.forEach(agent -> this.stopAgent(agent.getId()));
+            agentMap.clear();
+        }
         protocolInstanceMap.clear();
     }
 
@@ -160,7 +161,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
-            .routeId("AgentPersistenceChanges")
+            .routeId("Persistence-Agent")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
@@ -176,10 +177,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         // A protocol wants to write a new sensor value
         from(SENSOR_QUEUE)
-            .routeId("FromSensorUpdates")
+            .routeId("ProtocolOutbound")
             .filter(body().isInstanceOf(AttributeEvent.class))
             .setHeader(HEADER_SOURCE, () -> SENSOR)
-            .to(ASSET_QUEUE);
+            .to(ATTRIBUTE_EVENT_QUEUE);
     }
 
     @Override
@@ -377,97 +378,91 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             LOG.fine("Agent is disabled so not starting: " + agent);
             sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
         } else {
-            this.startAgent(agent);
+            executorService.execute(() -> this.startAgent(agent));
         }
     }
 
     protected void startAgent(Agent<?,?,?> agent) {
-        withLock(getClass().getSimpleName() + "::startAgent", () -> {
-            Protocol<?> protocol = null;
+        Protocol<?> protocol = null;
 
-            try {
-                protocol = agent.getProtocolInstance();
-                protocolInstanceMap.put(agent.getId(), protocol);
+        try {
+            protocol = agent.getProtocolInstance();
 
-                LOG.fine("Starting protocol instance: " + protocol);
-                protocol.start(container);
-                LOG.fine("Started protocol instance:" + protocol);
+            LOG.fine("Starting protocol instance: " + protocol);
+            protocol.start(container);
+            protocolInstanceMap.put(agent.getId(), protocol);
+            LOG.fine("Started protocol instance:" + protocol);
 
-                LOG.finest("Linking attributes to protocol instance: " + protocol);
+            LOG.finest("Linking attributes to protocol instance: " + protocol);
 
-                // Get all assets that have attributes with agent link meta for this agent
-                List<Asset<?>> assets = assetStorageService.findAll(
-                    new AssetQuery()
-                        .attributes(
-                            new AttributePredicate().meta(
-                                new NameValuePredicate(AGENT_LINK, new StringPredicate(agent.getId()), false, new NameValuePredicate.Path("id"))
-                            )
+            // Get all assets that have attributes with agent link meta for this agent
+            List<Asset<?>> assets = assetStorageService.findAll(
+                new AssetQuery()
+                    .attributes(
+                        new AttributePredicate().meta(
+                            new NameValuePredicate(AGENT_LINK, new StringPredicate(agent.getId()), false, new NameValuePredicate.Path("id"))
                         )
-                );
+                    )
+            );
 
-                LOG.finest("Found '" + assets.size() + "' asset(s) with attributes linked to this protocol instance: " + protocol);
+            LOG.finest("Found '" + assets.size() + "' asset(s) with attributes linked to this protocol instance: " + protocol);
 
-                assets.forEach(
-                    asset ->
-                        getGroupedAgentLinkAttributes(
-                            asset.getAttributes().stream(),
-                            assetAttribute -> assetAttribute.getMetaValue(AGENT_LINK)
-                                .map(agentLink -> agentLink.getId().equals(agent.getId()))
-                                .orElse(false)
-                        ).forEach((agnt, attributes) -> linkAttributes(agnt, asset.getId(), attributes))
-                );
-
-
-            } catch (Exception e) {
-                if (protocol != null) {
-                    try {
-                        protocol.stop(container);
-                    } catch (Exception ignored) {
-                    }
+            assets.forEach(
+                asset ->
+                    getGroupedAgentLinkAttributes(
+                        asset.getAttributes().stream(),
+                        assetAttribute -> assetAttribute.getMetaValue(AGENT_LINK)
+                            .map(agentLink -> agentLink.getId().equals(agent.getId()))
+                            .orElse(false)
+                    ).forEach((agnt, attributes) -> linkAttributes(agnt, asset.getId(), attributes))
+            );
+        } catch (Exception e) {
+            if (protocol != null) {
+                try {
+                    protocol.stop(container);
+                } catch (Exception ignored) {
                 }
-                protocolInstanceMap.remove(agent.getId());
-                LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
-                sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
             }
-        });
+            protocolInstanceMap.remove(agent.getId());
+            LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
+            sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
+        }
     }
 
     protected void stopAgent(String agentId) {
-        withLock(getClass().getSimpleName() + "::stopAgent", () -> {
-            Protocol<?> protocol = protocolInstanceMap.get(agentId);
+        Protocol<?> protocol = protocolInstanceMap.get(agentId);
 
-            if (protocol == null) {
-                return;
-            }
+        if (protocol == null) {
+            return;
+        }
 
-            Map<String, List<Attribute<?>>> groupedAttributes = protocol.getLinkedAttributes().entrySet().stream().collect(
-                Collectors.groupingBy(entry -> entry.getKey().getId(), mapping(Map.Entry::getValue, toList()))
-            );
+        Map<String, List<Attribute<?>>> groupedAttributes = protocol.getLinkedAttributes().entrySet().stream().collect(
+            Collectors.groupingBy(entry -> entry.getKey().getId(), mapping(Map.Entry::getValue, toList()))
+        );
 
-            groupedAttributes.forEach((assetId, linkedAttributes) -> unlinkAttributes(agentId, assetId, linkedAttributes));
+        groupedAttributes.forEach((assetId, linkedAttributes) -> unlinkAttributes(agentId, assetId, linkedAttributes));
 
-            // Stop the protocol instance
-            try {
-                protocol.stop(container);
-            } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Protocol instance threw an exception whilst being stopped", e);
-            }
+        // Stop the protocol instance
+        try {
+            protocol.stop(container);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Protocol instance threw an exception whilst being stopped", e);
+        }
 
-            // Remove child asset subscriptions for this agent
-            childAssetSubscriptions.remove(agentId);
-            protocolInstanceMap.remove(agentId);
-        });
+        // Remove child asset subscriptions for this agent
+        childAssetSubscriptions.remove(agentId);
+        protocolInstanceMap.remove(agentId);
     }
 
     protected void linkAttributes(Agent<?,?,?> agent, String assetId, Collection<Attribute<?>> attributes) {
-        withLock(getClass().getSimpleName() + "::linkAttributes", () -> {
-            Protocol<?> protocol = getProtocolInstance(agent.getId());
+        final Protocol<?> protocol = getProtocolInstance(agent.getId());
 
-            if (protocol == null) {
-                return;
-            }
+        if (protocol == null) {
+            return;
+        }
 
-            LOG.fine("Linking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() +  ", protocol=" + protocol);
+        synchronized (protocol) {
+            LOG.fine("Linking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() + ", protocol=" + protocol);
 
             attributes.forEach(attribute -> {
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
@@ -480,18 +475,18 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     LOG.log(Level.SEVERE, "Failed to link attribute '" + attributeRef + "' to protocol: " + protocol, ex);
                 }
             });
-        });
+        }
     }
 
     protected void unlinkAttributes(String agentId, String assetId, List<Attribute<?>> attributes) {
-        withLock(getClass().getSimpleName() + "::unlinkAttributes", () -> {
-            Protocol<?> protocol = getProtocolInstance(agentId);
+        final Protocol<?> protocol = getProtocolInstance(agentId);
 
-            if (protocol == null) {
-                return;
-            }
+        if (protocol == null) {
+            return;
+        }
 
-            LOG.fine("Unlinking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() +  ", protocol=" + protocol);
+        synchronized (protocol) {
+            LOG.fine("Unlinking asset '" + assetId + "' attributes linked to protocol: assetId=" + assetId + ", attributes=" + attributes.size() + ", protocol=" + protocol);
 
             attributes.forEach(attribute -> {
                 try {
@@ -504,7 +499,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     LOG.log(Level.SEVERE, "Ignoring error on unlinking attribute '" + attribute + "' from protocol: " + protocol, ex);
                 }
             });
-        });
+        }
     }
 
     /**
@@ -550,20 +545,17 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return false;
         }
 
-        Boolean result = withLockReturning(getClass().getSimpleName() + "::processAssetUpdate", () ->
-            attribute.getMetaValue(AGENT_LINK)
-                .map(agentLink -> {
-                    LOG.finest("Attribute write for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + asset.getId() + ", attribute=" + attribute.getName());
-
-                    messageBrokerService.getFluentProducerTemplate()
-                        .withBody(attributeEvent)
-                        .withHeader(Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL, getProtocolInstance(agentLink.getId()))
-                        .to(ACTUATOR_TOPIC)
-                        .asyncSend();
-                    return true; // Processing complete, skip other processors
-                }).orElse(false) // This is a regular attribute so allow the processing to continue
-        );
-        return result != null ? result : false;
+        return attribute.getMetaValue(AGENT_LINK)
+            .map(agentLink -> {
+                LOG.finest("Attribute write for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + asset.getId() + ", attribute=" + attribute.getName());
+                // TODO: Priority remove actuator topic and call protocol instance directly
+                messageBrokerService.getFluentProducerTemplate()
+                    .withBody(attributeEvent)
+                    .withHeader(Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL, getProtocolInstance(agentLink.getId()))
+                    .to(ACTUATOR_TOPIC)
+                    .asyncSend();
+                return true; // Processing complete, skip other processors
+            }).orElse(false); // This is a regular attribute so allow the processing to continue
     }
 
     /**
@@ -609,37 +601,30 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             agent = loadedAgent;
         }
 
-        Agent<?, ?, ?> finalAgent = agent;
-        withLock(getClass().getSimpleName() + "::addReplaceAgent", () -> getAgents().put(finalAgent.getId(), finalAgent));
+        getAgents().put(agent.getId(), agent);
         return agent;
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"BooleanMethodIsAlwaysInverted"})
     protected boolean removeAgent(String agentId) {
-        return withLockReturning(getClass().getSimpleName() + "::removeAgent", () -> getAgents().remove(agentId) != null);
+        return getAgents().remove(agentId) != null;
     }
 
     public Agent<?, ?, ?> getAgent(String agentId) {
         return getAgents().get(agentId);
     }
 
-    protected Map<String, Agent<?, ?, ?>> getAgents() {
+    protected synchronized Map<String, Agent<?, ?, ?>> getAgents() {
 
-        if (agentMap != null) {
-            return agentMap;
+        if (agentMap == null) {
+            agentMap = assetStorageService.findAll(
+                    new AssetQuery().types(Agent.class)
+                )
+                .stream()
+                .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)
+                .collect(Collectors.toConcurrentMap(Asset::getId, agent -> (Agent<?, ?, ?>) agent));
         }
-
-        return withLockReturning(getClass().getSimpleName() + "::getAgents", () -> {
-            if (agentMap == null) {
-                agentMap = assetStorageService.findAll(
-                        new AssetQuery().types(Agent.class)
-                    )
-                    .stream()
-                    .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)
-                    .collect(Collectors.toMap(Asset::getId, agent -> (Agent<?, ?, ?>)agent));
-            }
-            return agentMap;
-        });
+        return agentMap;
     }
 
     public Protocol<?> getProtocolInstance(Agent<?, ?, ?> agent) {
@@ -657,35 +642,29 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return;
         }
 
-        withLock(getClass().getSimpleName() + "::subscribeChildAssetChange", () -> {
-            List<Consumer<PersistenceEvent<Asset<?>>>> consumerList = childAssetSubscriptions
-                .computeIfAbsent(agentId, (id) -> new ArrayList<>());
-            if (!consumerList.contains(assetChangeConsumer)) {
-                consumerList.add(assetChangeConsumer);
-            }
-        });
+        Set<Consumer<PersistenceEvent<Asset<?>>>> consumers = childAssetSubscriptions
+            .computeIfAbsent(agentId, (id) -> Collections.synchronizedSet(new HashSet<>()));
+        consumers.add(assetChangeConsumer);
     }
 
     @Override
     public void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
-        withLock(getClass().getSimpleName() + "::unsubscribeChildAssetChange", () ->
-            childAssetSubscriptions.computeIfPresent(agentId, (id, consumerList) -> {
-                consumerList.remove(assetChangeConsumer);
-                return consumerList.isEmpty() ? null : consumerList;
-            }));
+        childAssetSubscriptions.computeIfPresent(agentId, (id, consumers) -> {
+            consumers.remove(assetChangeConsumer);
+            return consumers.isEmpty() ? null : consumers;
+        });
     }
 
     protected void notifyChildAssetChange(String agentId, PersistenceEvent<Asset<?>> assetPersistenceEvent) {
-        withLock(getClass().getSimpleName() + "::notifyChildAssetChange", () ->
-            childAssetSubscriptions.computeIfPresent(agentId, (id, consumerList) -> {
-                LOG.finest("Notifying child asset change consumers of change to agent child asset: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId());
-                try {
-                    consumerList.forEach(consumer -> consumer.accept(assetPersistenceEvent));
-                } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Child asset change consumer threw an exception: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId(), e);
-                }
-                return consumerList;
-            }));
+        childAssetSubscriptions.computeIfPresent(agentId, (id, consumers) -> {
+            LOG.finest("Notifying child asset change consumers of change to agent child asset: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId());
+            try {
+                consumers.forEach(consumer -> consumer.accept(assetPersistenceEvent));
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Child asset change consumer threw an exception: Agent ID=" + id + ", Asset<?> ID=" + assetPersistenceEvent.getEntity().getId(), e);
+            }
+            return consumers;
+        });
     }
 
     public boolean isProtocolAssetDiscoveryOrImportRunning(String agentId) {

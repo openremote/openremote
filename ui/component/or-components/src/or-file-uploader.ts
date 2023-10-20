@@ -26,17 +26,17 @@ import "./or-loading-indicator";
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
 
-    //Contains the content that will be shown towards the user.
+    // Contains the content that will be shown towards the user.
     @property({ attribute: false })
-    public src: string = "";
+    public readonly src: string = "";
 
     @property()
-    public title: string = "";
+    public readonly title: string = "";
 
     @property({ attribute: false })
-    public accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
+    public readonly accept: string = "image/png,image/jpeg,image/vnd.microsoft.icon,image/svg+xml";
 
-    private loading: boolean = false;
+    private loading = false;
     private files: FileInfo[] = []
 
     get Files(): FileInfo[] {
@@ -132,14 +132,12 @@ export class OrFileUploader extends LitElement {
                 <div class="title">${this.title}</div>
                 <div id="imageContainer">
 
-                    ${!!this.src ?
-                      html`<img src="${this.src}" alt="OR-File-Uploader">
-                      <div class="pencil-container">
-                          <or-icon icon="pencil-circle"></or-icon>
-                      </div>
-                      `
-                      :
-                      html`
+                    ${this.src ? html`
+                          <img src="${this.src}" alt="OR-File-Uploader">
+                          <div class="pencil-container">
+                              <or-icon icon="pencil-circle"></or-icon>
+                          </div>
+                      ` : html`
                           <div class="placeholder-container">
                               <or-icon icon="upload"></or-icon>
                               ${i18next.t('uploadFile')}

@@ -1,8 +1,8 @@
 package org.openremote.model.dashboard;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 public class DashboardTemplate {
 
@@ -25,6 +25,15 @@ public class DashboardTemplate {
 
 
     /* -------------------- */
+
+    public DashboardTemplate() {
+
+    }
+    public DashboardTemplate(DashboardScreenPreset[] screenPresets) {
+        this.columns = 1;
+        this.maxScreenWidth = 1;
+        this.screenPresets = screenPresets;
+    }
 
     public void setId(String id) { this.id = id; }
     public void setColumns(int columns) { this.columns = columns; }

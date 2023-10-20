@@ -15,10 +15,18 @@ const styling = css`
         flex-direction: column;
     }
 
-    .chart-wrapper {
+    #chart-wrapper {
         position: relative;
-        /*flex: 1;*/
         width: 100%;
+        height: 100%;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    #chart-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     #chart {
@@ -70,6 +78,9 @@ const styling = css`
     .main-number.xl, .main-number-unit.xl {
         font-size: 42px;
     }
+    .main-number.unknown, .main-number-unit.unknown {
+        font-size: unset;
+    }
 `
 export interface OrGaugeConfig {
     attributeRef?: AttributeRef;
@@ -117,9 +128,6 @@ export class OrGauge extends LitElement {
     @property({type: String})
     public realm?: string;
 
-    @property()
-    private mainValueSize: "xs" | "s" | "m" | "l" | "xl" = "m";
-
 
     @state()
     protected loading: boolean = false;
@@ -127,8 +135,17 @@ export class OrGauge extends LitElement {
     @state()
     private gauge?: Gauge;
 
+    @state()
+    private gaugeSize?: { width: number, height: number }
+
     @query("#chart")
     private _gaugeElem!: HTMLCanvasElement;
+
+    @query("#chart-wrapper")
+    private _wrapperElem!: HTMLElement;
+
+    @query("#details-container")
+    private _detailsElem!: HTMLElement;
 
     private resizeObserver?: ResizeObserver;
 
@@ -138,25 +155,36 @@ export class OrGauge extends LitElement {
         if(!this.config) {
             this.config = this.getDefaultConfig();
         }
+        // Register observer when gauge size changes
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-                this.setupGauge(); // recreate gauge since the library is not 100% responsive.
-                const gaugeSize = entries[0].devicePixelContentBoxSize[0].blockSize; // since gauge elem width == value elem width
-                this.setLabelSize(gaugeSize);
+                const size = entries[0].contentRect;
+                this.gaugeSize = {
+                    width: size.width,
+                    height: size.height
+                }
+                this.updateComplete.then(() => {
+                    this.setupGauge(); // recreate gauge since the library is not 100% responsive.
+                });
             }, 200))
-            this.resizeObserver.observe(this.shadowRoot!.getElementById('chart')!);
+            this.resizeObserver.observe(this._wrapperElem);
         })
     }
 
-    updated(changedProperties: Map<string, any>) {
-        if(changedProperties.has('value')) {
-            this.gauge?.set(this.value ? this.value : NaN);
-        }
-        if(changedProperties.has('assetAttribute')) {
+    // Processing changes before update, to prevent extra render
+    willUpdate(changedProps: Map<string, any>) {
+        if(changedProps.has('assetAttribute')) {
             const attr = this.assetAttribute![1];
             const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.asset!.type!);
             this.unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.asset!.type));
-            this.value = attr.value ? attr.value : NaN;
+            this.value = attr.value != null ? attr.value : NaN;
+        }
+    }
+
+    // After render took place...
+    updated(changedProperties: Map<string, any>) {
+        if(changedProperties.has('value')) {
+            this.gauge?.set(this.value != null ? this.value : NaN);
         }
         if(changedProperties.has('attrRef')) {
             if(this.attrRef) {
@@ -168,13 +196,13 @@ export class OrGauge extends LitElement {
         }
 
         // Render gauge again if..
-        if(changedProperties.has('min') && this.min) {
-            this.gauge?.setMinValue(this.min);
-            this.gauge?.set(this.value ? this.value : NaN);
+        if(changedProperties.has('min') && this.min != null && this.gauge) {
+            this.gauge.setMinValue(this.min);
+            this.gauge.set(this.value != null ? this.value : NaN);
         }
-        if(changedProperties.has('max') && this.max && this.gauge) {
+        if(changedProperties.has('max') && this.max != null && this.gauge) {
             this.gauge.maxValue = this.max;
-            this.gauge?.set(this.value ? this.value : NaN);
+            this.gauge.set(this.value != null ? this.value : NaN);
         }
         if(changedProperties.has('thresholds') && this.thresholds) {
 
@@ -210,38 +238,57 @@ export class OrGauge extends LitElement {
         this.gauge.maxValue = (this.max ? this.max : 100)
         this.gauge.setMinValue(this.min ? this.min : 0);
         this.gauge.animationSpeed = 1;
-        this.gauge.set(this.value ? this.value : NaN);
-        if(!this.value && this.attrRef) {
+        this.gauge.set(this.value != null ? this.value : NaN);
+        if(this.value == null && this.attrRef) {
             this.loadData(this.attrRef);
         }
     }
 
-    setLabelSize(blockSize: number) {
-        if(blockSize < 60) {
-            this.mainValueSize = "s";
-        } else if(blockSize < 100) {
-            this.mainValueSize = "m";
-        } else if(blockSize < 200) {
-            this.mainValueSize = "l"
+    getGaugeWidth(gaugeSize?: { width: number, height: number }, includeLabelHeight: boolean = true): string {
+        if(!gaugeSize) {
+            return "unset"
+        }
+        const width = gaugeSize.width;
+        const height = (includeLabelHeight ? (gaugeSize.height - this._detailsElem.clientHeight) : gaugeSize.height) * 1.5;
+        return Math.min(width, height) + "px";
+    }
+    shouldShowLabel(gaugeSize: { width: number, height: number }): boolean {
+        return (gaugeSize.width > 70) && (gaugeSize.height > 100);
+    }
+    getLabelSize(width: number): "s" | "m" | "l" | "xl" {
+        if(width < 120) {
+            return "s";
+        } else if(width < 240) {
+            return "m";
+        } else if(width < 320) {
+            return "l"
         } else {
-            this.mainValueSize = "xl"
+            return "xl"
         }
     }
 
     render() {
-        const formattedVal = (this.value ? +this.value.toFixed(this.decimals) : NaN); // + operator prevents str return
+        const formattedVal = (this.value != null ? +this.value.toFixed(this.decimals) : NaN); // + operator prevents str return
+
+        // Set width/height values based on size
+        const showLabel = this.gaugeSize ? this.shouldShowLabel(this.gaugeSize) : true;
+        const labelSize = showLabel && this.gaugeSize ? this.getLabelSize(this.gaugeSize.width) : "unknown"
+        const gaugeWidth = this.getGaugeWidth(this.gaugeSize, showLabel);
+
         return html`
             <div style="position: relative; height: 100%; width: 100%;">
-                <div class="chart-wrapper" style="display: ${this.loading ? 'none' : 'flex'}; flex-direction: column; justify-content: center; height: 100%;">
-                    <div style="flex: 0 0 0;">
+                <div id="chart-wrapper" style="display: ${this.loading ? 'none' : 'flex'};">
+                    <div id="chart-container" style="flex: 0 0 0; width: ${gaugeWidth};">
                         <canvas id="chart"></canvas>
                     </div>
-                    <div>
-                        <div class="mainvalue-wrapper">
-                            <span class="main-number-icon">${this.asset ? getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset.type)) : ""}</span>
-                            <span class="main-number ${this.mainValueSize}">${formattedVal}</span>
-                            <span class="main-number-unit ${this.mainValueSize}">${this.unit ? this.unit : ""}</span>
-                        </div>
+                    <div id="details-container">
+                        ${showLabel ? html`
+                            <div class="mainvalue-wrapper">
+                                <span class="main-number-icon">${this.asset ? getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset.type)) : ""}</span>
+                                <span class="main-number ${labelSize}">${formattedVal}</span>
+                                <span class="main-number-unit ${labelSize}">${this.unit ? this.unit : ""}</span>
+                            </div>
+                        ` : undefined}
                     </div>
                 </div>
             </div>
@@ -286,14 +333,5 @@ export class OrGauge extends LitElement {
                 highDpiSupport: true
             }
         }
-    }
-
-    // Wait until function that waits until a boolean returns differently
-    waitUntil(conditionFunction: any) {
-        const poll = (resolve: any) => {
-            if(conditionFunction()) resolve();
-            else setTimeout((_: any) => poll(resolve), 400);
-        }
-        return new Promise(poll);
     }
 }

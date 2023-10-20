@@ -39,11 +39,13 @@ import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.RepeatFrequency;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -59,7 +61,6 @@ import static org.openremote.manager.notification.NotificationProcessingExceptio
 import static org.openremote.model.notification.Notification.HEADER_SOURCE;
 import static org.openremote.model.notification.Notification.Source.*;
 
-// TODO Implement notification purging - configurable MAX_AGE for notifications?
 public class NotificationService extends RouteBuilder implements ContainerService {
 
     public static final String NOTIFICATION_QUEUE = "seda://NotificationQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
@@ -71,7 +72,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     protected MessageBrokerService messageBrokerService;
     protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
 
-    protected static Processor handleNotificationProcessingException(Logger logger) {
+    protected static Processor handleNotificationProcessingException() {
         return exchange -> {
             Notification notification = exchange.getIn().getBody(Notification.class);
             Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
@@ -89,14 +90,13 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             }
 
             // TODO Better exception handling - dead letter queue?
-            if (exception instanceof NotificationProcessingException) {
-                NotificationProcessingException processingException = (NotificationProcessingException) exception;
+            if (exception instanceof NotificationProcessingException processingException) {
                 error.append(" - ").append(processingException.getReasonPhrase());
                 error.append(": ").append(notification.toString());
-                logger.warning(error.toString());
+                NotificationService.LOG.warning(error.toString());
             } else {
                 error.append(": ").append(notification.toString());
-                logger.log(Level.WARNING, error.toString(), exception);
+                NotificationService.LOG.log(Level.WARNING, error.toString(), exception);
             }
 
             exchange.getMessage().setBody(false);
@@ -142,7 +142,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     public void configure() throws Exception {
 
         from(NOTIFICATION_QUEUE)
-                .routeId("NotificationQueueProcessor")
+                .routeId("NotificationQueue")
                 .doTry()
                 .process(exchange -> {
                     Notification notification = exchange.getIn().getBody(Notification.class);
@@ -184,40 +184,30 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     boolean isRestrictedUser = false;
 
                     switch (source) {
-                        case INTERNAL:
-                            isSuperUser = true;
-                            break;
-
-                        case CLIENT:
-
+                        case INTERNAL -> isSuperUser = true;
+                        case CLIENT -> {
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                             if (authContext == null) {
                                 // Anonymous clients cannot send notifications
                                 throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                             }
-
                             realm = authContext.getAuthenticatedRealmName();
                             userId = authContext.getUserId();
                             sourceId.set(userId);
                             isSuperUser = authContext.isSuperUser();
                             isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
-                            break;
-
-                        case GLOBAL_RULESET:
-                            isSuperUser = true;
-                            break;
-
-                        case REALM_RULESET:
+                        }
+                        case GLOBAL_RULESET -> isSuperUser = true;
+                        case REALM_RULESET -> {
                             realm = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
                             sourceId.set(realm);
-                            break;
-
-                        case ASSET_RULESET:
+                        }
+                        case ASSET_RULESET -> {
                             assetId = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
                             sourceId.set(assetId);
                             Asset<?> asset = assetStorageService.find(assetId, false);
                             realm = asset.getRealm();
-                            break;
+                        }
                     }
 
                     LOG.fine("Sending " + notification.getMessage().getType() + " notification '" + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> " + notification.getTargets());
@@ -296,11 +286,18 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 })
                 .endDoTry()
                 .doCatch(NotificationProcessingException.class)
-                .process(handleNotificationProcessingException(LOG));
+                .process(handleNotificationProcessingException());
     }
 
     public boolean sendNotification(Notification notification) {
         return sendNotification(notification, INTERNAL, "");
+    }
+
+    public void sendNotificationAsync(Notification notification, Notification.Source source, String sourceId) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Notification.HEADER_SOURCE, source);
+        headers.put(Notification.HEADER_SOURCE_ID, sourceId);
+        messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(NotificationService.NOTIFICATION_QUEUE).send();
     }
 
     public boolean sendNotification(Notification notification, Notification.Source source, String sourceId) {
@@ -349,8 +346,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         builder.append(" order by n.sentOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            IntStream.rangeClosed(1, parameters.size())
+                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
             return query.getResultList();
         });
     }
@@ -372,8 +369,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            IntStream.rangeClosed(1, parameters.size())
+                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
             query.executeUpdate();
         });
     }
@@ -473,22 +470,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (notification.getRepeatFrequency() != null) {
 
             switch (notification.getRepeatFrequency()) {
-
-                case HOURLY:
-                    timestamp = lastSend.truncatedTo(HOURS).plus(1, HOURS);
-                    break;
-                case DAILY:
-                    timestamp = lastSend.truncatedTo(DAYS).plus(1, DAYS);
-                    break;
-                case WEEKLY:
-                    timestamp = lastSend.truncatedTo(WEEKS).plus(1, WEEKS);
-                    break;
-                case MONTHLY:
-                    timestamp = lastSend.truncatedTo(MONTHS).plus(1, MONTHS);
-                    break;
-                case ANNUALLY:
-                    timestamp = lastSend.truncatedTo(YEARS).plus(1, YEARS);
-                    break;
+                case HOURLY -> timestamp = lastSend.truncatedTo(HOURS).plus(1, HOURS);
+                case DAILY -> timestamp = lastSend.truncatedTo(DAYS).plus(1, DAYS);
+                case WEEKLY -> timestamp = lastSend.truncatedTo(WEEKS).plus(1, WEEKS);
+                case MONTHLY -> timestamp = lastSend.truncatedTo(MONTHS).plus(1, MONTHS);
+                case ANNUALLY -> timestamp = lastSend.truncatedTo(YEARS).plus(1, YEARS);
             }
         } else if (!TextUtil.isNullOrEmpty(notification.getRepeatInterval())) {
             timestamp = lastSend.plus(TimeUtil.parseTimeDuration(notification.getRepeatInterval()), ChronoUnit.MILLIS);
@@ -497,7 +483,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return timestamp;
     }
 
-    @SuppressWarnings("unchecked")
     protected void checkAccess(Notification.Source source, String sourceId, List<Notification.Target> targets, String realm, String userId, boolean isSuperUser, boolean isRestrictedUser, String assetId) throws NotificationProcessingException {
 
         if (isSuperUser) {
@@ -522,18 +507,20 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     }
 
                     // Requester must be in the same realm as all target users
-                    boolean realmMatch = false;
+                    boolean realmMatch;
 
                     if (target.getType() == Notification.TargetType.USER) {
-                        realmMatch = Arrays.stream(identityService.getIdentityProvider().queryUsers(new UserQuery().ids(target.getId())))
-                                .allMatch(user -> realm.equals(user.getRealm()));
+                        realmMatch = Arrays.stream(identityService.getIdentityProvider().queryUsers(
+                            // Exclude service accounts and system accounts
+                            new UserQuery().ids(target.getId()).serviceUsers(false).attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)))
+                            )).allMatch(user -> realm.equals(user.getRealm()));
                     } else {
-                        // Can only send to the same realm as the requestor realm
+                        // Can only send to the same realm as the requester realm
                         realmMatch = realm.equals(target.getId());
                     }
 
                     if (!realmMatch) {
-                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requester");
                     }
                     break;
 

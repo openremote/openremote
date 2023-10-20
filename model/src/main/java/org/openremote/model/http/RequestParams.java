@@ -21,8 +21,8 @@ package org.openremote.model.http;
 
 import org.openremote.model.util.TextUtil;
 
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.core.*;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.core.*;
 import java.net.URI;
 
 public class RequestParams {

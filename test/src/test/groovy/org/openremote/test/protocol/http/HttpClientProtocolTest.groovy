@@ -20,12 +20,11 @@
 package org.openremote.test.protocol.http
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.jboss.resteasy.spi.ResteasyUriInfo
+import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.http.HTTPProtocol
-import org.openremote.agent.protocol.websocket.WebsocketAgentProtocol
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -49,10 +48,10 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.HttpMethod
-import javax.ws.rs.client.ClientRequestContext
-import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.*
+import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.*
 import java.util.regex.Pattern
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK

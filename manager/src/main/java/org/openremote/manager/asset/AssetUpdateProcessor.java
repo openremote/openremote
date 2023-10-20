@@ -19,20 +19,14 @@
  */
 package org.openremote.manager.asset;
 
-import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent.Source;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 /**
  * Process update of an asset attribute (value), from a {@link Source}.
- *
- * Implementations don't have to lock the whole context through {@link GlobalLock}, the
- * caller of this has already obtained the lock. Internal synchronization and thread-safety
- * must still be maintained if shared state of a processor can be modified by concurrent tasks
- * maintained by that processor.
  */
 public interface AssetUpdateProcessor {
 

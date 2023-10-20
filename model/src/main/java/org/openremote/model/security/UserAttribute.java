@@ -22,9 +22,9 @@ package org.openremote.model.security;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import org.hibernate.annotations.Subselect;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 @Entity
 @Subselect("select * from PUBLIC.USER_ATTRIBUTE") // Map this immutable to an SQL view, don't use/create table

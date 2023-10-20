@@ -81,7 +81,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the protocol instances should have been created and the agent status attributes should be updated"
         conditions.eventually {
-            assert agentService.agentMap.values().count {it instanceof MockAgent} == 3
+            assert agentService.agents.values().count {it instanceof MockAgent} == 3
             assert agentService.protocolInstanceMap.values().count {it instanceof MockProtocol} == 1
             assert agentService.getAgent(mockAgent1.id) != null
             assert agentService.getAgent(mockAgent2.id) != null

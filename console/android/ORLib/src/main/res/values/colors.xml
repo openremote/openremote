@@ -18,4 +18,5 @@
     <item name="purple" type="color">#ff660092</item>
 
     <color name="qr_code_reader_square">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
 </resources>

@@ -52,7 +52,7 @@ public class ManagerTestSetup extends ManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 44;
-    public static final int DEMO_RULE_STATES_APARTMENT_2 = 13;
+    public static final int DEMO_RULE_STATES_APARTMENT_2 = 14;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 5;
     public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -101,6 +101,7 @@ public class ManagerTestSetup extends ManagerSetup {
     public String electricityBatteryAssetId;
     public String light1Id;
     public String light2Id;
+
 
     public ManagerTestSetup(Container container) {
         super(container);
@@ -286,8 +287,6 @@ public class ManagerTestSetup extends ManagerSetup {
         );
         electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
         electricitySupplierAssetId = electricitySupplierAsset.getId();
-
-
 
         // ################################ Assets for 'building' realm ###################################
 
@@ -515,6 +514,7 @@ public class ManagerTestSetup extends ManagerSetup {
                                 new MetaItem<>(RULE_STATE, true)
                         )
         );
+        addDemoApartmentTemperatureControl(apartment2Livingroom, false, null);
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
 

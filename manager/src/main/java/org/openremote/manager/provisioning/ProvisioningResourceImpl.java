@@ -26,7 +26,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.provisioning.ProvisioningResource;
 
-import javax.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ForbiddenException;
 
 public class ProvisioningResourceImpl extends ManagerWebResource implements ProvisioningResource {
 

@@ -36,7 +36,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.Database.PROPERTY_POOL_NAME;
 
-public class PersistenceHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class PersistenceHealthStatusProvider implements HealthStatusProvider {
 
     private static final Logger LOG = Logger.getLogger(PersistenceHealthStatusProvider.class.getName());
     public static final String NAME = "db";

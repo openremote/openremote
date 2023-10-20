@@ -32,12 +32,12 @@ import org.openremote.model.syslog.SyslogCategory;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, SimulatorAgentLink> {
@@ -45,7 +45,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SimulatorProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "Simulator";
 
-    protected final Map<AttributeRef, ScheduledFuture<?>> replayMap = new HashMap<>();
+    protected final Map<AttributeRef, ScheduledFuture<?>> replayMap = new ConcurrentHashMap<>();
 
     public SimulatorProtocol(SimulatorAgent agent) {
         super(agent);
@@ -68,6 +68,13 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
     @Override
     protected void doStop(Container container) throws Exception {
+        replayMap.values().forEach(scheduledFuture -> {
+            try {
+                scheduledFuture.cancel(true);
+            } catch (Exception ignored) {
+
+            }
+        });
     }
 
     @Override
@@ -156,16 +163,14 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
 
         LOG.fine("Next update for asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " in " + nextRunRelative + " second(s)");
         return executorService.schedule(() -> {
-            withLock(getProtocolName() + "::firingNextUpdate", () -> {
-                LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
-                try {
-                    updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
-                } catch (Exception e) {
-                    LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
-                } finally {
-                    replayMap.put(attributeRef, scheduleReplay(attributeRef, simulatorReplayDatapoints));
-                }
-            });
+            LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
+            try {
+                updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
+            } finally {
+                replayMap.put(attributeRef, scheduleReplay(attributeRef, simulatorReplayDatapoints));
+            }
         }, nextRunRelative, TimeUnit.SECONDS);
     }
 }

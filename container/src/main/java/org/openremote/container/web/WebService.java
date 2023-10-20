@@ -31,7 +31,8 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.HeaderMap;
-import org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor;
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.CORSFilter;
@@ -42,9 +43,9 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.xnio.Options;
 
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.servlet.DispatcherType;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.Inet4Address;
 import java.net.URI;
 import java.util.*;
@@ -280,7 +281,7 @@ public abstract class WebService implements ContainerService {
         if (apiClasses == null && apiSingletons == null)
             return null;
         WebApplication webApplication = new WebApplication(container, apiClasses, apiSingletons);
-        ResteasyDeployment resteasyDeployment = new ResteasyDeployment();
+        ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
         resteasyDeployment.setApplication(webApplication);
 
         // Custom providers (these only apply to server applications, not client calls)
@@ -298,6 +299,10 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.setSecurityEnabled(secure);
 
         return resteasyDeployment;
+    }
+
+    public Undertow getUndertow() {
+        return undertow;
     }
 
     public static synchronized FilterInfo getCorsFilterInfo(Container container) {

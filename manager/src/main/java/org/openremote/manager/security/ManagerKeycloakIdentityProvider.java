@@ -20,6 +20,13 @@
 package org.openremote.manager.security;
 
 import io.undertow.util.Headers;
+import jakarta.persistence.Query;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -27,7 +34,6 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
-import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -50,17 +56,11 @@ import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.persistence.Query;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -92,8 +92,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_GRANT_FILE = "OR_KEYCLOAK_GRANT_FILE";
     public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
-    public static final String KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED = "emailNotificationsDisabled";
-    public static final String KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED = "pushNotificationsDisabled";
     public static final String KC_HOSTNAME = "KC_HOSTNAME";
     public static final String KC_HOSTNAME_PATH = "KC_HOSTNAME_PATH";
     public static final String KC_HOSTNAME_PORT = "KC_HOSTNAME_PORT";
@@ -248,18 +246,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public User[] queryUsers(UserQuery userQuery) {
-        if (userQuery == null) {
-            userQuery = new UserQuery();
-        }
-
-        if (userQuery.usernames == null) {
-            userQuery.usernames = new StringPredicate[1];
-            userQuery.usernames(new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(true));
-        } else {
-            userQuery.usernames = Arrays.copyOf(userQuery.usernames, userQuery.usernames.length+1);
-            userQuery.usernames[userQuery.usernames.length-1] = new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(true);
-        }
-
         return ManagerIdentityProvider.getUsersFromDb(persistenceService, userQuery);
     }
 
@@ -277,12 +263,16 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public User createUpdateUser(String realm, final User user, String passwordSecret, boolean allowUpdate) throws WebApplicationException {
         return getRealms(realmsResource -> {
 
-            if (user.getUsername() == null) {
-                throw new BadRequestException("Attempt to create/update user but no username provided: User=" + user);
+            // Force lowercase username
+            if (user.getUsername() != null) {
+                user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
             }
 
-            // Force lowercase username
-            user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
+            if (!user.isServiceAccount() && allowUpdate) {
+                if (getRealm(realm).getRegistrationEmailAsUsername() ? user.getEmail() == null : user.getUsername() == null) {
+                    throw new BadRequestException("Attempt to create/update user but no username or email provided: User=" + user);
+                }
+            }
 
             boolean isUpdate = false;
             User existingUser = user.getId() != null ? getUser(user.getId()) : getUserByUsername(realm, user.getUsername());
@@ -344,6 +334,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 userRepresentation.setLastName(user.getLastName());
                 userRepresentation.setEmail(user.getEmail());
                 userRepresentation.setEnabled(user.getEnabled());
+                userRepresentation.setAttributes(user.getAttributeMap());
                 userResource.update(userRepresentation);
 
             } else {
@@ -389,14 +380,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     Credential credential = new Credential(passwordSecret, false);
                     resetPassword(realm, userRepresentation.getId(), credential);
                 }
-            }
-
-            if (user.getAttributes() != null) {
-                if (existingUser != null) {
-                    // Populate attributes for persistence event
-                    existingUser.setAttributes(getUserAttributes(realm, existingUser.getId()));
-                }
-                updateUserAttributes(realm, userRepresentation.getId(), user.getAttributes());
             }
 
             User updatedUser = convert(userRepresentation, User.class);
@@ -498,25 +481,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 },
                 null
             );
-        });
-    }
-
-    @Override
-    public void updateUserAttributes(String realm, String userId, Map<String, List<String>> attributes) {
-        getRealms(realmsResource -> {
-            UserResource userResource = realmsResource.realm(realm).users().get(userId);
-            UserRepresentation userRepresentation = realmsResource.realm(realm).users().get(userId).toRepresentation();
-            userRepresentation.setAttributes(attributes);
-            userResource.update(userRepresentation);
-            return null;
-        });
-    }
-
-    @Override
-    public Map<String, List<String>> getUserAttributes(String realm, String userId) {
-        return getRealms(realmsResource -> {
-            UserRepresentation userRepresentation = realmsResource.realm(realm).users().get(userId).toRepresentation();
-            return userRepresentation.getAttributes();
         });
     }
 
@@ -977,42 +941,39 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             throw new NotFoundException("Realm does not exist: " + realmName);
         }
 
-        // TODO: This should be de-centralised and use a realm lock to prevent any resources being added to the realm during deletion
-        GlobalLock.withLock("RealmDeletion", () -> {
-            persistenceService.doTransaction(entityManager -> {
+        persistenceService.doTransaction(entityManager -> {
 
-                // Delete gateway connections
-                Query query = entityManager.createQuery("delete from " + GatewayConnection.class.getSimpleName() + " gc " +
-                    "where gc.localRealm = ?0");
+            // Delete gateway connections
+            Query query = entityManager.createQuery("delete from " + GatewayConnection.class.getSimpleName() + " gc " +
+                "where gc.localRealm = ?1");
 
-                query.setParameter(0, realmName);
-                query.executeUpdate();
+            query.setParameter(1, realmName);
+            query.executeUpdate();
 
-                // Delete provisioning configs
-                query = entityManager.createQuery("delete from " + ProvisioningConfig.class.getSimpleName() + " pc " +
-                    "where pc.realm = ?0");
+            // Delete provisioning configs
+            query = entityManager.createQuery("delete from " + ProvisioningConfig.class.getSimpleName() + " pc " +
+                "where pc.realm = ?1");
 
-                query.setParameter(0, realmName);
-                query.executeUpdate();
+            query.setParameter(1, realmName);
+            query.executeUpdate();
 
-                // Delete Rules
-                query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
-                    "where rs.realm = ?0");
-                query.setParameter(0, realmName);
-                query.executeUpdate();
+            // Delete Rules
+            query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
+                "where rs.realm = ?1");
+            query.setParameter(1, realmName);
+            query.executeUpdate();
 
-                // Delete Assets
-                List<String> assetIds = assetStorageService.findAll(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).realm(new RealmPredicate(realmName))).stream().map(Asset::getId).toList();
-                assetStorageService.delete(assetIds);
-            });
-
-            LOG.fine("Deleting realm: " + realmName);
-            getRealms(realmsResource -> {
-                realmsResource.realm(realmName).remove();
-                return null;
-            });
-            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, realm, Realm.class, null, null);
+            // Delete Assets
+            List<String> assetIds = assetStorageService.findAll(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).realm(new RealmPredicate(realmName))).stream().map(Asset::getId).toList();
+            assetStorageService.delete(assetIds);
         });
+
+        LOG.fine("Deleting realm: " + realmName);
+        getRealms(realmsResource -> {
+            realmsResource.realm(realmName).remove();
+            return null;
+        });
+        persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, realm, Realm.class, null, null);
     }
 
     public ClientRepresentation generateOpenRemoteClientRepresentation() {
@@ -1216,6 +1177,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             emailConfig.put("password", container.getConfig().getOrDefault(OR_EMAIL_PASSWORD, null));
             emailConfig.put("auth", container.getConfig().containsKey(OR_EMAIL_USER) ? "true" : "false");
             emailConfig.put("tls", Boolean.toString(getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT)));
+            emailConfig.put("ssl", Boolean.toString(!getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT) && getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT).equals("smtps")));
             emailConfig.put("from", getString(container.getConfig(), OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT));
             realmRepresentation.setSmtpServer(emailConfig);
         }

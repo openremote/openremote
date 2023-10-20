@@ -45,7 +45,7 @@ import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,8 +60,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.undertow.util.RedirectBuilder.redirect;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.UriBuilder.fromUri;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+import static jakarta.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;
@@ -82,6 +82,7 @@ public class ManagerWebService extends WebService {
     public static final String OR_ROOT_REDIRECT_PATH_DEFAULT = "/manager";
     public static final String API_PATH = "/api";
     public static final String MANAGER_APP_PATH = "/manager";
+    public static final String INSIGHTS_APP_PATH = "/insights";
     public static final String SWAGGER_APP_PATH = "/swagger";
     public static final String CONSOLE_LOADER_APP_PATH = "/console_loader";
     public static final String SHARED_PATH = "/shared";
@@ -212,6 +213,7 @@ public class ManagerWebService extends WebService {
             };
 
             deploymentHandler.addPrefixPath(MANAGER_APP_PATH, appFileHandler);
+            deploymentHandler.addPrefixPath(INSIGHTS_APP_PATH, appFileHandler);
             deploymentHandler.addPrefixPath(SWAGGER_APP_PATH, appFileHandler);
             deploymentHandler.addPrefixPath(CONSOLE_LOADER_APP_PATH, appFileHandler);
             deploymentHandler.addPrefixPath(SHARED_PATH, appFileHandler);

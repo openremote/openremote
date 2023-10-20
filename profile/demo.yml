@@ -16,7 +16,7 @@ version: '2.4'
 
 volumes:
   proxy-data:
-  temp-data:
+  manager-data:
   postgresql-data:
   deployment-data:
 
@@ -46,6 +46,7 @@ services:
       - "80:80"
       - "443:443"
       - "8883:8883"
+      - "127.0.0.1:8404:8404" # Localhost metrics access
     volumes:
       - proxy-data:/deployment
     environment:
@@ -61,7 +62,7 @@ services:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-      - temp-data:/tmp
+      - manager-data:/storage
     <<: *awslogs
 
   keycloak:
@@ -84,6 +85,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:8405:8404" # Localhost metrics access
     environment:
       # Set this variable `demo` to auto provision demo assets etc.
       OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
@@ -106,7 +109,7 @@ services:
       OR_SETUP_IMPORT_DEMO_AGENT_KNX:
       OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
-      - temp-data:/tmp
+      - manager-data:/storage
       - deployment-data:/deployment
     <<: *awslogs
 

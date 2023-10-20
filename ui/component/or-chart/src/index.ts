@@ -1,45 +1,57 @@
-import {
-    css,
-    html,
-    LitElement,
-    PropertyValues,
-    TemplateResult,
-    unsafeCSS
-} from "lit";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {AssetModelUtil, Asset, Attribute, AttributeRef, DatapointInterval, WellknownMetaItems, ReadAssetEvent, AssetEvent, ValueDatapoint, AssetQuery} from "@openremote/model";
-import manager, {
-    DefaultColor2,
-    DefaultColor3,
-    DefaultColor4,
-    DefaultColor5,
-    Util
-} from "@openremote/core";
+import {
+    Asset,
+    AssetDatapointQueryUnion,
+    AssetEvent,
+    AssetModelUtil,
+    AssetQuery,
+    Attribute,
+    AttributeRef,
+    DatapointInterval,
+    ReadAssetEvent,
+    ValueDatapoint,
+    WellknownMetaItems
+} from "@openremote/model";
+import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {Chart, ChartDataset, TimeUnit, ScatterDataPoint, ScatterController, LineController, LineElement, PointElement, LinearScale, TimeScale,
+import {
+    Chart,
+    ChartConfiguration,
+    ChartDataset,
     Filler,
     Legend,
+    LinearScale,
+    LineController,
+    LineElement,
+    PointElement,
+    ScatterController,
+    ScatterDataPoint,
+    TimeScale,
+    TimeScaleOptions,
+    TimeUnit,
     Title,
-    Tooltip,
-    ChartConfiguration,
-    TimeScaleOptions} from "chart.js";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+    Tooltip
+} from "chart.js";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import ChartAnnotation, { AnnotationOptions } from "chartjs-plugin-annotation";
+import ChartAnnotation, {AnnotationOptions} from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
-import {GenericAxiosResponse } from "@openremote/rest";
+import {GenericAxiosResponse} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
-import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { cache } from "lit/directives/cache.js";
-import { throttle } from "lodash";
+import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {cache} from "lit/directives/cache.js";
+import {throttle} from "lodash";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
@@ -59,10 +71,13 @@ export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
     }
 }
 
+export type TimePresetCallback = (date: Date) => [Date, Date];
+
 export interface ChartViewConfig {
     attributeRefs?: AttributeRef[];
-    timestamp?: number;
-    compareOffset?: number;
+    fromTimestamp?: number;
+    toTimestamp?: number;
+    /*compareOffset?: number;*/
     period?: moment.unitOfTime.Base;
     deltaFormat?: "absolute" | "percentage";
     decimals?: number;
@@ -184,31 +199,26 @@ const style = css`
     #msg:not([hidden]) {
         display: flex;    
     }
-    .interval-controls,
     .period-controls {
         display: flex;
-        flex-wrap: wrap;
-        flex-direction: row;
-    }
-
-    .period-controls {
-        --or-icon-fill: var(--or-app-color3);
+        min-width: 180px;
+        align-items: center;
     }
 
     #controls {
         display: flex;
         flex-wrap: wrap;
         margin: var(--internal-or-chart-controls-margin);
-        min-width: 320px;
-        padding-left: 10px;
+        width: 100%;
         flex-direction: column;
         margin: 0;
     }
 
     #attribute-list {
-        /*overflow: auto;*/
+        overflow: hidden auto;
+        min-height: 50px;
         flex: 1 1 0;
-        width: 95%;
+        width: 100%;
         display: flex;
         flex-direction: column;
     }
@@ -296,6 +306,11 @@ const style = css`
         /*min-height: 400px;
         max-height: 550px;*/
     }
+    #chart-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
     canvas {
         width: 100% !important;
         height: 100%; !important;
@@ -322,6 +337,13 @@ const style = css`
         #controls {
             min-width: 100%;
             padding-left: 0;
+        }
+        .interval-controls,
+        .period-controls {
+            flex-direction: row;
+            justify-content: left;
+            align-items: center;
+            gap: 8px;
         }
     }
 `;
@@ -354,17 +376,14 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Array})
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
 
-    @property({type: String})
-    public period: moment.unitOfTime.Base = "day";
-
-    @property({type: Number})
-    public timestamp: Date = moment().set('minute', 0).toDate();
-
-    @property({type: Number})
-    public compareTimestamp?: Date = moment().set('minute', 0).toDate();
+    @property({type: Object})
+    public readonly datapointQuery!: AssetDatapointQueryUnion;
 
     @property({type: Object})
     public config?: OrChartConfig;
+
+    @property({type: Object}) // options that will get merged with our default chartjs configuration.
+    public chartOptions?: any
 
     @property({type: String})
     public realm?: string;
@@ -377,6 +396,12 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     @property()
     public timestampControls: boolean = true;
+
+    @property()
+    public timePresetOptions?: Map<string, TimePresetCallback>;
+
+    @property()
+    public timePresetKey?: string;
 
     @property()
     public showLegend: boolean = true;
@@ -435,8 +460,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp")
-            || changedProperties.has("timestamp") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
+        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") ||
+            changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
             this._data = undefined;
@@ -513,8 +538,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     millisecond: 'HH:mm:ss.SSS',
                                     second: 'HH:mm:ss',
                                     minute: "HH:mm",
-                                    hour: "HH:mm",
-                                    day: "MMM D",
+                                    hour: (this._endOfPeriod && this._startOfPeriod && this._endOfPeriod - this._startOfPeriod > 86400000) ? "MMM DD, HH:mm" : "HH:mm",
+                                    day: "MMM DD",
                                     week: "w"
                                 },
                                 unit: this._timeUnits,
@@ -537,7 +562,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                 }
             } as ChartConfiguration<"line", ScatterDataPoint[]>;
 
-            this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
+            const mergedOptions = Util.mergeObjects(options, this.chartOptions, false);
+
+            this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, mergedOptions as ChartConfiguration<"line", ScatterDataPoint[]>);
         } else {
             if (changedProperties.has("_data")) {
                 this._chart.options.scales!.x!.min = this._startOfPeriod;
@@ -555,21 +582,32 @@ export class OrChart extends translate(i18next)(LitElement) {
         });
 
     }
+
+    // Not the best implementation, but it changes the legend & controls to wrap under the chart.
+    // Also sorts the attribute lists horizontally when it is below the chart
     applyChartResponsiveness(): void {
         if(this.shadowRoot) {
             const container = this.shadowRoot.getElementById('container');
             if(container) {
-                const bottomLegenda = (container.clientWidth < 600);
-                container.style.flexDirection = bottomLegenda ? 'column' : 'row';
+                const bottomLegend: boolean = (container.clientWidth < 600);
+                container.style.flexDirection = bottomLegend ? 'column' : 'row';
+                const periodControls = this.shadowRoot.querySelector('.period-controls') as HTMLElement;
+                if(periodControls) {
+                    periodControls.style.justifyContent = bottomLegend ? 'center' : 'start';
+                    periodControls.style.paddingLeft = bottomLegend ? '' : '18px';
+                }
                 const attributeList = this.shadowRoot.getElementById('attribute-list');
                 if(attributeList) {
-                    attributeList.style.gap = bottomLegenda ? '0 12px' : '';
-                    attributeList.style.maxHeight = bottomLegenda ? '90px' : '';
-                    attributeList.style.flexDirection = bottomLegenda ? 'row' : 'column'
+                    attributeList.style.gap = bottomLegend ? '4px 12px' : '';
+                    attributeList.style.maxHeight = bottomLegend ? '90px' : '';
+                    attributeList.style.flexFlow = bottomLegend ? 'row wrap' : 'column nowrap';
+                    attributeList.style.padding = bottomLegend ? '0' : '12px 0';
                 }
                 this.shadowRoot.querySelectorAll('.attribute-list-item').forEach((item: Element) => {
-                    (item as HTMLElement).style.minHeight = bottomLegenda ? '' : '44px';
-                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegenda ? 'row' : 'column';
+                    (item as HTMLElement).style.minHeight = bottomLegend ? '0px' : '44px';
+                    (item as HTMLElement).style.paddingLeft = bottomLegend ? '' : '16px';
+                    (item.children[1] as HTMLElement).style.flexDirection = bottomLegend ? 'row' : 'column';
+                    (item.children[1] as HTMLElement).style.gap = bottomLegend ? '4px' : '';
                 });
             }
         }
@@ -577,60 +615,44 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     render() {
         const disabled = this._loading;
-        const endDateInputType = this.getInputType();
         return html`
             <div id="container">
                 <div id="chart-container">
-                    <canvas id="chart"></canvas>
+                    ${disabled ? html`
+                        <div style="position: absolute; height: 100%; width: 100%;">
+                            <or-loading-indicator ?overlay="false"></or-loading-indicator>
+                        </div>
+                    ` : undefined}
+                    <canvas id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></canvas>
                 </div>
                 
                 ${(this.timestampControls || this.attributeControls || this.showLegend) ? html`
-                    <div id="chart-controls" style="overflow: hidden auto;">
-                        ${this.timestampControls || this.attributeControls ? html`
-                            <div id="controls">
-                                ${this.timestampControls ? html`
-                                    <div class="interval-controls" style="margin-right: 6px;">
+                    <div id="chart-controls">
+                        <div id="controls">
+                            <div class="period-controls">
+                                ${this.timePresetOptions && this.timePresetKey ? html`
+                                    ${this.timestampControls ? html`
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`, 
-                                                this._getPeriodOptions(), 
-                                                this.period, 
-                                                (value) => this.setPeriodOption(value)
-                                        )} 
-                                        ${!!this.compareTimestamp ? html`
-                                            <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @or-mwc-input-changed="${() => this.setPeriodCompare(false)}" icon="minus"></or-mwc-input>
-                                        ` : html`
-                                            <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @or-mwc-input-changed="${() => this.setPeriodCompare(true)}" icon="plus"></or-mwc-input>
-                                        `}
-                                    </div>
-                          
-                                    <div class="period-controls">
-                                        ${!!this.compareTimestamp ? html`
-                                            <span class="line-label solid"></span>
-                                        `: undefined}
-                                        <or-mwc-input id="ending-date" .checkAssetWrite="${false}" .type="${endDateInputType}" ?disabled="${disabled}" .value="${this.timestamp}"
-                                                      @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}">
-                                        </or-mwc-input>
-                                        <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false, undefined, 0)}"></or-icon>
-                                        <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true, undefined, 0)}"></or-icon>
-                                    </div>
-                                    ${!!this.compareTimestamp ? html `
-                                        <div class="period-controls">
-                                            <span class="line-label dashed"></span>
-                                            <or-mwc-input id="ending-date" .checkAssetWrite="${false}" .type="${endDateInputType}" ?disabled="${disabled}" .value="${this.compareTimestamp}" 
-                                                    @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}">
-                                            </or-mwc-input>
-                                            <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true, 0)}"></or-icon>
-                                            <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true, 0)}"></or-icon>
-                                        </div>
-                                    ` : undefined}
-                                ` : undefined}
-                                ${this.attributeControls ? html`
-                                    <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}"></or-mwc-input>`,
+                                                Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)),
+                                                this.timePresetKey,
+                                                (value: string | string[]) => this.timePresetKey = value.toString(),
+                                                undefined,
+                                                undefined,
+                                                undefined,
+                                                true
+                                        )}
+                                    ` : html`
+                                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}" disabled="true"></or-mwc-input>
+                                    `}
                                 ` : undefined}
                             </div>
-                        ` : undefined}
+                            ${this.attributeControls ? html`
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
+                            ` : undefined}
+                        </div>
                         ${cache(this.showLegend ? html`
-                            <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}" style="padding: ${this.denseLegend ? '6px' : '12px'};">
+                            <div id="attribute-list" class="${this.denseLegend ? 'attribute-list-dense' : undefined}">
                                 ${this.assetAttributes == null || this.assetAttributes.length == 0 ? html`
                                     <div>
                                         <span>${i18next.t('noAttributesConnected')}</span>
@@ -681,28 +703,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    setPeriodOption(value:any) {
-        this.period = value;
-
-        this.saveSettings();
-        this.requestUpdate();
-    }
-
-    getInputType() {
-        switch (this.period) {
-            case "hour":
-                return InputType.DATETIME;
-            case "day":
-                return InputType.DATE;
-            case "week":
-                return InputType.WEEK;
-            case "month":
-                return InputType.MONTH;
-            case "year":
-                return InputType.MONTH;
-          }
-    }
-
     removeDatasetHighlight(bgColor:string) {
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
@@ -735,18 +735,16 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(this.assetAttributes == undefined || reset) {
             this.assetAttributes = [];
         }
-        if(this.period == undefined || reset) {
-            this.period = "day";
-        }
-        if(this.timestamp == undefined || reset) {
-            this.timestamp = moment().set('minute', 0).toDate();
-        }
-        if(this.compareTimestamp == undefined || reset) {
-            this.compareTimestamp = undefined;
-        }
 
         if (!this.realm) {
             this.realm = manager.getRealm();
+        }
+
+        if (!this.timePresetOptions) {
+            this.timePresetOptions = this._getDefaultTimestampOptions();
+        }
+        if (!this.timePresetKey) {
+            this.timePresetKey = this.timePresetOptions.keys().next().value.toString();
         }
 
         if (!this.panelName) {
@@ -812,9 +810,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const asset = assetIndex >= 0 ? this.assets[assetIndex] : undefined;
                     return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
                 }).filter((indexAndAttr) => !!indexAndAttr) as [number, Attribute<any>][];
-                this.period = view.period || "day";
-                this.timestamp = new Date();
-                this.compareTimestamp = view.compareOffset ? new Date(new Date().getTime() + view.compareOffset) : undefined;
             }
         }
     }
@@ -850,8 +845,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     const asset = this.assets[index];
                     return !!asset ? {id: asset.id, name: attr.name} as AttributeRef : undefined;
                 }).filter((attrRef) => !!attrRef) as AttributeRef[],
-                period: this.period,
-                compareOffset: this.timestamp && this.compareTimestamp ? this.compareTimestamp.getTime() - this.timestamp.getTime() : undefined
             };
         }
 
@@ -967,77 +960,57 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _getPeriodOptions() {
-        return [
-            {
-                text: "hour",
-                value: "hour"
-            },
-            {
-                text: "day",
-                value: "day"
-            },
-            {
-                text:  "week",
-                value: "week"
-            },
-            {
-                text:  "month",
-                value: "month"
-            },
-            {
-                text: "year",
-                value: "year"
-            }
-        ];
+    protected _getDefaultTimestampOptions(): Map<string, TimePresetCallback> {
+        return new Map<string, TimePresetCallback>([
+            ["lastHour", (date) => [moment(date).subtract(1, 'hour').toDate(), date]],
+            ["last24Hours", (date) => [moment(date).subtract(24, 'hours').toDate(), date]],
+            ["last7Days", (date) => [moment(date).subtract(7, 'days').toDate(), date]],
+            ["last30Days", (date) => [moment(date).subtract(30, 'days').toDate(), date]],
+            ["last90Days", (date) => [moment(date).subtract(90, 'days').toDate(), date]],
+            ["last6Months", (date) => [moment(date).subtract(6, 'months').toDate(), date]],
+            ["lastYear", (date) => [moment(date).subtract(1, 'year').toDate(), date]]
+        ]);
     }
 
-    setPeriodCompare(periodCompare:boolean) {
-        if (periodCompare) {
-            this.compareTimestamp = this.timestamp;
-        } else {
-            this.compareTimestamp = undefined
-        }
+    protected _getInterval(diffInHours: number): [number, DatapointInterval] {
 
-        this.saveSettings();
+        if(diffInHours <= 1) {
+            return [5, DatapointInterval.MINUTE];
+        } else if(diffInHours <= 3) {
+            return [10, DatapointInterval.MINUTE];
+        } else if(diffInHours <= 6) {
+            return [30, DatapointInterval.MINUTE];
+        } else if(diffInHours <= 24) { // one day
+            return [1, DatapointInterval.HOUR];
+        } else if(diffInHours <= 48) { // two days
+            return [3, DatapointInterval.HOUR];
+        } else if(diffInHours <= 96) {
+            return [12, DatapointInterval.HOUR];
+        } else if(diffInHours <= 744) { // one month
+            return [1, DatapointInterval.DAY];
+        } else {
+            return [1, DatapointInterval.MONTH];
+        }
     }
 
     protected async _loadData() {
-        if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.period || !this.timestamp) {
+        if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
             return;
         }
 
         this._loading = true;
 
-        let interval: DatapointInterval = DatapointInterval.HOUR;
-        let stepSize = 1;
+        const dates: [Date, Date] = this.timePresetOptions!.get(this.timePresetKey!)!(new Date());
+        this._startOfPeriod = dates[0].getTime();
+        this._endOfPeriod = dates[1].getTime();
 
-        switch (this.period) {
-            case "hour":
-                interval = DatapointInterval.MINUTE;
-                stepSize = 5;
-                break;
-            case "day":
-                interval = DatapointInterval.HOUR;
-                stepSize = 1;
-                break;
-            case "week":
-                interval = DatapointInterval.HOUR;
-                stepSize = 6;
-                break;
-            case "month":
-                interval = DatapointInterval.DAY;
-                stepSize = 1;
-                break;
-            case "year":
-                interval = DatapointInterval.MONTH;
-                stepSize = 1;
-                break;
-        }
+        const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
+        const intervalArr = this._getInterval(diffInHours);
+
+        const stepSize: number = intervalArr[0];
+        const interval: DatapointInterval = intervalArr[1];
 
         const lowerCaseInterval = interval.toLowerCase();
-        this._startOfPeriod = moment(this.timestamp).startOf(this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-        this._endOfPeriod = moment(this.timestamp).endOf(this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
         const now = moment().toDate().getTime();
@@ -1047,7 +1020,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         let promises;
 
         if(this.dataProvider) {
-            await this.dataProvider(this._startOfPeriod, this._endOfPeriod, this._timeUnits, this._stepSize).then((dataset) => {
+            await this.dataProvider(this._startOfPeriod, this._endOfPeriod, (interval.toString() as TimeUnit), stepSize).then((dataset) => {
                 dataset.forEach((set) => { data.push(set); });
             });
         } else {
@@ -1058,71 +1031,26 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                 const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                 const colourIndex = index % this.colors.length;
-                let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], interval, this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
+                let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
                 (dataset as any).assetId = asset.id;
                 (dataset as any).attrName = attribute.name;
                 (dataset as any).unit = unit;
                 data.push(dataset);
 
-                dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));
+                dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));
                 data.push(dataset);
-
-                if (this.compareTimestamp) {
-                    const startOfPeriod = moment(this.compareTimestamp).startOf(this.period!).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-                    const endOfPeriod = moment(this.compareTimestamp).endOf(this.period!).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-                    const offset =  this._startOfPeriod! - startOfPeriod;
-
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, startOfPeriod, endOfPeriod, false,  asset.name + " " + label + " " + i18next.t("compare"));
-                    dataset.data.forEach((dp) => dp.x += offset);
-                    dataset.borderDash = [10, 10];
-                    (dataset as any).isComparisonDataset = true;
-                    data.push(dataset);
-
-                    predictedFromTimestamp = now < startOfPeriod ? startOfPeriod : now;
-                    dataset = await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, startOfPeriod, endOfPeriod, true,  asset.name + " " + label + " " + i18next.t("compare") + " " + i18next.t("predicted"));
-                    dataset.data.forEach((dp) => dp.x += offset);
-                    dataset.borderDash = [6, 8];
-                    (dataset as any).isComparisonDataset = true;
-                    data.push(dataset);
-                }
             });
         }
 
-        this._loading = false;
         if(promises) {
             await Promise.all(promises);
         }
+        this._loading = false;
         this._data = data;
     }
 
-    protected _timestampLabel(timestamp: Date | number | undefined) {
-        let newMoment = moment.utc(timestamp).local();
 
-        if(this.compareTimestamp) {
-            const initialTimestamp = moment(this.timestamp);
-            switch (this.period) {
-                case "hour":
-                    newMoment = moment.utc(timestamp).local();
-                    break;
-                case "day":
-                    newMoment = moment.utc(timestamp).local().set('day', initialTimestamp.day());
-                    break;
-                case "week":
-                    newMoment = moment.utc(timestamp).local().set('week', initialTimestamp.week());
-                    break;
-                case "month":
-                    newMoment = moment.utc(timestamp).local().set('month', initialTimestamp.month());
-                    break;
-                case "year":
-                    newMoment = moment.utc(timestamp).local().set('year', initialTimestamp.year());
-                    break;
-            }
-        }
-
-        return newMoment.format();
-    }
-
-    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, interval: DatapointInterval, from: number, to: number, predicted: boolean, label: string | undefined): Promise<ChartDataset<"line", ScatterDataPoint[]>> {
+    protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, from: number, to: number, predicted: boolean, label: string | undefined): Promise<ChartDataset<"line", ScatterDataPoint[]>> {
 
         const dataset: ChartDataset<"line", ScatterDataPoint[]> = {
             borderColor: color,
@@ -1134,27 +1062,27 @@ export class OrChart extends translate(i18next)(LitElement) {
             borderDash: predicted ? [2, 4] : undefined
         };
 
-        if (asset.id && attribute.name) {
-            const queryParams = {
-                interval: interval,
-                fromTimestamp: from,
-                toTimestamp: to
-            };
-
+        if (asset.id && attribute.name && this.datapointQuery) {
             let response: GenericAxiosResponse<ValueDatapoint<any>[]>;
+            const query = JSON.parse(JSON.stringify(this.datapointQuery)); // recreating object, since the changes shouldn't apply to parent components; only or-chart itself.
+            query.fromTimestamp = this._startOfPeriod;
+            query.toTimestamp = this._endOfPeriod;
 
-            if (!predicted) {
-                response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-                    asset.id,
-                    attribute.name,
-                    queryParams
-                );
+            if(query.type == 'lttb' && !query.amountOfPoints) {
+                if(this._chartElem.clientWidth == 0) {
+                    console.error("Could not grab width of the Chart for estimating amount of datapoints. Using 10 points instead.")
+                }
+                query.amountOfPoints = (this._chartElem.clientWidth == 0) ? 100 : Math.round(this._chartElem.clientWidth / 10); // set amount of datapoints based on current chart width.
+            } else if(query.type == 'interval' && !query.interval) {
+                const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
+                const intervalArr = this._getInterval(diffInHours);
+                query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
+            }
+
+            if(!predicted) {
+                response = await manager.rest.api.AssetDatapointResource.getDatapoints(asset.id, attribute.name, query)
             } else {
-                response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
-                    asset.id,
-                    attribute.name,
-                    queryParams
-                );
+                response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(asset.id, attribute.name, query)
             }
 
             if (response.status === 200) {
@@ -1163,27 +1091,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         return dataset;
-    }
-
-    protected _updateTimestamp(timestamp: Date, forward?: boolean, compare= false, timeout= 1500) {
-
-        if (this._updateTimestampTimer) {
-            window.clearTimeout(this._updateTimestampTimer);
-            this._updateTimestampTimer = null;
-        }
-        this._updateTimestampTimer = window.setTimeout(() => {
-                const newMoment = moment(timestamp);
-
-                if (forward !== undefined) {
-                    newMoment.add(forward ? 1 : -1, this.period);
-                }
-                if (compare) {
-                    this.compareTimestamp = newMoment.toDate()
-                } else {
-                    this.timestamp = newMoment.toDate()
-                }
-                this.saveSettings();
-        }, timeout);
     }
 
 }

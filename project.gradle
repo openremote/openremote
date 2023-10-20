@@ -21,11 +21,11 @@ if (project == rootProject) {
 
         if (rootProject.hasProperty("gradleFileEncrypt")) {
             println("File encryption plugin config found, configuring git pre commit hook and decrypt task dependency")
-
-            // Write git hook for encryption plugin checks before any commit
-            def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
-            def f = path.toFile()
-            f.text = """#!/bin/sh
+            try {
+                // Write git hook for encryption plugin checks before any commit
+                def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
+                def f = path.toFile()
+                f.text = """#!/bin/sh
 
 echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
 
@@ -33,9 +33,12 @@ echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
 
 status=\$?
 
+if [ \$status != 0 ]; then
+   echo "***** One or more encrypted files are not listed in a .gitignore - please add to prevent unencrypted version of file(s) from being committed *****"
+fi
+
 exit \$status
 """
-            try {
                 Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()
                 perms.add(PosixFilePermission.OWNER_WRITE)
                 perms.add(PosixFilePermission.OWNER_READ)
@@ -308,7 +311,7 @@ plugins.withType(JavaPlugin).whenPluginAdded {
                 warnLogFile << output
             }
         })
-        options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation"]
+        options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation", "-parameters"]
         options.encoding = 'UTF-8'
     }
 

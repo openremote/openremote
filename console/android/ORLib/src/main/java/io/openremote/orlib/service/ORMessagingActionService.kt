@@ -5,7 +5,9 @@ import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.text.TextUtils
+import io.openremote.orlib.BuildConfig
 import io.openremote.orlib.ORConstants
 import io.openremote.orlib.R
 import io.openremote.orlib.ui.OrMainActivity
@@ -18,8 +20,10 @@ class ORMessagingActionService : IntentService("org.openremote.android.ORMessagi
     }
 
     override fun onHandleIntent(intent: Intent?) {
-        val it = Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
-        this.sendBroadcast(it)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            val it = Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+            this.sendBroadcast(it)
+        }
         val notificationId = intent!!.getLongExtra("notificationId", 0L)
         val acknowledgement = intent.getStringExtra("acknowledgement")
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager

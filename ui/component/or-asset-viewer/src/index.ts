@@ -16,7 +16,7 @@ import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {subscribe, Util, DefaultColor5} from "@openremote/core";
-import {OrMwcTable} from "@openremote/or-mwc-components/or-mwc-table";
+import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
 import {
@@ -125,6 +125,7 @@ export interface ViewerConfig {
 }
 
 interface UserAssetLinkInfo {
+    userId: string;
     usernameAndId: string;
     roles: string[];
     restrictedUser: boolean;
@@ -254,6 +255,19 @@ export class OrAssetViewerEditToggleEvent extends CustomEvent<boolean> {
     }
 }
 
+export class OrAssetViewerLoadUserEvent extends CustomEvent<string> {
+
+    public static readonly NAME = "or-asset-viewer-load-user-event";
+
+    constructor(userId: string) {
+        super(OrAssetViewerLoadUserEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: userId
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrAssetViewerComputeGridEvent.NAME]: OrAssetViewerComputeGridEvent;
@@ -262,6 +276,7 @@ declare global {
         [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
         [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
         [OrAssetViewerChangeParentEvent.NAME]: OrAssetViewerChangeParentEvent;
+        [OrAssetViewerLoadUserEvent.NAME]: OrAssetViewerLoadUserEvent;
     }
 }
 
@@ -574,7 +589,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
             return [attr.name, label];
-        });
+            }).sort(Util.sortByString((item) => item[1] === undefined ? item[0]! : item[1]));
 
         let attrTemplate = html`
                 <div id="attribute-picker">
@@ -781,8 +796,11 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
             ];
         });
-
-        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
+        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"
+                                  @or-mwc-table-row-click="${(ev: OrMwcTableRowClickEvent) => { 
+                                      hostElement.dispatchEvent(new OrAssetViewerLoadUserEvent(assetLinkInfos[ev.detail.index].userId));
+                                  }}">
+                    </or-mwc-table>`;
     }
 }
 
@@ -931,6 +949,7 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
         });
 
     return {
+        userId: userId,
         usernameAndId: username,
         roles: roleNames,
         restrictedUser: isRestrictedUser
@@ -1411,7 +1430,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     <div id="right-wrapper" class="mobileHidden">
                         ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: new Date(asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
                         ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
-                        ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("viewAsset") : i18next.t("editAsset")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
+                        ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" .disabled="${!this._assetInfo.asset.id}" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("viewAsset") : i18next.t("editAsset")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
                         `: ``}
                     </div>
                 </div>

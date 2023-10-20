@@ -24,7 +24,7 @@ import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.Optional;
 
 @Entity

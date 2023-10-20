@@ -63,11 +63,6 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
 
-        expect: "the system settles down"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 300)
-        }
-
         when: "a simple UDP echo server is started"
         def echoServerPort = findEphemeralPort()
         def clientPort = findEphemeralPort()
@@ -112,7 +107,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         then: "the protocol instance should be created and should become connected"
         conditions.eventually {
             assert agentService.getProtocolInstance(agent.id) != null
-            assert agentService.agentMap.get(agent.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert agentService.agents.get(agent.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         when: "an asset is created with attributes linked to the agent"
@@ -288,8 +283,8 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
 
         then: "the protocol should be relinked"
         conditions.eventually {
-            assert agentService.agentMap.get(agent.id) != null
-            assert ((UDPAgent)agentService.agentMap.get(agent.id)).getMessageConvertHex().orElse(false)
+            assert agentService.agents.get(agent.id) != null
+            assert ((UDPAgent)agentService.agents.get(agent.id)).getMessageConvertHex().orElse(false)
             assert agentService.getProtocolInstance(agent.id) != null
             assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 7
             assert ((UDPProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 3

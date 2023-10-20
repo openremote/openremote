@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.NameHolder;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.Arrays;
 
 /**

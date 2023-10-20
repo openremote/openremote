@@ -1,4 +1,4 @@
-import manager from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import {Asset, Attribute, AttributeRef, DashboardWidget } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { i18next } from "@openremote/or-translate";
@@ -12,9 +12,10 @@ import {InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-
 export interface KpiWidgetConfig extends OrWidgetConfig {
     displayName: string;
     attributeRefs: AttributeRef[];
-    period?: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
+    period?: 'year' | 'month' | 'week' | 'day' | 'hour';
     decimals: number;
     deltaFormat: "absolute" | "percentage";
+    showTimestampControls: boolean;
 }
 
 export class OrKpiWidget implements OrWidgetEntity {
@@ -35,6 +36,13 @@ export class OrKpiWidget implements OrWidgetEntity {
             showTimestampControls: false
         } as KpiWidgetConfig;
     }
+
+    // Triggered every update to double check if the specification.
+    // It will merge missing values, or you can add custom logic to process here.
+    verifyConfigSpec(widget: DashboardWidget): KpiWidgetConfig {
+        return Util.mergeObjects(this.getDefaultConfig(widget), widget.widgetConfig, false) as KpiWidgetConfig;
+    }
+
 
     getSettingsHTML(widget: DashboardWidget, realm: string) {
         return html`<or-kpi-widgetsettings .widget="${widget}" realm="${realm}"></or-kpi-widgetsettings>`;
@@ -68,7 +76,7 @@ export class OrKpiWidgetContent extends LitElement {
         return html`
             <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widget?.widgetConfig.period}"
                                .deltaFormat="${this.widget?.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widget?.widgetConfig.decimals}"
-                               showControls="${false}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
+                               showControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" showTitle="${false}" realm="${this.realm}" style="height: 100%;">
             </or-attribute-card>
         `
     }
@@ -103,8 +111,6 @@ export class OrKpiWidgetContent extends LitElement {
                 showSnackbar(undefined, i18next.t('errorOccurred'));
             });
             return assets;
-        } else {
-            console.error("Error: attributeRefs are not present in widget config!");
         }
     }
 }
@@ -136,6 +142,9 @@ export class OrKpiWidgetSettings extends LitElement {
             <div>
                 ${this.expandedPanels.includes(i18next.t('attributes')) ? html`
                     <or-dashboard-settingspanel .type="${SettingsPanelType.SINGLE_ATTRIBUTE}" .widgetConfig="${this.widget!.widgetConfig}"
+                                                .attributeFilter="${(attribute: Attribute<any>) => {
+                                                    return ["positiveInteger", "positiveNumber", "number", "long", "integer", "bigInteger", "negativeInteger", "negativeNumber", "bigNumber", "integerByte", "direction"]
+                                                      .includes(attribute.type!)}}"
                                                 @updated="${(event: CustomEvent) => {
                                                     this.onAttributesUpdate(event.detail.changes);
                                                     this.updateConfig(this.widget!, event.detail.changes.get('config'));
@@ -148,13 +157,22 @@ export class OrKpiWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('display')) ? html`
-                    <div style="padding: 24px 24px 48px 24px;">
+                    <div class="expanded-panel">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" 
-                                          .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" 
+                                          .options="${['year', 'month', 'week', 'day', 'hour']}" 
                                           .value="${config.period}" label="${i18next.t('timeframe')}" 
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                               config.period = event.detail.value;
+                                              this.updateConfig(this.widget!, config);
+                                          }}"
+                            ></or-mwc-input>
+                        </div>
+                        <div class="switchMwcInputContainer">
+                            <span>${i18next.t('dashboard.allowTimerangeSelect')}</span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${config.showTimestampControls}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                                              config.showTimestampControls = event.detail.value;
                                               this.updateConfig(this.widget!, config);
                                           }}"
                             ></or-mwc-input>
@@ -167,7 +185,7 @@ export class OrKpiWidgetSettings extends LitElement {
             </div>
             <div>
                 ${this.expandedPanels.includes(i18next.t('values')) ? html`
-                    <div style="padding: 24px 24px 48px 24px;">
+                    <div class="expanded-panel">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${config.deltaFormat}" label="${i18next.t('dashboard.showValueAs')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
@@ -176,7 +194,7 @@ export class OrKpiWidgetSettings extends LitElement {
                                           }}"
                             ></or-mwc-input>
                         </div>
-                        <div style="margin-top: 18px;">
+                        <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${config.decimals}" label="${i18next.t('decimals')}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => { 
                                               config.decimals = event.detail.value;
@@ -217,7 +235,7 @@ export class OrKpiWidgetSettings extends LitElement {
 
     generateExpandableHeader(name: string): TemplateResult {
         return html`
-            <span class="expandableHeader panel-title" @click="${() => { this.expandPanel(name); }}">
+            <span class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
                 <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
                 <span style="margin-left: 6px; height: 25px; line-height: 25px;">${name}</span>
             </span>

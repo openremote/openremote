@@ -142,7 +142,7 @@ export class OrDashboardTree extends LitElement {
 
     private deleteDashboard(dashboard: Dashboard) {
         if(dashboard.id != null) {
-            manager.rest.api.DashboardResource.delete({dashboardId: [dashboard.id]})
+            manager.rest.api.DashboardResource.delete(this.realm, dashboard.id)
                 .then((response) => {
                     if(response.status == 204) {
                         this.getAllDashboards();
@@ -210,7 +210,7 @@ export class OrDashboardTree extends LitElement {
                         return (items != null && items.length > 0) ? html`
                             <div style="padding: 8px 0;">
                                 <span style="font-weight: 500; padding-left: 14px; color: #000000;">${(index == 0 ? i18next.t('dashboard.myDashboards') : i18next.t('dashboard.createdByOthers'))}</span>
-                                <div id="list-container">
+                                <div id="list-container" style="overflow: hidden;">
                                     <ol id="list">
                                         ${items.map((listItem: ListItem) => {
                                             return html`

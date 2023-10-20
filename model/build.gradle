@@ -2,24 +2,20 @@ apply plugin: "java-library"
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
-compileJava.options.compilerArgs.add '-parameters'
-compileTestJava.options.compilerArgs.add '-parameters'
-
 dependencies {
     api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
     api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     api "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
 
-    api "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:$javaxPersistenceVersion"
-    api "org.hibernate:hibernate-core:$hibernateVersion"
-    api "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
-    api "com.vladmihalcea:hibernate-types-52:$hibernateTypesVersion"
-    api "org.glassfish.web:javax.el:$javaxELVersion"
+    api "org.hibernate.orm:hibernate-core:$hibernateVersion"
+    api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
+    api "com.vladmihalcea:hibernate-types-60:$hibernateTypesVersion"
+    api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
     api "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
 
-    api "org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec:$javaxAnnotationsVersion"
-    api "org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec:$jaxrsSpecVersion"
+    api "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsVersion"
+    api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxrsSpecVersion"
 
     api "org.keycloak:keycloak-core:$keycloakVersion"
 
@@ -33,10 +29,11 @@ dependencies {
     api "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
 
     // Custom build until PR is merged from https://github.com/richturner/mbknor-jackson-jsonSchema
-    api "com.github.richturner:mbknor-jackson-jsonschema:1.0.40-SNAPSHOT"
+    api "com.github.richturner:mbknor-jackson-jsonschema:1.0.40-JAKARTA"
     //api "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
     api "org.scala-lang:scala-library:2.12.10"
     api "io.github.classgraph:classgraph:$classgraphVersion"
+    api "io.micrometer:micrometer-core:$micrometerVersion"
 }
 
 jar {

@@ -18,7 +18,7 @@ import org.openremote.setup.integration.protocol.MockProtocol
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.persistence.EntityManager
+import jakarta.persistence.EntityManager
 
 import static org.openremote.model.value.ValueType.*
 import static org.openremote.model.value.MetaItemType.*
@@ -85,11 +85,6 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
-        then: "the container should be running and initialised"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 500)
-        }
-
         then: "register mock asset processors"
         assetProcessingService.processors.add(0, firstProcessor)
         assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AgentService}+1, afterAgentServiceProcessor)
@@ -128,7 +123,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         then: "all agents should become connected"
         conditions.eventually {
-            assert agentService.agentMap.values().every {it.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED}
+            assert agentService.agents.values().every {it.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED}
         }
 
         then: "the mock thing to be deployed to the protocol instance"

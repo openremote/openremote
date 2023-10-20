@@ -306,10 +306,12 @@ export class PageRealms extends Page<AppStateKeyed> {
                                     <div class="column">
                                       <or-mwc-input ?readonly="${realm.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.name = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
-                                      <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.displayName = e.detail.value}"></or-mwc-input>            
+                                      <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.displayName = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("emailTheme", Util.camelCaseToSentenceCase("emailTheme"))}" .type="${InputType.TEXT}" .value="${realm.emailTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.emailTheme = e.detail.value}"></or-mwc-input>
                                     </div>
                                   </div>
 

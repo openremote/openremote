@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import net.fortuna.ical4j.model.Dur;
 import org.openremote.model.util.TextUtil;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Period;
@@ -46,7 +46,7 @@ public class PeriodAndDuration implements Serializable {
 
         String[] periodAndDuration = str.split("T");
         if (periodAndDuration.length == 2 && periodAndDuration[1].length() > 0) {
-            duration = Duration.parse("P" + periodAndDuration[1]);
+            duration = Duration.parse("PT" + periodAndDuration[1]);
         }
         if (periodAndDuration[0].length() > 1) {
             period = Period.parse(periodAndDuration[0]);

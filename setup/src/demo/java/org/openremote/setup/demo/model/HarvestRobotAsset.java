@@ -27,7 +27,7 @@ import org.openremote.model.value.ValueType;
 
 import static org.openremote.model.Constants.*;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class HarvestRobotAsset extends Asset<HarvestRobotAsset> {

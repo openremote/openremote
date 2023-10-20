@@ -37,21 +37,23 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.persistence.OptimisticLockException;
-import javax.validation.ConstraintViolationException;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import static javax.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.*;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
+import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.value.MetaItemType.*;
@@ -599,11 +601,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             Object result = messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
                 .withHeader(AttributeEvent.HEADER_SOURCE, CLIENT)
-                .to(AssetProcessingService.ASSET_QUEUE)
+                .to(ATTRIBUTE_EVENT_QUEUE)
                 .request();
 
-            if (result instanceof AssetProcessingException) {
-                AssetProcessingException processingException = (AssetProcessingException) result;
+            if (result instanceof AssetProcessingException processingException) {
                 failure = processingException.getReason();
             }
 

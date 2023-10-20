@@ -38,8 +38,8 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.model.Constants;
 
-import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.NonUniqueResultException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;

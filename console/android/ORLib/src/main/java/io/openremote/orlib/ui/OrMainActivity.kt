@@ -4,14 +4,15 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
+import android.app.NotificationManager
 import android.content.*
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.Uri
-import android.net.http.SslError
 import android.os.*
+import android.provider.Settings
 import android.view.KeyEvent
 import android.view.View
 import android.webkit.*
@@ -19,22 +20,27 @@ import android.webkit.ConsoleMessage.MessageLevel
 import android.webkit.WebView.WebViewTransport
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.firebase.messaging.FirebaseMessaging
 import io.openremote.orlib.ORConstants
-import io.openremote.orlib.ORConstants.CLEAR_URL
 import io.openremote.orlib.ORConstants.BASE_URL_KEY
+import io.openremote.orlib.ORConstants.CLEAR_URL
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
+import io.openremote.orlib.service.BleProvider
 import io.openremote.orlib.service.GeofenceProvider
 import io.openremote.orlib.service.QrScannerProvider
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.logging.Level
 import java.util.logging.Logger
+
 
 open class OrMainActivity : Activity() {
 
@@ -44,7 +50,9 @@ open class OrMainActivity : Activity() {
 
     private val locationResponseCode = 555
     private var locationCallback: GeolocationPermissions.Callback? = null;
-    private  var locationOrigin: String?  = null;
+    private var locationOrigin: String? = null;
+
+    private val pushResponseCode = 556
 
     private lateinit var binding: ActivityOrMainBinding
     private lateinit var sharedPreferences: SharedPreferences
@@ -60,6 +68,7 @@ open class OrMainActivity : Activity() {
     private var webViewLoaded = false
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
+    private var bleProvider: BleProvider? = null
     private var consoleId: String? = null
     private var connectFailCount: Int = 0
     private var connectFailResetHandler: Handler? = null
@@ -106,25 +115,18 @@ open class OrMainActivity : Activity() {
         progressBar?.max = 100
         progressBar?.progress = 1
 
-
-        if (intent.hasExtra(ORConstants.BASE_URL_KEY)) {
-            baseUrl = intent.getStringExtra(ORConstants.BASE_URL_KEY)
-        }
-
         if (intent.hasExtra(BASE_URL_KEY)) {
             baseUrl = intent.getStringExtra(BASE_URL_KEY)
         }
 
-            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-            val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
-            val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
+        val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
+        val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
 
-
-                    openIntentUrl(intent)
-
-
+        openIntentUrl(intent)
     }
+
 
     override fun onNewIntent(intent: Intent) {
         openIntentUrl(intent)
@@ -137,6 +139,7 @@ open class OrMainActivity : Activity() {
                 LOG.fine("Loading web view: $url")
                 loadUrl(url)
             }
+
             else -> {
                 var url = baseUrl
                 val intentUrl = intent.getStringExtra("appUrl")
@@ -148,7 +151,9 @@ open class OrMainActivity : Activity() {
                     }
                 }
                 LOG.fine("Loading web view: $url")
-                loadUrl(url!!)
+                if (url != null) {
+                    loadUrl(url)
+                }
             }
         }
     }
@@ -199,7 +204,6 @@ open class OrMainActivity : Activity() {
             loadUrl(url!!)
         }
     }
-
 
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -290,6 +294,20 @@ open class OrMainActivity : Activity() {
 
                     return super.shouldOverrideUrlLoading(view, request)
                 }
+
+                @RequiresApi(Build.VERSION_CODES.O)
+                override fun onRenderProcessGone(
+                    view: WebView?,
+                    detail: RenderProcessGoneDetail?
+                ): Boolean {
+
+                    if (view == binding.webView && detail?.didCrash() == true) {
+                        onCreate(null)
+                        return true
+                    }
+
+                    return super.onRenderProcessGone(view, detail)
+                }
             }
             webChromeClient = object : WebChromeClient() {
                 override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
@@ -307,7 +325,7 @@ open class OrMainActivity : Activity() {
                     origin: String?,
                     callback: GeolocationPermissions.Callback?
                 ) {
-                    if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                         callback?.invoke(origin, true, false)
                     } else {
                         locationCallback = callback
@@ -338,7 +356,10 @@ open class OrMainActivity : Activity() {
                     transport.webView = newWebView
                     resultMsg.sendToTarget()
                     newWebView.webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView,
+                            request: WebResourceRequest
+                        ): Boolean {
                             val browserIntent = Intent(Intent.ACTION_VIEW)
                             browserIntent.data = request.url
                             startActivity(browserIntent)
@@ -404,7 +425,7 @@ open class OrMainActivity : Activity() {
                     || failingUrl.endsWith("jpg")
                     || failingUrl.endsWith("ico")
                     || failingUrl.contains("locales")
-                    || failingUrl.contains( "consoleappconfig"))
+                    || failingUrl.contains("consoleappconfig"))
         ) {
             LOG.info("Ignoring error loading image resource")
             return
@@ -426,11 +447,16 @@ open class OrMainActivity : Activity() {
                 val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
                 if (launchIntent != null) {
                     launchIntent.putExtra(CLEAR_URL, baseUrl)
-                    launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    launchIntent.flags =
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(launchIntent)
                     finish()
                 }
-                Toast.makeText(applicationContext, "The main page couldn't be opened", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    applicationContext,
+                    "The main page couldn't be opened",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
@@ -457,6 +483,26 @@ open class OrMainActivity : Activity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 locationCallback?.invoke(locationOrigin, true, false)
             }
+        } else if (requestCode == BleProvider.BLUETOOTH_PERMISSION_REQUEST_CODE || requestCode == BleProvider.ENABLE_BLUETOOTH_REQUEST_CODE) {
+            bleProvider?.onRequestPermissionsResult(
+                this,
+                requestCode,
+                object : BleProvider.BleCallback {
+                    override fun accept(responseData: Map<String, Any>) {
+                        notifyClient(responseData)
+                    }
+                })
+        } else if (requestCode == pushResponseCode) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                notifyClient(hashMapOf(
+                    "action" to "PROVIDER_ENABLE",
+                    "provider" to "push",
+                    "hasPermission" to true,
+                    "success" to true
+                ))
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -495,6 +541,7 @@ open class OrMainActivity : Activity() {
                         Toast.LENGTH_LONG
                     ).show()
                 }
+
                 "provider" -> {
                     data?.let {
                         val action = it.getString("action")
@@ -504,14 +551,21 @@ open class OrMainActivity : Activity() {
                                 provider.equals("geofence", ignoreCase = true) -> {
                                     handleGeofenceProviderMessage(it)
                                 }
+
                                 provider.equals("push", ignoreCase = true) -> {
                                     handlePushProviderMessage(it)
                                 }
+
                                 provider.equals("storage", ignoreCase = true) -> {
                                     handleStorageProviderMessage(it)
                                 }
+
                                 provider.equals("qr", ignoreCase = true) -> {
                                     handleQrScannerProviderMessage(it)
+                                }
+
+                                provider.equals("ble", ignoreCase = true) -> {
+                                    handleBleProviderMessage(it)
                                 }
                             }
                         }
@@ -531,6 +585,7 @@ open class OrMainActivity : Activity() {
                     val initData: Map<String, Any> = geofenceProvider!!.initialize()
                     notifyClient(initData)
                 }
+
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
                     val consoleId = data.getString("consoleId")
                     (activity as OrMainActivity).consoleId = consoleId
@@ -541,6 +596,7 @@ open class OrMainActivity : Activity() {
                             }
                         })
                 }
+
                 action.equals("PROVIDER_DISABLE", ignoreCase = true) -> {
                     geofenceProvider?.disable()
                     val response: MutableMap<String, Any> = HashMap()
@@ -548,9 +604,11 @@ open class OrMainActivity : Activity() {
                     response["provider"] = "geofence"
                     notifyClient(response)
                 }
+
                 action.equals("GEOFENCE_REFRESH", ignoreCase = true) -> {
                     geofenceProvider?.refreshGeofences()
                 }
+
                 action.equals("GET_LOCATION", ignoreCase = true) -> {
                     geofenceProvider?.getLocation(
                         this@OrMainActivity,
@@ -574,18 +632,109 @@ open class OrMainActivity : Activity() {
                     response["provider"] = "push"
                     response["version"] = "fcm"
                     response["enabled"] = false
-                    response["disabled"] = sharedPreferences.contains(ORConstants.PUSH_PROVIDER_DISABLED_KEY)
+                    response["disabled"] =
+                        sharedPreferences.contains(ORConstants.PUSH_PROVIDER_DISABLED_KEY)
                     response["requiresPermission"] = false
                     response["hasPermission"] = true
                     response["success"] = true
                     notifyClient(response)
                 }
+
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
                     val consoleId = data.getString("consoleId")
                     sharedPreferences.edit()
                         .putString(ORConstants.CONSOLE_ID_KEY, consoleId)
                         .remove(ORConstants.PUSH_PROVIDER_DISABLED_KEY)
                         .apply()
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        if (ContextCompat.checkSelfPermission(
+                                this@OrMainActivity,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                                    this@OrMainActivity,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            ) {
+                                AlertDialog.Builder(this@OrMainActivity)
+                                    .setTitle(R.string.push_notification_alert_title)
+                                    .setMessage(R.string.push_notification_alert_message)
+                                    .setIcon(R.drawable.ic_notification)
+                                    .setCancelable(false)
+                                    .setPositiveButton(
+                                        R.string.yes
+                                    ) { dialog, which ->
+                                        requestPermissions(
+                                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                            pushResponseCode
+                                        )
+                                    }
+                                    .setNegativeButton(
+                                        R.string.no
+                                    ) { dialog, which ->
+                                        sharedPreferences.edit()
+                                            .putBoolean(
+                                                ORConstants.PUSH_PROVIDER_DISABLED_KEY,
+                                                true
+                                            )
+                                            .apply()
+                                        notifyClient(
+                                            hashMapOf(
+                                                "action" to "PROVIDER_ENABLE",
+                                                "provider" to "push",
+                                                "hasPermission" to false,
+                                                "success" to true
+                                            )
+                                        )
+                                    }.show()
+                            } else {
+                                requestPermissions(
+                                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                    pushResponseCode
+                                )
+                            }
+                        } else {
+                            val mgr =
+                                this@OrMainActivity.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                            if (!mgr.areNotificationsEnabled()) {
+                                AlertDialog.Builder(this@OrMainActivity)
+                                    .setTitle(R.string.push_notification_alert_title)
+                                    .setMessage(R.string.push_notification_alert_message)
+                                    .setIcon(R.drawable.ic_notification)
+                                    .setCancelable(false)
+                                    .setPositiveButton(
+                                        R.string.yes
+                                    ) { dialog, which ->
+                                        val intent = Intent()
+                                        intent.action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                                        intent.putExtra(
+                                            Settings.EXTRA_APP_PACKAGE,
+                                            this@OrMainActivity.packageName
+                                        )
+                                        startActivity(intent)
+                                    }
+                                    .setNegativeButton(
+                                        R.string.no
+                                    ) { dialog, which ->
+                                        sharedPreferences.edit()
+                                            .putBoolean(
+                                                ORConstants.PUSH_PROVIDER_DISABLED_KEY,
+                                                true
+                                            )
+                                            .apply()
+                                        notifyClient(
+                                            hashMapOf(
+                                                "action" to "PROVIDER_ENABLE",
+                                                "provider" to "push",
+                                                "hasPermission" to false,
+                                                "success" to true
+                                            )
+                                        )
+                                    }.show()
+                            }
+                        }
+                    }
                     // TODO: Implement topic support
                     FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
                         val response: MutableMap<String, Any?> =
@@ -603,12 +752,14 @@ open class OrMainActivity : Activity() {
                         notifyClient(response)
                     }
                 }
+
                 action.equals("PROVIDER_DISABLE", ignoreCase = true) -> {
                     // Cannot disable push notifications
                     val response: MutableMap<String, Any?> = HashMap()
                     response["action"] = "PROVIDER_DISABLE"
                     response["provider"] = "push"
-                    sharedPreferences.edit().putBoolean(ORConstants.PUSH_PROVIDER_DISABLED_KEY, true).apply()
+                    sharedPreferences.edit()
+                        .putBoolean(ORConstants.PUSH_PROVIDER_DISABLED_KEY, true).apply()
                     notifyClient(response)
                 }
             }
@@ -629,6 +780,7 @@ open class OrMainActivity : Activity() {
                     response["success"] = true
                     notifyClient(response)
                 }
+
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
                     // Doesn't require enabling but just in case it gets called lets return a valid response
                     val response: MutableMap<String, Any> = HashMap()
@@ -638,6 +790,7 @@ open class OrMainActivity : Activity() {
                     response["success"] = true
                     notifyClient(response)
                 }
+
                 action.equals("STORE", ignoreCase = true) -> {
                     try {
                         val key = data.getString("key")
@@ -647,6 +800,7 @@ open class OrMainActivity : Activity() {
                         LOG.log(Level.SEVERE, "Failed to store data", e)
                     }
                 }
+
                 action.equals("RETRIEVE", ignoreCase = true) -> {
                     try {
                         val key = data.getString("key")
@@ -675,6 +829,7 @@ open class OrMainActivity : Activity() {
                     val initData: Map<String, Any> = qrScannerProvider!!.initialize()
                     notifyClient(initData)
                 }
+
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
 
                     qrScannerProvider?.enable(object : QrScannerProvider.ScannerCallback {
@@ -683,12 +838,70 @@ open class OrMainActivity : Activity() {
                         }
                     })
                 }
+
                 action.equals("PROVIDER_DISABLE", ignoreCase = true) -> {
                     val response = qrScannerProvider?.disable()
                     notifyClient(response)
                 }
+
                 action.equals("SCAN_QR", ignoreCase = true) -> {
                     qrScannerProvider?.startScanner(this@OrMainActivity)
+                }
+            }
+        }
+
+        @Throws(JSONException::class)
+        private fun handleBleProviderMessage(data: JSONObject) {
+            val action = data.getString("action")
+            if (bleProvider == null) {
+                bleProvider = BleProvider(activity)
+            }
+            when {
+                action.equals("PROVIDER_INIT", ignoreCase = true) -> {
+                    val initData: Map<String, Any> = bleProvider!!.initialize()
+                    notifyClient(initData)
+                }
+
+                action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
+                    bleProvider?.enable(object : BleProvider.BleCallback {
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
+                }
+
+                action.equals("PROVIDER_DISABLE", ignoreCase = true) -> {
+                    val response = bleProvider?.disable()
+                    notifyClient(response)
+                }
+
+                action.equals("SCAN_BLE_DEVICES", ignoreCase = true) -> {
+                    bleProvider?.startBLEScan(
+                        this@OrMainActivity,
+                        object : BleProvider.BleCallback {
+                            override fun accept(responseData: Map<String, Any>) {
+                                notifyClient(responseData)
+                            }
+                        })
+                }
+
+                action.equals("CONNECT_TO_DEVICE", ignoreCase = true) -> {
+                    val address = data.getString("address")
+                    bleProvider?.connectToDevice(address, object : BleProvider.BleCallback {
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
+                }
+
+                action.equals("SEND_TO_DEVICE", ignoreCase = true) -> {
+                    val attributeId = data.getString("attributeId")
+                    val value = data.get("value")
+                    bleProvider?.sendToDevice(attributeId, value, object : BleProvider.BleCallback {
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
                 }
             }
         }

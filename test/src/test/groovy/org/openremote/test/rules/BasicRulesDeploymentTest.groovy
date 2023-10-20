@@ -191,10 +191,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         then: "the realms rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {
             assert !realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.deployments.size() == 2
             assert rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name) == null
             assert !apartment3Engine.isRunning()
-            assert apartment3Engine.deployments.size() == 1
             assert rulesService.assetEngines.get(managerTestSetup.apartment3Id) == null
         }
 
@@ -244,7 +242,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
             assert realmBuildingEngine.deployments.size() == 3
-            assert realmBuildingEngine.deployments[ruleset.id].status == EXECUTION_ERROR
+            assert realmBuildingEngine.deployments[ruleset.id].status == DEPLOYED
+            assert realmBuildingEngine.deployments[ruleset.id].error != null
             assert !realmBuildingEngine.isError()
         }
 

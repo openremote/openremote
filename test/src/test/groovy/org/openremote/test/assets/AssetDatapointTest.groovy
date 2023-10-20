@@ -5,11 +5,13 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
+import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.datapoint.DatapointInterval
+import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
+import org.openremote.model.util.Pair
 import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -20,9 +22,7 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import static java.util.concurrent.TimeUnit.DAYS
-import static java.util.concurrent.TimeUnit.MINUTES
-import static java.util.concurrent.TimeUnit.SECONDS
+import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT
 import static org.openremote.setup.integration.ManagerTestSetup.thingLightToggleAttributeName
 import static spock.util.matcher.HamcrestMatchers.closeTo
@@ -42,6 +42,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
 
         and: "the clock is stopped for testing purposes and advanced to the next hour"
         stopPseudoClock()
@@ -137,13 +138,16 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         and: "the aggregated datapoints should match"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            def aggregatedDatapoints = assetDatapointService.getValueDatapoints(
-                thing.getId(),
-                thing.getAttribute("light1PowerConsumption").orElseThrow({ new RuntimeException("Missing attribute") }),
-                DatapointInterval.MINUTE,
-                null,
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault())
+            def aggregatedDatapoints = assetDatapointService.queryDatapoints(
+                    thing.getId(),
+                    thing.getAttribute("light1PowerConsumption").orElseThrow({ new RuntimeException("Missing attribute") }),
+                    new AssetDatapointIntervalQuery(
+                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
+                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
+                            "minute",
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
+                    )
             )
             assert aggregatedDatapoints.size() == 61
             assert aggregatedDatapoints[54].value == 13.3
@@ -158,13 +162,16 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         and: "when the step size is set on the datapoint retrieval then the datapoints should match"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            def aggregatedDatapoints = assetDatapointService.getValueDatapoints(
+            def aggregatedDatapoints = assetDatapointService.queryDatapoints(
                     thing.getId(),
                     thing.getAttribute("light1PowerConsumption").orElseThrow({ new RuntimeException("Missing attribute") }),
-                    DatapointInterval.MINUTE,
-                    5,
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault())
+                    new AssetDatapointIntervalQuery(
+                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
+                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
+                            "5 minutes",
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
+                    )
             )
             assert aggregatedDatapoints.size() == 13
             assert aggregatedDatapoints[11].value, closeTo(13.36666, 0.0001)
@@ -227,13 +234,16 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         and: "the aggregated datapoints should match"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            def aggregatedDatapoints = assetDatapointService.getValueDatapoints(
-                thing.getId(),
-                thing.getAttribute(thingLightToggleAttributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
-                DatapointInterval.MINUTE,
-                null,
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault())
+            def aggregatedDatapoints = assetDatapointService.queryDatapoints(
+                    thing.getId(),
+                    thing.getAttribute(thingLightToggleAttributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                    new AssetDatapointIntervalQuery(
+                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).minus(1, ChronoUnit.HOURS),
+                            LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
+                            "MINUTE",
+                            AssetDatapointIntervalQuery.Formula.AVG,
+                            true
+                    )
             )
             assert aggregatedDatapoints.size() == 61
             assert aggregatedDatapoints[58].value == 0
@@ -336,5 +346,44 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.isEmpty()
         }
+
+        when: "predicted data points are added"
+        assetPredictedDatapointService.upsertValues(managerTestSetup.thingId, "light1PowerConsumption",
+                [
+                    new Pair<>(10d, LocalDateTime.now().plusSeconds(60)),
+                    new Pair<>(20d, LocalDateTime.now().plusSeconds(120)),
+                    new Pair<>(30d, LocalDateTime.now().plusSeconds(180)),
+                    new Pair<>(40d, LocalDateTime.now().plusSeconds(240)),
+                    new Pair<>(50d, LocalDateTime.now().plusSeconds(300))
+                ]
+        )
+        assetPredictedDatapointService.upsertValues(managerTestSetup.thingId, thingLightToggleAttributeName,
+                [
+                    new Pair<>(true, LocalDateTime.now().plusSeconds(60)),
+                    new Pair<>(true, LocalDateTime.now().plusSeconds(120)),
+                    new Pair<>(true, LocalDateTime.now().plusSeconds(180)),
+                    new Pair<>(false, LocalDateTime.now().plusSeconds(240)),
+                    new Pair<>(false, LocalDateTime.now().plusSeconds(300))
+                ]
+        )
+
+        then: "the predicted data should be available"
+        def predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
+        assert predictedData.size() == 5
+        assert predictedData.any {it.value == 20d}
+
+        when: "the predicted data is purged and then retrieved"
+        assetPredictedDatapointService.purgeValues(managerTestSetup.thingId, "light1PowerConsumption")
+        predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
+
+        then: "no predicted data should remain for this attribute"
+        assert predictedData.isEmpty()
+
+        when: "other predicted data is retrieved"
+        predictedData = assetPredictedDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
+
+        then: "predicted data should remain for this attribute"
+        assert predictedData.size() == 5
+        assert predictedData.count {it.value == false} == 2
     }
 }
