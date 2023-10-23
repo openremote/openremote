@@ -336,6 +336,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         .flatMap(ValueUtil::getString)
                         .flatMap(AttributeExecuteStatus::fromString);
 
+                    // TODO: Make this mechanism more generic with an interface
                     if (status.isPresent() && !status.get().isWrite()) {
                         throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
                     }
@@ -343,7 +344,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                 // Type coercion - event will contain a generic JsonNode that needs coercing to the correct type
                 Object value = event.getValue().map(eventValue -> {
-                    Class<?> attributeValueType = oldAttribute.getType().getType();
+                    Class<?> attributeValueType = oldAttribute.getTypeClass();
                     return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
                         LOG.log(System.Logger.Level.INFO, "Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
                         return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
@@ -419,7 +420,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             .flatMap(ValueUtil::getString)
                             .flatMap(AttributeExecuteStatus::fromString);
 
-                        // TODO: Make this mechanism more generic with an interface
                         if (status.isPresent() && !status.get().isWrite()) {
                             throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
                         }
