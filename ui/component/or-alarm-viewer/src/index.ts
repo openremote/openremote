@@ -179,9 +179,6 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
 
 
     @property({type: Number})
-    public timestamp?: Date;
-
-    @property({type: Number})
     public limit?: number;
 
     @property({type: Array})
@@ -261,11 +258,11 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <div id="controls-left" class="${this.hide ? "hidden" : ""}">
                         <or-mwc-input .type="${InputType.SELECT}" id="severity-select" ?disabled="${disabled}" .label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSeverityChanged(evt.detail.value)}" .value="${this.severity}" .options="${this._getSeverityOptions()}"></or-mwc-input>
-                        <or-mwc-input .type="${ InputType.SELECT}" id="status-select" ?disabled="${disabled}" .label="${i18next.t("alarm.status")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}" .value="${this.status}" .options="${this._getStatusOptions()}"></or-mwc-input>
-                        <or-mwc-input .type="${ InputType.SELECT}" id="sort-select" ?disabled="${disabled}" .label="${i18next.t("alarm.sort")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSortChanged(evt.detail.value)}" .value="${this.sort}" .options="${this._getSortOptions()}"></or-mwc-input>
-                        <or-mwc-input .type="${ InputType.CHECKBOX}" id="assign-check" ?disabled="${disabled}" .label="${i18next.t("alarm.assignedToMe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onAssignCheckChanged(evt.detail.value)}" .value="${this.assign}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.SELECT}" id="status-select" ?disabled="${disabled}" .label="${i18next.t("alarm.status")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}" .value="${this.status}" .options="${this._getStatusOptions()}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.SELECT}" id="sort-select" ?disabled="${disabled}" .label="${i18next.t("alarm.sort")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSortChanged(evt.detail.value)}" .value="${this.sort}" .options="${this._getSortOptions()}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.CHECKBOX}" id="assign-check" ?disabled="${disabled}" .label="${i18next.t("alarm.assignedToMe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onAssignCheckChanged(evt.detail.value)}" .value="${this.assign}"></or-mwc-input>
                     </div>
-                    <or-mwc-input .type="${ InputType.CHECKBOX}" id="hide-check" ?disabled="${disabled}" .label="${i18next.t("alarm.hideControls")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onHideChanged(evt.detail.value)}" .value="${this.hide}"></or-mwc-input>
+                    <or-mwc-input .type="${InputType.CHECKBOX}" id="hide-check" ?disabled="${disabled}" .label="${i18next.t("alarm.hideControls")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onHideChanged(evt.detail.value)}" .value="${this.hide}"></or-mwc-input>
                 </div>
                 ${disabled ? html`<div id="msg">${i18next.t("loading")}</div>` :
                     html`<div id="table-container">
@@ -396,9 +393,9 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                 <table class="mdc-data-table__table" aria-label="alarms list">
                     <thead>
                         <tr class="mdc-data-table__header-row">
-                            <th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader">
+                            <!--<th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader">
                                 <or-mwc-input id="check-all" .type="${InputType.CHECKBOX}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCheckChanged(ev.detail.value, "all")}"></or-mwc-input>
-                            </th>
+                            </th>-->
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("createdOn")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.severity")}</th>
                             <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.status")}</th>
@@ -412,9 +409,9 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                         ${this._data!.map((ev) => {
                             return html`
                                 <tr class="mdc-data-table__row" @click="${(e: MouseEvent) => this.dispatchEvent(new OrAlarmTableRowClickEvent(ev))}">
-                                    <td class="mdc-data-table__cell">
+                                    <!--<td class="mdc-data-table__cell">
                                     <or-mwc-input name="row-check" .value="${this.selected!.includes(ev)}" .type="${InputType.CHECKBOX}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCheckChanged(ev.detail.value, ev)}"></or-mwc-input>   
-                                    </td>
+                                    </td>-->
                                     <td class="mdc-data-table__cell">${new Date(ev.createdOn!).toLocaleString()}</td>
                                     <td class="mdc-data-table__cell" data-severity="${ev.severity}">${ev.severity}</td>
                                     <td class="mdc-data-table__cell">${ev.status}</td> 

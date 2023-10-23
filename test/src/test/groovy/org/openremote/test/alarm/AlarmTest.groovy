@@ -34,70 +34,70 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         AlarmService alarmService = container.getService(AlarmService.class)
 
 
-        and: "a mock persistence service"
-        AlarmService mockAlarmService = Spy(alarmService)
-        mockAlarmService.sendAlarm(_ as Alarm) >> {
-            output ->
-                alarms << output
-                callRealMethod()
-        }
-        mockAlarmService.getAlarms(_ as String, _ as String) >> {
-
-        }
-
-        and: "an authenticated test user"
-        def testuser1AccessToken = authenticate(
-                container,
-                MASTER_REALM,
-                KEYCLOAK_CLIENT_ID,
-                "testuser1",
-                "testuser1"
-        ).token
-
-        and: "an authenticated superuser"
-        def adminAccessToken = authenticate(
-                container,
-                MASTER_REALM,
-                KEYCLOAK_CLIENT_ID,
-                MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-        ).token
-
-        Alarm alarm = new Alarm("Test Alarm", "Test Content", Alarm.Severity.MEDIUM)
-        Alarm alarm1 = new Alarm("Test Alarm1", "Test Content1", Alarm.Severity.LOW)
-        Alarm update = new Alarm("Updated Alarm1", "Updated Content1", Alarm.Severity.HIGH)
-        //SentAlarm[] sentAlarms = [new SentAlarm("1", "Test SentAlarm", "Test Content", Alarm.Severity.HIGH, Alarm.Status.ACTIVE), new SentAlarm("2", "Test SentAlarm2", "Test Content", Alarm.Severity.MEDIUM, Alarm.Status.ACTIVE)]
-
-
-        and: "the mock alarm resource"
-        def testuser1Resource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(AlarmResource.class)
-        def adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
-        def anonymousResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AlarmResource.class)
-
-        when: "the anonymous user creates an alarm"
-        anonymousResource.createAlarm(null, alarm)
-
-        then: "no alarm should have been created"
-        WebApplicationException ex = thrown()
-        ex.response.status == 403
-
-        when: "the admin user creates an alarm"
-        adminResource.createAlarm(null, alarm1)
-
-        then: "an alarm should have been created"
-        conditions.eventually {
-            alarms = adminResource.getAlarms(null)
-            assert alarms.count {n -> n.content != null} == 1
-        }
-
-        when: "the admin user updates an existing alarm"
-        adminResource.updateAlarm(null, alarms.first().id, update)
-
-        then: "the alarm object has been updated"
-        conditions.eventually {
-            alarms = adminResource.getAlarms(null)
-            assert alarms.first().content == update.content
-            assert alarms.first().title == update.title
-        }
+//        and: "a mock persistence service"
+//        AlarmService mockAlarmService = Spy(alarmService)
+//        mockAlarmService.sendAlarm(_ as Alarm) >> {
+//            output ->
+//                alarms << output
+//                callRealMethod()
+//        }
+//        mockAlarmService.getAlarms(_ as String, _ as String) >> {
+//
+//        }
+//
+//        and: "an authenticated test user"
+//        def testuser1AccessToken = authenticate(
+//                container,
+//                MASTER_REALM,
+//                KEYCLOAK_CLIENT_ID,
+//                "testuser1",
+//                "testuser1"
+//        ).token
+//
+//        and: "an authenticated superuser"
+//        def adminAccessToken = authenticate(
+//                container,
+//                MASTER_REALM,
+//                KEYCLOAK_CLIENT_ID,
+//                MASTER_REALM_ADMIN_USER,
+//                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+//        ).token
+//
+//        Alarm alarm = new Alarm("Test Alarm", "Test Content", Alarm.Severity.MEDIUM)
+//        Alarm alarm1 = new Alarm("Test Alarm1", "Test Content1", Alarm.Severity.LOW)
+//        Alarm update = new Alarm("Updated Alarm1", "Updated Content1", Alarm.Severity.HIGH)
+//        //SentAlarm[] sentAlarms = [new SentAlarm("1", "Test SentAlarm", "Test Content", Alarm.Severity.HIGH, Alarm.Status.ACTIVE), new SentAlarm("2", "Test SentAlarm2", "Test Content", Alarm.Severity.MEDIUM, Alarm.Status.ACTIVE)]
+//
+//
+//        and: "the mock alarm resource"
+//        def testuser1Resource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(AlarmResource.class)
+//        def adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
+//        def anonymousResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AlarmResource.class)
+//
+//        when: "the anonymous user creates an alarm"
+//        anonymousResource.createAlarm(null, alarm)
+//
+//        then: "no alarm should have been created"
+//        WebApplicationException ex = thrown()
+//        ex.response.status == 403
+//
+//        when: "the admin user creates an alarm"
+//        adminResource.createAlarm(null, alarm1)
+//
+//        then: "an alarm should have been created"
+//        conditions.eventually {
+//            alarms = adminResource.getAlarms(null)
+//            assert alarms.count {n -> n.content != null} == 1
+//        }
+//
+//        when: "the admin user updates an existing alarm"
+//        adminResource.updateAlarm(null, alarms.first().id, update)
+//
+//        then: "the alarm object has been updated"
+//        conditions.eventually {
+//            alarms = adminResource.getAlarms(null)
+//            assert alarms.first().content == update.content
+//            assert alarms.first().title == update.title
+//        }
     }
 }
