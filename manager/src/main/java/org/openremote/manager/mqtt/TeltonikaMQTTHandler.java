@@ -9,17 +9,19 @@ import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.asset.AssetStateDuration;
 import org.openremote.model.asset.impl.CarAsset;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeMap;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.*;
+import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.AttributePredicate;
+import org.openremote.model.query.filter.NumberPredicate;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.teltonika.TeltonikaMessageResponse;
 import org.openremote.model.teltonika.TeltonikaParameter;
@@ -33,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -40,6 +43,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.syslog.SyslogCategory.API;
+import static org.openremote.model.value.MetaItemType.*;
 
 public class TeltonikaMQTTHandler extends MQTTHandler {
     //TODO: Maybe move this to Models?
@@ -63,6 +67,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     private static final Logger LOG = SyslogCategory.getLogger(API, TeltonikaMQTTHandler.class);
 
     protected AssetStorageService assetStorageService;
+    protected AssetDatapointService AssetDatapointService;
     protected TimerService timerService;
     protected Path DeviceParameterPath;
 
@@ -85,6 +90,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         getLogger().info("Starting Teltonika MQTT Handler");
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        AssetDatapointService = container.getService(AssetDatapointService.class);
         timerService = container.getService(TimerService.class);
         DeviceParameterPath = Paths.get("deployment/manager/fleet/FMC003.json");
         if (!identityService.isKeycloakEnabled()) {
@@ -251,6 +257,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         Asset<?> asset = assetStorageService.find(deviceUuid);
         try {
+            //Check state of Teltonika AVL ID 250 for FMC003, "Trip".
+//            Optional<Attribute<?>> sessionAttr = assetChangedTripState(new AttributeRef(asset.getId(), "250"));
             AttributeMap attributes = getAttributesFromPayload(payloadContent);
             Attribute<?> payloadAttribute =  new Attribute("payload", ValueType.JSON, payloadContent);
             payloadAttribute.addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true));
@@ -270,6 +278,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * Creates a new asset with the correct "hashed" Asset ID, its IMEI,
      * in the realm the MQTT message of the device submitted,
      * and the parsed list of attributes.
+     * //TODO: Add {@value DEVICE_SEND_COMMAND_ATTRIBUTE_NAME }, {@value DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME} Attributes when creating Asset
      *
      * @param newDeviceId The ID of the device's Asset.
      * @param newDeviceImei The IMEI of the device. If passed to
@@ -338,15 +347,102 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             TeltonikaMessageResponse response = mapper.readValue(payloadContent, TeltonikaMessageResponse.class);
             getLogger().info(response.rsp);
             AttributeMap map = new AttributeMap();
-            map.add(new Attribute<>
+            map.addAll(new Attribute<>
                     (
                             new AttributeDescriptor<>(DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
                             response.rsp
+                    ),
+                    new Attribute<>(
+                            new AttributeDescriptor<>(DEVICE_SEND_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
+                    response.rsp
                     )
             );
             return map;
         }
 
+    }
+
+
+    /**
+     * Returns an {@code Optional<Attribute<AssetStateDuration>>}, that {@code ifPresent()}, represents
+     * the Duration for which the predicate returned true.
+     *
+     * @param previousValue The old attribute state (Or the latest datapoint that exists)
+     * @param newValue The new attribute value
+     * @param pred A Predicate that describes the state change
+     * @param ref An AttributeRef that describes which asset and attribute this pertains to.
+     * @return An Optional Attribute of type AssetStateDuration that represents the Duration for which the predicate returned true.
+     */
+    //TODO: Change this to only use an AttributeRef and a Predicate.
+    private Optional<Attribute<?>> assetChangedTripState(Attribute<?> previousValue, Attribute<?> newValue, AttributePredicate pred, AttributeRef ref) {
+        //We will first check if the predicate fails for the new value, and then check if the predicate is true for the previous value.
+        //In that way, we know that the state change happened between the new and previous values.
+
+        //TODO: Understand what happens with negate(), does it change states to the object itself?
+        boolean newValueTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(newValue.getValue().get());
+        boolean previousValueTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(previousValue.getValue().get());
+        //If the predicate fails, then no changes need to happen.
+        if(!(!newValueTest && previousValueTest)) {
+            return Optional.empty();
+        }
+
+        // Grab all datapoints (To be replaced by AssetDatapointValueQuery)
+        List<AssetDatapoint> valueDatapoints = AssetDatapointService.getDatapoints(ref);
+        ArrayList<AssetDatapoint> list = new ArrayList<>(valueDatapoints);
+
+        // If there are no historical data found, add some first
+        if(list.isEmpty()) return Optional.empty();
+
+        //What we do now is, we will try to figure out the latest datapoint where the predicate fails,
+        //before the newValue.
+        //This means that, the state change took place between the datapoint we just found and its next one.
+
+        //Find the first datapoint that passes the negated predicate
+
+        AssetDatapoint StateChangeAssetDatapoint = null;
+
+        try {
+            for (int i = 0; i < list.size()-1; i++) {
+                // Not using Object.equals, but Datapoint.equals
+
+                AssetDatapoint currentDp = list.get(i);
+                AssetDatapoint theVeryPreviousDp = list.get(i+1);
+
+    //            So, if the currentDp passes the predicate,
+                boolean currentDpTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(currentDp.getValue());
+    //            and if the very previous one (NEXT one in the array and PREVIOUS in the time dimension).
+    //            FAILS the predicate,
+                boolean previousDpTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(theVeryPreviousDp.getValue());
+    //            A state change happened where the state we are looking for was turned on.
+    //            We want the currentDp.
+
+
+                if(currentDpTest && !previousDpTest){
+                    StateChangeAssetDatapoint = currentDp;
+                    break;
+                }
+            }
+
+            if (StateChangeAssetDatapoint != null){
+                if (!pred.value.asPredicate(timerService::getCurrentTimeMillis).test(StateChangeAssetDatapoint.getValue())){
+                    throw new Exception("Found state change datapoint failed predicate");
+                }
+            }else{
+                throw new Exception("Couldn't find asset state change value");
+            }
+
+        }catch (Exception e){
+            getLogger().warning(e.getMessage());
+            return Optional.empty();
+        }
+
+        //The AssetStateDuration will have a startTime of the found state-change variable, and the endDate will be the previousValue's timestamp, that being the end of the state duration
+        Attribute<?> tripAttr = new Attribute<>("LastTripStartedAndEndedAt", ValueType.ASSET_STATE_DURATION, new AssetStateDuration(
+                new Timestamp(StateChangeAssetDatapoint.getTimestamp()),
+                new Timestamp(previousValue.getTimestamp().get())
+        ));
+
+        return Optional.of(tripAttr);
     }
 
     private String getParameterFileString() {
@@ -377,6 +473,30 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         //OBD details: Prot:6,VIN:WVGZZZ1TZBW068095,TM:15,CNT:19,ST:DATA REQUESTING,P1:0xBE3EA813,P2:0xA005B011,P3:0xFED00400,P4:0x0,MIL:0,DTC:0,ID3,Hdr:7E8,Phy:0
         //Find which attributes need to be updated and which attributes need to be just reminded of updating.
 
+
+        // We want the state where the attribute 250 (Trip) is set to true.
+        AttributePredicate pred = new AttributePredicate("250", new NumberPredicate(1, AssetQuery.Operator.EQUALS));
+
+//        Predicate<AssetDatapoint> pred = dp -> Objects.equals(dp.getValue(), Double.parseDouble("1"));
+        Attribute<?> prevValue = asset.getAttributes().get("250").get();
+        Attribute<?> newValue = attributes.get("250").get();
+        AttributeRef ref = new AttributeRef(asset.getId(), "250");
+        Optional<Attribute<?>> sessionAttr = assetChangedTripState(prevValue, newValue, pred, ref);
+
+        if(sessionAttr.isPresent()){
+            Attribute<?> session = sessionAttr.get();
+            session.addOrReplaceMeta(
+                    new MetaItem<>(STORE_DATA_POINTS, true),
+                    new MetaItem<>(RULE_STATE, true),
+                    new MetaItem<>(READ_ONLY, true)
+            );
+            attributes.add(session);
+
+        }
+
+
+
+
         //I'm not sure why this needs these specific headers.
         Map<String, Object> headers = DefaultMQTTHandler.prepareHeaders(topicRealm(topic), connection);
 
@@ -404,3 +524,33 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     }
 }
+
+
+
+////        AssetDatapoint datapoint = list.stream().filter(
+////                pred.value.asPredicate(timerService::getCurrentTimeMillis)
+////        ).toList()
+////                .get(0);
+//
+//        //We now need to get the very next datapoint.
+//        AssetDatapoint StateChangeAssetDatapoint = null;
+//
+//        try {
+//            for (int i = 0; i < list.size(); i++) {
+//                // Not using Object.equals, but Datapoint.equals
+//                if(list.get(i).equals(datapoint)){
+//                    //If we found it, just grab the next one
+//                    StateChangeAssetDatapoint = list.get(i++);
+//                    break;
+//                }
+//            }
+//
+//            //Make sure that the Datapoint truly does pass the predicate.
+//
+//            //If it doesnt, throw an Exception.
+//
+//
+//        }catch (Exception e){
+//            getLogger().warning(e.getMessage());
+//            return Optional.empty();
+//        }
