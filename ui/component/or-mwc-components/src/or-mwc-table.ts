@@ -289,10 +289,26 @@ export class OrMwcTable extends LitElement {
                                                     </or-mwc-input>
                                                 </div>
                                             </th>
+                                            ${(typeof column == "string") ? html`
+                                                <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index+1}" role="columnheader" scope="col"
+                                                    title="${column}">
+                                                    column
+                                                </th>
+                                            ` : html`
+                                                <th class="mdc-data-table__header-cell ${classMap({
+                                                          'mdc-data-table__cell--numeric': !!column.isNumeric,
+                                                          'hide-mobile': !!column.hideMobile,
+                                                          'mdc-data-table__header-cell--with-sort': !!column.isSortable,
+                                                        })}"
+                                                    role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
+                                                    @click="${(ev: MouseEvent) => !!column.isSortable ? this.sortRows(ev, index, this.sortDirection!) : ''}">
+                                                    ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))}
+                                                </th>
                                             `
+                                            }`
                                         }
                                         return (typeof column == "string") ? html`
-                                            <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell mdc-data-table__header-cell--checkbox" : ''}" id="column-${index+1}" role="columnheader" scope="col"
+                                            <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index+1}" role="columnheader" scope="col"
                                                 title="${column}">
                                                 column
                                             </th>
@@ -349,7 +365,10 @@ export class OrMwcTable extends LitElement {
                                                                                           .value="${this.selectedRows?.includes(item)}"
                                                                             ></or-mwc-input>
                                                                         </div>
-                                                                    </td> `
+                                                                    </td>
+                                                                    <td class="${classMap(classes)}" title="${cell}">
+                                                                        <span>${cell}</span>
+                                                                    </td>`
                                                             }
                                                             return html`
                                                                 <td class="${classMap(classes)}" title="${cell}">

@@ -1,4 +1,3 @@
-
 import { css, html, TemplateResult, PropertyValues, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "@openremote/or-alarm-viewer";
@@ -25,6 +24,9 @@ import { until } from "lit/directives/until.js";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import { OrMwcDialog, showOkCancelDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { OrAssetTreeRequestSelectionEvent } from "@openremote/or-asset-tree";
+import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
+
+const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export interface PageAlarmsConfig {
   viewer?: ViewerConfig;
@@ -53,7 +55,9 @@ interface AlarmModel extends SentAlarm {
 export class PageAlarms extends Page<AppStateKeyed> {
   static get styles() {
     // language=CSS
-    return css`
+    return [
+      unsafeCSS(tableStyle),
+      css`
       :host {
         flex: 1;
         width: 100%;
@@ -161,7 +165,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         --or-icon-width: 16px;
         --or-icon-height: 16px;
       }
-    `;
+    `];
   }
 
   @property()
@@ -318,7 +322,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             <span> ${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.alarm_plural")} </span>
           </div>
 
-          <div class="${this.creationState || this.alarm ? "hidden" : "panel-title"} style="justify-content: flex-end;">
+          <div class="${this.creationState || this.alarm ? "hidden" : "panel-title"}" style="justify-content: flex-end;">
           <or-mwc-input
             style="margin: 0;"
             type="${InputType.BUTTON}"

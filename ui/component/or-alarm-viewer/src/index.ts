@@ -22,7 +22,8 @@ import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
-import { SentAlarm, AlarmSeverity, AlarmStatus } from "@openremote/model";
+import {SentAlarm, AlarmSeverity, AlarmStatus, Alarm} from "@openremote/model";
+import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -158,13 +159,6 @@ export class OrAlarmTableRowClickEvent extends CustomEvent<OrAlarmTableRowClickD
     }
 }
 
-enum Sort {
-    CREATED_ASC = "Created on asc",
-    CREATED_DESC = "Created on desc",
-    MODIFIED_ASC = "Last modified asc",
-    MODIFIED_DESC = "Last modified desc"
-}
-
 @customElement("or-alarm-viewer")
 export class OrAlarmViewer extends translate(i18next)(LitElement) {
 
@@ -195,9 +189,6 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
 
     @state()
     public status?: AlarmStatus;
-
-    @state()
-    public sort?: Sort;
 
     @state()
     public hide: boolean = false;
@@ -259,14 +250,13 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
                     <div id="controls-left" class="${this.hide ? "hidden" : ""}">
                         <or-mwc-input .type="${InputType.SELECT}" id="severity-select" ?disabled="${disabled}" .label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSeverityChanged(evt.detail.value)}" .value="${this.severity}" .options="${this._getSeverityOptions()}"></or-mwc-input>
                         <or-mwc-input .type="${InputType.SELECT}" id="status-select" ?disabled="${disabled}" .label="${i18next.t("alarm.status")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}" .value="${this.status}" .options="${this._getStatusOptions()}"></or-mwc-input>
-                        <or-mwc-input .type="${InputType.SELECT}" id="sort-select" ?disabled="${disabled}" .label="${i18next.t("alarm.sort")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSortChanged(evt.detail.value)}" .value="${this.sort}" .options="${this._getSortOptions()}"></or-mwc-input>
                         <or-mwc-input .type="${InputType.CHECKBOX}" id="assign-check" ?disabled="${disabled}" .label="${i18next.t("alarm.assignedToMe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onAssignCheckChanged(evt.detail.value)}" .value="${this.assign}"></or-mwc-input>
                     </div>
                     <or-mwc-input .type="${InputType.CHECKBOX}" id="hide-check" ?disabled="${disabled}" .label="${i18next.t("alarm.hideControls")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onHideChanged(evt.detail.value)}" .value="${this.hide}"></or-mwc-input>
                 </div>
                 ${disabled ? html`<div id="msg">${i18next.t("loading")}</div>` :
                     html`<div id="table-container">
-                        ${this._data ? this._getTable() : ``}
+                        ${this._data ? this.getAlarmsTable() : ``}
                     </div>`}
             </div>
         `;
@@ -279,49 +269,6 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
     protected _getSeverityOptions() {
         return [AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH];
     }
-
-    protected _getSortOptions() {
-        return [Sort.CREATED_ASC, Sort.CREATED_DESC, Sort.MODIFIED_ASC, Sort.MODIFIED_DESC];
-    }
-
-    protected _onSortChanged(sort: Sort) {
-        this.sort = sort;
-
-        if (!this.sort) {
-            return;
-        }
-        switch (this.sort) {
-            case Sort.CREATED_ASC:
-                this._data = this._data!.sort((a, b) => {
-                    const createdOnA = new Date(a.createdOn!).getTime();
-                    const createdOnB = new Date(b.createdOn!).getTime();
-                    return createdOnA - createdOnB;
-                  });
-                break;
-            case Sort.CREATED_DESC:
-                this._data = this._data!.sort((a, b) => {
-                    const createdOnA = new Date(a.createdOn!).getTime();
-                    const createdOnB = new Date(b.createdOn!).getTime();
-                    return createdOnB - createdOnA;
-                  });
-                break;
-            case Sort.MODIFIED_ASC:
-                this._data = this._data!.sort((a, b) => {
-                    const lastModifiedA = new Date(a.lastModified!).getTime();
-                    const lastModifiedB = new Date(b.lastModified!).getTime();
-                    return lastModifiedA - lastModifiedB;
-                  });
-                break;
-            case Sort.MODIFIED_DESC:
-                this._data = this._data!.sort((a, b) => {
-                    const lastModifiedA = new Date(a.lastModified!).getTime();
-                    const lastModifiedB = new Date(b.lastModified!).getTime();
-                    return lastModifiedB - lastModifiedA;
-                  });
-                break;
-       }
-    }
-
 
     protected _onSeverityChanged(severity: AlarmSeverity) {
         this.severity = severity;
@@ -351,7 +298,6 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         this.hide = hide;
         this.severity = undefined;
         this.status = undefined;
-        this.sort = undefined;
         this.assign = false;
     }
 
@@ -384,48 +330,44 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         this.requestUpdate();
     }
 
-    protected _getTable(): TemplateResult {
-        if(!this.selected) {
-            this.selected = [];
+    protected getAlarmsTable()  {
+        // Content of Alarm Table
+        const columns: TableColumn[] = [
+            {title: i18next.t('createdOn'), isSortable: true},
+            {title: i18next.t('alarm.severity')},
+            {title: i18next.t('alarm.status')},
+            {title: i18next.t('alarm.assignee')},
+            {title: i18next.t('alarm.title')},
+            {title: i18next.t('alarm.content')},
+            {title: i18next.t('alarm.lastModified'), isSortable: true}
+        ];
+
+        const rows: TableRow[] = this._data!.map((alarm) => {
+            return {
+                content: [new Date(alarm.createdOn!).toLocaleString(), alarm.severity, alarm.status, alarm.assigneeUsername, alarm.title, alarm.content, new Date(alarm.lastModified!).toLocaleString()],
+                clickable: true
+            } as TableRow
+        });
+
+        // Configuration
+        const config = {
+            columnFilter: [],
+            stickyFirstColumn: false,
+            pagination: {
+                enable: true
+            },
+            multiSelect: true
         }
+
         return html`
-            <div id="table" class="mdc-data-table">
-                <table class="mdc-data-table__table" aria-label="alarms list">
-                    <thead>
-                        <tr class="mdc-data-table__header-row">
-                            <!--<th style="width: 80px" class="mdc-data-table__header-cell" role="columnheader">
-                                <or-mwc-input id="check-all" .type="${InputType.CHECKBOX}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCheckChanged(ev.detail.value, "all")}"></or-mwc-input>
-                            </th>-->
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("createdOn")}</th>
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.severity")}</th>
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.status")}</th>
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.assignee")}</th>  
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.title")}</th>
-                            <th style="width: 100%; min-width: 300px;" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.content")}</th>  
-                            <th style="width: 180px" class="mdc-data-table__header-cell" role="columnheader" scope="col">${i18next.t("alarm.lastModified")}</th>                        
-                        </tr>
-                    </thead>
-                    <tbody class="mdc-data-table__content">
-                        ${this._data!.map((ev) => {
-                            return html`
-                                <tr class="mdc-data-table__row" @click="${(e: MouseEvent) => this.dispatchEvent(new OrAlarmTableRowClickEvent(ev))}">
-                                    <!--<td class="mdc-data-table__cell">
-                                    <or-mwc-input name="row-check" .value="${this.selected!.includes(ev)}" .type="${InputType.CHECKBOX}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCheckChanged(ev.detail.value, ev)}"></or-mwc-input>   
-                                    </td>-->
-                                    <td class="mdc-data-table__cell">${new Date(ev.createdOn!).toLocaleString()}</td>
-                                    <td class="mdc-data-table__cell" data-severity="${ev.severity}">${ev.severity}</td>
-                                    <td class="mdc-data-table__cell">${ev.status}</td> 
-                                    <td class="mdc-data-table__cell">${ev.assigneeUsername}</td>                                   
-                                    <td class="mdc-data-table__cell">${ev.title}</td>                                    
-                                    <td class="mdc-data-table__cell">${ev.content}</td> 
-                                    <td class="mdc-data-table__cell">${new Date(ev.lastModified!).toLocaleString()}</td>                                   
-                                </tr>
-                            `;            
-                        })}
-                    </tbody>
-                </table>
-            </div>
-            `;
+            <or-mwc-table .columns="${columns instanceof Array ? columns : undefined}"
+                          .columnsTemplate="${!(columns instanceof Array) ? columns : undefined}"
+                          .rows="${rows instanceof Array ? rows : undefined}"
+                          .rowsTemplate="${!(rows instanceof Array) ? rows : undefined}"
+                          .config="${config}"
+                          @or-mwc-table-row-click="${(e: OrMwcTableRowClickEvent) => this.dispatchEvent(new OrAlarmTableRowClickEvent(this._data![e.detail.index] as SentAlarm))}"
+            ></or-mwc-table>
+        `
     }
 
     protected async _loadData() {
@@ -454,9 +396,6 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
             }
             if(this.status) {
                 this._data = this._data.filter((e) => e.status === this.status);
-            }
-            if(this.sort) {
-                this._onSortChanged(this.sort);
             }
             this._pageCount = this._data?.length;
         }
