@@ -1170,7 +1170,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      */
     public void deleteUserAssetLinks(String userId) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userIód = ?1");
+            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?1");
             query.setParameter(1, userId);
             int deleteCount = query.executeUpdate();
             LOG.fine("Deleted all user asset links for user: user ID=" + userId + ", count=" + deleteCount);
