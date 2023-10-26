@@ -911,6 +911,17 @@ export class MapWidget {
         }
     }
 
+    public async getGeoJsonFeature(query: {query: string}){
+        // let gc: MaplibreGeocoder. = this._geocoder;
+        return this._forwardGeocode({query: "Boschdijk 36 H"});
+    }
+    public async getAddress(query: {lat: number, lon: number}){
+        // let gc: MaplibreGeocoder. = this._geocoder;
+        // return this._forwardGeocode({query: "Boschdijk 36 H"});
+        return this._reverseGeocode(query);
+    }
+
+
     protected async _forwardGeocode(config: any) {
         const features = [];
         try {
@@ -942,8 +953,35 @@ export class MapWidget {
         };
     }
 
-    protected async _reverseGeocode(config: any) {
+    public async _reverseGeocode(config: {lat: number, lon:number}) {
+        const features = [];
+        try {
+            let request =  this._viewSettings!.geocodeUrl + '/reverse?lat=' + config.lat + '&lon='+config.lon+'&format=geojson&polygon_geojson=1&addressdetails=1';
+            const response = await fetch(request);
+            const geojson = await response.json();
+            for (let feature of geojson.features) {
+                let center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
+                let point = {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: center
+                    },
+                    place_name: feature.properties.display_name,
+                    properties: feature.properties,
+                    text: feature.properties.display_name,
+                    place_type: ['place'],
+                    center: center
+                };
+                features.push(point);
+            }
+        } catch (e) {
+            console.error(`Failed to forwardGeocode with error: ${e}`);
+        }
 
+        return {
+            features: features
+        };
     }
 
     protected _initLongPressEvent() {

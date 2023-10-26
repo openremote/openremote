@@ -46,6 +46,7 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 import static org.openremote.model.value.MetaItemType.*;
 
 public class TeltonikaMQTTHandler extends MQTTHandler {
+
     //TODO: Maybe move this to Models?
     private static class TeltonikaDevice {
         String clientId;
@@ -60,6 +61,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         }
     }
 
+    private static final String TELTONIKA_DEVICE_RECEIVE_TOPIC = "data";
+    private static final String TELTONIKA_DEVICE_SEND_TOPIC = "commands";
     private static final String TOKEN_TELTONIKA_DEVICE = "teltonika";
     private static final String DEVICE_SEND_COMMAND_ATTRIBUTE_NAME = "sendToDevice";
     private static final String DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME = "response";
@@ -235,13 +238,15 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * Get the set of topics this handler wants to subscribe to for incoming publish messages; messages that match
      * these topics will be passed to {@link #onPublish}.
      * The listener topics are defined as <code>{realmID}/{userID}/{@value TOKEN_TELTONIKA_DEVICE}/{IMEI}</code>
-     * //TODO: Be explicit about sending data to {IMEI}/data, and sending commands to {IMEI}/commands.
+     * //DONE: Be explicit about sending data to {IMEI}/data, and sending commands to {IMEI}/commands.
      */
     @Override
     public Set<String> getPublishListenerTopics() {
         return Set.of(
                 TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" +
-                        TOKEN_TELTONIKA_DEVICE + "/" + TOKEN_MULTI_LEVEL_WILDCARD
+                        TOKEN_TELTONIKA_DEVICE + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TELTONIKA_DEVICE_RECEIVE_TOPIC,
+                TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" +
+                        TOKEN_TELTONIKA_DEVICE + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TELTONIKA_DEVICE_SEND_TOPIC
         );
     }
 
@@ -264,8 +269,32 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             payloadAttribute.addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true));
             attributes.add(payloadAttribute);
 
+
+
+
             if (asset == null) CreateNewAsset(deviceUuid, deviceImei, realm, attributes);
-            else UpdateAsset(asset, attributes,topic, connection);
+            else {
+                // We want the state where the attribute 250 (Trip) is set to true.
+                AttributePredicate pred = new AttributePredicate("250", new NumberPredicate((double) 1, AssetQuery.Operator.EQUALS));
+
+//        Predicate<AssetDatapoint> pred = dp -> Objects.equals(dp.getValue(), Double.parseDouble("1"));
+                Attribute<?> prevValue = asset.getAttributes().get("250").get();
+                Attribute<?> newValue = attributes.get("250").get();
+                AttributeRef ref = new AttributeRef(asset.getId(), "250");
+                Optional<Attribute<?>> sessionAttr = assetChangedTripState(prevValue, newValue, pred, ref);
+
+                if(sessionAttr.isPresent()){
+                    Attribute<?> session = sessionAttr.get();
+                    session.addOrReplaceMeta(
+                            new MetaItem<>(STORE_DATA_POINTS, true),
+                            new MetaItem<>(RULE_STATE, true),
+                            new MetaItem<>(READ_ONLY, true)
+                    );
+                    attributes.add(session);
+
+                }
+                UpdateAsset(asset, attributes, topic, connection);
+            };
 
         } catch (Exception e){
             getLogger().warning("Could not parse Teltonika device Payload.");
@@ -338,7 +367,11 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         TeltonikaPayload payload;
         try {
             payload = mapper.readValue(payloadContent, TeltonikaPayload.class);
-            return payload.state.GetAttributes(params);
+
+
+
+
+            return payload.state.GetAttributes(params, new AttributeMap());
         } catch (Exception e) {
             //If the payload wasn't parsed, then it means that it is either a response to a command,
             //or it's genuinely a wrong payload.
@@ -379,9 +412,11 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         //In that way, we know that the state change happened between the new and previous values.
 
         //TODO: Understand what happens with negate(), does it change states to the object itself?
-        boolean newValueTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(newValue.getValue().get());
-        boolean previousValueTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(previousValue.getValue().get());
+        boolean newValueTest =      pred.value.asPredicate(timerService::getCurrentTimeMillis).test(newValue        .getValue().get());
+        boolean previousValueTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(previousValue   .getValue().get());
         //If the predicate fails, then no changes need to happen.
+
+        // newValue is not 1, previousValue == 1
         if(!(!newValueTest && previousValueTest)) {
             return Optional.empty();
         }
@@ -436,11 +471,17 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             return Optional.empty();
         }
 
+        //BUG: The Timestamp of an asset datapoint is NOT attribute.getTimestamp()!
+        //This makes it much harder to relate datapoints to relate a duration to the time-distance between two datapoints.
+        //To make this easier, we are going to use some time-padding of 1 second from the gap. It's going to be sufficient to cover some edge-cases.
+
         //The AssetStateDuration will have a startTime of the found state-change variable, and the endDate will be the previousValue's timestamp, that being the end of the state duration
         Attribute<?> tripAttr = new Attribute<>("LastTripStartedAndEndedAt", ValueType.ASSET_STATE_DURATION, new AssetStateDuration(
                 new Timestamp(StateChangeAssetDatapoint.getTimestamp()),
                 new Timestamp(previousValue.getTimestamp().get())
         ));
+
+        tripAttr.setTimestamp(StateChangeAssetDatapoint.getTimestamp());
 
         return Optional.of(tripAttr);
     }
@@ -474,25 +515,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         //Find which attributes need to be updated and which attributes need to be just reminded of updating.
 
 
-        // We want the state where the attribute 250 (Trip) is set to true.
-        AttributePredicate pred = new AttributePredicate("250", new NumberPredicate(1, AssetQuery.Operator.EQUALS));
 
-//        Predicate<AssetDatapoint> pred = dp -> Objects.equals(dp.getValue(), Double.parseDouble("1"));
-        Attribute<?> prevValue = asset.getAttributes().get("250").get();
-        Attribute<?> newValue = attributes.get("250").get();
-        AttributeRef ref = new AttributeRef(asset.getId(), "250");
-        Optional<Attribute<?>> sessionAttr = assetChangedTripState(prevValue, newValue, pred, ref);
-
-        if(sessionAttr.isPresent()){
-            Attribute<?> session = sessionAttr.get();
-            session.addOrReplaceMeta(
-                    new MetaItem<>(STORE_DATA_POINTS, true),
-                    new MetaItem<>(RULE_STATE, true),
-                    new MetaItem<>(READ_ONLY, true)
-            );
-            attributes.add(session);
-
-        }
 
 
 

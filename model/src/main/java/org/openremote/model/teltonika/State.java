@@ -3,16 +3,24 @@ package org.openremote.model.teltonika;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import net.fortuna.ical4j.model.DateTime;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.AssetStateDuration;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.rules.flow.Option;
 import org.openremote.model.util.ValueUtil;
 
 import org.openremote.model.value.*;
 
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,12 +58,12 @@ public class State {
     //DONE: Add timestamp reported by device
     //TODO: Add description of each attribute (No idea where to put that yet)
     //DONE: Multiply value by multiplier
-    //TODO: Improve storage by using bytes variable?
+    //DEFERRED: Improve storage by using bytes variable? Improvements would be marginal, not to mention type safety.
     //DONE: If location is 0,0, don't overwrite location
     //TODO: Move any function from here; it's a model (POJO).
     //TODO: Figure out what the parameters: pr, alt, ang, sat, sp, and evt do
     // and implement their functionality (I can guess but I want to know exactly).
-    public AttributeMap GetAttributes(Map<Integer, TeltonikaParameter> params){
+    public AttributeMap GetAttributes(Map<Integer, TeltonikaParameter> params, AttributeMap additionalAttributes){
         AttributeMap attributes = new AttributeMap();
         for (Map.Entry<String,Object> entry : reported.entrySet()){
             //Check if parameter is a number value, pointing to a TeltonikaParameter
@@ -88,7 +96,8 @@ public class State {
                         value = Optional.of(entry.getValue().toString());
                     }
                 } catch (Exception ignored){
-
+                    value = Optional.of(entry.getValue().toString());
+                    attributeType = ValueType.TEXT;
                 }
 
 
@@ -166,15 +175,17 @@ public class State {
             attributes.add(attr);
         }
         //Timestamp grabbed from the device.
+        //TODO: It doesn't look like the timestamp is being parsed correctly...
         if (reported.containsKey("ts")){
-            String updateTime = reported.get("ts").toString();
-            Date update = new java.util.Date(Long.parseLong(updateTime));
-            attributes.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME, update));
+            long unixTimestampMillis = Long.parseLong(reported.get("ts").toString());
+            Timestamp deviceTimestamp = Timestamp.from(Instant.ofEpochMilli(unixTimestampMillis));
+            attributes.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME, deviceTimestamp));
 
             //Update all affected attribute timestamps
             attributes.forEach(attribute -> {
-                attribute.setTimestamp(update.getTime());
+                attribute.setTimestamp(deviceTimestamp.getTime());
             });
+
         }
 
         // Store data points, allow use for rules, and don't allow user parameter modification, for every attribute parsed
@@ -185,6 +196,8 @@ public class State {
 
         return attributes;
     }
+
+
 
     private ValueDescriptor<?> GetAttributeType(TeltonikaParameter parameter) {
         try{
