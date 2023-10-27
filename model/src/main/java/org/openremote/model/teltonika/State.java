@@ -22,6 +22,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,7 +64,7 @@ public class State {
     //TODO: Move any function from here; it's a model (POJO).
     //TODO: Figure out what the parameters: pr, alt, ang, sat, sp, and evt do
     // and implement their functionality (I can guess but I want to know exactly).
-    public AttributeMap GetAttributes(Map<Integer, TeltonikaParameter> params, AttributeMap additionalAttributes){
+    public AttributeMap GetAttributes(Map<Integer, TeltonikaParameter> params, AttributeMap additionalAttributes, Logger logger){
         AttributeMap attributes = new AttributeMap();
         for (Map.Entry<String,Object> entry : reported.entrySet()){
             //Check if parameter is a number value, pointing to a TeltonikaParameter
@@ -98,6 +99,8 @@ public class State {
                 } catch (Exception ignored){
                     value = Optional.of(entry.getValue().toString());
                     attributeType = ValueType.TEXT;
+                    logger.severe("Failed value parse");
+                    logger.severe(ignored.toString());
                 }
 
 
@@ -107,20 +110,32 @@ public class State {
                     if(!Objects.equals(parameter.multiplier, "-")){
                         Optional<?> multiplier = ValueUtil.parse(parameter.multiplier, attributeType.getType());
                         if(multiplier.isPresent()){
-                            double valueNumber = (double) value.get();
-                            double multiplierNumber = (double) multiplier.get();
+                            try{
+                                double valueNumber = (double) value.get();
+                                double multiplierNumber = (double) multiplier.get();
 
-                            value = Optional.of(valueNumber * multiplierNumber);
+                                value = Optional.of(valueNumber * multiplierNumber);
+                            }catch (Exception e){
+                                logger.severe(parameter.propertyName + "Failed multiplier");
+                                logger.severe(e.toString());
+                                throw e;
+                            }
                         }
 
-                    //TODO: Fix frontend to be able to display even custom units, not just the predefined ones
-//                        possibly prepend the unit with the string "custom."? So that it matches the predefined format
-                    //Add on its units
-                    if(!Objects.equals(parameter.units, "-")){
-                        MetaItem<String[]> units = new MetaItem<>(MetaItemType.UNITS);
-                            units.setValue(Constants.units(parameter.units));
-//                            Error when deploying: https://i.imgur.com/4IihWC3.png
-//                            metaMap.add(units);
+                        //TODO: Fix frontend to be able to display even custom units, not just the predefined ones
+                       //possibly prepend the unit with the string "custom."? So that it matches the predefined format
+                       //Add on its units
+                        if(!Objects.equals(parameter.units, "-")){
+                            try{
+                                MetaItem<String[]> units = new MetaItem<>(MetaItemType.UNITS);
+                                units.setValue(Constants.units(parameter.units));
+                                //                            Error when deploying: https://i.imgur.com/4IihWC3.png
+                                //                            metaMap.add(units);
+                            }catch (Exception e){
+                                logger.severe(parameter.propertyName + "Failed units");
+                                logger.severe(e.toString());
+                                throw e;
+                            }
                         }
                     }
                     //Add on its constraints (min, max)
@@ -129,30 +144,42 @@ public class State {
                         Optional<?> max;
 
                         try{
+                            try {
                                 //Try to parse Hex in case it is hex
                                 max = Optional.of(Double.longBitsToDouble(Long.parseLong(parameter.max.substring(2), 16)));
                                 min = Optional.of(Double.longBitsToDouble(Long.parseLong(parameter.min.substring(2), 16)));
-                        }catch (Exception ignored){
-                            // ValueUtil.getValue actually logs the exceptions. I can't catch em to then ignore them.
-                            min = ValueUtil.getValueCoerced(parameter.min, attributeType.getType());
-                            max = ValueUtil.getValueCoerced(parameter.max, attributeType.getType());
-                        }
-                        if(min.isPresent() || max.isPresent()){
-                            MetaItem<ValueConstraint[]> constraintsMeta = new MetaItem<>(CONSTRAINTS);
-                            List<ValueConstraint> constraintValues = new ArrayList<>();
-                            min.ifPresent(o -> constraintValues.add(new ValueConstraint.Min((Number) o)));
-                            max.ifPresent(o -> constraintValues.add(new ValueConstraint.Max((Number) o)));
+                            } catch (Exception ignored) {
+                                // ValueUtil.getValue actually logs the exceptions. I can't catch em to then ignore them.
+                                min = ValueUtil.getValueCoerced(parameter.min, attributeType.getType());
+                                max = ValueUtil.getValueCoerced(parameter.max, attributeType.getType());
+                            }
+                            if (min.isPresent() || max.isPresent()) {
+                                MetaItem<ValueConstraint[]> constraintsMeta = new MetaItem<>(CONSTRAINTS);
+                                List<ValueConstraint> constraintValues = new ArrayList<>();
+                                min.ifPresent(o -> constraintValues.add(new ValueConstraint.Min((Number) o)));
+                                max.ifPresent(o -> constraintValues.add(new ValueConstraint.Max((Number) o)));
 
-                            ValueConstraint[] constraints = constraintValues.toArray(new ValueConstraint[0]);
+                                ValueConstraint[] constraints = constraintValues.toArray(new ValueConstraint[0]);
 
-                            constraintsMeta.setValue(constraints);
-                            metaMap.add(constraintsMeta);
+                                constraintsMeta.setValue(constraints);
+                                metaMap.add(constraintsMeta);
+                            }
+                        }catch (Exception e){
+                            logger.severe(parameter.propertyName + "Failed constraints");
+                            logger.severe(e.toString());
+                            throw e;
                         }
                     }
                     // Add on its label
-                    MetaItem<String> label = new MetaItem<>(MetaItemType.LABEL);
-                    label.setValue(parameter.propertyName);
-                    metaMap.add(label);
+                    try{
+                        MetaItem<String> label = new MetaItem<>(MetaItemType.LABEL);
+                        label.setValue(parameter.propertyName);
+                        metaMap.add(label);
+                    }catch (Exception e){
+                        logger.severe(parameter.propertyName + "Failed label");
+                        logger.severe(e.toString());
+                        throw e;
+                    }
                     //Use the MetaMap to create an AttributeDescriptor
                     AttributeDescriptor<?> attributeDescriptor = new AttributeDescriptor<>(parameter.propertyId.toString(), attributeType, metaMap);
 
@@ -168,31 +195,51 @@ public class State {
 
         //latlng are the latitude-longitude coordinates, also check if it's 0,0, if it is, don't update.
         if (reported.containsKey("latlng") && !Objects.equals(reported.get("latlng"), "0.000000,0.000000")){
-            String latlngString = reported.get("latlng").toString();
-            GeoJSONPoint point = ParseLatLngToGeoJSONObject(latlngString);
-            Attribute<?> attr = new Attribute<>("location", ValueType.GEO_JSON_POINT, point);
+            try{
+                String latlngString = reported.get("latlng").toString();
+                GeoJSONPoint point = ParseLatLngToGeoJSONObject(latlngString);
+                Attribute<?> attr = new Attribute<>("location", ValueType.GEO_JSON_POINT, point);
 
-            attributes.add(attr);
+                attributes.add(attr);
+            }catch (Exception e){
+                logger.severe("Failed coordinates");
+                logger.severe(e.toString());
+                throw e;
+            }
         }
         //Timestamp grabbed from the device.
         //TODO: It doesn't look like the timestamp is being parsed correctly...
         if (reported.containsKey("ts")){
-            long unixTimestampMillis = Long.parseLong(reported.get("ts").toString());
-            Timestamp deviceTimestamp = Timestamp.from(Instant.ofEpochMilli(unixTimestampMillis));
-            attributes.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME, deviceTimestamp));
+            try{
+                long unixTimestampMillis = Long.parseLong(reported.get("ts").toString());
+                Timestamp deviceTimestamp = Timestamp.from(Instant.ofEpochMilli(unixTimestampMillis));
+                attributes.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME, deviceTimestamp));
 
-            //Update all affected attribute timestamps
-            attributes.forEach(attribute -> {
-                attribute.setTimestamp(deviceTimestamp.getTime());
-            });
+                //Update all affected attribute timestamps
+                attributes.forEach(attribute -> {
+                    attribute.setTimestamp(deviceTimestamp.getTime());
+                });
+            }catch (Exception e){
+                logger.severe("Failed timestamps");
+                logger.severe(e.toString());
+                throw e;
+            }
 
         }
 
         // Store data points, allow use for rules, and don't allow user parameter modification, for every attribute parsed
-        attributes.forEach(attribute -> attribute.addOrReplaceMeta(
-                new MetaItem<>(STORE_DATA_POINTS, true),
-                new MetaItem<>(RULE_STATE, true),
-                new MetaItem<>(READ_ONLY, true)));
+        try{
+            attributes.forEach(attribute -> attribute.addOrReplaceMeta(
+                            new MetaItem<>(STORE_DATA_POINTS, true),
+                            new MetaItem<>(RULE_STATE, true),
+                            new MetaItem<>(READ_ONLY, true)
+                    )
+            );
+        }catch (Exception e){
+            logger.severe("Failed metaItems");
+            logger.severe(e.toString());
+            throw e;
+        }
 
         return attributes;
     }

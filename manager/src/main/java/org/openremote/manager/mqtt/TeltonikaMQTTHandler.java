@@ -262,9 +262,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         Asset<?> asset = assetStorageService.find(deviceUuid);
         try {
-            //Check state of Teltonika AVL ID 250 for FMC003, "Trip".
-//            Optional<Attribute<?>> sessionAttr = assetChangedTripState(new AttributeRef(asset.getId(), "250"));
-            AttributeMap attributes = getAttributesFromPayload(payloadContent);
+            AttributeMap attributes;
+            try{
+                attributes = getAttributesFromPayload(payloadContent);
+            }catch (JsonProcessingException e) {
+                getLogger().severe("Failed to getAttributesFromPayload");
+                getLogger().severe(e.toString());
+                throw e;
+            }
             Attribute<?> payloadAttribute =  new Attribute("payload", ValueType.JSON, payloadContent);
             payloadAttribute.addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true));
             attributes.add(payloadAttribute);
@@ -272,33 +277,56 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
 
 
-            if (asset == null) CreateNewAsset(deviceUuid, deviceImei, realm, attributes);
+            if (asset == null) {
+                try{
+                    CreateNewAsset(deviceUuid, deviceImei, realm, attributes);
+                } catch (Exception e){
+                    getLogger().severe("Failed to CreateNewAsset(deviceUuid, deviceImei, realm, attributes);");
+                    getLogger().severe(e.toString());
+                    throw e;
+                }
+            }
             else {
+            //Check state of Teltonika AVL ID 250 for FMC003, "Trip".
+//            Optional<Attribute<?>> sessionAttr = assetChangedTripState(new AttributeRef(asset.getId(), "250"));
                 // We want the state where the attribute 250 (Trip) is set to true.
                 AttributePredicate pred = new AttributePredicate("250", new NumberPredicate((double) 1, AssetQuery.Operator.EQUALS));
 
 //        Predicate<AssetDatapoint> pred = dp -> Objects.equals(dp.getValue(), Double.parseDouble("1"));
-                Attribute<?> prevValue = asset.getAttributes().get("250").get();
-                Attribute<?> newValue = attributes.get("250").get();
-                AttributeRef ref = new AttributeRef(asset.getId(), "250");
-                Optional<Attribute<?>> sessionAttr = assetChangedTripState(prevValue, newValue, pred, ref);
+                try{
+                    Attribute<?> prevValue = asset.getAttributes().get("250").get();
+                    Attribute<?> newValue = attributes.get("250").get();
+                    AttributeRef ref = new AttributeRef(asset.getId(), "250");
+                    Optional<Attribute<?>> sessionAttr = assetChangedTripState(prevValue, newValue, pred, ref);
 
-                if(sessionAttr.isPresent()){
-                    Attribute<?> session = sessionAttr.get();
-                    session.addOrReplaceMeta(
-                            new MetaItem<>(STORE_DATA_POINTS, true),
-                            new MetaItem<>(RULE_STATE, true),
-                            new MetaItem<>(READ_ONLY, true)
-                    );
-                    attributes.add(session);
+                    if (sessionAttr.isPresent()) {
+                        Attribute<?> session = sessionAttr.get();
+                        session.addOrReplaceMeta(
+                                new MetaItem<>(STORE_DATA_POINTS, true),
+                                new MetaItem<>(RULE_STATE, true),
+                                new MetaItem<>(READ_ONLY, true)
+                        );
+                        attributes.add(session);
 
+                    }
+                }catch (Exception e){
+                    getLogger().severe("Could not parse Asset State Duration data");
+                    getLogger().severe(e.toString());
                 }
-                UpdateAsset(asset, attributes, topic, connection);
+                try{
+                    UpdateAsset(asset, attributes, topic, connection);
+                }catch (Exception e){
+                    getLogger().severe("Failed to UpdateAsset(asset, attributes, topic, connection)");
+                    getLogger().severe(e.toString());
+                    throw e;
+                }
             };
 
         } catch (Exception e){
             getLogger().warning("Could not parse Teltonika device Payload.");
             getLogger().warning(payloadContent);
+            getLogger().warning(e.toString());
+//            getLogger().warning(e.fi);
         }
         // Check if asset was found
     }
@@ -369,9 +397,15 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             payload = mapper.readValue(payloadContent, TeltonikaPayload.class);
 
 
-
-
-            return payload.state.GetAttributes(params, new AttributeMap());
+            AttributeMap attributeMap;
+            try{
+                attributeMap = payload.state.GetAttributes(params, new AttributeMap(), getLogger());
+            }catch (Exception e){
+                getLogger().severe("Failed to payload.state.GetAttributes");
+                getLogger().severe(e.toString());
+                throw e;
+            }
+            return attributeMap;
         } catch (Exception e) {
             //If the payload wasn't parsed, then it means that it is either a response to a command,
             //or it's genuinely a wrong payload.
