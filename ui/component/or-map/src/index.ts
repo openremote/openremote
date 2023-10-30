@@ -27,7 +27,6 @@ export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
 export {Control, IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
-export * from "./orMapLocationHistoryOverlay"
 
 export interface ViewSettings {
     center: LngLatLike;
@@ -450,7 +449,7 @@ export class OrMap extends LitElement {
     public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
-    public _map?: MapWidget;
+    protected _map?: MapWidget;
     protected _loaded: boolean = false;
     protected _observer?: FlattenedNodesObserver;
     protected _markers: OrMapMarker[] = [];
