@@ -31,14 +31,11 @@ import java.util.Optional;
 public class CityAsset extends Asset<CityAsset> {
 
     public static final AttributeDescriptor<String> REGION = new AttributeDescriptor<>("region", ValueType.TEXT)
-        .withOptional(true);
+            .withOptional(true);
     public static final AttributeDescriptor<String> COUNTRY = new AttributeDescriptor<>("country", ValueType.TEXT);
     public static final AttributeDescriptor<String> CITY = new AttributeDescriptor<>("city", ValueType.TEXT)
-        .withOptional(true);
+            .withOptional(true);
 
-    /**
-     * TODO: modify the color parameter depending on the status of the ignition when the data is ingested at TeltonikaMQTTHandler
-     */
     public static final AssetDescriptor<CityAsset> DESCRIPTOR = new AssetDescriptor<>("city", null, CityAsset.class);
 
     /**
@@ -55,9 +52,9 @@ public class CityAsset extends Asset<CityAsset> {
         return getAttributes().getValue(CITY);
     }
 
-    public Optional<String> getRegion() { 
-		return getAttributes().getValue(REGION); 
-	}
+    public Optional<String> getRegion() {
+        return getAttributes().getValue(REGION);
+    }
 
     public Optional<String> getCountry() {
         return getAttributes().getValue(COUNTRY);

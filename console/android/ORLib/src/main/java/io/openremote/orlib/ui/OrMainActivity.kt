@@ -123,6 +123,8 @@ open class OrMainActivity : Activity() {
 
         val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
         val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
+
+        openIntentUrl(intent)
     }
 
 

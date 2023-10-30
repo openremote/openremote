@@ -679,6 +679,9 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public checked: boolean = false;
 
+    @property({type: Boolean})
+    public indeterminate: boolean = false;
+
     @property({type: Number})
     public maxLength?: number;
 
@@ -821,6 +824,11 @@ export class OrMwcInput extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues) {
+        if(_changedProperties.has("indeterminate")) {
+            if(this._mdcComponent && this.type === InputType.CHECKBOX){
+                (this._mdcComponent as any).indeterminate = this.indeterminate;
+            }
+        }
 
         if (_changedProperties.has("disabled")) {
             if (this._mdcComponent) {
@@ -1238,7 +1246,8 @@ export class OrMwcInput extends LitElement {
                         <div id="field" class="mdc-form-field">
                             <div id="component" class="${classMap(classList)}">
                                 <input type="checkbox" 
-                                    id="elem"
+                                    id="elem" 
+                                    data-indeterminate="${this.indeterminate}"
                                     ?checked="${this.value}"
                                     ?required="${this.required}"
                                     ?disabled="${this.disabled || this.readonly}"

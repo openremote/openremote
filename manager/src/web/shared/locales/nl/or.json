@@ -545,6 +545,8 @@
     }
   },
   "rowsPerPage": "Rijen per pagina",
+  "noEmailSet": "Gebruiker aanmaken mislukt, geen email ingevuld.",
+  "noUsernameSet": "Gebruiker aanmaken mislukt, geen gebruikersnaam ingevuld.",
   "createUserFailed": "Aanmaken gebruiker mislukt",
   "saveUserFailed": "Opslaan gebruiker mislukt",
   "saveUserSucceeded": "Gebruiker succesvol opgeslagen!",
@@ -602,6 +604,8 @@
     "widget-kpi": "KPI",
     "widget-linechart": "Lijngrafiek",
     "chartConfig": "Grafiek configuratie",
+    "markerCoordinates": "Marker coordinaten",
+    "imageSettings": "Afbeeldingsinstellingen",
     "presets.wrap_to_single_column": "Widgets onder elkaar zetten",
     "presets.keep_layout": "Behoud indeling",
     "presets.block_device": "Blokkeer dit apparaat",
@@ -642,7 +646,9 @@
     "showUnits": "Toon eenheden",
     "showLabels": "Toon labels",
     "zoom": "Zoom",
-    "center": "Middelpunt"
+    "center": "Middelpunt",
+    "imageUrl": "Afbeelding URL",
+    "noImageSelected": "Geen afbeelding geselecteerd"
   },
   "south": "Zuid",
   "east": "Oost",

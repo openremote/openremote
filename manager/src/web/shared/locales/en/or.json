@@ -545,6 +545,8 @@
     }
   },
   "rowsPerPage": "Rows per page",
+  "noEmailSet": "Create user failed, no email set.",
+  "noUsernameSet": "Create user failed, no username set",
   "createUserFailed": "Create user failed",
   "saveUserFailed": "Save user failed",
   "saveUserSucceeded": "Saved user successfully!",
@@ -602,6 +604,8 @@
     "widget-kpi": "KPI",
     "widget-linechart": "Line Chart",
     "chartConfig": "Chart Configuration",
+    "markerCoordinates": "Marker Coordinates",
+    "imageSettings": "Image Settings",
     "presets.wrap_to_single_column": "Wrap to single column",
     "presets.keep_layout": "Keep layout",
     "presets.block_device": "Block this device",
@@ -642,7 +646,9 @@
     "showUnits": "Show units",
     "showLabels": "Show labels",
     "zoom": "Zoom",
-    "center": "Center"
+    "center": "Center",
+    "imageUrl": "Image URL",
+    "noImageSelected": "No image selected"
   },
   "south": "South",
   "east": "East",

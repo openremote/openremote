@@ -119,12 +119,11 @@ public class User {
         return this;
     }
 
-    @NotNull(message = "{User.username.NotNull}")
     @Size(min = 3, max = 255, message = "{User.username.Size}")
-    @Pattern(regexp = "[a-zA-Z0-9-_]+", message = "{User.username.Pattern}")
+    @Pattern(regexp = "[A-Za-z0-9\\-_@.]+", message = "{User.username.Pattern}")
     @JsonProperty
     public String getUsername() {
-        return username.replace(SERVICE_ACCOUNT_PREFIX, "");
+        return username == null ? null : username.replace(SERVICE_ACCOUNT_PREFIX, "");
     }
 
     @JsonSetter("username")
