@@ -683,6 +683,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
  * is useful for units containing currency which in some locales is prefixed to the value e.g. £0.00 kW/hr rather than
  * 0.00 £kW/hr)
  */
+//TODO: Add custom units support (Not following Intl.NumberFormat)
 export function resolveUnits(units: string[] | undefined, valueStr?: string): string {
     if (!units) {
         return "";

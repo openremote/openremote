@@ -36,6 +36,9 @@ public class CityAsset extends Asset<CityAsset> {
     public static final AttributeDescriptor<String> CITY = new AttributeDescriptor<>("city", ValueType.TEXT)
         .withOptional(true);
 
+    /**
+     * TODO: modify the color parameter depending on the status of the ignition when the data is ingested at TeltonikaMQTTHandler
+     */
     public static final AssetDescriptor<CityAsset> DESCRIPTOR = new AssetDescriptor<>("city", null, CityAsset.class);
 
     /**
