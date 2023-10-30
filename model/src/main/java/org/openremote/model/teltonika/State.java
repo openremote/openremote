@@ -61,7 +61,7 @@ public class State {
     //DONE: Multiply value by multiplier
     //DEFERRED: Improve storage by using bytes variable? Improvements would be marginal, not to mention type safety.
     //DONE: If location is 0,0, don't overwrite location
-    //TODO: Move any function from here; it's a model (POJO).
+    //TODO: Move any function from here; it's a POJO.
     //TODO: Figure out what the parameters: pr, alt, ang, sat, sp, and evt do
     // and implement their functionality (I can guess but I want to know exactly).
     public AttributeMap GetAttributes(Map<Integer, TeltonikaParameter> params, AttributeMap additionalAttributes, Logger logger){
