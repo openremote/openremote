@@ -266,8 +266,9 @@ trait ContainerTrait {
 
         if (container == null) {
             try {
+                TestFixture.container = getContainer();
                 TestFixture.container = new Container(config, services)
-                container.startBackground()
+                getContainer().startBackground()
             } catch (Exception e) {
                 LOG.warn("Failed to start the container")
                 stopContainer()

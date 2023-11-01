@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -191,17 +192,42 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     protected Logger getLogger() {
         return LOG;
     }
-
-    //Users should be able to subscribe for now
     @Override
     public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
+        // Skip standard checks
+        if (!canSubscribe(connection, securityContext, topic)) {
+            getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", connection" + connection);
+            return false;
+        }
         return true;
     }
 
+    /**
+     * Checks if the Subscribing client should be allowed to subscribe to the topic that is handled by this Handler.
+     * For Teltonika device endpoints, we need the fourth token (Index 3) to be a valid IMEI number.
+     * We do that by checking using IMEIValidator.
+     */
+    // To be removed when auto-provisioning works
     @Override
     public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
-//        getLogger().info("Topic "+topic.toString()+" is not subscribe-able");
-        return true;
+        if(topic.getTokens().size() < 5){
+            getLogger().warning(MessageFormat.format("Topic {0} is not a valid Topic. Please use a valid Topic.", topic.getString()));
+            return false;
+        }
+        long imeiValue = 0;
+        try{
+            imeiValue = Long.parseLong(topic.getTokens().get(3));
+        }catch (NumberFormatException e){
+            getLogger().warning(MessageFormat.format("IMEI {0} is not a valid IMEI value. Please use a valid IMEI value.", topic.getTokens().get(3)));
+            return false;
+        }
+                // IMEI should already be checked
+        return  Objects.equals(topic.getTokens().get(2), TELTONIKA_DEVICE_TOKEN) &&
+                IMEIValidator.isValidIMEI(imeiValue) &&
+                (
+                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC) ||
+                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)
+                );
     }
 
     /**
@@ -237,6 +263,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * these topics will be passed to {@link #onPublish}.
      * The listener topics are defined as <code>{realmID}/{userID}/{@value TOKEN_TELTONIKA_DEVICE}/{IMEI}</code>
      * //DONE: Be explicit about sending data to {IMEI}/data, and sending commands to {IMEI}/commands.
+     * //TODO: Understand the data flow for which topics should be subscribed/not subscribed by the handler. I think that the command topic should not be there since we're not looking to read the command we just sent.
      */
     @Override
     public Set<String> getPublishListenerTopics() {
@@ -412,6 +439,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             TeltonikaResponsePayload response = mapper.readValue(payloadContent, TeltonikaResponsePayload.class);
             getLogger().info(response.rsp);
             AttributeMap map = new AttributeMap();
+            // TODO: Do we want to remove the value from TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME?
             map.addAll(new Attribute<>
                     (
                             new AttributeDescriptor<>(DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
