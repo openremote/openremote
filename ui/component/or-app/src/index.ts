@@ -287,19 +287,30 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             return;
         }
 
+        if(changedProps.has("_offline")) {
+            if(this._offline) {
+                console.log("You went offline..");
+            } else {
+                console.log("Back online!");
+            }
+        }
+
         // If either page or 'offline'-status is changed, it should update to the correct page,
         // by appending the page to the HTML content
         if (changedProps.has("_page") || changedProps.has("_offline")) {
             if (this._mainElem) {
 
                 const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
-                const showOfflineFallback = (this._offline && !pageProvider?.allowOffline);
+                const showOfflineFallback = (this.appConfig!.offlinePage && this._offline && !pageProvider?.allowOffline);
                 const offlinePage = this._mainElem.querySelector('#offline-page');
+                const currentPage = this._mainElem.firstElementChild as HTMLElement | undefined;
 
-                // If page has changed, replace the previous content with the new page.
+                // If page has changed, or the user came back online (OFFLINE -> ONLINE), update the page.
+                // When there is already a page present, replace the content with the new page.
                 // However, if no page is present yet, append it to the page.
-                if(changedProps.has('_page') && pageProvider) {
-                    const currentPage = this._mainElem.firstElementChild;
+                const pageChanged = changedProps.has('_page');
+                const backOnline = (changedProps.has('_offline') && changedProps.get('_offline') == true && !this._offline)
+                if(pageProvider && (pageChanged || backOnline)) {
                     if(currentPage) {
                         const newPage = pageProvider.pageCreator();
                         if(showOfflineFallback) {
@@ -316,21 +327,20 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 if(offlinePage && !showOfflineFallback) {
                     console.log("Removing offline page fallback!");
                     this._mainElem.removeChild(offlinePage);
-                    const elem = this._mainElem.firstElementChild as HTMLElement;
 
                     // If the current page is "loaded during offline", the content is either empty or invalid; so we recreate it.
-                    if(pageProvider && elem?.getAttribute('loadedDuringOffline') === 'true') {
-                        this._mainElem.replaceChild(pageProvider.pageCreator(), elem); // recreate page
+                    if(pageProvider && currentPage?.getAttribute('loadedDuringOffline') === 'true') {
+                        this._mainElem.replaceChild(pageProvider.pageCreator(), currentPage); // recreate page
                     } else {
-                        elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
+                        currentPage?.style.removeProperty('display'); // show the current page again (back to the foreground)
                     }
                 }
 
                 // CASE: "Offline overlay page is NOT present, but needs to be there"
                 else if(!offlinePage && showOfflineFallback) {
                     console.log("Showing offline page fallback!");
-                    const newOfflinePage = (this.appConfig?.offlinePage) ? this.appConfig.offlinePage.pageCreator() : pageOfflineProvider(this._store).pageCreator();
-                    (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
+                    currentPage?.style.setProperty('display', 'none'); // Hide the current page (to the background)
+                    const newOfflinePage = (typeof this.appConfig!.offlinePage == "boolean") ? pageOfflineProvider(this._store).pageCreator() : this.appConfig!.offlinePage!.pageCreator();
                     newOfflinePage.id = "offline-page";
                     this._mainElem.appendChild(newOfflinePage);
                 }

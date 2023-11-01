@@ -21,7 +21,7 @@ export interface RealmAppConfig {
 
 export interface AppConfig<S extends AppStateKeyed> {
     pages: PageProvider<S>[];
-    offlinePage?: PageProvider<S>; // override for fallback page when user is offline/disconnected
+    offlinePage?: PageProvider<S> | boolean; // set fallback page when user is offline/disconnected ('true' will use default fallback page, 'undefined' will not show the page at all)
     languages?: Languages;
     superUserHeader?: HeaderConfig;
     realms?: {

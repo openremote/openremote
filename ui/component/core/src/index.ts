@@ -926,10 +926,12 @@ export class Manager implements EventProviderFactory {
                 this._setAuthenticated(false);
             };
 
+            // When keycloak fails to refresh the access token,
+            // we start the reconnectTimer to request a token in an increased rate (for example every 5 sec instead of 30)
             this._keycloak!.onAuthRefreshError = () => {
                 console.log("Failed to refresh the access token.")
                 if(this._keycloak?.isTokenExpired()) {
-                    this._runReconnectTimer();
+                    this._runReconnectTimer(5000);
                 }
             }
 
@@ -980,6 +982,18 @@ export class Manager implements EventProviderFactory {
     }
 
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
+
+        // If refresh token is present and expired, redirect to login page.
+        if(this._keycloak!.refreshTokenParsed) {
+            const refreshDate = new Date(0);
+            refreshDate.setUTCSeconds(this._keycloak!.refreshTokenParsed.exp as number)
+            if(refreshDate < new Date()) {
+                this._keycloak!.clearToken();
+                this._keycloak!.login();
+                return;
+            }
+        }
+
         // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
         const tokenRefreshed = await this._keycloak!.updateToken(30);
         // If refreshed from server, it means the refresh token was still good for another access token
