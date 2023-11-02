@@ -184,8 +184,9 @@ public class State {
                     AttributeDescriptor<?> attributeDescriptor = new AttributeDescriptor<>(parameter.propertyId.toString(), attributeType, metaMap);
 
                     //Use the AttributeDescriptor and the Value to create a new Attribute
+                    Attribute<?> generatedAttribute = new Attribute(attributeDescriptor, value.get());
                     // Add it to the AttributeMap
-                    attributes.add(new Attribute<>(attributeDescriptor, value.get()));
+                    attributes.addOrReplace(generatedAttribute);
                 }
             }
         }
