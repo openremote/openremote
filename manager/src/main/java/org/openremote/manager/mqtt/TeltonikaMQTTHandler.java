@@ -225,7 +225,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             return false;
         }
                 // IMEI should already be checked
-        return  Objects.equals(topic.getTokens().get(2), TELTONIKA_DEVICE_TOKEN) &&
+        return  topic.getTokens().get(2) == TELTONIKA_DEVICE_TOKEN &&
                 IMEIValidator.isValidIMEI(imeiValue) &&
                 (
                         Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC) ||
