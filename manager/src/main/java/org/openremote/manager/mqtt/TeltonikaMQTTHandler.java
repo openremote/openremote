@@ -298,7 +298,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                 getLogger().severe(e.toString());
                 throw e;
             }
-            Attribute<?> payloadAttribute =  new Attribute("payload", ValueType.JSON, payloadContent);
+            Attribute<String> payloadAttribute =  new Attribute<String>("payload", ValueType.TEXT, payloadContent);
             payloadAttribute.addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true));
             attributes.add(payloadAttribute);
 
