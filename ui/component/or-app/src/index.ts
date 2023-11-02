@@ -309,8 +309,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 // When there is already a page present, replace the content with the new page.
                 // However, if no page is present yet, append it to the page.
                 const pageChanged = changedProps.has('_page');
-                const backOnline = (changedProps.has('_offline') && changedProps.get('_offline') == true && !this._offline)
-                if(pageProvider && (pageChanged || backOnline)) {
+                /*const backOnline = (changedProps.has('_offline') && changedProps.get('_offline') == true && !this._offline)*/ // TODO: Temporary disabled
+                if(pageProvider && (pageChanged /*|| backOnline*/)) {
                     if(currentPage) {
                         const newPage = pageProvider.pageCreator();
                         if(showOfflineFallback) {
