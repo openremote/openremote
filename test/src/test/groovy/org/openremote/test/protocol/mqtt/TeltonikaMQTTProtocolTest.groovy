@@ -343,6 +343,9 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
             asset = assetStorageService.find(UniqueIdentifierGenerator.generateId(getTELTONIKA_DEVICE_IMEI()))
             assert asset != null;
             assert asset.getAttribute("IMEI").get().getValue().get() == (getTELTONIKA_DEVICE_IMEI());
+            //Make sure that it parsed the attributes, since there is an issue of parsing the FMC003.json file
+            assert asset.getAttributes().size() > 5;
+
         }
 
         and: "with the correct values within the Asset"
