@@ -266,9 +266,8 @@ trait ContainerTrait {
 
         if (container == null) {
             try {
-                TestFixture.container = getContainer();
                 TestFixture.container = new Container(config, services)
-                getContainer().startBackground()
+                container.startBackground()
             } catch (Exception e) {
                 LOG.warn("Failed to start the container")
                 stopContainer()
@@ -372,7 +371,7 @@ trait ContainerTrait {
 
     boolean noEventProcessedIn(AssetProcessingService assetProcessingService, int milliseconds) {
         return (assetProcessingService.lastProcessedEventTimestamp > 0
-            && assetProcessingService.lastProcessedEventTimestamp + milliseconds < System.currentTimeMillis())
+                && assetProcessingService.lastProcessedEventTimestamp + milliseconds < System.currentTimeMillis())
     }
 
     List<Ruleset> getRulesets(Class<? extends Ruleset> clazz) {

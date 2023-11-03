@@ -224,13 +224,21 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             getLogger().warning(MessageFormat.format("IMEI {0} is not a valid IMEI value. Please use a valid IMEI value.", topic.getTokens().get(3)));
             return false;
         }
-                // IMEI should already be checked
-        return  topic.getTokens().get(2) == TELTONIKA_DEVICE_TOKEN &&
-                IMEIValidator.isValidIMEI(imeiValue) &&
-                (
-                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC) ||
-                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)
-                );
+        //TODO: fix the boolean expression that is commented out below
+
+        if(!topic.getTokens().get(2).equalsIgnoreCase(TELTONIKA_DEVICE_TOKEN)) return false;
+        if(!IMEIValidator.isValidIMEI(imeiValue)) return false;
+        if(Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC)) return true;
+        if(Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)) return true;
+
+        return true;
+
+//        return  topic.getTokens().get(2) == TELTONIKA_DEVICE_TOKEN &&
+//                IMEIValidator.isValidIMEI(imeiValue) &&
+//                (
+//                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC) ||
+//                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)
+//                );
     }
 
     /**

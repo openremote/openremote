@@ -33,7 +33,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 class TeltonikaMQTTProtocolTest extends Specification implements ManagerContainerTrait {
-    @Shared public def conditions = new PollingConditions(timeout: 100, delay: 0.2)
+    @Shared public def conditions = new PollingConditions(timeout: 10, delay: 0.1)
     public static Map<String, TeltonikaParameter> params;
 
     public static Container container
@@ -143,7 +143,6 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
 
         String dataTopic = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
         client.connect();
-        client.addMessageConsumer(dataTopic, { msg -> getLOG().print(msg.toString())});
 
         then: "mqtt connection should exist"
         conditions.eventually {
@@ -151,6 +150,8 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
             def connection = mqttBrokerService.getConnectionFromClientID(mqttClientId)
             assert connection != null
         }
+
+        client.addMessageConsumer(dataTopic, { _ -> return});
 
         and: "There should be a subscription handled by TeltonikaMQTTHandler"
         conditions.eventually {
@@ -161,8 +162,8 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
         }
 
         cleanup: "disconnect client from broker"
-        client.disconnect()
         client.removeAllMessageConsumers()
+        client.disconnect()
     }
 
     def "the device connects to the MQTT broker to a data topic without TELTONIKA_DEVICE_TOKEN"() {
@@ -254,7 +255,6 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
         def correctTopic1 = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
 
         client.connect();
-        client.addMessageConsumer(correctTopic1, { _ -> return });
 
         then: "mqtt connection should exist"
         conditions.eventually {
@@ -262,6 +262,7 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
             def connection = mqttBrokerService.getConnectionFromClientID(mqttClientId)
             assert connection != null
         }
+        client.addMessageConsumer(correctTopic1, { _ -> return });
 
         then: "A subscription should exist"
         conditions.eventually {
