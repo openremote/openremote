@@ -63,7 +63,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     //TODO: Allow the below fields to be defined as environment variables
     private static final String TELTONIKA_DEVICE_RECEIVE_TOPIC = "data";
     private static final String TELTONIKA_DEVICE_SEND_TOPIC = "commands";
-    private static final String TELTONIKA_DEVICE_TOKEN = "teltonika";
+    final String TELTONIKA_DEVICE_TOKEN = "teltonika";
     private static final String TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME = "sendToDevice";
     private static final String TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME = "response";
 
