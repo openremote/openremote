@@ -125,17 +125,11 @@ export class OrChartWidgetContent extends LitElement {
         return html`
             ${when(this.assets && this.assetAttributes && this.assets.length > 0 && this.assetAttributes.length > 0, () => {
                 return html`
-                    <or-chart .assets="${this.assets}" 
-                              .assetAttributes="${this.assetAttributes}" 
-                              .realm="${this.realm}" 
+                    <or-chart .assets="${this.assets}" .assetAttributes="${this.assetAttributes}" .realm="${this.realm}" 
                               .showLegend="${(this.widget?.widgetConfig?.showLegend != null) ? this.widget?.widgetConfig?.showLegend : true}" 
-                              .attributeControls="${false}" 
-                              .timestampControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" 
-                              .algorithm="${this.widget?.widgetConfig?.algorithm}" 
-                              .timePresetOptions="${timePresetOptions}" 
-                              .timePresetKey="${this.widget?.widgetConfig?.defaultTimePresetKey}" 
-                              .datapointQuery="${this.widget?.widgetConfig?.datapointQuery}" 
-                              .chartOptions="${this.widget?.widgetConfig?.chartOptions}" 
+                              .attributeControls="${false}" .timestampControls="${!this.editMode && this.widget?.widgetConfig?.showTimestampControls}" .algorithm="${this.widget?.widgetConfig?.algorithm}" 
+                              .timePresetOptions="${timePresetOptions}" .timePresetKey="${this.widget?.widgetConfig?.defaultTimePresetKey}" 
+                              .datapointQuery="${this.widget?.widgetConfig?.datapointQuery}" .chartOptions="${this.widget?.widgetConfig?.chartOptions}" 
                               style="height: 100%"
                     ></or-chart>
                 `;
