@@ -62,7 +62,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     private static final String TELTONIKA_DEVICE_RECEIVE_TOPIC = "data";
     private static final String TELTONIKA_DEVICE_SEND_TOPIC = "commands";
-    final String TELTONIKA_DEVICE_TOKEN = "teltonika";
+    private static final String TELTONIKA_DEVICE_TOKEN = "teltonika";
     private static final String TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME = "sendToDevice";
     private static final String TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME = "response";
 
@@ -83,7 +83,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      */
     @Override
     protected boolean topicMatches(Topic topic) {
-        return TOKEN_TELTONIKA_DEVICE.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+        return TELTONIKA_DEVICE_TOKEN.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
     }
 
     @Override
@@ -114,13 +114,13 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     /**
      * Creates a filter for the AttributeEvents that could send a command to a Teltonika Device.
      *
-     * @return AssetFilter of CarAssets that have both {@value DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME} and
-     * {@value DEVICE_SEND_COMMAND_ATTRIBUTE_NAME} as attributes.
+     * @return AssetFilter of CarAssets that have both {@value TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME} and
+     * {@value TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME} as attributes.
      */
     private AssetFilter<AttributeEvent> buildAssetFilter(){
         List<Asset<?>> assetsWithAttribute = assetStorageService
                 .findAll(new AssetQuery().types(CarAsset.class)
-                .attributeNames(DEVICE_SEND_COMMAND_ATTRIBUTE_NAME));
+                .attributeNames(TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME));
         ArrayList<String> listOfCarAssetIds = new ArrayList<>();
         assetsWithAttribute.forEach(asset -> listOfCarAssetIds.add(asset.getId()));
         AssetFilter<AttributeEvent> event = new AssetFilter<>();
@@ -134,13 +134,13 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     //with payload {"CMD":"getstatus"} seems to work. Maybe the quotes are the issue?
     private void handleAttributeMessage(AttributeEvent event) {
         // If this is not an AttributeEvent that updates a sendToDevice field, ignore
-        if (!Objects.equals(event.getAttributeName(), DEVICE_SEND_COMMAND_ATTRIBUTE_NAME)) return;
+        if (!Objects.equals(event.getAttributeName(), TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME)) return;
         getLogger().info(event.getEventType());
         //Find the asset in question
         Asset<?> asset = assetStorageService.find(new AssetQuery().ids(event.getAssetId()).types(CarAsset.class));
 
         // Double check, remove later, sanity checks
-        if(asset.hasAttribute(DEVICE_SEND_COMMAND_ATTRIBUTE_NAME)){
+        if(asset.hasAttribute(TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME)){
             if(Objects.equals(event.getAssetId(), asset.getId())){
 
                 //Get the IMEI of the device
@@ -269,7 +269,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     /**
      * Get the set of topics this handler wants to subscribe to for incoming publish messages; messages that match
      * these topics will be passed to {@link #onPublish}.
-     * The listener topics are defined as <code>{realmID}/{userID}/{@value TOKEN_TELTONIKA_DEVICE}/{IMEI}</code>
+     * The listener topics are defined as <code>{realmID}/{userID}/{@value TELTONIKA_DEVICE_TOKEN}/{IMEI}</code>
      * //DONE: Be explicit about sending data to {IMEI}/data, and sending commands to {IMEI}/commands.
      * //TODO: Understand the data flow for which topics should be subscribed/not subscribed by the handler. I think that the command topic should not be there since we're not looking to read the command we just sent.
      */
@@ -277,9 +277,9 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     public Set<String> getPublishListenerTopics() {
         return Set.of(
                 TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" +
-                        TOKEN_TELTONIKA_DEVICE + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TELTONIKA_DEVICE_RECEIVE_TOPIC,
+                        TELTONIKA_DEVICE_TOKEN + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TELTONIKA_DEVICE_RECEIVE_TOPIC,
                 TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" +
-                        TOKEN_TELTONIKA_DEVICE + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TELTONIKA_DEVICE_SEND_TOPIC
+                        TELTONIKA_DEVICE_TOKEN + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TELTONIKA_DEVICE_SEND_TOPIC
         );
     }
 
@@ -368,7 +368,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * Creates a new asset with the correct "hashed" Asset ID, its IMEI,
      * in the realm the MQTT message of the device submitted,
      * and the parsed list of attributes.
-     * //TODO: Add {@value DEVICE_SEND_COMMAND_ATTRIBUTE_NAME }, {@value DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME} Attributes when creating Asset
+     * //TODO: Add {@value TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME }, {@value TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME} Attributes when creating Asset
      *
      * @param newDeviceId The ID of the device's Asset.
      * @param newDeviceImei The IMEI of the device. If passed to
@@ -447,14 +447,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             TeltonikaResponsePayload response = mapper.readValue(payloadContent, TeltonikaResponsePayload.class);
             getLogger().info(response.rsp);
             AttributeMap map = new AttributeMap();
-            // TODO: Do we want to remove the value from TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME?
+            // TODO: Do we want to remove the value from TELTONIKA_TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME?
             map.addAll(new Attribute<>
                     (
-                            new AttributeDescriptor<>(DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
+                            new AttributeDescriptor<>(TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
                             response.rsp
                     ),
                     new Attribute<>(
-                            new AttributeDescriptor<>(DEVICE_SEND_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
+                            new AttributeDescriptor<>(TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
                     response.rsp
                     )
             );
