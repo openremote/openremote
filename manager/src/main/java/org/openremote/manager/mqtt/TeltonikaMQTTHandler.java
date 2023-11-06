@@ -121,31 +121,40 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         List<Asset<?>> assetsWithAttribute = assetStorageService
                 .findAll(new AssetQuery().types(CarAsset.class)
                 .attributeNames(TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME));
-        ArrayList<String> listOfCarAssetIds = new ArrayList<>();
-        assetsWithAttribute.forEach(asset -> listOfCarAssetIds.add(asset.getId()));
+        List<String> listOfCarAssetIds = assetsWithAttribute.stream()
+                .map(Asset::getId)
+                .toList();
+
         AssetFilter<AttributeEvent> event = new AssetFilter<>();
         event.setAssetIds(listOfCarAssetIds.toArray(new String[0]));
-        event.setAttributeNames("sendToDevice");
+        event.setAttributeNames(TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME);
         return event;
     }
 
-
-    //Sending a message to master/teltonikaDevice1/teltonika/864636060373301/commands
-    //with payload {"CMD":"getstatus"} seems to work. Maybe the quotes are the issue?
     private void handleAttributeMessage(AttributeEvent event) {
-        // If this is not an AttributeEvent that updates a sendToDevice field, ignore
+        // If this is not an AttributeEvent that updates a TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME field, ignore
         if (!Objects.equals(event.getAttributeName(), TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME)) return;
         getLogger().info(event.getEventType());
         //Find the asset in question
-        Asset<?> asset = assetStorageService.find(new AssetQuery().ids(event.getAssetId()).types(CarAsset.class));
+        CarAsset asset = assetStorageService.find(event.getAssetId(), CarAsset.class);
 
         // Double check, remove later, sanity checks
         if(asset.hasAttribute(TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME)){
             if(Objects.equals(event.getAssetId(), asset.getId())){
 
                 //Get the IMEI of the device
-                Attribute<String> imei = asset.getAttribute("IMEI", String.class).get();
-                String imeiString = imei.getValue().get();
+                Optional<Attribute<String>> imei;
+                String imeiString;
+                try {
+                    imei = asset.getAttribute("IMEI", String.class);
+                    if(imei.isEmpty()) throw new Exception();
+                    if(imei.get().getValue().isEmpty()) throw new Exception();
+                    imeiString = imei.get().getValue().get();
+
+                }catch (Exception e){
+                    getLogger().warning("This Asset does not contain an IMEI! Can't send message!");
+                    return;
+                }
 
                 // Get the device subscription information, and even if it's subscribed
                 TeltonikaDevice deviceInfo = connectionSubscriberInfoMap.get(imeiString);
@@ -156,11 +165,11 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
                     getLogger().info(String.format("Device %s is not subscribed to topic, not posting message",
                             imeiString));
-                    return;
                 // If it is subscribed, check that there is a command there, and send the command
                 } else{
                     if(event.getValue().isPresent()){
                         this.sendCommandToTeltonikaDevice((String)event.getValue().get(), deviceInfo);
+                        getLogger().fine("MQTT Message fired");
                     }
                     else{
                         getLogger().warning("Attribute sendToDevice was empty");
@@ -169,9 +178,6 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
             }
         }
-
-
-        getLogger().info("fired");
     }
 
     /**
@@ -214,7 +220,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             getLogger().warning(MessageFormat.format("Topic {0} is not a valid Topic. Please use a valid Topic.", topic.getString()));
             return false;
         }
-        long imeiValue = 0;
+        long imeiValue;
         try{
             imeiValue = Long.parseLong(topic.getTokens().get(3));
         }catch (NumberFormatException e){
@@ -228,14 +234,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         if(Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC)) return true;
         if(Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)) return true;
 
-        return true;
+//        return true;
 
-//        return  topic.getTokens().get(2) == TELTONIKA_DEVICE_TOKEN &&
-//                IMEIValidator.isValidIMEI(imeiValue) &&
-//                (
-//                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC) ||
-//                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)
-//                );
+        return Objects.equals(topic.getTokens().get(2), TELTONIKA_DEVICE_TOKEN) &&
+                IMEIValidator.isValidIMEI(imeiValue) &&
+                (
+                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC) ||
+                        Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)
+                );
     }
 
     /**
@@ -303,7 +309,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                 getLogger().severe(e.toString());
                 throw e;
             }
-            Attribute<String> payloadAttribute =  new Attribute<String>("payload", ValueType.TEXT, payloadContent);
+            Attribute<String> payloadAttribute = new Attribute<>("payload", ValueType.TEXT, payloadContent);
             payloadAttribute.addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true));
             attributes.add(payloadAttribute);
 
@@ -325,8 +331,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                 // We want the state where the attribute 250 (Trip) is set to true.
                 AttributePredicate pred = new AttributePredicate("250", new NumberPredicate((double) 1, AssetQuery.Operator.EQUALS));
 
-//        Predicate<AssetDatapoint> pred = dp -> Objects.equals(dp.getValue(), Double.parseDouble("1"));
                 try{
+                    if (asset.getAttributes().get("250").isEmpty()) {
+                        getLogger().warning("The new value is empty!");
+                        throw new Exception();
+                    } else if (attributes.get("250").isEmpty()) {
+                        getLogger().warning("The old value is empty!");
+                        throw new Exception();
+                    }
                     Attribute<?> prevValue = asset.getAttributes().get("250").get();
                     Attribute<?> newValue = attributes.get("250").get();
                     AttributeRef ref = new AttributeRef(asset.getId(), "250");
@@ -353,7 +365,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                     getLogger().severe(e.toString());
                     throw e;
                 }
-            };
+            }
 
         } catch (Exception e){
             getLogger().warning("Could not parse Teltonika device Payload.");
@@ -479,6 +491,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         //We will first check if the predicate fails for the new value, and then check if the predicate is true for the previous value.
         //In that way, we know that the state change happened between the new and previous values.
 
+        if (newValue.getValue().isEmpty()) {
+            getLogger().warning("The new value is empty!");
+            return Optional.empty();
+        } else if (previousValue.getValue().isEmpty()) {
+            getLogger().warning("The old value is empty!");
+            return Optional.empty();
+        }
+
         //TODO: Understand what happens with negate(), does it change states to the object itself?
         boolean newValueTest =      pred.value.asPredicate(timerService::getCurrentTimeMillis).test(newValue        .getValue().get());
         boolean previousValueTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(previousValue   .getValue().get());
@@ -544,6 +564,12 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         //To make this easier, we are going to use some time-padding of 1 second from the gap. It's going to be sufficient to cover some edge-cases.
 
         //The AssetStateDuration will have a startTime of the found state-change variable, and the endDate will be the previousValue's timestamp, that being the end of the state duration
+
+        if(previousValue.getTimestamp().isEmpty()){
+            getLogger().warning("previousValue's timestamp is empty!");
+            return Optional.empty();
+        }
+
         Attribute<?> tripAttr = new Attribute<>("LastTripStartedAndEndedAt", ValueType.ASSET_STATE_DURATION, new AssetStateDuration(
                 new Timestamp(StateChangeAssetDatapoint.getTimestamp()),
                 new Timestamp(previousValue.getTimestamp().get())
@@ -581,12 +607,6 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         // because there is no attribute to update. ATTRIBUTE_DOESNT_EXIST
         //OBD details: Prot:6,VIN:WVGZZZ1TZBW068095,TM:15,CNT:19,ST:DATA REQUESTING,P1:0xBE3EA813,P2:0xA005B011,P3:0xFED00400,P4:0x0,MIL:0,DTC:0,ID3,Hdr:7E8,Phy:0
         //Find which attributes need to be updated and which attributes need to be just reminded of updating.
-
-
-
-
-
-
 
         //I'm not sure why this needs these specific headers.
         Map<String, Object> headers = DefaultMQTTHandler.prepareHeaders(topicRealm(topic), connection);
