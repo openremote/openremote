@@ -39,6 +39,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.syslog.SyslogCategory.API;
@@ -96,7 +97,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         timerService = container.getService(TimerService.class);
         DeviceParameterPath = Paths.get("deployment/manager/fleet/FMC003.json");
         if (!identityService.isKeycloakEnabled()) {
-            getLogger().warning("MQTT connections are not supported when not using Keycloak identity provider");
+            getLogger().warning("MQTT connections are supported when not using Keycloak identity provider, only for the Teltonika Telematics devices, until auto-provisioning is fully implemented.");
             isKeycloak = false;
         } else {
             isKeycloak = true;
@@ -134,7 +135,6 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     private void handleAttributeMessage(AttributeEvent event) {
         // If this is not an AttributeEvent that updates a TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME field, ignore
         if (!Objects.equals(event.getAttributeName(), TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME)) return;
-        getLogger().info(event.getEventType());
         //Find the asset in question
         CarAsset asset = assetStorageService.find(event.getAssetId(), CarAsset.class);
 
@@ -160,22 +160,18 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                 TeltonikaDevice deviceInfo = connectionSubscriberInfoMap.get(imeiString);
                 //If it's null, the device is not subscribed, leave
                 if(deviceInfo == null) {
-                    //Maybe it does not have to be subscribed to the topic to receive the message?
-                    //When subscribed in MQTT Explorer, it works, but when not, deviceInfo is null
-
                     getLogger().info(String.format("Device %s is not subscribed to topic, not posting message",
                             imeiString));
-                // If it is subscribed, check that there is a command there, and send the command
+                // If it is subscribed, check that the attribute's value is not empty, and send the command
                 } else{
                     if(event.getValue().isPresent()){
                         this.sendCommandToTeltonikaDevice((String)event.getValue().get(), deviceInfo);
                         getLogger().fine("MQTT Message fired");
                     }
                     else{
-                        getLogger().warning("Attribute sendToDevice was empty");
+                        getLogger().warning("Attribute "+TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME+" was empty");
                     }
                 }
-
             }
         }
     }
@@ -202,7 +198,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     public boolean checkCanSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         // Skip standard checks
         if (!canSubscribe(connection, securityContext, topic)) {
-            getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", connection" + connection);
+            getLogger().warning("Cannot subscribe to this topic, topic=" + topic + ", connection" + connection);
             return false;
         }
         return true;
@@ -252,7 +248,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      */
     @Override
     public boolean checkCanPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
-        return true;
+        return canPublish(connection,securityContext, topic);
     }
 
     @Override
@@ -262,22 +258,20 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     }
 
     public void onSubscribe(RemotingConnection connection, Topic topic) {
-        getLogger().info("CONNECT: Device "+topic.tokens.get(1)+" connected to topic "+topic+".");
+//        getLogger().info("CONNECT: Device "+topic.tokens.get(1)+" connected to topic "+topic+".");
         connectionSubscriberInfoMap.put(topic.tokens.get(3), new TeltonikaDevice(topic));
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
-        getLogger().info("DISCONNECT: Device "+topic.tokens.get(1)+" disconnected from topic "+topic+".");
+//        getLogger().info("DISCONNECT: Device "+topic.tokens.get(1)+" disconnected from topic "+topic+".");
         connectionSubscriberInfoMap.remove(topic.tokens.get(3));
     }
 
     /**
      * Get the set of topics this handler wants to subscribe to for incoming publish messages; messages that match
      * these topics will be passed to {@link #onPublish}.
-     * The listener topics are defined as <code>{realmID}/{userID}/{@value TELTONIKA_DEVICE_TOKEN}/{IMEI}</code>
-     * //DONE: Be explicit about sending data to {IMEI}/data, and sending commands to {IMEI}/commands.
-     * //TODO: Understand the data flow for which topics should be subscribed/not subscribed by the handler. I think that the command topic should not be there since we're not looking to read the command we just sent.
+     * The listener topics are defined as <code>{realmID}/{userID}/{@value TELTONIKA_DEVICE_TOKEN}/{IMEI}/{@value TELTONIKA_DEVICE_RECEIVE_TOPIC}</code>
      */
     @Override
     public Set<String> getPublishListenerTopics() {
@@ -291,13 +285,12 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+        //TODO: How bad/easy would it be to emit events for when a new payload comes in with the attributes parsed?
         String payloadContent = body.toString(StandardCharsets.UTF_8);
-        getLogger().info(payloadContent);
         String deviceImei = topic.tokens.get(3);
         String realm = topic.tokens.get(0);
 
         String deviceUuid = UniqueIdentifierGenerator.generateId(deviceImei);
-        getLogger().info("IMEI Linked to Asset ID:"+ deviceUuid);
 
         Asset<?> asset = assetStorageService.find(deviceUuid);
         try {
@@ -318,7 +311,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
             if (asset == null) {
                 try{
-                    CreateNewAsset(deviceUuid, deviceImei, realm, attributes);
+                    createNewAsset(deviceUuid, deviceImei, realm, attributes);
                 } catch (Exception e){
                     getLogger().severe("Failed to CreateNewAsset(deviceUuid, deviceImei, realm, attributes);");
                     getLogger().severe(e.toString());
@@ -359,7 +352,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                     getLogger().severe(e.toString());
                 }
                 try{
-                    UpdateAsset(asset, attributes, topic, connection);
+                    updateAsset(asset, attributes, topic, connection);
                 }catch (Exception e){
                     getLogger().severe("Failed to UpdateAsset(asset, attributes, topic, connection)");
                     getLogger().severe(e.toString());
@@ -369,7 +362,6 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         } catch (Exception e){
             getLogger().warning("Could not parse Teltonika device Payload.");
-            getLogger().warning(payloadContent);
             getLogger().warning(e.toString());
 //            getLogger().warning(e.fi);
         }
@@ -389,8 +381,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * @param realm The realm to create the Asset in.
      * @param attributes The attributes to insert in the Asset.
      */
-    private void CreateNewAsset(String newDeviceId, String newDeviceImei, String realm, AttributeMap attributes) {
-        getLogger().info("Creating CarAsset with IMEI "+newDeviceImei);
+    private void createNewAsset(String newDeviceId, String newDeviceImei, String realm, AttributeMap attributes) {
 
         CarAsset testAsset = new CarAsset("Teltonika Asset "+newDeviceImei)
                 .setRealm(realm)
@@ -404,10 +395,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         testAsset.addOrReplaceAttributes(attributes.stream().toArray(Attribute[]::new));
         Asset<?> mergedAsset = assetStorageService.merge(testAsset);
 
-        if(mergedAsset != null){
-            getLogger().info("Created Asset through Teltonika: " + testAsset);
-//            getLogger().info()
-        }else{
+        if(mergedAsset == null) {
             getLogger().info("Failed to create Asset: " + testAsset);
         }
     }
@@ -424,16 +412,20 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         ObjectMapper mapper = new ObjectMapper();
         try {
             // Parse file with Parameter details
-            TeltonikaParameter[] paramArray = mapper.readValue(getParameterFileString(), TeltonikaParameter[].class);
-
-            getLogger().info("Parsed "+paramArray.length+" Teltonika Parameters");
 
             // Add each element to the HashMap, with the key being the unique parameter ID and the parameter
             // being the value
-            for (TeltonikaParameter param : paramArray) {
-                params.put(param.getPropertyId(), param);
-            }
+            params = Arrays.stream(mapper.readValue(getParameterFileString(), TeltonikaParameter[].class)).collect(Collectors.toMap(
+                    TeltonikaParameter::getPropertyId, // Key Mapper
+                    param -> param, // Value Mapper
+                    (existing, replacement) -> replacement, // Merge Function
+                    HashMap::new
+            ));
+
+            getLogger().info("Parsed "+params.size()+" Teltonika Parameters");
+
         } catch (Exception e) {
+            getLogger().warning("Could not parse the Teltonika Parameter file");
             getLogger().info(e.toString());
         }
         //Parameters parsed, time to understand the payload
@@ -457,17 +449,12 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
             mapper = new ObjectMapper();
             TeltonikaResponsePayload response = mapper.readValue(payloadContent, TeltonikaResponsePayload.class);
-            getLogger().info(response.rsp);
             AttributeMap map = new AttributeMap();
-            // TODO: Do we want to remove the value from TELTONIKA_TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME?
+            // TODO: Do we want to remove the value from TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME?
             map.addAll(new Attribute<>
                     (
                             new AttributeDescriptor<>(TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
                             response.rsp
-                    ),
-                    new Attribute<>(
-                            new AttributeDescriptor<>(TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME, ValueType.TEXT),
-                    response.rsp
                     )
             );
             return map;
@@ -516,8 +503,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         // If there are no historical data found, add some first
         if(list.isEmpty()) return Optional.empty();
 
-        //What we do now is, we will try to figure out the latest datapoint where the predicate fails,
-        //before the newValue.
+        //What we do now is, we will try to figure out the latest datapoint where the predicate fails, before the newValue.
         //This means that, the state change took place between the datapoint we just found and its next one.
 
         //Find the first datapoint that passes the negated predicate
@@ -533,7 +519,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     //            So, if the currentDp passes the predicate,
                 boolean currentDpTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(currentDp.getValue());
-    //            and if the very previous one (NEXT one in the array and PREVIOUS in the time dimension).
+    //            and if the very previous one (NEXT one in the array and PREVIOUS in the time dimension)
     //            FAILS the predicate,
                 boolean previousDpTest = pred.value.asPredicate(timerService::getCurrentTimeMillis).test(theVeryPreviousDp.getValue());
     //            A state change happened where the state we are looking for was turned on.
@@ -559,6 +545,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             return Optional.empty();
         }
 
+        //TODO: Issue #1156 (https://github.com/openremote/openremote/issues/1156)
         //BUG: The Timestamp of an asset datapoint is NOT attribute.getTimestamp()!
         //This makes it much harder to relate datapoints to relate a duration to the time-distance between two datapoints.
         //To make this easier, we are going to use some time-padding of 1 second from the gap. It's going to be sufficient to cover some edge-cases.
@@ -591,27 +578,23 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     /**
      * Updates the {@link Asset} passed, with the {@link AttributeMap} passed.
-     * I have a very big feeling that the way this is done is wrong.
+     * TODO: I have a very big feeling that the way this is done is wrong.
      *
      * @param asset The asset to be updated.
      * @param attributes The attributes to be upserted to the Attribute.
      * @param topic The topic to which the MQTT payload was sent.
      * @param connection The connection on which the payload was sent.
      */
-    private void UpdateAsset(Asset<?> asset, AttributeMap attributes, Topic topic, RemotingConnection connection) {
-
+    private void updateAsset(Asset<?> asset, AttributeMap attributes, Topic topic, RemotingConnection connection) {
         String imei = asset.getAttribute("IMEI").toString();
 
         getLogger().info("Updating CarAsset with IMEI "+imei);
-        //DONE: If the parameters do not exist, then the update fails,
-        // because there is no attribute to update. ATTRIBUTE_DOESNT_EXIST
         //OBD details: Prot:6,VIN:WVGZZZ1TZBW068095,TM:15,CNT:19,ST:DATA REQUESTING,P1:0xBE3EA813,P2:0xA005B011,P3:0xFED00400,P4:0x0,MIL:0,DTC:0,ID3,Hdr:7E8,Phy:0
         //Find which attributes need to be updated and which attributes need to be just reminded of updating.
 
         //I'm not sure why this needs these specific headers.
         Map<String, Object> headers = DefaultMQTTHandler.prepareHeaders(topicRealm(topic), connection);
 
-//        asset.setAttributes(attributes);
         AttributeMap nonExistingAttributes = new AttributeMap();
 
         attributes.forEach( attribute ->  {
@@ -632,36 +615,5 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         asset.addAttributes(nonExistingAttributes.stream().toArray(Attribute[]::new));
 
         assetStorageService.merge(asset);
-
     }
 }
-
-
-
-////        AssetDatapoint datapoint = list.stream().filter(
-////                pred.value.asPredicate(timerService::getCurrentTimeMillis)
-////        ).toList()
-////                .get(0);
-//
-//        //We now need to get the very next datapoint.
-//        AssetDatapoint StateChangeAssetDatapoint = null;
-//
-//        try {
-//            for (int i = 0; i < list.size(); i++) {
-//                // Not using Object.equals, but Datapoint.equals
-//                if(list.get(i).equals(datapoint)){
-//                    //If we found it, just grab the next one
-//                    StateChangeAssetDatapoint = list.get(i++);
-//                    break;
-//                }
-//            }
-//
-//            //Make sure that the Datapoint truly does pass the predicate.
-//
-//            //If it doesnt, throw an Exception.
-//
-//
-//        }catch (Exception e){
-//            getLogger().warning(e.getMessage());
-//            return Optional.empty();
-//        }
