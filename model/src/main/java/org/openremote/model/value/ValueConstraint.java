@@ -167,7 +167,7 @@ public abstract class ValueConstraint implements Serializable {
 
             if (min instanceof Integer minInt) {
                 if (value instanceof Long longValue) {
-                    return minInt.compareTo(longValue.intValue()) <= 0;
+                    return Long.valueOf(minInt.longValue()).compareTo(longValue) <= 0;
                 }
                 if (value instanceof Double doubleValue) {
                     return minInt.compareTo(doubleValue.intValue()) <= 0;
@@ -243,7 +243,7 @@ public abstract class ValueConstraint implements Serializable {
 
             if (max instanceof Integer maxInt) {
                 if (value instanceof Long longValue) {
-                    return maxInt.compareTo(longValue.intValue()) >= 0;
+                    return Long.valueOf(maxInt.longValue()).compareTo(longValue) >= 0;
                 }
                 if (value instanceof Double doubleValue) {
                     return maxInt.compareTo(doubleValue.intValue()) >= 0;
