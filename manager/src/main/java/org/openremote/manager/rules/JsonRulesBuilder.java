@@ -58,12 +58,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
-import static org.openremote.model.util.ValueUtil.LOG;
 import static org.openremote.model.util.ValueUtil.distinctByKey;
 
 public class JsonRulesBuilder extends RulesBuilder {
@@ -540,8 +540,9 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Map<String, RuleState> ruleStateMap = new HashMap<>();
     final protected JsonRule[] jsonRules;
     final protected Ruleset jsonRuleset;
+    final protected Logger LOG;
 
-    public JsonRulesBuilder(Ruleset ruleset, TimerService timerService,
+    public JsonRulesBuilder(Logger logger, Ruleset ruleset, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
                             Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                             HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
@@ -556,6 +557,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.historicDatapointsFacade= historicDatapoints;
         this.predictedDatapointsFacade = predictedDatapoints;
         this.scheduledActionConsumer = scheduledActionConsumer;
+        LOG = logger;
 
         jsonRuleset = ruleset;
         String rulesStr = ruleset.getRules();
@@ -1024,7 +1026,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return null;
     }
 
-    private static String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml, boolean isJson) {
+    private String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml, boolean isJson) {
 
         Set<String> assetIds = useUnmatched ? ruleEvaluationResult.otherwiseMatchedAssetIds : ruleEvaluationResult.thenMatchedAssetIds;
 
@@ -1155,11 +1157,11 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     protected void log(Level level, String message) {
-        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message);
+        LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message);
     }
 
     protected void log(Level level, String message, Throwable t) {
-        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message, t);
+        LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message, t);
     }
 
     protected static SunTimes.Parameters getSunCalculator(Ruleset ruleset, SunPositionTrigger sunPositionTrigger, TimerService timerService) throws IllegalStateException {
