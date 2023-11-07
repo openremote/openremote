@@ -1,7 +1,6 @@
 package org.openremote.manager.rules.flow;
 
 import org.openremote.manager.rules.RulesBuilder;
-import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.flow.*;
@@ -10,7 +9,6 @@ import org.openremote.model.util.ValueUtil;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public enum NodeModel {
     READ_ATTRIBUTE(
@@ -25,15 +23,14 @@ public enum NodeModel {
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
                 Optional<AssetState<?>> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
-                if (!readValue.isPresent()) return null;
-                return readValue.get().getValue().orElse(null);
+                return readValue.<Object>map(assetState -> assetState.getValue().orElse(null)).orElse(null);
             },
             params -> {
                 AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = internal.getAssetId();
                 String attributeName = internal.getAttributeName();
                 List<AssetState<?>> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
-                ).collect(Collectors.toList());
+                ).toList();
 
                 return allAssets.stream().anyMatch(state -> {
                     long timestamp = state.getTimestamp();
@@ -53,7 +50,6 @@ public enum NodeModel {
                 info.setFacts(facts);
                 Object value = info.getValueFromInput(0);
                 if (value == null) {
-                    RulesEngine.LOG.warning("Flow rule error: node " + info.getNode().getName() + " receives invalid value");
                     return;
                 }
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
@@ -88,14 +84,9 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.BOOLEAN),
     }),
             info -> {
-                try {
-                    boolean a = (boolean) info.getValueFromInput(0);
-                    boolean b = (boolean) info.getValueFromInput(1);
-                    return a && b;
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return false;
-                }
+                boolean a = (boolean) info.getValueFromInput(0);
+                boolean b = (boolean) info.getValueFromInput(1);
+                return a && b;
             }),
 
     OR_GATE(new Node(NodeType.PROCESSOR, "∥", new NodeInternal[0], new NodeSocket[]{
@@ -105,14 +96,9 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.BOOLEAN),
     }),
             info -> {
-                try {
-                    boolean a = (boolean) info.getValueFromInput(0);
-                    boolean b = (boolean) info.getValueFromInput(1);
-                    return a || b;
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return false;
-                }
+                boolean a = (boolean) info.getValueFromInput(0);
+                boolean b = (boolean) info.getValueFromInput(1);
+                return a || b;
             }),
 
     NOT_GATE(new Node(NodeType.PROCESSOR, "!", new NodeInternal[0], new NodeSocket[]{
@@ -121,13 +107,8 @@ public enum NodeModel {
             new NodeSocket("o", NodeDataType.BOOLEAN),
     }),
             info -> {
-                try {
-                    boolean a = (boolean) info.getValueFromInput(0);
-                    return !a;
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return true;
-                }
+                boolean a = (boolean) info.getValueFromInput(0);
+                return !a;
             }),
 
     NUMBER_INPUT(new Node(NodeType.INPUT, new NodeInternal[]{
@@ -135,14 +116,7 @@ public enum NodeModel {
     }, new NodeSocket[0], new NodeSocket[]{
             new NodeSocket("value", NodeDataType.NUMBER)
     }),
-            info -> {
-                try {
-                    return ValueUtil.convert(info.getInternals()[0].getValue(), Double.class);
-                } catch (IllegalArgumentException e) {
-                    RulesEngine.RULES_LOG.warning("Number node returned invalid value");
-                    return 0f;
-                }
-            }),
+            info -> ValueUtil.convert(info.getInternals()[0].getValue(), Double.class)),
 
     ADD_OPERATOR(new Node(NodeType.PROCESSOR, "+", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER),
@@ -151,14 +125,9 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.NUMBER),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    Number b = (Number) info.getValueFromInput(1);
-                    return a.doubleValue() + b.doubleValue();
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
-                }
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+                return a != null && b != null ? a.doubleValue() + b.doubleValue() : null;
             }),
 
     SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, "-", new NodeInternal[0], new NodeSocket[]{
@@ -168,14 +137,9 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.NUMBER),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    Number b = (Number) info.getValueFromInput(1);
-                    return a.doubleValue() - b.doubleValue();
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
-                }
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+                return a != null && b != null ? a.doubleValue() - b.doubleValue() : null;
             }),
 
     MULTIPLY_OPERATOR(new Node(NodeType.PROCESSOR, "×", new NodeInternal[0], new NodeSocket[]{
@@ -185,14 +149,9 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.NUMBER),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    Number b = (Number) info.getValueFromInput(1);
-                    return a.doubleValue() * b.doubleValue();
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
-                }
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+                return a != null && b != null ? a.doubleValue() * b.doubleValue() : null;
             }),
 
     DIVIDE_OPERATOR(new Node(NodeType.PROCESSOR, "÷", new NodeInternal[0], new NodeSocket[]{
@@ -202,18 +161,17 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.NUMBER),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    Number b = (Number) info.getValueFromInput(1);
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
 
-                    if (b.doubleValue() == 0d)
-                        return 0d;
-
-                    return a.doubleValue() / b.doubleValue();
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
+                if (a == null || b == null) {
+                    return null;
                 }
+
+                if (b.doubleValue() == 0d)
+                    return 0d;
+
+                return a.doubleValue() / b.doubleValue();
             }),
 
     EQUALS_COMPARATOR(new Node(NodeType.PROCESSOR, "=", new NodeInternal[0], new NodeSocket[]{
@@ -223,14 +181,9 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.BOOLEAN),
     }),
             info -> {
-                try {
-                    Object a = info.getValueFromInput(0);
-                    Object b = info.getValueFromInput(1);
-                    return a.equals(b);
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return false;
-                }
+                Object a = info.getValueFromInput(0);
+                Object b = info.getValueFromInput(1);
+                return a != null && b != null && Objects.equals(a, b);
             }),
 
     GREATER_THAN(new Node(NodeType.PROCESSOR, ">", new NodeInternal[0], new NodeSocket[]{
@@ -240,14 +193,9 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.BOOLEAN),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    Number b = (Number) info.getValueFromInput(1);
-                    return a.doubleValue() > b.doubleValue();
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return false;
-                }
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+                return a != null && b != null && a.doubleValue() > b.doubleValue();
             }),
 
     LESS_THAN(new Node(NodeType.PROCESSOR, "<", new NodeInternal[0], new NodeSocket[]{
@@ -257,14 +205,9 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.BOOLEAN),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    Number b = (Number) info.getValueFromInput(1);
-                    return a.doubleValue() < b.doubleValue();
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return false;
-                }
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+                return a != null && b != null && a.doubleValue() < b.doubleValue();
             }),
 
     ROUND_NODE(new Node(NodeType.PROCESSOR, new NodeInternal[]{
@@ -279,22 +222,18 @@ public enum NodeModel {
             new NodeSocket("value", NodeDataType.NUMBER),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
+                Number a = (Number) info.getValueFromInput(0);
 
-                    switch ((String) info.getInternals()[0].getValue()) {
-                        case "round":
-                            return Math.round(a.doubleValue());
-                        case "ceil":
-                            return Math.ceil(a.doubleValue());
-                        case "floor":
-                            return Math.floor(a.doubleValue());
-                    }
-                    return a;
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
+                if (a == null) {
+                    return null;
                 }
+
+                return switch ((String) info.getInternals()[0].getValue()) {
+                    case "round" -> Math.round(a.doubleValue());
+                    case "ceil" -> Math.ceil(a.doubleValue());
+                    case "floor" -> Math.floor(a.doubleValue());
+                    default -> a;
+                };
             }),
 
     ABS_OPERATOR(new Node(NodeType.PROCESSOR, "|x|", new NodeInternal[0], new NodeSocket[]{
@@ -303,13 +242,8 @@ public enum NodeModel {
             new NodeSocket("absolute", NodeDataType.NUMBER),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    return Math.abs(a.doubleValue());
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
-                }
+                Number a = (Number) info.getValueFromInput(0);
+                return a != null ? Math.abs(a.doubleValue()) : null;
             }),
 
     POW_OPERATOR(new Node(NodeType.PROCESSOR, "^", new NodeInternal[0], new NodeSocket[]{
@@ -319,14 +253,9 @@ public enum NodeModel {
             new NodeSocket("value", NodeDataType.NUMBER),
     }),
             info -> {
-                try {
-                    Number a = (Number) info.getValueFromInput(0);
-                    Number b = (Number) info.getValueFromInput(1);
-                    return Math.pow(a.doubleValue(), b.doubleValue());
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
-                }
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+                return a != null && b != null ? Math.pow(a.doubleValue(), b.doubleValue()) : null;
             }),
 
     NUMBER_SWITCH(new Node(NodeType.PROCESSOR, new NodeInternal[0], new NodeSocket[]{
@@ -337,17 +266,12 @@ public enum NodeModel {
             new NodeSocket("output", NodeDataType.NUMBER),
     }),
             info -> {
-                try {
-                    boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
+                boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
 
-                    Number a = (Number) info.getValueFromInput(1);
-                    Number b = (Number) info.getValueFromInput(2);
+                Number a = (Number) info.getValueFromInput(1);
+                Number b = (Number) info.getValueFromInput(2);
 
-                    return condition ? a.doubleValue() : b.doubleValue();
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
-                }
+                return condition ? (a != null ? a.doubleValue() : null) : (b != null ? b.doubleValue() : null);
             }),
 
     TEXT_INPUT(new Node(NodeType.INPUT, new NodeInternal[]{
@@ -357,9 +281,8 @@ public enum NodeModel {
     }),
             info -> {
                 Object value = info.getInternals()[0].getValue();
-                if (value == null) return "";
-                if (!(value instanceof String)) return "";
-                return value;
+                if (!(value instanceof CharSequence charSequence)) return null;
+                return charSequence.toString();
             }),
 
     COMBINE_TEXT(new Node(NodeType.PROCESSOR, new NodeInternal[]{
@@ -371,17 +294,12 @@ public enum NodeModel {
             new NodeSocket("c", NodeDataType.STRING),
     }),
             info -> {
-                try {
-                    Object joiner = ValueUtil.convert(info.getInternals()[0].getValue(), String.class);
-                    Object a = ValueUtil.convert(info.getValueFromInput(0), String.class);
-                    Object b = ValueUtil.convert(info.getValueFromInput(1), String.class);
+                Object joiner = ValueUtil.convert(info.getInternals()[0].getValue(), String.class);
+                Object a = ValueUtil.convert(info.getValueFromInput(0), String.class);
+                Object b = ValueUtil.convert(info.getValueFromInput(1), String.class);
 
-                    joiner = joiner == null ? "" : joiner;
-                    return "" + a + joiner + b;
-                } catch (Exception e) {
-                    RulesEngine.LOG.warning("Flow rule processing error: " + e.getMessage());
-                    return 0;
-                }
+                joiner = joiner == null ? "" : joiner;
+                return "" + (a != null ? a : "") + joiner + (b != null ? b : "");
             }),
 
     TEXT_SWITCH(new Node(NodeType.PROCESSOR, new NodeInternal[0], new NodeSocket[]{
@@ -406,7 +324,7 @@ public enum NodeModel {
             info -> {
                 try {
                     Number a = (Number) info.getValueFromInput(0);
-                    return Math.sin(a.doubleValue());
+                    return a != null ? Math.sin(a.doubleValue()) : null;
                 } catch (Exception e) {
                     return 0;
                 }
@@ -419,7 +337,7 @@ public enum NodeModel {
     }),
             info -> {
                 Number a = (Number) info.getValueFromInput(0);
-                return Math.cos(a.doubleValue());
+                return a != null ? Math.cos(a.doubleValue()) : null;
             }),
 
     TAN(new Node(NodeType.PROCESSOR, "tan", new NodeInternal[0], new NodeSocket[]{
@@ -430,7 +348,7 @@ public enum NodeModel {
             info -> {
                 try {
                     Number a = (Number) info.getValueFromInput(0);
-                    return Math.tan(a.doubleValue());
+                    return a != null ? Math.tan(a.doubleValue()) : null;
                 } catch (Exception e) {
                     return 0;
                 }
@@ -444,7 +362,7 @@ public enum NodeModel {
             info -> {
                 try {
                     Number a = (Number) info.getValueFromInput(0);
-                    return Math.sqrt(a.doubleValue());
+                    return a != null ? Math.sqrt(a.doubleValue()) : null;
                 } catch (Exception e) {
                     return 0;
                 }
@@ -460,7 +378,7 @@ public enum NodeModel {
                 try {
                     Number a = (Number) info.getValueFromInput(0);
                     Number b = (Number) info.getValueFromInput(1);
-                    return a.doubleValue() % b.doubleValue();
+                    return a != null  && b != null ? a.doubleValue() % b.doubleValue() : null;
                 } catch (Exception e) {
                     return 0;
                 }
