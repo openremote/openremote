@@ -383,11 +383,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
 
 
-
-
-
-
-
                     // Either use the timestamp of the event or set event time to processing time or (old event time + 1)
                     // We need a different timestamp for Attribute.equals() check
                     long oldEventTime = oldAttribute.getTimestamp().orElse(0L);
@@ -420,6 +415,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             .flatMap(ValueUtil::getString)
                             .flatMap(AttributeExecuteStatus::fromString);
 
+                        // TODO: Make this mechanism more generic with an interface
                         if (status.isPresent() && !status.get().isWrite()) {
                             throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
                         }

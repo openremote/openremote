@@ -170,7 +170,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "time advances"
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
-        then: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
+        and: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
         def realmALastFireTimestamp = rulesImport.realmBuildingEngine.lastFireTimestamp

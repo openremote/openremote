@@ -18,9 +18,10 @@ import java.util.*;
 import java.util.logging.Logger;
 
 public class FlowRulesBuilder {
+
     protected final Logger LOG;
     protected final AssetStorageService assetStorageService;
-    protected final Map<String, Long> triggerMap = new LinkedHashMap<>();
+    protected final Map<String, Long> triggerMap = new HashMap<>();
     protected final List<NodeCollection> nodeCollections = new ArrayList<>();
     protected final Assets assetsFacade;
     protected final Users usersFacade;
@@ -28,7 +29,7 @@ public class FlowRulesBuilder {
     protected final HistoricDatapoints historicDatapointsFacade;
     protected final PredictedDatapoints predictedDatapointsFacade;
     protected final TimerService timerService;
-
+  
     public FlowRulesBuilder(
         Logger logger,
         TimerService timerService,

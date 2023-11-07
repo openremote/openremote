@@ -78,7 +78,9 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         // empty
     }
 
+
     public boolean sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
+
         try (Response response = this.buildRequest(target, webhook.getHttpMethod(), mediaType, webhook.getPayload())) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());

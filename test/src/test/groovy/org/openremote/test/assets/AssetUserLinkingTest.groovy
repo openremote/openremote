@@ -193,5 +193,12 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         userAssetLinks.length == 0
+
+        when: "all of a user assets are deleted"
+        assetResource.deleteAllUserAssetLinks(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+        userAssetLinks = assetResource.getUserAssetLinks(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id, null)
+
+        then: "result should match"
+        userAssetLinks.length == 0
     }
 }
