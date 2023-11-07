@@ -28,9 +28,7 @@ import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Source;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
-import java.net.URI;
-import java.net.URL;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class SAXParser {
@@ -73,11 +71,7 @@ public class SAXParser {
     protected Schema createSchema(Source[] schemaSources) {
         try {
             SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            schemaFactory.setResourceResolver(new CatalogResourceResolver(
-                new HashMap<URI, URL>() {{
-                    put(DOM.XML_SCHEMA_NAMESPACE, DOM.XML_SCHEMA_RESOURCE);
-                }}
-            ));
+            schemaFactory.setResourceResolver(new CatalogResourceResolver(Map.of(DOM.XML_SCHEMA_NAMESPACE, DOM.XML_SCHEMA_RESOURCE)));
             return schemaFactory.newSchema(schemaSources);
         } catch (Exception ex) {
             throw new RuntimeException(ex);

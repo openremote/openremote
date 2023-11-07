@@ -19,23 +19,17 @@
  */
 package org.openremote.manager.system;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SystemHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "system";
-
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -59,7 +53,7 @@ public class SystemHealthStatusProvider implements HealthStatusProvider {
 
     @Override
     public Object getHealthStatus() {
-        ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
+        Map<String, Object> objectValue = new HashMap<>();
         com.sun.management.OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         File[] roots = File.listRoots();
 
@@ -70,18 +64,18 @@ public class SystemHealthStatusProvider implements HealthStatusProvider {
         objectValue.put("totalSwapSpaceMB", operatingSystemMXBean.getTotalSwapSpaceSize() / (1024F*1024F));
         objectValue.put("freeSwapSpaceMB", operatingSystemMXBean.getFreeSwapSpaceSize() / (1024F*1024F));
 
-        ObjectNode rootsObj = ValueUtil.JSON.createObjectNode();
+        Map<String, Object> rootsObj = new HashMap<>();
 
         for (File root : roots) {
-            ObjectNode rootObj = ValueUtil.JSON.createObjectNode();
+            Map<String, Object> rootObj = new HashMap<>();
             rootObj.put("totalSpaceMB", root.getTotalSpace() / (1024F*1024F));
             rootObj.put("freeSpaceMB", root.getFreeSpace() / (1024F*1024F));
             String name = root.getAbsolutePath();
             name = name.replace("/","").replace("\\", "").replace(":", "");
-            rootsObj.set(name, rootObj);
+            rootsObj.put(name, rootObj);
         }
 
-        objectValue.set("filesystem", rootsObj);
+        objectValue.put("filesystem", rootsObj);
 
         return objectValue;
     }

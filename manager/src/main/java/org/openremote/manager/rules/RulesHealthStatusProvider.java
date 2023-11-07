@@ -19,13 +19,14 @@
  */
 package org.openremote.manager.rules;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class RulesHealthStatusProvider implements HealthStatusProvider {
 
@@ -73,7 +74,7 @@ public class RulesHealthStatusProvider implements HealthStatusProvider {
             }
         }
 
-        ObjectNode realmEngines = ValueUtil.createJsonObject();
+        Map<String, Object> realmEngines = new HashMap<>();
 
         for (RulesEngine<RealmRuleset> realmEngine : rulesService.realmEngines.values()) {
             if (!realmEngine.isRunning()) {
@@ -83,10 +84,10 @@ public class RulesHealthStatusProvider implements HealthStatusProvider {
                 errorEngines++;
             }
 
-            realmEngines.set(realmEngine.getId().getRealm().orElse(""), getEngineHealthStatus(realmEngine));
+            realmEngines.put(realmEngine.getId().getRealm().orElse(""), getEngineHealthStatus(realmEngine));
         }
 
-        ObjectNode assetEngines = ValueUtil.createJsonObject();
+        Map<String, Object> assetEngines = new HashMap<>();
 
         for (RulesEngine<AssetRuleset> assetEngine : rulesService.assetEngines.values()) {
             if (!assetEngine.isRunning()) {
@@ -97,45 +98,44 @@ public class RulesHealthStatusProvider implements HealthStatusProvider {
                 errorEngines++;
             }
 
-            assetEngines.set(assetEngine.getId().getAssetId().orElse(""), getEngineHealthStatus(assetEngine));
+            assetEngines.put(assetEngine.getId().getAssetId().orElse(""), getEngineHealthStatus(assetEngine));
         }
 
-        ObjectNode objectValue = ValueUtil.createJsonObject();
+        Map<String, Object> objectValue = new HashMap<>();
         objectValue.put("totalEngines", totalEngines);
         objectValue.put("stoppedEngines", stoppedEngines);
         objectValue.put("errorEngines", errorEngines);
         if (rulesService.globalEngine != null) {
-            objectValue.set("global", getEngineHealthStatus(rulesService.globalEngine));
+            objectValue.put("global", getEngineHealthStatus(rulesService.globalEngine));
         }
-        objectValue.set("realm", realmEngines);
-        objectValue.set("asset", assetEngines);
+        objectValue.put("realm", realmEngines);
+        objectValue.put("asset", assetEngines);
         return objectValue;
     }
 
-    protected ObjectNode getEngineHealthStatus(RulesEngine<?> rulesEngine) {
+    protected Map<String, Object> getEngineHealthStatus(RulesEngine<?> rulesEngine) {
         boolean isError = rulesEngine.isError();
         int totalDeployments = rulesEngine.deployments.size();
         int executionErrorDeployments = rulesEngine.getExecutionErrorDeploymentCount();
         int compilationErrorDeployments = rulesEngine.getExecutionErrorDeploymentCount();
-        ObjectNode val = ValueUtil.createJsonObject();
+        Map<String, Object> val = new HashMap<>();
         val.put("isRunning", rulesEngine.isRunning());
         val.put("isError", isError);
         val.put("totalDeployments", totalDeployments);
         val.put("executionErrorDeployments", executionErrorDeployments);
         val.put("compilationErrorDeployments", compilationErrorDeployments);
 
-        ObjectNode deployments = ValueUtil.createJsonObject();
+        Map<String, Object> deployments = new HashMap<>();
 
-        for (Object obj : rulesEngine.deployments.values()) {
-            RulesetDeployment deployment = (RulesetDeployment)obj;
-            ObjectNode dVal = ValueUtil.createJsonObject();
+        for (RulesetDeployment deployment : rulesEngine.deployments.values()) {
+            Map<String, Object> dVal = new HashMap<>();
             dVal.put("name", deployment.getName());
             dVal.put("status", deployment.getStatus().name());
             dVal.put("error", deployment.getError() != null ? deployment.getError().getMessage() : null);
-            deployments.set(Long.toString(deployment.getId()), dVal);
+            deployments.put(Long.toString(deployment.getId()), dVal);
         }
 
-        val.set("deployments", deployments);
+        val.put("deployments", deployments);
 
         return val;
     }

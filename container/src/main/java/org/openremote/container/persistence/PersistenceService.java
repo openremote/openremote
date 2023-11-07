@@ -292,6 +292,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             );
         }
 
+        persistenceUnitProperties.put(AvailableSettings.JSON_FORMAT_MAPPER, JsonFormatMapper.class.getName());
+        // Disable JPA validation as it triggers on select for entities with JSON columns - we do our own validation
+        persistenceUnitProperties.put(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
+
         persistenceUnitProperties.put(AvailableSettings.DEFAULT_SCHEMA, dbSchema);
 
         // Add custom integrator so we can register a custom flush entity event listener
@@ -323,7 +327,19 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
         prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema);
+    }
 
+    protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
+        PersistenceUnitInfo persistenceUnitInfo = new PersistenceUnitInfo(classNames, properties);
+
+        return new EntityManagerFactoryBuilderImpl(
+            new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
+            .build();
+    }
+
+
+    @Override
+    public void start(Container container) throws Exception {
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
         entityClasses.add(Asset.class.getName());
@@ -352,7 +368,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(UnknownAsset.class.getName()); // This doesn't have an asset descriptor which is why it is specifically added
         Arrays.stream(ValueUtil.getAssetDescriptors(null))
             .map(AssetDescriptor::getType)
-            .filter(assetClass -> assetClass.getAnnotation(Entity.class) != null)
+            .filter(assetClass -> assetClass != null && assetClass.getAnnotation(Entity.class) != null)
             .map(Class::getName)
             .forEach(entityClasses::add);
 
@@ -364,20 +380,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         this.entityManagerFactory = getEntityManagerFactory(persistenceUnitProperties, entityClasses);
         //Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
-    }
-
-    protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
-        PersistenceUnitInfo persistenceUnitInfo = new PersistenceUnitInfo(classNames, properties);
-
-        return new EntityManagerFactoryBuilderImpl(
-            new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
-            .build();
-    }
-
-
-    @Override
-    public void start(Container container) throws Exception {
-
     }
 
     @Override
@@ -427,7 +429,11 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         } catch (Exception ex) {
             if (tx != null && tx.isActive()) {
                 try {
-                    LOG.log(Level.FINE, "Rolling back failed transaction, cause follows", ex);
+                    if (LOG.isLoggable(Level.FINER)) {
+                        LOG.log(Level.FINE, "Rolling back failed transaction, cause follows", ex);
+                    } else {
+                        LOG.log(Level.FINE, "Rolling back failed transaction");
+                    }
                     tx.rollback();
                 } catch (RuntimeException rbEx) {
                     LOG.log(Level.SEVERE, "Rollback of transaction failed!", rbEx);
@@ -459,13 +465,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         Field[] propertyFields = getEntityPropertyFields(clazz, includeFields, excludeFields);
 
         switch (cause) {
-            case CREATE:
-                publishPersistenceEvent(cause, currentEntity, null, null, null);
-                break;
-            case DELETE:
-                publishPersistenceEvent(cause, previousEntity, null, null, null);
-                break;
-            case UPDATE:
+            case CREATE -> publishPersistenceEvent(cause, currentEntity, null, null, null);
+            case DELETE -> publishPersistenceEvent(cause, previousEntity, null, null, null);
+            case UPDATE -> {
                 List<String> propertyNames = new ArrayList<>(propertyFields.length);
                 List<Object> currentState = new ArrayList<>(propertyFields.length);
                 List<Object> previousState = new ArrayList<>(propertyFields.length);
@@ -479,7 +481,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
                     }
                 });
                 publishPersistenceEvent(cause, currentEntity, propertyNames.toArray(new String[0]), currentState.toArray(), previousState.toArray());
-                break;
+            }
         }
     }
 

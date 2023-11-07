@@ -35,7 +35,7 @@ public class KNXAgent extends Agent<KNXAgent, KNXProtocol, KNXAgentLink> {
     @Pattern(regexp = "^\\d\\.\\d\\.\\d$")
     public static final ValueDescriptor<String> SOURCE_ADDRESS_VALUE = new ValueDescriptor<>("kNXMessageSourceAddress", String.class);
 
-    public static final AttributeDescriptor<String> GATEWAY = HOST.withOptional(false);
+    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
     public static final AttributeDescriptor<Boolean> NAT_MODE = new AttributeDescriptor<>("NATMode", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> ROUTING_MODE = new AttributeDescriptor<>("routingMode", ValueType.BOOLEAN);
     public static final AttributeDescriptor<String> MESSAGE_SOURCE_ADDRESS = new AttributeDescriptor<>("messageSourceAddress", SOURCE_ADDRESS_VALUE);

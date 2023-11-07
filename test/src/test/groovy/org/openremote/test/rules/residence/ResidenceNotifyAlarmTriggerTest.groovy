@@ -4,7 +4,6 @@ package org.openremote.test.rules.residence
 import com.google.firebase.messaging.Message
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.Recur
-import net.fortuna.ical4j.model.parameter.Value
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -31,8 +30,6 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TemporaryFact
-import com.fasterxml.jackson.databind.node.ObjectNode
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -41,8 +38,6 @@ import spock.util.concurrent.PollingConditions
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -161,7 +156,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                                 true,
                                 true,
                                 false,
-                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                ((Map) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                         )))
                     }
                 },
@@ -180,7 +175,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         then: "that value should be stored"
         conditions.eventually {
             def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert asset.getAttribute("alarmEnabled", Boolean.class).get().getValue().orElse(false)
+            assert asset.getAttribute("alarmEnabled").get().getValue().orElse(false)
         }
 
         when: "the presence is detected in Living room of apartment 1"

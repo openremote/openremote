@@ -19,14 +19,14 @@
  */
 package org.openremote.model.system;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.openremote.model.Constants;
-
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import org.openremote.model.Constants;
+
+import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -39,10 +39,10 @@ public interface StatusResource {
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    ObjectNode getHealthStatus();
+    Map<String, Object> getHealthStatus();
 
     @Path("info")
     @GET
     @Produces(APPLICATION_JSON)
-    ObjectNode getInfo();
+    Map<String, Object> getInfo();
 }

@@ -27,6 +27,9 @@ import java.net.URI;
 
 public class RequestParams {
 
+    @Context
+    public HttpHeaders headers;
+
     @HeaderParam(HttpHeaders.AUTHORIZATION)
     public String authorization;
 

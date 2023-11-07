@@ -19,6 +19,7 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
@@ -43,8 +44,9 @@ import java.util.Collection;
 @TsIgnoreTypeParams
 public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T> implements MetaHolder {
 
+    @JsonIgnore
     protected MetaMap meta;
-    protected boolean optional;
+    protected Boolean optional;
 
     AttributeDescriptor() {}
 
@@ -80,11 +82,11 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
     }
 
     public boolean isOptional() {
-        return optional;
+        return optional != null ? optional : false;
     }
 
     public AttributeDescriptor<T> withOptional(boolean optional) {
-        AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<T>(name, type, meta);
+        AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<>(name, type, meta);
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
@@ -93,7 +95,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
     }
 
     public AttributeDescriptor<T> withFormat(ValueFormat format) {
-        AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<T>(name, type, meta);
+        AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<>(name, type, meta);
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
@@ -102,7 +104,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
     }
 
     public AttributeDescriptor<T> withConstraints(ValueConstraint...constraints) {
-        AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<T>(name, type, meta);
+        AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<>(name, type, meta);
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
@@ -111,7 +113,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
     }
 
     public AttributeDescriptor<T> withUnits(String...units) {
-        AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<T>(name, type, meta);
+        AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<>(name, type, meta);
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
         newDescriptor.units = units;
