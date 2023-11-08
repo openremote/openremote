@@ -9,7 +9,7 @@ import {
     RuleView,
     RuleViewInfoMap
 } from "./index";
-import {ClientRole, RulesetUnion} from "@openremote/model";
+import {ClientRole, RulesetStatus, RulesetUnion} from "@openremote/model";
 import manager, {Util} from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
@@ -67,6 +67,16 @@ export const style = css`
         margin-left: auto;
         display: flex;
         align-items: center;
+    }
+
+    #rule-status {
+        flex: 1;
+        text-align: center;
+    }
+    
+    #rule-id {
+        min-width: 70px;
+        margin-right: 10px;
     }
     
     #rule-header-controls > * {
@@ -165,10 +175,11 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         return html`
             <div id="main-wrapper" class="wrapper">            
                 <div id="rule-header">
+                    <h3 id="rule-id">${this.ruleset.id ? "ID: " + this.ruleset.id : ""}</h3>
                     <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
                     <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
+                    ${this.ruleset.status ? html`<span id="rule-status" title="${this.ruleset.error}">${i18next.t("status") + ": " + this.ruleset.status}</span>` : ``}
                     <div id="rule-header-controls">
-                        <span id="rule-status" title="${this.ruleset.error}">${this.ruleset.status == ("LOOP_ERROR" || "COMPILATION_ERROR" || "EXECUTION_ERROR") ? this.ruleset.status : ""}</span>
                         <span id="active-wrapper">
                             <or-translate value="enabled"></or-translate>
                             <or-mwc-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>

@@ -52,7 +52,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         conditions.eventually {
             assert agentService.protocolInstanceMap.get(managerTestSetup.agentId) != null
             assert ((SimulatorProtocol) agentService.protocolInstanceMap.get(managerTestSetup.agentId)).linkedAttributes.size() == 4
-            assert ((SimulatorProtocol) agentService.protocolInstanceMap.get(managerTestSetup.agentId)).linkedAttributes.get(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption")).getValueAs(Double.class).orElse(0d) == 12.345d
+            assert ((SimulatorProtocol) agentService.protocolInstanceMap.get(managerTestSetup.agentId)).linkedAttributes.get(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption")).getValue(Double.class).orElse(0d) == 12.345d
         }
 
         when: "an attribute linked to the simulator agent receives some values"
@@ -67,7 +67,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValueAs(Double.class) }.orElse(null) == 13.3d
+            assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValue(Double.class) }.orElse(null) == 13.3d
         }
 
         when: "a simulated sensor receives a new value"
@@ -78,7 +78,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValueAs(Double.class) }.orElse(null) == 13.5d
+            assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValue(Double.class) }.orElse(null) == 13.5d
         }
 
         when: "a simulated sensor receives a new value"
@@ -89,7 +89,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValueAs(Double.class) }.orElse(null) == 14.4d
+            assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValue(Double.class) }.orElse(null) == 14.4d
         }
 
         when: "a simulated sensor receives a new value"
@@ -100,7 +100,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValueAs(Double.class) }.orElse(null) == 15.5d
+            assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValue(Double.class) }.orElse(null) == 15.5d
         }
 
         when: "a simulated sensor receives a new value"
@@ -191,7 +191,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            assert !thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValueAs(Boolean.class) }.orElse(null)
+            assert !thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValue(Boolean.class) }.orElse(null)
         }
 
         when: "a simulated sensor receives a new value"
@@ -202,7 +202,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            assert thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValueAs(Boolean.class) }.orElse(null)
+            assert thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValue(Boolean.class) }.orElse(null)
         }
 
         when: "a simulated sensor receives a new value"
@@ -213,7 +213,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerTestSetup.thingId, true)
-            assert !thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValueAs(Boolean.class) }.orElse(null)
+            assert !thing.getAttribute(thingLightToggleAttributeName).flatMap { it.getValue(Boolean.class) }.orElse(null)
         }
 
         expect: "the datapoints to be stored"

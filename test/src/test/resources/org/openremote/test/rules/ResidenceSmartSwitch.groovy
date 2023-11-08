@@ -91,7 +91,7 @@ rules.add()
             }.filter { modeNowOn ->
                 // Begin/end time of cycle is greater than zero
                 smartSwitchAttributeMatch(facts, modeNowOn, SmartSwitchAttribute.BeginEnd)
-                        .flatMap { it.getValueAs(Long.class) }
+                        .flatMap { it.getValue(Long.class) }
                         .map { it > 0 }
                         .orElse(false)
             }.findFirst().map { modeNowOn ->

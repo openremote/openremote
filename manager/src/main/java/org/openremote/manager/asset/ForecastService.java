@@ -36,6 +36,7 @@ import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
+import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
@@ -210,7 +211,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                             .count() == 0;
                     })
                     .map(attr -> new ForecastAttribute(asset, attr))
-                    .collect(Collectors.toList())
+                    .toList()
                 );
 
                 forecastTaskManager.delete(attributesToDelete);
@@ -531,12 +532,12 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             // Attr(t) = Attr(t-p) * a + Attr(t-2p) * (1 - a)
             List<Object> values = datapoints
                 .stream()
-                .map(dp -> dp.getValue())
+                .map(Datapoint::getValue)
                 .collect(Collectors.toList());
             double R = datapoints.size();
             double a = 2 / (R + 1);
 
-            Class<?> clazz = attribute.getType().getType();
+            Class<?> clazz = attribute.getTypeClass();
             if (Long.class == clazz || Integer.class == clazz || Short.class == clazz || Byte.class == clazz ||
                 Double.class == clazz || Float.class == clazz) {
                 if (values.size() == 1) {
@@ -566,7 +567,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     }
                 }
                 return value;
-            } else if (attribute.getType().getType() == BigDecimal.class) {
+            } else if (attribute.getTypeClass() == BigDecimal.class) {
                 if (values.size() == 1) {
                     values.add(0, BigDecimal.valueOf(0));
                 }
@@ -576,7 +577,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     .reduce((olderValue, oldValue) ->
                         ((BigDecimal)oldValue).multiply(BigDecimal.valueOf(a)).add(((BigDecimal)olderValue).multiply(BigDecimal.valueOf(1 - a)))
                     );
-            } else if (attribute.getType().getType() == BigInteger.class) {
+            } else if (attribute.getTypeClass() == BigInteger.class) {
                 if (values.size() == 1) {
                     values.add(0, BigInteger.valueOf(0));
                 }

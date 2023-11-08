@@ -19,8 +19,6 @@
  */
 package org.openremote.model.protocol;
 
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
@@ -39,6 +37,7 @@ import org.openremote.model.value.ValueFilter;
 import org.openremote.model.value.ValueType;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -96,7 +95,7 @@ public final class ProtocolUtil {
         Pair<Boolean, Object> ignoreAndConvertedValue;
 
         // Check if attribute type is executable
-        if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
+        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
             AttributeExecuteStatus status = ValueUtil.getValueCoerced(value, AttributeExecuteStatus.class).orElse(null);
 
             if (status == AttributeExecuteStatus.REQUEST_START && writeValue != null) {
@@ -174,7 +173,7 @@ public final class ProtocolUtil {
         }
 
         // built in value conversion
-        Class<?> toType = attribute.getType().getType();
+        Class<?> toType = attribute.getTypeClass();
         Class<?> fromType = valRef.get().getClass();
 
         if (toType != fromType) {
@@ -192,7 +191,7 @@ public final class ProtocolUtil {
     }
 
     @SuppressWarnings("unchecked")
-    public static Pair<Boolean, Object> applyValueConverter(Object value, ObjectNode converter) {
+    public static Pair<Boolean, Object> applyValueConverter(Object value, Map<String, Object> converter) {
 
         if (converter == null) {
             return new Pair<>(false, value);
@@ -201,23 +200,23 @@ public final class ProtocolUtil {
         String converterKey = ValueUtil.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT)).orElse(NULL_LITERAL.toUpperCase());
 
         return Optional.ofNullable(converter.get(converterKey))
-            .map(node -> {
-                if (node.getNodeType() == JsonNodeType.STRING) {
-                    if ("@IGNORE".equalsIgnoreCase(node.textValue())) {
+            .map(converterValue -> {
+                if (converterValue instanceof String convertValueStr) {
+                    if ("@IGNORE".equalsIgnoreCase(convertValueStr)) {
                         return new Pair<>(true, null);
                     }
 
-                    if ("@NULL".equalsIgnoreCase(node.textValue())) {
+                    if ("@NULL".equalsIgnoreCase(convertValueStr)) {
                         return new Pair<>(false, null);
                     }
                 }
 
-                return new Pair<Boolean, Object>(false, node);
+                return new Pair<>(false, converterValue);
             })
             .orElse((Pair<Boolean, Object>) Optional.ofNullable(converter.get("*"))
-                .map(node -> {
-                    if (node.getNodeType() == JsonNodeType.STRING) {
-                        if (AttributeLink.ConverterType.NEGATE.getValue().equals(node.textValue())) {
+                .map(converterValue -> {
+                    if (converterValue instanceof String converterValueStr) {
+                        if (AttributeLink.ConverterType.NEGATE.getValue().equals(converterValueStr)) {
                             if (ValueUtil.isNumber(value.getClass())) {
                                 return new Pair<>(false, (ValueUtil.getValueCoerced(value, Double.class).orElse(0D) * -1));
                             }
@@ -226,7 +225,7 @@ public final class ProtocolUtil {
                             }
                         }
                     }
-                    return new Pair<Boolean, Object>(false, node);
+                    return new Pair<>(false, converterValue);
                 })
                 .orElse(new Pair<>(true, value)));
     }

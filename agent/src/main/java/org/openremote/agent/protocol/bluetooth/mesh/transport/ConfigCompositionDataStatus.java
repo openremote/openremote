@@ -27,7 +27,7 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -51,7 +51,7 @@ public class ConfigCompositionDataStatus extends ConfigStatusMessage{
     private boolean proxyFeatureSupported;
     private boolean friendFeatureSupported;
     private boolean lowPowerFeatureSupported;
-    private Map<Integer, Element> mElements = new LinkedHashMap<>();
+    private Map<Integer, Element> mElements = new HashMap<>();
 
     /**
      * Constructs the ConfigCompositionDataStatus mMessage.
@@ -130,7 +130,7 @@ public class ConfigCompositionDataStatus extends ConfigStatusMessage{
         int counter = 0;
         int elementAddress = 0;
         while (tempOffset < accessPayload.length) {
-            final Map<Integer, MeshModel> models = new LinkedHashMap<>();
+            final Map<Integer, MeshModel> models = new HashMap<>();
             final int locationDescriptor = accessPayload[tempOffset + 1] << 8 | accessPayload[tempOffset];
             LOG.info("Location identifier: " + String.format(Locale.US, "%04X", locationDescriptor));
 

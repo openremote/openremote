@@ -19,13 +19,12 @@
  */
 package org.openremote.model.rules;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.model.attribute.MetaMap;
-import org.openremote.model.calendar.CalendarEvent;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.openremote.model.calendar.CalendarEvent;
+
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Rules that apply to all realms and assets, for the whole system.
@@ -92,7 +91,7 @@ public class GlobalRuleset extends Ruleset {
     }
 
     @Override
-    public GlobalRuleset setMeta(ObjectNode meta) {
+    public GlobalRuleset setMeta(Map<String, Object> meta) {
         super.setMeta(meta);
         return this;
     }

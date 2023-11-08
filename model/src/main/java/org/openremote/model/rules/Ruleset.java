@@ -22,19 +22,19 @@ package org.openremote.model.rules;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.node.BooleanNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.util.ValueUtil;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.openremote.model.calendar.CalendarEvent;
+import org.openremote.model.util.ValueUtil;
+
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 /**
@@ -99,9 +99,9 @@ public abstract class Ruleset {
     @Column(name = "RULES_LANG", nullable = false)
     protected Lang lang = Lang.GROOVY;
 
-    @Column(name = "META", columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(JsonBinaryType.class)
-    protected ObjectNode meta;
+    @Column(name = "META")
+    @JdbcTypeCode(SqlTypes.JSON)
+    protected Map<String, Object> meta;
 
     @Transient
     protected RulesetStatus status;
@@ -202,14 +202,14 @@ public abstract class Ruleset {
         return this;
     }
 
-    public ObjectNode getMeta() {
+    public Map<String, Object> getMeta() {
         if (meta == null) {
-            meta = ValueUtil.createJsonObject();
+            meta = new HashMap<>();
         }
         return meta;
     }
 
-    public Ruleset setMeta(ObjectNode meta) {
+    public Ruleset setMeta(Map<String, Object> meta) {
         this.meta = meta;
         return this;
     }
@@ -233,41 +233,41 @@ public abstract class Ruleset {
     }
 
     public boolean isContinueOnError() {
-        return Optional.ofNullable(getMeta().get(CONTINUE_ON_ERROR)).map(node -> node.asBoolean(true)).orElse(true);
+        return Optional.ofNullable(getMeta().get(CONTINUE_ON_ERROR)).flatMap(ValueUtil::getBoolean).orElse(true);
     }
 
     public Ruleset setContinueOnError(boolean continueOnError) {
-        getMeta().set(CONTINUE_ON_ERROR, BooleanNode.valueOf(continueOnError));
+        getMeta().put(CONTINUE_ON_ERROR, continueOnError);
         return this;
     }
 
     @JsonIgnore
     public CalendarEvent getValidity() {
-        return Optional.ofNullable(getMeta().get(VALIDITY)).map(node -> ValueUtil.convert(node, CalendarEvent.class)).orElse(null);
+        return Optional.ofNullable(getMeta().get(VALIDITY)).map(calEvent -> ValueUtil.convert(calEvent, CalendarEvent.class)).orElse(null);
     }
 
     @JsonIgnore
     public Ruleset setValidity(CalendarEvent calendarEvent) {
-        getMeta().set(VALIDITY, ValueUtil.getValue(calendarEvent, ObjectNode.class, true).orElse(null));
+        getMeta().put(VALIDITY, calendarEvent);
         return this;
     }
 
     // TODO: Unify triggers for rulesets
     public boolean isTriggerOnPredictedData() {
-        return Optional.ofNullable(getMeta().get(TRIGGER_ON_PREDICTED_DATA)).map(node -> node.asBoolean(false)).orElse(false);
+        return Optional.ofNullable(getMeta().get(TRIGGER_ON_PREDICTED_DATA)).flatMap(ValueUtil::getBoolean).orElse(false);
     }
 
     public Ruleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
-        getMeta().set(TRIGGER_ON_PREDICTED_DATA, BooleanNode.valueOf(triggerOnPredictedData));
+        getMeta().put(TRIGGER_ON_PREDICTED_DATA, triggerOnPredictedData);
         return this;
     }
 
     public boolean isShowOnList() {
-        return Optional.ofNullable(getMeta().get(SHOW_ON_LIST)).map(node -> node.asBoolean(false)).orElse(false);
+        return Optional.ofNullable(getMeta().get(SHOW_ON_LIST)).flatMap(ValueUtil::getBoolean).orElse(false);
     }
 
     public Ruleset setShowOnList(boolean showOn) {
-        getMeta().set(SHOW_ON_LIST, BooleanNode.valueOf(showOn));
+        getMeta().put(SHOW_ON_LIST, showOn);
         return this;
     }
 }

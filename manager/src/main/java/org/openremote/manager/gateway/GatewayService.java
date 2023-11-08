@@ -61,7 +61,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.apache.camel.builder.PredicateBuilder.and;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
@@ -331,7 +330,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
             // This is a change to a locally registered gateway
             if (GatewayAsset.DISABLED.getName().equals(attribute.getName())) {
-                boolean disabled = attribute.getValueAs(Boolean.class).orElse(false);
+                boolean disabled = attribute.getValue(Boolean.class).orElse(false);
                 boolean isAlreadyDisabled = gatewayAsset.getDisabled().orElse(false);
                 gatewayAsset.setDisabled(disabled); // Ensure we update state
 
@@ -345,7 +344,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             }
 
             if (GatewayAsset.CLIENT_SECRET.getName().equals(attribute.getName())) {
-                String newSecret = attribute.getValueAs(String.class).orElse(null);
+                String newSecret = attribute.getValue(String.class).orElse(null);
                 if (!TextUtil.isNullOrEmpty(newSecret)) {
                     LOG.fine("Gateway client secret attribute updated so updating gateway service user secret to match: (Gateway ID=" + asset.getId() + ")");
                     User gatewayServiceUser = identityProvider.getUserByUsername(asset.getRealm(), User.SERVICE_ACCOUNT_PREFIX + ((GatewayAsset) asset).getClientId().orElse(""));

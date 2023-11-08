@@ -21,6 +21,9 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import org.openremote.model.Constants;
 
 import java.io.Serializable;
 
@@ -36,7 +39,10 @@ import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
  */
 public class AttributeRef implements Serializable {
 
+    @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
     protected String id;
+    @NotBlank(message = "{Asset.valueHolder.name.NotBlank}")
+    @Pattern(regexp = "^\\w+$")
     protected String name;
 
     @JsonCreator

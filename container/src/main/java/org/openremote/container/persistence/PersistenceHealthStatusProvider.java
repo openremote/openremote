@@ -19,18 +19,16 @@
  */
 package org.openremote.container.persistence;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaxxer.hikari.HikariPoolMXBean;
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
 
 import javax.management.JMX;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,11 +39,6 @@ public class PersistenceHealthStatusProvider implements HealthStatusProvider {
     private static final Logger LOG = Logger.getLogger(PersistenceHealthStatusProvider.class.getName());
     public static final String NAME = "db";
     protected PersistenceService persistenceService;
-
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -87,13 +80,11 @@ public class PersistenceHealthStatusProvider implements HealthStatusProvider {
             int totalConnections = poolMBean.getTotalConnections();
             int threadsWaiting = poolMBean.getThreadsAwaitingConnection();
 
-            ObjectNode value = ValueUtil.JSON.createObjectNode();
-            value.put("idleConnections", idleConnections);
-            value.put("activeConnections", activeConnections);
-            value.put("totalConnections", totalConnections);
-            value.put("threadsWaiting", threadsWaiting);
-
-            return value;
+            return Map.<String, Object>of(
+                "idleConnections", idleConnections,
+                "activeConnections", activeConnections,
+                "totalConnections", totalConnections,
+                "threadsWaiting", threadsWaiting);
         } catch (MalformedObjectNameException e) {
             LOG.log(Level.SEVERE, "Failed to get hikari connection pool status", e);
         }

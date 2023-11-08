@@ -657,7 +657,7 @@ jobs:
           fi
 
           # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir tmp
+          mkdir -p tmp
           chmod 777 tmp
 
           # Define cleanup command

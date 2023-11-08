@@ -46,7 +46,8 @@ dependencies {
     }
 
     implementation("org.quartz-scheduler:quartz:$quartzVersion") {
-        exclude group: "c3p0"
+        exclude module: "c3p0"
+        exclude module: "HikariCP-java7"
     }
 
     implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"

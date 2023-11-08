@@ -27,10 +27,10 @@ rules.add()
                 .attributeName("cameraCountIn"))
                 .map(
                 {
-                    new Tuple(it.id, it.getValueAs(Double.class).orElse(0d) - facts.matchFirstAssetState(new AssetQuery()
+                    new Tuple(it.id, it.getValue(Double.class).orElse(0d) - facts.matchFirstAssetState(new AssetQuery()
                             .names(new StringPredicate(AssetQuery.Match.BEGIN, "Camera"))
                             .attributeName("cameraCountOut"))
-                            .map({ it.getValueAs(Double.class).orElse(0d)}).orElse(0d))
+                            .map({ it.getValue(Double.class).orElse(0d)}).orElse(0d))
                 })
                 .filter(
                 {

@@ -28,7 +28,6 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * A named value whose name must match the name of a {@link MetaItemDescriptor} and whose value must match the value
@@ -56,6 +55,19 @@ public class MetaItem<T> extends AbstractNameValueHolder<T> {
     MetaItem() {
     }
 
+    public MetaItem(String name) {
+        this(name, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public MetaItem(String name, ValueDescriptor<?> valueDescriptor) {
+        this(name, (ValueDescriptor<T>) valueDescriptor, null);
+    }
+
+    public MetaItem(String name, ValueDescriptor<T> valueDescriptor, T value) {
+        super(name, valueDescriptor, value);
+    }
+
     @SuppressWarnings("unchecked")
     public MetaItem(MetaItemDescriptor<T> metaDescriptor) {
         // If it's a boolean meta descriptor assume the caller wants it to be true as a default
@@ -64,20 +76,6 @@ public class MetaItem<T> extends AbstractNameValueHolder<T> {
 
     public MetaItem(MetaItemDescriptor<T> metaDescriptor, T value) {
         super(metaDescriptor.getName(), metaDescriptor.getType(), value);
-    }
-
-    // For JPA/Hydrators
-    protected void setNameInternal(String name) {
-        this.name = name;
-    }
-
-    protected void setTypeInternal(ValueDescriptor<T> type) {
-        this.type = type;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getName(), getValue());
     }
 
     @Override

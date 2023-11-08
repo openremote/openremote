@@ -132,7 +132,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             .stream()
             .map(asset -> (EnergyOptimisationAsset) asset)
             .filter(optimisationAsset -> !optimisationAsset.isOptimisationDisabled().orElse(false))
-            .collect(Collectors.toList());
+            .toList();
 
         LOG.fine("Found enabled optimisation asset count = " + energyOptimisationAssets.size());
 
