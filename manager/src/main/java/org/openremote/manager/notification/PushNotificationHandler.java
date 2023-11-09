@@ -49,6 +49,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -56,7 +57,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
@@ -384,8 +384,17 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         return consoleAsset.getConsoleProviders().flatMap(consoleProviders ->
             Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
                 .map(ConsoleProvider::getData)
-                .map(objectValue -> objectValue.withArray("topics"))
-                .map(arrayValue -> StreamSupport.stream(arrayValue.spliterator(), false).anyMatch(node -> node.asText("").equals(topic))))
+                .map(data -> data.get("topics"))
+                .map(arrayValue -> {
+                    int length = Array.getLength(arrayValue);
+                    for (int i = 0; i < length; i ++) {
+                        Object arrayElement = Array.get(arrayValue, i);
+                        if (arrayElement instanceof String && arrayElement.equals(topic)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }))
             .orElse(false);
     }
 
@@ -483,7 +492,10 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         return asset.getConsoleProviders().flatMap(consoleProviders ->
             Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
                 .map(ConsoleProvider::getData)
-                .map(data -> data.get("token") != null && !data.get("token").isNull() && !data.get("token").asText().isEmpty() ? data.get("token").asText() : null));
+                .map(data -> {
+                    Object token = data.get("token");
+                    return token instanceof String ? (String)token : null;
+                }));
     }
 
     protected void processConsoleAssetChange(ConsoleAsset asset, PersistenceEvent<ConsoleAsset> persistenceEvent) {

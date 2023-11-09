@@ -19,7 +19,8 @@
  */
 package org.openremote.model.datapoint;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
@@ -50,8 +51,8 @@ public abstract class Datapoint implements Serializable {
     @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP")
     protected Date timestamp;
 
-    @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)
-    @org.hibernate.annotations.Type(JsonBinaryType.class)
+    @Column(name = "VALUE", nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
     protected Object value;
 
     public Datapoint() {

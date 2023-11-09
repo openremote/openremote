@@ -105,9 +105,11 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     break
                 case "https://mockapi/targetTemperature":
                     attribute1SubscriptionDone = true
+                    requestContext.abortWith(Response.ok().build())
                     break
                 case "https://mockapi/co2Level":
                     attribute2SubscriptionDone = true
+                    requestContext.abortWith(Response.ok().build())
                     break
             }
 
@@ -272,8 +274,8 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         conditions.eventually {
             def livingRoom = assetStorageService.find(managerTestSetup.apartment1LivingroomId)
             assert livingRoom != null
-            assert livingRoom.getAttribute("targetTemperature", Double.class).flatMap{it.value}.orElse(0d) == 99d
-            assert livingRoom.getAttribute("co2Level", Integer.class).flatMap{it.value}.orElse(0i) == 50i
+            assert livingRoom.getAttribute("targetTemperature").flatMap{it.value}.orElse(0d) == 99d
+            assert livingRoom.getAttribute("co2Level").flatMap{it.value}.orElse(0i) == 50i
         }
 
         then: "the linked attributes should also have the updated values of the subscribed attributes"
@@ -292,7 +294,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
-            assert asset.getAttribute("readWriteTargetTemp", Double.class).flatMap{it.getValue()}.orElse(null) == 19.5d
+            assert asset.getAttribute("readWriteTargetTemp").flatMap{it.getValue()}.orElse(null) == 19.5d
         }
 
         when: "the co2level changes"

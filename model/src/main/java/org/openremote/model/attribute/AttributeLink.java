@@ -21,11 +21,11 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.model.value.*;
+import org.openremote.model.value.ValueFilter;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -85,12 +85,12 @@ public class AttributeLink implements Serializable {
     }
 
     protected AttributeRef ref;
-    protected ObjectNode converter;
+    protected Map<String, Object> converter;
     protected ValueFilter[] filters;
 
     @JsonCreator
     public AttributeLink(@JsonProperty("ref") AttributeRef ref,
-                         @JsonProperty("converter") ObjectNode converter,
+                         @JsonProperty("converter") Map<String, Object> converter,
                          @JsonProperty("filters") ValueFilter[] filters) {
         this.ref = requireNonNull(ref);
         this.converter = converter;
@@ -101,11 +101,11 @@ public class AttributeLink implements Serializable {
         return ref;
     }
 
-    public Optional<ObjectNode> getConverter() {
+    public Optional<Map<String, Object>> getConverter() {
         return Optional.ofNullable(converter);
     }
 
-    public void setConverter(ObjectNode converter) {
+    public void setConverter(Map<String, Object> converter) {
         this.converter = converter;
     }
 

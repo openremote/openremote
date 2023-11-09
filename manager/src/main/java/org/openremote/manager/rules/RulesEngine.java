@@ -43,6 +43,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
+import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,10 +92,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
-
-    // Separate logger for execution of rules
-    public static final Logger RULES_LOG = Logger.getLogger("org.openremote.rules.Rules");
+    protected final Logger LOG;
 
     // Separate logger for periodic stats printer
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
@@ -148,6 +146,10 @@ public class RulesEngine<T extends Ruleset> {
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
         this.id = id;
+
+        String ruleEngineCategory = id.scope.getSimpleName().replace("Ruleset", "Engine-") + id.getId().orElse("");
+        LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleEngineCategory);
+
         AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, attributeEvent -> {
             try {
                 assetProcessingService.sendAttributeEvent(attributeEvent);
@@ -163,7 +165,7 @@ public class RulesEngine<T extends Ruleset> {
         this.predictedFacade = new PredictedFacade<>(id, assetPredictedDatapointService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
-        this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RULES_LOG);
+        this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, LOG);
         engine = new DefaultRulesEngine(
             // Skip any other rules after the first failed rule (exception thrown in condition or action)
             new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)
@@ -317,7 +319,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        LOG.info("Starting: " + this);
+        LOG.info("Starting");
         running = true;
         trackLocationPredicates(true);
 
@@ -330,9 +332,9 @@ public class RulesEngine<T extends Ruleset> {
         // Start a background stats printer if INFO level logging is enabled
         if (STATS_LOG.isLoggable(Level.FINE) || STATS_LOG.isLoggable(Level.FINEST)) {
             if (STATS_LOG.isLoggable(Level.FINEST)) {
-                LOG.info("On " + this + ", enabling periodic statistics output at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
+                LOG.info("Enabling periodic statistics output at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
             } else {
-                LOG.info("On " + this + ", enabling periodic full memory dump at FINE level every 30 seconds on category: " + STATS_LOG.getName());
+                LOG.info("Enabling periodic full memory dump at FINE level every 30 seconds on category: " + STATS_LOG.getName());
             }
             statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
         }
@@ -358,7 +360,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
         running = false;
-        LOG.info("Stopping: " + this);
+        LOG.info("Stopping");
         if (fireTimer != null) {
             fireTimer.cancel(true);
             fireTimer = null;
@@ -419,7 +421,7 @@ public class RulesEngine<T extends Ruleset> {
 
         long fireTimeMillis = quickFire ? rulesService.quickFireMillis : rulesService.tempFactExpirationMillis;
 
-        LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms on: " + this);
+        LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms");
         fireTimer = executorService.schedule(
             () -> {
                 synchronized (RulesEngine.this) {
@@ -457,9 +459,9 @@ public class RulesEngine<T extends Ruleset> {
         executionTotalMillis = (timerService.getCurrentTimeMillis() - executionTotalMillis);
 
         if (executionTotalMillis > 500) {
-            LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
+            LOG.warning("Rules firing took " + executionTotalMillis + "ms");
         } else {
-            LOG.fine("Rules firing took " + executionTotalMillis + "ms on: " + this);
+            LOG.fine("Rules firing took " + executionTotalMillis + "ms");
         }
     }
 
@@ -476,7 +478,7 @@ public class RulesEngine<T extends Ruleset> {
 
                     // If full detail logging is enabled
                     // Log asset states and events before firing
-                    facts.logFacts(RULES_LOG, Level.FINEST);
+                    facts.logFacts(LOG, Level.FINEST);
 
                     // Reset facts for this firing (loop detection etc.)
                     facts.reset();
@@ -489,7 +491,7 @@ public class RulesEngine<T extends Ruleset> {
                     LOG.fine("Rules deployment '" + deployment.getName() + "' skipped as status is: " + status);
                 }
             } catch (Exception ex) {
-                LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
+                LOG.log(Level.SEVERE, "Error executing rules of: " + deployment, ex);
 
                 deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
                 deployment.setError(ex);

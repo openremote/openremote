@@ -21,12 +21,7 @@ package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Base mesh model class
@@ -41,7 +36,7 @@ public abstract class MeshModel {
 
     final List<Integer> mBoundAppKeyIndexes = new ArrayList<>();
 
-    final Map<Integer, String> mBoundAppKeys = new LinkedHashMap<>();
+    final Map<Integer, String> mBoundAppKeys = new HashMap<>();
 
     final List<Integer> subscriptionAddresses = new ArrayList<>();
 

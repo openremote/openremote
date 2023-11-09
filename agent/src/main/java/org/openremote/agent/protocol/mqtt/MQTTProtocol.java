@@ -19,7 +19,6 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
@@ -104,7 +103,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 
         if (agent.getLastWillTopic().isPresent()) {
             String topic = agent.getLastWillTopic().get();
-            BaseJsonNode payload = agent.getLastWillPayload().orElse(null);
+            String payload = agent.getLastWillPayload().orElse(null);
             boolean retain = agent.isLastWillRetain().orElse(false);
             lastWill = new MQTTLastWill(topic, payload, retain);
         }

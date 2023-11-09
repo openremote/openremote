@@ -97,8 +97,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId(), true)
             assert gateway.getAttribute("clientId").isPresent()
-            assert !isNullOrEmpty(gateway.getAttribute("clientId", String.class).flatMap{it.getValue()}.orElse(""))
-            assert !isNullOrEmpty(gateway.getAttribute("clientSecret", String.class).flatMap{it.getValue()}.orElse(""))
+            assert !isNullOrEmpty(gateway.getAttribute("clientId").flatMap{it.getValue()}.orElse(""))
+            assert !isNullOrEmpty(gateway.getAttribute("clientSecret").flatMap{it.getValue()}.orElse(""))
         }
 
         and: "a gateway connector should have been created for this gateway"
@@ -367,7 +367,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         then: "the descendant asset in the local manager should contain the new attribute value"
         conditions.eventually {
             def building1Room1Asset = assetStorageService.find(mapAssetId(gateway.id, assetIds[1], false))
-            assert building1Room1Asset.getAttribute("tempSetpoint", Double.class).flatMap {it.getValue()}.orElse(0d) == 20d
+            assert building1Room1Asset.getAttribute("tempSetpoint").flatMap {it.getValue()}.orElse(0d) == 20d
         }
 
         when: "an asset is added on the gateway and the local manager is notified"
@@ -431,7 +431,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert localBuilding1Room5Asset.getRealm() == managerTestSetup.realmBuildingName
             assert localBuilding1Room5Asset.getParentId() == mapAssetId(gateway.id, assetIds[0], false)
             assert localBuilding1Room5Asset.getAttributes().size() == 7
-            assert localBuilding1Room5Asset.getAttribute("co2Level", Integer.class).flatMap{it.getValue()}.orElse(0i) == 500i
+            assert localBuilding1Room5Asset.getAttribute("co2Level").flatMap{it.getValue()}.orElse(0i) == 500i
         }
 
         when: "an asset is deleted on the gateway and the local manager is notified"
@@ -581,7 +581,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway asset client secret attribute is updated"
-        def newSecret = UniqueIdentifierGenerator.generateId()
+        def newSecret = UUID.randomUUID().toString()
         assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.CLIENT_SECRET, newSecret))
 
         then: "the service user secret should be updated"
@@ -801,8 +801,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             "127.0.0.1",
             serverPort,
             managerTestSetup.realmBuildingName,
-            gateway.getAttribute("clientId", String.class).flatMap{it.getValue()}.orElse(""),
-            gateway.getAttribute("clientSecret", String.class).flatMap{it.getValue()}.orElse(""),
+            gateway.getAttribute("clientId").flatMap{it.getValue()}.orElse(""),
+            gateway.getAttribute("clientSecret").flatMap{it.getValue()}.orElse(""),
             false,
             false
         )
@@ -840,7 +840,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert mirroredMicrophone != null
             assert mirroredMicrophone.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).flatMap{it.getMetaItem(READ_ONLY)}.flatMap{it.getValue()}.orElse(false)
             assert mirroredMicrophone.getAttribute("test").isPresent()
-            assert mirroredMicrophone.getAttribute("test", Double.class).flatMap{it.getValue()}.orElse(0d) == 100d
+            assert mirroredMicrophone.getAttribute("test").flatMap{it.getValue()}.orElse(0d) == 100d
         }
 
         when: "a gateway client asset is added"

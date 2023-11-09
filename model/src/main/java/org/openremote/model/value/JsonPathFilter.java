@@ -86,8 +86,7 @@ public class JsonPathFilter extends ValueFilter {
 
         Object obj = jsonPathParser.parse(valueStr).read(path);
 
-        if ((returnFirst || returnLast) && obj != null && ValueUtil.isArray(obj.getClass())) {
-            ArrayNode arrayNode = ValueUtil.convert(obj, ArrayNode.class);
+        if ((returnFirst || returnLast) && obj instanceof ArrayNode arrayNode) {
             obj = arrayNode.get(returnFirst ? 0 : arrayNode.size() - 1);
         }
         return obj;

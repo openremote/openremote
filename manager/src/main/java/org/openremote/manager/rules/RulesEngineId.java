@@ -21,8 +21,8 @@ package org.openremote.manager.rules;
 
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RealmRuleset;
+import org.openremote.model.rules.Ruleset;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -71,6 +71,10 @@ public class RulesEngineId<T extends Ruleset> {
 
     public Optional<String> getAssetId() {
         return Optional.ofNullable(assetId);
+    }
+
+    public Optional<String> getId() {
+        return scope == RealmRuleset.class ? getRealm() : scope == AssetRuleset.class ? getAssetId() : Optional.empty();
     }
 
     @Override

@@ -32,10 +32,10 @@ import static org.openremote.model.Constants.*;
 public class TypeMapper {
 
     public static final class TypeInfo {
-        protected ValueDescriptor<?> valueDescriptor;
-        protected String[] units;
-        protected ValueConstraint[] constraints;
-        protected ValueFormat valueFormat;
+        private ValueDescriptor<?> valueDescriptor;
+        private String[] units;
+        private ValueConstraint[] constraints;
+        private ValueFormat valueFormat;
 
         public TypeInfo(ValueDescriptor<?> valueDescriptor) {
             this.valueDescriptor = valueDescriptor;
@@ -70,7 +70,7 @@ public class TypeMapper {
         typeMap.put(ChannelType.NUMBER, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.STRING, new TypeInfo(ValueType.TEXT));
         typeMap.put(ChannelType.BOOLEAN, new TypeInfo(ValueType.BOOLEAN));
-        typeMap.put(ChannelType.ARRAY, new TypeInfo(ValueType.JSON_OBJECT.asArray()));
+        typeMap.put(ChannelType.ARRAY, new TypeInfo(null));
 
         // COMMAND_CLASS_SENSOR_MULTILEVEL
 
@@ -246,23 +246,13 @@ public class TypeMapper {
             format = typeInfo.valueFormat;
             units = typeInfo.units;
         } else {
-            switch(channelType.getValueType()) {
-                case INTEGER:
-                    valueType = ValueType.INTEGER;
-                    break;
-                case NUMBER:
-                    valueType = ValueType.NUMBER;
-                    break;
-                case BOOLEAN:
-                    valueType = ValueType.BOOLEAN;
-                    break;
-                case STRING:
-                    valueType = ValueType.TEXT;
-                    break;
-                case ARRAY:
-                    valueType = ValueDescriptor.UNKNOWN.asArray();
-                    break;
-            }
+            valueType = switch (channelType.getValueType()) {
+                case INTEGER -> ValueType.INTEGER;
+                case NUMBER -> ValueType.NUMBER;
+                case BOOLEAN -> ValueType.BOOLEAN;
+                case STRING -> ValueType.TEXT;
+                default -> valueType;
+            };
         }
 
         Attribute<?> attribute = new Attribute<>(name, valueType);

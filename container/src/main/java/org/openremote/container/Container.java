@@ -98,10 +98,6 @@ public class Container implements org.openremote.model.Container {
 
         this.devMode = getBoolean(this.config, OR_DEV_MODE, OR_DEV_MODE_DEFAULT);
 
-        if (this.devMode) {
-            ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
-        }
-
         boolean metricsEnabled = getBoolean(getConfig(), OR_METRICS_ENABLED, OR_METRICS_ENABLED_DEFAULT);
         LOG.log(INFO, "Metrics enabled: " + metricsEnabled);
 
@@ -158,6 +154,14 @@ public class Container implements org.openremote.model.Container {
                 LOG.log(INFO, "Initializing service: " + service.getClass().getName());
                 service.init(Container.this);
             }
+
+            // Initialise the asset model
+            ValueUtil.initialise(this);
+
+            if (this.devMode) {
+                ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
+            }
+
             for (ContainerService service : getServices()) {
                 LOG.log(INFO, "Starting service: " + service.getClass().getName());
                 service.start(Container.this);
@@ -211,7 +215,7 @@ public class Container implements org.openremote.model.Container {
     @Override
     public ContainerService[] getServices() {
         synchronized (services) {
-            return services.values().toArray(new ContainerService[services.size()]);
+            return services.values().toArray(new ContainerService[0]);
         }
     }
 
@@ -231,7 +235,7 @@ public class Container implements org.openremote.model.Container {
 
     @Override
     public <T extends ContainerService> boolean hasService(Class<T> type) {
-        return getServices(type).size() > 0;
+        return !getServices(type).isEmpty();
     }
 
     @Override

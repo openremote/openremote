@@ -86,7 +86,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
-    public static final int PRIORITY = DEFAULT_PRIORITY + 100; // Start quite late to ensure asset model etc. are initialised
+    public static final int PRIORITY = MessageBrokerService.PRIORITY + 100; // Start quite late to ensure asset model etc. are initialised
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
     protected AssetProcessingService assetProcessingService;
@@ -144,7 +144,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         Collection<Agent<?, ?, ?>> agents = getAgents().values();
         LOG.fine("Found agent count = " + agents.size());
 
-        agents.stream().forEach(this::doAgentInit);
+        agents.forEach(this::doAgentInit);
     }
 
     @Override
@@ -246,20 +246,18 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         Agent<?, ?, ?> agent = persistenceEvent.getEntity();
 
         switch (persistenceEvent.getCause()) {
-            case CREATE:
+            case CREATE -> {
                 agent = addReplaceAgent(agent);
                 doAgentInit(agent);
-                break;
-            case UPDATE:
-                onAgentUpdated(agent);
-                break;
-            case DELETE:
+            }
+            case UPDATE -> onAgentUpdated(agent);
+            case DELETE -> {
                 if (!removeAgent(agent.getId())) {
                     return;
                 }
                 // Unlink any attributes that have an agent link to this agent
                 stopAgent(agent.getId());
-                break;
+            }
         }
     }
 
@@ -291,25 +289,21 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         Asset<?> asset = persistenceEvent.getEntity();
 
         switch (persistenceEvent.getCause()) {
-            case CREATE:
+            case CREATE ->
 
                 // Link any AGENT_LINK attributes to their referenced agent asset
                 getGroupedAgentLinkAttributes(
                     asset.getAttributes().stream(),
                     attribute -> true
                 ).forEach((agent, attributes) -> this.linkAttributes(agent, asset.getId(), attributes));
-
-                break;
-            case UPDATE:
+            case UPDATE -> {
                 if (!persistenceEvent.hasPropertyChanged("attributes")) {
                     return;
                 }
-
-                List<Attribute<?>> oldLinkedAttributes = ((AttributeMap)persistenceEvent.getPreviousState("attributes"))
+                List<Attribute<?>> oldLinkedAttributes = ((AttributeMap) persistenceEvent.getPreviousState("attributes"))
                     .stream()
                     .filter(attr -> attr.hasMeta(AGENT_LINK))
                     .collect(toList());
-
                 List<Attribute<?>> newLinkedAttributes = ((AttributeMap) persistenceEvent.getCurrentState("attributes"))
                     .stream()
                     .filter(attr -> attr.hasMeta(AGENT_LINK))
@@ -317,7 +311,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
                 // Unlink obsolete or modified linked attributes
                 List<Attribute<?>> obsoleteOrModified = getAddedOrModifiedAttributes(newLinkedAttributes, oldLinkedAttributes).collect(toList());
-
                 getGroupedAgentLinkAttributes(
                     obsoleteOrModified.stream(),
                     attribute -> true
@@ -329,14 +322,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                         !oldLinkedAttributes.contains(attr) || obsoleteOrModified.contains(attr)),
                     attribute -> true)
                     .forEach((agent, attributes) -> linkAttributes(agent, asset.getId(), attributes));
-
-                break;
-            case DELETE: {
+            }
+            case DELETE -> {
 
                 // Unlink any AGENT_LINK attributes from the referenced protocol
                 getGroupedAgentLinkAttributes(asset.getAttributes().stream(), attribute -> true)
                     .forEach((agent, attributes) -> unlinkAttributes(agent.getId(), asset.getId(), attributes));
-                break;
             }
         }
 
@@ -509,7 +500,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      * processing of this event by the processing chain. The protocol should raise sensor updates as
      * required (i.e. the protocol is responsible for synchronising state with the database).
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public boolean processAssetUpdate(EntityManager entityManager,
                                       Asset<?> asset,
