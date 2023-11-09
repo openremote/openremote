@@ -25,6 +25,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
     var fcmToken: String?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        UIBarButtonItem.appearance().setTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor(named: "or_green") as Any], for: .normal)
+        UINavigationBar.appearance().titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor(named: "or_green") as Any]
+        UIBarButtonItem.appearance().tintColor = UIColor(named: "or_green")
+        
         IQKeyboardManager.shared.enable = true
 
         UNUserNotificationCenter.current().delegate = self
@@ -75,12 +79,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
     func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
         if shortcutItem.type == "settings" {
             let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
-            userDefaults?.removeObject(forKey: DefaultsKey.projectKey)
             userDefaults?.removeObject(forKey: DefaultsKey.realmKey)
-
-            
-            // TODO: try displaying a simple image
-            
             (self.window?.rootViewController as? SplashViewController)?.displaySettings = true
             self.window?.rootViewController?.dismiss(animated: false)
         }
@@ -237,17 +236,20 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
         let userInfo = response.notification.request.content.userInfo
         var notificationId : Int64? = nil
         var consoleId : String?
-        var urlString: String?
+        var project: ProjectConfig?
 
         if let notificationIdString = userInfo[ActionType.notificationId] as? String{
             notificationId = Int64(notificationIdString)
         }
-
+        
         if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement) {
-            consoleId = userDefaults.string(forKey: GeofenceProvider.consoleIdKey)
-            let host = userDefaults.string(forKey: DefaultsKey.hostKey)
-            let realm = userDefaults.string(forKey: DefaultsKey.realmKey)
-            urlString = host!.appending("/api/\(realm!)")
+            consoleId = userDefaults.string(forKey: GeofenceProvider.consoleIdKey) // TODO: geofence provider should also be adapted to store "per project"
+            
+            let selectedProjectId = userDefaults.string(forKey: DefaultsKey.projectKey)
+            if let projectsData = userDefaults.data(forKey: DefaultsKey.projectsConfigurationKey) {
+                let projects = (try? JSONDecoder().decode([ProjectConfig].self, from: projectsData)) ?? []
+                project = projects.first(where:{ $0.id == selectedProjectId })
+            }
         }
 
         NSLog("%@", "Action chosen: \(response.actionIdentifier)")
@@ -259,7 +261,7 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
                 if urlTo.hasPrefix("http") || urlTo.hasPrefix("https") {
                     urlRequest = URL(string:urlTo)
                 } else {
-                    if let url = urlString {
+                    if let url = project?.baseURL {
                         urlRequest = URL(string: "\(url)/console/\(urlTo)")
                     }
                 }
@@ -292,7 +294,7 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
                                     if action.url.hasPrefix("http") || action.url.hasPrefix("https") {
                                         urlRequest = URL(string:action.url)
                                     } else {
-                                        if let url = urlString {
+                                        if let url = project?.baseURL {
                                             urlRequest = URL(string: "\(url)/console/\(action.url)")
                                         }
                                     }
