@@ -3,24 +3,21 @@ package org.openremote.model.teltonika;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import net.fortuna.ical4j.model.DateTime;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.AssetStateDuration;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.rules.flow.Option;
+import org.openremote.model.rules.AssetState;
 import org.openremote.model.util.ValueUtil;
-
+import org.openremote.model.validation.AssetStateStore;
 import org.openremote.model.value.*;
 
 import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -56,11 +53,8 @@ public class State {
     }
 
 
-    //DONE: Add timestamp reported by device
+    //TODO: Add real timestamp reported by device, check issue #1156
     //TODO: Add description of each attribute (No idea where to put that yet)
-    //DONE: Multiply value by multiplier
-    //DEFERRED: Improve storage by using bytes variable? Improvements would be marginal, not to mention type safety.
-    //DONE: If location is 0,0, don't overwrite location
     //TODO: Move any function from here; it's a POJO.
     //TODO: Figure out what the parameters: pr, alt, ang, sat, sp, and evt do
     // and implement their functionality (I can guess but I want to know exactly).
@@ -75,120 +69,144 @@ public class State {
             }catch (Exception e){
                 continue;
             }
-            //If the Teltonika Parameter HashMap contains the requested AVL ID:
-            if (params.containsKey(parsedEntryId)){
+            //If the Teltonika Parameter HashMap doesn't contain the requested AVL ID, continue:
 
-                //Retrieve the parameter data
-                TeltonikaParameter parameter = params.get(Integer.valueOf(entry.getKey()));
+            if (!params.containsKey(parsedEntryId)) continue;
 
-                //Create the MetaItem Map
-                MetaMap metaMap = new MetaMap();
+            //Retrieve the parameter data
+            TeltonikaParameter parameter = params.get(Integer.valueOf(entry.getKey()));
 
-                // Figure out its attributeType
-                ValueDescriptor<?> attributeType = GetAttributeType(parameter);
+            //Create the MetaItem Map
+            MetaMap metaMap = new MetaMap();
 
-                //Retrieve its coerced value
-                Optional<?> value = Optional.empty();
-                try {
-                    //Inner method returns Optional.empty, but still throws and prints exception. A lot of clutter, but the exception is handled.
-                    value = ValueUtil.getValueCoerced(entry.getValue(), attributeType.getType());
-                    if (!value.isPresent()){
-                        attributeType = ValueType.TEXT;
-                        value = Optional.of(entry.getValue().toString());
-                    }
-                } catch (Exception ignored){
-                    value = Optional.of(entry.getValue().toString());
+            // Figure out its attributeType
+            ValueDescriptor<?> attributeType = GetAttributeType(parameter);
+
+            //Retrieve its coerced value
+            Optional<?> value;
+            try {
+                //Inner method returns Optional.empty, but still throws and prints exception. A lot of clutter, but the exception is handled.
+                value = ValueUtil.getValueCoerced(entry.getValue(), attributeType.getType());
+                if (value.isEmpty()){
                     attributeType = ValueType.TEXT;
-                    logger.severe("Failed value parse");
-                    logger.severe(ignored.toString());
+                    value = Optional.of(entry.getValue().toString());
                 }
+            } catch (Exception e){
+                value = Optional.of(entry.getValue().toString());
+                attributeType = ValueType.TEXT;
+                logger.severe("Failed value parse");
+                logger.severe(e.toString());
+            }
+            Optional<?> originalValue = value;
 
+            double multiplier = 1L;
+            //If value was parsed correctly,
+            // Multiply the value with its multiplier if given
+            if(!Objects.equals(parameter.multiplier, "-")){
+                Optional<?> optionalMultiplier = ValueUtil.parse(parameter.multiplier, attributeType.getType());
 
-                //If value was parsed correctly,
-                if(value.isPresent()){
-                    // Multiply the value with its multiplier if given
-                    if(!Objects.equals(parameter.multiplier, "-")){
-                        Optional<?> multiplier = ValueUtil.parse(parameter.multiplier, attributeType.getType());
-                        if(multiplier.isPresent()){
-                            try{
-                                double valueNumber = (double) value.get();
-                                double multiplierNumber = (double) multiplier.get();
+                if(optionalMultiplier.isPresent()){
 
-                                value = Optional.of(valueNumber * multiplierNumber);
-                            }catch (Exception e){
-                                logger.severe(parameter.propertyName + "Failed multiplier");
-                                logger.severe(e.toString());
-                                throw e;
-                            }
-                        }
-
-                        //TODO: Fix frontend to be able to display even custom units, not just the predefined ones
-                       //possibly prepend the unit with the string "custom."? So that it matches the predefined format
-                       //Add on its units
-                        if(!Objects.equals(parameter.units, "-")){
-                            try{
-                                MetaItem<String[]> units = new MetaItem<>(MetaItemType.UNITS);
-                                units.setValue(Constants.units(parameter.units));
-                                //                            Error when deploying: https://i.imgur.com/4IihWC3.png
-                                //                            metaMap.add(units);
-                            }catch (Exception e){
-                                logger.severe(parameter.propertyName + "Failed units");
-                                logger.severe(e.toString());
-                                throw e;
-                            }
-                        }
-                    }
-                    //Add on its constraints (min, max)
-                    if(ValueUtil.isNumber(attributeType.getType())){
-                        Optional<?> min;
-                        Optional<?> max;
-
-                        try{
-                            try {
-                                //Try to parse Hex in case it is hex
-                                max = Optional.of(Double.longBitsToDouble(Long.parseLong(parameter.max.substring(2), 16)));
-                                min = Optional.of(Double.longBitsToDouble(Long.parseLong(parameter.min.substring(2), 16)));
-                            } catch (Exception ignored) {
-                                // ValueUtil.getValue actually logs the exceptions. I can't catch em to then ignore them.
-                                min = ValueUtil.getValueCoerced(parameter.min, attributeType.getType());
-                                max = ValueUtil.getValueCoerced(parameter.max, attributeType.getType());
-                            }
-                            if (min.isPresent() || max.isPresent()) {
-                                MetaItem<ValueConstraint[]> constraintsMeta = new MetaItem<>(CONSTRAINTS);
-                                List<ValueConstraint> constraintValues = new ArrayList<>();
-                                min.ifPresent(o -> constraintValues.add(new ValueConstraint.Min((Number) o)));
-                                max.ifPresent(o -> constraintValues.add(new ValueConstraint.Max((Number) o)));
-
-                                ValueConstraint[] constraints = constraintValues.toArray(new ValueConstraint[0]);
-
-                                constraintsMeta.setValue(constraints);
-                                metaMap.add(constraintsMeta);
-                            }
-                        }catch (Exception e){
-                            logger.severe(parameter.propertyName + "Failed constraints");
-                            logger.severe(e.toString());
-                            throw e;
-                        }
-                    }
-                    // Add on its label
+                    if(!ValueUtil.objectsEquals(optionalMultiplier.get(), multiplier)) multiplier = (Double) optionalMultiplier.get();
                     try{
-                        MetaItem<String> label = new MetaItem<>(MetaItemType.LABEL);
-                        label.setValue(parameter.propertyName);
-                        metaMap.add(label);
+                        double valueNumber = (double) value.get();
+
+                        value = Optional.of(valueNumber * multiplier);
+                        //If the original value is unequal to the new (multiplied) value, then we have to also multiply the constraints
+
                     }catch (Exception e){
-                        logger.severe(parameter.propertyName + "Failed label");
+                        logger.severe(parameter.propertyName + "Failed multiplier");
                         logger.severe(e.toString());
                         throw e;
                     }
-                    //Use the MetaMap to create an AttributeDescriptor
-                    AttributeDescriptor<?> attributeDescriptor = new AttributeDescriptor<>(parameter.propertyId.toString(), attributeType, metaMap);
+                }
 
-                    //Use the AttributeDescriptor and the Value to create a new Attribute
-                    Attribute<?> generatedAttribute = new Attribute(attributeDescriptor, value.get());
-                    // Add it to the AttributeMap
-                    attributes.addOrReplace(generatedAttribute);
+                //TODO: Fix frontend to be able to display even custom units, not just the predefined ones
+                //possibly prepend the unit with the string "custom."? So that it matches the predefined format
+                //Add on its units
+                if(!Objects.equals(parameter.units, "-")){
+                    try{
+                        MetaItem<String[]> units = new MetaItem<>(MetaItemType.UNITS);
+                        units.setValue(Constants.units(parameter.units));
+                        //                            Error when deploying: https://i.imgur.com/4IihWC3.png
+                        //                            metaMap.add(units);
+                    }catch (Exception e){
+                        logger.severe(parameter.propertyName + "Failed units");
+                        logger.severe(e.toString());
+                        throw e;
+                    }
                 }
             }
+            //Add on its constraints (min, max)
+            //TODO: The constraints need to be the MULTIPLIED values.
+            if(ValueUtil.isNumber(attributeType.getType())){
+                Optional<?> min;
+                Optional<?> max;
+
+                try{
+                    //param id 17, 18 and 19, parsed as double, with min = -8000 and max = +8000 is being parsed as 0 and 0?
+                    //You cant do this to me Teltonika, why does parameter ID 237 with constraints (0, 1) have value 2 (and description says it can go up to 99)?
+                    //TODO: Fix this
+                    min = ValueUtil.getValueCoerced(parameter.min, attributeType.getBaseType());
+                    max = ValueUtil.getValueCoerced(parameter.max, attributeType.getBaseType());
+                    if (min.isPresent() || max.isPresent()) {
+                        MetaItem<ValueConstraint[]> constraintsMeta = new MetaItem<>(CONSTRAINTS);
+                        List<ValueConstraint> constraintValues = new ArrayList<>();
+                        //Do I even have to multiply the constraints?
+                        double finalMultiplier = 1;
+                        //TODO: Try this with parameter 66 - why is it not properly storing the max constraint?
+                        //      It is calculated correctly, check with a debugger, but why is it not storing the data as required?
+                        if(multiplier != 1L){
+                            finalMultiplier = multiplier;
+                        }
+
+                        // Check if the value is correctly within the constraints. If it's not, don't apply the constraint.
+                        // The only reason I am doing this is that the constraints are currently not programmatically, thus "seriously", set.
+                        // If it was properly defined, then parameter ID 237 wouldn't be inaccurate, let alone to this state.
+                        // Not to mention parsing errors (from example from the UDP/Codec 8 to MQTT/Codec JSON converter, look at accelerator axes)
+                        // THE AXES VARS OVERFLOW  - if i see that TCT has value -46, if I do 65535 minus the value I am given, then it gives me the real value
+                        if (min.isPresent()) {
+                            if ( !((Double) value.get() < (Double) min.get())) {
+                                constraintValues.add(new ValueConstraint.Min((Double) min.get() * finalMultiplier));
+                            }
+                        }
+                        if(max.isPresent()){
+                            if ( !((Double) value.get() > (Double) max.get())) {
+                                constraintValues.add(new ValueConstraint.Max((Double) max.get() * finalMultiplier));
+                            }
+                        }
+
+                        ValueConstraint[] constraints = constraintValues.toArray(new ValueConstraint[0]);
+
+                        constraintsMeta.setValue(constraints);
+
+                        metaMap.add(constraintsMeta);
+                    }
+                }catch (Exception e){
+                    logger.severe(parameter.propertyName + "Failed constraints");
+                    logger.severe(e.toString());
+                    throw e;
+                }
+            }
+            // Add on its label
+            try{
+                MetaItem<String> label = new MetaItem<>(MetaItemType.LABEL);
+                label.setValue(parameter.propertyName);
+                metaMap.add(label);
+            }catch (Exception e){
+                logger.severe(parameter.propertyName + "Failed label");
+                logger.severe(e.toString());
+                throw e;
+            }
+            //Use the MetaMap to create an AttributeDescriptor
+            AttributeDescriptor<?> attributeDescriptor = new AttributeDescriptor<>(parameter.propertyId.toString(), attributeType, metaMap);
+
+
+
+            //Use the AttributeDescriptor and the Value to create a new Attribute
+            Attribute<?> generatedAttribute = new Attribute(attributeDescriptor, value.get());
+            // Add it to the AttributeMap
+            attributes.addOrReplace(generatedAttribute);
         }
         //Special parameter definitions without being defined in the AVL Parameter List, thanks Teltonika
 
@@ -215,9 +233,7 @@ public class State {
                 attributes.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME, deviceTimestamp));
 
                 //Update all affected attribute timestamps
-                attributes.forEach(attribute -> {
-                    attribute.setTimestamp(deviceTimestamp.getTime());
-                });
+                attributes.forEach(attribute -> attribute.setTimestamp(deviceTimestamp.getTime()));
             }catch (Exception e){
                 logger.severe("Failed timestamps");
                 logger.severe(e.toString());

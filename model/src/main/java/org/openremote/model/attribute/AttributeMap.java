@@ -19,7 +19,6 @@
  */
 package org.openremote.model.attribute;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
@@ -42,6 +41,7 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
 
     // This works around the crappy type system and avoids the need for a type witness
     public <S> Optional<Attribute<S>> get(AttributeDescriptor<S> attributeDescriptor) {
+
         return super.get(attributeDescriptor);
     }
 
@@ -52,7 +52,7 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
     public <S> Attribute<S> getOrCreate(AttributeDescriptor<S> attributeDescriptor) {
         return get(attributeDescriptor).orElseGet(() -> {
             Attribute<S> attr = new Attribute<>(attributeDescriptor);
-            putSilent(attr);
+            put(attr);
             return attr;
         });
     }
@@ -61,21 +61,12 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
     public <S> Attribute<S> getOrCreate(String attributeName, ValueDescriptor<S> valueDescriptor) {
         return (Attribute<S>) get(attributeName).orElseGet(() -> {
             Attribute<S> attr = new Attribute<>(attributeName, valueDescriptor);
-            putSilent(attr);
+            put(attr);
             return attr;
         });
     }
 
     public <T> void setValue(AttributeDescriptor<T> descriptor, T value) {
         getOrCreate(descriptor).setValue(value);
-    }
-
-    /**
-     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonTypeDescriptor} uses
-     * {@link Class#getDeclaredMethod} to find it...
-     */
-    @Override
-    public boolean equals(@Nullable Object object) {
-        return super.equals(object);
     }
 }

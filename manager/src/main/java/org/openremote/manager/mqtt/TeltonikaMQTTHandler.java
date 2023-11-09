@@ -146,7 +146,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                 Optional<Attribute<String>> imei;
                 String imeiString;
                 try {
-                    imei = asset.getAttribute("IMEI", String.class);
+                    imei = asset.getAttribute("IMEI");
                     if(imei.isEmpty()) throw new Exception();
                     if(imei.get().getValue().isEmpty()) throw new Exception();
                     imeiString = imei.get().getValue().get();

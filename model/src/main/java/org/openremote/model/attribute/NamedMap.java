@@ -20,12 +20,12 @@
 package org.openremote.model.attribute;
 
 import com.google.common.collect.ForwardingMap;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.model.value.AbstractNameValueDescriptorHolder;
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.NameHolder;
 import org.openremote.model.value.ValueHolder;
 
-import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.*;
 import java.util.function.Consumer;
@@ -69,17 +69,13 @@ public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMa
         return super.put(key, value);
     }
 
-    protected T putSilent(T value) {
-        return super.put(value.getName(), value);
-    }
-
     @Override
     public void putAll(Map<? extends String, ? extends T> map) {
         addAll(map.values());
     }
 
-    protected void putAllSilent(Collection<? extends T> c) {
-        c.forEach(this::putSilent);
+    public void putAll(Collection<? extends T> c) {
+        c.forEach(this::put);
     }
 
     public void add(@NotNull T t) {
@@ -104,7 +100,7 @@ public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMa
     }
 
     public void addOrReplace(T item) {
-        putSilent(item);
+        put(item);
     }
 
     @SafeVarargs
@@ -127,32 +123,16 @@ public class NamedMap<T extends AbstractNameValueHolder<?>> extends ForwardingMa
     @SuppressWarnings("unchecked")
     public <V, W extends AbstractNameValueHolder<V>> Optional<W> get(AbstractNameValueDescriptorHolder<V> nameValueDescriptorHolder) {
         Optional<T> valueProvider = get(nameValueDescriptorHolder.getName());
-        return valueProvider.map(item -> {
-            Class<?> itemType = item.getType().getType();
-            Class<V> expectedType = nameValueDescriptorHolder.getType().getType();
-            if (itemType == expectedType) {
-                return (W)item;
-            }
-            return null;
-        });
+        return valueProvider.map(item -> (W)item);
     }
 
     @SuppressWarnings("unchecked")
-    public <S> Optional<S> getValue(String name) {
-        return get(name).flatMap(ValueHolder::getValue).map(v -> (S)v);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <S> S getValueOrDefault(String name) {
-        return (S) get(name).flatMap(ValueHolder::getValue).orElse(null);
+    public <S> Optional<S> getValue(String name, Class<S> clazz) {
+        return get(name).flatMap(valueHolder -> valueHolder.getValue(clazz));
     }
 
     public <S> Optional<S> getValue(AbstractNameValueDescriptorHolder<S> nameValueDescriptorProvider) {
         return get(nameValueDescriptorProvider).flatMap(ValueHolder::getValue);
-    }
-
-    public <S> S getValueOrDefault(AbstractNameValueDescriptorHolder<S> nameValueDescriptorProvider) {
-        return get(nameValueDescriptorProvider).flatMap(ValueHolder::getValue).orElse(null);
     }
 
     public boolean has(NameHolder nameHolder) {

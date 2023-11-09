@@ -17,10 +17,10 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ValueHolder;
 
 import java.util.*;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.impl.LightAsset.BRIGHTNESS;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -155,13 +155,13 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
 
             List<String> obsoleteAssetIds = childAssets.stream()
                 .map(asset -> {
-                    Integer deviceId = asset.getAttributes().getValueOrDefault(TradfriAsset.DEVICE_ID);
+                    Integer deviceId = asset.getAttribute(TradfriAsset.DEVICE_ID).flatMap(ValueHolder::getValue).orElse(null);
                     boolean isObsolete = deviceId != null && Arrays.stream(devices)
                         .noneMatch(device -> deviceId.equals(device.getInstanceId()));
                     return isObsolete ? asset.getId() : null;
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
 
             if (!obsoleteAssetIds.isEmpty()) {
                 LOG.finest("Removing " + obsoleteAssetIds.size() + " obsolete asset(s): " + this);

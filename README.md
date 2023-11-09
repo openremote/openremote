@@ -61,7 +61,8 @@ Try creating assets, agents, rules, users, realms, etc. using the Manager UI, pl
 
 ## Where's the data stored?
 Persistent data is stored in a PostgreSQL DB which is stored in the `openremote_postgresql-data` docker volume which is durably stored independently of the running containers (see all with `docker volume ls`).
-If you want to create a backup of your installation, just make a copy of this volume.
+Note that historical attribute data is purged daily based on value of `OR_DATA_POINTS_MAX_AGE_DAYS`; this value can also be overridden for individual attributes by using the `dataPointsMaxAgeDays` configuration item.
+See the [Developer Guide](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Useful-commands-and-queries#backuprestore-openremote-db) for details on making backups of the database.
 
 
 ## Contributing to OpenRemote

@@ -19,29 +19,33 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemDescriptor;
-import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.*;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class AssetTypeInfo {
     protected AssetDescriptor<?> assetDescriptor;
-    protected AttributeDescriptor<?>[] attributeDescriptors;
-    @JsonSerialize(contentConverter = MetaItemDescriptor.MetaItemDescriptorStringConverter.class)
+    @JsonIgnore
+    protected Map<String, AttributeDescriptor<?>> attributeDescriptors;
+    @JsonSerialize(contentConverter = NameHolder.NameHolderToStringConverter.class)
     @JsonDeserialize(contentConverter = MetaItemDescriptor.StringMetaItemDescriptorConverter.class)
     protected MetaItemDescriptor<?>[] metaItemDescriptors;
-    @JsonSerialize(contentConverter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(contentConverter = ValueDescriptor.StringValueDescriptorConverter.class)
+    @JsonSerialize(contentConverter = ValueDescriptor.NameHolderToStringConverter.class)
     protected ValueDescriptor<?>[] valueDescriptors;
 
-    AssetTypeInfo() {
-    }
-
-    public AssetTypeInfo(AssetDescriptor<?> assetDescriptor, AttributeDescriptor<?>[] attributeDescriptors, MetaItemDescriptor<?>[] metaItemDescriptors, ValueDescriptor<?>[] valueDescriptors) {
+    @JsonCreator
+    public AssetTypeInfo(AssetDescriptor<?> assetDescriptor, @JsonProperty("attributeDescriptors") AttributeDescriptor<?>[] attributeDescriptors, MetaItemDescriptor<?>[] metaItemDescriptors, ValueDescriptor<?>[] valueDescriptors) {
         this.assetDescriptor = assetDescriptor;
-        this.attributeDescriptors = attributeDescriptors;
+        this.attributeDescriptors = Arrays.stream(attributeDescriptors).collect(Collectors.toMap(AbstractNameValueDescriptorHolder::getName, ad -> ad));
         this.metaItemDescriptors = metaItemDescriptors;
         this.valueDescriptors = valueDescriptors;
     }
@@ -50,7 +54,12 @@ public class AssetTypeInfo {
         return assetDescriptor;
     }
 
-    public AttributeDescriptor<?>[] getAttributeDescriptors() {
+    @JsonProperty("attributeDescriptors")
+    protected Collection<AttributeDescriptor<?>> getAttributeDescriptorsInternal() {
+        return attributeDescriptors.values();
+    }
+
+    public Map<String, AttributeDescriptor<?>> getAttributeDescriptors() {
         return attributeDescriptors;
     }
 

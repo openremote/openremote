@@ -40,7 +40,6 @@ task generateTypescriptModelInfo(type: cz.habarta.typescript.generator.gradle.Ge
         "java.io.**",
         "java.lang.**",
         "org.hibernate.**",
-        "com.vladmihalcea.**",
         "jakarta.**"
     ]
     customTypeProcessor = "CustomTypeProcessor"
@@ -87,7 +86,6 @@ generateTypeScript {
         "java.io.**",
         "java.lang.**",
         "org.hibernate.**",
-        "com.vladmihalcea.**",
         "jakarta.**"
     ]
     moduleDependencies = [

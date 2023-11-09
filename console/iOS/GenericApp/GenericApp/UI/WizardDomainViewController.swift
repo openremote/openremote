@@ -18,7 +18,8 @@ class WizardDomainViewController: UIViewController {
 
     @IBOutlet weak var domainTextInput: ORTextInput!
     @IBOutlet weak var nextButton: MDCRaisedButton!
-
+    @IBOutlet var boxView: UIView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -26,6 +27,7 @@ class WizardDomainViewController: UIViewController {
 
         nextButton.backgroundColor = orGreenColor
         nextButton.tintColor = UIColor.white
+        boxView.layer.cornerRadius = 10
     }
 
     override func viewDidAppear(_ animated: Bool) {

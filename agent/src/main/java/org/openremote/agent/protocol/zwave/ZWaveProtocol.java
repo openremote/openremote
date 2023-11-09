@@ -32,10 +32,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.impl.ColourRGB;
 import org.openremote.protocol.zwave.model.commandclasses.channel.value.Value;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
@@ -104,7 +101,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
         String linkName = agentLink.getDeviceValue().orElse("");
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
-        Class<?> clazz = (attribute == null ? null : attribute.getType().getType());
+        Class<?> clazz = attribute.getTypeClass();
         Consumer<Value> sensorValueConsumer = value ->
             updateLinkedAttribute(new AttributeState(attributeRef, toAttributeValue(value, clazz)));
 
@@ -169,19 +166,18 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
             retValue = value.getNumber();
         } else if (clazz == Integer.class) {
             retValue = value.getInteger();
-        } else if (clazz == ColourRGB.class && value instanceof org.openremote.protocol.zwave.model.commandclasses.channel.value.ArrayValue) {
-            org.openremote.protocol.zwave.model.commandclasses.channel.value.ArrayValue zwArray = (org.openremote.protocol.zwave.model.commandclasses.channel.value.ArrayValue) value;
+        } else if (clazz == ColourRGB.class && value instanceof org.openremote.protocol.zwave.model.commandclasses.channel.value.ArrayValue zwArray) {
             if (zwArray.length() >= 3) {
                 List<Object> values = new ArrayList<>(zwArray.length());
                 for (int i = 0; i < zwArray.length(); i++) {
                     values.add(toAttributeValue(zwArray.get(i), Integer.class));
                 }
-                if (values.stream().anyMatch(val -> val == null)) {
+                if (values.stream().anyMatch(Objects::isNull)) {
                     return null;
                 }
                 int offset = (zwArray.length() == 3 ? 0 : 1); // RGB : ARGB
                 retValue = new ColourRGB(
-                    (Integer) values.get(0 + offset), (Integer) values.get(1 + offset), (Integer) values.get(2 + offset)
+                    (Integer) values.get(offset), (Integer) values.get(1 + offset), (Integer) values.get(2 + offset)
                 );
             }
         } else {

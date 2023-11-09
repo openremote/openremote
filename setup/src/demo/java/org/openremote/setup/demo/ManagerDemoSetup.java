@@ -24,7 +24,6 @@ import org.openremote.agent.protocol.http.HTTPAgentLink;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
 import org.openremote.container.util.UniqueIdentifierGenerator;
-import org.openremote.manager.mqtt.ConnectionMonitorHandler;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
@@ -40,22 +39,23 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
-import org.openremote.setup.demo.model.*;
-import org.openremote.setup.demo.model.HarvestRobotAsset.*;
-
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.MetaItemType.*;
+import org.openremote.setup.demo.model.HarvestRobotAsset;
+import org.openremote.setup.demo.model.HarvestRobotAsset.OperationMode;
+import org.openremote.setup.demo.model.HarvestRobotAsset.VegetableType;
+import org.openremote.setup.demo.model.IrrigationAsset;
+import org.openremote.setup.demo.model.SoilSensorAsset;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
-import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static java.time.temporal.ChronoField.SECOND_OF_DAY;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.MultivaluedStringMap;
 
 public class ManagerDemoSetup extends ManagerSetup {
@@ -828,7 +828,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         agentLink.setPollingMillis((int)halfHourInMillis);
 
         weather.getAttributes().addOrReplace(
-                new Attribute<>("currentWeather", ValueType.JSON_OBJECT)
+                new Attribute<>("currentWeather")
                         .addMeta(
                                 new MetaItem<>(MetaItemType.AGENT_LINK, agentLink),
                                 new MetaItem<>(MetaItemType.LABEL, "Open Weather Map API weather end point"),

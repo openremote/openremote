@@ -67,7 +67,7 @@ abstract class ProvisionedBaseMeshNode  {
     List<NodeKey> mAddedNetKeys = new ArrayList<>();
     List<NodeKey> mAddedAppKeys = new ArrayList<>();
     byte[] mFlags;
-    Map<Integer, Element> mElements = new LinkedHashMap<>();
+    Map<Integer, Element> mElements = new HashMap<>();
     boolean excluded = false;
     int nodeIdentityState;
 

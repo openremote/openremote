@@ -48,10 +48,6 @@ public class CityAsset extends Asset<CityAsset> {
         super(name);
     }
 
-    public Optional<String> getCity() {
-        return getAttributes().getValue(CITY);
-    }
-
     public Optional<String> getRegion() { 
 		return getAttributes().getValue(REGION); 
 	}

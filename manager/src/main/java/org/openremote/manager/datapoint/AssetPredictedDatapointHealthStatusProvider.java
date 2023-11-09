@@ -19,20 +19,14 @@
  */
 package org.openremote.manager.datapoint;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
+
+import java.util.Map;
 
 public class AssetPredictedDatapointHealthStatusProvider implements HealthStatusProvider {
     public static final String NAME = "predicted";
     protected AssetPredictedDatapointService assetPredictedDatapointService;
-
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -56,8 +50,6 @@ public class AssetPredictedDatapointHealthStatusProvider implements HealthStatus
 
     @Override
     public Object getHealthStatus() {
-        ObjectNode value = ValueUtil.JSON.createObjectNode();
-        value.put("totalDatapoints", assetPredictedDatapointService.getDatapointsCount());
-        return value;
+        return Map.of("totalDatapoints", assetPredictedDatapointService.getDatapointsCount());
     }
 }

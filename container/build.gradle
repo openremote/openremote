@@ -33,7 +33,7 @@ dependencies {
 
     api "org.postgresql:postgresql:$postgresJdbcVersion"
     api "org.flywaydb:flyway-core:$flywaydbVersion"
-    api "org.hibernate:hibernate-core:$hibernateVersion"
+    api "org.hibernate.orm:hibernate-core:$hibernateVersion"
     api "org.hibernate.orm:hibernate-hikaricp:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
     api "com.zaxxer:HikariCP:$hikaricpVersion"
@@ -47,7 +47,6 @@ dependencies {
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
     api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
-    api "com.vladmihalcea:hibernate-types-60:$hibernateTypesVersion"
     api "org.apache.camel:camel-micrometer:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }
