@@ -27,6 +27,7 @@ public enum Segues {
     public static var goToWizardAppView = "goToWizardAppView"
     public static var goToWizardRealmView = "goToWizardRealmView"
     public static var goToWebView = "goToWebView"
+    public static var addProject = "addProject"
 }
 
 public enum DefaultsKey {

@@ -83,7 +83,13 @@ public class ConfigManager {
                 if cc.allowedApps == nil || cc.allowedApps!.isEmpty {
                     do {
                         let apps = try await api.getApps()
-                        await state = .selectApp(baseUrl, filterPotentialApps(apiManager: api, potentialApps: apps))
+                        let filteredApps = await filterPotentialApps(apiManager: api, potentialApps: apps)
+                        if let fa = filteredApps, fa.count == 1, let appName = fa.first {
+                            state = .selectRealm(baseUrl, appName, nil)
+                        } else {
+                            state = .selectApp(baseUrl, filteredApps)
+                        }
+                        
                     } catch ApiManagerError.communicationError(let httpStatusCode) {
                         if httpStatusCode == 404 || httpStatusCode == 403 {
                             if cc.showRealmTextInput {
@@ -94,7 +100,12 @@ public class ConfigManager {
                         }
                     }
                 } else {
-                    await self.state = .selectApp(baseUrl, filterPotentialApps(apiManager: api, potentialApps: cc.allowedApps))
+                    let filteredApps = await filterPotentialApps(apiManager: api, potentialApps: cc.allowedApps)
+                    if let fa = filteredApps, fa.count == 1, let appName = fa.first {
+                        state = .selectRealm(baseUrl, appName, nil)
+                    } else {
+                        state = .selectApp(baseUrl, filteredApps)
+                    }
                 }
                 return state
             } catch {

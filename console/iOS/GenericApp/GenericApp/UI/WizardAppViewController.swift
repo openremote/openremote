@@ -21,6 +21,7 @@ class WizardAppViewController: UIViewController {
 
     @IBOutlet weak var appTextInput: ORTextInput!
     @IBOutlet weak var nextButton: MDCRaisedButton!
+    @IBOutlet weak var boxView: UIView!
     
     @IBOutlet weak var appsSelectionButton: UIButton!
     var dropDown = DropDown()
@@ -32,6 +33,8 @@ class WizardAppViewController: UIViewController {
 
         nextButton.backgroundColor = orGreenColor
         nextButton.tintColor = UIColor.white
+        
+        boxView.layer.cornerRadius = 10
     }
 
     override func viewDidAppear(_ animated: Bool) {
