@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.vladmihalcea.hibernate.type.array.StringArrayType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -84,8 +83,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @Column(name = "RESTRICTED_USER", nullable = false)
     protected boolean restrictedUser;
 
-    @Column(name = "ROLES", columnDefinition = "client_role[]")
-    @org.hibernate.annotations.Type(StringArrayType.class)
+    @Column(name = "ROLES")
     @Enumerated(EnumType.STRING)
     protected ClientRole[] userRoles;
 

@@ -294,7 +294,7 @@ export class OrMwcTable extends LitElement {
                                         return (typeof column == "string") ? html`
                                             <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell mdc-data-table__header-cell--checkbox" : ''}" id="column-${index+1}" role="columnheader" scope="col"
                                                 title="${column}">
-                                                column
+                                                ${column}
                                             </th>
                                         ` : html`
                                             <th class="mdc-data-table__header-cell ${classMap({

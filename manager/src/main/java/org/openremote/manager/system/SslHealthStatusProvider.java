@@ -19,12 +19,9 @@
  */
 package org.openremote.manager.system;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.util.ValueUtil;
 
 import javax.net.ssl.*;
 import java.io.IOException;
@@ -32,6 +29,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,11 +46,6 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
     protected SSLContext SSLContext;
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
         
         int SSLPort = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1);
@@ -64,7 +57,7 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
         if (SSLPort > 0 && SSLPort <= 65536) {
             this.SSLPort = SSLPort;
             host = getString(container.getConfig(), Constants.OR_HOSTNAME, null);
-            SSLContext = SSLContext.getInstance("TLS");
+            SSLContext = javax.net.ssl.SSLContext.getInstance("TLS");
             SSLContext.init(null, new TrustManager[]{this}, null);
         }
     }
@@ -91,8 +84,7 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
         SSLSocketFactory ssf = SSLContext.getSocketFactory();
 
-        try {
-            SSLSocket socket = (SSLSocket) ssf.createSocket(host, SSLPort);
+        try (SSLSocket socket = (SSLSocket) ssf.createSocket(host, SSLPort)) {
             socket.startHandshake();
 
             X509Certificate[] peerCertificates = (X509Certificate[]) socket.getSession().getPeerCertificates();
@@ -100,9 +92,7 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
             Date date = serverCert.getNotAfter();
             long validDays = DAYS.between(Instant.now(), date.toInstant());
-            ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
-            objectValue.put("validDays", validDays);
-            return objectValue;
+            return Map.<String, Object>of("validDays", validDays);
         } catch (IOException e) {
             LOG.log(Level.WARNING, "Failed to connect to SSL port " + SSLPort + " on host: " + host);
             return null;

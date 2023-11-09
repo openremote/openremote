@@ -40,7 +40,6 @@ generateTypeScript {
         "org.openremote.model.flow.**",
         "java.io.**",
         "org.hibernate.**",
-        "com.vladmihalcea.**",
         "jakarta.**"
     ]
     customTypeProcessor = "CustomTypeProcessor"
@@ -69,7 +68,7 @@ generateTypeScript {
         "com.fasterxml.jackson.module.paramnames.ParameterNamesModule"
     ]
     extensions = [
-        "AssetModelInfoExtension",
+        "org.openremote.model.util.AssetModelInfoExtension",
         "CustomExtension",
         "JsonSerializeExtension"
     ]

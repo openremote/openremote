@@ -23,12 +23,11 @@ import jakarta.transaction.Status;
 import jakarta.transaction.Synchronization;
 import org.apache.camel.CamelExecutionException;
 import org.hibernate.CallbackException;
-import org.hibernate.EmptyInterceptor;
+import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 import org.openremote.model.PersistenceEvent;
 
-import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -38,7 +37,7 @@ import java.util.logging.Logger;
 /**
  * Intercept Hibernate lifecycle events and publish a message.
  */
-public class PersistenceEventInterceptor extends EmptyInterceptor {
+public class PersistenceEventInterceptor implements Interceptor {
 
     private static final Logger LOG = Logger.getLogger(PersistenceEventInterceptor.class.getName());
     protected Consumer<PersistenceEvent<?>> eventConsumer;
@@ -49,7 +48,8 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
-    public boolean onSave(Object entity, Serializable id,
+    public boolean onSave(Object entity,
+                          Object id,
                           Object[] state, String[] propertyNames, Type[] types)
         throws CallbackException {
         persistenceEvents.add(new PersistenceEvent<>(
@@ -62,7 +62,8 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
-    public boolean onFlushDirty(Object entity, Serializable id,
+    public boolean onFlushDirty(Object entity,
+                                Object id,
                                 Object[] currentState, Object[] previousState,
                                 String[] propertyNames, Type[] types)
         throws CallbackException {
@@ -77,7 +78,8 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
-    public void onDelete(Object entity, Serializable id,
+    public void onDelete(Object entity,
+                         Object id,
                          Object[] state,
                          String[] propertyNames,
                          Type[] types) {
@@ -120,9 +122,5 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                 }
             }
         });
-    }
-
-    @Override
-    public void afterTransactionCompletion(Transaction tx) {
     }
 }

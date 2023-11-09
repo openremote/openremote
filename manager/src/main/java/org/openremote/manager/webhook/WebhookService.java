@@ -19,22 +19,21 @@
  */
 package org.openremote.manager.webhook;
 
-import org.apache.camel.builder.RouteBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
-import org.openremote.container.web.WebTargetBuilder;
-import org.openremote.manager.rules.RulesEngine;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.http.HTTPMethod;
-import org.openremote.model.webhook.Webhook;
-
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.apache.camel.builder.RouteBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.http.HTTPMethod;
+import org.openremote.model.webhook.Webhook;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -65,11 +64,6 @@ public class WebhookService extends RouteBuilder implements ContainerService {
     }
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void configure() throws Exception {
         // empty
     }
@@ -84,22 +78,20 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         // empty
     }
 
-    public void sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
-        Response response = null;
-        try {
-            response = this.buildRequest(target, webhook.getHttpMethod(), mediaType, webhook.getPayload());
+
+    public boolean sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
+
+        try (Response response = this.buildRequest(target, webhook.getHttpMethod(), mediaType, webhook.getPayload())) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                RulesEngine.LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
+                LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
             } else {
-                RulesEngine.LOG.info("Webhook request executed successfully with response status " + response.getStatus());
+                LOG.info("Webhook request executed successfully with response status " + response.getStatus());
+                return true;
             }
         } catch (Exception e) {
             LOG.warning(e.getMessage());
-        } finally {
-            if (response != null) {
-                response.close();
-            }
         }
+        return false;
     }
 
     public WebTarget buildWebTarget(Webhook webhook) {
@@ -113,7 +105,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         } else if (webhook.getOAuthGrant() != null) {
             builder.setOAuthAuthentication(webhook.getOAuthGrant());
         }
-        if (webhook.getHeaders() != null && webhook.getHeaders().size() > 0) {
+        if (webhook.getHeaders() != null && !webhook.getHeaders().isEmpty()) {
             builder.setInjectHeaders(webhook.getHeaders());
         }
         return builder.build();

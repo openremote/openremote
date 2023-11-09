@@ -28,6 +28,6 @@ import jakarta.ws.rs.core.MediaType;
 @TsIgnore
 public abstract class Webhooks {
 
-    public abstract void send(Webhook webhook, MediaType mediaType, WebTarget target);
+    public abstract boolean send(Webhook webhook, MediaType mediaType, WebTarget target);
     public abstract WebTarget buildTarget(Webhook webhook);
 }

@@ -360,7 +360,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         and: "the connected attribute of the provisioned asset should show as not connected"
         conditions.eventually {
-            weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            weatherAsset = assetStorageService.find (weatherAsset.id)
             assert !weatherAsset.getAttribute("connected").flatMap{it.value}.orElse(true)
         }
 

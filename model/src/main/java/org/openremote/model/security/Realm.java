@@ -276,7 +276,7 @@ public class Realm {
 
     @JsonIgnore
     public Set<RealmRole> getNormalisedRealmRoles() {
-        Set<RealmRole> tempSet = new LinkedHashSet<>(getDefaultRealmRoles(getName()));
+        Set<RealmRole> tempSet = new HashSet<>(getDefaultRealmRoles(getName()));
         if (realmRoles != null) {
             tempSet.addAll(realmRoles);
         }
