@@ -67,7 +67,10 @@ import org.postgresql.util.PGobject;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -232,6 +235,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
+    protected ConcurrentHashMap<String, Lock> assetLocks = new ConcurrentHashMap<>();
 
     /**
      * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link LogicGroup} type
@@ -439,6 +443,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .end();
     }
 
+    public void withAssetLock(String assetId, Runnable runnable) {
+        Lock assetLock = assetLocks.computeIfAbsent(assetId, (k) -> new ReentrantLock());
+
+        lockWrapper.lock.lock();
+    }
+
     /**
      * Authorizes an {@link AssetQuery} by validating it against security constraints and/or applying default options to the query
      * based on security constraints.
@@ -643,6 +653,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Merging asset: " + asset);
         }
+
+
 
         return persistenceService.doReturningTransaction(em -> {
 

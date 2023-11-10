@@ -342,7 +342,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
                 }
 
-                // Type coercion - event will contain a generic JsonNode that needs coercing to the correct type
+                // Type coercion - event could contain a generic JsonNode that needs coercing to the correct type
                 Object value = event.getValue().map(eventValue -> {
                     Class<?> attributeValueType = oldAttribute.getTypeClass();
                     return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
