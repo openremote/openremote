@@ -336,35 +336,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         .flatMap(ValueUtil::getString)
                         .flatMap(AttributeExecuteStatus::fromString);
 
-                    // TODO: Make this mechanism more generic with an interface
-                    if (status.isPresent() && !status.get().isWrite()) {
-                        throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
-                    }
-                }
-
-                // Type coercion - event could contain a generic JsonNode that needs coercing to the correct type
-                Object value = event.getValue().map(eventValue -> {
-                    Class<?> attributeValueType = oldAttribute.getTypeClass();
-                    return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                        LOG.log(System.Logger.Level.INFO, "Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
-                        return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
-                    });
-                }).orElse(null);
-
-                // TODO: Use schema validation
-                // Check if attribute is well known and the value is valid
-//                    AssetModelUtil.getAssetDescriptor(asset.getType()).map(assetDescriptor -> assetDescriptor.get)
-//                    AssetModelUtil.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
-//                        // Check if the value is valid
-//                        wellKnownAttribute.getValueDescriptor()
-//                            .getValidator().flatMap(v -> v.apply(event.getValue().orElse(null)))
-//                            .ifPresent(validationFailure -> {
-//                                throw new AssetProcessingException(
-//                                    INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE
-//                                );
-//                            });
-//                    });
-
 
                 // Process the asset update in a database transaction, this ensures that processors
                 // will see consistent database state and we only commit if no processor failed. This

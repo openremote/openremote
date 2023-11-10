@@ -7,10 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4CBDF29E2AE2797E00C7D94C /* ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CBDF29D2AE2797E00C7D94C /* ORLib.framework */; };
-		4CBDF29F2AE2797E00C7D94C /* ORLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4CBDF29D2AE2797E00C7D94C /* ORLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		4CBDF2A22AE2798700C7D94C /* ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CBDF2A12AE2798700C7D94C /* ORLib.framework */; };
-		4CBDF2A32AE2798700C7D94C /* ORLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4CBDF2A12AE2798700C7D94C /* ORLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4CBDF2B62AE2862500C7D94C /* ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CBDF2B52AE2862500C7D94C /* ORLib.framework */; };
+		4CBDF2BA2AE2862A00C7D94C /* ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CBDF2B92AE2862A00C7D94C /* ORLib.framework */; };
+		4CBDF2BB2AE2862A00C7D94C /* ORLib.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4CBDF2B92AE2862A00C7D94C /* ORLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4CEDA25D25405B1E00C47E3B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */; };
 		4CEDA2A7254074D100C47E3B /* Storyboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA2A6254074D100C47E3B /* Storyboard.storyboard */; };
 		4CEDA2CE254075D400C47E3B /* SplashViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2CD254075D400C47E3B /* SplashViewController.swift */; };
@@ -26,6 +25,7 @@
 		910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */; };
 		910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */; };
 		91543FDE293FA2F20009016E /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91543FDD293FA2F20009016E /* SettingsViewController.swift */; };
+		915BFDFC29685A7200A4FD67 /* ProjectTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915BFDFB29685A7200A4FD67 /* ProjectTableViewCell.swift */; };
 		91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91658F942889C15D000FF05C /* WizardRealmViewController.swift */; };
 /* End PBXBuildFile section */
 
@@ -40,24 +40,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		4CBDF2A02AE2797E00C7D94C /* Embed Frameworks */ = {
+		4CBDF2BC2AE2862A00C7D94C /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				4CBDF29F2AE2797E00C7D94C /* ORLib.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		4CBDF2A42AE2798700C7D94C /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				4CBDF2A32AE2798700C7D94C /* ORLib.framework in Embed Frameworks */,
+				4CBDF2BB2AE2862A00C7D94C /* ORLib.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -80,8 +69,8 @@
 		46FD90D41833A0E2C4C7DDA6 /* Pods-NotificationService.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.release.xcconfig"; path = "Target Support Files/Pods-NotificationService/Pods-NotificationService.release.xcconfig"; sourceTree = "<group>"; };
 		4C38E9C02548089A00E381C6 /* OpenRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenRemote.entitlements; sourceTree = "<group>"; };
 		4C38E9C12548090200E381C6 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
-		4CBDF29D2AE2797E00C7D94C /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		4CBDF2A12AE2798700C7D94C /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CBDF2B52AE2862500C7D94C /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CBDF2B92AE2862A00C7D94C /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		4CEDA2A6254074D100C47E3B /* Storyboard.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Storyboard.storyboard; sourceTree = "<group>"; };
 		4CEDA2CD254075D400C47E3B /* SplashViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashViewController.swift; sourceTree = "<group>"; };
@@ -100,6 +89,7 @@
 		9108939F285DB30D00D4ABA7 /* WizardAppViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardAppViewController.swift; sourceTree = "<group>"; };
 		910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardDomainViewController.swift; sourceTree = "<group>"; };
 		91543FDD293FA2F20009016E /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
+		915BFDFB29685A7200A4FD67 /* ProjectTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectTableViewCell.swift; sourceTree = "<group>"; };
 		91658F8F28897BC0000FF05C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		91658F942889C15D000FF05C /* WizardRealmViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WizardRealmViewController.swift; sourceTree = "<group>"; };
 		A994B3D3E3853BA4D16AA5A8 /* Pods-GenericApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GenericApp.debug.xcconfig"; path = "Target Support Files/Pods-GenericApp/Pods-GenericApp.debug.xcconfig"; sourceTree = "<group>"; };
@@ -112,7 +102,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				756FA8BF24545CB0CC18CA6E /* Pods_GenericApp.framework in Frameworks */,
-				4CBDF2A22AE2798700C7D94C /* ORLib.framework in Frameworks */,
+				4CBDF2BA2AE2862A00C7D94C /* ORLib.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -121,7 +111,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5952998DA2B50AFF73DDCAE1 /* Pods_NotificationService.framework in Frameworks */,
-				4CBDF29E2AE2797E00C7D94C /* ORLib.framework in Frameworks */,
+				4CBDF2B62AE2862500C7D94C /* ORLib.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +201,7 @@
 				910893A1285DB37C00D4ABA7 /* WizardDomainViewController.swift */,
 				91658F942889C15D000FF05C /* WizardRealmViewController.swift */,
 				91543FDD293FA2F20009016E /* SettingsViewController.swift */,
+				915BFDFB29685A7200A4FD67 /* ProjectTableViewCell.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -218,8 +209,8 @@
 		E76367874E329A8C268BC128 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				4CBDF2A12AE2798700C7D94C /* ORLib.framework */,
-				4CBDF29D2AE2797E00C7D94C /* ORLib.framework */,
+				4CBDF2B92AE2862A00C7D94C /* ORLib.framework */,
+				4CBDF2B52AE2862500C7D94C /* ORLib.framework */,
 				4E012F268F107177E6B242E8 /* Pods_GenericApp.framework */,
 				570B5A477F4AA747A62A45EF /* Pods_NotificationService.framework */,
 			);
@@ -239,7 +230,7 @@
 				878D2D07249A490300011484 /* Resources */,
 				878D2D2C249A498900011484 /* Embed App Extensions */,
 				1916A4B7304981F2A7B97168 /* [CP] Embed Pods Frameworks */,
-				4CBDF2A42AE2798700C7D94C /* Embed Frameworks */,
+				4CBDF2BC2AE2862A00C7D94C /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -259,7 +250,6 @@
 				878D2D20249A498900011484 /* Sources */,
 				878D2D21249A498900011484 /* Frameworks */,
 				878D2D22249A498900011484 /* Resources */,
-				4CBDF2A02AE2797E00C7D94C /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -401,6 +391,7 @@
 				91658F952889C15D000FF05C /* WizardRealmViewController.swift in Sources */,
 				4CF3439127A13F2200EB5A0E /* String+Utils.swift in Sources */,
 				91543FDE293FA2F20009016E /* SettingsViewController.swift in Sources */,
+				915BFDFC29685A7200A4FD67 /* ProjectTableViewCell.swift in Sources */,
 				878D2D0D249A490300011484 /* AppDelegate.swift in Sources */,
 				910893A0285DB30D00D4ABA7 /* WizardAppViewController.swift in Sources */,
 				910893A2285DB37C00D4ABA7 /* WizardDomainViewController.swift in Sources */,
@@ -562,7 +553,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 42;
+				CURRENT_PROJECT_VERSION = 44;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
@@ -588,7 +579,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 42;
+				CURRENT_PROJECT_VERSION = 44;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
