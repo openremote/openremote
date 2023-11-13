@@ -24,9 +24,6 @@ export abstract class OrWidget extends LitElement {
     @property({type: Object})
     protected readonly widgetConfig!: WidgetConfig;
 
-    @property()
-    protected readonly editMode = false;
-
     constructor(config: WidgetConfig) {
         super();
         this.widgetConfig = config;

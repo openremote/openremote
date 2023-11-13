@@ -71,6 +71,7 @@ async function fetchAssets(attributeRefs: AttributeRef[] = []) {
     let assets: Asset[] = [];
     await manager.rest.api.AssetResource.queryAssets({
         ids: attributeRefs?.map((x: AttributeRef) => x.id) as string[],
+        realm: { name: manager.displayRealm },
         select: {
             attributes: attributeRefs?.map((x: AttributeRef) => x.name) as string[]
         }

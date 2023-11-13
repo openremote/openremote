@@ -125,7 +125,6 @@ export class ChartWidget extends OrAssetWidget {
 
     // WebComponent lifecycle method, that occurs DURING every state update
     protected willUpdate(changedProps: PropertyValues) {
-        console.log(changedProps);
 
         // Add datapointQuery if not set yet (due to migration)
         if(!this.widgetConfig.datapointQuery) {
@@ -168,13 +167,12 @@ export class ChartWidget extends OrAssetWidget {
     }
 
     protected render(): TemplateResult {
-        console.warn("chart-widget render!");
         return html`
             ${when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
-                              .attributeControls="${false}" .timestampControls="${!this.editMode && this.widgetConfig?.showTimestampControls}"
+                              .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
                               style="height: 100%"

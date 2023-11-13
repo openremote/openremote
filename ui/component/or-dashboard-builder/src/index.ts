@@ -294,7 +294,7 @@ export class OrDashboardBuilder extends LitElement {
         registerWidgetTypes();
 
         this.updateComplete.then(() => {
-            this.updateDashboards(this.realm!);
+            this.loadAllDashboards(this.realm);
         });
     }
 
@@ -330,7 +330,7 @@ export class OrDashboardBuilder extends LitElement {
 
         // Support for realm switching
         if(changedProps.has("realm") && changedProps.get("realm") !== undefined && this.realm) {
-            this.updateDashboards(this.realm);
+            this.loadAllDashboards(this.realm);
         }
 
         // Any update on the dashboard
@@ -380,7 +380,7 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
 
-    async updateDashboards(realm: string) {
+    async loadAllDashboards(realm: string) {
 
         // Getting dashboards
         await manager.rest.api.DashboardResource.getAllRealmDashboards(realm).then((result) => {

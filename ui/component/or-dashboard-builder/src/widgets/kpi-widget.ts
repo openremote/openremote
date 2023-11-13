@@ -86,7 +86,7 @@ export class KpiWidget extends OrAssetWidget {
         return html`
             <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widgetConfig.period}"
                                .deltaFormat="${this.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widgetConfig.decimals}"
-                               showControls="${!this.editMode && this.widgetConfig?.showTimestampControls}" showTitle="${false}" style="height: 100%;">
+                               showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" style="height: 100%;">
             </or-attribute-card>
         `;
     }

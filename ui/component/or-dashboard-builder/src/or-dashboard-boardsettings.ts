@@ -24,20 +24,6 @@ export class OrDashboardBoardsettings extends LitElement {
     @property()
     protected readonly showPerms?: boolean;
 
-    /* constructor() {
-        super();
-        this.updateComplete.then(() => {
-            if (this.shadowRoot != null) {
-                this.shadowRoot.querySelectorAll(".displayInput").forEach(element => {
-                    (element.shadowRoot?.querySelector(".mdc-menu") as HTMLElement).style.minWidth = "250px"; // small fix for dropdown menu's to be the correct width
-                })
-                this.shadowRoot.querySelectorAll(".permissionInput").forEach(element => {
-                    (element.shadowRoot?.querySelector(".mdc-menu") as HTMLElement).style.minWidth = "250px"; // small fix for dropdown menu's to be the correct width
-                })
-            }
-        })
-    } */
-
     /* ------------------------- */
 
     static get styles() {
@@ -260,8 +246,4 @@ export class OrDashboardBoardsettings extends LitElement {
             })}
         `
     }
-
-
-    /* ------------------------- */
-
 }

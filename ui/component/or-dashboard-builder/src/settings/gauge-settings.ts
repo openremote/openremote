@@ -79,7 +79,6 @@ export class GaugeSettings extends WidgetSettings {
     }
 
     protected onThresholdChange(ev: ThresholdChangeEvent) {
-        console.log("onThresholdChange()");
         this.widgetConfig.thresholds = ev.detail;
         this.notifyConfigUpdate();
     }

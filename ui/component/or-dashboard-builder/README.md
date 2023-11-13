@@ -1,6 +1,12 @@
 # or-dashboard-builder
 ### All-in-one bundle for creating dashboards with OpenRemote data.
 
+This component is the core of the Insights page on our OpenRemote manager,<br />
+where users can build dashboards with widgets, for monitoring their assets in their preferred way.<br />
+It is quite an extensive piece of code, so some apps using this (such as or standalone Insights app)<br />
+might not need the full package.<br />
+<br />
+It is structured to support the additions of custom widgets, whereof a short tutorial is shown below.
 
 
 ---

@@ -98,7 +98,6 @@ export class AssettypesPanel extends LitElement {
 
     protected willUpdate(changedProps: PropertyValues) {
         super.willUpdate(changedProps);
-        console.log(changedProps);
         if (changedProps.has("assetType") && this.assetType) {
             this.attributeList = this.getAttributesByType(this.assetType)!;
             this.dispatchEvent(new AssetTypeSelectEvent(this.assetType));

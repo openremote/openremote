@@ -111,7 +111,6 @@ export class AttributesPanel extends LitElement {
     // Lit lifecycle method to compute values during update
     protected willUpdate(changedProps: PropertyValues) {
         super.willUpdate(changedProps);
-        console.log(changedProps);
 
         if (!this.attributeRefs) {
             this.attributeRefs = [];
@@ -149,6 +148,7 @@ export class AttributesPanel extends LitElement {
         let assets: Asset[] = [];
         await manager.rest.api.AssetResource.queryAssets({
             ids: attributeRefs.map((x: AttributeRef) => x.id) as string[],
+            realm: { name: manager.displayRealm },
             select: {
                 attributes: attributeRefs.map((x: AttributeRef) => x.name) as string[]
             }

@@ -1,7 +1,7 @@
-import { i18next } from "@openremote/or-translate";
-import {css, html, LitElement, PropertyValues } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
+import {i18next} from "@openremote/or-translate";
+import {css, html, LitElement, PropertyValues} from "lit";
+import {customElement, property, query, state} from "lit/decorators.js";
+import {when} from "lit/directives/when.js";
 import {throttle} from "lodash";
 import {style} from "./style";
 import {DashboardWidget} from "@openremote/model";
@@ -55,21 +55,21 @@ export class OrDashboardWidgetContainer extends LitElement {
 
         // Update config if some values in the spec are not set.
         // Useful for when migrations have taken place.
-        if(this.widget) {
+        if (this.widget) {
             const manifest = WidgetService.getManifest(this.widget.widgetTypeId!);
-            if(manifest) {
+            if (manifest) {
                 this.widget.widgetConfig = WidgetService.correctToConfigSpec(manifest, this.widget.widgetConfig);
             }
         }
 
         // Only update widget if certain properties of widget has changed.
         // For example, when the 'gridItem' field changes, no update is needed since it doesn't apply here.
-        if(changedProps.has('widget') && this.widget) {
+        if (changedProps.has('widget') && this.widget) {
             const oldVal = changedProps.get('widget') as DashboardWidget | undefined;
             const idChanged = oldVal?.id !== this.widget?.id;
             const nameChanged = oldVal?.displayName !== this.widget?.displayName;
             const configChanged = JSON.stringify(oldVal?.widgetConfig) !== JSON.stringify(this.widget?.widgetConfig);
-            if(!(idChanged || nameChanged || configChanged)) {
+            if (!(idChanged || nameChanged || configChanged)) {
                 changed.delete('widget');
             }
         }
@@ -80,12 +80,12 @@ export class OrDashboardWidgetContainer extends LitElement {
     willUpdate(changedProps: Map<string, any>) {
         super.willUpdate(changedProps);
 
-        if(!this.manifest && this.widget) {
+        if (!this.manifest && this.widget) {
             this.manifest = WidgetService.getManifest(this.widget.widgetTypeId!);
         }
 
         // Create widget
-        if(changedProps.has("widget") && this.widget) {
+        if (changedProps.has("widget") && this.widget) {
             this.initializeWidgetElem(this.manifest!, this.widget.widgetConfig);
         }
     }
@@ -93,9 +93,9 @@ export class OrDashboardWidgetContainer extends LitElement {
     firstUpdated(changedProps: PropertyValues) {
         super.firstUpdated(changedProps);
 
-        if(this.orWidget) {
+        if (this.orWidget) {
             const containerElem = this.containerElem;
-            if(containerElem) {
+            if (containerElem) {
                 this.resizeObserver?.disconnect();
                 this.resizeObserver = new ResizeObserver(throttle(() => {
                     const minWidth = this.manifest!.minPixelWidth || 0;
@@ -112,26 +112,28 @@ export class OrDashboardWidgetContainer extends LitElement {
 
     protected initializeWidgetElem(manifest: WidgetManifest, config: WidgetConfig) {
         console.log(`Initialising ${manifest.displayName} widget..`);
-        if(this.orWidget) {
+        if (this.orWidget) {
             this.orWidget.remove();
         }
         this.orWidget = manifest.getContentHtml(config);
     }
 
     protected render() {
-        console.warn("or-dashboard-widgetcontainer render!");
+        const showHeader = !!this.widget.displayName;
         return html`
             <div id="widget-container" style="height: calc(100% - 16px); padding: 8px 16px 8px 16px; display: flex; flex-direction: column;">
-                
+
                 <!-- Container title -->
-                <div style="flex: 0 0 36px; display: flex; justify-content: space-between; align-items: center;">
-                    <span class="panel-title" style="width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        ${this.widget.displayName?.toUpperCase()}
-                    </span>
-                </div>
-                
+                ${when(showHeader, () => html`
+                    <div style="flex: 0 0 36px; display: flex; justify-content: space-between; align-items: center;">
+                        <span class="panel-title" style="width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ${this.widget.displayName?.toUpperCase()}
+                        </span>
+                    </div>
+                `)}
+
                 <!-- Content -->
-                <div style="flex: 1; max-height: calc(100% - 36px);">
+                <div style="flex: 1; max-height: ${showHeader ? 'calc(100% - 36px)' : '100%'});">
                     ${when((!this.error && !this.loading), () => html`
                         ${this.orWidget}
                     `, () => html`

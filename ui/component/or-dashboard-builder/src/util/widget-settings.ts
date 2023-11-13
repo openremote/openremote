@@ -42,7 +42,6 @@ export abstract class WidgetSettings extends LitElement {
 
     // Lit lifecycle for "on every update" which triggers on every property/state change
     protected willUpdate(changedProps: PropertyValues) {
-        console.log(changedProps);
         if(changedProps.has('widgetConfig') && this.widgetConfig) {
             this.dispatchEvent(new WidgetSettingsChangedEvent(this.widgetConfig));
         }

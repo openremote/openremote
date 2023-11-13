@@ -439,7 +439,6 @@ export class OrDashboardPreview extends LitElement {
                 widgetContainer.refreshContent(false);
             }
         })
-        console.log(this.grid?.getGridItems());
     }
 
     protected selectGridItem(gridItem: GridItemHTMLElement) {
@@ -487,7 +486,6 @@ export class OrDashboardPreview extends LitElement {
 
     // Render
     protected render() {
-        console.warn("or-dashboard-preview render!");
 
         try { // to correct the list of gridItems each render (Hopefully temporarily since it's quite compute heavy)
             if(this.grid?.el && this.grid?.getGridItems()) {
@@ -710,8 +708,6 @@ export class OrDashboardPreview extends LitElement {
             WidgetService.placeNew(newWidget.widgetTypeId, newWidget.x!, newWidget.y!).then((widget) => {
                 this.dispatchEvent(new CustomEvent("created", { detail: widget }));
             });
-
-            /* this.dispatchEvent(new CustomEvent("dropped", { detail: newWidget })); */
         }
     }
 }

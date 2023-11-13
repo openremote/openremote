@@ -91,7 +91,6 @@ export class GaugeWidget extends OrAssetWidget {
 
 
     protected render(): TemplateResult {
-        console.warn("gauge-widget render!");
         return html`
             ${when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
                 return html`

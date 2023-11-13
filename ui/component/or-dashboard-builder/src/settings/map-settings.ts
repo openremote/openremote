@@ -114,7 +114,6 @@ export class MapSettings extends AssetWidgetSettings {
     }
 
     protected async onAttributeNameSelect(ev: AttributeNameSelectEvent) {
-        console.log("onAttributeNameSelect()");
         this.widgetConfig.attributeName = ev.detail;
         await manager.rest.api.AssetResource.queryAssets({
             realm: {
@@ -147,6 +146,7 @@ export class MapSettings extends AssetWidgetSettings {
 
     protected onThresholdsChange(ev: ThresholdChangeEvent) {
         this.widgetConfig.thresholds = ev.detail;
+        this.notifyConfigUpdate();
     }
 
 }

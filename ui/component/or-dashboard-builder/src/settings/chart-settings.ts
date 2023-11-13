@@ -40,7 +40,6 @@ export class ChartSettings extends WidgetSettings {
     }
 
     protected render(): TemplateResult {
-        console.warn("chart-settings render!");
         const attributeFilter: (attr: Attribute<any>) => boolean = (attr): boolean => {
             return ["boolean", "positiveInteger", "positiveNumber", "number", "long", "integer", "bigInteger", "negativeInteger", "negativeNumber", "bigNumber", "integerByte", "direction"].includes(attr.type!)
         };

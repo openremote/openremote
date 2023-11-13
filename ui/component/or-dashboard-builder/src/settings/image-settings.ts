@@ -30,7 +30,6 @@ export class ImageSettings extends AssetWidgetSettings {
 
     protected willUpdate(changedProps: PropertyValues) {
         super.willUpdate(changedProps);
-        console.log(changedProps);
         if(changedProps.has('widgetConfig') && this.widgetConfig) {
             this.updateCoordinateMap(this.widgetConfig);
             this.loadAssets();
@@ -130,7 +129,6 @@ export class ImageSettings extends AssetWidgetSettings {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
                     label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                 }
-                console.log(this.loadedAssets);
                 return html`
                     <div id="marker-container">
                         <div style="flex: 1; display: flex; flex-direction: column;">

@@ -48,7 +48,7 @@ export class DashboardRefreshControls extends LitElement {
     @property()
     protected readonly = true;
 
-    // TODO: Replace this with Object.values(), after generated typescript enums support this. ('const' variable issue)
+    // TODO: Replace this with Object.values(), after generated typescript enums support this. ('const' variable issue in model.ts)
     protected intervalOptions = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.TEN_SECONDS, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR]
 
     protected willUpdate(changedProps: PropertyValues) {
@@ -61,8 +61,6 @@ export class DashboardRefreshControls extends LitElement {
     protected render(): TemplateResult {
         const intervalOptions: string[] = this.getRefreshOptions();
         const value = this.getIntervalString(this.interval);
-        console.log(intervalOptions);
-        console.log(value);
         return html`
             <div style="height: 100%; display: flex; align-items: center;">
                 ${when(this.readonly, () => html`
