@@ -48,6 +48,9 @@ Similar to Test 9 but Console 1 is not selectable as app
 ### Test 12
 Similar to Test 7 but with no realms defined in the AppInfo
 
+### Test 13
+ConsoleConfig with no specified app and no allowed apps but apps list available via Apps call only contains 1 app
+
 
 
 

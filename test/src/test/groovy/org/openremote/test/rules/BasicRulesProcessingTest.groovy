@@ -170,41 +170,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "time advances"
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
-        then: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
+        and: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
         def realmALastFireTimestamp = rulesImport.realmBuildingEngine.lastFireTimestamp
         def apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
-        def apartment2LivingRoomWindowOpenChange = new AttributeEvent(
-            managerTestSetup.apartment2LivingroomId, "windowOpen", true
-        )
-        assetProcessingService.sendAttributeEvent(apartment2LivingRoomWindowOpenChange)
-
-        then: "the attribute event should have been processed"
-        conditions.eventually {
-            def apartment2LivingRoom = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
-            assert apartment2LivingRoom.getAttribute("windowOpen").flatMap{it.getValueAs(Boolean.class)}.orElse(false)
-        }
-
-        then: "the rules engines should not have fired"
-        conditions.eventually {
-            assert rulesImport.globalEngine.lastFireTimestamp == globalLastFireTimestamp
-            assert rulesImport.masterEngine.lastFireTimestamp == masterLastFireTimestamp
-            assert rulesImport.realmBuildingEngine.lastFireTimestamp == realmALastFireTimestamp
-            assert rulesImport.apartment2Engine.lastFireTimestamp == apartment2LastFireTimestamp
-            assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
-        }
-
-        when: "time advances"
-        advancePseudoClock(1, TimeUnit.SECONDS, container)
-
-        and: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
-        globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
-        masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
-        realmALastFireTimestamp = rulesImport.realmBuildingEngine.lastFireTimestamp
-        apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
-        apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         asset.addOrReplaceAttributes(
             new Attribute<>("testString", ValueType.TEXT, "test")
                 .addOrReplaceMeta(

@@ -26,6 +26,8 @@ import org.openremote.model.value.ValueDescriptor;
 
 import jakarta.ws.rs.*;
 
+import java.util.Map;
+
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
@@ -72,23 +74,23 @@ public interface AssetModelResource {
 
     /**
      * Retrieve value descriptors {@link ValueDescriptor} available in this system or from a {@link
-     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a * parentId is supplied, if it isn't
-     * then this instance is used, if it is and the {@link Asset} or one of its' * ancestors resides on a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a  parentId is supplied, if it isn't
+     * then this instance is used, if it is and the {@link Asset} or one of its' ancestors resides on a {@link
      * org.openremote.model.asset.impl.GatewayAsset} then that gateway instance is used.
      */
     @GET
     @Path("valueDescriptors")
     @Produces(APPLICATION_JSON)
-    ValueDescriptor<?>[] getValueDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+    Map<String, ValueDescriptor<?>> getValueDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 
     /**
      * Retrieve meta descriptors {@link MetaItemDescriptor} available in this system or from a {@link
-     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a * parentId is supplied, if it isn't
-     * then this instance is used, if it is and the {@link Asset} or one of its' * ancestors resides on a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a parentId is supplied, if it isn't
+     * then this instance is used, if it is and the {@link Asset} or one of its' ancestors resides on a {@link
      * org.openremote.model.asset.impl.GatewayAsset} then that gateway instance is used.
      */
     @GET
     @Path("metaItemDescriptors")
     @Produces(APPLICATION_JSON)
-    MetaItemDescriptor<?>[] getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+    Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 }

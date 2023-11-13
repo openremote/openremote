@@ -23,10 +23,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.model.Constants;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Roles available for our client application on Keycloak.
@@ -77,13 +75,10 @@ public enum ClientRole {
     });
 
     // Only individual roles, not composites
-    public static final Set<String> ALL_ROLES = new HashSet<String>() {{
-        for (ClientRole clientRole : values()) {
-            if (clientRole.composites == null) {
-                add(clientRole.value);
-            }
-        }
-    }};
+    public static final Set<String> ALL_ROLES = Arrays.stream(values())
+        .filter(r -> r.composites == null)
+        .map(ClientRole::getValue)
+        .collect(Collectors.toSet());
 
     final protected String value;
     final protected String description;

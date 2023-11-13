@@ -19,10 +19,16 @@
  */
 package org.openremote.manager.asset;
 
-import com.vladmihalcea.hibernate.type.array.StringArrayType;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
+import org.hibernate.jpa.AvailableHints;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -39,6 +45,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.impl.GroupAsset;
+import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
@@ -54,15 +61,10 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.validation.AssetStateStore;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -659,13 +661,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 throw new IllegalStateException(msg);
             }
 
-            // Do standard JSR-380 validation on the asset (includes custom validation)
-            Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset, Asset.AssetSave.class);
+            // Do standard JSR-380 validation on the asset (includes custom validation using descriptors and constraints)
+            Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset);
 
-            if (validationFailures.size() > 0) {
+            if (!validationFailures.isEmpty()) {
                 String msg = "Asset merge failed as asset has failed constraint validation: asset=" + asset;
                 ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
-                LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage(), ex);
+                LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
                 throw ex;
             }
 
@@ -823,6 +825,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (user != null) {
                 createUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
+            }
+
+            if (existingAsset == null && updatedAsset instanceof ThingAsset && !ThingAsset.DESCRIPTOR.getName().equals(updatedAsset.getType())) {
+                // When an asset is first saved then any custom type is not persisted as JPA will set it to ThingAsset so we need to override
+                // We don't need to do this when updating an existing asset as JPA doesn't overwrite the type - if this changes in future it
+                // should be detected by tests
+                em.createNativeQuery("update ASSET set type = ? where id = ?;")
+                    .setParameter(1, updatedAsset.getType())
+                    .setParameter(2, updatedAsset.getId())
+                    .executeUpdate();
             }
 
             return updatedAsset;
@@ -1248,6 +1260,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @SuppressWarnings("unchecked")
     protected List<Asset<?>> findAll(EntityManager em, AssetQuery query) {
+
         long startMillis = System.currentTimeMillis();
 
         if (query.access == null)
@@ -1309,8 +1322,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 //            return asset;
 //        });
 
-        org.hibernate.query.Query<Object[]> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class);
-
+        org.hibernate.query.Query<Object[]> jpql = em.createNativeQuery(querySql.querySql, Asset.class).unwrap(org.hibernate.query.Query.class)
+            .setHint(AvailableHints.HINT_READ_ONLY, true); // Make query readonly so no dirty checks are performed
         querySql.apply(em, jpql);
         List<Asset<?>> assets = (List<Asset<?>>)(Object)jpql.getResultList();
 
@@ -1329,59 +1342,46 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * This does a low level JDBC update so hibernate event interceptor doesn't get called and we 'manually'
      * generate the {@link AttributeEvent}
      */
-    protected boolean updateAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) {
+    @SuppressWarnings("unchecked")
+    protected boolean updateAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) throws ConstraintViolationException {
+
+        long timestamp = attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis);
+
+        // TODO: Reuse AssetState and change validator over to that class
+        // Do standard JSR-380 validation on the new value (needs attribute descriptor to do this)
+        Set<ConstraintViolation<AssetStateStore>> validationFailures = ValueUtil.validate(new AssetStateStore(asset.getType(), attribute));
+
+        if (!validationFailures.isEmpty()) {
+            String msg = "Attribute update failed as value failed constraint validation: attribute=" + attribute;
+            ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
+            LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
+            throw ex;
+        }
 
         try {
+            PGobject valueTimestampJSON = new PGobject();
+            valueTimestampJSON.setType("jsonb");
+            valueTimestampJSON.setValue("{\"value\":" + ValueUtil.asJSON(attribute.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}");
 
-            // Detach the asset from the em so we can manually update the attribute
-            em.detach(asset);
-            String attributeName = attribute.getName();
-            Object value = attribute.getValue();
-            long timestamp = attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis);
+            // TODO: Use jsonb type directly to optimise over wire data (couldn't get this to work even after seeing https://stackoverflow.com/questions/53847917/postgresql-throws-column-is-of-type-jsonb-but-expression-is-of-type-bytea-with)
+            Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ?")
+                .setParameter(1, attribute.getName())
+                .setParameter(2, attribute.getName())
+                .setParameter(3, "{\"value\":" + ValueUtil.asJSON(attribute.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
+                .setParameter(4, asset.getId());
 
-            boolean success = em.unwrap(Session.class).doReturningWork(connection -> {
-                String jpql = "update Asset" +
-                    " set attributes = jsonb_set(jsonb_set(attributes, ?, ?, true), ?, ?, true)" +
-                    " where id = ? and attributes -> ? is not null";
+            int affectedRows = query.executeUpdate();
+            boolean success = affectedRows == 1;
 
-                try (PreparedStatement statement = connection.prepareStatement(jpql)) {
-                    Array attributeValuePath = connection.createArrayOf(
-                        "text",
-                        new String[]{attributeName, "value"}
-                    );
-                    statement.setArray(1, attributeValuePath);
-
-                    PGobject pgJsonValue = new PGobject();
-                    pgJsonValue.setType("jsonb");
-                    // Careful, do not set Java null here! It will erase your whole SQL column!
-                    pgJsonValue.setValue(ValueUtil.asJSON(value).orElse(ValueUtil.NULL_LITERAL));
-                    statement.setObject(2, pgJsonValue);
-
-                    // Bind the value timestamp
-                    Array attributeValueTimestampPath = connection.createArrayOf(
-                        "text",
-                        new String[]{attributeName, "timestamp"}
-                    );
-                    statement.setArray(3, attributeValueTimestampPath);
-                    PGobject pgJsonValueTimestamp = new PGobject();
-                    pgJsonValueTimestamp.setType("jsonb");
-                    pgJsonValueTimestamp.setValue(Long.toString(timestamp));
-                    statement.setObject(4, pgJsonValueTimestamp);
-
-                    // Bind asset ID and attribute name
-                    statement.setString(5, asset.getId());
-                    statement.setString(6, attributeName);
-
-                    int updatedRows = statement.executeUpdate();
-                    if (LOG.isLoggable(Level.FINEST)) {
-                        LOG.finest("Stored asset '" + asset.getId()
-                            + "' attribute '" + attributeName
-                            + "' (affected rows: " + updatedRows + ") value: "
-                            + (value != null ? ValueUtil.asJSON(value).orElse("null") : "null"));
-                    }
-                    return updatedRows == 1;
+            if (success) {
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("Updated attribute value assetID=" + asset.getId() + ", attributeName=" + attribute.getName() + ", timestamp=" + timestamp);
                 }
-            });
+            } else {
+                if (LOG.isLoggable(Level.FINE)) {
+                    LOG.fine("Failed to update attribute value assetID=" + asset.getId() + ", attributeName=" + attribute.getName() + ", timestamp=" + timestamp);
+                }
+            }
 
             if (success) {
                 publishAttributeEvent(asset, attribute);
@@ -1588,7 +1588,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 .append("?")
                 .append(pos)
                 .append(")");
-            binders.add((em, st) -> st.setParameter(pos, select.attributes, StringArrayType.INSTANCE));
+            binders.add((em, st) -> st.setParameter(pos, select.attributes));
         }
 
         if (query.access != PRIVATE) {
@@ -1670,7 +1670,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(" and A.ID = ANY(?")
                 .append(pos)
                 .append(")");
-            binders.add((em, st) -> st.setParameter(pos, query.ids, StringArrayType.INSTANCE));
+            binders.add((em, st) -> st.setParameter(pos, query.ids));
         }
 
         if (level == 1 && query.names != null) {
@@ -1745,7 +1745,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(" and UA.USER_ID = ANY(?")
                     .append(pos)
                     .append(")");
-                binders.add((em, st) -> st.setParameter(pos, query.userIds, StringArrayType.INSTANCE));
+                binders.add((em, st) -> st.setParameter(pos, query.userIds));
             }
 
             if (level == 1 && query.access == Access.PUBLIC) {
@@ -1758,7 +1758,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(" and A.TYPE = ANY(?")
                     .append(pos)
                     .append(")");
-                binders.add((em, st) -> st.setParameter(pos, resolvedTypes, StringArrayType.INSTANCE));
+                binders.add((em, st) -> st.setParameter(pos, resolvedTypes));
             }
 
             if (query.attributes != null) {
@@ -1920,7 +1920,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 valuePathInserter = (sb, b) -> {
                     final int pos = binders.size() + 1;
                     sb.append("(").append(jsonObjName).append(".VALUE ").append(operator).append(" ?").append(pos).append(")");
-                    binders.add((em, st) -> st.setParameter(pos, paths.toArray(new String[0]), StringArrayType.INSTANCE));
+                    binders.add((em, st) -> st.setParameter(pos, paths.toArray(new String[0])));
                 };
             }
 

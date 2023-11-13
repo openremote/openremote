@@ -24,6 +24,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
@@ -33,12 +38,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.MetaItemType;
 
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -206,8 +205,9 @@ public interface AssetResource {
     @PUT
     @Path("{assetId}")
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @Valid Asset<?> asset);
+    Asset<?> update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset<?> asset);
 
     /**
      * Updates an attribute of an asset. Regular users can only update assets in their authenticated realm, the
@@ -253,7 +253,7 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    Asset<?> create(@BeanParam RequestParams requestParams, @Valid Asset<?> asset);
+    Asset<?> create(@BeanParam RequestParams requestParams, Asset<?> asset);
 
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm, the superuser can delete

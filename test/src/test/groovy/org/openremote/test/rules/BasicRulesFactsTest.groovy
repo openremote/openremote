@@ -2,11 +2,10 @@ package org.openremote.test.rules
 
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import org.openremote.container.Container
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesFacts
+import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.facade.AssetsFacade
 import spock.lang.Specification
 
@@ -51,7 +50,7 @@ class BasicRulesFactsTest extends Specification {
         def assetStorageService = new AssetStorageService()
         timerService.clock = TimerService.Clock.PSEUDO
         timerService.clock.stop()
-        rulesFacts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RulesEngine.RULES_LOG)
+        rulesFacts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RulesService.LOG)
     }
 
     def "Handle named facts"() {

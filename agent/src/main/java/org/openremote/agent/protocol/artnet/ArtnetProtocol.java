@@ -1,7 +1,6 @@
 package org.openremote.agent.protocol.artnet;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.agent.protocol.udp.UDPIOClient;
@@ -90,7 +89,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //            if(lightId != -1 && groupId != -1 && universe != -1 && amountOfLeds != -1 && requiredKeysField != null)
 //            {
 //                String[] requiredKeys = requiredKeysField.split(",");
-//                ArtnetLightState state = new ArtnetLightState(lightId, new LinkedHashMap<String, Integer>(), 100, true);
+//                ArtnetLightState state = new ArtnetLightState(lightId, new HashMap<String, Integer>(), 100, true);
 //                for(String key : requiredKeys)
 //                    state.getReceivedValues().put(key, 0);
 //                ArtnetLight lightToCreate = new ArtnetLight(lightId, groupId, universe, amountOfLeds, requiredKeys, state, null);
@@ -146,7 +145,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //                    ArtnetLightState oldLightState = updatedLight.getLightState();
 //                    //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
 //                    if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
-//                        Map<String, Integer> valuesToUpdate = new LinkedHashMap<>();
+//                        Map<String, Integer> valuesToUpdate = new HashMap<>();
 //                        for(String requiredKey : updatedLight.getRequiredValues()) {
 //                            try {
 //                                JsonNode node = ValueUtil.JSON.readTree(processedValue.toJson());
@@ -222,7 +221,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //
 //    private void syncLightsToMemory(List<ArtnetLight> lights) {
 //        for(ArtnetLight light : new ArrayList<ArtnetLight>(artnetLightMemory)) {
-//            ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
+//            ArtnetLightState state = new ArtnetLightState(light.getLightId(), new HashMap<String, Integer>(), 100, true);
 //            for(String key : light.getRequiredValues())
 //                state.getReceivedValues().put(key, 0);
 //            light.setLightState(state);
@@ -244,7 +243,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //            }
 //        }
 //        for(ArtnetLight light : lights) {
-//            ArtnetLightState state = new ArtnetLightState(light.getLightId(), new LinkedHashMap<String, Integer>(), 100, true);
+//            ArtnetLightState state = new ArtnetLightState(light.getLightId(), new HashMap<String, Integer>(), 100, true);
 //            for(String key : light.getRequiredValues())
 //                state.getReceivedValues().put(key, 0);
 //            light.setLightState(state);

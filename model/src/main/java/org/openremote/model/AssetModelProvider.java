@@ -22,12 +22,12 @@ package org.openremote.model;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.util.TsIgnore;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
-import org.openremote.model.util.ValueUtil;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -57,14 +57,18 @@ public interface AssetModelProvider {
      * If {@link #useAutoScan} is true and this is also defined then the results will be combined with those returned by
      * scanning.
      */
-    AssetDescriptor<?>[] getAssetDescriptors();
+    default AssetDescriptor<?>[] getAssetDescriptors() {
+        return null;
+    }
 
     /**
      * Get {@link AttributeDescriptor}s that should be associated with the specified {@link Asset} type; these are
      * combined with any {@link AttributeDescriptor}s already associated with the given {@link Asset} type. Any
      * duplicate conflicts will generate an {@link IllegalStateException} during {@link ValueUtil} initialisation.
      */
-    Map<Class<? extends Asset<?>>, List<AttributeDescriptor<?>>> getAttributeDescriptors();
+    default Map<String, Collection<AttributeDescriptor<?>>> getAttributeDescriptors() {
+        return null;
+    }
 
     /**
      * Get {@link MetaItemDescriptor}s that should be associated with the specified {@link Asset} type; these are
@@ -74,23 +78,34 @@ public interface AssetModelProvider {
      * If {@link #useAutoScan} is true and this is also defined then the results will be combined with those returned by
      * scanning.
      */
-    Map<Class<? extends Asset<?>>, List<MetaItemDescriptor<?>>> getMetaItemDescriptors();
+    default Map<String, Collection<MetaItemDescriptor<?>>> getMetaItemDescriptors() {
+        return null;
+    }
 
     /**
      * Get {@link ValueDescriptor}s that should be associated with the specified {@link Asset} type; these are combined
      * with any {@link ValueDescriptor}s already associated with the given {@link Asset} type. Any duplicate conflicts
-     * will generate an {@link IllegalStateException} during {@link ValueUtil} initialisation. Shouldn't contain
-     * any {@link ValueDescriptor}s of type array (i.e. ones obtained by calling {@link ValueDescriptor#asArray} or ones
+     * will generate an {@link IllegalStateException} during {@link ValueUtil} initialisation. Shouldn't contain any
+     * {@link ValueDescriptor}s of type array (i.e. ones obtained by calling {@link ValueDescriptor#asArray} or ones
      * where {@link ValueDescriptor#getType} returns a class that {@link Class#isArray} returns true for.
      * <p>
      * If {@link #useAutoScan} is true and this is also defined then the results will be combined with those returned by
      * scanning.
      */
-    Map<Class<? extends Asset<?>>, List<ValueDescriptor<?>>> getValueDescriptors();
+    default Map<String, Collection<ValueDescriptor<?>>> getValueDescriptors() {
+        return null;
+    }
 
     /**
      * Called when the full Asset model has been initialised which gives {@link AssetModelProvider}s the chance to do
      * additional work (e.g. add constraints such as allowed values based on available asset types).
      */
-    void onAssetModelFinished();
+    default void onAssetModelFinished() {}
+
+    /**
+     * Indicates that this model provider is dynamic and can be refreshed when needed.
+     */
+    default boolean isDynamic() {
+        return false;
+    }
 }

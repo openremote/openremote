@@ -206,7 +206,6 @@ export const RuleViewInfoMap: {[key in RulesetLang]: RuleViewInfo} = {
             "import org.openremote.model.rules.Assets\n" +
             "import org.openremote.model.rules.Notifications\n" +
             "import org.openremote.model.rules.Users\n" +
-            "import org.simplejavamail.email.Email\n" +
             "\n" +
             "import java.util.logging.Logger\n" +
             "import java.util.stream.Collectors\n" +

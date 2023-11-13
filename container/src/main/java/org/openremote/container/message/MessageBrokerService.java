@@ -20,12 +20,9 @@
 package org.openremote.container.message;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
-import org.apache.camel.component.micrometer.spi.TimedScheduledExecutorService;
 import org.apache.camel.component.snmp.SnmpComponent;
 import org.apache.camel.health.HealthCheckRegistry;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -53,8 +50,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
-
-import static org.openremote.container.util.MapAccess.getString;
 
 public class MessageBrokerService implements ContainerService {
 
@@ -168,7 +163,7 @@ public class MessageBrokerService implements ContainerService {
         checkRegistry.register(new RoutesHealthCheckRepository());
         checkRegistry.register(new ConsumersHealthCheckRepository());
         checkRegistry.register(new ContextHealthCheck());
-        context.setExtension(HealthCheckRegistry.class, checkRegistry);
+        context.getCamelContextExtension().addContextPlugin(HealthCheckRegistry.class, checkRegistry);
 
         // Force a quick shutdown of routes with in-flight exchanges
         context.getShutdownStrategy().setTimeout(5);
@@ -179,7 +174,7 @@ public class MessageBrokerService implements ContainerService {
         streamCachingStrategy.setSpoolThreshold(524288); // Half megabyte
         context.setStreamCachingStrategy(streamCachingStrategy);
 
-        context.setErrorHandlerFactory(new DefaultErrorHandlerBuilder());
+        context.getCamelContextExtension().setErrorHandlerFactory(new DefaultErrorHandlerBuilder());
 
         ((SimpleRegistry)((DefaultRegistry)context.getRegistry()).getFallbackRegistry()).put("OpenRemote", Map.of(Container.class, container));
 

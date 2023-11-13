@@ -1,6 +1,5 @@
 package org.openremote.agent.protocol.snmp;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.snmp.SnmpMessage;
 import org.openremote.agent.protocol.AbstractProtocol;
@@ -11,7 +10,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.ValueUtil;
 import org.snmp4j.PDU;
 
 import java.util.HashMap;
@@ -74,7 +72,7 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
 
                             AttributeRef wildCardAttributeRef;
                             if ((wildCardAttributeRef = oidMap.get("*")) != null) {
-                                ObjectNode wildCardValue = ValueUtil.createJsonObject();
+                                Map<String, Object> wildCardValue = new HashMap<>();
                                 pdu.getVariableBindings().forEach(variableBinding -> {
                                     wildCardValue.put(variableBinding.getOid().format(), variableBinding.toValueString());
                                 });

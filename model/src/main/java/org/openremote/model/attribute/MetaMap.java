@@ -22,16 +22,15 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.*;
+import org.openremote.model.value.MetaItemDescriptor;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 
 @JsonDeserialize(using = MetaMap.MetaObjectDeserializer.class)
 public class MetaMap extends NamedMap<MetaItem<?>> {
@@ -41,52 +40,62 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
      */
     public static class MetaObjectDeserializer extends StdDeserializer<MetaMap> {
 
+        public static final String META_DESCRIPTOR_PROVIDER = "meta-descriptor-provider";
+        protected static Function<String, MetaItemDescriptor<?>> DEFAULT_META_DESCRIPTOR_PROVIDER = (name) -> ValueUtil.getMetaItemDescriptor(name).orElse(null);
+
         public MetaObjectDeserializer() {
             super(MetaMap.class);
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
+        @SuppressWarnings("unchecked")
         @Override
         public MetaMap deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-            if (!jp.isExpectedStartObjectToken()) {
-                throw new InvalidFormatException(jp, "Expected an object but got something else", jp.nextValue(), MetaMap.class);
+
+            Function<String, MetaItemDescriptor<?>> metaDescriptorProvider = (Function<String, MetaItemDescriptor<?>>)ctxt.getAttribute(META_DESCRIPTOR_PROVIDER);
+            if (metaDescriptorProvider == null) {
+                metaDescriptorProvider = DEFAULT_META_DESCRIPTOR_PROVIDER;
             }
 
-            List<MetaItem<?>> list = new ArrayList<>();
-
-            while(jp.nextToken() != JsonToken.END_OBJECT) {
-                if(jp.currentToken() == JsonToken.FIELD_NAME) {
-                    String metaItemName = jp.getCurrentName();
-                    jp.nextToken();
-
-                    MetaItem metaItem = new MetaItem<>();
-                    metaItem.setNameInternal(metaItemName);
-
-                    // Find the meta descriptor for this meta item as this will give us value type also; fallback to
-                    // OBJECT type meta item to allow deserialization of meta that doesn't exist in the current asset model
-                    Optional<ValueDescriptor<?>> valueDescriptor = ValueUtil.getMetaItemDescriptor(metaItemName)
-                        .map(MetaItemDescriptor::getType);
-
-                    Class valueType = valueDescriptor.map(ValueDescriptor::getType).orElseGet(() -> (Class) JsonNode.class);
-                    metaItem.setValue(jp.readValueAs(valueType));
-
-                    // Get the value descriptor from the value if it isn't known
-                    metaItem.setTypeInternal(valueDescriptor.orElseGet(() -> {
-                        if (!metaItem.getValue().isPresent()) {
-                            return ValueDescriptor.UNKNOWN;
-                        }
-                        Object value = metaItem.getValue().orElse(null);
-                        return ValueUtil.getValueDescriptorForValue(value);
-                    }));
-
-                    list.add(metaItem);
-                }
-            }
+            List<MetaItem<?>> list = deserialiseMetaMap(jp, ctxt, metaDescriptorProvider);
 
             MetaMap metaMap = new MetaMap();
-            metaMap.putAllSilent(list);
+            metaMap.putAll(list);
             return metaMap;
         }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static List<MetaItem<?>> deserialiseMetaMap(JsonParser jp, DeserializationContext ctxt, Function<String, MetaItemDescriptor<?>> metaDescriptorProvider) throws IOException {
+        if (!jp.isExpectedStartObjectToken()) {
+            throw JsonMappingException.from(jp, "MetaMap must be an object");
+        }
+
+        List<MetaItem<?>> list = new ArrayList<>();
+
+        while(jp.nextToken() != JsonToken.END_OBJECT) {
+            if(jp.currentToken() == JsonToken.FIELD_NAME) {
+                jp.nextToken();
+            }
+            if (jp.currentToken() == JsonToken.VALUE_NULL) {
+                continue;
+            }
+
+            String metaItemName = jp.getCurrentName();
+            MetaItemDescriptor<?> metaItemDescriptor = metaDescriptorProvider.apply(metaItemName);
+
+            MetaItem metaItem;
+            if (metaItemDescriptor != null) {
+                metaItem = new MetaItem(metaItemDescriptor.getName(), metaItemDescriptor.getType());
+            } else {
+                metaItem = new MetaItem(metaItemName);
+            }
+
+            metaItem.setValue(Attribute.AttributeDeserializer.deserialiseValue(metaItem.getType(), jp, ctxt));
+
+            list.add(metaItem);
+        }
+
+        return list;
     }
 
     public MetaMap() {
@@ -113,14 +122,5 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
         MetaItem<S> metaItem = get(metaDescriptor).orElse(new MetaItem<>(metaDescriptor));
         addOrReplace(metaItem);
         return metaItem;
-    }
-
-    /**
-     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonTypeDescriptor} uses
-     * {@link Class#getDeclaredMethod} to find it...
-     */
-    @Override
-    public boolean equals(@Nullable Object object) {
-        return super.equals(object);
     }
 }

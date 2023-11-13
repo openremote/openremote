@@ -21,9 +21,9 @@ package org.openremote.model.console;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Objects;
 
 public class ConsoleProvider implements Serializable {
@@ -33,7 +33,7 @@ public class ConsoleProvider implements Serializable {
     protected boolean success;
     protected boolean enabled;
     protected boolean disabled;
-    protected ObjectNode data;
+    protected Map<String, Object> data;
 
     @JsonCreator
     public ConsoleProvider(@JsonProperty("version") String version,
@@ -42,7 +42,7 @@ public class ConsoleProvider implements Serializable {
                            @JsonProperty("success") boolean success,
                            @JsonProperty("enabled") boolean enabled,
                            @JsonProperty("disabled") boolean disabled,
-                           @JsonProperty("data") ObjectNode data) {
+                           @JsonProperty("data") Map<String, Object> data) {
         this.version = version;
         this.requiresPermission = requiresPermission;
         this.hasPermission = hasPermission;
@@ -76,7 +76,7 @@ public class ConsoleProvider implements Serializable {
         return disabled;
     }
 
-    public ObjectNode getData() {
+    public Map<String, Object> getData() {
         return data;
     }
 
