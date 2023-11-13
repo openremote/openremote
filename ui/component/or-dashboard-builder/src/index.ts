@@ -577,21 +577,23 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="header-actions">
                                     <div id="header-actions-content">
-                                        <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
-                                                      @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}">
-                                        </or-mwc-input>
-                                        <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
-                                                      @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
-                                        </or-mwc-input>
-                                        <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
-                                                      @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}">
-                                        </or-mwc-input>
-                                        <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
-                                                      @or-mwc-input-changed="${() => { this.saveDashboard(); }}">
-                                        </or-mwc-input>
-                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}"
-                                                      @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}">
-                                        </or-mwc-input>
+                                        ${when(this.selectedDashboard, () => html`
+                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="refresh"
+                                                          @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}">
+                                            </or-mwc-input>
+                                            <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="responsive"
+                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
+                                            </or-mwc-input>
+                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="open-in-new"
+                                                          @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}">
+                                            </or-mwc-input>
+                                            <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
+                                                          @or-mwc-input-changed="${() => { this.saveDashboard(); }}">
+                                            </or-mwc-input>
+                                            <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}"
+                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}">
+                                            </or-mwc-input>
+                                        `)}
                                     </div>
                                 </div>
                             </div>
@@ -606,17 +608,20 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
-                                        <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
+                                        ${when(this.selectedDashboard, () => html`
+                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
                                                       @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}"
-                                        ></or-mwc-input>
-                                        <dashboard-refresh-controls .interval="${this.refreshInterval}" .readonly="${false}"
-                                                                    @interval-select="${(ev: IntervalSelectEvent) => this.onIntervalSelect(ev)}"
-                                        ></dashboard-refresh-controls>
-                                        <or-mwc-input id="share-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
-                                                      @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}"
-                                        ></or-mwc-input>
-                                        <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
-                                                      @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
+                                            ></or-mwc-input>
+                                            <dashboard-refresh-controls .interval="${this.refreshInterval}" .readonly="${false}"
+                                                                        @interval-select="${(ev: IntervalSelectEvent) => this.onIntervalSelect(ev)}"
+                                            ></dashboard-refresh-controls>
+                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
+                                                          @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}"
+                                            ></or-mwc-input>
+                                            <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
+                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}">
+                                            </or-mwc-input>
+                                        `)}
                                     </div>
                                 </div>
                             </div>

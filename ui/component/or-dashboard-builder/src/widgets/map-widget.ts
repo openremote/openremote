@@ -17,6 +17,7 @@ import {when} from "lit/directives/when.js";
 import manager, {Util} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import "@openremote/or-map";
 
 export interface MapWidgetConfig extends WidgetConfig {
     // General values
