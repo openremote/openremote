@@ -108,6 +108,7 @@ export enum InputType {
     DATETIME = "datetime-local",
     EMAIL = "email",
     JSON = "json",
+    JSON_OBJECT = "json-object",
     MONTH = "month",
     NUMBER = "number",
     BIG_INT = "big-int",
@@ -164,6 +165,7 @@ function inputTypeSupportsButton(inputType: InputType): boolean {
         || inputType === InputType.DATETIME
         || inputType === InputType.EMAIL
         || inputType === InputType.JSON
+        || inputType === InputType.JSON_OBJECT
         || inputType === InputType.MONTH
         || inputType === InputType.TEXTAREA
         || inputType === InputType.TIME
@@ -276,6 +278,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                 break;
             case WellknownValueTypes.TIMEANDPERIODDURATIONISO8601:
                 inputType = InputType.DURATION;
+                break;
+            case WellknownValueTypes.JSONOBJECT:
+                inputType = InputType.JSON_OBJECT;
                 break;
         }
 
@@ -1288,7 +1293,8 @@ export class OrMwcInput extends LitElement {
                 case InputType.URL:
                 case InputType.TEXT:
                 case InputType.TEXTAREA:
-                case InputType.JSON: {
+                case InputType.JSON:
+                case InputType.JSON_OBJECT: {
                     // The following HTML input types require the values as specially formatted strings
                     let valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? undefined : this.value, this.min, this.max];
 
@@ -1361,10 +1367,10 @@ export class OrMwcInput extends LitElement {
                             "mdc-text-field--invalid": !this.valid,
                             "mdc-text-field--filled": !outlined,
                             "mdc-text-field--outlined": outlined,
-                            "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,
+                            "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON || type === InputType.JSON_OBJECT,
                             "mdc-text-field--disabled": this.disabled,
                             "mdc-text-field--fullwidth": this.fullWidth && !outlined,
-                            "dense-comfortable": this.comfortable && !(type === InputType.TEXTAREA || type === InputType.JSON),
+                            "dense-comfortable": this.comfortable && !(type === InputType.TEXTAREA || type === InputType.JSON || type === InputType.JSON_OBJECT),
                             "dense-compact": !this.comfortable && this.compact,
                             "mdc-text-field--label-floating": hasValue,
                             "mdc-text-field--no-label": !this.label,
@@ -1373,7 +1379,7 @@ export class OrMwcInput extends LitElement {
                             "or-mwc-input--rounded": this.rounded
                         };
 
-                        inputElem = type === InputType.TEXTAREA || type === InputType.JSON
+                        inputElem = type === InputType.TEXTAREA || type === InputType.JSON || type === InputType.JSON_OBJECT
                             ? html`
                                 <textarea id="elem" class="mdc-text-field__input ${this.resizeVertical ? "resize-vertical" : ""}" ?required="${this.required}"
                                 ?readonly="${this.readonly}" ?disabled="${this.disabled}" minlength="${ifDefined(this.minLength)}"
@@ -1676,9 +1682,9 @@ export class OrMwcInput extends LitElement {
             valid = nativeValidity.valid;
         }
 
-        if (valid && this.type === InputType.JSON) {
+        if (valid && (this.type === InputType.JSON || this.type === InputType.JSON_OBJECT)) {
             // JSON needs special validation - if no text value but this.value then parsing failed
-            if (this.value !== undefined && (this._mdcComponent as MDCTextField).value === "") {
+            if (this.value !== undefined && this.value !== null && (this._mdcComponent as MDCTextField).value === "") {
                 valid = false;
             }
         }
@@ -1718,6 +1724,7 @@ export class OrMwcInput extends LitElement {
                     newValue = newValue === "on";
                     break;
                 case InputType.JSON:
+                case InputType.JSON_OBJECT:
                 case InputType.NUMBER:
                 case InputType.RANGE:
                     if (newValue === "") {
@@ -1725,9 +1732,13 @@ export class OrMwcInput extends LitElement {
                     } else {
                         try {
                             newValue = JSON.parse(newValue);
+                            if (this.type === InputType.JSON_OBJECT && (typeof newValue !== 'object' || Array.isArray(newValue))) {
+                                newValue = this.value;
+                                errorMsg = i18next.t("validation.invalidJSON");
+                            }
                         } catch (e) {
                             newValue = this.value;
-                            errorMsg = this.type === InputType.JSON ? i18next.t("validation.invalidJSON") : i18next.t("validation.invalidNumber");
+                            errorMsg = this.type === InputType.JSON || this.type == InputType.JSON_OBJECT ? i18next.t("validation.invalidJSON") : i18next.t("validation.invalidNumber");
                         }
                     }
                     break;

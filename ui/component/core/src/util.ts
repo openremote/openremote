@@ -530,7 +530,10 @@ export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): s
     return i18next.t("label.asset." + type.name, {defaultValue: camelCaseToSentenceCase(type.name!)});
 }
 
-export function getValueDescriptorLabel(descriptor: ValueDescriptor | string): string {
+export function getValueDescriptorLabel(descriptor: ValueDescriptor | undefined | string): string {
+    if (!descriptor) {
+        return i18next.t("label.value.unknown", {defaultValue: "Unknown"});
+    }
     const name = (typeof(descriptor) === "string" ? descriptor : descriptor.name);
     return i18next.t("label.value." + name, {defaultValue: camelCaseToSentenceCase(name || "")});
 }
