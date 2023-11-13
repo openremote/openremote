@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
+import org.opengis.temporal.DateAndTime;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
@@ -42,6 +43,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
+import static org.openremote.manager.mqtt.DefaultMQTTHandler.prepareHeaders;
 import static org.openremote.model.syslog.SyslogCategory.API;
 import static org.openremote.model.value.MetaItemType.*;
 
@@ -302,9 +304,9 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                 getLogger().severe(e.toString());
                 throw e;
             }
-            Attribute<String> payloadAttribute = new Attribute<>("payload", ValueType.TEXT, payloadContent);
-            payloadAttribute.addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true));
-            attributes.add(payloadAttribute);
+//            Attribute<String> payloadAttribute = new Attribute<>("payload", ValueType.TEXT, payloadContent);
+//            payloadAttribute.addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true));
+//            attributes.add(payloadAttribute);
 
 
 
@@ -586,6 +588,11 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * @param connection The connection on which the payload was sent.
      */
     private void updateAsset(Asset<?> asset, AttributeMap attributes, Topic topic, RemotingConnection connection) {
+
+        Attribute<Date> packetTime = attributes.get(new AttributeDescriptor<Date>("lastContact", ValueType.DATE_AND_TIME)).get();
+
+        Long packetTimestamp = packetTime.getValue().get().getTime();
+
         String imei = asset.getAttribute("IMEI").toString();
 
         getLogger().info("Updating CarAsset with IMEI "+imei);
@@ -593,14 +600,15 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         //Find which attributes need to be updated and which attributes need to be just reminded of updating.
 
         //I'm not sure why this needs these specific headers.
-        Map<String, Object> headers = DefaultMQTTHandler.prepareHeaders(topicRealm(topic), connection);
+        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
 
         AttributeMap nonExistingAttributes = new AttributeMap();
 
         attributes.forEach( attribute ->  {
             //Attribute exists, needs to be updated
             if(asset.getAttributes().containsKey(attribute.getName())){
-                AttributeEvent attributeEvent = new AttributeEvent(asset.getId(), attribute.getName(), attribute.getValue());
+                AttributeEvent attributeEvent = new AttributeEvent(asset.getId(), attribute.getName(), attribute.getValue(), packetTimestamp);
+                LOG.finer("Publishing to client inbound queue: " + attributeEvent);
                 messageBrokerService.getFluentProducerTemplate()
                         .withHeaders(headers)
                         .withBody(attributeEvent)
