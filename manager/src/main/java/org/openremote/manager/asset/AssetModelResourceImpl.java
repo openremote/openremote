@@ -29,6 +29,8 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import java.util.Map;
+
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
     protected AssetModelService assetModelService;
@@ -54,12 +56,12 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public ValueDescriptor<?>[] getValueDescriptors(RequestParams requestParams, String parentId) {
+    public Map<String, ValueDescriptor<?>> getValueDescriptors(RequestParams requestParams, String parentId) {
         return assetModelService.getValueDescriptors(parentId);
     }
 
     @Override
-    public MetaItemDescriptor<?>[] getMetaItemDescriptors(RequestParams requestParams, String parentId) {
+    public Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(RequestParams requestParams, String parentId) {
         return assetModelService.getMetaItemDescriptors(parentId);
     }
 }

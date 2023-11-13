@@ -8,11 +8,26 @@ import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
 import org.jetbrains.gradle.ext.Application
 import org.jetbrains.gradle.ext.JUnit
 
-
 // Configure versions in gradle.properties (putting a gradle.properties file
 // in a subproject only overrides root properties of same name for the actual
 // subproject, not for its children!)
 version = hasProperty("openremoteVersion") ? openremoteVersion : "0.0.0"
+
+configurations.all {
+    resolutionStrategy {
+
+        //failOnVersionConflict()
+
+        // This has been replaced with eclipse angus implementation
+        exclude group: "com.sun.activation", module: "jakarta.activation"
+
+        eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'org.eclipse.angus' && details.requested.name == 'angus-activation' && details.requested.version == '1.0.0') {
+                details.useVersion '2.0.0'
+            }
+        }
+    }
+}
 
 // Ensure git hook creation task is executed
 if (project == rootProject) {
@@ -314,6 +329,9 @@ plugins.withType(JavaPlugin).whenPluginAdded {
         options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation", "-parameters"]
         options.encoding = 'UTF-8'
     }
+
+    // Allow dependencyInsight checks across all projects
+    task allDependencyInsight(type: DependencyInsightReportTask) {}
 
     // JAR/ZIP base name is the fully qualified subproject name
     archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"

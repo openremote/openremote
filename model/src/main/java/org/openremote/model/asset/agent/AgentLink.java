@@ -22,7 +22,6 @@ package org.openremote.model.asset.agent;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import org.openremote.model.attribute.Attribute;
@@ -33,6 +32,7 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -55,10 +55,10 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         " pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but" +
         " you want to connect this to a Boolean attribute")
     @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
-    protected ObjectNode valueConverter;
+    protected Map<String, Object> valueConverter;
     @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     @JsonPropertyDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
-    protected ObjectNode writeValueConverter;
+    protected Map<String, Object> writeValueConverter;
     @JsonPropertyDescription("String to be used for attribute writes and can contain '" + Protocol.DYNAMIC_VALUE_PLACEHOLDER +
         "' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the" +
         " protocol (particularly useful for executable attributes)")
@@ -108,22 +108,22 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         return (T) this;
     }
 
-    public Optional<ObjectNode> getValueConverter() {
+    public Optional<Map<String, Object>> getValueConverter() {
         return Optional.ofNullable(valueConverter);
     }
 
     @SuppressWarnings("unchecked")
-    public T setValueConverter(ObjectNode valueConverter) {
+    public T setValueConverter(Map<String, Object> valueConverter) {
         this.valueConverter = valueConverter;
         return (T) this;
     }
 
-    public Optional<ObjectNode> getWriteValueConverter() {
+    public Optional<Map<String, Object>> getWriteValueConverter() {
         return Optional.ofNullable(writeValueConverter);
     }
 
     @SuppressWarnings("unchecked")
-    public T setWriteValueConverter(ObjectNode writeValueConverter) {
+    public T setWriteValueConverter(Map<String, Object> writeValueConverter) {
         this.writeValueConverter = writeValueConverter;
         return (T) this;
     }

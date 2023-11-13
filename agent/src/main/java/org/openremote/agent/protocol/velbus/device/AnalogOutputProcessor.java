@@ -26,6 +26,7 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -424,21 +425,23 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
         }
 
         if (ValueUtil.isArray(value.getClass())) {
-            return ValueUtil.asJSONArray(value)
-                .map(arr -> {
-                    Optional<Integer> level = ValueUtil.getIntegerCoerced(arr.get(0));
-                    Optional<Integer> speed = ValueUtil.getIntegerCoerced(arr.get(1));
-                    return level.isPresent() && speed.isPresent() ? new Pair<>(level.get(), speed.get()) : null;
-                });
+            if (Array.getLength(value) != 2) {
+                return Optional.empty();
+            }
+            Object level = Array.get(value, 0);
+            Object speed = Array.get(value, 1);
+            if ((level instanceof Integer) && (speed instanceof Integer)) {
+                return Optional.of(new Pair<>((int) level, (int) speed));
+            }
         }
 
-        if (ValueUtil.isObject(value.getClass())) {
-            return ValueUtil.asJSONObject(value)
-                .map(obj -> {
-                    Optional<Integer> level = ValueUtil.getIntegerCoerced(obj.get("level"));
-                    Optional<Integer> speed = ValueUtil.getIntegerCoerced(obj.get("speed"));
-                    return level.isPresent() && speed.isPresent() ? new Pair<>(level.get(), speed.get()) : null;
-                });
+        if (ValueUtil.isMap(value.getClass())) {
+            Map map = (Map)value;
+            Object level = map.get("level");
+            Object speed = map.get("speed");
+            if ((level instanceof Integer) && (speed instanceof Integer)) {
+                return Optional.of(new Pair<>((int) level, (int) speed));
+            }
         }
 
         return Optional.empty();

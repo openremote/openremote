@@ -19,9 +19,6 @@
  */
 package org.openremote.manager.rules;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -48,6 +45,7 @@ import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,12 +56,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
-import static org.openremote.model.util.ValueUtil.LOG;
 import static org.openremote.model.util.ValueUtil.distinctByKey;
 
 public class JsonRulesBuilder extends RulesBuilder {
@@ -162,7 +160,9 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     // If occurrence is before requested time then advance the sun calculator to either reset occurrence or 5 mins before requested time (whichever is later)
                     if (nextMillis < time) {
-                        ZonedDateTime resetOccurrence = useRiseTime ? sunTimes.get().getSet() : sunTimes.get().getRise();
+                        // Move to the next day
+                        ZonedDateTime resetOccurrence = sunTimes.get().getSet().isBefore(sunTimes.get().getRise()) ? sunTimes.get().getSet() : sunTimes.get().getRise();
+                        resetOccurrence = resetOccurrence.truncatedTo(ChronoUnit.DAYS).plusDays(1);
                         sunTimes.set(sunCalculator.on(new Date(Math.max(resetOccurrence.toInstant().toEpochMilli(), time - 300000))).execute());
                     }
 
@@ -213,15 +213,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                 } else {
                     // Replace or remove asset state as required
                     switch (event.cause) {
-                        case UPDATE:
+                        case UPDATE -> {
                             // Only insert if fact was already in there (i.e. it matches the asset type constraints)
                             if (unfilteredAssetStates.remove(event.assetState)) {
                                 unfilteredAssetStates.add(event.assetState);
                             }
-                            break;
-                        case DELETE:
-                            unfilteredAssetStates.remove(event.assetState);
-                            break;
+                        }
+                        case DELETE -> unfilteredAssetStates.remove(event.assetState);
                     }
                 }
 
@@ -306,7 +304,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     .filter(matchedAssetState -> Objects.equals(previousAssetState, matchedAssetState))
                     .findFirst();
 
-                boolean noLongerMatches = !matched.isPresent();
+                boolean noLongerMatches = matched.isEmpty();
 
                 if (!noLongerMatches) {
                     noLongerMatches = matched.map(matchedAssetState -> {
@@ -349,8 +347,8 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Filter out unmatched asset ids that are in the matched list
                 unmatchedAssetIds = unmatchedAssetStateStream
-                        .filter(assetState -> !matchedAssetIds.contains(assetState.getId()))
                         .map(AssetState::getId)
+                        .filter(id -> !matchedAssetIds.contains(id))
                         .collect(Collectors.toList());
             }
 
@@ -540,8 +538,9 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Map<String, RuleState> ruleStateMap = new HashMap<>();
     final protected JsonRule[] jsonRules;
     final protected Ruleset jsonRuleset;
+    final protected Logger LOG;
 
-    public JsonRulesBuilder(Ruleset ruleset, TimerService timerService,
+    public JsonRulesBuilder(Logger logger, Ruleset ruleset, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
                             Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                             HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
@@ -556,6 +555,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.historicDatapointsFacade= historicDatapoints;
         this.predictedDatapointsFacade = predictedDatapoints;
         this.scheduledActionConsumer = scheduledActionConsumer;
+        LOG = logger;
 
         jsonRuleset = ruleset;
         String rulesStr = ruleset.getRules();
@@ -618,7 +618,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         add().name(rule.name)
                 .description(rule.description)
                 .priority(rule.priority)
-                .when(condition::evaluate)
+                .when(condition)
                 .then(action);
 
         return this;
@@ -626,7 +626,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected void addRuleConditionStates(LogicGroup<RuleCondition> ruleConditionGroup, boolean trackUnmatched, AtomicInteger index, Map<String, RuleConditionState> triggerStateMap) throws Exception {
         if (ruleConditionGroup != null) {
-            if (ruleConditionGroup.getItems().size() > 0) {
+            if (!ruleConditionGroup.getItems().isEmpty()) {
                 for (RuleCondition ruleCondition : ruleConditionGroup.getItems()) {
                     if (TextUtil.isNullOrEmpty(ruleCondition.tag)) {
                         ruleCondition.tag = index.toString();
@@ -636,7 +636,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     index.incrementAndGet();
                 }
             }
-            if (ruleConditionGroup.groups != null && ruleConditionGroup.groups.size() > 0) {
+            if (ruleConditionGroup.groups != null && !ruleConditionGroup.groups.isEmpty()) {
                 for (LogicGroup<RuleCondition> childRuleTriggerCondition : ruleConditionGroup.groups) {
                     addRuleConditionStates(childRuleTriggerCondition, trackUnmatched, index, triggerStateMap);
                 }
@@ -761,6 +761,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             .collect(Collectors.toList());
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     protected RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade) {
 
         if (ruleAction instanceof RuleActionNotification notificationAction) {
@@ -955,62 +956,66 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 matchingAssetStates.forEach(assetState -> {
                     Object value = assetState.getValue().orElse(null);
-                    Class<?> valueType = assetState.getType().getType();
+                    Class<?> valueType = assetState.getTypeClass();
                     boolean isArray = ValueUtil.isArray(valueType);
 
-                    if (!isArray && !ValueUtil.isObject(valueType)) {
+                    if (!isArray && !ValueUtil.isMap(valueType)) {
                         log(Level.WARNING, "Rule action target asset cannot determine value type or incompatible value type for attribute: " + assetState);
                     } else {
+                        if (isArray) {
+                            List<Object> list = new ArrayList<>();
+                            if (value != null) {
+                                Collections.addAll(list, value);
+                            }
 
-                        // Convert value to JSON Node to easily manipulate it
-                        value = isArray ? ValueUtil.convert(value, ArrayNode.class) : ValueUtil.convert(value, ObjectNode.class);
-
-                        switch (attributeUpdateAction.updateAction) {
-                            case ADD:
-                                if (isArray) {
-                                    value = value == null ? ValueUtil.JSON.createArrayNode() : value;
-                                    ((ArrayNode)value).add(ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
-                                } else {
-                                    value = value == null ? ValueUtil.JSON.createObjectNode() : value;
-                                    ((ObjectNode) value).set(attributeUpdateAction.key, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
+                            switch (attributeUpdateAction.updateAction) {
+                                case ADD -> {
+                                    list.add(attributeUpdateAction.value);
                                 }
-                                break;
-                            case ADD_OR_REPLACE:
-                            case REPLACE:
-                                if (isArray) {
-                                    value = value == null ? ValueUtil.JSON.createArrayNode() : value;
-                                    ArrayNode arrayValue = (ArrayNode) value;
-
-                                    if (attributeUpdateAction.index != null && arrayValue.size() >= attributeUpdateAction.index) {
-                                        arrayValue.set(attributeUpdateAction.index, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
+                                case ADD_OR_REPLACE, REPLACE -> {
+                                    if (attributeUpdateAction.index != null && list.size() >= attributeUpdateAction.index) {
+                                        list.set(attributeUpdateAction.index, attributeUpdateAction.value);
                                     } else {
-                                        arrayValue.add(ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
+                                        list.add(attributeUpdateAction.value);
                                     }
-                                } else {
-                                    value = value == null ? ValueUtil.JSON.createObjectNode() : value;
+                                }
+                                case DELETE -> {
+                                    if (attributeUpdateAction.index != null && list.size() >= attributeUpdateAction.index) {
+                                        list.remove(attributeUpdateAction.index);
+                                    }
+                                }
+                                case CLEAR -> {
+                                    value = Collections.emptyList();
+                                }
+                            }
+
+                            value = list;
+                        } else {
+                            Map map = new HashMap();
+                            if (value != null) {
+                                map.putAll((Map)value);
+                            }
+
+                            switch (attributeUpdateAction.updateAction) {
+                                case ADD -> {
+                                    map.put(attributeUpdateAction.key, attributeUpdateAction.value);
+                                }
+                                case ADD_OR_REPLACE, REPLACE -> {
                                     if (!TextUtil.isNullOrEmpty(attributeUpdateAction.key)) {
-                                        ((ObjectNode) value).set(attributeUpdateAction.key, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
+                                        map.put(attributeUpdateAction.key, attributeUpdateAction.value);
                                     } else {
                                         log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + ValueUtil.asJSON(attributeUpdateAction));
                                     }
                                 }
-                                break;
-                            case DELETE:
-                                if(value != null) {
-                                    if (isArray) {
-                                        ((ArrayNode) value).remove(attributeUpdateAction.index);
-                                    } else {
-                                        ((ObjectNode) value).remove(attributeUpdateAction.key);
-                                    }
+                                case DELETE -> {
+                                    map.remove(attributeUpdateAction.key);
                                 }
-                                break;
-                            case CLEAR:
-                                if (isArray) {
-                                    value = ValueUtil.JSON.createArrayNode();
-                                } else {
-                                    value = ValueUtil.JSON.createObjectNode();
+                                case CLEAR -> {
+                                    map = Collections.emptyMap();
                                 }
-                                break;
+                            }
+
+                            value = map;
                         }
 
                         log(Level.FINE, "Updating attribute for rule action: " + rule.name + " '" + actionsName + "' action index " + index + ": " + assetState);
@@ -1024,7 +1029,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return null;
     }
 
-    private static String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml, boolean isJson) {
+    private String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml, boolean isJson) {
 
         Set<String> assetIds = useUnmatched ? ruleEvaluationResult.otherwiseMatchedAssetIds : ruleEvaluationResult.thenMatchedAssetIds;
 
@@ -1155,11 +1160,11 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     protected void log(Level level, String message) {
-        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message);
+        LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message);
     }
 
     protected void log(Level level, String message, Throwable t) {
-        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message, t);
+        LOG.log(level, LOG_PREFIX + jsonRuleset.getName() + "': " + message, t);
     }
 
     protected static SunTimes.Parameters getSunCalculator(Ruleset ruleset, SunPositionTrigger sunPositionTrigger, TimerService timerService) throws IllegalStateException {

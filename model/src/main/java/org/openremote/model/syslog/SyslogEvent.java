@@ -19,12 +19,11 @@
  */
 package org.openremote.model.syslog;
 
-import org.openremote.model.Constants;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import java.util.*;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;

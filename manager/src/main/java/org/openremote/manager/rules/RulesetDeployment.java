@@ -36,6 +36,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.NodeCollection;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -53,34 +54,6 @@ import static org.openremote.model.rules.RulesetStatus.*;
 
 public class RulesetDeployment {
 
-    /**
-     * An interface that looks like a JavaScript browser console, for simplified logging.
-     */
-    public static class JsConsole {
-
-        final protected Logger logger;
-
-        public JsConsole(Logger logger) {
-            this.logger = logger;
-        }
-
-        public void debug(Object o) {
-            logger.fine(o != null ? o.toString() : "null");
-        }
-
-        public void log(Object o) {
-            logger.info(o != null ? o.toString() : "null");
-        }
-
-        public void warn(Object o) {
-            logger.warning(o != null ? o.toString() : "null");
-        }
-
-        public void error(Object o) {
-            logger.severe(o != null ? o.toString() : "null");
-        }
-    }
-
     // TODO Finish groovy sandbox
     static class GroovyDenyAllFilter extends GroovyValueFilter {
         @Override
@@ -92,19 +65,12 @@ public class RulesetDeployment {
     public static final int DEFAULT_RULE_PRIORITY = 1000;
     // Share one JS script engine manager, it's thread-safe
     static final protected ScriptEngineManager scriptEngineManager;
-
     static final protected GroovyShell groovyShell;
 
     static {
         scriptEngineManager = new ScriptEngineManager();
 
-        // LOG and console wrapper can be in global scope for all script engines
-        // TODO Use a different logger for each RulesEngine and show messages in Manager UI for that engine
-        scriptEngineManager.put("LOG", RulesEngine.RULES_LOG);
-        scriptEngineManager.put("console", new JsConsole(RulesEngine.RULES_LOG));
-
         /* TODO Sharing a static GroovyShell doesn't work, redeploying a ruleset which defines classes (e.g. Flight) is broken:
-
         java.lang.RuntimeException: Error evaluating condition of rule '-Update flight facts when estimated landing time of flight asset is updated':
         No signature of method: org.openremote.manager.setup.database.Script1$_run_closure2$_closure14$_closure17.doCall() is applicable for argument types: (org.openremote.manager.setup.database.Flight) values: [...]
         Possible solutions: doCall(org.openremote.manager.setup.database.Flight), findAll(), findAll(), isCase(java.lang.Object), isCase(java.lang.Object)
@@ -132,6 +98,7 @@ public class RulesetDeployment {
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
     final protected List<ScheduledFuture<?>> scheduledRuleActions = Collections.synchronizedList(new ArrayList<>());
+    protected final Logger LOG;
     protected boolean running;
     protected RulesetStatus status = RulesetStatus.READY;
     protected Throwable error;
@@ -154,32 +121,35 @@ public class RulesetDeployment {
         this.webhooksFacade = webhooksFacade;
         this.historicDatapointsFacade = historicDatapointsFacade;
         this.predictedDatapointsFacade = predictedDatapointsFacade;
+
+        String ruleCategory = ruleset.getClass().getSimpleName() + "-" + ruleset.getId();
+        LOG = SyslogCategory.getLogger(SyslogCategory.RULES, Ruleset.class.getName() + "." + ruleCategory);
     }
 
     protected void init() throws IllegalStateException {
-        if (ruleset.getMeta().has(Ruleset.VALIDITY)) {
+        if (ruleset.getMeta().containsKey(Ruleset.VALIDITY)) {
             validity = ruleset.getValidity();
 
             if (validity == null) {
-                RulesEngine.LOG.log(Level.WARNING, "Ruleset '" + ruleset.getName() + "' has invalid validity value: " + ruleset.getMeta().get(Ruleset.VALIDITY));
+                LOG.log(Level.WARNING, "Ruleset '" + ruleset.getName() + "' has invalid validity value: " + ruleset.getMeta().get(Ruleset.VALIDITY));
                 status = VALIDITY_PERIOD_ERROR;
                 return;
             }
         }
 
         if (TextUtil.isNullOrEmpty(ruleset.getRules())) {
-            RulesEngine.LOG.finest("Ruleset is empty so no rules to deploy: " + ruleset.getName());
+            LOG.finest("Ruleset is empty so no rules to deploy: " + ruleset.getName());
             status = EMPTY;
             return;
         }
 
         if (!ruleset.isEnabled()) {
-            RulesEngine.LOG.finest("Ruleset is disabled: " + ruleset.getName());
+            LOG.finest("Ruleset is disabled: " + ruleset.getName());
             status = DISABLED;
         }
 
         if (!compile()) {
-            RulesEngine.LOG.log(Level.SEVERE, "Ruleset compilation error: " + ruleset.getName(), getError());
+            LOG.log(Level.SEVERE, "Ruleset compilation error: " + ruleset.getName(), getError());
             status = COMPILATION_ERROR;
         }
     }
@@ -208,10 +178,10 @@ public class RulesetDeployment {
         Pair<Long, Long> fromTo = validity.getNextOrActiveFromTo(new Date(timerService.getCurrentTimeMillis()));
         if (fromTo == null) {
             nextValidity = EXPIRED;
-            RulesEngine.LOG.log(Level.INFO, "Ruleset deployment '" + getName() + "' has expired");
+            LOG.log(Level.INFO, "Ruleset deployment '" + getName() + "' has expired");
         } else {
             nextValidity = fromTo;
-            RulesEngine.LOG.log(Level.INFO, "Ruleset deployment '" + getName() + "' paused until: " + new Date(fromTo.key));
+            LOG.log(Level.INFO, "Ruleset deployment '" + getName() + "' paused until: " + new Date(fromTo.key));
         }
     }
 
@@ -236,7 +206,7 @@ public class RulesetDeployment {
     }
 
     public boolean compile() {
-        RulesEngine.LOG.info("Compiling ruleset deployment: " + ruleset);
+        LOG.info("Compiling ruleset deployment: " + ruleset);
         if (error != null) {
             return false;
         }
@@ -316,10 +286,10 @@ public class RulesetDeployment {
     protected boolean compileRulesJson(Ruleset ruleset) {
 
         try {
-            jsonRulesBuilder = new JsonRulesBuilder(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
+            jsonRulesBuilder = new JsonRulesBuilder(LOG, ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
 
             for (Rule rule : jsonRulesBuilder.build()) {
-                RulesEngine.LOG.finest("Registering JSON rule: " + rule.getName());
+                LOG.finest("Registering JSON rule: " + rule.getName());
                 rules.register(rule);
             }
 
@@ -336,7 +306,7 @@ public class RulesetDeployment {
         ScriptContext newContext = new SimpleScriptContext();
         newContext.setBindings(scriptEngine.createBindings(), ScriptContext.ENGINE_SCOPE);
         Bindings engineScope = newContext.getBindings(ScriptContext.ENGINE_SCOPE);
-
+        engineScope.put("LOG", LOG);
         engineScope.put("assets", assetsFacade);
         engineScope.put("users", usersFacade);
         engineScope.put("notifications", notificationsFacade);
@@ -465,7 +435,7 @@ public class RulesetDeployment {
                 throw new IllegalArgumentException("Defined 'then' is not a function in rule: " + name);
             }
 
-            RulesEngine.LOG.finest("Registering javascript rule: " + name);
+            LOG.finest("Registering javascript rule: " + name);
 
             rules.register(
                     new RuleBuilder().name(name).description(description).priority(priority).when(when).then(then).build()
@@ -480,7 +450,7 @@ public class RulesetDeployment {
             Script script = groovyShell.parse(ruleset.getRules());
             Binding binding = new Binding();
             RulesBuilder rulesBuilder = new RulesBuilder();
-            binding.setVariable("LOG", RulesEngine.RULES_LOG);
+            binding.setVariable("LOG", LOG);
             binding.setVariable("rules", rulesBuilder);
             binding.setVariable("assets", assetsFacade);
             binding.setVariable("users", usersFacade);
@@ -499,7 +469,7 @@ public class RulesetDeployment {
             script.setBinding(binding);
             script.run();
             for (Rule rule : rulesBuilder.build()) {
-                RulesEngine.LOG.finest("Registering groovy rule: " + rule.getName());
+                LOG.finest("Registering groovy rule: " + rule.getName());
                 rules.register(rule);
             }
 
@@ -513,16 +483,16 @@ public class RulesetDeployment {
 
     protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         try {
-            flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
+            flowRulesBuilder = new FlowRulesBuilder(LOG, timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
             NodeCollection nodeCollection = ValueUtil.JSON.readValue(ruleset.getRules(), NodeCollection.class);
             flowRulesBuilder.add(nodeCollection);
             for (Rule rule : flowRulesBuilder.build()) {
-                RulesEngine.LOG.info("Compiling flow rule: " + rule.getName());
+                LOG.info("Compiling flow rule: " + rule.getName());
                 rules.register(rule);
             }
             return true;
         } catch (Exception e) {
-            RulesEngine.LOG.log(Level.SEVERE, "Error evaluating flow rule ruleset: " + ruleset, e);
+            LOG.log(Level.SEVERE, "Error evaluating flow rule ruleset: " + ruleset, e);
             setError(e);
             return false;
         }

@@ -19,16 +19,16 @@
  */
 package org.openremote.manager.system;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
-import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,12 +37,12 @@ public class StatusResourceImpl implements StatusResource {
 
     private static final Logger LOG = Logger.getLogger(StatusResourceImpl.class.getName());
     protected List<HealthStatusProvider> healthStatusProviderList;
-    protected ObjectNode serverInfo;
+    protected Map<String, Object> serverInfo;
 
     public StatusResourceImpl(Container container, List<HealthStatusProvider> healthStatusProviderList) {
         this.healthStatusProviderList = healthStatusProviderList;
         Properties versionProps = new Properties();
-        String authServerUrl = null;
+        String authServerUrl = "";
 
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         if (identityService != null) {
@@ -57,19 +57,19 @@ public class StatusResourceImpl implements StatusResource {
         }
 
         String version = versionProps.getProperty("version");
-        serverInfo = ValueUtil.JSON.createObjectNode();
-        serverInfo.put("version", version);
-        serverInfo.put("authServerUrl", authServerUrl);
+        serverInfo = Map.of(
+            "version", version,
+            "authServerUrl", authServerUrl
+        );
     }
 
     @Override
-    public ObjectNode getHealthStatus() {
-        ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
+    public Map<String, Object> getHealthStatus() {
+        Map<String, Object> objectValue = new HashMap<>();
 
         healthStatusProviderList.forEach(healthStatusProvider -> {
-                ObjectNode providerValue = ValueUtil.JSON.createObjectNode();
-                providerValue.putPOJO("data", healthStatusProvider.getHealthStatus());
-                objectValue.set(healthStatusProvider.getHealthStatusName(), providerValue);
+            Map<String, Object> providerValue = Map.of("data", healthStatusProvider.getHealthStatus());
+                objectValue.put(healthStatusProvider.getHealthStatusName(), providerValue);
             }
         );
 
@@ -77,7 +77,7 @@ public class StatusResourceImpl implements StatusResource {
     }
 
     @Override
-    public ObjectNode getInfo() {
+    public Map<String, Object> getInfo() {
         return serverInfo;
     }
 }

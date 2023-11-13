@@ -19,21 +19,19 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import jakarta.validation.constraints.Pattern;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.TsIgnoreTypeParams;
-import org.openremote.model.value.NameHolder;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.NameHolder;
 
 import java.io.IOException;
 
@@ -64,18 +62,23 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
 
         @Override
         public AssetDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            String name = null;
             JsonNode node = p.getCodec().readTree(p);
+            String name = node.get("name").asText();
 
-            if (node.isTextual()) {
-                name = node.asText();
-            } else if (node.isObject()) {
-                name = node.get("name").asText();
+            // Try and lookup instance in type registry
+            AssetDescriptor<?> existing = ValueUtil.getAssetDescriptor(name).orElse(null);
+
+            if (existing != null) {
+                return existing;
             }
-            return ValueUtil.getAssetDescriptor(name).orElse(null);
+
+            String icon = node.get("icon").asText();
+            String colour = node.get("colour").asText();
+            return new AssetDescriptor<>(name, icon, colour);
         }
     }
 
+    @Pattern(regexp = "^\\w+$")
     protected String name;
     @JsonIgnore
     protected Class<T> type;
@@ -83,6 +86,13 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
     protected String colour;
 
     AssetDescriptor() {}
+
+    @JsonCreator
+    protected AssetDescriptor(String name, String icon, String colour) {
+        this.name = name;
+        this.icon = icon;
+        this.colour = colour;
+    }
 
     /**
      * Construct an instance using the {@link Class#getSimpleName} value of the specified type as the descriptor name,
@@ -113,5 +123,14 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
 
     public String getColour() {
         return colour;
+    }
+
+    @JsonProperty("dynamic")
+    protected Boolean isDynamicInternal() {
+        return type != null ? null : true;
+    }
+
+    public boolean isDynamic() {
+        return type == null;
     }
 }

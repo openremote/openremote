@@ -39,8 +39,8 @@ public class WebhooksFacade<T extends Ruleset> extends Webhooks {
     }
 
     @Override
-    public void send(Webhook webhook, MediaType mediaType, WebTarget target) {
-        webhookService.sendHttpRequest(webhook, mediaType, target);
+    public boolean send(Webhook webhook, MediaType mediaType, WebTarget target) {
+        return webhookService.sendHttpRequest(webhook, mediaType, target);
     }
 
     @Override
