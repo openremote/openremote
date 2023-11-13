@@ -13,6 +13,7 @@ import maplibregl,{
     Marker as MarkerGL,
     NavigationControl,
     Style as StyleGL,
+    Popup
 } from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
@@ -24,9 +25,12 @@ import {
     OrMapLoadedEvent,
     OrMapLongPressEvent,
     ViewSettings,
+    OrMapMarkerClickedEvent,
+    OrMapMarkerAsset, MapMarkerAssetConfig, OrMapMovedEvent, OrMapSourceLoadedEvent, getMarkerConfigForAssetType
 } from "./index";
 import { OrMapMarker } from "./markers/or-map-marker";
-import { getLatLngBounds, getLngLat } from "./util";
+import {getLatLngBounds, getLngLat, getMarkerIconAndColorFromAssetType, OverrideConfigSettings} from "./util";
+import { Asset, AssetModelUtil } from "@openremote/model";
 import {GeoJsonConfig, MapType } from "@openremote/model";
 import { Feature, FeatureCollection } from "geojson";
 
@@ -61,6 +65,18 @@ export class MapWidget {
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
+    protected popup: Popup | undefined = undefined;
+    protected popupClusterId: string | undefined = undefined;
+    protected markerConfig: MapMarkerAssetConfig | undefined;
+    protected currentMarkers: MarkerGL[] = [];
+
+    protected _pointsMap: any = {
+        type: "FeatureCollection",
+        features: []
+    };
+
+    protected _assetTypesColors: any = {};
+    protected _markers: maplibregl.Marker[] = [];
 
     constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement, showGeoCodingControl: boolean = false, showBoundaryBox = false, useZoomControls = true, showGeoJson = true) {
         this._type = type;
@@ -354,6 +370,11 @@ export class MapWidget {
                 this._onMapClick(e.lngLat, true);
             });
 
+            this._mapGl.on('moveend', () => {
+                this._mapContainer.dispatchEvent(new OrMapMovedEvent());
+                this.renderCurrentCluster();
+            });
+
             if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geocodeUrl) {
                 this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { maplibregl: maplibregl, showResultsWhileTyping: true });
                 // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
@@ -407,6 +428,14 @@ export class MapWidget {
                   }
                 }, 300);
                 this._mapGl!.addControl(this._geocoder, 'top-left');
+
+                this._mapGl!.addSource('mapPoints', {
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: []
+                    }
+                });
 
                 // There's no callback parameter in the options of the MaplibreGeocoder,
                 // so this is how we get the selected result.
@@ -635,6 +664,479 @@ export class MapWidget {
             this._updateMarkerElement(marker, true);
         }
     }
+
+    public getCurrentView(centre?: LngLatLike): string[] {
+        if (this._mapGl) {
+            const res2 = this._mapGl.querySourceFeatures('mapPoints', { sourceLayer: 'unclustered-point' });
+
+            console.log(res2);
+
+            let viewedAsset: any = {};
+            let assetId: string[] = [];
+
+            res2.forEach((marker) => {
+                if (marker.properties && !marker.properties.cluster && !viewedAsset[marker.properties.id]) {
+                    viewedAsset[marker.properties.id] = marker.properties;
+                    assetId.push(marker.properties.id);
+                }
+            });
+
+            return assetId;
+        } else {
+            return [];
+        }
+    }
+
+    /**
+     * Methods from maplibre example for Cluster with Donut Chart
+     */
+    protected createDonutChart(props: any[], maxClusterCount: number = 1000): ChildNode | null {
+        const offsets: any[] = [];
+        const subOffsets: any[] = [];
+        const counts: any[] = [];
+        const subCounts: any[] = [];
+        const subColours: string[] = [];
+        props.forEach(p => {
+            counts.push(p.count);
+            p.threshold.forEach((t: any) => {
+                subCounts.push(t.count);
+                subColours.push(t.color);
+            });
+        });
+
+        let total: number = 0;
+        let subTotal: number = 0;
+        for (let i: number = 0; i < counts.length; i++) {
+            offsets.push(total);
+            total += counts[i];
+        }
+
+        for (let i: number = 0; i < subCounts.length; i++) {
+            subOffsets.push(subTotal);
+            subTotal += subCounts[i];
+        }
+
+        const highTreshold: number = maxClusterCount - (maxClusterCount * 20 / 100);
+        const midTreshold: number = highTreshold / 10;
+        const lowTreshold: number = midTreshold / 10;
+
+        const fontSize =
+            total >= highTreshold ? 22 : total >= midTreshold ? 20 : total >= lowTreshold ? 18 : 16;
+        const r = total >= highTreshold ? 50 : total >= midTreshold ? 32 : total >= lowTreshold ? 24 : 18;
+        const r2 = total >= highTreshold ? 32 : total >= midTreshold ? 26 : total >= lowTreshold ? 20 : 15;
+        const dR = r - r2;
+        const r0: number = Math.round(r * 0.6);
+        const w: number = r * 2;
+
+        let html =
+            `<div><svg width="${
+                w
+            }" height="${
+                w
+            }" viewbox="0 0 ${
+                w
+            } ${
+                w
+            }" text-anchor="middle" style="font: ${
+                fontSize
+            }px sans-serif; display: block">`;
+
+        for (let i: number = 0; i < subCounts.length; i++) {
+            html += this.donutSegment(
+                subOffsets[i] / subTotal,
+                (subOffsets[i] + subCounts[i]) / subTotal,
+                r,
+                r0,
+                subColours[i] , true, 0
+            );
+        }
+
+        for (let i: number = 0; i < counts.length; i++) {
+            html += this.donutSegment(
+                offsets[i] / total,
+                (offsets[i] + counts[i]) / total,
+                r2,
+                r0,
+                this._assetTypesColors[props[i].assetType], false, dR
+            );
+        }
+
+        html +=
+            `<circle cx="${
+                r
+            }" cy="${
+                r
+            }" r="${
+                r0
+            }" fill="white" /><text dominant-baseline="central" transform="translate(${
+                r
+            }, ${
+                r
+            })">${
+                total.toLocaleString()
+            }</text></svg></div>`;
+
+        const el = document.createElement('div');
+        el.innerHTML = html;
+        return el.firstChild;
+    }
+
+    /**
+     * Methods from maplibre example for Cluster with Donut Chart
+     */
+    protected donutSegment(start: number, end: number, r: number, r0: number, color: string, sub: boolean, dR: number): string {
+        if (end - start === 1) {
+            end -= 0.00001;
+        }
+        const a0: number = 2 * Math.PI * (start - 0.25);
+        const a1: number = 2 * Math.PI * (end - 0.25);
+        const x0: number = Math.cos(a0),
+            y0: number = Math.sin(a0);
+        const x1: number = Math.cos(a1),
+            y1: number = Math.sin(a1);
+        const largeArc: 1 | 0 = end - start > 0.5 ? 1 : 0;
+
+        return [
+            '<path d="M',
+            r + r0 * x0,
+            r + r0 * y0,
+            'L',
+            r + r * x0,
+            r + r * y0,
+            'A',
+            r,
+            r,
+            0,
+            largeArc,
+            1,
+            r + r * x1,
+            r + r * y1,
+            'L',
+            r + r0 * x1,
+            r + r0 * y1,
+            'A',
+            r0,
+            r0,
+            0,
+            largeArc,
+            0,
+            r + r0 * x0,
+            r + r0 * y0,
+            `" fill="#${color}" ${!sub ? `transform="translate(${dR}, ${dR})"` : ""} />`
+        ].join(' ');
+    }
+    public renderCurrentCluster(config?: MapMarkerAssetConfig): void {
+        if (config) {
+            this.markerConfig = config;
+        }
+
+        if (this._mapGl) {
+            const features = this._mapGl.querySourceFeatures('mapPoints', {sourceLayer: 'clusters'});
+
+            console.log("resultat : ");
+            console.log(features);
+
+            this._markers.forEach((marker: maplibregl.Marker) => {
+                marker.remove();
+            })
+
+            let totalCount: number = 0;
+
+            features.forEach((feature: any) => {
+                if (this._mapGl) {
+                    //IF true, the marker object is representing a cluster instance
+                    if (feature.properties && feature.properties.cluster) {
+                        totalCount += feature.properties.point_count;
+                    }
+                }
+            });
+
+            features.forEach((marker: any) => {
+                if (this._mapGl) {
+                    //IF true, the marker object is representing a cluster instance
+                    if (marker.properties && marker.properties.cluster) {
+                        let props: any[] = [];
+                        /**
+                         * {
+                         *     count: 50,
+                         *     assetType: 'assetTYpe',
+                         *     threshold: [
+                         *         {
+                         *             count: 10,
+                         *             color: '#color1'
+                         *         }, {
+                         *             count: 40,
+                         *             color: '#color2'
+                         *         }
+                         *     ]
+                         * }
+                         */
+
+                        let sourcePoints: GeoJSONSource = (this._mapGl.getSource('mapPoints') as GeoJSONSource);
+                        sourcePoints.getClusterLeaves(marker.properties.cluster_id, marker.properties.point_count, 0, (err, aFeatures) => {
+                            aFeatures.forEach((feature) => {
+                                let assetType = feature.properties?.assetType;
+
+                                if (assetType) {
+                                    console.log(this.markerConfig);
+                                    const assetTypeConfig = getMarkerConfigForAssetType(this.markerConfig, assetType);
+                                    let iconAndColour: any = undefined;
+
+                                    if(assetTypeConfig && assetTypeConfig.colours && feature.properties) {
+                                        const assetAttributeValue = feature.properties.asset.attributes[assetTypeConfig.attributeName].value;
+                                        let overrideOpts: OverrideConfigSettings = {
+                                            markerConfig: assetTypeConfig.colours,
+                                            currentValue: assetAttributeValue
+                                        };
+
+                                        iconAndColour = getMarkerIconAndColorFromAssetType(assetType, overrideOpts);
+                                    } else {
+                                        console.log('no colours treshold defined on asset type ' + assetType);
+                                    }
+
+
+                                    let findIndex = props.findIndex((prop: any) => { return assetType === prop.assetType});
+                                    if (findIndex !== -1) {
+                                        props[findIndex].count++;
+                                    } else {
+                                        props.push({
+                                            assetType: assetType,
+                                            count: 1
+                                        });
+                                    }
+
+                                    if (iconAndColour) {
+                                        findIndex = props.length - 1;
+
+                                        let thresholdIndex = props[findIndex].threshold.findIndex((t: any) => { return t.color === iconAndColour.color; });
+
+                                        if (thresholdIndex !== -1) {
+                                            props[findIndex].threshold[thresholdIndex].count++;
+                                        } else {
+                                            props[findIndex].threshold.push({
+                                                count: 1,
+                                                color: iconAndColour.color
+                                            });
+                                        }
+                                    }
+                                }
+                            });
+
+                            props.forEach((prop: any) => {
+                                if (!prop.threshold) {
+                                    prop.threshold = [ {
+                                        count: prop.count,
+                                        color: this._assetTypesColors[prop.assetType]
+                                    } ];
+                                }
+                            });
+
+                            let donutChart = this.createDonutChart(props, totalCount);
+
+                            // @ts-ignore
+                            this._markers.push(new maplibregl.Marker({element: donutChart}).setLngLat(marker.geometry['coordinates']).addTo(this._mapGl));
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    public loadPoints() {
+        if (!this._mapGl) {
+            this.load();
+        } else {
+            console.log('asset colors :');
+            console.log(this._assetTypesColors);
+            if (this._mapGl.getSource('mapPoints')) {
+                let s = this._mapGl.getSource('mapPoints');
+                this._mapGl.removeSource('mapPoints');
+            }
+
+            this._mapGl.addSource('mapPoints', {
+                'type': 'geojson',
+                'cluster': true,
+                'clusterMaxZoom': 40, // Max zoom to cluster points on
+                'clusterRadius': 50,
+                'data': this._pointsMap
+            });
+
+            if (!this._mapGl.getLayer('unclustered-point')) {
+                this._mapGl.addLayer({
+                    id: 'unclustered-point',
+                    type: 'circle',
+                    source: 'mapPoints',
+                    filter: ['!', ['has', 'point_count']],
+                    paint: {
+                        'circle-color': '#11b4da',
+                        'circle-radius': 4,
+                        'circle-stroke-width': 1,
+                        'circle-stroke-color': '#fff'
+                    }
+                });
+
+                this._mapGl.setLayoutProperty('unclustered-point', 'visibility', 'none');
+            }
+
+            if (!this._mapGl.getLayer('clusters')) {
+                this._mapGl.addLayer({
+                    id: 'clusters',
+                    type: 'circle',
+                    source: 'mapPoints',
+                    filter: ['has', 'point_count'],
+                    paint: {
+                        'circle-color': [
+                            'step',
+                            ['get', 'point_count'],
+                            '#51bbd6',
+                            100,
+                            '#f1f075',
+                            750,
+                            '#f28cb1'
+                        ],
+                        'circle-radius': [
+                            'step',
+                            ['get', 'point_count'],
+                            20,
+                            100,
+                            30,
+                            750,
+                            40
+                        ]
+                    }
+                });
+
+                this._mapGl.setLayoutProperty('clusters', 'visibility', 'none');
+            }
+
+            if (!this._mapGl.getLayer('cluster-count')) {
+                this._mapGl.addLayer({
+                    id: 'cluster-count',
+                    type: 'symbol',
+                    source: 'mapPoints',
+                    filter: ['has', 'point_count'],
+                    layout: {
+                        'text-field': ['get', 'point_count_abbreviated'],
+                        'text-font': ['Open Sans Bold'],
+                        'text-size': 12
+                    }
+                });
+            }
+
+            this._mapGl.on('click', 'unclustered-point', (e) => {
+                if (e && e.features && e.features.length > 0 && e.features[0].properties && e.lngLat) {
+                    const coordinates = e.lngLat;
+
+                    while (Math.abs(e.lngLat.lng - coordinates.lng) > 180) {
+                        coordinates.lng += e.lngLat.lng > coordinates.lng ? 360 : -360;
+                    }
+
+                    let marker: OrMapMarkerAsset = new OrMapMarkerAsset();
+                    marker.asset = JSON.parse(e.features[0].properties.asset);
+
+                    this._mapContainer.dispatchEvent(new OrMapMarkerClickedEvent(marker));
+                }
+            });
+
+            this._mapGl.on('zoom', () => {
+                if (this.popup && this.popup.isOpen()) {
+                    this.popup.remove();
+                    this.popupClusterId = undefined;
+                }
+            });
+
+            this._mapGl.on('load', (e) => {
+                console.log('load...');
+                console.log(e);
+                this._mapContainer.dispatchEvent(new OrMapSourceLoadedEvent());
+            });
+
+            this._mapGl.on('click', 'clusters', (e) => {
+                if (this._mapGl) {
+                    const features = this._mapGl.queryRenderedFeatures(e.point, {
+                        layers: ['clusters']
+                    });
+
+                    let clusterId = features[0].properties!.cluster_id;
+
+                    if ((this.popupClusterId && this.popupClusterId !== clusterId) || !this.popupClusterId) {
+                        this.popupClusterId = clusterId;
+
+                        let sourcePoints: GeoJSONSource = (this._mapGl.getSource('mapPoints') as GeoJSONSource);
+                        let point_count = features[0].properties!.point_count;
+
+                        sourcePoints.getClusterLeaves(clusterId, point_count, 0, (err, aFeatures) => {
+                            if (this._mapGl) {
+                                let queryAssets: Asset[] = aFeatures.map(feature => {
+                                    return feature.properties!.asset;
+                                });
+
+                                let assetsByType: {assetType: string, assets: Asset[]}[] = [];
+
+                                queryAssets.forEach((asset: Asset) => {
+                                    if (asset.type) {
+                                        let index = assetsByType.findIndex(assetByType => {
+                                            return assetByType.assetType === asset.type;
+                                        });
+                                        if (index !== -1) {
+                                            assetsByType[index].assets.push(asset);
+                                        } else {
+                                            assetsByType.push(
+                                                {
+                                                    assetType: asset.type,
+                                                    assets: [asset]
+                                                }
+                                            );
+                                        }
+                                    }
+                                });
+
+                                let result = '<div>';
+
+                                assetsByType.forEach(assetByType => {
+                                    const descriptor = AssetModelUtil.getAssetDescriptor(assetByType.assetType);
+                                    let icon = AssetModelUtil.getAssetDescriptorIcon(descriptor, undefined);
+                                    let color = AssetModelUtil.getAssetDescriptorColour(descriptor, undefined);
+                                    result += `<div><or-icon style="--or-icon-fill: ${color ? "#" + color : "unset"}" icon="${icon}"></or-icon> ${ assetByType.assetType } : ${ assetByType.assets.length }</div><br />`;
+                                });
+                                result += '</div>';
+
+                                this.popup = new Popup({ offset: 25, maxWidth: "250px" })
+                                    .setLngLat([e.lngLat.lng, e.lngLat.lat])
+                                    .setHTML(
+                                        result
+                                    )
+                                    .addTo(this._mapGl);
+                            }
+                        });
+                    }
+                }
+            });
+
+            if (this._mapGl) {
+                this.getCurrentView();
+            }
+        }
+    }
+
+    public addMark(assetId: string, assetName: string, assetType: string, long: number, lat: number, asset: Asset) {
+        this._assetTypesColors[assetType] = getMarkerIconAndColorFromAssetType(assetType)?.color;
+
+        this._pointsMap.features.push({
+            type: 'Feature',
+            properties: {
+                name: assetName,
+                id: assetId,
+                assetType: assetType,
+                asset: asset
+            },
+            geometry: {
+                type: "Point",
+                coordinates: [ long, lat ]
+            }
+        });
+    }
+
 
     public removeMarker(marker: OrMapMarker) {
         this._removeMarkerRadius(marker);

@@ -7,7 +7,7 @@ import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
-import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
+import {OrMapMarker, OrMapMarkerChangedEvent, OrMapMarkerClickedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
 import {
     InputType,
@@ -18,8 +18,12 @@ import {
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
+import {
+    Asset
+} from "@openremote/model";
 import { debounce } from "lodash";
 import {GeoJsonConfig, MapType } from "@openremote/model";
+import {getMarkerConfigForAssetType, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
 
 // Re-exports
 export {Util, LngLatLike};
@@ -52,6 +56,29 @@ export class OrMapLoadedEvent extends CustomEvent<void> {
 
     constructor() {
         super(OrMapLoadedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrMapSourceLoadedEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-map-source-loaded";
+
+    constructor() {
+        super(OrMapSourceLoadedEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrMapMovedEvent extends CustomEvent<void> {
+    public static readonly NAME = "or-map-moved";
+
+    constructor() {
+        super(OrMapMovedEvent.NAME, {
             bubbles: true,
             composed: true
         });
@@ -465,6 +492,34 @@ export class OrMap extends LitElement {
     constructor() {
         super();
         this.addEventListener(OrMapMarkerChangedEvent.NAME, this._onMarkerChangedEvent);
+    }
+
+    public addMarker(asset: Asset): boolean {
+        let res = asset.attributes?.hasOwnProperty("location");
+        if (res && asset.attributes && asset.attributes.location.value) {
+            let coordinates = asset.attributes.location.value;
+            this._map?.addMark(asset.id ? asset.id : '', asset.name ? asset.name : '', asset.type ? asset.type : '', coordinates.coordinates[0], coordinates.coordinates[1], asset);
+            return true;
+        }
+        return false;
+    }
+
+    public loadPoints() {
+        this._map?.loadPoints();
+    }
+
+    public getCurrentView(centre?: any): string[] {
+        if (this._map) {
+            return this._map.getCurrentView(centre);
+        } else {
+            return [];
+        }
+    }
+
+    public renderCurrentCluster(config?: MapMarkerAssetConfig | undefined): void {
+        if (this._map) {
+            this._map.renderCurrentCluster(config);
+        }
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {

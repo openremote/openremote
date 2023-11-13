@@ -10,7 +10,8 @@ import {
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent,
     OrMapGeocoderChangeEvent,
-    MapMarkerAssetConfig
+    MapMarkerAssetConfig,
+    OrMapMovedEvent, OrMapSourceLoadedEvent
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -174,12 +175,21 @@ export class PageMap extends Page<MapStateKeyed> {
     @state()
     protected _currentAsset?: Asset;
 
+    @state()
+    protected movedDone: Date;
+
+    @state()
+    protected mapInitLoaded: boolean = false;
+
     protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
     protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
     protected _realmSelector = (state: MapStateKeyed) => state.app.realm || manager.displayRealm;
 
     protected assetSubscriptionId: string;
     protected attributeSubscriptionId: string;
+
+    protected locationAssets: Asset[] = [];
+    protected assetTypes: string[] = [];
 
     protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
         // Extract all label attributes configured in marker config
@@ -252,6 +262,21 @@ export class PageMap extends Page<MapStateKeyed> {
 
                 this._store.dispatch(setAssets(assets));
 
+                if (this._map) {
+                    this.locationAssets = [];
+                    this.assetTypes = [];
+                    assets.forEach((asset: Asset) => {
+                        if (this._map.addMarker(asset)) {
+                            if(!this.assetTypes.find((assetType: string) => { return assetType === asset.type; })) {
+                                this.assetTypes.push(asset.type);
+                            }
+                            this.locationAssets.push(asset);
+                        }
+                    });
+
+                    this._map.loadPoints();
+                }
+
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
                     this._store.dispatch(assetEventReceived(event));
                 });
@@ -277,7 +302,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 this.attributeSubscriptionId = attributeSubscriptionId;
             }
         } catch (e) {
-            console.error("Failed to subscribe to assets", e)
+            console.error("Failed to subscribe to assets", e);
         }
     };
 
@@ -340,6 +365,7 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
+        let assetIdsToShow: string[] = this._map ? this._map.getCurrentView() : [];
 
         return html`
             
@@ -347,25 +373,25 @@ export class PageMap extends Page<MapStateKeyed> {
             
             <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${
-          this._assets.filter((asset) => {
-              if (!asset.attributes) {
-                  return false;
-              }
-              const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-              return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-          })
-            .sort((a,b) => {
-                if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
-                    return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
-                } else {
-                    return;
+            this._assets.filter((asset) => {
+                if (!asset.attributes || assetIdsToShow.findIndex((idx: string) => { return idx === asset.id; }) === -1) {
+                    return false;
                 }
+                const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
+                return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
             })
-            .map(asset => {
-                return html`
-                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
-                        `;
-            })
+                .sort((a,b) => {
+                    if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
+                        return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
+                    } else {
+                        return;
+                    }
+                })
+                .map(asset => {
+                    return html`
+                                    <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
+                                `;
+                })
         }
             </or-map>
         `;
@@ -375,28 +401,46 @@ export class PageMap extends Page<MapStateKeyed> {
         super.connectedCallback();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this.onMapClick);
+        this.addEventListener(OrMapMovedEvent.NAME, this.onMapMoved);
+        this.addEventListener(OrMapSourceLoadedEvent.NAME, this.onMapLoad);
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.removeEventListener(OrMapClickedEvent.NAME, this.onMapClick);
+        this.removeEventListener(OrMapMovedEvent.NAME, this.onMapMoved);
+        this.removeEventListener(OrMapSourceLoadedEvent.NAME, this.onMapLoad);
         this.unsubscribeAssets();
     }
 
     stateChanged(state: MapStateKeyed) {
         this._assets = this._getMapAssets(state);
         this._currentAsset = this._getCurrentAsset(state);
+
+        const currentId = state.app.params ? state.app.params.id : undefined;
+
+        this._currentAsset = this.locationAssets.find((asset) => asset.id === currentId);
+
         this.getRealmState(state);
     }
 
     protected onMapMarkerClick(e: OrMapMarkerClickedEvent) {
-        const asset = (e.detail.marker as OrMapMarkerAsset).asset;
+        const asset: Asset = (e.detail.marker as OrMapMarkerAsset).asset;
         router.navigate(getMapRoute(asset.id));
     }
 
     protected onMapClick(e: OrMapClickedEvent) {
         router.navigate(getMapRoute());
+    }
+
+    protected onMapMoved(e: OrMapMovedEvent) {
+        this.movedDone = new Date();
+    }
+
+    protected onMapLoad(e: OrMapSourceLoadedEvent) {
+        this.mapInitLoaded = !this.mapInitLoaded;
+        this._map.renderCurrentCluster(this.config.markers);
     }
 
     protected getCurrentAsset() {
