@@ -133,7 +133,7 @@ export class OrDashboardWidgetContainer extends LitElement {
                 `)}
 
                 <!-- Content -->
-                <div style="flex: 1; max-height: ${showHeader ? 'calc(100% - 36px)' : '100%'});">
+                <div style="flex: 1; max-height: ${showHeader ? 'calc(100% - 36px)' : '100%'};">
                     ${when((!this.error && !this.loading), () => html`
                         ${this.orWidget}
                     `, () => html`

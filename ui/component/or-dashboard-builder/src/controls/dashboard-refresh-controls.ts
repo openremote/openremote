@@ -11,8 +11,6 @@ export function intervalToMillis(interval: DashboardRefreshInterval): number | u
     switch (interval) {
         case DashboardRefreshInterval.OFF:
             return undefined;
-        case DashboardRefreshInterval.TEN_SECONDS:
-            return (10 * 1000);
         case DashboardRefreshInterval.ONE_MIN:
             return (60 * 1000);
         case DashboardRefreshInterval.FIVE_MIN:
@@ -49,7 +47,7 @@ export class DashboardRefreshControls extends LitElement {
     protected readonly = true;
 
     // TODO: Replace this with Object.values(), after generated typescript enums support this. ('const' variable issue in model.ts)
-    protected intervalOptions = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.TEN_SECONDS, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR]
+    protected intervalOptions = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR]
 
     protected willUpdate(changedProps: PropertyValues) {
         super.willUpdate(changedProps);

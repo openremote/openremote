@@ -69,7 +69,7 @@ export class ChartSettings extends WidgetSettings {
                         <div>
                             <div class="switch-container">
                                 <span>${i18next.t('dashboard.allowTimerangeSelect')}</span>
-                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showTimestampControls}"
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
@@ -161,7 +161,7 @@ export class ChartSettings extends WidgetSettings {
     }
 
     protected onTimestampControlsToggle(ev: OrInputChangedEvent) {
-        this.widgetConfig.showTimestampControls = ev.detail.value;
+        this.widgetConfig.showTimestampControls = !ev.detail.value;
         this.notifyConfigUpdate();
     }
 

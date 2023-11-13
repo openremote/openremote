@@ -623,7 +623,6 @@
     "access.shared": "Realm Users",
     "access.private": "Only me",
     "interval.off": "Off",
-    "interval.ten_seconds": "10 sec",
     "interval.one_min": "1 min",
     "interval.five_min": "5 min",
     "interval.quarter": "15 min",
