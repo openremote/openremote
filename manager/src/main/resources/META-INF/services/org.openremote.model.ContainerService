@@ -34,3 +34,5 @@ org.openremote.manager.dashboard.DashboardStorageService
 org.openremote.manager.security.AuthorisationService
 org.openremote.manager.app.ConfigurationService
 org.openremote.manager.asset.ForecastService
+org.openremote.manager.asset.AnomalyDetectionService
+org.openremote.manager.datapoint.AssetAnomalyDatapointService
