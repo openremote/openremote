@@ -389,7 +389,8 @@ public abstract class ValueConstraint implements Serializable {
             Object compareValue = null;
 
             if (Enum.class.isAssignableFrom(clazz)) {
-                compareValue = ((Enum<?>) value).name();
+                // We can skip this check as the value is already a concrete type so must be valid - allowed values is for informational purposes
+                return true;
             } else if (ValueUtil.isString(clazz)) {
                 compareValue = ((CharSequence)value).toString();
             } else if (ValueUtil.isNumber(clazz)) {
