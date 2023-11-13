@@ -180,7 +180,8 @@ public class State {
 
                         constraintsMeta.setValue(constraints);
 
-                        metaMap.add(constraintsMeta);
+                        //TODO: Fix this, constraints for some reason are not being applied
+//                        metaMap.add(constraintsMeta);
                     }
                 }catch (Exception e){
                     logger.severe(parameter.propertyName + "Failed constraints");
@@ -230,7 +231,8 @@ public class State {
             try{
                 long unixTimestampMillis = Long.parseLong(reported.get("ts").toString());
                 Timestamp deviceTimestamp = Timestamp.from(Instant.ofEpochMilli(unixTimestampMillis));
-                attributes.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME, deviceTimestamp));
+                attributes.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME, deviceTimestamp).setTimestamp(deviceTimestamp.getTime()));
+
 
                 //Update all affected attribute timestamps
                 attributes.forEach(attribute -> attribute.setTimestamp(deviceTimestamp.getTime()));
