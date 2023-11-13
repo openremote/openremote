@@ -797,9 +797,6 @@ Resources:
           # Install latest cfn scripts
           yum -y install aws-cfn-bootstrap
 
-          # Install cloudwatch agent
-          rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
-          
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
           
