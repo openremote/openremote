@@ -349,9 +349,13 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("allowedValues")
     public static class AllowedValues extends ValueConstraint {
         Object[] allowedValues;
+        String[] allowedValueNames;
+
         @JsonCreator
-        protected AllowedValues() {
+        public AllowedValues(@JsonProperty("allowedValueNames") String[] allowedValueNames, @JsonProperty("allowedValues") Object[] allowedValues) {
             super(ALLOWED_VALUES_MESSAGE_TEMPLATE);
+            this.allowedValueNames = allowedValueNames;
+            this.allowedValues = allowedValues;
         }
 
         public AllowedValues(Object...allowedValues) {
@@ -366,6 +370,10 @@ public abstract class ValueConstraint implements Serializable {
         @Override
         public Map<String, Object> getParameters() {
             return Map.of("values", Arrays.toString(allowedValues));
+        }
+
+        public String[] getAllowedValueNames() {
+            return allowedValueNames;
         }
 
         @Override
