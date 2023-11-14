@@ -168,7 +168,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                 new Attribute<>(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR, "abcde"),
                 new Attribute<>(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR, new ModelTestAsset.TestObject(110, true)),
                 // Custom attributes
-                new Attribute<>("custom1"),
+                new Attribute<>("custom1", null, 456), // Any value can go in here
                 new Attribute<>("custom2", ValueType.GEO_JSON_POINT, new GeoJSONPoint(1.234, 5.678)).addMeta(
                         new MetaItem<>(MetaItemType.CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.NotNull()))
                 )
@@ -200,7 +200,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null).length == 1
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_ARRAY_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null)[0] == 1
         modelTestAsset.getAttribute(ModelTestAsset.NOT_BLANK_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.value}.orElse(null) == "abcde"
-        modelTestAsset.getAttribute("custom1").flatMap {it.value}.orElse(null) == null
+        modelTestAsset.getAttribute("custom1").flatMap {it.value}.orElse(null) == 456
         modelTestAsset.getAttribute("custom2").flatMap {it.value}.orElse(null).x == 1.234d
         modelTestAsset.getAttribute("custom2").flatMap {it.value}.orElse(null).y == 5.678d
         modelTestAsset.getAttribute(ModelTestAsset.OBJECT_ATTRIBUTE_DESCRIPTOR).flatMap {it.value} != null
@@ -284,6 +284,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         and: "we simulate a value descriptor being removed or changed (by changing the type name of an attribute)"
         ((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get(ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR.name)).put("type", "missingType")
 
+        and: "we simulate a value descriptor being removed on a custom attribute (by changing the type name of the attribute)"
+        ((ObjectNode)((ObjectNode)assetObjectNode.get("attributes")).get("custom1")).put("type", "missingType2")
+
         and: "we deserialise the object back into an Asset"
         modelTestAsset = ValueUtil.parse(assetObjectNode.toString(), Asset).orElse(null) as ModelTestAsset
 
@@ -297,6 +300,13 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("missingMeta")}.flatMap {it.value}.orElse(null).getClass().isArray()
         Array.getLength(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("missingMeta")}.flatMap {it.value}.orElse(null)) == 1
         Array.get(modelTestAsset.getAttribute(ModelTestAsset.NOT_EMPTY_STRING_ATTRIBUTE_DESCRIPTOR).flatMap {it.getMeta().get("missingMeta")}.flatMap {it.value}.orElse(null), 0) instanceof Map
+
+        and: "the well known attribute with the missing value type should have the correct value type"
+        modelTestAsset.getAttribute(ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR.name).map {it.type}.orElse(null) == ModelTestAsset.PAST_OR_PRESENT_DATE_ATTRIBUTE_DESCRIPTOR.type
+
+        and: "the custom attribute with the missing value type should have no value type but the value should still be there"
+        modelTestAsset.getAttribute("custom1").map {it.type}.isEmpty()
+        modelTestAsset.getAttribute("custom1").flatMap {it.value}.orElse(null) == 456
 
         when: "the attribute with the missing attribute descriptor now violates its' previous constraint"
         modelTestAsset.getAttribute("missingAttr").ifPresent {it.value = timerService.getCurrentTimeMillis() + 100000}
