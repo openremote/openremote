@@ -48,6 +48,7 @@ import java.util.List;
 public final class ValueType {
 
     /* SOME CUSTOM TYPES TO AVOID GENERIC TYPE SO THESE CAN BE CONSUMED IN VALUE DESCRIPTORS */
+    public static class ObjectMap extends HashMap<String, Object> {}
     public static class StringMap extends HashMap<String, String> {}
     public static class IntegerMap extends HashMap<String, Integer> {}
     public static class DoubleMap extends HashMap<String, Double> {}
@@ -75,6 +76,10 @@ public final class ValueType {
     public static final ValueDescriptor<String> TEXT = new ValueDescriptor<>("text", String.class);
 
     public static final ValueDescriptor<StringMap> TEXT_MAP = new ValueDescriptor<>("textMap", StringMap.class);
+
+    public static final ValueDescriptor<ObjectMap> JSON_OBJECT = new ValueDescriptor<>("JSONObject", ObjectMap.class);
+
+    public static final ValueDescriptor<Object> JSON = new ValueDescriptor<>("JSON", Object.class);
 
     public static final ValueDescriptor<MultivaluedStringMap> MULTIVALUED_TEXT_MAP = new ValueDescriptor<>("multivaluedTextMap", MultivaluedStringMap.class);
 
