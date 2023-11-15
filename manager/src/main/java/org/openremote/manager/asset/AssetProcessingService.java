@@ -118,6 +118,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
     // Single threaded attribute event queue (event order has to be maintained)
     public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
+    public static final String OR_ATTRIBUTE_EVENT_THREADS = "OR_ATTRIBUTE_EVENT_THREADS";
+    public static final int ATTRIBUTE_EVENT_THREADS_DEFAULT = 3;
     private static final System.Logger LOG = System.getLogger(AssetProcessingService.class.getName());
     final protected List<AssetUpdateProcessor> processors = new ArrayList<>();
     protected TimerService timerService;
@@ -265,6 +267,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         processors.add(assetAttributeLinkingService);
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
+
+        // Configure dynamic routes for event processing
+    }
+
+    protected String getEventProcessingRoutePrefix(String assetId) {
     }
 
     @Override
@@ -315,27 +322,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return; // Ignore events with no attribute name
 
                 Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Source.class);
+
                 if (source == null) {
                     throw new AssetProcessingException(MISSING_SOURCE);
                 }
-
-                LOG.log(System.Logger.Level.TRACE, () -> "Processing: " + event);
-
-                Asset<?> asset = assetStorageService.find(event.getAssetId(), true);
-
-                if (asset == null) {
-                    throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
-                }
-
-                Attribute<?> oldAttribute = asset.getAttribute(event.getAttributeName()).orElseThrow(() ->
-                    new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
-
-                // For executable attributes, non-sensor sources can set a writable attribute execute status
-                if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
-                    Optional<AttributeExecuteStatus> status = event.getValue()
-                        .flatMap(ValueUtil::getString)
-                        .flatMap(AttributeExecuteStatus::fromString);
-
 
                 // Process the asset update in a database transaction, this ensures that processors
                 // will see consistent database state and we only commit if no processor failed. This
@@ -344,15 +334,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     Asset<?> asset = assetStorageService.find(em, event.getAssetId(), true);
 
                     if (asset == null) {
-                        if (source == SENSOR) {
-                            // Fail silently as a protocol may have queued updates before the asset was deleted
-                            return;
-                        }
-
-                        throw new AssetProcessingException(ASSET_NOT_FOUND);
+                        throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
                     }
 
-
+                    Attribute<?> oldAttribute = asset.getAttribute(event.getAttributeName()).orElseThrow(() ->
+                        new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
 
                     // Either use the timestamp of the event or set event time to processing time or (old event time + 1)
                     // We need a different timestamp for Attribute.equals() check
@@ -396,7 +382,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     Object value = event.getValue().map(eventValue -> {
                         Class<?> attributeValueType = oldAttribute.getTypeClass();
                         return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                            LOG.info("Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
+                            LOG.log(System.Logger.Level.INFO, "Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
                             return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
                         });
 

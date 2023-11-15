@@ -235,7 +235,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
-    protected ConcurrentHashMap<String, Lock> assetLocks = new ConcurrentHashMap<>();
 
     /**
      * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link LogicGroup} type
@@ -441,12 +440,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             })
             .end();
-    }
-
-    public void withAssetLock(String assetId, Runnable runnable) {
-        Lock assetLock = assetLocks.computeIfAbsent(assetId, (k) -> new ReentrantLock());
-
-        lockWrapper.lock.lock();
     }
 
     /**
