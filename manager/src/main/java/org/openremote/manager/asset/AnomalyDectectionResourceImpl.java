@@ -37,6 +37,7 @@ import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.AnomalyDetectionConfigObject;
+import org.openremote.model.value.AnomalyDetectionConfiguration;
 import org.openremote.model.value.MetaItemType;
 
 import java.util.logging.Logger;
@@ -61,7 +62,7 @@ public class AnomalyDectectionResourceImpl extends ManagerWebResource implements
     public ValueDatapoint<?>[][] getAnomalyDatapointLimits(@BeanParam RequestParams requestParams,
                                                            String assetId,
                                                            String attributeName,
-                                                           AnomalyDetectionConfigObject anomalyDetectionConfigObject) {
+                                                           AnomalyDetectionConfiguration anomalyDetectionConfiguration) {
         try {
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -110,7 +111,7 @@ public class AnomalyDectectionResourceImpl extends ManagerWebResource implements
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 });
             }
-            return anomalyDetectionService.getAnomalyDatapointLimits(assetId,attributeName,anomalyDetectionConfigObject);
+            return anomalyDetectionService.getAnomalyDatapointLimits(assetId,attributeName, anomalyDetectionConfiguration);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);

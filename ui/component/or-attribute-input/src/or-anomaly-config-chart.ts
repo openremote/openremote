@@ -16,7 +16,7 @@ import moment from "moment";
 import {throttle} from "lodash";
 import {AnnotationOptions} from "chartjs-plugin-annotation";
 import {
-    AnomalyDetectionConfigObject, Asset,
+    AnomalyDetectionConfigObject, AnomalyDetectionConfiguration, Asset,
     AssetDatapointQueryUnion,
     AssetModelUtil,
     AssetQuery,
@@ -38,7 +38,7 @@ export class OrAnomalyConfigChart extends OrChart {
     @property({type: Object})
     public datapointQuery!: AssetDatapointQueryUnion;
     @property({type: Object})
-    public anomalyConfig?: AnomalyDetectionConfigObject = undefined;
+    public anomalyConfig?: AnomalyDetectionConfiguration = undefined;
     @property({type: Number})
     public timespan?: Number = undefined;
 
@@ -96,7 +96,6 @@ export class OrAnomalyConfigChart extends OrChart {
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
 
-        console.log(this.assetAttributes)
         const data: ChartDataset<"line", ScatterDataPoint[]>[] = [];
         let promises;
 
@@ -134,7 +133,6 @@ export class OrAnomalyConfigChart extends OrChart {
 
                 //limits anomaly data
                 let datasets = await this.getAnomalyLimits(asset,attribute,this.datapointQuery)
-                console.log(datasets);
                 dataset = datasets[0]
                 data.push(dataset);
                 dataset = datasets[1]
@@ -147,7 +145,6 @@ export class OrAnomalyConfigChart extends OrChart {
         }
         this._loading = false;
         this._data = data;
-        console.log(data);
     }
 
     protected async getAnomalyLimits(asset: Asset, attribute:Attribute<any>,query:AssetDatapointQueryUnion): Promise<ChartDataset<"line", ScatterDataPoint[]>[]>{
@@ -171,7 +168,6 @@ export class OrAnomalyConfigChart extends OrChart {
         };
         if(this.anomalyConfig){
             response = await manager.rest.api.AnomalyDetectionResource.getAnomalyDatapointLimits(asset.id, attribute.name, this.anomalyConfig);
-            console.log(response)
             if (response.status === 200) {
                 minData.data = response.data[0].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
                 maxData.data = response.data[1].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
@@ -185,9 +181,7 @@ export class OrAnomalyConfigChart extends OrChart {
     render() {
         const disabled = this._loading;
         return html`
-            <or-collapsible-panel>
-                <div id="container " slot="content">
-                    <div id="chart-container">
+                    <div id="chart-container" style="display: flex; ">
                         ${disabled ? html`
                         <div style="position: absolute; height: 100%; width: 100%;">
                             <or-loading-indicator ?overlay="false"></or-loading-indicator>
@@ -195,8 +189,6 @@ export class OrAnomalyConfigChart extends OrChart {
                     ` : undefined}
                         <canvas id="chart" style="visibility: ${disabled ? 'hidden' : 'visible'}"></canvas>
                     </div>
-                </div>
-            </or-collapsible-panel>
         `;
     }
 }

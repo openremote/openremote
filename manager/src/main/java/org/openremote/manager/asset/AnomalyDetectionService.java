@@ -194,17 +194,17 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         );
     }
 
-    public ValueDatapoint<?>[][] getAnomalyDatapointLimits( String assetId, String attributeName, AnomalyDetectionConfigObject anomalyDetectionConfigObject) {
+    public ValueDatapoint<?>[][] getAnomalyDatapointLimits( String assetId, String attributeName, AnomalyDetectionConfiguration anomalyDetectionConfiguration) {
         ValueDatapoint<?> vd = new ValueDatapoint<>(1699448760,2);
         ValueDatapoint<?>[] vda = new ValueDatapoint<?>[]{vd,vd,vd};
         ValueDatapoint<?>[][] vdaa = new ValueDatapoint<?>[][]{vda,vda};
 
         DetectionMethod detectionMethod;
-        if(anomalyDetectionConfigObject.methods.length != 0) {
-            switch (anomalyDetectionConfigObject.methods[0].getClass().getSimpleName()) {
-                case "Global" -> detectionMethod = new DetectionMethodGlobal(anomalyDetectionConfigObject.methods[0]);
-                case "Change" -> detectionMethod =(new DetectionMethodChange(anomalyDetectionConfigObject.methods[0]));
-                case "Timespan" -> detectionMethod =(new DetectionMethodTimespan(anomalyDetectionConfigObject.methods[0]));
+        if(anomalyDetectionConfiguration != null) {
+            switch (anomalyDetectionConfiguration.getClass().getSimpleName()) {
+                case "Global" -> detectionMethod = new DetectionMethodGlobal(anomalyDetectionConfiguration);
+                case "Change" -> detectionMethod = new DetectionMethodChange(anomalyDetectionConfiguration);
+                case "Timespan" -> detectionMethod = new DetectionMethodTimespan(anomalyDetectionConfiguration);
                 default -> {
                     return vdaa;
                 }

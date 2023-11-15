@@ -25,6 +25,7 @@ import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.AnomalyDetectionConfigObject;
+import org.openremote.model.value.AnomalyDetectionConfiguration;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -45,6 +46,6 @@ public interface AnomalyDetectionResource {
     ValueDatapoint<?>[][] getAnomalyDatapointLimits(@BeanParam RequestParams requestParams,
                                                     @PathParam("assetId") String assetId,
                                                     @PathParam("attributeName") String attributeName,
-                                                    AnomalyDetectionConfigObject anomalyDetectionConfigObject);
+                                                    AnomalyDetectionConfiguration anomalyDetectionConfiguration);
 
 }
