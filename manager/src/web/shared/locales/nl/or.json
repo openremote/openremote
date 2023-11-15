@@ -453,7 +453,9 @@
     },
     "meta": {},
     "attribute": {},
-    "value": {}
+    "value": {
+      "unknown": "Onbekend"
+    }
   },
   "metaOverrides": {
     "label": {}
