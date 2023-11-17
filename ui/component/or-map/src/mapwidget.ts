@@ -747,7 +747,7 @@ export class MapWidget {
                 (subOffsets[i] + subCounts[i]) / subTotal,
                 r,
                 r0,
-                subColours[i] , true, 0
+                /*subColours[i]*/ 'e3d5f4' , true, 0
             );
         }
 
@@ -827,14 +827,13 @@ export class MapWidget {
     }
     public renderCurrentCluster(config?: MapMarkerAssetConfig): void {
         if (config) {
+            console.log('got a marker config...');
+            console.log(config);
             this.markerConfig = config;
         }
 
         if (this._mapGl) {
             const features = this._mapGl.querySourceFeatures('mapPoints', {sourceLayer: 'clusters'});
-
-            console.log("resultat : ");
-            console.log(features);
 
             this._markers.forEach((marker: maplibregl.Marker) => {
                 marker.remove();
@@ -842,101 +841,102 @@ export class MapWidget {
 
             let totalCount: number = 0;
 
-            features.forEach((feature: any) => {
+            let clusters = features.filter((feature) => {
+                return feature.properties && feature.properties.cluster;
+            });
+
+            console.log("clusters : ");
+            console.log(clusters);
+
+            clusters.forEach((cluster: any) => {
                 if (this._mapGl) {
-                    //IF true, the marker object is representing a cluster instance
-                    if (feature.properties && feature.properties.cluster) {
-                        totalCount += feature.properties.point_count;
-                    }
+                    totalCount += cluster.properties.point_count;
                 }
             });
 
-            features.forEach((marker: any) => {
+            clusters.forEach((cluster: any) => {
                 if (this._mapGl) {
-                    //IF true, the marker object is representing a cluster instance
-                    if (marker.properties && marker.properties.cluster) {
-                        let props: any[] = [];
-                        /**
-                         * {
-                         *     count: 50,
-                         *     assetType: 'assetTYpe',
-                         *     threshold: [
-                         *         {
-                         *             count: 10,
-                         *             color: '#color1'
-                         *         }, {
-                         *             count: 40,
-                         *             color: '#color2'
-                         *         }
-                         *     ]
-                         * }
-                         */
+                    let props: any[] = [];
+                    /**
+                     * {
+                     *     count: 50,
+                     *     assetType: 'assetTYpe',
+                     *     threshold: [
+                     *         {
+                     *             count: 10,
+                     *             color: '#color1'
+                     *         }, {
+                     *             count: 40,
+                     *             color: '#color2'
+                     *         }
+                     *     ]
+                     * }
+                     */
 
-                        let sourcePoints: GeoJSONSource = (this._mapGl.getSource('mapPoints') as GeoJSONSource);
-                        sourcePoints.getClusterLeaves(marker.properties.cluster_id, marker.properties.point_count, 0, (err, aFeatures) => {
-                            aFeatures.forEach((feature) => {
-                                let assetType = feature.properties?.assetType;
+                    let sourcePoints: GeoJSONSource = (this._mapGl.getSource('mapPoints') as GeoJSONSource);
+                    sourcePoints.getClusterLeaves(cluster.properties.cluster_id, cluster.properties.point_count, 0, (err, aFeatures) => {
+                        aFeatures.forEach((feature) => {
+                            let assetType = feature.properties?.assetType;
 
-                                if (assetType) {
-                                    console.log(this.markerConfig);
-                                    const assetTypeConfig = getMarkerConfigForAssetType(this.markerConfig, assetType);
-                                    let iconAndColour: any = undefined;
+                            if (assetType) {
+                                console.log(this.markerConfig);
+                                const assetTypeConfig = getMarkerConfigForAssetType(this.markerConfig, assetType);
+                                let iconAndColour: any = undefined;
 
-                                    if(assetTypeConfig && assetTypeConfig.colours && feature.properties) {
-                                        const assetAttributeValue = feature.properties.asset.attributes[assetTypeConfig.attributeName].value;
-                                        let overrideOpts: OverrideConfigSettings = {
-                                            markerConfig: assetTypeConfig.colours,
-                                            currentValue: assetAttributeValue
-                                        };
+                                if(assetTypeConfig && assetTypeConfig.colours && feature.properties) {
+                                    const assetAttributeValue = feature.properties.asset.attributes[assetTypeConfig.attributeName].value;
+                                    let overrideOpts: OverrideConfigSettings = {
+                                        markerConfig: assetTypeConfig.colours,
+                                        currentValue: assetAttributeValue
+                                    };
 
-                                        iconAndColour = getMarkerIconAndColorFromAssetType(assetType, overrideOpts);
+                                    iconAndColour = getMarkerIconAndColorFromAssetType(assetType, overrideOpts);
+                                } else {
+                                    //console.log('no colours treshold defined on asset type ' + assetType);
+                                }
+
+
+                                let findIndex = props.findIndex((prop: any) => { return assetType === prop.assetType});
+                                if (findIndex !== -1) {
+                                    props[findIndex].count++;
+                                } else {
+                                    props.push({
+                                        assetType: assetType,
+                                        count: 1
+                                    });
+                                }
+
+                                if (iconAndColour) {
+                                    findIndex = props.length - 1;
+
+                                    let thresholdIndex = props[findIndex].threshold.findIndex((t: any) => { return t.color === iconAndColour.color; });
+
+                                    if (thresholdIndex !== -1) {
+                                        props[findIndex].threshold[thresholdIndex].count++;
                                     } else {
-                                        console.log('no colours treshold defined on asset type ' + assetType);
-                                    }
-
-
-                                    let findIndex = props.findIndex((prop: any) => { return assetType === prop.assetType});
-                                    if (findIndex !== -1) {
-                                        props[findIndex].count++;
-                                    } else {
-                                        props.push({
-                                            assetType: assetType,
-                                            count: 1
+                                        props[findIndex].threshold.push({
+                                            count: 1,
+                                            color: iconAndColour.color
                                         });
                                     }
-
-                                    if (iconAndColour) {
-                                        findIndex = props.length - 1;
-
-                                        let thresholdIndex = props[findIndex].threshold.findIndex((t: any) => { return t.color === iconAndColour.color; });
-
-                                        if (thresholdIndex !== -1) {
-                                            props[findIndex].threshold[thresholdIndex].count++;
-                                        } else {
-                                            props[findIndex].threshold.push({
-                                                count: 1,
-                                                color: iconAndColour.color
-                                            });
-                                        }
-                                    }
                                 }
-                            });
-
-                            props.forEach((prop: any) => {
-                                if (!prop.threshold) {
-                                    prop.threshold = [ {
-                                        count: prop.count,
-                                        color: this._assetTypesColors[prop.assetType]
-                                    } ];
-                                }
-                            });
-
-                            let donutChart = this.createDonutChart(props, totalCount);
-
-                            // @ts-ignore
-                            this._markers.push(new maplibregl.Marker({element: donutChart}).setLngLat(marker.geometry['coordinates']).addTo(this._mapGl));
+                            }
                         });
-                    }
+
+                        props.forEach((prop: any) => {
+                            if (!prop.threshold) {
+                                prop.threshold = [ {
+                                    count: prop.count,
+                                    color: this._assetTypesColors[prop.assetType]
+                                } ];
+                            }
+                        });
+
+                        let donutChart = this.createDonutChart(props, totalCount);
+
+                        // @ts-ignore
+                        this._markers.push(new maplibregl.Marker({element: donutChart}).setLngLat(cluster.geometry['coordinates']).addTo(this._mapGl));
+                    });
                 }
             });
         }
@@ -949,7 +949,15 @@ export class MapWidget {
             console.log('asset colors :');
             console.log(this._assetTypesColors);
             if (this._mapGl.getSource('mapPoints')) {
-                let s = this._mapGl.getSource('mapPoints');
+                if (this._mapGl.getLayer('unclustered-point')) {
+                    this._mapGl.removeLayer('unclustered-point');
+                }
+                if (this._mapGl.getLayer('clusters')) {
+                    this._mapGl.removeLayer('clusters');
+                }
+                if (this._mapGl.getLayer('cluster-count')) {
+                    this._mapGl.removeLayer('cluster-count');
+                }
                 this._mapGl.removeSource('mapPoints');
             }
 
@@ -1051,66 +1059,10 @@ export class MapWidget {
                 this._mapContainer.dispatchEvent(new OrMapSourceLoadedEvent());
             });
 
-            this._mapGl.on('click', 'clusters', (e) => {
-                if (this._mapGl) {
-                    const features = this._mapGl.queryRenderedFeatures(e.point, {
-                        layers: ['clusters']
-                    });
-
-                    let clusterId = features[0].properties!.cluster_id;
-
-                    if ((this.popupClusterId && this.popupClusterId !== clusterId) || !this.popupClusterId) {
-                        this.popupClusterId = clusterId;
-
-                        let sourcePoints: GeoJSONSource = (this._mapGl.getSource('mapPoints') as GeoJSONSource);
-                        let point_count = features[0].properties!.point_count;
-
-                        sourcePoints.getClusterLeaves(clusterId, point_count, 0, (err, aFeatures) => {
-                            if (this._mapGl) {
-                                let queryAssets: Asset[] = aFeatures.map(feature => {
-                                    return feature.properties!.asset;
-                                });
-
-                                let assetsByType: {assetType: string, assets: Asset[]}[] = [];
-
-                                queryAssets.forEach((asset: Asset) => {
-                                    if (asset.type) {
-                                        let index = assetsByType.findIndex(assetByType => {
-                                            return assetByType.assetType === asset.type;
-                                        });
-                                        if (index !== -1) {
-                                            assetsByType[index].assets.push(asset);
-                                        } else {
-                                            assetsByType.push(
-                                                {
-                                                    assetType: asset.type,
-                                                    assets: [asset]
-                                                }
-                                            );
-                                        }
-                                    }
-                                });
-
-                                let result = '<div>';
-
-                                assetsByType.forEach(assetByType => {
-                                    const descriptor = AssetModelUtil.getAssetDescriptor(assetByType.assetType);
-                                    let icon = AssetModelUtil.getAssetDescriptorIcon(descriptor, undefined);
-                                    let color = AssetModelUtil.getAssetDescriptorColour(descriptor, undefined);
-                                    result += `<div><or-icon style="--or-icon-fill: ${color ? "#" + color : "unset"}" icon="${icon}"></or-icon> ${ assetByType.assetType } : ${ assetByType.assets.length }</div><br />`;
-                                });
-                                result += '</div>';
-
-                                this.popup = new Popup({ offset: 25, maxWidth: "250px" })
-                                    .setLngLat([e.lngLat.lng, e.lngLat.lat])
-                                    .setHTML(
-                                        result
-                                    )
-                                    .addTo(this._mapGl);
-                            }
-                        });
-                    }
-                }
+            this._mapGl.on('data', (e) => {
+                console.log('data...');
+                console.log(e);
+                this._mapContainer.dispatchEvent(new OrMapSourceLoadedEvent());
             });
 
             if (this._mapGl) {

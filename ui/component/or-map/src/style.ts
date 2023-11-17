@@ -236,4 +236,96 @@ export const mapAssetCardStyle = css`
                     min-height: 134px;
                 }
             }
+`;
+
+export const mapAssetLegendStyle = css`
+            :host {
+                --internal-or-map-asset-card-header-color: var(--or-map-asset-card-header-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+                --internal-or-map-asset-card-header-text-color: var(--or-map-asset-card-header-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+                --internal-or-map-asset-card-header-height: var(--or-map-asset-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
+                --internal-or-map-asset-card-background-color: var(--or-map-asset-card-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+                --internal-or-map-asset-card-background-text-color: var(--or-map-asset-card-background-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+                --internal-or-map-asset-card-separator-color: var(--or-map-asset-card-separator-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
+                
+                display: block;
+            }
+
+            #card-container {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                background-color: var(--internal-or-map-asset-card-background-color);
+                -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);  
+            }
+            
+            #header {
+                height: var(--internal-or-map-asset-card-header-height);
+                background-color: var(--internal-or-map-asset-card-header-color);
+                line-height: var(--internal-or-map-asset-card-header-height);
+                border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
+                text-align: center;
+                color: var(--internal-or-map-asset-card-header-text-color);
+                --or-icon-fill: var(--internal-or-map-asset-card-header-text-color);
+                --or-icon-width: 20px;
+                --or-icon-height: 20px;
+                z-index: 99999;
+            }
+
+            #header > or-icon {
+                margin-right: 5px;
+            }
+            
+            #title {
+                font-weight: 500;
+            }
+            
+            #attribute-list {
+                flex: 1;                
+                color: var(--internal-or-map-asset-card-background-text-color);
+                padding: 10px 20px;
+                overflow: auto;
+                font-size: 14px;
+            }
+            
+            ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+            }
+            
+            li {
+                display: flex;
+                line-height: 30px;
+            }
+            li.highlighted {
+                font-weight: bold;
+            }
+            
+            .attribute-name {
+                flex: 1;            
+            }
+            
+            .attribute-value {
+                overflow: hidden;
+                padding-left: 20px;
+                text-align: right;
+            }
+            
+            #footer {
+                height: var(--internal-or-map-asset-card-header-height);
+                border-top: 1px solid var(--internal-or-map-asset-card-separator-color);
+                text-align: right;
+                padding: 5px 12px;
+            }
+            
+            @media only screen and (min-width: 415px){
+                #card-container {
+                    height: 400px; /* fallback for IE */
+                    height: max-content;
+                    max-height: calc(100vh - 150px);
+                    min-height: 134px;
+                }
+            }
 `

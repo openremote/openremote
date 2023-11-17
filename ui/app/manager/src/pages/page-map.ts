@@ -141,6 +141,15 @@ export class PageMap extends Page<MapStateKeyed> {
                 width: 100vw;
                 z-index: 3;
             }
+
+           or-map-legend {
+               height: 35vh;
+               position: absolute;
+               bottom: 0;
+               left: 0;
+               width: 100vw;
+               z-index: 3;
+           }
         
             or-map {
                 display: block;
@@ -153,6 +162,17 @@ export class PageMap extends Page<MapStateKeyed> {
                     position: absolute;
                     top: 10px;
                     right: 50px;
+                    width: 320px;
+                    margin: 0;
+                    height: 400px; /* fallback for IE */
+                    height: max-content;
+                    max-height: calc(100vh - 150px);
+                }
+
+                or-map-legend {
+                    position: absolute;
+                    top: 100px;
+                    left: 50px;
                     width: 320px;
                     margin: 0;
                     height: 400px; /* fallback for IE */
@@ -196,6 +216,8 @@ export class PageMap extends Page<MapStateKeyed> {
         let markerLabelAttributes = [];
 
         if (this.config && this.config.markers) {
+            console.log('CONFIG');
+            console.log(this.config);
             markerLabelAttributes = Object.values(this.config.markers)
               .filter(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName)
               .map(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName);
@@ -365,11 +387,14 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
+        console.log("render page map...");
         let assetIdsToShow: string[] = this._map ? this._map.getCurrentView() : [];
 
         return html`
             
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
+
+            <or-map-legend assetTypes="${this.assetTypes}"></or-map-legend>
             
             <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${
@@ -416,6 +441,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
     stateChanged(state: MapStateKeyed) {
         this._assets = this._getMapAssets(state);
+        console.log('assets set on map page level');
         this._currentAsset = this._getCurrentAsset(state);
 
         const currentId = state.app.params ? state.app.params.id : undefined;
@@ -439,6 +465,7 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected onMapLoad(e: OrMapSourceLoadedEvent) {
+        console.log('map loaded !');
         this.mapInitLoaded = !this.mapInitLoaded;
         this._map.renderCurrentCluster(this.config.markers);
     }
