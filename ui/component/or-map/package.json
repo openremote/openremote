@@ -17,7 +17,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@maplibre/maplibre-gl-geocoder": "^1.2.0",
+    "@maplibre/maplibre-gl-geocoder": "^1.5.0",
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
     "@openremote/or-icon": "^1.1.0",
@@ -25,10 +25,10 @@
     "@openremote/or-translate": "^1.1.0",
     "@openremote/rest": "workspace:*",
     "@polymer/polymer": "^3.3.1",
-    "@types/mapbox": "^1.6.42",
+    "@types/mapbox": "^1.6.45",
     "lit": "^2.0.2",
-    "mapbox.js": "^3.2.0",
-    "maplibre-gl": "^1.15.2"
+    "mapbox.js": "^3.3.1",
+    "maplibre-gl": "^3.6.1"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",

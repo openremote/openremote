@@ -1,14 +1,13 @@
 import manager, { DefaultColor4 } from "@openremote/core";
 import maplibregl,{
-    AnyLayer,
-    Control,
+    LayerSpecification,
     GeoJSONSource,
     GeolocateControl,
     IControl,
     LngLat,
     LngLatLike,
     Map as MapGL,
-    MapboxOptions as OptionsGL,
+    MapOptions as OptionsGL,
     MapMouseEvent,
     Marker as MarkerGL,
     NavigationControl,
@@ -58,7 +57,7 @@ export class MapWidget {
     protected _showBoundaryBox: boolean = false;
     protected _useZoomControls: boolean = true;
     protected _showGeoJson: boolean = true;
-    protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
+    protected _controls?: (IControl | [IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
 
@@ -166,13 +165,13 @@ export class MapWidget {
         return this;
     }
 
-    public setControls(controls?: (Control | IControl | [Control | IControl, ControlPosition?])[]): this {
+    public setControls(controls?: (IControl | [IControl, ControlPosition?])[]): this {
         this._controls = controls;
         if (this._mapGl) {
             if (this._controls) {
                 this._controls.forEach((control) => {
                     if (Array.isArray(control)) {
-                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        const controlAndPosition: [IControl, ControlPosition?] = control;
                         this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
                     } else {
                         this._mapGl!.addControl(control);
@@ -420,7 +419,7 @@ export class MapWidget {
             if (this._controls) {
                 this._controls.forEach((control) => {
                     if (Array.isArray(control)) {
-                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        const controlAndPosition: [IControl, ControlPosition?] = control;
                         this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
                     } else {
                         this._mapGl!.addControl(control);
@@ -617,7 +616,7 @@ export class MapWidget {
                             'line-color': realmColor,
                             'line-width': 2
                         },
-                    } as AnyLayer
+                    } as LayerSpecification
                     this._geoJsonLayers.set(outlineId, outlineLayer);
                     this._mapGl.addLayer(outlineLayer);
                     break;
