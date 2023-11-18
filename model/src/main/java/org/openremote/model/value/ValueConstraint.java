@@ -349,9 +349,13 @@ public abstract class ValueConstraint implements Serializable {
     @JsonTypeName("allowedValues")
     public static class AllowedValues extends ValueConstraint {
         Object[] allowedValues;
+        String[] allowedValueNames;
+
         @JsonCreator
-        protected AllowedValues() {
+        public AllowedValues(@JsonProperty("allowedValueNames") String[] allowedValueNames, @JsonProperty("allowedValues") Object[] allowedValues) {
             super(ALLOWED_VALUES_MESSAGE_TEMPLATE);
+            this.allowedValueNames = allowedValueNames;
+            this.allowedValues = allowedValues;
         }
 
         public AllowedValues(Object...allowedValues) {
@@ -368,6 +372,10 @@ public abstract class ValueConstraint implements Serializable {
             return Map.of("values", Arrays.toString(allowedValues));
         }
 
+        public String[] getAllowedValueNames() {
+            return allowedValueNames;
+        }
+
         @Override
         public boolean evaluate(Object value, Instant now) {
             if (value == null) {
@@ -381,7 +389,8 @@ public abstract class ValueConstraint implements Serializable {
             Object compareValue = null;
 
             if (Enum.class.isAssignableFrom(clazz)) {
-                compareValue = ((Enum<?>) value).name();
+                // We can skip this check as the value is already a concrete type so must be valid - allowed values is for informational purposes
+                return true;
             } else if (ValueUtil.isString(clazz)) {
                 compareValue = ((CharSequence)value).toString();
             } else if (ValueUtil.isNumber(clazz)) {
