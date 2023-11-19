@@ -26,9 +26,9 @@ export class OrMapLegend extends LitElement {
                 <div id="attribute-list">
                     <ul>
                         <li>Test</li>
-                        ${this.assetTypes.map((assetType) => {
+                        ${this.assetTypes ? this.assetTypes.map((assetType) => {
                             return html`<li>${assetType}</li>`;
-                        })}
+                        }) : ''}
                     </ul>
                 </div>
             </div>
