@@ -1,7 +1,5 @@
-import {css, LitElement, PropertyValues, TemplateResult } from "lit";
+import {LitElement, PropertyValues, TemplateResult } from "lit";
 import { property } from "lit/decorators.js";
-import {AttributeRef, DashboardWidget} from "@openremote/model";
-import {SettingsPanel} from "./settings-panel";
 import {WidgetConfig} from "./widget-config";
 import {style} from "../style";
 
@@ -19,17 +17,13 @@ export class WidgetSettingsChangedEvent extends CustomEvent<WidgetConfig> {
 
 }
 
-const styling = css`
-
-`
-
 export abstract class WidgetSettings extends LitElement {
 
     @property()
     protected readonly widgetConfig: WidgetConfig;
 
     static get styles() {
-        return [styling, style];
+        return [style];
     }
 
     protected abstract render(): TemplateResult

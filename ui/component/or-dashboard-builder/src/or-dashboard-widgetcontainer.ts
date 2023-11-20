@@ -1,5 +1,5 @@
 import {i18next} from "@openremote/or-translate";
-import {css, html, LitElement, PropertyValues} from "lit";
+import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
 import {throttle} from "lodash";
@@ -8,10 +8,6 @@ import {DashboardWidget} from "@openremote/model";
 import {OrWidget, WidgetManifest} from "./util/or-widget";
 import {WidgetService} from "./service/widget-service";
 import {WidgetConfig} from "./util/widget-config";
-
-//language=css
-const styling = css`
-`
 
 /* ------------------------------------ */
 
@@ -42,7 +38,7 @@ export class OrDashboardWidgetContainer extends LitElement {
 
 
     static get styles() {
-        return [styling, style];
+        return [style];
     }
 
     disconnectedCallback() {

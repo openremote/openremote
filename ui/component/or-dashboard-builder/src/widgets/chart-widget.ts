@@ -1,8 +1,8 @@
-import {AssetDatapointLTTBQuery, AssetDatapointQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
+import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
 import {i18next} from "@openremote/or-translate";
-import {OrChart, TimePresetCallback} from "@openremote/or-chart";
+import {TimePresetCallback} from "@openremote/or-chart";
 import moment from "moment";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
