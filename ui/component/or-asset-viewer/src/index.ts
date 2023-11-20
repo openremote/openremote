@@ -988,10 +988,8 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
                 throw new Error("Request to update existing asset but asset ID is not set");
             }
             const response = await manager.rest.api.AssetResource.update(asset.id!, asset);
-            success = response.status === 204;
-            if (success) {
-                id = asset.id!;
-            }
+            success = response.status === 200;
+            id = asset.id!;
         } else {
             const response = await manager.rest.api.AssetResource.create(asset);
             success = response.status === 200;
@@ -1133,6 +1131,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @query("#view-container")
     protected containerElem!: HTMLDivElement;
 
+    protected _saveResult?: SaveResult;
 
     constructor() {
         super();
@@ -1487,7 +1486,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.saveBtnElem.disabled = true;
         this.wrapperElem.classList.add("saving");
 
-        const result = await saveAsset(asset);
+        this._saveResult = await saveAsset(asset);
 
         this.wrapperElem.classList.remove("saving");
         this.saveBtnElem.disabled = false;
@@ -1497,13 +1496,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             return;
         }
 
-        if (result.success) {
+        if (this._saveResult.success) {
             this._assetInfo.modified = false;
             this.asset = undefined;
-            this.ids = [result.assetId];
+            this.ids = [this._saveResult.assetId];
         }
 
-        this.dispatchEvent(new OrAssetViewerSaveEvent(result));
+        this.dispatchEvent(new OrAssetViewerSaveEvent(this._saveResult));
     }
 
     protected _onAssetModified(validationResults: ValidatorResult[]) {
@@ -1540,8 +1539,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             if (this.editMode) {
                 // Asset hasn't been modified yet so just re-render with new version of asset
-                if (!this._assetInfo.modified) {
+                if (!this._assetInfo.modified || (this._saveResult?.assetId === assetId)) {
                     this._assetInfo = undefined;
+                    this._saveResult = undefined;
                     this.loadAssetInfo(asset)
                         .then(assetInfo => this._assetInfo = assetInfo)
                         .catch(reason => {
