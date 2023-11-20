@@ -316,13 +316,15 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 if(offlinePage && !showOfflineFallback) {
                     console.log("Removing offline page fallback!");
                     this._mainElem.removeChild(offlinePage);
-                    const elem = this._mainElem.firstElementChild as HTMLElement;
 
-                    // If the current page is "loaded during offline", the content is either empty or invalid; so we recreate it.
-                    if(pageProvider && elem?.getAttribute('loadedDuringOffline') === 'true') {
-                        this._mainElem.replaceChild(pageProvider.pageCreator(), elem); // recreate page
-                    } else {
+                    // If custom onRefresh() is set by the page, run that function.
+                    // Otherwise, just force recreate the page.
+                    const elem = this._mainElem.firstElementChild as Page<any>;
+                    if(elem?.onRefresh) {
                         elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
+                        elem.onRefresh();
+                    } else if(pageProvider) {
+                        this._mainElem.replaceChild(pageProvider.pageCreator(), elem); // recreate page
                     }
                 }
 

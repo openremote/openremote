@@ -46,6 +46,10 @@ export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(L
 
     protected _storeUnsubscribe!: Unsubscribe;
 
+    // onRefresh() gets called by or-app to refresh the content of the page.
+    // If undefined (default), it will fully rerender the Web Component.
+    onRefresh?: () => void;
+
     constructor(store: Store<S, AnyAction>) {
         super();
         this._store = store;
