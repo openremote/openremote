@@ -593,7 +593,7 @@ export class Manager implements EventProviderFactory {
     // It automatically clears the interval when the reconnect is successful.
     protected _runReconnectTimer(timeout = 10000) {
         if(!this._reconnectInterval) {
-            this._reconnectInterval = window.setInterval(() => {
+            const reconnectFunc = () => {
                 console.log("Attempting to reconnect...");
                 this._attemptReconnect().then((disconnected) => {
                     if(!disconnected) {
@@ -601,7 +601,9 @@ export class Manager implements EventProviderFactory {
                         delete this._reconnectInterval;
                     }
                 });
-            }, timeout);
+            };
+            reconnectFunc();
+            this._reconnectInterval = window.setInterval(reconnectFunc, timeout);
         }
     }
 
