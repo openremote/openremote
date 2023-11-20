@@ -236,7 +236,7 @@ export class PageView extends Page<AppStateKeyed> {
                 ${getDashboardHeaderTemplate(!this.viewDashboardOnly, selected, () => this.dashboardMenu?.toggleDrawer(), () => this.rerenderPending = true)}
                 <div style="flex: 1;">
                     ${guard([this._selectedId, this._loadedDashboards, this.rerenderPending], () => html`
-                        ${when(this._selectedId && selected != undefined, () => html`
+                        ${when(this._selectedId && selected !== undefined, () => html`
                             <or-dashboard-preview style="background: transparent;" .rerenderPending="${this.rerenderPending}" 
                                                   .realm="${manager.displayRealm}" .template="${selected?.template}" .editMode="${false}" 
                                                   .fullscreen="${true}" .readonly="${true}"
