@@ -18,7 +18,10 @@ import {
     WellknownValueTypes,
     AssetModelUtil,
     ClientRole,
-    AnomalyDetectionConfigObject, AnomalyDetectionConfiguration
+    AnomalyDetectionConfigObject,
+    AnomalyDetectionConfiguration,
+    AnomalyDetectionConfigurationUnion,
+    AnomalyDetectionConfigurationGlobal
 } from "@openremote/model";
 import manager, {Console, subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -42,6 +45,7 @@ import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
 import {agentIdRendererRegistryEntry, loadAgents} from "./agent-link-json-forms-renderer";
 import "./or-anomaly-config-chart"
+import "./or-anomaly-config-input"
 import {showDialog,OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog"
 import {OrChart} from "@openremote/or-chart";
 
@@ -270,353 +274,139 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                 return jsonForms.value.checkValidity();
             }
         };
-    }else if (valueDescriptor.name === WellknownValueTypes.ANOMALYDETECTIONCONFIGURATION){
+    }else if (valueDescriptor.name === WellknownValueTypes.ANOMALYDETECTIONCONFIGURATION) {
         const uiSchema: any = {
             type: "Control",
-            scope: "#/properties/methods"
+            scope: "#"
         };
         let schema: any;
         const jsonForms: Ref<OrJSONForms> = createRef();
         let config: AnomalyDetectionConfigObject | undefined;
+        let index: number = 0;
 
         schema = JSON.parse("{\n" +
             "  \"type\": \"object\",\n" +
             "  \"title\": \"Anomaly Detection Methods\",\n" +
+            "  \"required\": [\n" +
+            "    \"type\",\n" +
+            "    \"deviation\",\n" +
+            "    \"minimumDatapoints\",\n" +
+            "    \"timespan\",\n" +
+            "    \"onOff\"\n" +
+            "  ],\n" +
             "  \"properties\": {\n" +
-            "    \"methods\": {\n" +
-            "      \"type\": \"array\",\n" +
-            "      \"items\": {\n" +
-            "        \"type\": \"object\",\n" +
-            "        \"title\": \"Detection Method\",\n" +
-            "        \"required\": [\n" +
-            "          \"type\",\n" +
-            "          \"deviation\",\n" +
-            "          \"minimumDatapoints\",\n" +
-            "          \"timespan\",\n" +
-            "          \"onOff\"\n" +
-            "        ],\n" +
-            "        \"properties\": {\n" +
-            "          \"onOff\": {\n" +
-            "            \"type\": \"boolean\"\n" +
-            "          },\n" +
-            "          \"type\": {\n" +
-            "            \"type\": \"string\",\n" +
-            "            \"enum\": [\n" +
-            "              \"global\",\n" +
-            "              \"change\",\n" +
-            "              \"timespan\"\n" +
-            "            ]\n" +
-            "          },\n" +
-            "          \"deviation\": {\n" +
-            "            \"title\": \"Deviation (0-200)\",\n" +
-            "            \"type\": \"integer\"\n" +
-            "          },\n" +
-            "          \"minimumDatapoints\": {\n" +
-            "            \"type\": \"integer\"\n" +
-            "          },\n" +
-            "          \"timespan\": {\n" +
-            "            \"title\": \"Minimum Timespan\",\n" +
-            "            \"type\": \"string\"\n" +
-            "          }\n" +
-            "        }\n" +
-            "      }\n" +
+            "    \"onOff\": {\n" +
+            "      \"type\": \"boolean\"\n" +
+            "    },\n" +
+            "    \"type\": {\n" +
+            "      \"type\": \"string\",\n" +
+            "      \"enum\": [\n" +
+            "        \"global\",\n" +
+            "        \"change\",\n" +
+            "        \"timespan\"\n" +
+            "      ]\n" +
+            "    },\n" +
+            "    \"deviation\": {\n" +
+            "      \"title\": \"Deviation (0-200)\",\n" +
+            "      \"type\": \"integer\"\n" +
+            "    },\n" +
+            "    \"minimumDatapoints\": {\n" +
+            "      \"type\": \"integer\"\n" +
+            "    },\n" +
+            "    \"timespan\": {\n" +
+            "      \"title\": \"Minimum Timespan (in hours)\",\n" +
+            "      \"type\": \"string\"\n" +
             "    }\n" +
             "  }\n" +
             "}");
 
-        const onChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
+        const onChanged = (dataAndErrors: { errors: ErrorObject[] | undefined, data: any }) => {
             let valid = true
-            const newConfig: AnomalyDetectionConfigObject = dataAndErrors.data
-            if(newConfig){
-                if(newConfig.methods){
-                    if(newConfig.methods.length > 0){
-                        newConfig.methods.forEach((con) =>{
-                                if(!con.timespan || !con.type || !con.minimumDatapoints || !con.deviation || con.onOff == undefined) valid = false;
-                            }
-                        )
-                        if (!Util.objectsEqual(newConfig, config) && valid) {
-                            config = newConfig;
-                            if(jsonForms.value){
-                                jsonForms.value.data = config
-                            }
-                            valueChangeNotifier({
-                                value: config
-                            });
-
-                        }
+            const newConfig: AnomalyDetectionConfigurationUnion = dataAndErrors.data
+            if (newConfig) {
+                if (!newConfig.timespan || !newConfig.type || !newConfig.minimumDatapoints || !newConfig.deviation || newConfig.onOff == undefined) valid = false;
+            }
+            if(!config || config.methods){
+                config = {methods:[newConfig]}
+            }
+            if(config.methods && config.methods[index]){
+                if (!Util.objectsEqual(newConfig, config) && valid) {
+                    config.methods[index] = newConfig
+                    if (jsonForms.value) {
+                        jsonForms.value.data = config.methods![index]
                     }
+                    valueChangeNotifier({
+                        value: config
+                    });
                 }
             }
-        }
-        const useConfig = () =>{
-            //add config to config item
-        }
-
-        const test = (config: any) => {
-
-            let newconfig : AnomalyDetectionConfigObject = config;
-            let index = 0;
-            const dialogActions: DialogAction[] = [
-                {
-                    actionName: "useConfig",
-                    content: i18next.t("ok"),
-                    action: useConfig
-                },
-                {
-                    default: true,
-                    actionName: "cancel",
-                    content: i18next.t("cancel")
-                }
-            ];
-            const update = (i : number) =>{
-                index = i
-                console.log(newconfig.methods![0])
-
-                if(newconfig.methods){
-                    dialog.setContent(html`
-                    <div>
-                        <div style= "display:flex; width: 100%; height: 50%">
-                            <or-anomaly-config-chart style="display: flex" .attributeRef="${attributeRef}" .panelName="${i}" .timePresetKey="${i}" .anomalyConfig="${newconfig.methods[i]}"></or-anomaly-config-chart>
-                        </div>
-                        <div style="display: flex; padding-left: 16pt">
-                        ${newconfig.methods?.map((m) => {
-                            const i = newconfig.methods?.indexOf(newconfig.methods?.find(x => x === m)!)!;
-                            return html`
-                                <div .style="z-index: 10; ${i === index ? "border-style:outset;border-bottom-style: solid;border-bottom-color: white;": ""}">
-                                    <or-mwc-input type="button" .label="${m.type}" @or-mwc-input-changed="${() => update(i)}" ></or-mwc-input>
-                                </div>
-                            `
-                    })}
-                        </div styl>
-                            <div style="padding-left: 16pt">
-                                ${newconfig.methods?.map((m) => {
-                                    const i = newconfig.methods?.indexOf(newconfig.methods?.find(x => x === m)!)!;
-                                    if(newconfig.methods){
-                                        return html`
-                                        <div class="columnDiv" .style="visibility: ${i === index ? "block": "hidden"}; position: absolute; width: 95%; z-index:1; margin-top:-2pt; padding-left:2pt; border-style: outset;">
-                                            <or-mwc-input type="number" label="deviation" .value=${newconfig.methods[i].deviation} style="padding: 10px 10px 16px 0;"></or-mwc-input>
-                                            <or-mwc-input type="number" label="minimumDatapoints" .value="${newconfig.methods[i].minimumDatapoints}" style="padding: 10px 10px 16px 0;"></or-mwc-input>
-                                            <or-mwc-input type="text" label="timespan" .value="${newconfig.methods[i].timespan}" style="padding: 10px 10px 16px 0;"></or-mwc-input>
-                                            <or-mwc-input type="button" label="Test"  @or-mwc-input-changed="${() => update(i)}" style="padding:10px 10px 16px 0;"></or-mwc-input>
-                                        </div>
-                                        `
-                                    }
-                                })}
-                            </div>
-                    </div>
-                `)
-                }else{
-                    dialog.setContent(html`
-                    <div>
-                        <h1>No detection methods found</h1>
-                    </div>
-                    `)
-                }
+        };
+        const addMethod =() => {
+            if(config){
+                const obj = config;
+                const i = config.methods ? config.methods.length: 0
+                let con : AnomalyDetectionConfigurationGlobal;
+                con = {type:"global", onOff:false, deviation:20, minimumDatapoints:2, timespan:"PT20M"  }
+                config.methods?.push(con);
+                index=i;
             }
-
-            const dialog = showDialog(new OrMwcDialog()
-                .setContent(html`
-                    <!-- The Modal -->
-                    <div>
-                    </div>
-            `)
-                .setStyles(html`
-                <style>
-                    .mdc-dialog__surface {
-                        overflow-x: visible !important;
-                        overflow-y: visible !important;
-                        width: 200%;
-                        height: 70%;
-                    }
-                    #dialog-content {
-                        padding: 0;
-                        overflow: visible;
-                    }
-                    .columnDiv{
-                        display: flex;
-                        flex-direction: column;
-                    }
-                    
-                </style>
-            `)
-                .setActions(dialogActions)
-                .setHeading(i18next.t("test configuration"))
-                .setDismissAction(null));
-
-            update(index)
-
         }
+
+
         const doLoad = async (con: AnomalyDetectionConfigObject) => {
-            if(jsonForms.value){
-                jsonForms.value.data = con;
+            if (jsonForms.value) {
+                jsonForms.value.data = con.methods![0];
             }
         }
         const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
 
             window.setTimeout(() => doLoad(value as AnomalyDetectionConfigObject), 0);
+            config = value as AnomalyDetectionConfigObject
+            if(config && config.methods && config.methods[index]){
 
-            let panelName = "anomalyChart"
-
+            }else{
+                config = {methods:[{type:"global"}]}
+            }
             return html`
                 <style>
-                    .test{
+                    .test {
                         display: flex;
                         flex-direction: column;
                         width: 100%;
                     }
                 </style>
                 <div class="test">
-                    <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
-                                   .disabled="${false}" .readonly="${false}" .label="Config"
-                                   .schema="${schema}" label="Anomaly Detection" .uischema="${uiSchema}" .onChange="${onChanged}"></or-json-forms>
-                    <or-mwc-input .label="${i18next.t("Test detection methods")}" icon="" type="button" @or-mwc-input-changed="${() => test(value)}">test</or-mwc-input>
+                    <or-collapsible-panel style="width: 100%" expanded="${true}">
+                        <span slot="header">
+                            Anomaly Detection Custom
+                        </span>
+                        <div class="test" slot="content">
+                            <div style="display: flex; padding: 0 16pt;">
+                                ${config!.methods?.map((m) => {
+                                    const i = config!.methods?.indexOf(config!.methods?.find(x => x === m)!)!;
+                                    return html`
+                                <div .style="z-index: 10; ${i === index ? "border-style:outset;border-bottom-style: solid;border-bottom-color: white;": ""}">
+                                    <or-mwc-input type="button" .label="${m.type}" @or-mwc-input-changed="${() =>{ index = i;}}" ></or-mwc-input>
+                                </div>
+                            `
+                                })}
+                                <or-mwc-input type="button" icon="plus" @or-mwc-input-changed="${() =>{addMethod()}}" ></or-mwc-input>
+                            </div >
+                            <or-json-forms style="padding: 0 16pt;"  .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
+                                .disabled="${false}" .readonly="${false}" .label="Config"
+                                .schema="${schema}" label="Anomaly Detection Json forms" .uischema="${uiSchema}"
+                                .onChange="${onChanged}" ></or-json-forms>
+                            <or-anomaly-config-chart style="display: flex; padding: 0 16pt; width: auto"  .panelName="${index}" .anomalyConfig="${(value as AnomalyDetectionConfigObject) ? (value as AnomalyDetectionConfigObject).methods![0] : undefined}" .attributeRef="${attributeRef}" >
+                            </or-anomaly-config-chart>
+                        </div>
+                    </or-collapsible-panel>
                 </div>
-
                 
-        `;
+
+
+            `;
         };
 
-        return {
-            templateFunction: templateFunction,
-            supportsHelperText: false,
-            supportsLabel: false,
-            supportsSendButton: false,
-            validator: () => {
-                if (!jsonForms.value) {
-                    return false;
-                }
-                return jsonForms.value.checkValidity();
-            }
-        };
-    }else if(valueDescriptor.name === WellknownValueTypes.ATTRIBUTELINK){
-        const uiSchema: any = {
-            type: "Control",
-            scope: "#/properties/methods",
-            options:{
-                elementLabelProp: "type"
-            }
-        };
-        let schema: any;
-        const jsonForms: Ref<OrJSONForms> = createRef();
-        let config: AnomalyDetectionConfiguration | undefined;
-
-        schema = JSON.parse("{\n" +
-            "  \"definitions\": {\n" +
-            "    \"change\": {\n" +
-            "      \"type\": \"object\",\n" +
-            "      \"title\": \"Change\",\n" +
-            "      \"properties\": {\n" +
-            "        \"onOff\": {\n" +
-            "          \"type\": \"boolean\"\n" +
-            "        },\n" +
-            "        \"type\":{\n" +
-            "          \"type\":\"string\",\n" +
-            "          \"enum\":[\n" +
-            "            \"\",\n" +
-            "            \"global\",\n" +
-            "            \"change\",\n" +
-            "            \"timespan\"\n" +
-            "          ]\n" +
-            "        },\n" +
-            "        \"deviation\": {\n" +
-            "          \"type\": \"integer\"\n" +
-            "        },\n" +
-            "        \"minimumDatapoints\":{\n" +
-            "          \"type\":\"integer\"\n" +
-            "        },\n" +
-            "        \"timespan\":{\n" +
-            "          \"type\":\"string\"\n" +
-            "        }\n" +
-            "      }\n" +
-            "    },\n" +
-            "    \"global\": {\n" +
-            "      \"type\": \"object\",\n" +
-            "      \"title\": \"Global\",\n" +
-            "      \"properties\": {\n" +
-            "        \"onOff\": {\n" +
-            "          \"type\": \"boolean\"\n" +
-            "        },\n" +
-            "        \"deviation\": {\n" +
-            "          \"type\": \"integer\"\n" +
-            "        },\n" +
-            "        \"minimumDatapoints\":{\n" +
-            "          \"type\":\"integer\"\n" +
-            "        },\n" +
-            "        \"timespan\":{\n" +
-            "          \"type\":\"string\"\n" +
-            "        }\n" +
-            "      },\n" +
-            "      \"required\":[\n" +
-            "        \"onOff\",\n" +
-            "        \"deviation\",\n" +
-            "        \"minimumDatapoints\",\n" +
-            "        \"timespan\"\n" +
-            "      ]\n" +
-            "    }\n" +
-            "  },\n" +
-            "  \"type\": \"object\",\n" +
-            "  \"properties\": {\n" +
-            "    \"methods\": {\n" +
-            "      \"type\": \"array\",\n" +
-            "      \"items\": {\n" +
-            "        \"oneOf\": [\n" +
-            "          {\n" +
-            "            \"$ref\": \"#/definitions/change\"\n" +
-            "          },\n" +
-            "          {\n" +
-            "            \"$ref\": \"#/definitions/global\"\n" +
-            "          }\n" +
-            "        ]\n" +
-            "      }\n" +
-            "    }\n" +
-            "  }\n" +
-            "}");
-
-        const onChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
-            let valid = true
-            const newConfig: AnomalyDetectionConfiguration = dataAndErrors.data
-            console.log(newConfig)
-            console.log(dataAndErrors.data)
-            if(newConfig){
-                if(!newConfig.timespan || !newConfig.type || !newConfig.minimumDatapoints || !newConfig.deviation || newConfig.onOff == undefined) valid = false;
-                        if (!Util.objectsEqual(newConfig, config) && valid) {
-                            config = newConfig;
-                            if(jsonForms.value){
-                                jsonForms.value.data = config
-                            }
-                            valueChangeNotifier({
-                                value: config
-                            });
-                }
-            }
-        }
-        const doLoad = async (con: AnomalyDetectionConfiguration) => {
-            if(jsonForms.value){
-                jsonForms.value.data = con;
-            }
-        }
-        const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
-
-            window.setTimeout(() => doLoad(value as AnomalyDetectionConfiguration), 0);
-
-            let panelName = "anomalyChart"
-
-
-            return html`
-                <style>
-                    .test{
-                        display: flex;
-                        flex-direction: column;
-                        width: 100%;
-                    }
-                </style>
-                <div class="test">
-                    <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
-                                   .disabled="${false}" .readonly="${false}" .label="Config"
-                                   .schema="${schema}" label="Test" .uischema="${uiSchema}" .onChange="${onChanged}"></or-json-forms>
-                </div>
-        `;
-        };
 
         return {
             templateFunction: templateFunction,
@@ -725,6 +515,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             }
         `];
     }
+
+    @property({type: Object})
+    public anomalyDetectionConfigObject? : AnomalyDetectionConfigObject
 
     @property({type: Object, reflect: false})
     public attribute?: Attribute<any>;

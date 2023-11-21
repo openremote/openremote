@@ -36,8 +36,6 @@ export class OrAnomalyConfigChart extends OrChart {
     @property({type: Object})
     public attributeRef?: AttributeRef = undefined;
     @property({type: Object})
-    public datapointQuery!: AssetDatapointQueryUnion;
-    @property({type: Object})
     public anomalyConfig?: AnomalyDetectionConfiguration = undefined;
     @property({type: Number})
     public timespan?: Number = undefined;
@@ -71,7 +69,7 @@ export class OrAnomalyConfigChart extends OrChart {
             }
             this.datapointQuery = {
                 type: "all",
-                fromTimestamp: Date.now()- 1000*60*10,
+                fromTimestamp: Date.now()- moment.duration(this.anomalyConfig.timespan).asSeconds() * 5,
                 toTimestamp: Date.now()
             }
         }
@@ -82,7 +80,7 @@ export class OrAnomalyConfigChart extends OrChart {
         }
         this._loading = true;
 
-        this.timespan = 1000 * 60 * 60 * 4;
+        this.timespan = moment.duration(this.anomalyConfig.timespan).asMilliseconds() * 5
         this._startOfPeriod = Date.now() - this.timespan.valueOf();
         this._endOfPeriod = Date.now();
 
