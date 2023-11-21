@@ -597,13 +597,22 @@ export class Manager implements EventProviderFactory {
                 console.log("Attempting to reconnect...");
                 this._attemptReconnect().then((disconnected) => {
                     if(!disconnected) {
-                        clearInterval(this._reconnectInterval);
-                        delete this._reconnectInterval;
+                        this._finishReconnectTimer(true);
                     }
                 });
             };
             reconnectFunc();
             this._reconnectInterval = window.setInterval(reconnectFunc, timeout);
+        }
+    }
+
+    protected _finishReconnectTimer(success: boolean) {
+        if(this._reconnectInterval) {
+            clearInterval(this._reconnectInterval);
+            delete this._reconnectInterval;
+            if(success) {
+                this._setDisconnected(false);
+            }
         }
     }
 
@@ -937,8 +946,7 @@ export class Manager implements EventProviderFactory {
                     keycloakPromise(true);
                 }
                 // clear reconnect timer after success
-                clearInterval(this._reconnectInterval);
-                delete this._reconnectInterval;
+                this._finishReconnectTimer(true);
             };
 
             this._keycloak!.onAuthError = () => {

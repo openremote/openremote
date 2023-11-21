@@ -15,7 +15,7 @@ import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, setOffline, updatePage, updateRealm} from "./app";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {Auth, ManagerConfig, Realm} from "@openremote/model";
+import {Auth, EventListener, ManagerConfig, Realm} from "@openremote/model";
 import {pageOfflineProvider} from "./page-offline";
 
 export const DefaultLogo = require("../images/logo.svg");
@@ -159,14 +159,20 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return this._store.getState();
     }
 
+    protected onVisibilityChange(ev: Event) {
+        console.log(`Visibility change! The manager is now ${document.visibilityState}`);
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
+        document.addEventListener("visibilitychange", this.onVisibilityChange);
         this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
+        document.removeEventListener("visibilityChange", this.onVisibilityChange);
         if(this._onEventBind) {
             manager.removeListener(this._onEventBind);
         }
