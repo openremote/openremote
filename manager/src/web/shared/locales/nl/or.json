@@ -324,7 +324,7 @@
   "host": "Hostname",
   "errorOccurred": "Er is een fout opgetreden",
   "sendFailed": "Verzenden mislukt",
-  "youAreOffline": "Geen internet",
+  "youAreOffline": "Verbinding verloren met de server",
   "checkConnection": "Controleer je internetverbinding",
   "retryingConnection": "Opnieuw proberen na {{seconds}} seconden",
   "reconnecting": "Verbinden",

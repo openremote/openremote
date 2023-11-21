@@ -60,10 +60,14 @@ export function pageOfflineProvider(store: Store<AppStateKeyed>): PageProvider<A
 @customElement("page-offline")
 export class PageOffline extends Page<AppStateKeyed> {
 
+    protected readonly DEFAULT_TIMEOUT = 6000;
+    protected readonly TIMEOUT_MULTIPLIER = 1.2;
+
     @state()
     protected _timer?: AsyncGenerator<number | undefined>;
 
     protected _onEventBind?: any;
+    protected _attemptAmount: number = 0;
 
     static get styles() {
         return [styling]
@@ -87,16 +91,19 @@ export class PageOffline extends Page<AppStateKeyed> {
 
     protected _onEvent(event: OREvent) {
         if (event === OREvent.CONNECTING) {
-            this._startTimer(10);
+            const timeoutMs = Math.round(this.DEFAULT_TIMEOUT * (this.TIMEOUT_MULTIPLIER ** this._attemptAmount));
+            this._startTimer(timeoutMs);
+            this._attemptAmount = this._attemptAmount + 1;
         }
     }
 
-    protected _startTimer(seconds: number) {
+    protected _startTimer(millis: number) {
+        const seconds = Math.round(millis / 1000);
         const timer = countDown(seconds);
         this._timer = timer;
         setTimeout(() => {
             this._stopTimer(timer); // stop after the amount of seconds is passed.
-        }, seconds * 1000)
+        }, millis);
     }
 
     // Stopping the timer/timeout if it is the current active timer

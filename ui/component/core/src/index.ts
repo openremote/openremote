@@ -595,14 +595,27 @@ export class Manager implements EventProviderFactory {
         if(!this._reconnectInterval) {
             const reconnectFunc = () => {
                 console.log("Attempting to reconnect...");
+                let continueTimer = true;
                 this._attemptReconnect().then((disconnected) => {
                     if(!disconnected) {
                         this._finishReconnectTimer(true);
+                        continueTimer = false;
+                    } else {
+                        continueTimer = true;
+                    }
+
+                }).finally(() => {
+                    if(continueTimer) {
+                        this._finishReconnectTimer(false);
+                        timeout = Math.round(timeout * 1.2); // gradually increase the timer
+                        console.log(`Trying again in ${timeout} milliseconds...`)
+                        this._reconnectInterval = window.setInterval(reconnectFunc, timeout);
                     }
                 });
             };
+            // Start reconnect timer by triggering it once
             reconnectFunc();
-            this._reconnectInterval = window.setInterval(reconnectFunc, timeout);
+            /*this._reconnectInterval = window.setInterval(reconnectFunc, timeout);*/
         }
     }
 
@@ -1009,8 +1022,8 @@ export class Manager implements EventProviderFactory {
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
         const timeoutPromise = new Promise((resolve, reject) => {
             setTimeout(() => {
-                reject(new Error("Timed out"));
-            }, 30000);
+                reject(new Error("Request to update keycloak token timed out after 15 seconds.."));
+            }, 15000);
         })
         // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
         const promise = this._keycloak!.updateToken(30);
