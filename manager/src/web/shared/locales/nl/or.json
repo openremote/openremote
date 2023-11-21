@@ -453,7 +453,9 @@
     },
     "meta": {},
     "attribute": {},
-    "value": {}
+    "value": {
+      "unknown": "Onbekend"
+    }
   },
   "metaOverrides": {
     "label": {}
@@ -606,6 +608,8 @@
     "chartConfig": "Grafiek configuratie",
     "markerCoordinates": "Marker coordinaten",
     "imageSettings": "Afbeeldingsinstellingen",
+    "dataManagement": "Weergave van data",
+    "defaultRefreshInterval": "Standaard interval van data verversen",
     "presets.wrap_to_single_column": "Widgets onder elkaar zetten",
     "presets.keep_layout": "Behoud indeling",
     "presets.block_device": "Blokkeer dit apparaat",
@@ -620,6 +624,11 @@
     "access.public": "Openbaar",
     "access.shared": "Realm gebruikers",
     "access.private": "Alleen ik",
+    "interval.off": "Uit",
+    "interval.one_min": "1 min",
+    "interval.five_min": "5 min",
+    "interval.quarter": "15 min",
+    "interval.one_hour": "1 uur",
     "saveSuccessful": "Dashboard succesvol opgeslagen!",
     "initialName": "Nieuw dashboard",
     "openInNewTab": "Openen in een nieuw tabblad",
