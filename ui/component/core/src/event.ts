@@ -1,5 +1,5 @@
 import manager from "./index";
-import {arrayRemove, Deferred} from "./util";
+import {arrayRemove, Deferred, waitUntil} from "./util";
 import {
     Asset,
     AssetEvent,
@@ -617,10 +617,13 @@ export class WebSocketEventProvider extends EventProviderImpl {
         });
     }
 
-    protected _doConnect(): Promise<boolean> {
+    protected async _doConnect(): Promise<boolean> {
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
         if (manager.authenticated) {
+            if(manager.authDisconnected) {
+                await waitUntil((_: any) => !manager.authDisconnected, 400);
+            }
             authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
         }
 

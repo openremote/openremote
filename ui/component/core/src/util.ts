@@ -1078,3 +1078,11 @@ export function blobToBase64(blob:Blob) {
 export function realmRoleFilter(role: Role) {
     return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name!) && !role.name!.startsWith("default-roles"));
 }
+
+export function waitUntil(conditionFunction: any, timeout = 400) {
+    const poll = (resolve: any) => {
+        if(conditionFunction()) resolve();
+        else setTimeout(_ => poll(resolve), timeout);
+    }
+    return new Promise(poll);
+}

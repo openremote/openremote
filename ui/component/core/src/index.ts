@@ -176,6 +176,10 @@ export class Manager implements EventProviderFactory {
         return this._authenticated;
     }
 
+    get authDisconnected(): boolean {
+        return this._authDisconnected;
+    }
+
     get ready() {
         return this._ready;
     }
@@ -276,6 +280,7 @@ export class Manager implements EventProviderFactory {
     private _config!: ManagerConfig;
     private _authenticated: boolean = false;
     private _disconnected: boolean = false;
+    private _authDisconnected: boolean = false;
     private _reconnectInterval?: number;
     private _ready: boolean = false;
     private _readyCallback?: () => PromiseLike<any>;
@@ -1020,19 +1025,22 @@ export class Manager implements EventProviderFactory {
     }
 
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
-        const timeoutPromise = new Promise((resolve, reject) => {
-            setTimeout(() => {
-                reject(new Error("Request to update keycloak token timed out after 15 seconds.."));
-            }, 15000);
-        })
-        // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
-        const promise = this._keycloak!.updateToken(30);
         try {
+            // Custom request timeout of 15 seconds
+            const timeoutPromise = new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    reject(new Error("Request to update keycloak token timed out after 15 seconds.."));
+                }, 15000);
+            })
+            // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
+            const promise = this._keycloak!.updateToken(30);
+
             // If refreshed from server, it means the refresh token was still good for another access token
             const tokenRefreshed = await Promise.race([promise, timeoutPromise]) as boolean;
             console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
             return Promise.resolve(tokenRefreshed);
         } catch (e) {
+            console.debug("Failed to update the access token.");
             console.error(e);
             return Promise.reject(e);
         }
@@ -1077,6 +1085,9 @@ export class Manager implements EventProviderFactory {
         if(this._disconnected !== disconnected) {
             const webSocketOnline = this._config.eventProviderType === EventProviderType.WEBSOCKET && this._events?.status === EventProviderStatus.CONNECTED;
             const tokenValid = (this._keycloak ? !this._keycloak.isTokenExpired() : !!this._basicIdentity?.token);
+
+            // If token became invalid, we assume authentication is OFFLINE
+            this._authDisconnected = !tokenValid;
 
             // Always go OFFLINE if given, but only go back ONLINE when
             // websocket is also online, and token is valid.
