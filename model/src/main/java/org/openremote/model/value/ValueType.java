@@ -20,6 +20,8 @@
 package org.openremote.model.value;
 
 import org.openremote.model.Constants;
+import org.openremote.model.SensorThings.Thing;
+import org.openremote.model.SensorThings.UnitOfMeasurement;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -206,6 +208,12 @@ public final class ValueType {
     public static final ValueDescriptor<ForecastConfiguration> FORECAST_CONFIGURATION = new ValueDescriptor<>("forecastConfiguration", ForecastConfiguration.class).forMetaUseOnly();
 
     public static final ValueDescriptor<ValueDescriptor> VALUE_DESCRIPTOR_VALUE_DESCRIPTOR = new ValueDescriptor<>("valueDescriptor", ValueDescriptor.class).forMetaUseOnly();
+
+    public static final ValueDescriptor<Thing> SensorThing = new ValueDescriptor<>("SensorThing", Thing.class);
+    public static final ValueDescriptor<Thing> SMART_CITY_THING = new ValueDescriptor<>("SmartCityThing", Thing.class);
+    public static final ValueDescriptor<org.openremote.model.SensorThings.UnitOfMeasurement> UnitOfMeasurement = new ValueDescriptor<>("UnitOfMeasurement", UnitOfMeasurement.class);
+
+
 
     protected ValueType() {
     }
