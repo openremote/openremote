@@ -1079,10 +1079,12 @@ export function realmRoleFilter(role: Role) {
     return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name!) && !role.name!.startsWith("default-roles"));
 }
 
-export function waitUntil(conditionFunction: any, timeout = 400) {
-    const poll = (resolve: any) => {
+export function waitUntil(conditionFunction: any, interval = 400, maxTimeout = 30000) {
+    const expiryTime = moment().add(maxTimeout, "milliseconds").toDate();
+    const poll = (resolve: any, reject: any) => {
         if(conditionFunction()) resolve();
-        else setTimeout(_ => poll(resolve), timeout);
+        else if(new Date() < expiryTime) reject();
+        else setTimeout(_ => poll(resolve, reject), interval);
     }
     return new Promise(poll);
 }
