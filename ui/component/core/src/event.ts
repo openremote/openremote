@@ -618,11 +618,19 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected async _doConnect(): Promise<boolean> {
+        console.debug("[WebSocketEventProvider] Connecting...");
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
         if (manager.authenticated) {
             if(manager.authDisconnected) {
+                console.debug("[WebSocketEventProvider] Got disconnected from authentication service, waiting before it is back online...")
                 await waitUntil((_: any) => !manager.authDisconnected, 400);
+                console.debug("[WebSocketEventProvider] Authentication service available again, continuing with connecting to WebSocket.")
+            }
+            if(manager.isTokenInvalid()) {
+                console.debug("[WebSocketEventProvider] Token is currently invalid, waiting before it is valid again...");
+                await waitUntil((_: any) => !manager.isTokenInvalid, 400);
+                console.debug("[WebSocketEventProvider] Token is valid now, continuing with connecting to WebSocket.");
             }
             authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
         }

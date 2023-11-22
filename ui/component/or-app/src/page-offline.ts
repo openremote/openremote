@@ -62,6 +62,7 @@ export class PageOffline extends Page<AppStateKeyed> {
 
     protected readonly DEFAULT_TIMEOUT = 6000;
     protected readonly TIMEOUT_MULTIPLIER = 1.2;
+    protected readonly TIMEOUT_MAX = 30000;
 
     @state()
     protected _timer?: AsyncGenerator<number | undefined>;
@@ -92,7 +93,7 @@ export class PageOffline extends Page<AppStateKeyed> {
     protected _onEvent(event: OREvent) {
         if (event === OREvent.CONNECTING) {
             const timeoutMs = Math.round(this.DEFAULT_TIMEOUT * (this.TIMEOUT_MULTIPLIER ** this._attemptAmount));
-            this._startTimer(timeoutMs);
+            this._startTimer(Math.min(timeoutMs, this.TIMEOUT_MAX));
             this._attemptAmount = this._attemptAmount + 1;
         }
     }

@@ -596,7 +596,7 @@ export class Manager implements EventProviderFactory {
 
     // Timer that runs the reconnect logic every X milliseconds
     // It automatically clears the interval when the reconnect is successful.
-    protected _runReconnectTimer(timeout = 10000) {
+    protected _runReconnectTimer(timeout = 10000, timeoutMax = 30000) {
         if(!this._reconnectInterval) {
             const reconnectFunc = () => {
                 console.log("Attempting to reconnect...");
@@ -612,7 +612,7 @@ export class Manager implements EventProviderFactory {
                 }).finally(() => {
                     if(continueTimer) {
                         this._finishReconnectTimer(false);
-                        timeout = Math.round(timeout * 1.2); // gradually increase the timer
+                        timeout = Math.min(timeoutMax, Math.round(timeout * 1.2)); // gradually increase the timer
                         console.log(`Trying again in ${timeout} milliseconds...`)
                         this._reconnectInterval = window.setInterval(reconnectFunc, timeout);
                     }
@@ -903,6 +903,14 @@ export class Manager implements EventProviderFactory {
 
     public getBasicToken(): string | undefined {
         return this._basicIdentity ? this._basicIdentity.token : undefined;
+    }
+
+    public isTokenInvalid(): boolean {
+        if(this._keycloak) {
+            return this._keycloak.isTokenExpired();
+        } else {
+            return false; // TODO: Update this to check validity of JWT token manually
+        }
     }
 
     public getRealm(): string | undefined {
