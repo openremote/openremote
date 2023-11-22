@@ -19,14 +19,18 @@
  */
 package org.openremote.manager.asset;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import jakarta.persistence.EntityManager;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.MapAccess;
 import org.openremote.manager.agent.AgentService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.ClientEventService;
@@ -48,7 +52,10 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.attribute.AttributeEvent.Source.*;
@@ -119,7 +126,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     // Single threaded attribute event queue (event order has to be maintained)
     public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String OR_ATTRIBUTE_EVENT_THREADS = "OR_ATTRIBUTE_EVENT_THREADS";
-    public static final int ATTRIBUTE_EVENT_THREADS_DEFAULT = 3;
+    public static final int OR_ATTRIBUTE_EVENT_THREADS_DEFAULT = 3;
     private static final System.Logger LOG = System.getLogger(AssetProcessingService.class.getName());
     final protected List<AssetUpdateProcessor> processors = new ArrayList<>();
     protected TimerService timerService;
@@ -135,6 +142,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected ClientEventService clientEventService;
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
+    protected int eventProcessingThreadCount;
 
     protected static Processor handleAssetProcessingException() {
         return exchange -> {
@@ -187,6 +195,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
+        MeterRegistry meterRegistry = container.getMeterRegistry();
 
         clientEventService.addSubscriptionAuthorizer((requestedRealm, auth, subscription) -> {
             if (!subscription.isEventType(AttributeEvent.class)) {
@@ -269,9 +278,20 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         // Configure dynamic routes for event processing
+        eventProcessingThreadCount = MapAccess.getInteger(container.getConfig(), OR_ATTRIBUTE_EVENT_THREADS, OR_ATTRIBUTE_EVENT_THREADS_DEFAULT);
+        if (eventProcessingThreadCount < 1) {
+            LOG.log(System.Logger.Level.WARNING, OR_ATTRIBUTE_EVENT_THREADS + " value " + eventProcessingThreadCount + " is less than 1; forcing to 1");
+            eventProcessingThreadCount = 1;
+        } else if (eventProcessingThreadCount > 20) {
+            LOG.log(System.Logger.Level.WARNING, OR_ATTRIBUTE_EVENT_THREADS + " value " + eventProcessingThreadCount + " is greater than max value of 20; forcing to 20");
+            eventProcessingThreadCount = 20;
+        }
     }
 
     protected String getEventProcessingRoutePrefix(String assetId) {
+        int charCode = Character.codePointAt(assetId, 0);
+        int prefix = (charCode % eventProcessingThreadCount) + 1;
+        return Integer.toString(prefix);
     }
 
     @Override
@@ -403,6 +423,16 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .endDoTry()
             .doCatch(AssetProcessingException.class)
             .process(handleAssetProcessingException());
+
+        // Create the event processor routes
+        IntStream.rangeClosed(1, eventProcessingThreadCount).forEach(processorCount -> {
+            String camelRouteURI = "seda://AttributeEventProcessor" + processorCount;
+
+            from(camelRouteURI)
+                .process(exchange -> {
+                    pro
+                });
+        });
     }
 
     /**
