@@ -680,7 +680,7 @@ public class GatewayConnector {
         asset.setParentId(asset.getParentId() != null ? mapAssetId(gatewayId, asset.getParentId(), false) : gatewayId);
         asset.setRealm(realm);
         LOG.fine("Creating/updating gateway asset: Gateway ID=" + gatewayId + ", Asset ID=" + assetId + ", Asset ID Mapped=" + asset.getId());
-        return assetStorageService.merge(asset, true, true, null);
+        return assetStorageService.merge(asset, true, true, null, false);
     }
 
     protected boolean deleteAssetsLocally(List<String> assetIds) {

@@ -121,7 +121,7 @@ export class AssetModelUtil {
 
         if (!valueDescriptor && valueHolder) {
             // Try and determine the value descriptor based on the value type
-            valueDescriptor = this.resolveValueDescriptorFromValue(valueHolder.value);
+            valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.JSON);
         }
 
         return valueDescriptor;
@@ -166,11 +166,6 @@ export class AssetModelUtil {
         if (value instanceof Date) {
             return WellknownValueTypes.DATEANDTIME;
         }
-    }
-
-    public static resolveValueDescriptorFromValue(value: any): ValueDescriptor | undefined {
-        const valueType = AssetModelUtil.resolveValueTypeFromValue(value);
-        return AssetModelUtil.getValueDescriptor(valueType);
     }
 
     public static getAttributeAndValueDescriptors(assetType: string | undefined, attributeNameOrDescriptor: string | AttributeDescriptor | undefined, attribute?: Attribute<any>): [AttributeDescriptor | undefined, ValueDescriptor | undefined] {

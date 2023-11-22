@@ -67,7 +67,7 @@ export class OrDashboardBrowser extends LitElement {
         const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
         const coords: Array<[number, number]> = new Array<[number, number]>([0,0],[2,0], [0,2], [2,2], [0,4], [2,4], [0,6], [2,6], [0,8], [2,8]) // TODO: make this unlimited possibilities with a formula
         const sidebarItems: any[] = Array.from(widgetTypes).map((typeArr, index) => {
-            return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].DISPLAY_MDI_ICON}"></or-icon><span class="itemText">${typeArr[1].DISPLAY_NAME}</span>`}
+            return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].displayIcon}"></or-icon><span class="itemText">${typeArr[1].displayName}</span>`}
         });
 
         // Setting Sidebar height depending on sidebarItems
@@ -104,7 +104,9 @@ export class OrDashboardBrowser extends LitElement {
 
                 // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
             }, sidebarElement);
+            
             this.sidebarGrid.load(sidebarItems);
+
             // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
             // This is done by just loading the initial/original widget back in the sidebar.
             // @ts-ignore typechecking since we assume they are not undefined

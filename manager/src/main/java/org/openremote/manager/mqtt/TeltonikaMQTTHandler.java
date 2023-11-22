@@ -299,6 +299,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             AttributeMap attributes;
             try{
                 attributes = getAttributesFromPayload(payloadContent);
+
+
             }catch (JsonProcessingException e) {
                 getLogger().severe("Failed to getAttributesFromPayload");
                 getLogger().severe(e.toString());
@@ -313,7 +315,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
             if (asset == null) {
                 try{
-                    createNewAsset(deviceUuid, deviceImei, realm, attributes);
+                    createNewAsset(deviceUuid, deviceImei, realm, attributes, topic, connection);
                 } catch (Exception e){
                     getLogger().severe("Failed to CreateNewAsset(deviceUuid, deviceImei, realm, attributes);");
                     getLogger().severe(e.toString());
@@ -346,6 +348,9 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                                 new MetaItem<>(RULE_STATE, true),
                                 new MetaItem<>(READ_ONLY, true)
                         );
+                        attributes.get(CarAsset.LAST_CONTACT).ifPresent(date -> {
+                            session.setTimestamp(date.getValue().get().getTime());
+                        });
                         attributes.add(session);
 
                     }
@@ -383,23 +388,33 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * @param realm The realm to create the Asset in.
      * @param attributes The attributes to insert in the Asset.
      */
-    private void createNewAsset(String newDeviceId, String newDeviceImei, String realm, AttributeMap attributes) {
+    private void createNewAsset(String newDeviceId, String newDeviceImei, String realm, AttributeMap attributes, Topic topic, RemotingConnection connection) {
 
         CarAsset testAsset = new CarAsset("Teltonika Asset "+newDeviceImei)
                 .setRealm(realm)
                 .setId(newDeviceId);
 
-        //TODO: Maybe move these to getAttributes?
-        attributes.add(new Attribute<>("IMEI", ValueType.TEXT, newDeviceImei));
-        attributes.add(new Attribute<>("lastContact", ValueType.DATE_AND_TIME,
-                new Date(timerService.getCurrentTimeMillis())));
+        testAsset.getAttributes().add(new Attribute<>(CarAsset.IMEI, newDeviceImei));
 
-        testAsset.addOrReplaceAttributes(attributes.stream().toArray(Attribute[]::new));
-        Asset<?> mergedAsset = assetStorageService.merge(testAsset);
 
-        if(mergedAsset == null) {
-            getLogger().info("Failed to create Asset: " + testAsset);
-        }
+        //Now that the asset is created and IMEI is set, pull the packet timestamp, and then
+        //set each of the asset's attributes to have that timestamp.
+
+        attributes.get(CarAsset.LAST_CONTACT).ifPresent(dateAttr -> {
+            dateAttr.getValue().ifPresent(dateVal -> {
+                testAsset.setCreatedOn(dateVal);
+                testAsset.getAttributes().forEach(attribute -> {
+                    attribute.setTimestamp(dateVal.getTime());
+                });
+                attributes.forEach(attribute -> {
+                    attribute.setTimestamp(dateVal.getTime());
+                });
+            });
+        });
+
+
+
+        updateAsset(testAsset, attributes, topic, connection);
     }
 
     /**
@@ -564,8 +579,6 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
                 new Timestamp(previousValue.getTimestamp().get())
         ));
 
-        tripAttr.setTimestamp(StateChangeAssetDatapoint.getTimestamp());
-
         return Optional.of(tripAttr);
     }
 
@@ -593,6 +606,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         Long packetTimestamp = packetTime.getValue().get().getTime();
 
+        attributes.forEach(attribute -> attribute.setTimestamp(packetTimestamp));
+
         String imei = asset.getAttribute("IMEI").toString();
 
         getLogger().info("Updating CarAsset with IMEI "+imei);
@@ -603,25 +618,37 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
 
         AttributeMap nonExistingAttributes = new AttributeMap();
+        AttributeMap existingAttributes = new AttributeMap();
 
         attributes.forEach( attribute ->  {
-            //Attribute exists, needs to be updated
-            if(asset.getAttributes().containsKey(attribute.getName())){
-                AttributeEvent attributeEvent = new AttributeEvent(asset.getId(), attribute.getName(), attribute.getValue(), packetTimestamp);
-                LOG.finer("Publishing to client inbound queue: " + attributeEvent);
-                messageBrokerService.getFluentProducerTemplate()
-                        .withHeaders(headers)
-                        .withBody(attributeEvent)
-                        .to(CLIENT_INBOUND_QUEUE)
-                        .asyncSend();
-            }
-            else{
+            if (asset.getAttribute(attribute.getName()).isPresent()) {
+                existingAttributes.add(attribute);
+            } else {
                 nonExistingAttributes.add(attribute);
             }
         });
 
+        //First merge, then update existing attributes
         asset.addAttributes(nonExistingAttributes.stream().toArray(Attribute[]::new));
+        if(nonExistingAttributes.size() > 0){
+            assetStorageService.merge(asset, false, true);
+        }
 
-        assetStorageService.merge(asset);
+        existingAttributes.forEach(attribute -> attribute.getTimestamp().ifPresent(timestamp -> {
+            AttributeEvent attributeEvent = new AttributeEvent(asset.getId(), attribute.getName(), attribute.getValue().get(), timestamp);
+            LOG.info("Publishing to client inbound queue: " + attributeEvent);
+            messageBrokerService.getFluentProducerTemplate()
+                    .withHeaders(headers)
+                    .withBody(attributeEvent)
+                    .to(CLIENT_INBOUND_QUEUE)
+                    .asyncSend();
+        }));
     }
 }
+
+//Attribute exists, needs to be updated
+//            asset.getAttribute(attribute.getName()).ifPresentOrElse(attr -> {
+//                existingAttributes.add(attribute);
+//            }, () -> {
+//                nonExistingAttributes.add(attribute);
+//            });

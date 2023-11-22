@@ -1,5 +1,5 @@
-import {css, html, LitElement, unsafeCSS} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
+import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
+import {customElement, property, query, state} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
 import {styleMap} from 'lit/directives/style-map.js';
 import "./or-dashboard-tree";
@@ -7,34 +7,27 @@ import "./or-dashboard-browser";
 import "./or-dashboard-preview";
 import "./or-dashboard-widgetsettings";
 import "./or-dashboard-boardsettings";
+import "./controls/dashboard-refresh-controls";
 import {InputType, OrInputChangedEvent} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
-import {ORGridStackNode} from "./or-dashboard-preview";
-import {
-    ClientRole,
-    Dashboard,
-    DashboardAccess,
-    DashboardGridItem,
-    DashboardScalingPreset,
-    DashboardScreenPreset,
-    DashboardTemplate,
-    DashboardWidget
-} from "@openremote/model";
+import {ClientRole, Dashboard, DashboardAccess, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate, DashboardWidget} from "@openremote/model";
 import manager, {DefaultColor1, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrMwcTabItem} from "@openremote/or-mwc-components/or-mwc-tabs";
 import "@openremote/or-mwc-components/or-mwc-tabs";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {i18next} from "@openremote/or-translate";
-import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {DashboardKeyEmitter} from "./or-dashboard-keyhandler";
-import {OrWidgetEntity} from "./widgets/or-base-widget";
-import {OrChartWidget} from "./widgets/or-chart-widget";
-import { OrKpiWidget } from "./widgets/or-kpi-widget";
-import { OrGaugeWidget } from "./widgets/or-gauge-widget";
-import {OrMapWidget} from "./widgets/or-map-widget";
-import {OrImageWidget} from "./widgets/or-image-widget";
+import {OrDashboardPreview} from "./or-dashboard-preview";
+import {WidgetManifest} from "./util/or-widget";
+import {ChartWidget} from "./widgets/chart-widget";
+import {GaugeWidget} from "./widgets/gauge-widget";
+import {IntervalSelectEvent, intervalToMillis} from "./controls/dashboard-refresh-controls";
+import {ImageWidget} from "./widgets/image-widget";
+import {KpiWidget} from "./widgets/kpi-widget";
+import {MapWidget} from "./widgets/map-widget";
 
 // language=CSS
 const styling = css`
@@ -208,14 +201,17 @@ export function getActivePreset(gridWidth: number, presets: DashboardScreenPrese
     });
     return activePreset;
 }
-export const widgetTypes: Map<string, OrWidgetEntity> = new Map<string, OrWidgetEntity>();
+
+// A map containing a unique identifier as key, and a WidgetManifest (displayName, displayIcon and HTML tags) as value.
+// We will use this for or-dashboard-browser and to initialise widgets, based on the html tags.
+export const widgetTypes: Map<string, WidgetManifest> = new Map<string, WidgetManifest>();
 
 export function registerWidgetTypes() {
-    widgetTypes.set("linechart", new OrChartWidget());
-    widgetTypes.set("kpi", new OrKpiWidget());
-    widgetTypes.set("gauge", new OrGaugeWidget());
-    widgetTypes.set("map", new OrMapWidget());
-    widgetTypes.set("image", new OrImageWidget());
+    widgetTypes.set("linechart", ChartWidget.getManifest());
+    widgetTypes.set("gauge", GaugeWidget.getManifest());
+    widgetTypes.set("image", ImageWidget.getManifest());
+    widgetTypes.set("kpi", KpiWidget.getManifest());
+    widgetTypes.set("map", MapWidget.getManifest());
 }
 
 @customElement("or-dashboard-builder")
@@ -229,23 +225,23 @@ export class OrDashboardBuilder extends LitElement {
     @property()
     protected readonly config: DashboardBuilderConfig | undefined;
 
-    @property() // Originally from URL
+    @property() // (originally from URL)
     protected readonly editMode: boolean = false;
 
     @property()
     protected readonly fullscreen: boolean = true;
 
-    @property() // Originally from URL
+    @property() // ID of the selected dashboard (originally from URL)
     protected readonly selectedId: string | undefined;
 
-    @property() // Originally just manager.displayRealm
-    protected realm: string | undefined;
+    @property()
+    protected realm: string = manager.displayRealm;
 
     @property() // REQUIRED userId
-    protected userId: string | undefined;
+    protected readonly userId!: string;
 
     @property()
-    protected readonly: boolean = true;
+    protected readonly readonly: boolean = true;
 
 
     /* ------------------- */
@@ -269,6 +265,9 @@ export class OrDashboardBuilder extends LitElement {
     protected initialTemplateJSON: string | undefined;
 
     @state()
+    protected refreshInterval: DashboardRefreshInterval = DashboardRefreshInterval.OFF;
+
+    @state()
     protected isInitializing: boolean;
 
     @state()
@@ -277,9 +276,10 @@ export class OrDashboardBuilder extends LitElement {
     @state() // Whether changes have been made
     protected hasChanged: boolean;
 
-    @state()
-    protected rerenderPending: boolean;
+    @query('or-dashboard-preview')
+    protected dashboardPreview?: OrDashboardPreview;
 
+    protected refreshTimer?: NodeJS.Timer;
     private readonly keyEmitter: DashboardKeyEmitter = new DashboardKeyEmitter();
 
 
@@ -290,12 +290,11 @@ export class OrDashboardBuilder extends LitElement {
         this.isInitializing = true;
         this.isLoading = true;
         this.hasChanged = false;
-        this.rerenderPending = false;
 
         registerWidgetTypes();
 
-        this.updateComplete.then(async () => {
-            await this.updateDashboards(this.realm!);
+        this.updateComplete.then(() => {
+            this.loadAllDashboards(this.realm);
         });
     }
 
@@ -310,12 +309,78 @@ export class OrDashboardBuilder extends LitElement {
         this.keyEmitter.addListener('deselect', (_e: KeyboardEvent) => { this.deselectWidget(); });
         this.keyEmitter.addListener('save', (_e: KeyboardEvent) => { this.saveDashboard(); });
     }
+
     disconnectedCallback() {
         super.disconnectedCallback();
         this.keyEmitter.removeAllListeners();
     }
 
-    async updateDashboards(realm: string) {
+    willUpdate(changedProps: PropertyValues) {
+        super.willUpdate(changedProps);
+
+        this.isLoading = (this.dashboards == undefined);
+        this.isInitializing = (this.dashboards == undefined);
+
+        // On any update (except widget selection), check whether hasChanged should be updated.
+        if(!(changedProps.size === 1 && changedProps.has('selectedWidget'))) {
+            const dashboardEqual = Util.objectsEqual(this.selectedDashboard, this.initialDashboardJSON ? JSON.parse(this.initialDashboardJSON) : undefined);
+            const templateEqual = Util.objectsEqual(this.currentTemplate, this.initialTemplateJSON ? JSON.parse(this.initialTemplateJSON) : undefined);
+            this.hasChanged = (!dashboardEqual || !templateEqual);
+        }
+
+        // Support for realm switching
+        if(changedProps.has("realm") && changedProps.get("realm") !== undefined && this.realm) {
+            this.loadAllDashboards(this.realm);
+        }
+
+        // Any update on the dashboard
+        if(changedProps.has("selectedDashboard")) {
+            this.deselectWidget();
+            this.currentTemplate = this.selectedDashboard?.template;
+            if(!this.editMode) {
+                this.refreshInterval = this.currentTemplate?.refreshInterval || DashboardRefreshInterval.OFF;
+                changedProps.set('refreshInterval', this.refreshInterval);
+            }
+            this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedDashboard }))
+        }
+
+        // When edit/view mode gets toggled
+        if(changedProps.has("editMode")) {
+            this.deselectWidget();
+            this.refreshInterval = DashboardRefreshInterval.OFF;
+            this.showDashboardTree = true;
+            if(this.editMode) {
+                this.refreshInterval = DashboardRefreshInterval.OFF;
+            } else {
+                this.refreshInterval = this.currentTemplate?.refreshInterval || DashboardRefreshInterval.OFF;
+            }
+            changedProps.set('refreshInterval', this.refreshInterval);
+        }
+
+        // When refresh interval has changed
+        if(changedProps.has("refreshInterval") && this.refreshInterval) {
+            this.setRefreshTimer(intervalToMillis(this.refreshInterval));
+        }
+    }
+
+    protected setRefreshTimer(millis: number | undefined) {
+        this.clearRefreshTimer();
+        if(millis !== undefined) {
+            this.refreshTimer = setInterval(() => {
+                this.deselectWidget();
+                this.dashboardPreview?.refreshWidgets();
+            }, millis)
+        }
+    }
+
+    protected clearRefreshTimer() {
+        if(this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+            this.refreshTimer = undefined;
+        }
+    }
+
+    async loadAllDashboards(realm: string) {
 
         // Getting dashboards
         await manager.rest.api.DashboardResource.getAllRealmDashboards(realm).then((result) => {
@@ -326,7 +391,7 @@ export class OrDashboardBuilder extends LitElement {
         });
 
         // Setting dashboard if selectedId is given by parent component
-        if(this.selectedId != undefined) {
+        if(this.selectedId !== undefined) {
             this.selectedDashboard = this.dashboards?.find(x => { return x.id == this.selectedId; });
         }
     }
@@ -335,28 +400,7 @@ export class OrDashboardBuilder extends LitElement {
 
     // On every property update
     updated(changedProperties: Map<string, any>) {
-        this.isLoading = (this.dashboards == undefined);
-        this.isInitializing = (this.dashboards == undefined);
-        if(this.realm == undefined) { this.realm = manager.displayRealm; }
-
-        // On any update (except widget selection), check whether hasChanged should be updated.
-        if(!(changedProperties.size == 1 && changedProperties.has('selectedWidget'))) {
-            const dashboardEqual = Util.objectsEqual(this.selectedDashboard, this.initialDashboardJSON ? JSON.parse(this.initialDashboardJSON) : undefined);
-            const templateEqual = Util.objectsEqual(this.currentTemplate, this.initialTemplateJSON ? JSON.parse(this.initialTemplateJSON) : undefined);
-            this.hasChanged = (!dashboardEqual || !templateEqual);
-        }
-
-        // Support for realm switching
-        if(changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
-            this.updateDashboards(this.realm);
-        }
-
-        // Any update on the dashboard
-        if(changedProperties.has("selectedDashboard")) {
-            this.deselectWidget();
-            this.currentTemplate = this.selectedDashboard?.template;
-            this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedDashboard }))
-        }
+        super.updated(changedProperties);
 
         // Update on the Grid and its widget
         if(changedProperties.has("currentTemplate")) {
@@ -364,37 +408,17 @@ export class OrDashboardBuilder extends LitElement {
                 this.selectedDashboard.template = this.currentTemplate;
             }
         }
-        // When edit/view mode gets toggled
-        if(changedProperties.has("editMode")) {
-            this.deselectWidget();
-            this.showDashboardTree = true;
-        }
     }
 
     /* ----------------- */
 
-
-    createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
-        const randomId = (Math.random() + 1).toString(36).substring(2);
-        let displayName = widgetTypes.get(gridStackNode.widgetTypeId)?.DISPLAY_NAME;
-        if(displayName == undefined) { displayName = (i18next.t('dashboard.widget') + " #" + randomId); } // If no displayName, set random ID as name.
-        const gridItem: DashboardGridItem = generateGridItem(gridStackNode, displayName);
-
-        const widget = {
-            id: randomId,
-            displayName: displayName,
-            gridItem: gridItem,
-            widgetTypeId: gridStackNode.widgetTypeId,
-        } as DashboardWidget;
-        widget.widgetConfig = widgetTypes.get(gridStackNode.widgetTypeId)?.getDefaultConfig(widget);
-
+    protected onWidgetCreation(widget: DashboardWidget): void {
         const tempTemplate = JSON.parse(JSON.stringify(this.currentTemplate)) as DashboardTemplate;
-        if(tempTemplate.widgets == undefined) {
+        if(!tempTemplate.widgets) {
             tempTemplate.widgets = [];
         }
-        tempTemplate.widgets?.push(widget);
+        tempTemplate.widgets.push(widget);
         this.currentTemplate = tempTemplate;
-        return widget;
     }
 
     deleteWidget(widget: DashboardWidget) {
@@ -403,7 +427,7 @@ export class OrDashboardBuilder extends LitElement {
             tempTemplate.widgets = tempTemplate.widgets?.filter((x: DashboardWidget) => { return x.id != widget.id; });
             this.currentTemplate = tempTemplate;
         }
-        if(this.selectedWidgetId == widget.id) {
+        if(this.selectedWidgetId === widget.id) {
             this.deselectWidget();
         }
     }
@@ -418,6 +442,7 @@ export class OrDashboardBuilder extends LitElement {
             console.error("The selected widget does not exist!");
         }
     }
+
     deselectWidget() {
         this.selectedWidgetId = undefined;
     }
@@ -511,6 +536,7 @@ export class OrDashboardBuilder extends LitElement {
         { icon: "content-copy", text: (i18next.t("copy") + " URL"), value: "copy" },
         { icon: "open-in-new", text: i18next.t("dashboard.openInNewTab"), value: "tab" },
     ];
+
     private readonly tabItems: OrMwcTabItem[] = [
         { name: i18next.t("dashboard.widgets") }, { name: i18next.t("settings") }
     ];
@@ -551,21 +577,23 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="header-actions">
                                     <div id="header-actions-content">
-                                        <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
-                                                      @or-mwc-input-changed="${() => { this.rerenderPending = true; }}">
-                                        </or-mwc-input>
-                                        <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="responsive"
-                                                      @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
-                                        </or-mwc-input>
-                                        <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
-                                                      @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}">
-                                        </or-mwc-input>
-                                        <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
-                                                      @or-mwc-input-changed="${() => { this.saveDashboard(); }}">
-                                        </or-mwc-input>
-                                        <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}"
-                                                      @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}">
-                                        </or-mwc-input>
+                                        ${when(this.selectedDashboard, () => html`
+                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="refresh"
+                                                          @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}">
+                                            </or-mwc-input>
+                                            <or-mwc-input id="responsive-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="responsive"
+                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('fullscreenToggle', { detail: !this.fullscreen })); }}">
+                                            </or-mwc-input>
+                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${this.isLoading}" type="${InputType.BUTTON}" icon="open-in-new"
+                                                          @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}">
+                                            </or-mwc-input>
+                                            <or-mwc-input id="save-btn" ?hidden="${this._isReadonly() || !this._hasEditAccess()}" .disabled="${this.isLoading || !this.hasChanged}" type="${InputType.BUTTON}" raised label="${i18next.t('save')}"
+                                                          @or-mwc-input-changed="${() => { this.saveDashboard(); }}">
+                                            </or-mwc-input>
+                                            <or-mwc-input id="view-btn" ?hidden="${this._isReadonly() || !this._hasViewAccess()}" type="${InputType.BUTTON}" outlined icon="eye" label="${i18next.t('viewAsset')}"
+                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}">
+                                            </or-mwc-input>
+                                        `)}
                                     </div>
                                 </div>
                             </div>
@@ -580,14 +608,20 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
-                                        <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
-                                                      @or-mwc-input-changed="${() => { this.rerenderPending = true; }}"
-                                        ></or-mwc-input>
-                                        <or-mwc-input id="share-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
-                                                      @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}"
-                                        ></or-mwc-input>
-                                        <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
-                                                      @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
+                                        ${when(this.selectedDashboard, () => html`
+                                            <or-mwc-input id="refresh-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="refresh"
+                                                      @or-mwc-input-changed="${() => { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}"
+                                            ></or-mwc-input>
+                                            <dashboard-refresh-controls .interval="${this.refreshInterval}" .readonly="${false}"
+                                                                        @interval-select="${(ev: IntervalSelectEvent) => this.onIntervalSelect(ev)}"
+                                            ></dashboard-refresh-controls>
+                                            <or-mwc-input id="share-btn" class="small-btn" .disabled="${(this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="open-in-new"
+                                                          @or-mwc-input-changed="${() => { this.openDashboardInInsights(); }}"
+                                            ></or-mwc-input>
+                                            <or-mwc-input id="view-btn" class="hideMobile" ?hidden="${this.selectedDashboard == null || this._isReadonly() || !this._hasEditAccess()}" type="${InputType.BUTTON}" outlined icon="pencil" label="${i18next.t('editAsset')}"
+                                                          @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}">
+                                            </or-mwc-input>
+                                        `)}
                                     </div>
                                 </div>
                             </div>
@@ -603,14 +637,15 @@ export class OrDashboardBuilder extends LitElement {
                             <div id="builder" style="${styleMap(builderStyles)}">
                                 ${(this.selectedDashboard != null) ? html`
                                     <or-dashboard-preview class="editor" style="background: transparent;"
-                                                          .realm="${this.realm}" .template="${this.currentTemplate}" .rerenderPending="${this.rerenderPending}"
+                                                          .realm="${this.realm}" .template="${this.currentTemplate}"
                                                           .selectedWidget="${this.selectedDashboard?.template?.widgets?.find(w => w.id == this.selectedWidgetId)}" .editMode="${this.editMode}"
                                                           .fullscreen="${this.fullscreen}" .readonly="${this._isReadonly()}"
                                                           @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                           @deselected="${() => { this.deselectWidget(); }}"
-                                                          @dropped="${(event: CustomEvent) => { this.createWidget(event.detail as ORGridStackNode)}}"
-                                                          @changed="${(event: CustomEvent) => { this.currentTemplate = event.detail.template; }}"
-                                                          @rerenderfinished="${(event: CustomEvent) => { this.rerenderPending = false; }}"
+                                                          @created="${(event: CustomEvent) => { this.onWidgetCreation(event.detail); }}"
+                                                          @changed="${(event: CustomEvent) => { 
+                                                              this.currentTemplate = event.detail.template; 
+                                                          }}"
                                     ></or-dashboard-preview>
                                 ` : html`
                                     <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
@@ -643,7 +678,7 @@ export class OrDashboardBuilder extends LitElement {
                                                                                      @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
                                                                                      @update="${(event: CustomEvent) => {
                                                                                          this.currentTemplate = Object.assign({}, this.selectedDashboard?.template);
-                                                                                         if(event.detail.force) { this.rerenderPending = true; }}}"
+                                                                                         if(event.detail.force) { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}}"
                                                         ></or-dashboard-widgetsettings>
                                                     </div>
                                                 </div>
@@ -660,7 +695,7 @@ export class OrDashboardBuilder extends LitElement {
                                                                                 .dashboard="${this.selectedDashboard}" .showPerms="${this.selectedDashboard?.ownerId == this.userId}" 
                                                                                 @update="${(event: CustomEvent) => {
                                                                                     this.currentTemplate = Object.assign({}, this.selectedDashboard?.template);
-                                                                                    if(event.detail.force) { this.rerenderPending = true; }}}"
+                                                                                    if(event.detail.force) { this.deselectWidget(); this.dashboardPreview?.refreshPreview(); }}}"
                                                     ></or-dashboard-boardsettings>
                                                 </div>
                                             </div>
@@ -683,26 +718,10 @@ export class OrDashboardBuilder extends LitElement {
         `
     }
 
+    protected onIntervalSelect(ev: IntervalSelectEvent) {
+        this.refreshInterval = ev.detail;
+    }
+
     /* ======================== */
 
-}
-
-// Generating the Grid Item details like X and Y coordinates for GridStack to work.
-export function generateGridItem(gridstackNode: ORGridStackNode, _displayName: string): DashboardGridItem {
-    const randomId = (Math.random() + 1).toString(36).substring(2);
-    const widgetType = widgetTypes.get(gridstackNode.widgetTypeId)!;
-    return {
-        id: randomId,
-        x: gridstackNode.x,
-        y: gridstackNode.y,
-        w: 2,
-        h: 2,
-        minW: widgetType.MIN_COLUMN_WIDTH,
-        minH: widgetType.MIN_COLUMN_WIDTH,
-        minPixelW: widgetType.MIN_PIXEL_WIDTH,
-        minPixelH: widgetType.MIN_PIXEL_HEIGHT,
-        noResize: false,
-        noMove: false,
-        locked: false,
-    }
 }
