@@ -373,7 +373,7 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
             assert retrievedVoltage.getMeta().containsKey(MetaItemType.LABEL.getName())
             assert retrievedVoltage.getMeta().get(MetaItemType.LABEL.getName()).get().getValue().get() == voltageParam.propertyName
 
-            assert retrievedVoltage.getValueAs(ValueType.NUMBER.getType()).get() == 11922 * Double.parseDouble(voltageParam.multiplier)
+            assert retrievedVoltage.getValue(ValueType.NUMBER.getType()).get() == 11922 * Double.parseDouble(voltageParam.multiplier)
         }
 
 
@@ -469,7 +469,7 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
             asset = assetStorageService.find(asset.getId())
             Optional<Attribute<?>> attr = asset.getAttribute(getTELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME());
             assert attr.isPresent();
-            assert attr.get().getValueAs(String.class).get() == testResponseValue;
+            assert attr.get().getValue(String.class).get() == testResponseValue;
         }
 
 
