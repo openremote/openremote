@@ -189,7 +189,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         // TODO: Define access permissions for merged asset (user asset links inherit from parent agent?)
         LOG.fine("Merging asset with protocol-provided: " + asset);
-        return assetStorageService.merge(asset, true);
+        return assetStorageService.merge(asset, true, false);
     }
 
     @Override
