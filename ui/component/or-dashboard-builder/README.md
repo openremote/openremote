@@ -29,7 +29,7 @@ Here it is:
 | **Dashboard** | The board / area that contains widgets. (stored in database)                                                                                     | 
 | **Widget**    | The object on the dashboard that contains information like content (stored in database)                                                          |
 | *WidgetContainer* | Wrapper that displays widget content, header, and its actions                                                                                    |
-| *WidgetSettings* | THe available settings to customize WidgetConfig, 
+| *WidgetSettings* | The available settings to customise WidgetConfig, 
 | **Insights**  | 'The showcase term' we use for the page in our Manager App. We also have an "Insights app" that is a standalone app for viewing your dashboards. |
 
 <br/>
