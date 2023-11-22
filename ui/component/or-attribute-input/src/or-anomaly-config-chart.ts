@@ -46,6 +46,9 @@ export class OrAnomalyConfigChart extends OrChart {
         if(this._loading || !this.anomalyConfig){
             return
         }
+        if(this.anomalyConfig.onOff == undefined || !this.anomalyConfig.type || !this.anomalyConfig.deviation || !this.anomalyConfig.minimumDatapoints || moment.duration(this.anomalyConfig.timespan).asSeconds() < 1){
+            return;
+        }
         if(this.attributeRef){
             this._loading = true
             const query = {
@@ -122,19 +125,21 @@ export class OrAnomalyConfigChart extends OrChart {
                 anomalyDataset.pointBackgroundColor = "#be0000"
                 data.push(anomalyDataset);
 
-                this.datapointQuery.type = "all";
-                let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
+                //limits anomaly data
+                let datasets = await this.getAnomalyLimits(asset,attribute,this.datapointQuery)
+                let dataset = datasets[2];
                 (dataset as any).assetId = asset.id;
                 (dataset as any).attrName = attribute.name;
                 (dataset as any).unit = unit;
+                dataset = datasets[2]
                 data.push(dataset);
 
-                //limits anomaly data
-                let datasets = await this.getAnomalyLimits(asset,attribute,this.datapointQuery)
+
                 dataset = datasets[0]
                 data.push(dataset);
                 dataset = datasets[1]
                 data.push(dataset);
+
             });
         }
 
@@ -164,14 +169,24 @@ export class OrAnomalyConfigChart extends OrChart {
             fill: "-1",
             data: [],
         };
+        let dataset: ChartDataset<"line", ScatterDataPoint[]> = {
+            borderColor: "#2844cc",
+            backgroundColor: "#2844cc",
+            label: "data",
+            pointRadius: 2,
+            fill: false,
+            data: [],
+        };
         if(this.anomalyConfig){
             response = await manager.rest.api.AnomalyDetectionResource.getAnomalyDatapointLimits(asset.id, attribute.name, this.anomalyConfig);
             if (response.status === 200) {
                 minData.data = response.data[0].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
                 maxData.data = response.data[1].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
+                dataset.data = response.data[2].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
             }
             datasets.push(minData);
             datasets.push(maxData);
+            datasets.push(dataset);
         }
         return datasets;
     }

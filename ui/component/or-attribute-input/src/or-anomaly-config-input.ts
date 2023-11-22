@@ -12,9 +12,6 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import { customElement, property } from "lit/decorators.js";
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {Console, DefaultColor4, manager, Util} from "@openremote/core";
-import moment from "moment";
-import {throttle} from "lodash";
-import {AnnotationOptions} from "chartjs-plugin-annotation";
 import {
     AnomalyDetectionConfigObject,
     AnomalyDetectionConfiguration,
@@ -34,6 +31,7 @@ import {i18next, translate} from "@openremote/or-translate";
 import "@openremote/or-components/or-collapsible-panel"
 import {GenericAxiosResponse} from "@openremote/rest";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
+import moment from "moment";
 
 
 
@@ -49,25 +47,28 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
     @property({type: Number})
     public timespan?: number = undefined;
     @property({type: Boolean})
-    expanded: boolean = false;
+    expanded: boolean = true;
+    @property({type: Boolean})
+    updateBool: boolean = false;
     @property({type:Object})
     public template!: TemplateResult
     @property({type:Number})
     public selectedIndex: number = 0;
+    @property({type: String, attribute: false})
+    public onChange?: (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => void;
 
 
     render() {
-        return this.draw(this.selectedIndex)
+        return this.draw()
     }
 
-    protected draw(index:number){
+    protected draw(){
         const uiSchema: any = {
             type: "Control",
             scope: "#"
         };
         let schema: any;
         const jsonFormsInput: Ref<OrJSONForms> = createRef();
-        console.log("draw")
 
         schema= JSON.parse("{\n" +
             "  \"type\": \"object\",\n" +
@@ -107,70 +108,78 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
 
         if(!this.anomalyDetectionConfigObject || !this.attributeRef)return html``;
         const attributeRef = this.attributeRef;
-        const forms = jsonFormsInput.value;
 
-        if(jsonFormsInput.value){
-            jsonFormsInput.value!.schema = schema;
-            jsonFormsInput.value!.data =  this.anomalyDetectionConfigObject.methods![this.selectedIndex] as AnomalyDetectionConfigurationGlobal;
-            console.log(jsonFormsInput.value!.data)
-        }
         const onChanged = (dataAndErrors: { errors: ErrorObject[] | undefined, data: any }) => {
             let valid = true
-            const newConfig: AnomalyDetectionConfigurationGlobal = dataAndErrors.data
+            const newConfig: AnomalyDetectionConfigurationUnion = dataAndErrors.data
             if (newConfig) {
 
                 if (!newConfig.timespan || !newConfig.type || !newConfig.minimumDatapoints || !newConfig.deviation || newConfig.onOff == undefined) valid = false;
+                if(!moment.duration(newConfig.timespan))valid=false;
                 if (!Util.objectsEqual(newConfig, this.anomalyDetectionConfigObject!.methods![this.selectedIndex]) && valid) {
                     this.anomalyDetectionConfigObject!.methods![this.selectedIndex] = newConfig;
                     if (jsonFormsInput.value) {
-                        jsonFormsInput.value.data = newConfig
+                        jsonFormsInput.value.data = newConfig;
                     }
                 }
             }
-            console.log(jsonFormsInput.value!.data)
+            if (this.onChange ) {
+                this.onChange({data: this.anomalyDetectionConfigObject, errors: []});
+            }
+            this.updateBool = !this.updateBool;
+            if(valid)this.draw();
+
         }
+        const doLoad = async (con: AnomalyDetectionConfigObject) => {
+            if (jsonFormsInput.value) {
+                jsonFormsInput.value.data = con.methods![this.selectedIndex];
+            }
+        }
+        window.setTimeout(() => doLoad(this.anomalyDetectionConfigObject as AnomalyDetectionConfigObject), 0);
+
         return html`
-            <or-collapsible-panel style="width: 100%" expanded="${this.expanded}">
-                <span slot="header">
-                    Anomaly Detection Custom
-                </span>
-                    <div slot="content">
-                        
-                        <div style="display: flex; padding-left: 16pt">
-                        ${this.anomalyDetectionConfigObject!.methods?.map((m) => {
+            <style>
+                    .test {
+                        display: flex;
+                        flex-direction: column;
+                        width: 100%;
+                    }
+                </style>
+                <div class="test">
+                    <or-collapsible-panel style="width: 100%">
+                        <span slot="header">
+                            Anomaly Detection Custom
+                        </span>
+                        <div class="test" slot="content">
+                            <div style="display: flex; padding: 0 16pt; margin-left: 10pt">
+                                ${this.anomalyDetectionConfigObject!.methods?.map((m) => {
             const i = this.anomalyDetectionConfigObject!.methods?.indexOf(this.anomalyDetectionConfigObject!.methods?.find(x => x === m)!)!;
             return html`
-                                <div .style="z-index: 10; ${i === index ? "border-style:outset;border-bottom-style: solid;border-bottom-color: white;": ""}">
-                                    <or-mwc-input type="button" .label="${m.type}" @or-mwc-input-changed="${() =>{ this.selectedIndex = i; this.requestUpdate()}}" ></or-mwc-input>
+                                <div .style="z-index: 10; ${i === this.selectedIndex ? "border-style:outset;border-bottom-style: solid;border-bottom-color: white;": ""}">
+                                    <or-mwc-input type="button" .label="${m.type}" @or-mwc-input-changed="${() =>{ this.selectedIndex = i; this.draw(); this.updateBool = !this.updateBool}}" ></or-mwc-input>
+                                    <or-mwc-input type="button" icon="delete" @or-mwc-input-changed="${() =>{ this.removeMethod(i); this.draw();}}" ></or-mwc-input>
                                 </div>
                             `
         })}
-                            <or-mwc-input type="button" icon="plus" @or-mwc-input-changed="${() =>{this.addMethod()}}" ></or-mwc-input>
-                        </div >
-                        <div style="padding-left: 16pt">
-                                ${this.anomalyDetectionConfigObject!.methods?.map((m) => {
-            const i = this.anomalyDetectionConfigObject!.methods?.indexOf(this.anomalyDetectionConfigObject!.methods?.find(x => x === m)!)!;
-            if(this.anomalyDetectionConfigObject && this.anomalyDetectionConfigObject.methods && i === index){
-                return html`
-                    <or-json-forms .renderers="${StandardRenderers}" ${ref(jsonFormsInput)}
-                            .disabled="${false}" .readonly="${false}" .label="Config"
-                            .schema="${schema}" label="Anomaly Detection Json forms" .uischema="${uiSchema}"
-                                   .onChange="${onChanged}" ></or-json-forms>
-                                        <div class="columnDiv" style="visibility: visible; width: 95%; z-index:1; margin-top:-2pt; padding-left:2pt; border-style: outset;">
-                                            <or-mwc-input type="number" label="deviation" @or-mwc-input-changed="${(e : CustomEvent) => this._onAttributeModified(i,e,this.anomalyDetectionConfigObject!.methods![i].deviation)}" .value=${this.anomalyDetectionConfigObject.methods[i].deviation} style="padding: 10px 10px 16px 0;"></or-mwc-input>
-                                            <or-mwc-input type="number" label="minimumDatapoints" @or-mwc-input-changed="${(e : Event) =>{ this.selectedIndex = i; this.requestUpdate()}}" .value="${this.anomalyDetectionConfigObject.methods[i].minimumDatapoints}" style="padding: 10px 10px 16px 0;"></or-mwc-input>
-                                            <or-mwc-input type="text" label="timespan" @or-mwc-input-changed="${(e : Event) =>{ this.selectedIndex = i; this.requestUpdate()}}" .value="${this.anomalyDetectionConfigObject.methods[i].timespan}" style="padding: 10px 10px 16px 0;"></or-mwc-input>
-                                            <or-mwc-input type="button" label="Test"  @or-mwc-input-changed="${() =>{ this.selectedIndex = i; this.requestUpdate()}}" style="padding:10px 10px 16px 0;"></or-mwc-input>
-                                        </div>
-                                        `
-            }
-        })}
+                                <or-mwc-input type="button" icon="plus" @or-mwc-input-changed="${() =>{this.addMethod(); this.draw();}}" ></or-mwc-input>
+                            </div >
+                            <or-collapsible-panel style="margin: 16pt; margin-top: 0;" expanded="${true}">
+                                <span slot="header">
+                                    ${this.anomalyDetectionConfigObject.methods![this.selectedIndex].type}
+                                </span>
+                                <div class="test" slot="content">
+                                    <or-json-forms style="padding: 0 16pt;"  .renderers="${StandardRenderers}" ${ref(jsonFormsInput)}
+                                        .disabled="${false}" .readonly="${false}" .label="Config"
+                                        .schema="${schema}" label="Anomaly Detection Json forms" .uischema="${uiSchema}"
+                                        .onChange="${onChanged}" .props="test" .minimal="${true}"></or-json-forms>
+                                    <or-anomaly-config-chart style="display: flex; padding: 0 16pt; width: auto;"
+                                        .timePresetKey="${this.updateBool}" .panelName="${this.selectedIndex}" .anomalyConfig="${this.anomalyDetectionConfigObject ? this.anomalyDetectionConfigObject.methods![this.selectedIndex] : undefined}" .attributeRef="${attributeRef}" >
+                                    </or-anomaly-config-chart>
+                                </div>
+                            </or-collapsible-panel>
                         </div>
-                        <div style= "display:flex; width: 100%; height: 50%">
-                            <or-anomaly-config-chart style="display: flex" .attributeRef="${attributeRef}" .panelName="${index}" .timePresetKey="${index}" .anomalyConfig="${this.anomalyDetectionConfigObject!.methods![index]}"></or-anomaly-config-chart>
-                        </div>
-                    </div>
-                </or-collapsible-panel>
+                    </or-collapsible-panel>
+                </div>
                 `
     }
 
@@ -187,14 +196,20 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
 
             const i = this.anomalyDetectionConfigObject.methods ? this.anomalyDetectionConfigObject.methods.length: 0
             let con : AnomalyDetectionConfigurationGlobal;
-            con = {type:"global", onOff:false, deviation:20, minimumDatapoints:1, timespan:"PT20M"  }
+            con = {type:"global", onOff:false, deviation:20, minimumDatapoints:2, timespan:"PT20M"  }
             this.anomalyDetectionConfigObject.methods![i] = con;
-
-            console.log(this.anomalyDetectionConfigObject.methods![i])
+            this.selectedIndex = i;
             this.requestUpdate();
         }
-
-
+    }
+    protected removeMethod(index:number) {
+        if(this.anomalyDetectionConfigObject){
+            const obj = this.anomalyDetectionConfigObject;
+            this.anomalyDetectionConfigObject.methods?.splice(index,1);
+            this.selectedIndex = 0;
+            console.log(this.anomalyDetectionConfigObject.methods![index])
+            this.requestUpdate();
+        }
     }
 
 }

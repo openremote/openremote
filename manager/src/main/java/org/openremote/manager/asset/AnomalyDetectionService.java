@@ -117,9 +117,6 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     anomalyDetectionAttributes.put(asset.getId() + "$" + attribute.getName(),new AnomalyAttribute(asset,attribute));
                 }
         ));
-
-
-
         LOG.fine("Found anomaly detection asset attributes count  = " + anomalyDetectionAttributes.size());
     }
 
@@ -216,17 +213,28 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             AnomalyAttribute anomalyAttribute = anomalyDetectionAttributes.get(assetId + "$" + attributeName);
             DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
             if(period.getLatest() - period.getOldest() > detectionMethod.config.timespan.toMillis()){
-                List<AssetAnomalyDatapoint> datapoints = anomalyAttribute.GetDatapoints(period.getLatest() - detectionMethod.config.timespan.toMillis()*5,period.getLatest());
-                ValueDatapoint<?>[][] valueDatapoints = new ValueDatapoint[2][datapoints.size()-detectionMethod.config.minimumDatapoints+1];
+                ValueDatapoint<?>[] datapoints = assetDatapointService.queryDatapoints(anomalyAttribute.attributeRef.getId(), anomalyAttribute.attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest() - detectionMethod.config.timespan.toMillis()*5, period.getLatest()));
+                List<AssetAnomalyDatapoint> assetAnomalyDatapoints = new ArrayList<>();
+                for (ValueDatapoint<?> dp : datapoints) {
+                    AssetAnomalyDatapoint point = new AssetAnomalyDatapoint();
+                    point.anomalyType = AnomalyType.Unchecked;
+                    point.setTimestamp(dp.getTimestamp());
+                    point.setValue(dp.getValue());
+                    assetAnomalyDatapoints.add(point);
+                }
+                if(datapoints.length < detectionMethod.config.minimumDatapoints) return vdaa;
+                ValueDatapoint<?>[][] valueDatapoints = new ValueDatapoint[3][datapoints.length-detectionMethod.config.minimumDatapoints+1];
                 int index =0;
-                for(int i = datapoints.size() - detectionMethod.config.minimumDatapoints; i >= 0; i--){
-                    AssetAnomalyDatapoint dp = datapoints.get(i);
+                for(int i = datapoints.length - detectionMethod.config.minimumDatapoints; i >= 0; i--){
+                    ValueDatapoint<?> dp = datapoints[i];
                     if(!detectionMethod.checkRecentDataSaved(dp.getTimestamp())){
-                       detectionMethod.UpdateData(datapoints.stream().filter(p -> p.getTimestamp() > dp.getTimestamp() - detectionMethod.config.timespan.toMillis() && p.getTimestamp() < dp.getTimestamp()).toList());
+                       detectionMethod.UpdateData(assetAnomalyDatapoints.stream().filter(p -> p.getTimestamp() > dp.getTimestamp() - detectionMethod.config.timespan.toMillis() && p.getTimestamp() < dp.getTimestamp()).toList());
                     }
-                    double[] values = detectionMethod.GetLimits(datapoints.get(i));
-                    valueDatapoints[0][index] = new ValueDatapoint<>(datapoints.get(i).getTimestamp(), values[0]);
-                    valueDatapoints[1][index] = new ValueDatapoint<>(datapoints.get(i).getTimestamp(), values[1]);
+
+                    double[] values = detectionMethod.GetLimits(datapoints[i]);
+                    valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
+                    valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
+                    valueDatapoints[2] = datapoints;
                     index++;
                 }
                 return valueDatapoints;
@@ -391,7 +399,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         boolean checkRecentDataSaved(long latestTimestamp);
         /**Update saved values used to calculate Limits */
         void UpdateData(List<AssetAnomalyDatapoint> datapoints);
-        double[] GetLimits(AssetAnomalyDatapoint datapoint);
+        double[] GetLimits(ValueDatapoint<?> datapoint);
     }
 
 
@@ -462,8 +470,8 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         }
 
         @Override
-        public double[] GetLimits(AssetAnomalyDatapoint datapoint) {
-            double differance = maxValue - minValue + 0.001;;
+        public double[] GetLimits(ValueDatapoint<?> datapoint) {
+            double differance = maxValue - minValue + 0.001;
             double deviation = differance * ((double)config.deviation /100);
             double[] limits = new double[]{minValue - deviation, maxValue + deviation};
             double value = (double)datapoint.getValue();
@@ -551,7 +559,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         }
 
         @Override
-        public double[] GetLimits(AssetAnomalyDatapoint datapoint) {
+        public double[] GetLimits(ValueDatapoint<?> datapoint) {
             double increase = ((double)datapoint.getValue() - previousValue);
             double bigoffset =  biggestIncrease * ((double)config.deviation/100);
             double smalloffset = smallestIncrease * ((double)config.deviation/100);
@@ -640,7 +648,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         }
 
         @Override
-        public double[] GetLimits(AssetAnomalyDatapoint datapoint) {
+        public double[] GetLimits(ValueDatapoint<?> datapoint) {
             return new double[0];
         }
     }

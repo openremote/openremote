@@ -184,7 +184,8 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             </div>
         `;
 
-        return this.minimal ? html`<div>${content}</div>` : html`<or-collapsible-panel .expandable="${expandable}">${content}</or-collapsible-panel>`;
+
+        return this.minimal ? html`<div>${contentTemplate}</div>` : html`<or-collapsible-panel .expandable="${expandable}">${content}</or-collapsible-panel>`;
     }
 
     protected _getDynamicContentTemplate(dynamicPropertyRegex: string, dynamicValueSchema: JsonSchema): TemplateResult | undefined {

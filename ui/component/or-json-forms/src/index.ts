@@ -93,6 +93,9 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
     @property({type: Boolean})
     public required: boolean = false;
 
+    @property({type: Boolean})
+    public minimal: boolean = false;
+
     public static get styles() {
         return [
             baseStyle,
@@ -177,11 +180,11 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
         if (!this.contextValue) {
             return html``;
         }
-
         const props: JsonFormsProps & AdditionalProps = {
             ...mapStateToJsonFormsRendererProps({jsonforms: {...this.contextValue}}, this),
             label: getLabel(this.schema!, this.uischema!, this.label, undefined) || "",
-            required: this.required
+            required: this.required,
+            minimal: this.minimal
         };
         return getTemplateFromProps(this.contextValue, props) || html``;
     }
