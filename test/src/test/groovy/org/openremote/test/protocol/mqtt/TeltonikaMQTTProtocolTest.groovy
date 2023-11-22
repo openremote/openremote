@@ -475,7 +475,11 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
 
         cleanup: "delete asset and disconnect client from broker"
 
-        assetStorageService.delete(asset.getId() as List<String>);
+        boolean result = assetStorageService.delete(asset.getId() as List<String>);
+
+        conditions.eventually {
+            result
+        }
 
         client.removeAllMessageConsumers()
         client.disconnect()
@@ -484,6 +488,13 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
 
 
     def "the handler stores all attributes with the correct timestamp"() {
+        when: "remove the asset, if it exists"
+        then: "asset is not there"
+        conditions.eventually {
+            assert assetStorageService.delete([UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)])
+            assert assetStorageService.find(UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)) == null
+        }
+
         when: "the device connects to the MQTT broker to a data topic with a RX endpoint"
 
         String correctTopic1 = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
