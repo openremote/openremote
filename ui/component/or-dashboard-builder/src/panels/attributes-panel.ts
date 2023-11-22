@@ -13,6 +13,28 @@ import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-at
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
+export interface AttributeAction {
+    icon: string,
+    tooltip: string,
+    disabled: boolean
+}
+
+export class AttributeActionEvent extends CustomEvent<{ attributeRef: AttributeRef, action: AttributeAction }> {
+
+    public static readonly NAME = "attribute-action"
+
+    constructor(attributeRef: AttributeRef, action: AttributeAction) {
+        super(AttributeActionEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                attributeRef: attributeRef,
+                action: action
+            }
+        });
+    }
+}
+
 export class AttributesSelectEvent extends CustomEvent<AttributeRef[]> {
 
     public static readonly NAME = "attribute-select";
@@ -50,6 +72,11 @@ const styling = css`
     line-height: 16px;
     flex-direction: column;
   }
+  
+  .attribute-list-item-actions {
+    display: flex;
+    gap: 8px;
+  }
 
   .attribute-list-item-bullet {
     width: 14px;
@@ -66,7 +93,7 @@ const styling = css`
     display: block;
   }
 
-  .button-clear {
+  .button-action {
     background: none;
     visibility: hidden;
     color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
@@ -77,11 +104,11 @@ const styling = css`
     cursor: pointer;
   }
 
-  .attribute-list-item:hover .button-clear {
+  .attribute-list-item:hover .button-action {
     visibility: visible;
   }
 
-  .button-clear:hover {
+  .button-action:hover {
     --or-icon-fill: var(--or-app-color4);
   }
 `
@@ -100,6 +127,9 @@ export class AttributesPanel extends LitElement {
 
     @property()
     protected attributeFilter?: (attribute: Attribute<any>) => boolean;
+
+    @property()
+    protected attributeActionCallback?: (attribute: AttributeRef) => AttributeAction[]
 
     @state()
     protected loadedAssets: Asset[] = [];
@@ -161,6 +191,10 @@ export class AttributesPanel extends LitElement {
         return assets;
     }
 
+    protected onAttributeActionClick(attributeRef: AttributeRef, action: AttributeAction) {
+        this.dispatchEvent(new AttributeActionEvent(attributeRef, action));
+    }
+
     protected openAttributeSelector(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs = true, attributeFilter?: (attribute: Attribute<any>) => boolean) {
         let dialog: OrAttributePicker;
         if (attributeRefs != null) {
@@ -179,7 +213,7 @@ export class AttributesPanel extends LitElement {
                 ${when(this.attributeRefs.length > 0, () => html`
 
                     <div id="attribute-list">
-                        ${guard([this.attributeRefs, this.loadedAssets], () => html`
+                        ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback], () => html`
                             ${map(this.attributeRefs, (attributeRef: AttributeRef) => {
                                 const asset = this.getLoadedAsset(attributeRef);
                                 if (asset) {
@@ -193,10 +227,21 @@ export class AttributesPanel extends LitElement {
                                                 <span>${asset.name}</span>
                                                 <span style="font-size:14px; color:grey;">${label}</span>
                                             </div>
-                                            <button class="button-clear"
-                                                    @click="${() => this.removeWidgetAttribute(attributeRef)}">
-                                                <or-icon icon="close-circle"></or-icon>
-                                            </button>
+                                            <div class="attribute-list-item-actions">
+                                                
+                                                <!-- Custom actions defined by callback -->
+                                                ${when(!!this.attributeActionCallback, () => {
+                                                    return this.attributeActionCallback!(attributeRef).map((action) => html`
+                                                        <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(attributeRef, action)}">
+                                                            <or-icon icon="${action.icon}"></or-icon>
+                                                        </button>
+                                                    `);
+                                                })}
+                                                <!-- Remove attribute button -->
+                                                <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
+                                                    <or-icon icon="close-circle"></or-icon>
+                                                </button>
+                                            </div>
                                         </div>
                                     `;
                                 } else {

@@ -1,8 +1,8 @@
-import {AssetDatapointLTTBQuery, AssetDatapointQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
+import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
 import {i18next} from "@openremote/or-translate";
-import {OrChart, TimePresetCallback} from "@openremote/or-chart";
+import {TimePresetCallback} from "@openremote/or-chart";
 import moment from "moment";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
@@ -13,6 +13,7 @@ import {WidgetSettings} from "../util/widget-settings";
 
 export interface ChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
+    rightAxisIndexes: number[];
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
     showTimestampControls: boolean;
@@ -52,6 +53,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     const dates = dateFunc(new Date());
     return {
         attributeRefs: [],
+        rightAxisIndexes: [],
         datapointQuery: {
             type: "lttb",
             fromTimestamp: dates[0].getTime(),
@@ -62,6 +64,10 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
             options: {
                 scales: {
                     y: {
+                        min: undefined,
+                        max: undefined
+                    },
+                    y1: {
                         min: undefined,
                         max: undefined
                     }
@@ -170,7 +176,7 @@ export class ChartWidget extends OrAssetWidget {
         return html`
             ${when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
                 return html`
-                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
+                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisIndexes="${this.widgetConfig.rightAxisIndexes}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"

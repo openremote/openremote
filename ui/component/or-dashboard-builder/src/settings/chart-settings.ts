@@ -4,11 +4,12 @@ import {WidgetSettings} from "../util/widget-settings";
 import "../panels/attributes-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
-import {AttributesSelectEvent} from "../panels/attributes-panel";
+import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {TimePresetCallback} from "@openremote/or-chart";
+import {when} from "lit/directives/when.js";
 
 const styling = css`
   .switch-container {
@@ -45,12 +46,23 @@ export class ChartSettings extends WidgetSettings {
         };
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
+        const isMultiAxis = this.widgetConfig.rightAxisIndexes.length > 0;
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
+        const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
+            const index = this.widgetConfig.attributeRefs.indexOf(attributeRef);
+            return [{
+                icon: this.widgetConfig.rightAxisIndexes.includes(index) ? "arrow-right-bold" : "arrow-left-bold",
+                tooltip: i18next.t('dashboard.toggleAxis'),
+                disabled: false
+            }]
+        }
         return html`
             <div>
                 <!-- Attribute selection -->
                 <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" multi="${true}" style="padding-bottom: 12px;"
+                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi="${true}" style="padding-bottom: 12px;"
+                                      onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" .attributeActionCallback="${attributeActionCallback}"
+                                      @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>
                 </settings-panel>
@@ -83,33 +95,81 @@ export class ChartSettings extends WidgetSettings {
                     </div>
                 </settings-panel>
 
-                <!-- Chart configuration -->
-                <settings-panel displayName="${i18next.t('dashboard.chartConfig')}" expanded="${true}">
-                    <div style="padding-bottom: 12px;">
-                        <div style="display: flex;">
-                            ${max !== undefined ? html`
-                                <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${max}" style="width: 100%;"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('max', ev)}"
+                <!-- Axis configuration -->
+                <settings-panel displayName="${i18next.t('dashboard.axisConfig')}" expanded="${true}">
+                    <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
+
+                        <!-- Left axis configuration -->
+                        <div>
+                            ${when(isMultiAxis, () => html`
+                                <div style="margin-bottom: 8px;">
+                                    <span>${i18next.t('dashboard.leftAxis')}</span>
+                                </div>
+                            `)}
+                            <div style="display: flex;">
+                                ${max !== undefined ? html`
+                                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${max}" style="width: 100%;"
+                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('left', 'max', ev)}"
+                                    ></or-mwc-input>
+                                ` : html`
+                                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
+                                `}
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${max !== undefined}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'max', ev)}"
                                 ></or-mwc-input>
-                            ` : html`
-                                <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
-                            `}
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${max !== undefined}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('max', ev)}"
-                            ></or-mwc-input>
-                        </div>
-                        <div style="display: flex; margin-top: 12px;">
-                            ${min !== undefined ? html`
-                                <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${min}" style="width: 100%;"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('min', ev)}"
+                            </div>
+                            <div style="display: flex; margin-top: 12px;">
+                                ${min !== undefined ? html`
+                                    <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${min}" style="width: 100%;"
+                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('left', 'min', ev)}"
+                                    ></or-mwc-input>
+                                ` : html`
+                                    <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
+                                `}
+                                <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${min !== undefined}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('left', 'min', ev)}"
                                 ></or-mwc-input>
-                            ` : html`
-                                <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto" style="width: 100%;"></or-mwc-input>
-                            `}
-                            <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${min !== undefined}"
-                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('min', ev)}"
-                            ></or-mwc-input>
+                            </div>
                         </div>
+
+                        <!-- Right axis configuration -->
+                        ${when(isMultiAxis, () => {
+                            const rightMin = this.widgetConfig.chartOptions.options?.scales?.y1?.min;
+                            const rightMax = this.widgetConfig.chartOptions.options?.scales?.y1?.max;
+                            return html`
+                                <div>
+                                    <div style="margin-bottom: 8px;">
+                                        <span>${i18next.t('dashboard.rightAxis')}</span>
+                                    </div>
+                                    <div style="display: flex;">
+                                        ${rightMax !== undefined ? html`
+                                            <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" .value="${rightMax}" style="width: 100%;"
+                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('right', 'max', ev)}"
+                                            ></or-mwc-input>
+                                        ` : html`
+                                            <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('max')}" disabled="true" value="auto"
+                                                          style="width: 100%;"></or-mwc-input>
+                                        `}
+                                        <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMax !== undefined}"
+                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'max', ev)}"
+                                        ></or-mwc-input>
+                                    </div>
+                                    <div style="display: flex; margin-top: 12px;">
+                                        ${rightMin !== undefined ? html`
+                                            <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" .value="${rightMin}" style="width: 100%;"
+                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('right', 'min', ev)}"
+                                            ></or-mwc-input>
+                                        ` : html`
+                                            <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('yAxis') + ' ' + i18next.t('min')}" disabled="true" value="auto"
+                                                          style="width: 100%;"></or-mwc-input>
+                                        `}
+                                        <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px 0 0;" .value="${rightMin !== undefined}"
+                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueToggle('right', 'min', ev)}"
+                                        ></or-mwc-input>
+                                    </div>
+                                </div>
+                            `
+                        })}
                     </div>
                 </settings-panel>
 
@@ -138,9 +198,9 @@ export class ChartSettings extends WidgetSettings {
                 return html`
                     <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${formulaOptions}"
                                   .value="${intervalQuery.formula}" label="${i18next.t('algorithmMethod')}" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                      intervalQuery.formula = event.detail.value;
-                                      this.notifyConfigUpdate();
-                                  }}"
+                        intervalQuery.formula = event.detail.value;
+                        this.notifyConfigUpdate();
+                    }}"
                     ></or-mwc-input>
                 `;
             }
@@ -149,6 +209,17 @@ export class ChartSettings extends WidgetSettings {
         }
     }
 
+    protected onAttributeAction(ev: AttributeActionEvent) {
+        const attrIndex = this.widgetConfig.attributeRefs.indexOf(ev.detail.attributeRef);
+        if (attrIndex >= 0) {
+            if (this.widgetConfig.rightAxisIndexes.includes(attrIndex)) {
+                this.widgetConfig.rightAxisIndexes.splice(this.widgetConfig.rightAxisIndexes.indexOf(attrIndex), 1);
+            } else {
+                this.widgetConfig.rightAxisIndexes.push(attrIndex);
+            }
+            this.notifyConfigUpdate();
+        }
+    }
 
     protected onAttributesSelect(ev: AttributesSelectEvent) {
         this.widgetConfig.attributeRefs = ev.detail as AttributeRef[];
@@ -170,24 +241,29 @@ export class ChartSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
-    protected onMinMaxValueChange(type: 'min' | 'max', ev: OrInputChangedEvent) {
-        switch (type) {
-            case "max":
-                this.widgetConfig.chartOptions.options.scales.y.max = ev.detail.value; break;
-            case "min":
-                this.widgetConfig.chartOptions.options.scales.y.min = ev.detail.value; break;
+    protected setAxisMinMaxValue(axis: 'left' | 'right', type: 'min' | 'max', value?: number) {
+        if(axis === 'left') {
+            if(type === 'min') {
+                this.widgetConfig.chartOptions.options.scales.y.min = value;
+            } else {
+                this.widgetConfig.chartOptions.options.scales.y.max = value;
+            }
+        } else {
+            if(type === 'min') {
+                this.widgetConfig.chartOptions.options.scales.y1.min = value;
+            } else {
+                this.widgetConfig.chartOptions.options.scales.y1.max = value;
+            }
         }
         this.notifyConfigUpdate();
     }
 
-    protected onMinMaxValueToggle(type: 'min' | 'max', ev: OrInputChangedEvent) {
-        switch (type) {
-            case "max":
-                this.widgetConfig.chartOptions.options.scales.y.max = (ev.detail.value ? 100 : undefined); break;
-            case "min":
-                this.widgetConfig.chartOptions.options.scales.y.min = (ev.detail.value ? 0 : undefined); break;
-        }
-        this.notifyConfigUpdate();
+    protected onMinMaxValueChange(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent) {
+        this.setAxisMinMaxValue(axis, type, ev.detail.value);
+    }
+
+    protected onMinMaxValueToggle(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent) {
+        this.setAxisMinMaxValue(axis, type, (ev.detail.value ? (type === 'min' ? 0 : 100) : undefined));
     }
 
     protected onSamplingQueryChange(ev: OrInputChangedEvent) {
