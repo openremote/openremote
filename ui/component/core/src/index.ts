@@ -905,11 +905,14 @@ export class Manager implements EventProviderFactory {
         return this._basicIdentity ? this._basicIdentity.token : undefined;
     }
 
-    public isTokenInvalid(): boolean {
+    // Checking (manually) if token is invalid. Default margin of 2 seconds
+    public isTokenInvalid(margin = 2000): boolean {
         if(this._keycloak) {
-            return this._keycloak.isTokenExpired();
+            const invalid = (this._keycloak.tokenParsed.exp <= moment().add(margin, "milliseconds").unix());
+            console.debug(`Is token invalid? ${invalid}`);
+            return invalid;
         } else {
-            return false; // TODO: Update this to check validity of JWT token manually
+            return !this._basicIdentity?.token; // TODO: Update this to check validity of JWT token manually
         }
     }
 
@@ -1092,7 +1095,7 @@ export class Manager implements EventProviderFactory {
     protected _setDisconnected(disconnected: boolean) {
         if(this._disconnected !== disconnected) {
             const webSocketOnline = this._config.eventProviderType === EventProviderType.WEBSOCKET && this._events?.status === EventProviderStatus.CONNECTED;
-            const tokenValid = (this._keycloak ? !this._keycloak.isTokenExpired() : !!this._basicIdentity?.token);
+            const tokenValid = !this.isTokenInvalid();
 
             // If token became invalid, we assume authentication is OFFLINE
             this._authDisconnected = !tokenValid;
