@@ -46,12 +46,11 @@ export class ChartSettings extends WidgetSettings {
         };
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
-        const isMultiAxis = this.widgetConfig.rightAxisIndexes.length > 0;
+        const isMultiAxis = this.widgetConfig.rightAxisAttributes.length > 0;
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
-            const index = this.widgetConfig.attributeRefs.indexOf(attributeRef);
             return [{
-                icon: this.widgetConfig.rightAxisIndexes.includes(index) ? "arrow-right-bold" : "arrow-left-bold",
+                icon: this.widgetConfig.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
                 tooltip: i18next.t('dashboard.toggleAxis'),
                 disabled: false
             }]
@@ -209,21 +208,45 @@ export class ChartSettings extends WidgetSettings {
         }
     }
 
+    // When a user clicks on ANY action in the attribute list, we want to switch between LEFT and RIGHT axis.
+    // Since that is the only action, there is no need to check the ev.action variable.
     protected onAttributeAction(ev: AttributeActionEvent) {
-        const attrIndex = this.widgetConfig.attributeRefs.indexOf(ev.detail.attributeRef);
-        if (attrIndex >= 0) {
-            if (this.widgetConfig.rightAxisIndexes.includes(attrIndex)) {
-                this.widgetConfig.rightAxisIndexes.splice(this.widgetConfig.rightAxisIndexes.indexOf(attrIndex), 1);
+        if(this.widgetConfig.attributeRefs.indexOf(ev.detail.attributeRef) >= 0) {
+            if(this.widgetConfig.rightAxisAttributes.includes(ev.detail.attributeRef)) {
+                this.removeFromRightAxis(ev.detail.attributeRef);
             } else {
-                this.widgetConfig.rightAxisIndexes.push(attrIndex);
+                this.addToRightAxis(ev.detail.attributeRef);
             }
             this.notifyConfigUpdate();
         }
     }
 
+    // When the list of attributeRefs is changed by the asset selector,
+    // we should remove the "right axis" references for the attributes that got removed.
+    // Also update the WidgetConfig attributeRefs field as usual
     protected onAttributesSelect(ev: AttributesSelectEvent) {
+        const removedAttributeRefs = this.widgetConfig.attributeRefs.filter(ar => !ev.detail.includes(ar));
+        removedAttributeRefs.forEach(raf => this.removeFromRightAxis(raf));
         this.widgetConfig.attributeRefs = ev.detail as AttributeRef[];
         this.notifyConfigUpdate();
+    }
+
+    protected addToRightAxis(attributeRef: AttributeRef, notify = false) {
+        if(!this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
+            this.widgetConfig.rightAxisAttributes.push(attributeRef);
+            if(notify) {
+                this.notifyConfigUpdate();
+            }
+        }
+    }
+
+    protected removeFromRightAxis(attributeRef: AttributeRef, notify = false) {
+        if(this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
+            this.widgetConfig.rightAxisAttributes.splice(this.widgetConfig.rightAxisAttributes.indexOf(attributeRef), 1);
+            if(notify) {
+                this.notifyConfigUpdate();
+            }
+        }
     }
 
     protected onTimePresetSelect(ev: OrInputChangedEvent) {

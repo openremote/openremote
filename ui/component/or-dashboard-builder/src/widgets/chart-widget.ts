@@ -13,7 +13,7 @@ import {WidgetSettings} from "../util/widget-settings";
 
 export interface ChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
-    rightAxisIndexes: number[];
+    rightAxisAttributes: AttributeRef[];
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
     showTimestampControls: boolean;
@@ -53,7 +53,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     const dates = dateFunc(new Date());
     return {
         attributeRefs: [],
-        rightAxisIndexes: [],
+        rightAxisAttributes: [],
         datapointQuery: {
             type: "lttb",
             fromTimestamp: dates[0].getTime(),
@@ -176,7 +176,7 @@ export class ChartWidget extends OrAssetWidget {
         return html`
             ${when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
                 return html`
-                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisIndexes="${this.widgetConfig.rightAxisIndexes}"
+                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"

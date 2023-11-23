@@ -372,7 +372,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public assetAttributes: [number, Attribute<any>][] = [];
 
     @property({type: Array}) // The indexes of the assetAttributes array that appear on the right Y axis.
-    public readonly rightAxisIndexes: number[] = [];
+    public readonly rightAxisAttributes: AttributeRef[] = [];
 
     @property()
     public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<ChartDataset<"line", ScatterDataPoint[]>[]>
@@ -533,7 +533,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             }
                         },
                         y1: {
-                            display: this.rightAxisIndexes.length > 0,
+                            display: this.rightAxisAttributes.length > 0,
                             position: 'right',
                             ticks: {
                                 beginAtZero: true
@@ -673,10 +673,11 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     </div>
                                 ` : undefined}
                                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
+                                    const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
-                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
-                                    const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
-                                    const axisNote = this.rightAxisIndexes.includes(index) ? i18next.t('right') : undefined;
+                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
+                                    const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
+                                    const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = this.colors[colourIndex] || "";
                                     return html`
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
@@ -1045,7 +1046,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                 const asset = this.assets[assetIndex];
-                const shownOnRightAxis = this.rightAxisIndexes.includes(index);
+                const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                 const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                 const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));

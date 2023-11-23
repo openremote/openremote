@@ -62,10 +62,18 @@ export class DashboardRefreshControls extends LitElement {
         return html`
             <div style="height: 100%; display: flex; align-items: center;">
                 ${when(this.readonly, () => html`
-                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}" disabled="true"></or-mwc-input>
+                    ${when(this.interval === DashboardRefreshInterval.OFF, () => html`
+                        <or-mwc-input .type="${InputType.BUTTON}" icon="pause" disabled="true" style="height: 36px; margin-top: -12px;"></or-mwc-input>
+                    `, () => html`
+                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}" disabled="true"></or-mwc-input>
+                    `)}
                 `, () => html`
                     ${getContentWithMenuTemplate(
-                            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>`,
+                            this.interval === DashboardRefreshInterval.OFF ? html`
+                                <or-mwc-input .type="${InputType.BUTTON}" icon="pause" style="height: 36px; margin-top: -12px;"></or-mwc-input>
+                            ` : html`
+                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>
+                            `,
                             intervalOptions.map(o => ({value: o} as ListItem)),
                             value,
                             (newVal) => this.onIntervalSelect(intervalOptions, newVal as string),
