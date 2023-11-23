@@ -58,22 +58,34 @@ const styling = css`
   }
 
   .attribute-list-item {
+    position: relative;
     cursor: pointer;
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: stretch;
+    gap: 10px;
     padding: 0;
     min-height: 50px;
+  }
+  
+  .attribute-list-item-icon {
+    display: flex;
+    align-items: center;
+    --or-icon-width: 20px;
   }
 
   .attribute-list-item-label {
     display: flex;
+    justify-content: center;
     flex: 1 1 0;
     line-height: 16px;
     flex-direction: column;
   }
   
   .attribute-list-item-actions {
+    flex: 1;
+    justify-content: end;
+    align-items: center;
     display: flex;
     gap: 8px;
   }
@@ -104,6 +116,11 @@ const styling = css`
     cursor: pointer;
   }
 
+  .attribute-list-item:hover .attribute-list-item-actions {
+    background: white;
+    z-index: 1;
+  }
+  
   .attribute-list-item:hover .button-action {
     visibility: visible;
   }
@@ -127,6 +144,9 @@ export class AttributesPanel extends LitElement {
 
     @property()
     protected attributeFilter?: (attribute: Attribute<any>) => boolean;
+
+    @property()
+    protected attributeLabelCallback?: (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => TemplateResult;
 
     @property()
     protected attributeActionCallback?: (attribute: AttributeRef) => AttributeAction[]
@@ -213,7 +233,7 @@ export class AttributesPanel extends LitElement {
                 ${when(this.attributeRefs.length > 0, () => html`
 
                     <div id="attribute-list">
-                        ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback], () => html`
+                        ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback], () => html`
                             ${map(this.attributeRefs, (attributeRef: AttributeRef) => {
                                 const asset = this.getLoadedAsset(attributeRef);
                                 if (asset) {
@@ -222,10 +242,17 @@ export class AttributesPanel extends LitElement {
                                     const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
                                     return html`
                                         <div class="attribute-list-item">
-                                            <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
+                                            <div class="attribute-list-item-icon">
+                                                <span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
+                                            </div>
                                             <div class="attribute-list-item-label">
-                                                <span>${asset.name}</span>
-                                                <span style="font-size:14px; color:grey;">${label}</span>
+                                                ${when(!!this.attributeLabelCallback,
+                                                        () => this.attributeLabelCallback!(asset, attribute, label), 
+                                                        () => html`
+                                                            <span>${asset.name}</span>
+                                                            <span style="font-size:14px; color:grey;">${label}</span>
+                                                        `
+                                                )}
                                             </div>
                                             <div class="attribute-list-item-actions">
                                                 

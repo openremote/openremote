@@ -5,7 +5,7 @@ import "../panels/attributes-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
-import {AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {TimePresetCallback} from "@openremote/or-chart";
@@ -48,6 +48,16 @@ export class ChartSettings extends WidgetSettings {
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
         const isMultiAxis = this.widgetConfig.rightAxisAttributes.length > 0;
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
+        const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
+            const isOnRightAxis = isMultiAxis && this.widgetConfig.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name) !== undefined;
+            return html`
+                <span>${asset.name}</span>
+                <span style="font-size:14px; color:grey;">${attributeLabel}</span>
+                ${when(isOnRightAxis, () => html`
+                    <span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;">(${i18next.t('right')})</span>
+                `)}
+            `
+        }
         const attributeActionCallback = (attributeRef: AttributeRef): AttributeAction[] => {
             return [{
                 icon: this.widgetConfig.rightAxisAttributes.includes(attributeRef) ? "arrow-right-bold" : "arrow-left-bold",
@@ -59,8 +69,8 @@ export class ChartSettings extends WidgetSettings {
             <div>
                 <!-- Attribute selection -->
                 <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi="${true}" style="padding-bottom: 12px;"
-                                      onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" .attributeActionCallback="${attributeActionCallback}"
+                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi="${true}" onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
+                                      .attributeLabelCallback="${attributeLabelCallback}" .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>
