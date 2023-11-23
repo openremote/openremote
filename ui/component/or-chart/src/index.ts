@@ -371,8 +371,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
-    @property({type: Array}) // The indexes of the assetAttributes array that appear on the right Y axis.
-    public readonly rightAxisAttributes: AttributeRef[] = [];
+    @property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
+    public rightAxisAttributes: AttributeRef[] = [];
 
     @property()
     public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<ChartDataset<"line", ScatterDataPoint[]>[]>
@@ -464,7 +464,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") ||
+        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("rightAxisAttributes") ||
             changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
