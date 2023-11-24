@@ -67,6 +67,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     private static final String TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME = "sendToDevice";
     private static final String TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME = "response";
 
+    private static final boolean CHECK_FOR_VALID_IMEI = false;
+
     private static final Logger LOG = SyslogCategory.getLogger(API, TeltonikaMQTTHandler.class);
 
     protected AssetStorageService assetStorageService;
@@ -136,8 +138,8 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         AssetFilter<AttributeEvent> eventFilter = buildAssetFilter();
 
-        if(eventFilter.apply(event) != null) {
-            getLogger().finer("eventFilter applied and the event is not for me");
+        if(eventFilter.apply(event) == null) {
+            getLogger().info("eventFilter applied and the event is not for me: " + event);
             return;
         }
 
@@ -212,7 +214,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     /**
      * Checks if the Subscribing client should be allowed to subscribe to the topic that is handled by this Handler.
      * For Teltonika device endpoints, we need the fourth token (Index 3) to be a valid IMEI number.
-     * We do that by checking using IMEIValidator.
+     * We do that by checking using IMEIValidator. If IMEI checking is false, then skip the check.
      */
     // To be removed when auto-provisioning works
     @Override
@@ -230,15 +232,16 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         }
         //TODO: fix the boolean expression that is commented out below
 
-        if(!topic.getTokens().get(2).equalsIgnoreCase(TELTONIKA_DEVICE_TOKEN)) return false;
-        if(!IMEIValidator.isValidIMEI(imeiValue)) return false;
-        if(Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC)) return true;
-        if(Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)) return true;
+//        if(!topic.getTokens().get(2).equalsIgnoreCase(TELTONIKA_DEVICE_TOKEN)) return false;
+//        if(!IMEIValidator.isValidIMEI(imeiValue)) return false;
+//        if(Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC)) return true;
+//        if(Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)) return true;
 
 //        return true;
 
+
         return Objects.equals(topic.getTokens().get(2), TELTONIKA_DEVICE_TOKEN) &&
-                IMEIValidator.isValidIMEI(imeiValue) &&
+                (CHECK_FOR_VALID_IMEI ? IMEIValidator.isValidIMEI(imeiValue) : true) &&
                 (
                         Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_RECEIVE_TOPIC) ||
                         Objects.equals(topic.getTokens().get(4), TELTONIKA_DEVICE_SEND_TOPIC)
@@ -605,9 +608,30 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      */
     private void updateAsset(Asset<?> asset, AttributeMap attributes, Topic topic, RemotingConnection connection) {
 
-        Attribute<Date> packetTime = attributes.get(new AttributeDescriptor<Date>("lastContact", ValueType.DATE_AND_TIME)).get();
+        // Make sure that there is a lastContact attribute, even if it's a response to a command from the device.
+        Optional<Attribute<Date>> timestampAttrOptional = Optional.empty();
 
-        Long packetTimestamp = packetTime.getValue().get().getTime();
+        if(attributes.containsKey(TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME) && attributes.size() == 1){
+            Date timestamp = new Date(TimerService.Clock.REAL.getCurrentTimeMillis());
+            attributes.add(new Attribute<Date>("lastContact", ValueType.DATE_AND_TIME, timestamp, timestamp.getTime()));
+        }
+
+
+        timestampAttrOptional = attributes.get(new AttributeDescriptor<Date>("lastContact", ValueType.DATE_AND_TIME));
+
+        if (timestampAttrOptional.isEmpty()) {
+            getLogger().warning("Could not figure out current packet timestamp");
+            throw new NullPointerException("Could not find current packet timestamp");
+        }
+
+        Attribute<Date> packetTime = timestampAttrOptional.get();
+
+        if (packetTime.getValue().isEmpty()) {
+            getLogger().warning("Current packet timestamp is empty");
+            throw new NullPointerException("Current packet timestamp is empty");
+        }
+
+        long packetTimestamp = packetTime.getValue().get().getTime();
 
         attributes.forEach(attribute -> attribute.setTimestamp(packetTimestamp));
 

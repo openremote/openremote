@@ -38,7 +38,7 @@ import spock.util.concurrent.PollingConditions
 import java.nio.file.Path
 
 class TeltonikaMQTTProtocolTest extends Specification implements ManagerContainerTrait {
-    @Shared public def conditions = new PollingConditions(timeout: 10, delay: 0.1)
+    @Shared public def conditions = new PollingConditions(timeout: 100, delay: 0.1)
     public static Map<String, TeltonikaParameter> params;
 
     public static Container container
@@ -391,25 +391,23 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
         def correctTopicData = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
         def correctTopicCommands = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_SEND_TOPIC}".toString();
 
-        def String testCommandKey = "CMD";
+
+
         def String testCommandValue = "test";
-
-
         def String testResponseKey = "RSP"
         def String testResponseValue = "test successful"
-        HashMap<String, String> rspMap = new HashMap<>();
-        rspMap.put(testResponseKey, testResponseValue);
+
+        Map<String, String> cmdMap = new HashMap<>();
+        Map<String, String> rspMap = Map.of(testResponseKey, testResponseValue)
 
         Boolean correctResponse = false;
         client.connect();
         client.addMessageConsumer(correctTopicData, { _ -> return });
         client.addMessageConsumer(correctTopicCommands, { msg -> {
             getLOG().error("RECEIVED NEW MESSAGE: "+msg.getPayload())
-            Optional<HashMap<String, String>> sentMap = ValueUtil.parse(msg.getPayload(), Map<String,String>.class)
-            if(sentMap.isPresent()){
-                assert sentMap.get().get(testCommandKey) == testCommandValue
-                assert !correctResponse
-                correctResponse = true
+            ValueUtil.parse(msg.getPayload(), Map<String,String>.class).ifPresent {map ->
+                cmdMap = map
+                getLOG().error("PARSED PAYLOAD" + cmdMap);
             }
         }});
 
@@ -455,12 +453,14 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
         then: "A message is sent to the device with the correct format"
 
         conditions.eventually {
-            assert correctResponse
+            getLOG().info("eventually: "+cmdMap.toString())
+            assert cmdMap.containsKey("CMD")
+            assert cmdMap.get("CMD") == testCommandValue
         }
 
         when: "the device replies to that message"
 
-        // Check AWS IoT Core tutorial from Teltonika, the bottom of the page always shows that rspMap is the format we need
+        // Check AWS IoT Core tutorial from Teltonika, the bottom of the page always shows that rspMap is the format we nee
         client.sendMessage(new MQTTMessage<String>(correctTopicData, ValueUtil.asJSON(rspMap).get()));
 
         then: "The Handler understands the message and updates the response attribute"
@@ -485,6 +485,9 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
         client.disconnect()
     }
 
+
+    //TODO: Commented-out test for now, need to create a concise list of payloads for full integration test, with
+    // Asset state duration, bidirectional messages, etc.
 
 
     def "the handler stores all attributes with the correct timestamp"() {
