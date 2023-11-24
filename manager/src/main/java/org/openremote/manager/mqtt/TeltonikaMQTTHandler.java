@@ -453,7 +453,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
             AttributeMap attributeMap;
             try{
-                attributeMap = payload.state.GetAttributes(params, new AttributeMap(), getLogger());
+                attributeMap = payload.state.getAttributes(params, new AttributeMap(), getLogger());
             }catch (Exception e){
                 getLogger().severe("Failed to payload.state.GetAttributes");
                 getLogger().severe(e.toString());
