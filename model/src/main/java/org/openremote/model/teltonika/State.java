@@ -266,7 +266,14 @@ public class State {
         }
     }
 
-    private GeoJSONPoint ParseLatLngToGeoJSONObject(String latlngString) {
+    /**
+     * A function that takes a string input and, if the regex pattern is satisfied, return a GeoJSONPoint.
+     *
+     * @param latlngString  A string that contains coordinates in latitude-longitude format,separated by a comma with no spaces,
+     *                      and the values being specified with periods as decimal points. Example: " 5.4807328,51.44314"
+     * @return              A GeoJSONPoint of the coordinates in the input string.
+     */
+    private GeoJSONPoint parseLatLngToGeoJSONObject(String latlngString) {
         String regexPattern = "^([-+]?[0-8]?\\d(\\.\\d+)?|90(\\.0+)?),([-+]?(1?[0-7]?[0-9](\\.\\d+)?|180(\\.0+)?))$";
 
         Pattern r = Pattern.compile(regexPattern);
