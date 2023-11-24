@@ -631,6 +631,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
         this._connectDeferred = new Deferred();
 
         this._webSocket!.onopen = () => {
+            console.debug("[WebSocketEventProvider] Connected.")
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
@@ -651,6 +652,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
         };
 
         this._webSocket!.onclose = () => {
+            console.debug("[WebSocketEventProvider] Closed the connection.")
             this._webSocket = undefined;
 
             if (this._connectDeferred) {
@@ -711,7 +713,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected _doDisconnect(): void {
-        this._webSocket!.close();
+        this._webSocket?.close(); // TODO: Temporary changed it from ! to ?, should we keep it this way?
         this._subscribeDeferred = null;
         this._repliesDeferred.clear();
     }

@@ -593,10 +593,9 @@ export class Manager implements EventProviderFactory {
 
     // Timer that runs the reconnect logic every X milliseconds
     // It automatically clears the interval when the reconnect is successful.
-    protected _runAuthReconnectTimer(timeout = 10000, timeoutMax = 30000) {
+    protected _runAuthReconnectTimer(timeout = 5000, timeoutMax = 30000) {
         if(!this._authReconnectTimeout) {
             const reconnectAuthFunc = () => {
-                console.log("Attempting to reconnect...");
                 this._attemptKeycloakReconnect().then((disconnected) => {
                     if(!disconnected) {
                         this._finishAuthReconnectTimer(true);
@@ -644,6 +643,7 @@ export class Manager implements EventProviderFactory {
         let keycloakOffline = false;
         if(this._keycloak !== undefined) {
 
+            console.log("Attempting to reconnect to keycloak...");
             this._setAuthDisconnected(true);
             this._emitEvent(OREvent.CONNECTING); // emit event every time a reconnect attempt is made
 
@@ -976,8 +976,8 @@ export class Manager implements EventProviderFactory {
             };
 
             this._keycloak!.onAuthRefreshError = () => {
-                console.log("Failed to refresh the access token.")
-                this._runAuthReconnectTimer(5000);
+                console.debug("Keycloak callback: Failed to refresh the access token.")
+                this._runAuthReconnectTimer();
             }
 
             try {
@@ -1006,7 +1006,12 @@ export class Manager implements EventProviderFactory {
                     this._keycloakUpdateTokenInterval = window.setInterval(() => {
                         // only try to update token when online, otherwise the reconnect logic (this._attemptReconnect()) will try this
                         if(!this._authDisconnected) {
-                            this.updateKeycloakAccessToken();
+                            try {
+                                this.updateKeycloakAccessToken();
+                            } catch (e) {
+                                console.error("Could not update keycloak access token during regular interval.");
+                                this._runAuthReconnectTimer();
+                            }
                         }
                     }, 10000);
                     this._onAuthenticated();
@@ -1029,6 +1034,7 @@ export class Manager implements EventProviderFactory {
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
         try {
             // Custom request timeout of 15 seconds
+            const controller = new AbortController();
             const timeoutPromise = new Promise((resolve, reject) => {
                 setTimeout(() => {
                     reject(new Error("Request to update keycloak token timed out after 15 seconds.."));
@@ -1042,8 +1048,9 @@ export class Manager implements EventProviderFactory {
             console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
             return Promise.resolve(tokenRefreshed);
         } catch (e) {
-            console.debug("Failed to update the access token.");
+            console.error("Access token update failed, during refresh from server...");
             console.error(e);
+            console.debug(`Is this an error object? ${(e instanceof Error)}`); // TODO: Remove this after debugging
             return Promise.reject(e);
         }
     }
@@ -1076,6 +1083,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected _setAuthDisconnected(disconnected: boolean) {
+        console.debug(`Authentication is now ${disconnected ? 'disconnected.' : 'connected!'}`);
         if(disconnected) {
             this._authDisconnected = true;
             this._emitEvent(OREvent.OFFLINE)
@@ -1090,6 +1098,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected _setEventDisconnected(disconnected: boolean) {
+        console.debug(`EventProvider is now ${disconnected ? 'disconnected.' : 'connected!'}`);
         if(disconnected) {
             this._eventsDisconnected = true;
             this._emitEvent(OREvent.OFFLINE);
