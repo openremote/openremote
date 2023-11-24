@@ -596,7 +596,7 @@ export class Manager implements EventProviderFactory {
     protected _runAuthReconnectTimer(timeout = 5000, timeoutMax = 30000) {
         if(!this._authReconnectTimeout) {
             const reconnectAuthFunc = () => {
-                this._attemptKeycloakReconnect().then((disconnected) => {
+                this._tryUpdateAccessToken().then((disconnected) => {
                     if(!disconnected) {
                         this._finishAuthReconnectTimer(true);
                     } else {
@@ -606,12 +606,18 @@ export class Manager implements EventProviderFactory {
                     }
 
                 }).catch((e) => {
-                    console.error(e)
+                    console.error(e);
                     this._finishAuthReconnectTimer(false);
                 })
             };
             // Start reconnect timer by triggering it once
             reconnectAuthFunc();
+
+        // If a timer is already running, just try to update the access token directly.
+        } else {
+            this._tryUpdateAccessToken().catch((e) => {
+                console.error(e);
+            });
         }
     }
 
@@ -625,6 +631,9 @@ export class Manager implements EventProviderFactory {
         }
     }
 
+    // Checks whether keycloak is reachable using a simple HTTP request.
+    // Since the keycloak JS adapter doesn't give us details of the HTTP responses they get, we test it manually using this.
+    // Resolves or throws exception.
     protected async isKeycloakReachable(): Promise<void> {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 2000);
@@ -639,29 +648,29 @@ export class Manager implements EventProviderFactory {
         }
     }
 
-    protected async _attemptKeycloakReconnect(): Promise<boolean> {
-        let keycloakOffline = false;
-        if(this._keycloak !== undefined) {
+    // Function that tries to update the token, whilst making sure the authentication service is available.
+    // It first checks the connection to keycloak, and then tries to update the access token.
+    // TODO: Currently only applies to Keycloak, not to basic auth.
+    protected async _tryUpdateAccessToken(): Promise<boolean> {
+        let authOffline = false;
+        if(this.isKeycloak() && this._authDisconnected) {
 
             console.log("Attempting to reconnect to keycloak...");
-            this._setAuthDisconnected(true);
             this._emitEvent(OREvent.CONNECTING); // emit event every time a reconnect attempt is made
 
-            // Attempt keycloak check, if applicable
-            if(this._keycloak !== undefined) {
-                try {
-                    // Before updating keycloak token, check whether Keycloak is UP using a simple HEAD request
-                    await this.isKeycloakReachable();
-                    await this.updateKeycloakAccessToken();
-                } catch (e) {
-                    keycloakOffline = true;
-                    console.error("Could not reach keycloak server.");
-                }
+            try {
+                // Before updating keycloak token, check whether Keycloak is UP using a simple HEAD request
+                await this.isKeycloakReachable();
+                await this.updateKeycloakAccessToken();
+            } catch (e) {
+                authOffline = true;
+                console.error("Could not reach keycloak server.");
             }
 
-            this._setAuthDisconnected(keycloakOffline);
+            // Update _authDisconnected respectively
+            this._setAuthDisconnected(authOffline);
         }
-        return keycloakOffline;
+        return authOffline;
     }
 
     protected _onEventProviderStatusChanged(status: EventProviderStatus) {
@@ -1034,7 +1043,6 @@ export class Manager implements EventProviderFactory {
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
         try {
             // Custom request timeout of 15 seconds
-            const controller = new AbortController();
             const timeoutPromise = new Promise((resolve, reject) => {
                 setTimeout(() => {
                     reject(new Error("Request to update keycloak token timed out after 15 seconds.."));
@@ -1082,6 +1090,8 @@ export class Manager implements EventProviderFactory {
         this.reconnectEvents();
     }
 
+    // When authentication service status changes; in most cases a failed token refresh.
+    // Always go OFFLINE if 'failed', only go back ONLINE when all EventProviders are also connected.
     protected _setAuthDisconnected(disconnected: boolean) {
         console.debug(`Authentication is now ${disconnected ? 'disconnected.' : 'connected!'}`);
         if(disconnected) {
@@ -1097,53 +1107,32 @@ export class Manager implements EventProviderFactory {
         }
     }
 
+    // When EventProvider (such as WebSocket) connection status changes.
+    // Always go OFFLINE if disconnected, only go back ONLINE when authentication is also connected.
     protected _setEventDisconnected(disconnected: boolean) {
         console.debug(`EventProvider is now ${disconnected ? 'disconnected.' : 'connected!'}`);
         if(disconnected) {
             this._eventsDisconnected = true;
             this._emitEvent(OREvent.OFFLINE);
+
+            // WebSocket might disconnect because of token expiry, so we try updating it immediately
+            if(this.isTokenExpired()) {
+                if(this.isKeycloak() && !this._authDisconnected) {
+                    this._tryUpdateAccessToken().catch((e) => {
+                        console.error(e);
+                    });
+                }
+            }
+
         } else {
             this._eventsDisconnected = false;
             if(this._authDisconnected) {
-                this._attemptKeycloakReconnect();
+                this._runAuthReconnectTimer();
             } else {
                 this._emitEvent(OREvent.ONLINE);
             }
         }
     }
-
-    /*protected _setDisconnected(disconnected: boolean) {
-        if(this._disconnected !== disconnected) {
-
-            // Always go OFFLINE if that is requested,
-            // but only go back ONLINE when all services are back online (and access token is valid etc.)
-            if(disconnected) {
-                this._disconnected = true;
-                this._emitEvent(OREvent.OFFLINE)
-            } else {
-
-                // Check status of services
-                const onlineCheck = async () => {
-                    await this.isKeycloakReachable();
-                    if(this.isTokenExpired()) {
-                        return Promise.reject("Access token is expired.");
-                    }
-                    if(this._config.eventProviderType === EventProviderType.WEBSOCKET) {
-                        if(this._events?.status !== EventProviderStatus.CONNECTED) {
-                            return Promise.reject("WebSocket is not connected.");
-                        }
-                    }
-                }
-
-                onlineCheck().then(() => {
-                    this._disconnected = false;
-                    this._emitEvent(OREvent.ONLINE);
-                }).catch(e => {
-                    console.debug(`Could not go back online: ${e}`);
-                })
-            }
-        }
-    }*/
 }
 
 export const manager = new Manager(); // Needed for webpack bundling
