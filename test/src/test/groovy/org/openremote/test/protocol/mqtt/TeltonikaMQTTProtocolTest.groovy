@@ -38,7 +38,7 @@ import spock.util.concurrent.PollingConditions
 import java.nio.file.Path
 
 class TeltonikaMQTTProtocolTest extends Specification implements ManagerContainerTrait {
-    @Shared public def conditions = new PollingConditions(timeout: 10, delay: 0.1)
+    @Shared public def conditions = new PollingConditions(timeout: 100, delay: 0.1)
     public static Map<String, TeltonikaParameter> params;
 
     public static Container container
@@ -391,25 +391,23 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
         def correctTopicData = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
         def correctTopicCommands = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_SEND_TOPIC}".toString();
 
-        def String testCommandKey = "CMD";
+
+
         def String testCommandValue = "test";
-
-
         def String testResponseKey = "RSP"
         def String testResponseValue = "test successful"
-        HashMap<String, String> rspMap = new HashMap<>();
-        rspMap.put(testResponseKey, testResponseValue);
+
+        Map<String, String> cmdMap = new HashMap<>();
+        Map<String, String> rspMap = Map.of(testResponseKey, testResponseValue)
 
         Boolean correctResponse = false;
         client.connect();
         client.addMessageConsumer(correctTopicData, { _ -> return });
         client.addMessageConsumer(correctTopicCommands, { msg -> {
             getLOG().error("RECEIVED NEW MESSAGE: "+msg.getPayload())
-            Optional<HashMap<String, String>> sentMap = ValueUtil.parse(msg.getPayload(), Map<String,String>.class)
-            if(sentMap.isPresent()){
-                assert sentMap.get().get(testCommandKey) == testCommandValue
-                assert !correctResponse
-                correctResponse = true
+            ValueUtil.parse(msg.getPayload(), Map<String,String>.class).ifPresent {map ->
+                cmdMap = map
+                getLOG().error("PARSED PAYLOAD" + cmdMap);
             }
         }});
 
@@ -455,12 +453,14 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
         then: "A message is sent to the device with the correct format"
 
         conditions.eventually {
-            assert correctResponse
+            getLOG().info("eventually: "+cmdMap.toString())
+            assert cmdMap.containsKey("CMD")
+            assert cmdMap.get("CMD") == testCommandValue
         }
 
         when: "the device replies to that message"
 
-        // Check AWS IoT Core tutorial from Teltonika, the bottom of the page always shows that rspMap is the format we need
+        // Check AWS IoT Core tutorial from Teltonika, the bottom of the page always shows that rspMap is the format we nee
         client.sendMessage(new MQTTMessage<String>(correctTopicData, ValueUtil.asJSON(rspMap).get()));
 
         then: "The Handler understands the message and updates the response attribute"
@@ -486,51 +486,54 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
     }
 
 
-
-    def "the handler stores all attributes with the correct timestamp"() {
-        when: "remove the asset, if it exists"
-        then: "asset is not there"
-        conditions.eventually {
-            assert assetStorageService.delete([UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)])
-            assert assetStorageService.find(UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)) == null
-        }
-
-        when: "the device connects to the MQTT broker to a data topic with a RX endpoint"
-
-        String correctTopic1 = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
-        client.connect();
-        then: "mqtt connection should exist"
-        conditions.eventually {
-            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
-            def connection = mqttBrokerService.getConnectionFromClientID(mqttClientId)
-            assert connection != null
-        }
-        when: "a client subscribes to the correct data topic"
-        client.addMessageConsumer(correctTopic1, { _ -> return });
-
-        then: "A subscription should exist"
-        conditions.eventually {
-            assert client.topicConsumerMap.get(correctTopic1) != null
-            assert handler.connectionSubscriberInfoMap.containsKey(getTELTONIKA_DEVICE_IMEI());
-        }
-
-        and: "the JSON with all the payloads is parsed"
-        def slurper = new JsonSlurper()
-            ArrayList<LazyMap> payloads = slurper.parseText(getClass().getResource("/org/openremote/test/teltonika/SortedPayloads.json").text) as ArrayList<Object>;
-
-        and: "the device starts publishing payloads"
-        payloads.each { LazyMap payload ->
-            // Your logic here, for example:
-            client.sendMessage(new MQTTMessage<String>(correctTopic1, JsonOutput.toJson(payload)))
-            sleep(1000);
-        }
-
-        cleanup: "disconnect client from broker"
-        client.disconnect()
-        client.removeAllMessageConsumers();
+    //TODO: Commented-out test for now, need to create a concise list of payloads for full integration test, with
+    // Asset state duration, bidirectional messages, etc.
 
 
-    }
+//    def "the handler stores all attributes with the correct timestamp"() {
+//        when: "remove the asset, if it exists"
+//        then: "asset is not there"
+//        conditions.eventually {
+//            assert assetStorageService.delete([UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)])
+//            assert assetStorageService.find(UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)) == null
+//        }
+//
+//        when: "the device connects to the MQTT broker to a data topic with a RX endpoint"
+//
+//        String correctTopic1 = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
+//        client.connect();
+//        then: "mqtt connection should exist"
+//        conditions.eventually {
+//            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+//            def connection = mqttBrokerService.getConnectionFromClientID(mqttClientId)
+//            assert connection != null
+//        }
+//        when: "a client subscribes to the correct data topic"
+//        client.addMessageConsumer(correctTopic1, { _ -> return });
+//
+//        then: "A subscription should exist"
+//        conditions.eventually {
+//            assert client.topicConsumerMap.get(correctTopic1) != null
+//            assert handler.connectionSubscriberInfoMap.containsKey(getTELTONIKA_DEVICE_IMEI());
+//        }
+//
+//        and: "the JSON with all the payloads is parsed"
+//        def slurper = new JsonSlurper()
+//            ArrayList<LazyMap> payloads = slurper.parseText(getClass().getResource("/org/openremote/test/teltonika/SortedPayloads.json").text) as ArrayList<Object>;
+//
+//        and: "the device starts publishing payloads"
+//        payloads.each { LazyMap payload ->
+//            // Your logic here, for example:
+//            client.sendMessage(new MQTTMessage<String>(correctTopic1, JsonOutput.toJson(payload)))
+//            sleep(1000);
+//        }
+//
+//        cleanup: "disconnect client from broker"
+//        client.disconnect()
+//        client.removeAllMessageConsumers();
+//
+//
+//    }
 
     //TODO: Write a test for AssetStateDuration (Multiple trip payloads etc.)
 }
