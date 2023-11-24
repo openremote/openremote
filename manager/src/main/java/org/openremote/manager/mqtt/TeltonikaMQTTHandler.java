@@ -6,9 +6,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
-import org.opengis.temporal.DateAndTime;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -26,7 +26,6 @@ import org.openremote.model.query.filter.NumberPredicate;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.teltonika.*;
 import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import java.io.IOException;
@@ -42,7 +41,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.manager.mqtt.DefaultMQTTHandler.prepareHeaders;
 import static org.openremote.model.syslog.SyslogCategory.API;
 import static org.openremote.model.value.MetaItemType.*;
@@ -50,7 +48,7 @@ import static org.openremote.model.value.MetaItemType.*;
 public class TeltonikaMQTTHandler extends MQTTHandler {
 
     //TODO: Maybe move this to Models?
-    private static class TeltonikaDevice {
+    protected static class TeltonikaDevice {
         String clientId;
         String commandTopic;
 
@@ -72,6 +70,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     private static final Logger LOG = SyslogCategory.getLogger(API, TeltonikaMQTTHandler.class);
 
     protected AssetStorageService assetStorageService;
+    protected AssetProcessingService assetProcessingService;
     protected AssetDatapointService AssetDatapointService;
     protected TimerService timerService;
     protected Path DeviceParameterPath;
@@ -95,6 +94,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         getLogger().info("Starting Teltonika MQTT Handler");
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        assetProcessingService = container.getService(AssetProcessingService.class);
         AssetDatapointService = container.getService(AssetDatapointService.class);
         timerService = container.getService(TimerService.class);
         DeviceParameterPath = Paths.get("deployment/manager/fleet/FMC003.json");
@@ -105,12 +105,10 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
         }
-        //TODO: Figure out a way to update the AssetFilter when a new asset is a candidate to receive a response message
-        // Does it even automatically refresh the Asset list?
 
         clientEventService.addInternalSubscription(
                 AttributeEvent.class,
-                buildAssetFilter(),
+                null,
                 this::handleAttributeMessage);
     }
 
@@ -135,6 +133,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     }
 
     private void handleAttributeMessage(AttributeEvent event) {
+
+        AssetFilter<AttributeEvent> eventFilter = buildAssetFilter();
+
+        if(eventFilter.apply(event) != null) {
+            getLogger().finer("eventFilter applied and the event is not for me");
+            return;
+        }
+
         // If this is not an AttributeEvent that updates a TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME field, ignore
         if (!Objects.equals(event.getAttributeName(), TELTONIKA_DEVICE_SEND_COMMAND_ATTRIBUTE_NAME)) return;
         //Find the asset in question
@@ -186,10 +192,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
      * @param device A {@link TeltonikaDevice} that is currently subscribed, to which to send the message to.
      */
     private void sendCommandToTeltonikaDevice(String command, TeltonikaDevice device) {
-        HashMap<String, String> cmdtest = new HashMap<>();
-        cmdtest.put("CMD", command);
-
-        mqttBrokerService.publishMessage(device.commandTopic, cmdtest, MqttQoS.EXACTLY_ONCE);
+        mqttBrokerService.publishMessage(device.commandTopic, Map.of("CMD", command), MqttQoS.EXACTLY_ONCE);
     }
 
     @Override
@@ -255,7 +258,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
-        getLogger().info("Teltonika device will publish to Topic "+topic.toString()+" to transmit payload");
+        getLogger().finer("Teltonika device will publish to Topic "+topic.toString()+" to transmit payload");
         return true;
     }
 
@@ -453,7 +456,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
             AttributeMap attributeMap;
             try{
-                attributeMap = payload.state.GetAttributes(params, new AttributeMap(), getLogger());
+                attributeMap = payload.state.getAttributes(params, new AttributeMap(), getLogger());
             }catch (Exception e){
                 getLogger().severe("Failed to payload.state.GetAttributes");
                 getLogger().severe(e.toString());
@@ -630,18 +633,14 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
 
         //First merge, then update existing attributes
         asset.addAttributes(nonExistingAttributes.stream().toArray(Attribute[]::new));
-        if(nonExistingAttributes.size() > 0){
-            assetStorageService.merge(asset, false, true);
+        if(!nonExistingAttributes.isEmpty()){
+            assetStorageService.merge(asset);
         }
 
         existingAttributes.forEach(attribute -> attribute.getTimestamp().ifPresent(timestamp -> {
             AttributeEvent attributeEvent = new AttributeEvent(asset.getId(), attribute.getName(), attribute.getValue().get(), timestamp);
-            LOG.info("Publishing to client inbound queue: " + attributeEvent);
-            messageBrokerService.getFluentProducerTemplate()
-                    .withHeaders(headers)
-                    .withBody(attributeEvent)
-                    .to(CLIENT_INBOUND_QUEUE)
-                    .asyncSend();
+//            LOG.info("Publishing to client inbound queue: " + attribute.getName());
+            assetProcessingService.sendAttributeEvent(attributeEvent);
         }));
     }
 }
