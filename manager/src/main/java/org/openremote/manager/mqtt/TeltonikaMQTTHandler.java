@@ -609,31 +609,31 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
     private void updateAsset(Asset<?> asset, AttributeMap attributes, Topic topic, RemotingConnection connection) {
 
         // Make sure that there is a lastContact attribute, even if it's a response to a command from the device.
-        Optional<Attribute<Date>> timestampAttrOptional = Optional.empty();
-
-        if(attributes.containsKey(TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME) && attributes.size() == 1){
-            Date timestamp = new Date(TimerService.Clock.REAL.getCurrentTimeMillis());
-            attributes.add(new Attribute<Date>("lastContact", ValueType.DATE_AND_TIME, timestamp, timestamp.getTime()));
-        }
-
-
-        timestampAttrOptional = attributes.get(new AttributeDescriptor<Date>("lastContact", ValueType.DATE_AND_TIME));
-
-        if (timestampAttrOptional.isEmpty()) {
-            getLogger().warning("Could not figure out current packet timestamp");
-            throw new NullPointerException("Could not find current packet timestamp");
-        }
-
-        Attribute<Date> packetTime = timestampAttrOptional.get();
-
-        if (packetTime.getValue().isEmpty()) {
-            getLogger().warning("Current packet timestamp is empty");
-            throw new NullPointerException("Current packet timestamp is empty");
-        }
-
-        long packetTimestamp = packetTime.getValue().get().getTime();
-
-        attributes.forEach(attribute -> attribute.setTimestamp(packetTimestamp));
+//        Optional<Attribute<Date>> timestampAttrOptional = Optional.empty();
+//
+//        if(attributes.containsKey(TELTONIKA_DEVICE_RECEIVE_COMMAND_ATTRIBUTE_NAME) && attributes.size() == 1){
+//            Date timestamp = new Date(TimerService.Clock.REAL.getCurrentTimeMillis());
+//            attributes.add(new Attribute<Date>("lastContact", ValueType.DATE_AND_TIME, timestamp, timestamp.getTime()));
+//        }
+//
+//
+//        timestampAttrOptional = attributes.get(new AttributeDescriptor<Date>("lastContact", ValueType.DATE_AND_TIME));
+//
+//        if (timestampAttrOptional.isEmpty()) {
+//            getLogger().warning("Could not figure out current packet timestamp");
+//            throw new NullPointerException("Could not find current packet timestamp");
+//        }
+//
+//        Attribute<Date> packetTime = timestampAttrOptional.get();
+//
+//        if (packetTime.getValue().isEmpty()) {
+//            getLogger().warning("Current packet timestamp is empty");
+//            throw new NullPointerException("Current packet timestamp is empty");
+//        }
+//
+//        long packetTimestamp = packetTime.getValue().get().getTime();
+//
+//        attributes.forEach(attribute -> attribute.setTimestamp(packetTimestamp));
 
         String imei = asset.getAttribute("IMEI").toString();
 
