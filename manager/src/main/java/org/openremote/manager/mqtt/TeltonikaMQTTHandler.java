@@ -99,7 +99,7 @@ public class TeltonikaMQTTHandler extends MQTTHandler {
         assetProcessingService = container.getService(AssetProcessingService.class);
         AssetDatapointService = container.getService(AssetDatapointService.class);
         timerService = container.getService(TimerService.class);
-        DeviceParameterPath = Paths.get("deployment/manager/fleet/FMC003.json");
+        DeviceParameterPath = Paths.get("/deployment/manager/fleet/FMC003.json");
         if (!identityService.isKeycloakEnabled()) {
             getLogger().warning("MQTT connections are supported when not using Keycloak identity provider, only for the Teltonika Telematics devices, until auto-provisioning is fully implemented.");
             isKeycloak = false;
