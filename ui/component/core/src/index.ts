@@ -606,6 +606,7 @@ export class Manager implements EventProviderFactory {
                     }
 
                 }).catch((e) => {
+                    // It is very unlikely that an exception is thrown here, but we should finish the timer if it does
                     console.error(e);
                     this._finishAuthReconnectTimer(false);
                 })
@@ -615,9 +616,7 @@ export class Manager implements EventProviderFactory {
 
         // If a timer is already running, just try to update the access token directly.
         } else {
-            this._tryUpdateAccessToken().catch((e) => {
-                console.error(e);
-            });
+            this._tryUpdateAccessToken();
         }
     }
 
@@ -1092,44 +1091,52 @@ export class Manager implements EventProviderFactory {
 
     // When authentication service status changes; in most cases a failed token refresh.
     // Always go OFFLINE if 'failed', only go back ONLINE when all EventProviders are also connected.
-    protected _setAuthDisconnected(disconnected: boolean) {
-        console.debug(`Authentication is now ${disconnected ? 'disconnected.' : 'connected!'}`);
-        if(disconnected) {
-            this._authDisconnected = true;
-            this._emitEvent(OREvent.OFFLINE)
-        } else {
-            this._authDisconnected = false;
-            if(this._eventsDisconnected) {
-                this.reconnectEvents();
+    protected _setAuthDisconnected(disconnected: boolean, force = false) {
+        if(this._authDisconnected !== disconnected || force) {
+            console.debug(`Authentication is now ${disconnected ? 'disconnected.' : 'connected!'}`);
+            if(disconnected) {
+                this._authDisconnected = true;
+                this._emitEvent(OREvent.OFFLINE);
             } else {
-                this._emitEvent(OREvent.ONLINE);
+                this._authDisconnected = false;
+                if(this._eventsDisconnected) {
+                    this.reconnectEvents();
+                } else {
+                    this._emitEvent(OREvent.ONLINE);
+                }
             }
         }
     }
 
     // When EventProvider (such as WebSocket) connection status changes.
     // Always go OFFLINE if disconnected, only go back ONLINE when authentication is also connected.
-    protected _setEventDisconnected(disconnected: boolean) {
-        console.debug(`EventProvider is now ${disconnected ? 'disconnected.' : 'connected!'}`);
-        if(disconnected) {
-            this._eventsDisconnected = true;
-            this._emitEvent(OREvent.OFFLINE);
+    protected _setEventDisconnected(disconnected: boolean, force = false) {
+        if(this._eventsDisconnected !== disconnected || force) {
+            console.debug(`EventProvider is now ${disconnected ? 'disconnected.' : 'connected!'}`);
+            if(disconnected) {
+                this._eventsDisconnected = true;
+                this._emitEvent(OREvent.OFFLINE);
 
-            // WebSocket might disconnect because of token expiry, so we try updating it immediately
-            if(this.isTokenExpired()) {
-                if(this.isKeycloak() && !this._authDisconnected) {
-                    this._tryUpdateAccessToken().catch((e) => {
-                        console.error(e);
-                    });
+                // WebSocket might disconnect because of token expiry, so we try updating it immediately
+                // Since token expiry is unrelated to disconnected state, a successful token update would change _authDisconnected from FALSE to FALSE.
+                // So, if the token update is successful, we force update _authDisconnected.
+                if(this.isTokenExpired()) {
+                    if(this.isKeycloak() && !this._authDisconnected) {
+                        this._tryUpdateAccessToken().then((offline) => {
+                            if(!offline) {
+                                this._setAuthDisconnected(false, true);
+                            }
+                        });
+                    }
                 }
-            }
 
-        } else {
-            this._eventsDisconnected = false;
-            if(this._authDisconnected) {
-                this._runAuthReconnectTimer();
             } else {
-                this._emitEvent(OREvent.ONLINE);
+                this._eventsDisconnected = false;
+                if(this._authDisconnected) {
+                    this._runAuthReconnectTimer();
+                } else {
+                    this._emitEvent(OREvent.ONLINE);
+                }
             }
         }
     }
