@@ -6,17 +6,9 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {
-    AssetModelUtil,
-    ConsoleAppConfig,
-    MapType,
-    Role,
-    User,
-    UsernamePassword,
-} from "@openremote/model";
+import {AssetModelUtil, Auth, ManagerConfig, ConsoleAppConfig, MapType, Role, User, UsernamePassword, EventProviderType} from "@openremote/model";
 import * as Util from "./util";
-import {IconSets, createSvgIconSet, createMdiIconSet, OrIconSet} from "@openremote/or-icon";
-import { Auth, EventProviderType, ManagerConfig } from "@openremote/model/lib";
+import {createMdiIconSet, createSvgIconSet, IconSets, OrIconSet} from "@openremote/or-icon";
 
 // Re-exports
 export {Util};
@@ -176,10 +168,6 @@ export class Manager implements EventProviderFactory {
         return this._authenticated;
     }
 
-    get authDisconnected(): boolean {
-        return this._authDisconnected;
-    }
-
     get ready() {
         return this._ready;
     }
@@ -279,9 +267,8 @@ export class Manager implements EventProviderFactory {
     private _error?: ORError;
     private _config!: ManagerConfig;
     private _authenticated: boolean = false;
-    private _disconnected: boolean = false;
     private _authDisconnected: boolean = false;
-    private _reconnectInterval?: number;
+    private _authReconnectTimeout?: number;
     private _ready: boolean = false;
     private _readyCallback?: () => PromiseLike<any>;
     private _name: string = "";
@@ -299,6 +286,7 @@ export class Manager implements EventProviderFactory {
     private _console!: Console;
     private _consoleAppConfig?: ConsoleAppConfig;
     private _events?: EventProvider;
+    private _eventsDisconnected: boolean = false;
     private _displayRealm?: string;
 
     public isManagerSameOrigin(): boolean {
@@ -594,42 +582,46 @@ export class Manager implements EventProviderFactory {
         return connected;
     }
 
-    // Timer that runs the reconnect logic every X milliseconds
-    // It automatically clears the interval when the reconnect is successful.
-    protected _runReconnectTimer(timeout = 10000, timeoutMax = 30000) {
-        if(!this._reconnectInterval) {
-            const reconnectFunc = () => {
-                console.log("Attempting to reconnect...");
-                let continueTimer = true;
-                this._attemptReconnect().then((disconnected) => {
-                    if(!disconnected) {
-                        this._finishReconnectTimer(true);
-                        continueTimer = false;
-                    } else {
-                        continueTimer = true;
-                    }
-
-                }).finally(() => {
-                    if(continueTimer) {
-                        this._finishReconnectTimer(false);
-                        timeout = Math.min(timeoutMax, Math.round(timeout * 1.2)); // gradually increase the timer
-                        console.log(`Trying again in ${timeout} milliseconds...`)
-                        this._reconnectInterval = window.setInterval(reconnectFunc, timeout);
-                    }
-                });
-            };
-            // Start reconnect timer by triggering it once
-            reconnectFunc();
-            /*this._reconnectInterval = window.setInterval(reconnectFunc, timeout);*/
+    protected reconnectEvents() {
+        if (this._events) {
+            this._events.disconnect();
+        }
+        if (!this._events) {
+            this.doEventsSubscriptionInit();
         }
     }
 
-    protected _finishReconnectTimer(success: boolean) {
-        if(this._reconnectInterval) {
-            clearInterval(this._reconnectInterval);
-            delete this._reconnectInterval;
+    // Timer that runs the reconnect logic every X milliseconds
+    // It automatically clears the interval when the reconnect is successful.
+    protected _runAuthReconnectTimer(timeout = 10000, timeoutMax = 30000) {
+        if(!this._authReconnectTimeout) {
+            const reconnectAuthFunc = () => {
+                console.log("Attempting to reconnect...");
+                this._attemptKeycloakReconnect().then((disconnected) => {
+                    if(!disconnected) {
+                        this._finishAuthReconnectTimer(true);
+                    } else {
+                        timeout = Math.min(timeoutMax, Math.round(timeout * 1.2)); // gradually increase the timer
+                        console.log(`Trying again in ${timeout} milliseconds...`)
+                        this._authReconnectTimeout = window.setTimeout(reconnectAuthFunc, timeout);
+                    }
+
+                }).catch((e) => {
+                    console.error(e)
+                    this._finishAuthReconnectTimer(false);
+                })
+            };
+            // Start reconnect timer by triggering it once
+            reconnectAuthFunc();
+        }
+    }
+
+    protected _finishAuthReconnectTimer(success: boolean) {
+        if(this._authReconnectTimeout) {
+            clearTimeout(this._authReconnectTimeout);
+            delete this._authReconnectTimeout;
             if(success) {
-                this._setDisconnected(false);
+                this._setAuthDisconnected(false);
             }
         }
     }
@@ -648,38 +640,39 @@ export class Manager implements EventProviderFactory {
         }
     }
 
-    protected async _attemptReconnect(): Promise<boolean> {
-
-        this._setDisconnected(true);
-        this._emitEvent(OREvent.CONNECTING); // emit event every time a reconnect attempt is made
-
-        // Attempt keycloak check, if applicable
+    protected async _attemptKeycloakReconnect(): Promise<boolean> {
         let keycloakOffline = false;
         if(this._keycloak !== undefined) {
-            try {
-                // Before updating keycloak token, check whether Keycloak is UP using a simple HEAD request
-                await fetch(this._config.keycloakUrl! + "/health/ready", {method: 'HEAD', mode: 'no-cors'});
-                await this.updateKeycloakAccessToken();
-            } catch (e) {
-                keycloakOffline = true;
-                console.error("Could not reach keycloak server.");
-            }
-        }
 
-        const offline = (keycloakOffline)
-        this._setDisconnected(offline);
-        return offline;
+            this._setAuthDisconnected(true);
+            this._emitEvent(OREvent.CONNECTING); // emit event every time a reconnect attempt is made
+
+            // Attempt keycloak check, if applicable
+            if(this._keycloak !== undefined) {
+                try {
+                    // Before updating keycloak token, check whether Keycloak is UP using a simple HEAD request
+                    await this.isKeycloakReachable();
+                    await this.updateKeycloakAccessToken();
+                } catch (e) {
+                    keycloakOffline = true;
+                    console.error("Could not reach keycloak server.");
+                }
+            }
+
+            this._setAuthDisconnected(keycloakOffline);
+        }
+        return keycloakOffline;
     }
 
     protected _onEventProviderStatusChanged(status: EventProviderStatus) {
         switch (status) {
             case EventProviderStatus.DISCONNECTED:
                 console.log("Event provider disconnected.");
-                this._emitEvent(OREvent.OFFLINE);
+                this._setEventDisconnected(true);
                 break;
             case EventProviderStatus.CONNECTED:
                 console.log("Event provider connected.")
-                this._emitEvent(OREvent.ONLINE);
+                this._setEventDisconnected(false);
                 break;
             case EventProviderStatus.CONNECTING:
                 this._emitEvent(OREvent.CONNECTING);
@@ -876,7 +869,7 @@ export class Manager implements EventProviderFactory {
     }
 
     public hasRealmRole(role: string) {
-        return this._keycloak && this._keycloak.hasRealmRole(role);
+        return this.isKeycloak() && this._keycloak!.hasRealmRole(role);
     }
 
     public hasRole(role: string, client: string = this._config.clientId!) {
@@ -895,8 +888,8 @@ export class Manager implements EventProviderFactory {
     }
 
     public getKeycloakToken(): string | undefined {
-        if (this._keycloak) {
-            return this._keycloak.token;
+        if (this.isKeycloak()) {
+            return this._keycloak!.token;
         }
         return undefined;
     }
@@ -906,9 +899,9 @@ export class Manager implements EventProviderFactory {
     }
 
     // Checking (manually) if token is invalid. Default margin of 2 seconds
-    public isTokenInvalid(margin = 2000): boolean {
-        if(this._keycloak) {
-            const invalid = (this._keycloak.tokenParsed.exp <= moment().add(margin, "milliseconds").unix());
+    public isTokenExpired(margin = 2000): boolean {
+        if(this.isKeycloak()) {
+            const invalid = (this._keycloak!.tokenParsed.exp <= moment().add(margin, "milliseconds").unix());
             console.debug(`Is token invalid? ${invalid}`);
             return invalid;
         } else {
@@ -975,7 +968,7 @@ export class Manager implements EventProviderFactory {
                     keycloakPromise(true);
                 }
                 // clear reconnect timer after success
-                this._finishReconnectTimer(true);
+                this._finishAuthReconnectTimer(true);
             };
 
             this._keycloak!.onAuthError = () => {
@@ -984,9 +977,7 @@ export class Manager implements EventProviderFactory {
 
             this._keycloak!.onAuthRefreshError = () => {
                 console.log("Failed to refresh the access token.")
-                this.isKeycloakReachable().catch(() => {
-                    this._runReconnectTimer(5000);
-                });
+                this._runAuthReconnectTimer(5000);
             }
 
             try {
@@ -1014,7 +1005,7 @@ export class Manager implements EventProviderFactory {
                     }
                     this._keycloakUpdateTokenInterval = window.setInterval(() => {
                         // only try to update token when online, otherwise the reconnect logic (this._attemptReconnect()) will try this
-                        if(!this._disconnected) {
+                        if(!this._authDisconnected) {
                             this.updateKeycloakAccessToken();
                         }
                     }, 10000);
@@ -1081,36 +1072,69 @@ export class Manager implements EventProviderFactory {
     // TODO: Remove events logic once websocket supports anonymous connections
     protected _setAuthenticated(authenticated: boolean) {
         this._authenticated = authenticated;
-
-        // Reconnect to websocket
-        if (this._events) {
-            this._events.disconnect();
-        }
-
-        if (!this._events) {
-            this.doEventsSubscriptionInit();
-        }
+        this.reconnectEvents();
     }
 
-    protected _setDisconnected(disconnected: boolean) {
-        if(this._disconnected !== disconnected) {
-            const webSocketOnline = this._config.eventProviderType === EventProviderType.WEBSOCKET && this._events?.status === EventProviderStatus.CONNECTED;
-            const tokenValid = !this.isTokenInvalid();
-
-            // If token became invalid, we assume authentication is OFFLINE
-            this._authDisconnected = !tokenValid;
-
-            // Always go OFFLINE if given, but only go back ONLINE when
-            // websocket is also online, and token is valid.
-            if(disconnected) {
-                this._disconnected = true;
-                this._emitEvent(OREvent.OFFLINE);
-            } else if(webSocketOnline && tokenValid && !disconnected) {
-                this._disconnected = false;
+    protected _setAuthDisconnected(disconnected: boolean) {
+        if(disconnected) {
+            this._authDisconnected = true;
+            this._emitEvent(OREvent.OFFLINE)
+        } else {
+            this._authDisconnected = false;
+            if(this._eventsDisconnected) {
+                this.reconnectEvents();
+            } else {
                 this._emitEvent(OREvent.ONLINE);
             }
         }
     }
+
+    protected _setEventDisconnected(disconnected: boolean) {
+        if(disconnected) {
+            this._eventsDisconnected = true;
+            this._emitEvent(OREvent.OFFLINE);
+        } else {
+            this._eventsDisconnected = false;
+            if(this._authDisconnected) {
+                this._attemptKeycloakReconnect();
+            } else {
+                this._emitEvent(OREvent.ONLINE);
+            }
+        }
+    }
+
+    /*protected _setDisconnected(disconnected: boolean) {
+        if(this._disconnected !== disconnected) {
+
+            // Always go OFFLINE if that is requested,
+            // but only go back ONLINE when all services are back online (and access token is valid etc.)
+            if(disconnected) {
+                this._disconnected = true;
+                this._emitEvent(OREvent.OFFLINE)
+            } else {
+
+                // Check status of services
+                const onlineCheck = async () => {
+                    await this.isKeycloakReachable();
+                    if(this.isTokenExpired()) {
+                        return Promise.reject("Access token is expired.");
+                    }
+                    if(this._config.eventProviderType === EventProviderType.WEBSOCKET) {
+                        if(this._events?.status !== EventProviderStatus.CONNECTED) {
+                            return Promise.reject("WebSocket is not connected.");
+                        }
+                    }
+                }
+
+                onlineCheck().then(() => {
+                    this._disconnected = false;
+                    this._emitEvent(OREvent.ONLINE);
+                }).catch(e => {
+                    console.debug(`Could not go back online: ${e}`);
+                })
+            }
+        }
+    }*/
 }
 
 export const manager = new Manager(); // Needed for webpack bundling

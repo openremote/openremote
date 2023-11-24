@@ -1,5 +1,5 @@
 import manager from "./index";
-import {arrayRemove, Deferred, waitUntil} from "./util";
+import {arrayRemove, Deferred} from "./util";
 import {
     Asset,
     AssetEvent,
@@ -12,7 +12,6 @@ import {
     EventRequestResponseWrapper,
     EventSubscription,
     ReadAssetsEvent,
-    ReadAttributeEvent,
     SharedEvent,
     TriggeredEventSubscription
 } from "@openremote/model";
@@ -622,15 +621,8 @@ export class WebSocketEventProvider extends EventProviderImpl {
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
         if (manager.authenticated) {
-            if(manager.authDisconnected) {
-                console.debug("[WebSocketEventProvider] Got disconnected from authentication service, waiting before it is back online...")
-                await waitUntil((_: any) => !manager.authDisconnected, 400, 5000);
-                console.debug("[WebSocketEventProvider] Authentication service available again, continuing with connecting to WebSocket.")
-            }
-            if(manager.isTokenInvalid()) {
-                console.debug("[WebSocketEventProvider] Token is currently invalid, waiting before it is valid again...");
-                await waitUntil((_: any) => !manager.isTokenInvalid(), 400, 5000);
-                console.debug("[WebSocketEventProvider] Token is valid now, continuing with connecting to WebSocket.");
+            if(manager.isTokenExpired()) {
+                return Promise.reject("The access token inserted in the WebSocket connection is invalid. Aborted.");
             }
             authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
         }
