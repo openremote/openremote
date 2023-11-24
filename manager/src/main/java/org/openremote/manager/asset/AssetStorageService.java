@@ -604,18 +604,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public <T extends Asset<?>> T merge(T asset) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, false, false);
+        return merge(asset, false);
     }
 
     /**
      * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of
      *                        version.
-     * @param preserveTimestamps    If true, the attributes being merged will be stored with their stored timestamp, given those timestamps are newer than the current asset's attributes.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
-    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean preserveTimestamps) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, overrideVersion, false, null, preserveTimestamps);
+    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion) throws IllegalStateException, ConstraintViolationException {
+        return merge(asset, overrideVersion, false, null);
     }
 
     /**
@@ -624,23 +623,22 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public <T extends Asset<?>> T merge(T asset, String userName) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, false, false, userName, false);
+        return merge(asset, false, false, userName);
     }
 
     /**
      * Merge the requested {@link Asset} checking that it meets all constraint requirements before doing so; the
      * timestamp of each {@link Attribute} will also be updated to the current system time if it has changed to assist
      * with {@link Attribute} equality (see {@link Attribute#equals}).
-     * @param overrideVersion       If <code>true</code>, the merge will override the data in the database, independent of
-     *                              version.
-     * @param skipGatewayCheck      Don't check if asset is a gateway asset and merge asset into local persistence service.
-     * @param userName              the user which this asset needs to be assigned to.
-     * @param preserveTimestamps    If true, the attributes being merged will be stored with their stored timestamp, given those timestamps are newer than the current asset's attributes.
+     * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of
+     *                        version.
+     * @param skipGatewayCheck Don't check if asset is a gateway asset and merge asset into local persistence service.
+     * @param userName        the user which this asset needs to be assigned to.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean skipGatewayCheck, String userName, boolean preserveTimestamps) throws IllegalStateException, ConstraintViolationException {
+    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean skipGatewayCheck, String userName) throws IllegalStateException, ConstraintViolationException {
 
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Merging asset: " + asset);
@@ -690,28 +688,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     throw new IllegalStateException(msg);
                 }
 
-
-
-
                 // Update timestamp on modified attributes this allows fast equality checking
                 asset.getAttributes().stream().forEach(attr ->
                     existingAsset.getAttribute(attr.getName()).ifPresent(existingAttr -> {
-                        if(!preserveTimestamps){
-                            // If attribute is modified make sure the timestamp is also updated to allow simple equality
-                            if (!attr.deepEquals(existingAttr) && attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
-                                // In the unlikely situation that we are in the same millisecond as last update
-                                // we will always ensure a delta of >= 1ms
-                                attr.setTimestamp(Math.max(existingAttr.getTimestamp().orElse(0L)+1, timerService.getCurrentTimeMillis()));
-                            }
-                        }
-                        //If preserveTimestamp is true, only allow new attribute values if existingAttr.getTimestamp() < attr.getTimestamp().
-                        else {
-                            //This means that the attr has a timestamp earlier than existingAttr
-                            if (attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
-                                // In the unlikely situation that we are in the same millisecond as last update
-                                // we will always ensure a delta of >= 1ms
-                                attr.setTimestamp(Math.max(existingAttr.getTimestamp().orElse(0L)+1, timerService.getCurrentTimeMillis()));
-                            }
+                        // If attribute is modified make sure the timestamp is also updated to allow simple equality
+                        if (!attr.deepEquals(existingAttr) && attr.getTimestamp().orElse(0L) <= existingAttr.getTimestamp().orElse(0L)) {
+                            // In the unlikely situation that we are in the same millisecond as last update
+                            // we will always ensure a delta of >= 1ms
+                            attr.setTimestamp(Math.max(existingAttr.getTimestamp().orElse(0L)+1, timerService.getCurrentTimeMillis()));
                         }
                 }));
 

@@ -311,7 +311,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     asset.setRealm(connection.getLocalRealm());
                     LOG.finest("Request from central manager to create/update an asset: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId());
                     try {
-                        asset = assetStorageService.merge(asset, true, false);
+                        asset = assetStorageService.merge(asset, true);
                     } catch (Exception e) {
                         LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId(), e);
                     }
