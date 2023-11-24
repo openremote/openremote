@@ -9,6 +9,9 @@ package org.openremote.model.teltonika;
  *
  */
 public class IMEIValidator {
+    private IMEIValidator() {
+    }
+
     // Function for finding and returning
     // sum of digits of a number
     static int sumDig(int n) {
