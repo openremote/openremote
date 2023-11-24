@@ -1,19 +1,13 @@
 package org.openremote.model.teltonika;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validator;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.rules.AssetState;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.validation.AssetStateStore;
 import org.openremote.model.value.*;
 
 import java.sql.Timestamp;
@@ -24,16 +18,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.openremote.model.value.MetaItemType.*;
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "reported"
-})
+
 public class State {
 
-//    public ReportedState reportedState;
+    //    public ReportedState reportedState;
     @JsonProperty("reported")
     private Map<String, Object> reported;
-
 
 
     @Override

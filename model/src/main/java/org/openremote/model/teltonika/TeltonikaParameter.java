@@ -1,70 +1,23 @@
 
 package org.openremote.model.teltonika;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "propertyIdInAvlPacket",
-        "propertyName",
-        "bytes",
-        "type",
-        "min",
-        "max",
-        "multiplier",
-        "units",
-        "description",
-        "hwSupport",
-        "parameterGroup"
-})
+import java.util.Objects;
 public class TeltonikaParameter {
 
     @JsonProperty("propertyIdInAvlPacket")
     public Integer propertyId;
-    @JsonProperty("propertyName")
     public String propertyName;
-    @JsonProperty("bytes")
     public String bytes;
-    @JsonProperty("type")
     public String type;
-    @JsonProperty("min")
     public String min;
-    @JsonProperty("max")
     public String max;
-    @JsonProperty("multiplier")
     public String multiplier;
-    @JsonProperty("units")
     public String units;
-    @JsonProperty("description")
     public String description;
-    @JsonProperty("hwSupport")
     public String hwSupport;
-    @JsonProperty("parameterGroup")
     public String parameterGroup;
-
-    @JsonIgnore
-    private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
-
-
-    @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() {
-        return this.additionalProperties;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) {
-        this.additionalProperties.put(name, value);
-    }
-
 
 
     @Override
@@ -114,10 +67,6 @@ public class TeltonikaParameter {
         sb.append("parameterGroup");
         sb.append('=');
         sb.append(((this.parameterGroup == null)?"<null>":this.parameterGroup));
-        sb.append(',');
-        sb.append("additionalProperties");
-        sb.append('=');
-        sb.append(((this.additionalProperties == null)?"<null>":this.additionalProperties));
         sb.append(',');
         if (sb.charAt((sb.length()- 1)) == ',') {
             sb.setCharAt((sb.length()- 1), ']');
