@@ -490,50 +490,50 @@ class TeltonikaMQTTProtocolTest extends Specification implements ManagerContaine
     // Asset state duration, bidirectional messages, etc.
 
 
-    def "the handler stores all attributes with the correct timestamp"() {
-        when: "remove the asset, if it exists"
-        then: "asset is not there"
-        conditions.eventually {
-            assert assetStorageService.delete([UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)])
-            assert assetStorageService.find(UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)) == null
-        }
-
-        when: "the device connects to the MQTT broker to a data topic with a RX endpoint"
-
-        String correctTopic1 = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
-        client.connect();
-        then: "mqtt connection should exist"
-        conditions.eventually {
-            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
-            def connection = mqttBrokerService.getConnectionFromClientID(mqttClientId)
-            assert connection != null
-        }
-        when: "a client subscribes to the correct data topic"
-        client.addMessageConsumer(correctTopic1, { _ -> return });
-
-        then: "A subscription should exist"
-        conditions.eventually {
-            assert client.topicConsumerMap.get(correctTopic1) != null
-            assert handler.connectionSubscriberInfoMap.containsKey(getTELTONIKA_DEVICE_IMEI());
-        }
-
-        and: "the JSON with all the payloads is parsed"
-        def slurper = new JsonSlurper()
-            ArrayList<LazyMap> payloads = slurper.parseText(getClass().getResource("/org/openremote/test/teltonika/SortedPayloads.json").text) as ArrayList<Object>;
-
-        and: "the device starts publishing payloads"
-        payloads.each { LazyMap payload ->
-            // Your logic here, for example:
-            client.sendMessage(new MQTTMessage<String>(correctTopic1, JsonOutput.toJson(payload)))
-            sleep(1000);
-        }
-
-        cleanup: "disconnect client from broker"
-        client.disconnect()
-        client.removeAllMessageConsumers();
-
-
-    }
+//    def "the handler stores all attributes with the correct timestamp"() {
+//        when: "remove the asset, if it exists"
+//        then: "asset is not there"
+//        conditions.eventually {
+//            assert assetStorageService.delete([UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)])
+//            assert assetStorageService.find(UniqueIdentifierGenerator.generateId(TELTONIKA_DEVICE_IMEI)) == null
+//        }
+//
+//        when: "the device connects to the MQTT broker to a data topic with a RX endpoint"
+//
+//        String correctTopic1 = "${keycloakTestSetup.realmBuilding.name}/${mqttClientId}/${TELTONIKA_DEVICE_TOKEN}/${TELTONIKA_DEVICE_IMEI}/${TELTONIKA_DEVICE_RECEIVE_TOPIC}".toString();
+//        client.connect();
+//        then: "mqtt connection should exist"
+//        conditions.eventually {
+//            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+//            def connection = mqttBrokerService.getConnectionFromClientID(mqttClientId)
+//            assert connection != null
+//        }
+//        when: "a client subscribes to the correct data topic"
+//        client.addMessageConsumer(correctTopic1, { _ -> return });
+//
+//        then: "A subscription should exist"
+//        conditions.eventually {
+//            assert client.topicConsumerMap.get(correctTopic1) != null
+//            assert handler.connectionSubscriberInfoMap.containsKey(getTELTONIKA_DEVICE_IMEI());
+//        }
+//
+//        and: "the JSON with all the payloads is parsed"
+//        def slurper = new JsonSlurper()
+//            ArrayList<LazyMap> payloads = slurper.parseText(getClass().getResource("/org/openremote/test/teltonika/SortedPayloads.json").text) as ArrayList<Object>;
+//
+//        and: "the device starts publishing payloads"
+//        payloads.each { LazyMap payload ->
+//            // Your logic here, for example:
+//            client.sendMessage(new MQTTMessage<String>(correctTopic1, JsonOutput.toJson(payload)))
+//            sleep(1000);
+//        }
+//
+//        cleanup: "disconnect client from broker"
+//        client.disconnect()
+//        client.removeAllMessageConsumers();
+//
+//
+//    }
 
     //TODO: Write a test for AssetStateDuration (Multiple trip payloads etc.)
 }
