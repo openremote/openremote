@@ -679,11 +679,9 @@ export class Manager implements EventProviderFactory {
     protected _onEventProviderStatusChanged(status: EventProviderStatus) {
         switch (status) {
             case EventProviderStatus.DISCONNECTED:
-                console.log("Event provider disconnected.");
                 this._setEventDisconnected(true);
                 break;
             case EventProviderStatus.CONNECTED:
-                console.log("Event provider connected.")
                 this._setEventDisconnected(false);
                 break;
             case EventProviderStatus.CONNECTING:
@@ -988,8 +986,8 @@ export class Manager implements EventProviderFactory {
             };
 
             this._keycloak!.onAuthRefreshError = () => {
-                console.debug("Keycloak callback: Failed to refresh the access token.")
-                this._runAuthReconnectTimer();
+                console.debug("Keycloak callback: Failed to refresh the access token.");
+                this._setAuthDisconnected(true);
             }
 
             try {
@@ -1018,12 +1016,9 @@ export class Manager implements EventProviderFactory {
                     this._keycloakUpdateTokenInterval = window.setInterval(() => {
                         // only try to update token when online, otherwise the reconnect logic (this._attemptReconnect()) will try this
                         if(!this._authDisconnected) {
-                            try {
-                                this.updateKeycloakAccessToken();
-                            } catch (e) {
+                            this.updateKeycloakAccessToken().catch(() => {
                                 console.error("Could not update keycloak access token during regular interval.");
-                                this._runAuthReconnectTimer();
-                            }
+                            });
                         }
                     }, 10000);
                     this._onAuthenticated();
@@ -1045,30 +1040,21 @@ export class Manager implements EventProviderFactory {
 
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
 
-        // Custom request timeout of 15 seconds
-        const timeoutPromise = new Promise((resolve, reject) => {
-            setTimeout(() => {
-                reject(new Error("Request to update keycloak token timed out after 15 seconds.."));
-            }, 15000);
-        })
-        timeoutPromise.catch((e) => {
-            console.error(e);
-            return Promise.reject(e);
-        })
-
         // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
         const promise = this._keycloak!.updateToken(30) as Promise<boolean>;
-        promise.catch((e) => {
+        promise.then(tokenRefreshed => {
+            console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
+        }).catch(() => {
             console.error("Access token update failed.");
-            console.error(e);
-        })
+            this._setAuthDisconnected(true);
+        });
 
-        // Now starting promise and timeoutPromise at the same time
-        // Since timeoutPromise will never resolve, we assume only a boolean can be returned.
-        // tokenRefreshed means whether the token is 'refreshed' (updated) by the server, or the cached access token is 'still good enough for another access token'.
-        const tokenRefreshed = await Promise.race([promise, timeoutPromise]) as boolean;
-        console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
-        return Promise.resolve(tokenRefreshed);
+        // Using Promise.race() with a timeout of 15 seconds
+        // Since the timeout will never resolve, we assume only a boolean can be returned.
+        let timer: NodeJS.Timeout;
+        return Promise.race(
+            [promise, new Promise((_r, rej) => timer = setTimeout(rej, 15000))]
+        ).finally(() => clearTimeout(timer)) as Promise<boolean | void>;
     }
 
     protected async _getNativeOfflineRefreshToken(): Promise<string | undefined> {
@@ -1101,8 +1087,11 @@ export class Manager implements EventProviderFactory {
     // When authentication service status changes; in most cases a failed token refresh.
     // Always go OFFLINE if 'failed', only go back ONLINE when all EventProviders are also connected.
     protected _setAuthDisconnected(disconnected: boolean, force = false) {
+        if(disconnected) {
+            this._runAuthReconnectTimer();
+        }
         if(this._authDisconnected !== disconnected || force) {
-            console.debug(`Authentication is now ${disconnected ? 'disconnected.' : 'connected!'}`);
+            console.debug(`Authentication status changed: ${disconnected ? 'DISCONNECTED' : 'CONNECTED'}`);
             if(disconnected) {
                 this._authDisconnected = true;
                 this._emitEvent(OREvent.OFFLINE);
@@ -1121,7 +1110,7 @@ export class Manager implements EventProviderFactory {
     // Always go OFFLINE if disconnected, only go back ONLINE when authentication is also connected.
     protected _setEventDisconnected(disconnected: boolean, force = false) {
         if(this._eventsDisconnected !== disconnected || force) {
-            console.debug(`EventProvider is now ${disconnected ? 'disconnected.' : 'connected!'}`);
+            console.debug(`EventProvider status changed: ${disconnected ? 'DISCONNECTED' : 'CONNECTED'}`);
             if(disconnected) {
                 this._eventsDisconnected = true;
                 this._emitEvent(OREvent.OFFLINE);
@@ -1142,7 +1131,7 @@ export class Manager implements EventProviderFactory {
             } else {
                 this._eventsDisconnected = false;
                 if(this._authDisconnected) {
-                    this._runAuthReconnectTimer();
+                    this._runAuthReconnectTimer()
                 } else {
                     this._emitEvent(OREvent.ONLINE);
                 }
