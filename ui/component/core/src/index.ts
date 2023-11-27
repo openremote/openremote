@@ -640,7 +640,6 @@ export class Manager implements EventProviderFactory {
             await fetch(this._config.keycloakUrl! + "/health/ready", {method: 'HEAD', mode: 'no-cors', signal: controller.signal});
             return Promise.resolve();
         } catch (e) {
-            console.log("Could not reach keycloak!")
             return Promise.reject(e);
         } finally {
             clearTimeout(timeout);
@@ -649,26 +648,31 @@ export class Manager implements EventProviderFactory {
 
     // Function that tries to update the token, whilst making sure the authentication service is available.
     // It first checks the connection to keycloak, and then tries to update the access token.
+    // Mostly used during "reconnect" logic, since it isn't necessary to 'double check' service availability in most cases.
     // TODO: Currently only applies to Keycloak, not to basic auth.
     protected async _tryUpdateAccessToken(): Promise<boolean> {
         let authOffline = false;
-        if(this.isKeycloak() && this._authDisconnected) {
+        if(this.isKeycloak()) {
 
-            console.log("Attempting to reconnect to keycloak...");
+            console.debug("Attempting to update keycloak access token...");
             this._emitEvent(OREvent.CONNECTING); // emit event every time a reconnect attempt is made
 
-            try {
-                // Before updating keycloak token, check whether Keycloak is UP using a simple HEAD request
-                await this.isKeycloakReachable();
-                await this.updateKeycloakAccessToken();
-            } catch (e) {
+            // Check if keycloak service is available / can be accessed.
+            await this.isKeycloakReachable().catch(() => {
                 authOffline = true;
-                console.error("Could not reach keycloak server.");
-            }
+                console.error("Could not reach keycloak service! Aborting token update.");
+            });
 
-            // Update _authDisconnected respectively
-            this._setAuthDisconnected(authOffline);
+            // Update token
+            await this.updateKeycloakAccessToken().catch((e) => {
+                authOffline = true;
+                console.error(e);
+            });
         }
+
+        // Update _authDisconnected respectively
+        this._setAuthDisconnected(authOffline);
+
         return authOffline;
     }
 
@@ -1040,26 +1044,31 @@ export class Manager implements EventProviderFactory {
     }
 
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
-        try {
-            // Custom request timeout of 15 seconds
-            const timeoutPromise = new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    reject(new Error("Request to update keycloak token timed out after 15 seconds.."));
-                }, 15000);
-            })
-            // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
-            const promise = this._keycloak!.updateToken(30);
 
-            // If refreshed from server, it means the refresh token was still good for another access token
-            const tokenRefreshed = await Promise.race([promise, timeoutPromise]) as boolean;
-            console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
-            return Promise.resolve(tokenRefreshed);
-        } catch (e) {
-            console.error("Access token update failed, during refresh from server...");
+        // Custom request timeout of 15 seconds
+        const timeoutPromise = new Promise((resolve, reject) => {
+            setTimeout(() => {
+                reject(new Error("Request to update keycloak token timed out after 15 seconds.."));
+            }, 15000);
+        })
+        timeoutPromise.catch((e) => {
             console.error(e);
-            console.debug(`Is this an error object? ${(e instanceof Error)}`); // TODO: Remove this after debugging
             return Promise.reject(e);
-        }
+        })
+
+        // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
+        const promise = this._keycloak!.updateToken(30) as Promise<boolean>;
+        promise.catch((e) => {
+            console.error("Access token update failed.");
+            console.error(e);
+        })
+
+        // Now starting promise and timeoutPromise at the same time
+        // Since timeoutPromise will never resolve, we assume only a boolean can be returned.
+        // tokenRefreshed means whether the token is 'refreshed' (updated) by the server, or the cached access token is 'still good enough for another access token'.
+        const tokenRefreshed = await Promise.race([promise, timeoutPromise]) as boolean;
+        console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
+        return Promise.resolve(tokenRefreshed);
     }
 
     protected async _getNativeOfflineRefreshToken(): Promise<string | undefined> {
@@ -1117,7 +1126,7 @@ export class Manager implements EventProviderFactory {
                 this._eventsDisconnected = true;
                 this._emitEvent(OREvent.OFFLINE);
 
-                // WebSocket might disconnect because of token expiry, so we try updating it immediately
+                // WebSocket might not connect because of token expiry, so we try updating it immediately.
                 // Since token expiry is unrelated to disconnected state, a successful token update would change _authDisconnected from FALSE to FALSE.
                 // So, if the token update is successful, we force update _authDisconnected.
                 if(this.isTokenExpired()) {
