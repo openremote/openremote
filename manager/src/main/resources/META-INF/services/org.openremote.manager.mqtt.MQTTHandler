@@ -1,4 +1,3 @@
 org.openremote.manager.mqtt.DefaultMQTTHandler
-org.openremote.manager.mqtt.TeltonikaMQTTHandler
 org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler
 org.openremote.manager.mqtt.ConnectionMonitorHandler

@@ -20,7 +20,6 @@
 package org.openremote.model.value;
 
 import org.openremote.model.Constants;
-import org.openremote.model.asset.AssetStateDuration;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -128,8 +127,6 @@ public final class ValueType {
     public static final ValueDescriptor<PeriodAndDuration> PERIOD_ISO8601 = new ValueDescriptor<>("timeAndPeriodDurationISO8601", PeriodAndDuration.class,
         new ValueConstraint.Pattern(Constants.ISO8601_DURATION_REGEXP)
     );
-
-    public static final ValueDescriptor<AssetStateDuration> ASSET_STATE_DURATION = new ValueDescriptor<>("AssetStateDuration", AssetStateDuration.class);
 
     public static final ValueDescriptor<String> EMAIL = new ValueDescriptor<>("email", String.class,
         new ValueConstraint.Pattern(Constants.EMAIL_REGEXP)
