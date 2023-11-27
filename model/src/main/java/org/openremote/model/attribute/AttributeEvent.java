@@ -22,9 +22,11 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaItemType;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -202,5 +204,19 @@ public class AttributeEvent extends SharedEvent implements AssetInfo {
         AttributeEvent event = new AttributeEvent(assetId, attributeName);
         event.attributeState.deleted = true;
         return event;
+    }
+
+    public static AttributeEvent fromAssetAttribute(Asset<?> asset, Attribute<?> attribute) {
+        return new AttributeEvent(
+            asset.getId(),
+            attribute.getName(),
+            attribute.getValue().orElse(null),
+            attribute.getTimestamp().orElse(null)
+        )
+            .setParentId(asset.getParentId())
+            .setRealm(asset.getRealm())
+            .setPath(asset.getPath())
+            .setAccessRestrictedRead(attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false))
+            .setAccessPublicRead(attribute.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false));
     }
 }

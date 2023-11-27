@@ -61,16 +61,11 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.validation.AssetStateStore;
-import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
 
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -1348,48 +1343,37 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * generate the {@link AttributeEvent}
      */
     @SuppressWarnings("unchecked")
-    protected boolean updateAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) throws ConstraintViolationException {
+    protected boolean updateAttributeValue(EntityManager em, AttributeEvent event) throws ConstraintViolationException {
 
-        long timestamp = attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis);
-
-        // TODO: Reuse AssetState and change validator over to that class
-        // Do standard JSR-380 validation on the new value (needs attribute descriptor to do this)
-        Set<ConstraintViolation<AssetStateStore>> validationFailures = ValueUtil.validate(new AssetStateStore(asset.getType(), attribute));
-
-        if (!validationFailures.isEmpty()) {
-            String msg = "Attribute update failed as value failed constraint validation: attribute=" + attribute;
-            ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
-            LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
-            throw ex;
-        }
+        long timestamp = event.getTimestamp() > 0 ? event.getTimestamp() : timerService.getCurrentTimeMillis();
 
         try {
             PGobject valueTimestampJSON = new PGobject();
             valueTimestampJSON.setType("jsonb");
-            valueTimestampJSON.setValue("{\"value\":" + ValueUtil.asJSON(attribute.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}");
+            valueTimestampJSON.setValue("{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}");
 
             // TODO: Use jsonb type directly to optimise over wire data (couldn't get this to work even after seeing https://stackoverflow.com/questions/53847917/postgresql-throws-column-is-of-type-jsonb-but-expression-is-of-type-bytea-with)
             Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ?")
-                .setParameter(1, attribute.getName())
-                .setParameter(2, attribute.getName())
-                .setParameter(3, "{\"value\":" + ValueUtil.asJSON(attribute.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
-                .setParameter(4, asset.getId());
+                .setParameter(1, event.getAttributeName())
+                .setParameter(2, event.getAttributeName())
+                .setParameter(3, "{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
+                .setParameter(4, event.getAssetId());
 
             int affectedRows = query.executeUpdate();
             boolean success = affectedRows == 1;
 
             if (success) {
                 if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Updated attribute value assetID=" + asset.getId() + ", attributeName=" + attribute.getName() + ", timestamp=" + timestamp);
+                    LOG.finest("Updated attribute value assetID=" + event.getAssetId() + ", attributeName=" + event.getAttributeName() + ", timestamp=" + timestamp);
                 }
             } else {
                 if (LOG.isLoggable(Level.FINE)) {
-                    LOG.fine("Failed to update attribute value assetID=" + asset.getId() + ", attributeName=" + attribute.getName() + ", timestamp=" + timestamp);
+                    LOG.fine("Failed to update attribute value assetID=" + event.getAssetId() + ", attributeName=" + event.getAttributeName() + ", timestamp=" + timestamp);
                 }
             }
 
             if (success) {
-                publishAttributeEvent(asset, attribute);
+                publishAttributeEvent(event);
             }
 
             return success;
@@ -1400,20 +1384,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected void publishAttributeEvent(Asset<?> asset, Attribute<?> attribute) {
-        clientEventService.publishEvent(
-            new AttributeEvent(
-                asset.getId(),
-                attribute.getName(),
-                attribute.getValue().orElse(null),
-                attribute.getTimestamp().orElse(timerService.getCurrentTimeMillis())
-            )
-                .setParentId(asset.getParentId())
-                .setRealm(asset.getRealm())
-                .setPath(asset.getPath())
-                .setAccessRestrictedRead(attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false))
-                .setAccessPublicRead(attribute.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false))
-        );
+    protected void publishAttributeEvent(AttributeEvent event) {
+        clientEventService.publishEvent(event);
     }
 
     protected void publishModificationEvents(PersistenceEvent<Asset<?>> persistenceEvent) {
@@ -1483,7 +1455,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     getAddedOrModifiedAttributes(oldAttributes.values(),
                         newAttributes.values())
                         .forEach(newOrModifiedAttribute ->
-                            publishAttributeEvent(asset, newOrModifiedAttribute)
+                            publishAttributeEvent(AttributeEvent.fromAssetAttribute(asset, newOrModifiedAttribute))
                         );
                 }
             }

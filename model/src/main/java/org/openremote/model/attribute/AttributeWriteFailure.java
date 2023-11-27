@@ -78,16 +78,6 @@ public enum AttributeWriteFailure {
     INSUFFICIENT_ACCESS,
 
     /**
-     * The event timestamp is later than the processing time.
-     */
-    EVENT_IN_FUTURE,
-
-    /**
-     * The event timestamp is older than the last updated timestamp of the attribute.
-     */
-    EVENT_OUTDATED,
-
-    /**
      * Applying the event violates constraints of the attribute.
      */
     ATTRIBUTE_VALIDATION_FAILURE,

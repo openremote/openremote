@@ -20,12 +20,12 @@
 package org.openremote.manager.asset;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import jakarta.persistence.EntityManager;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -48,13 +48,16 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.validation.AssetStateStore;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.stream.IntStream;
 
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
@@ -127,6 +130,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String OR_ATTRIBUTE_EVENT_THREADS = "OR_ATTRIBUTE_EVENT_THREADS";
     public static final int OR_ATTRIBUTE_EVENT_THREADS_DEFAULT = 3;
+    protected static final String EVENT_ROUTE_COUNT_HEADER = "EVENT_ROUTE_COUNT_HEADER";
+    protected static final String EVENT_ROUTE_URI_PREFIX = "seda://AttributeEventProcessor";
     private static final System.Logger LOG = System.getLogger(AssetProcessingService.class.getName());
     final protected List<AssetUpdateProcessor> processors = new ArrayList<>();
     protected TimerService timerService;
@@ -275,9 +280,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         processors.add(assetDatapointService);
         processors.add(assetAttributeLinkingService);
 
-        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-
-        // Configure dynamic routes for event processing
+        // Get dynamic route count for event processing (multithreaded event processing but guaranteeing events for the same asset end up in the same route)
         eventProcessingThreadCount = MapAccess.getInteger(container.getConfig(), OR_ATTRIBUTE_EVENT_THREADS, OR_ATTRIBUTE_EVENT_THREADS_DEFAULT);
         if (eventProcessingThreadCount < 1) {
             LOG.log(System.Logger.Level.WARNING, OR_ATTRIBUTE_EVENT_THREADS + " value " + eventProcessingThreadCount + " is less than 1; forcing to 1");
@@ -286,12 +289,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             LOG.log(System.Logger.Level.WARNING, OR_ATTRIBUTE_EVENT_THREADS + " value " + eventProcessingThreadCount + " is greater than max value of 20; forcing to 20");
             eventProcessingThreadCount = 20;
         }
-    }
 
-    protected String getEventProcessingRoutePrefix(String assetId) {
-        int charCode = Character.codePointAt(assetId, 0);
-        int prefix = (charCode % eventProcessingThreadCount) + 1;
-        return Integer.toString(prefix);
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override
@@ -329,17 +328,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
 
-                // Set timestamp if not set
-                if (event.getTimestamp() <= 0) {
-                    event.setTimestamp(timerService.getCurrentTimeMillis());
-                }
-
-                if (event.getValue().isEmpty())
-                    return; // Ignore events with no value set
                 if (event.getAssetId() == null || event.getAssetId().isEmpty())
                     return; // Ignore events with no asset ID
                 if (event.getAttributeName() == null || event.getAttributeName().isEmpty())
                     return; // Ignore events with no attribute name
+
+                if (event.getTimestamp() <= 0) {
+                    // Set timestamp if not set
+                    event.setTimestamp(timerService.getCurrentTimeMillis());
+                } else if (event.getTimestamp() > timerService.getCurrentTimeMillis()) {
+                    // Use system time if event time is in the future (clock issue)
+                    event.setTimestamp(timerService.getCurrentTimeMillis());
+                }
 
                 Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Source.class);
 
@@ -347,91 +347,28 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     throw new AssetProcessingException(MISSING_SOURCE);
                 }
 
-                // Process the asset update in a database transaction, this ensures that processors
-                // will see consistent database state and we only commit if no processor failed. This
-                // still won't make this procedure consistent with the message queue from which we consume!
-                persistenceService.doTransaction(em -> {
-                    Asset<?> asset = assetStorageService.find(em, event.getAssetId(), true);
-
-                    if (asset == null) {
-                        throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
-                    }
-
-                    Attribute<?> oldAttribute = asset.getAttribute(event.getAttributeName()).orElseThrow(() ->
-                        new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
-
-                    // Either use the timestamp of the event or set event time to processing time or (old event time + 1)
-                    // We need a different timestamp for Attribute.equals() check
-                    long oldEventTime = oldAttribute.getTimestamp().orElse(0L);
-                    long eventTime = event.getTimestamp();
-                    long processingTime = timerService.getCurrentTimeMillis();
-
-                    if (eventTime > 0) {
-                        // If it's less than previous event but within 10ms then just bump the time to old+1
-                        if (oldEventTime - eventTime > 0 && oldEventTime - eventTime < 10) {
-                            eventTime = oldEventTime + 1;
-                        }
-                    } else {
-                        eventTime = Math.max(oldEventTime + 1, processingTime);
-                    }
-
-                    // Check the last update timestamp of the attribute, ignoring any event that is older than last update
-                    long finalEventTime = eventTime;
-                    oldAttribute.getTimestamp().filter(t -> t >= 0 && finalEventTime < t).ifPresent(
-                        lastStateTime -> {
-                            throw new AssetProcessingException(
-                                EVENT_OUTDATED,
-                                "last asset state time: " + new Date(lastStateTime) + "/" + lastStateTime
-                                    + ", event time: " + new Date(finalEventTime) + "/" + finalEventTime);
-                        }
-                    );
-
-                    // For executable attributes, non-sensor sources can set a writable attribute execute status
-                    if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
-                        Optional<AttributeExecuteStatus> status = event.getValue()
-                            .flatMap(ValueUtil::getString)
-                            .flatMap(AttributeExecuteStatus::fromString);
-
-                        // TODO: Make this mechanism more generic with an interface
-                        if (status.isPresent() && !status.get().isWrite()) {
-                            throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
-                        }
-                    }
-
-                    // Type coercion
-                    Object value = event.getValue().map(eventValue -> {
-                        Class<?> attributeValueType = oldAttribute.getTypeClass();
-                        return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                            LOG.log(System.Logger.Level.INFO, "Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
-                            return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
-                        });
-
-                    }).orElse(null);
-
-                    // Create a copy of the attribute and set the new value and timestamp
-                    Attribute updatedAttribute = oldAttribute.shallowClone();
-                    updatedAttribute.setValue(value, eventTime);
-
-                    // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp
-                    // is not updated so tests can't then detect the problem.
-                    lastProcessedEventTimestamp = System.currentTimeMillis();
-
-                    // Push through all processors
-                    processAssetUpdate(em, asset, updatedAttribute, source);
-                });
+                exchange.getIn().setHeader(EVENT_ROUTE_COUNT_HEADER, getEventProcessingRouteNumber(event.getAssetId()));
             })
+            .toD(EVENT_ROUTE_URI_PREFIX + "${header." + EVENT_ROUTE_COUNT_HEADER + "}")
             .endDoTry()
             .doCatch(AssetProcessingException.class)
             .process(handleAssetProcessingException());
 
         // Create the event processor routes
         IntStream.rangeClosed(1, eventProcessingThreadCount).forEach(processorCount -> {
-            String camelRouteURI = "seda://AttributeEventProcessor" + processorCount;
+            String camelRouteURI = getEventProcessingRouteURI(processorCount);
 
             from(camelRouteURI)
+                .routeId("AttributeEventProcessor" + processorCount)
+                .doTry()
                 .process(exchange -> {
-                    pro
-                });
+                    AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+                    Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Source.class);
+                    processAttributeEvent(event, source);
+                })
+                .endDoTry()
+                .doCatch(AssetProcessingException.class)
+                .process(handleAssetProcessingException());
         });
     }
 
@@ -460,64 +397,141 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * AssetUpdateProcessor#processAssetUpdate}. If no processor completely consumed the update, the attribute will be
      * stored in the database.
      */
-    protected boolean processAssetUpdate(EntityManager em,
-                                         Asset<?> asset,
-                                         Attribute<?> attribute,
-                                         Source source) throws AssetProcessingException {
+    protected boolean processAttributeEvent(AttributeEvent event,
+                                            Source source) throws AssetProcessingException {
 
-        String consumerProcessor = null;
-        boolean complete = false;
-        long startMillis = System.currentTimeMillis();
-        StringBuilder processorTimings = new StringBuilder();
-        Supplier<String> attributeStrSupplier = () -> "Asset ID=" + asset.getId() + ", Asset name=" + asset.getName() + ", " + attribute;
+        // TODO: Get asset lock so it cannot be modified during event processing
+        persistenceService.doTransaction(em -> {
 
-        LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: " + attributeStrSupplier.get());
+            // TODO: Retrieve optimised DTO rather than whole asset
+            Asset<?> asset = assetStorageService.find(em, event.getAssetId(), true);
 
-        for (AssetUpdateProcessor processor : processors) {
-            long processorStartMillis = System.currentTimeMillis();
+            if (asset == null) {
+                throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
+            }
 
-            LOG.log(System.Logger.Level.TRACE, () -> "==> Processor " + processor + " accepts: " + attributeStrSupplier.get());
+            Attribute<?> oldAttribute = asset.getAttribute(event.getAttributeName()).orElseThrow(() ->
+                new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
 
-            try {
-                complete = processor.processAssetUpdate(em, asset, attribute, source);
-                processorTimings.append(processor).append("=").append(System.currentTimeMillis() - processorStartMillis).append("ms ");
-            } catch (AssetProcessingException ex) {
+            // Type coercion
+            Object value = event.getValue().map(eventValue -> {
+                Class<?> attributeValueType = oldAttribute.getTypeClass();
+                return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
+                    LOG.log(System.Logger.Level.INFO, "Failed to coerce attribute event value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
+                    return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
+                });
+
+            }).orElse(null);
+
+            // Value validation
+            // TODO: Reuse AssetState and change validator over to that class
+            // Do standard JSR-380 validation on the new value (needs attribute descriptor to do this)
+            Set<ConstraintViolation<AssetStateStore>> validationFailures = ValueUtil.validate(new AssetStateStore(asset.getType(), attribute));
+
+            if (!validationFailures.isEmpty()) {
+                String msg = "Attribute update failed as value failed constraint validation: attribute=" + attribute;
+                ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
+                LOG.log(System.Logger.Level.WARNING, msg + ", exception=" + ex.getMessage());
                 throw ex;
-            } catch (Throwable t) {
-                throw new AssetProcessingException(
-                    PROCESSOR_FAILURE,
-                    "processor '" + processor + "' threw an exception",
-                    t
-                );
             }
-            if (complete) {
-                consumerProcessor = processor.toString();
-                break;
+
+            // If event timestamp is before last event timestamp then we just route this event to the datapoint service and skip regular processing
+            long oldEventTime = oldAttribute.getTimestamp().orElse(0L);
+            long eventTime = event.getTimestamp();
+
+            if (oldEventTime - eventTime > 0) {
+                LOG.log(System.Logger.Level.TRACE, () -> "Attribute event is older than current attribute timestamp so routing straight to datapoint service");
+                // TODO: Generate an event for this situation so rules etc that are relying on historical data know there is a new value available
+                assetDatapointService.upsertValue(event.getAssetId(), event.getAttributeName(), event.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(event.getTimestamp()), ZoneId.systemDefault()));
+                return;
             }
-        }
 
-        if (!complete) {
-            if (!assetStorageService.updateAttributeValue(em, asset, attribute)) {
-                throw new AssetProcessingException(
-                    STATE_STORAGE_FAILED, "database update failed, no rows updated"
-                );
+            // For executable attributes, non-sensor sources can set a writable attribute execute status
+            if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
+                Optional<AttributeExecuteStatus> status = event.getValue()
+                    .flatMap(ValueUtil::getString)
+                    .flatMap(AttributeExecuteStatus::fromString);
+
+                // TODO: Make this mechanism more generic with an interface
+                if (status.isPresent() && !status.get().isWrite()) {
+                    throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
+                }
             }
-        }
 
-        long processingMillis = System.currentTimeMillis() - startMillis;
-        String finalConsumerProcessor = consumerProcessor;
 
-        if (processingMillis > 50) {
-            LOG.log(System.Logger.Level.INFO, () -> "<<< Attribute event processing took a long time " + processingMillis + "ms: attribute=" + attributeStrSupplier.get() + ", consumer=" + finalConsumerProcessor + ", timings=" + processorTimings);
-        } else {
-            LOG.log(System.Logger.Level.DEBUG, () -> "<<< Attribute event processed in " + processingMillis + "ms: attribute=" + attributeStrSupplier.get() + ", consumer=" + finalConsumerProcessor);
-        }
-        return complete;
+
+            // Create a copy of the attribute and set the new value and timestamp
+            Attribute updatedAttribute = oldAttribute.shallowClone();
+            updatedAttribute.setValue(value, eventTime);
+
+            // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp
+            // is not updated so tests can't then detect the problem.
+            lastProcessedEventTimestamp = System.currentTimeMillis();
+
+            // Push through all processors
+            String consumerProcessor = null;
+            boolean complete = false;
+            long startMillis = System.currentTimeMillis();
+            StringBuilder processorTimings = new StringBuilder();
+            Supplier<String> attributeStrSupplier = () -> "Asset ID=" + asset.getId() + ", Asset name=" + asset.getName() + ", " + attribute;
+
+            LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: " + attributeStrSupplier.get());
+
+            for (AssetUpdateProcessor processor : processors) {
+                long processorStartMillis = System.currentTimeMillis();
+
+                LOG.log(System.Logger.Level.TRACE, () -> "==> Processor " + processor + " accepts: " + attributeStrSupplier.get());
+
+                try {
+                    complete = processor.processAssetUpdate(em, asset, attribute, source);
+                    processorTimings.append(processor).append("=").append(System.currentTimeMillis() - processorStartMillis).append("ms ");
+                } catch (AssetProcessingException ex) {
+                    throw ex;
+                } catch (Throwable t) {
+                    throw new AssetProcessingException(
+                        PROCESSOR_FAILURE,
+                        "processor '" + processor + "' threw an exception",
+                        t
+                    );
+                }
+                if (complete) {
+                    consumerProcessor = processor.toString();
+                    break;
+                }
+            }
+
+            if (!complete) {
+                if (!assetStorageService.updateAttributeValue(em, event)) {
+                    throw new AssetProcessingException(
+                        STATE_STORAGE_FAILED, "database update failed, no rows updated"
+                    );
+                }
+            }
+
+            long processingMillis = System.currentTimeMillis() - startMillis;
+            String finalConsumerProcessor = consumerProcessor;
+
+            if (processingMillis > 50) {
+                LOG.log(System.Logger.Level.INFO, () -> "<<< Attribute event processing took a long time " + processingMillis + "ms: attribute=" + attributeStrSupplier.get() + ", consumer=" + finalConsumerProcessor + ", timings=" + processorTimings);
+            } else {
+                LOG.log(System.Logger.Level.DEBUG, () -> "<<< Attribute event processed in " + processingMillis + "ms: attribute=" + attributeStrSupplier.get() + ", consumer=" + finalConsumerProcessor);
+            }
+            return complete;
+        });
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             '}';
+    }
+
+    protected int getEventProcessingRouteNumber(String assetId) {
+        int charCode = Character.codePointAt(assetId, 0);
+        return (charCode % eventProcessingThreadCount) + 1;
+    }
+
+    protected String getEventProcessingRouteURI(int routeNumber) {
+        return EVENT_ROUTE_URI_PREFIX + routeNumber;
     }
 }
