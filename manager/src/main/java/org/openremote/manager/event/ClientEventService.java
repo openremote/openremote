@@ -140,13 +140,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected Set<EventSubscription<?>> pendingInternalSubscriptions;
     protected boolean stopped;
 
-    /**
-     * Method to stop further processing of the exchange
-     */
-    public static void stopMessage(Exchange exchange) {
-        exchange.setRouteStop(true);
-    }
-
     public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(SESSION_KEY, String.class);
     }
@@ -318,7 +311,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                     SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
 
                     if (!authorizeEventWrite(realm, authContext, event)) {
-                        stopMessage(exchange);
+                        exchange.setRouteStop(true);
                     }
                 } else if (exchange.getIn().getBody() instanceof EventSubscription<?>) {
                     EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
@@ -326,7 +319,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
                     if (!authorizeEventSubscription(realm, authContext, subscription)) {
                         sendToSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
-                        stopMessage(exchange);
+                        exchange.setRouteStop(true);
                     }
                 }
             })

@@ -28,7 +28,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
+import org.openremote.manager.event.AttributeEventInterceptor;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.event.ClientEventService;
@@ -80,7 +80,7 @@ import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
  * Manages {@link RulesEngine}s for stored {@link Ruleset}s and processes asset attribute updates.
  * <p>
  * If an updated attribute doesn't have meta {@link MetaItemType#RULE_STATE} is false and the attribute has an {@link
- * org.openremote.model.asset.agent.AgentLink} meta, this implementation of {@link AssetUpdateProcessor} converts the
+ * org.openremote.model.asset.agent.AgentLink} meta, this implementation of {@link AttributeEventInterceptor} converts the
  * update message to an {@link AssetState} fact. This service keeps the facts and thus the state of rule facts are in
  * sync with the asset state changes that occur. If an asset attribute value changes, the {@link AssetState} in the
  * rules engines will be updated to reflect the change.
@@ -98,7 +98,7 @@ import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
  * </ol>
  * Processing order of rulesets with the same scope or same parent is not guaranteed.
  */
-public class RulesService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
+public class RulesService extends RouteBuilder implements ContainerService, AttributeEventInterceptor {
 
     public static final int PRIORITY = LOW_PRIORITY;
     public static final String OR_RULE_EVENT_EXPIRES = "OR_RULE_EVENT_EXPIRES";
@@ -377,10 +377,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     @Override
-    public boolean processAssetUpdate(EntityManager em,
-                                      Asset<?> asset,
-                                      Attribute<?> attribute,
-                                      Source source) throws AssetProcessingException {
+    public boolean intercept(EntityManager em,
+                             Asset<?> asset,
+                             Attribute<?> attribute,
+                             boolean outdated, Source source) throws AssetProcessingException {
         if (!startDone) {
             preInitAssetStates.add(new AssetState<>(asset, attribute, source));
         } else {

@@ -130,7 +130,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
         if (restrictedEvents) {
             if (event instanceof AttributeEvent attributeEvent) {
-                if (!attributeEvent.isRestrictedRead()) {
+                if (!attributeEvent.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false)) {
                     return null;
                 }
             } else {
@@ -140,7 +140,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
         if (publicEvents) {
             if (event instanceof AttributeEvent attributeEvent) {
-                if (!attributeEvent.isPublicRead()) {
+                if (!attributeEvent.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false)) {
                     return null;
                 }
             } else if (event instanceof AssetEvent assetEvent) {
@@ -153,7 +153,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         }
 
         if (assetIds != null && assetIds.length > 0) {
-            if (!Arrays.asList(assetIds).contains(event.getAssetId())) {
+            if (!Arrays.asList(assetIds).contains(event.getId())) {
                 return null;
             }
         }

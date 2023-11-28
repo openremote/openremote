@@ -76,7 +76,6 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
 
-        // TODO: Priority should each protocol instance have its' own camel route
         try {
             messageBrokerContext.addRoutes(new RouteBuilder() {
                 @Override
@@ -175,7 +174,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         AgentLink<?> agentLink = agent.getAgentLink(attribute);
 
         Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
-            event.getAssetId(),
+            event.getId(),
             attribute,
             agentLink,
             event.getValue().orElse(null),
@@ -360,7 +359,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
             @Override
             public void sendAttributeEvent(AttributeEvent attributeEvent) {
                 if (TextUtil.isNullOrEmpty(attributeEvent.getRealm())) {
-                    attributeEvent.setRealm(getAgent().getRealm());
+                    attributeEvent.withRealm(getAgent().getRealm());
                 } else if (!Objects.equals(attributeEvent.getRealm(), getAgent().getRealm())) {
                     Protocol.LOG.warning("Protocol attempting to send attribute event to another realm: " + agent);
                     throw new IllegalArgumentException("Protocol attempting to send attribute event to another realm");

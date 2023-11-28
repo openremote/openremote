@@ -20,6 +20,7 @@
 package org.openremote.manager.datapoint;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.EntityManager;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.persistence.PersistenceService;
@@ -89,23 +90,28 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         }
     }
 
-    public void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) throws IllegalStateException {
-        persistenceService.doTransaction(em ->
-                em.unwrap(Session.class).doWork(connection -> {
+    public void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) {
+        persistenceService.doTransaction(em -> upsertValue(assetId, attributeName, value, timestamp));
+    }
 
-                    getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
-                    PreparedStatement st;
+    public boolean upsertValueWithEM(EntityManager em, String assetId, String attributeName, Object value, LocalDateTime timestamp) {
+        return em.unwrap(Session.class).doReturningWork(connection -> {
 
-                    try {
-                        st = getUpsertPreparedStatement(connection);
-                        setUpsertValues(st, assetId, attributeName, value, timestamp);
-                        st.executeUpdate();
-                    } catch (Exception e) {
-                        String msg = "Failed to insert/update data point: ";
-                        getLogger().log(Level.WARNING, msg, e);
-                        throw new IllegalStateException(msg, e);
-                    }
-                }));
+            getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
+            PreparedStatement st;
+
+            try {
+                st = getUpsertPreparedStatement(connection);
+                setUpsertValues(st, assetId, attributeName, value, timestamp);
+                st.executeUpdate();
+            } catch (Exception e) {
+                String msg = "Failed to insert/update data point: ";
+                getLogger().log(Level.WARNING, msg, e);
+                return false;
+            }
+
+            return true;
+        });
     }
 
     public void upsertValues(String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) throws IllegalStateException {

@@ -172,29 +172,29 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     }
 
     protected void processAttributeEvent(AttributeEvent attributeEvent) {
-        OptimisationInstance optimisationInstance = assetOptimisationInstanceMap.get(attributeEvent.getAssetId());
+        OptimisationInstance optimisationInstance = assetOptimisationInstanceMap.get(attributeEvent.getId());
 
         if (optimisationInstance != null) {
             processOptimisationAssetAttributeEvent(optimisationInstance, attributeEvent);
             return;
         }
 
-        String attributeName = attributeEvent.getAttributeName();
+        String attributeName = attributeEvent.getName();
 
         if ((attributeName.equals(ElectricityChargerAsset.VEHICLE_CONNECTED.getName()) || attributeName.equals(ElectricVehicleAsset.CHARGER_CONNECTED.getName()))
             && attributeEvent.<Boolean>getValue().orElse(false)) {
             // Look for forced charge asset
-            if (forceChargeAssetIds.remove(attributeEvent.getAssetId())) {
-                LOG.fine("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getAssetId());
+            if (forceChargeAssetIds.remove(attributeEvent.getId())) {
+                LOG.fine("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getId());
             }
             return;
         }
 
         // Check for request to force charge
         if (attributeName.equals(ElectricityStorageAsset.FORCE_CHARGE.getName())) {
-            Asset<?> asset = assetStorageService.find(attributeEvent.getAssetId());
+            Asset<?> asset = assetStorageService.find(attributeEvent.getId());
             if (!(asset instanceof ElectricityStorageAsset)) {
-                LOG.fine("Request to force charge asset will be ignored as asset not found or is not of type '" + ElectricityStorageAsset.class.getSimpleName() + "': " + attributeEvent.getAssetId());
+                LOG.fine("Request to force charge asset will be ignored as asset not found or is not of type '" + ElectricityStorageAsset.class.getSimpleName() + "': " + attributeEvent.getId());
                 return;
             }
 
@@ -205,9 +205,9 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
                 double maxEnergyLevel = getElectricityStorageAssetEnergyLevelMax(storageAsset);
                 double currentEnergyLevel = storageAsset.getEnergyLevel().orElse(0d);
-                LOG.fine("Request to force charge asset '" + attributeEvent.getAssetId() + "': attempting to set powerSetpoint=" + powerImportMax);
+                LOG.fine("Request to force charge asset '" + attributeEvent.getId() + "': attempting to set powerSetpoint=" + powerImportMax);
 
-                if (forceChargeAssetIds.contains(attributeEvent.getAssetId())) {
+                if (forceChargeAssetIds.contains(attributeEvent.getId())) {
                     LOG.fine("Request to force charge asset will be ignored as force charge already requested for asset: " + storageAsset);
                     return;
                 }
@@ -217,13 +217,13 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                     return;
                 }
 
-                forceChargeAssetIds.add(attributeEvent.getAssetId());
+                forceChargeAssetIds.add(attributeEvent.getId());
                 assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, powerImportMax));
                 assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.RUNNING));
 
             } else if (attributeEvent.<AttributeExecuteStatus>getValue().orElse(null) == AttributeExecuteStatus.REQUEST_CANCEL) {
 
-                if (forceChargeAssetIds.remove(attributeEvent.getAssetId())) {
+                if (forceChargeAssetIds.remove(attributeEvent.getId())) {
                     LOG.info("Request to cancel force charge asset: " + storageAsset.getId());
                     assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, 0d));
                     assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.CANCELLED));
@@ -240,14 +240,14 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
     protected synchronized void processOptimisationAssetAttributeEvent(OptimisationInstance optimisationInstance, AttributeEvent attributeEvent) {
 
-        if (EnergyOptimisationAsset.FINANCIAL_SAVING.getName().equals(attributeEvent.getAttributeName())
-            || EnergyOptimisationAsset.CARBON_SAVING.getName().equals(attributeEvent.getAttributeName())) {
+        if (EnergyOptimisationAsset.FINANCIAL_SAVING.getName().equals(attributeEvent.getName())
+            || EnergyOptimisationAsset.CARBON_SAVING.getName().equals(attributeEvent.getName())) {
             // These are updated by this service
             return;
         }
 
 
-        if (attributeEvent.getAttributeName().equals(EnergyOptimisationAsset.OPTIMISATION_DISABLED.getName())) {
+        if (attributeEvent.getName().equals(EnergyOptimisationAsset.OPTIMISATION_DISABLED.getName())) {
             boolean disabled = attributeEvent.<Boolean>getValue().orElse(false);
             if (!disabled && assetOptimisationInstanceMap.containsKey(optimisationInstance.optimisationAsset.getId())) {
                 // Nothing to do here
@@ -259,10 +259,10 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         LOG.info("Processing optimisation asset attribute event: " + attributeEvent);
-        stopOptimisation(attributeEvent.getAssetId());
+        stopOptimisation(attributeEvent.getId());
 
         // Get latest asset from storage
-        EnergyOptimisationAsset asset = (EnergyOptimisationAsset) assetStorageService.find(attributeEvent.getAssetId());
+        EnergyOptimisationAsset asset = (EnergyOptimisationAsset) assetStorageService.find(attributeEvent.getId());
 
         if (asset != null && !asset.isOptimisationDisabled().orElse(false)) {
             startOptimisation(asset);

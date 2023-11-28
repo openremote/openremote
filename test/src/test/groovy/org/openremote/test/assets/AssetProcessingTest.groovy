@@ -3,6 +3,7 @@ package org.openremote.test.assets
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.*
 import org.openremote.manager.datapoint.AssetDatapointService
+import org.openremote.manager.event.AttributeEventInterceptor
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.agent.DefaultAgentLink
@@ -38,41 +39,41 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         List<AttributeEvent> updatesPassedDatapointService = []
         List<AttributeEvent> updatesPassedAttributeLinkingService = []
 
-        AssetUpdateProcessor firstProcessor = new AssetUpdateProcessor() {
+        AttributeEventInterceptor firstProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
                 if (startRecording[0]) updatesPassedStartOfProcessingChain.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
-        AssetUpdateProcessor afterAgentServiceProcessor = new AssetUpdateProcessor() {
+        AttributeEventInterceptor afterAgentServiceProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
                 if (startRecording[0]) updatesPassedAgentService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
-        AssetUpdateProcessor afterRulesServiceProcessor = new AssetUpdateProcessor() {
+        AttributeEventInterceptor afterRulesServiceProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
                 if (startRecording[0]) updatesPassedRulesService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
-        AssetUpdateProcessor afterDatapointServiceProcessor = new AssetUpdateProcessor() {
+        AttributeEventInterceptor afterDatapointServiceProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
                 if (startRecording[0]) updatesPassedDatapointService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
-        AssetUpdateProcessor afterAttributeLinkingServiceProcessor = new AssetUpdateProcessor() {
+        AttributeEventInterceptor afterAttributeLinkingServiceProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
                 if (startRecording[0]) updatesPassedAttributeLinkingService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
@@ -86,11 +87,11 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
         then: "register mock asset processors"
-        assetProcessingService.processors.add(0, firstProcessor)
-        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AgentService}+1, afterAgentServiceProcessor)
-        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof RulesService}+1, afterRulesServiceProcessor)
-        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AssetDatapointService}+1, afterDatapointServiceProcessor)
-        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AttributeLinkingService}+1, afterAttributeLinkingServiceProcessor)
+        assetProcessingService.eventInterceptors.add(0, firstProcessor)
+        assetProcessingService.eventInterceptors.add(assetProcessingService.eventInterceptors.findIndexOf {it instanceof AgentService}+1, afterAgentServiceProcessor)
+        assetProcessingService.eventInterceptors.add(assetProcessingService.eventInterceptors.findIndexOf {it instanceof RulesService}+1, afterRulesServiceProcessor)
+        assetProcessingService.eventInterceptors.add(assetProcessingService.eventInterceptors.findIndexOf {it instanceof AssetDatapointService}+1, afterDatapointServiceProcessor)
+        assetProcessingService.eventInterceptors.add(assetProcessingService.eventInterceptors.findIndexOf {it instanceof AttributeLinkingService}+1, afterAttributeLinkingServiceProcessor)
 
         when: "a mock agent that uses the mock protocol is created"
         def mockAgent = new MockAgent("Mock agent")

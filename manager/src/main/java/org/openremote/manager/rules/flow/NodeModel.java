@@ -21,14 +21,14 @@ public enum NodeModel {
             info -> {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
-                String attributeName = assetAttributePair.getAttributeName();
+                String attributeName = assetAttributePair.getName();
                 Optional<AssetState<?>> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
                 return readValue.<Object>map(assetState -> assetState.getValue().orElse(null)).orElse(null);
             },
             params -> {
                 AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = internal.getAssetId();
-                String attributeName = internal.getAttributeName();
+                String attributeName = internal.getName();
                 List<AssetState<?>> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
                 ).toList();
 
@@ -53,7 +53,7 @@ public enum NodeModel {
                     return;
                 }
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
-                Optional<AssetState<?>> existingValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetAttributePair.getAssetId()).attributeName(assetAttributePair.getAttributeName()));
+                Optional<AssetState<?>> existingValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetAttributePair.getAssetId()).attributeName(assetAttributePair.getName()));
 
                 if (existingValue.isPresent())
                     if (existingValue.get().getValue().isPresent())
@@ -61,7 +61,7 @@ public enum NodeModel {
 
                 info.getAssets().dispatch(
                     assetAttributePair.getAssetId(),
-                    assetAttributePair.getAttributeName(),
+                    assetAttributePair.getName(),
                     value);
             })),
 

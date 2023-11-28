@@ -23,7 +23,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import org.apache.activemq.artemis.api.core.SimpleString;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
@@ -552,7 +551,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         if (isAssetTopic) {
             String topicStr = topic.toString();
             String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
-            topicExpander = ev -> replaceToken != null ? topicStr.replace(replaceToken, ((AssetEvent)ev).getAssetId()) : topicStr;
+            topicExpander = ev -> replaceToken != null ? topicStr.replace(replaceToken, ((AssetEvent)ev).getId()) : topicStr;
         } else {
             String topicStr = topic.toString();
             boolean injectAttributeName = TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3));
@@ -564,9 +563,9 @@ public class DefaultMQTTHandler extends MQTTHandler {
             String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
             String finalTopicStr = topicStr;
             topicExpander = ev -> {
-                String expanded = replaceToken != null ? finalTopicStr.replace(replaceToken, ((AttributeEvent)ev).getAssetId()) : finalTopicStr;
+                String expanded = replaceToken != null ? finalTopicStr.replace(replaceToken, ((AttributeEvent)ev).getId()) : finalTopicStr;
                 if (injectAttributeName) {
-                    expanded = expanded.replace("$", ((AttributeEvent)ev).getAttributeName());
+                    expanded = expanded.replace("$", ((AttributeEvent)ev).getName());
                 }
                 return expanded;
             };

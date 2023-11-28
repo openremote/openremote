@@ -197,7 +197,7 @@ public final class ProtocolUtil {
             return new Pair<>(false, value);
         }
 
-        String converterKey = ValueUtil.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT)).orElse(NULL_LITERAL.toUpperCase());
+        String converterKey = ValueUtil.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT)).orElse(NULL_LITERAL);
 
         return Optional.ofNullable(converter.get(converterKey))
             .map(converterValue -> {

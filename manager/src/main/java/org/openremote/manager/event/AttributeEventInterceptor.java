@@ -17,30 +17,41 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.asset;
+package org.openremote.manager.event;
 
+import jakarta.persistence.EntityManager;
+import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent.Source;
 
-import jakarta.persistence.EntityManager;
-
 /**
- * Process update of an asset attribute (value), from a {@link Source}.
+ * An interceptor that can choose to intercept the {@link org.openremote.model.attribute.AttributeEvent} passing through
+ * the system; if it is handled by this interceptor then the event will not be passed to any more interceptors and will
+ * not reach the DB.
  */
-public interface AssetUpdateProcessor {
+public interface AttributeEventInterceptor {
+
+    int DEFAULT_PRIORITY = 1000;
 
     /**
-     * @param em        The current session and transaction on the database, processors may use this to query additional data.
+     * Gets the priority of this interceptor which is used to determine the order in which the interceptors are called;
+     * interceptors with a lower priority are called first.
+     */
+    default int getPriority() {
+        return DEFAULT_PRIORITY;
+    }
+
+    /**
+     * @param em        The current session and transaction on the database, processors may use this to query additional
+     *                  data.
      * @param asset     The current asset state with the old value and old value timestamp.
-     * @param attribute The attribute to be updated, with new value and value timestamp already set. Value and timestamp can be mutated by processors.
+     * @param attribute The attribute to be updated, with new value and value timestamp already set. Value and timestamp
+     *                  can be mutated by processors.
+     * @param outdated  Indicates that the event has an older timestamp than the current attribute value.
      * @param source    The source of the update.
      * @return <code>true</code> if processing is complete and subsequent processor should be skipped.
      * @throws AssetProcessingException When processing failed and the update can not continue.
      */
-    boolean processAssetUpdate(EntityManager em, Asset<?> asset, Attribute<?> attribute, Source source) throws AssetProcessingException;
-
-    /* TODO Processors should be transactional, so an exception in one processor can roll back the update in others */
-    // void commit();
-    // void rollback();
+    boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, Source source) throws AssetProcessingException;
 }

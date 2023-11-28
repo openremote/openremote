@@ -393,10 +393,10 @@ public class GatewayConnector {
             // Remove any assets that have been deleted since requested
             cachedAssetEvents.removeIf(
                 assetEvent -> {
-                    boolean remove = requestedAssetIds.stream().anyMatch(id -> id.equals(assetEvent.getAssetId()) && assetEvent.getCause() == AssetEvent.Cause.DELETE);
+                    boolean remove = requestedAssetIds.stream().anyMatch(id -> id.equals(assetEvent.getId()) && assetEvent.getCause() == AssetEvent.Cause.DELETE);
                     if (remove) {
-                        syncAssetIds.remove(assetEvent.getAssetId());
-                        requestedAssetIds.remove(assetEvent.getAssetId());
+                        syncAssetIds.remove(assetEvent.getId());
+                        requestedAssetIds.remove(assetEvent.getId());
                     }
                     return remove;
                 });
@@ -419,7 +419,7 @@ public class GatewayConnector {
                     final AtomicReference<Asset<?>> latestAssetVersion = new AtomicReference<>(returnedAsset);
                     cachedAssetEvents.removeIf(
                         assetEvent -> {
-                            boolean remove = assetEvent.getAssetId().equals(returnedAsset.getId()) && (assetEvent.getCause() == AssetEvent.Cause.UPDATE || assetEvent.getCause() == AssetEvent.Cause.READ);
+                            boolean remove = assetEvent.getId().equals(returnedAsset.getId()) && (assetEvent.getCause() == AssetEvent.Cause.UPDATE || assetEvent.getCause() == AssetEvent.Cause.READ);
                             if (remove && assetEvent.getAsset().getVersion() > latestAssetVersion.get().getVersion()) {
                                 latestAssetVersion.set(assetEvent.getAsset());
                             }
@@ -439,16 +439,16 @@ public class GatewayConnector {
                 cachedAssetEvents.forEach(
                     assetEvent -> {
                         if (assetEvent.getCause() == AssetEvent.Cause.DELETE) {
-                            syncAssetIds.remove(assetEvent.getAssetId());
+                            syncAssetIds.remove(assetEvent.getId());
                         } else if (assetEvent.getCause() == AssetEvent.Cause.CREATE) {
-                            syncAssetIds.add(assetEvent.getAssetId());
+                            syncAssetIds.add(assetEvent.getId());
                             try {
                                 saveAssetLocally(assetEvent.getAsset());
                             } catch (Exception ex) {
                                 LOG.log(Level.SEVERE, "Failed to add new gateway asset (Gateway ID=" + gatewayId + ", Asset=" + assetEvent.getAsset(), ex);
                             }
                         } else {
-                            refreshAssets.add(assetEvent.getAssetId());
+                            refreshAssets.add(assetEvent.getId());
                         }
                     }
                 );
@@ -458,7 +458,7 @@ public class GatewayConnector {
 
                 // Refresh attributes that have changed
                 cachedAttributeEvents.forEach(attributeEvent -> {
-                    String assetId = attributeEvent.getAssetId();
+                    String assetId = attributeEvent.getId();
                     if (!refreshAssets.contains(assetId)) {
                         LOG.info("1 or more gateway asset attribute values have changed so requesting the asset again (Gateway ID=" + gatewayId + ", Asset<?> ID=" + assetId);
                         refreshAssets.add(assetId);
@@ -638,7 +638,7 @@ public class GatewayConnector {
             case CREATE:
             case READ:
             case UPDATE:
-                String assetId = e.getAssetId();
+                String assetId = e.getId();
                 Asset<?> mergedAsset = saveAssetLocally(e.getAsset());
 
                 synchronized (pendingAssetMerges) {
@@ -658,9 +658,9 @@ public class GatewayConnector {
                 break;
             case DELETE:
                 try {
-                    deleteAssetsLocally(Collections.singletonList(mapAssetId(gatewayId, e.getAssetId(), false)));
+                    deleteAssetsLocally(Collections.singletonList(mapAssetId(gatewayId, e.getId(), false)));
                 } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "Removing obsolete asset failed: " + e.getAssetId(), ex);
+                    LOG.log(Level.SEVERE, "Removing obsolete asset failed: " + e.getId(), ex);
                 }
                 break;
         }
@@ -669,7 +669,7 @@ public class GatewayConnector {
     protected void onAttributeEvent(AttributeEvent e) {
         // Just push the event through the processing chain
         assetProcessingService.sendAttributeEvent(
-            new AttributeEvent(mapAssetId(gatewayId, e.getAssetId(), false), e.getAttributeName(), e.getValue().orElse(null), e.getTimestamp()),
+            new AttributeEvent(mapAssetId(gatewayId, e.getId(), false), e.getName(), e.getValue().orElse(null), e.getTimestamp()),
             AttributeEvent.Source.GATEWAY
         );
     }

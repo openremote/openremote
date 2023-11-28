@@ -172,7 +172,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 50
         }
@@ -186,7 +186,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "presenceDetected"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(false) == true
         }
@@ -202,7 +202,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 70d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 70d
         }
@@ -218,7 +218,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert !assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("lights").get().value.orElse(true)
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "lights"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(true) == false
         }
@@ -234,7 +234,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("lights").get().value.orElse(false)
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "lights"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(false) == true
         }
@@ -281,7 +281,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 30
         }
@@ -327,7 +327,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 40
         }
@@ -359,7 +359,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert receivedValues.get(0) == "50"
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 50
         }
@@ -374,7 +374,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "presenceDetected"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(true) == false
             assert receivedValues.size() == 0
@@ -431,7 +431,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AssetEvent
-            assert (receivedEvents.get(0) as AssetEvent).assetId == managerTestSetup.smartBuildingId
+            assert (receivedEvents.get(0) as AssetEvent).id == managerTestSetup.smartBuildingId
             assert (receivedEvents.get(0) as AssetEvent).asset.attributes.get("temp") != null
             assert (receivedEvents.get(0) as AssetEvent).asset.attributes.get("temp").flatMap(){it.getValue()}.orElse(null) == "hello world"
         }
@@ -459,7 +459,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AssetEvent
-            assert (receivedEvents.get(0) as AssetEvent).assetId == childAsset.id
+            assert (receivedEvents.get(0) as AssetEvent).id == childAsset.id
             assert (receivedEvents.get(0) as AssetEvent).assetName == childAsset.name
         }
         receivedEvents.clear()
@@ -510,7 +510,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 170d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 170d
         }
@@ -532,7 +532,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 1000d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 1000d
         }
@@ -548,7 +548,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 170d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
             assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 170d
         }

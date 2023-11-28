@@ -44,6 +44,7 @@ import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaMap;
+import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
 import org.openremote.model.persistence.LTreeType;
@@ -227,7 +228,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 @DynamicUpdate
 @TsIgnoreTypeParams
 @SuppressWarnings("unchecked")
-public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T> {
+public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo {
 
     /**
      * The purpose of this is to provide {@link org.openremote.model.attribute.Attribute.AttributeDeserializer} access
@@ -365,6 +366,10 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     }
 
     public String getName() {
+        return name;
+    }
+
+    public String getAssetName() {
         return name;
     }
 

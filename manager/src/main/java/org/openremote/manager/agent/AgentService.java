@@ -27,7 +27,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
+import org.openremote.manager.event.AttributeEventInterceptor;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -83,7 +83,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * <p>
  * Finds all {@link Agent} assets and manages their {@link Protocol} instances.
  */
-public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService {
+public class AgentService extends RouteBuilder implements ContainerService, AttributeEventInterceptor, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
     public static final int PRIORITY = MessageBrokerService.PRIORITY + 100; // Start quite late to ensure asset model etc. are initialised
@@ -507,10 +507,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      * required (i.e. the protocol is responsible for synchronising state with the database).
      */
     @Override
-    public boolean processAssetUpdate(EntityManager entityManager,
-                                      Asset<?> asset,
-                                      Attribute<?> attribute,
-                                      Source source) throws AssetProcessingException {
+    public boolean intercept(EntityManager entityManager,
+                             Asset<?> asset,
+                             Attribute<?> attribute,
+                             boolean outdated, Source source) throws AssetProcessingException {
 
         if (source == SENSOR || source == GATEWAY) {
             return false;
@@ -524,7 +524,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             // is not ideal as value is not committed to the DB and could in theory be consumed by another processor
             // but we need to know the source which isn't available from the client event service.
             // TODO: Expose event source to client event subscriptions
-            Agent<?, ?, ?> agent = getAgent(attributeEvent.getAssetId());
+            Agent<?, ?, ?> agent = getAgent(attributeEvent.getId());
 
             if (agent != null) {
 

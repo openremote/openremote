@@ -21,7 +21,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TextUtil;
 
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
@@ -169,36 +168,36 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     protected synchronized void processElectricityProducerSolarAssetAttributeEvent(AttributeEvent attributeEvent) {
 
-        if (ElectricityProducerSolarAsset.POWER.getName().equals(attributeEvent.getAttributeName())
-                || ElectricityProducerSolarAsset.POWER_FORECAST.getName().equals(attributeEvent.getAttributeName())) {
+        if (ElectricityProducerSolarAsset.POWER.getName().equals(attributeEvent.getName())
+                || ElectricityProducerSolarAsset.POWER_FORECAST.getName().equals(attributeEvent.getName())) {
             // These are updated by this service
             return;
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.getName())) {
+        if (attributeEvent.getName().equals(ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.getName())) {
             boolean enabled = attributeEvent.<Boolean>getValue().orElse(false);
-            if (enabled && calculationFutures.containsKey(attributeEvent.getAssetId())) {
+            if (enabled && calculationFutures.containsKey(attributeEvent.getId())) {
                 // Nothing to do here
                 return;
-            } else if (!enabled && !calculationFutures.containsKey(attributeEvent.getAssetId())) {
+            } else if (!enabled && !calculationFutures.containsKey(attributeEvent.getId())) {
                 // Nothing to do here
                 return;
             }
 
             LOG.fine("Processing producer solar asset attribute event: " + attributeEvent);
-            stopProcessing(attributeEvent.getAssetId());
+            stopProcessing(attributeEvent.getId());
 
             // Get latest asset from storage
-            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
+            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getId());
 
             if (asset != null && asset.isIncludeForecastSolarService().orElse(false)) {
                 startProcessing(asset);
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.getName())) {
+        if (attributeEvent.getName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.getName())) {
             // Get latest asset from storage
-            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
+            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getId());
 
             // Check if power is currently zero and set it if power forecast has an value
             if (asset.getPower().orElse(0d) == 0d && asset.getPowerForecast().orElse(0d) != 0d) {

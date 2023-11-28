@@ -49,6 +49,7 @@ import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.EventSubscription;
@@ -1170,7 +1171,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      */
     public void deleteUserAssetLinks(String userId) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userIód = ?1");
+            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?1");
             query.setParameter(1, userId);
             int deleteCount = query.executeUpdate();
             LOG.fine("Deleted all user asset links for user: user ID=" + userId + ", count=" + deleteCount);
@@ -1354,21 +1355,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             // TODO: Use jsonb type directly to optimise over wire data (couldn't get this to work even after seeing https://stackoverflow.com/questions/53847917/postgresql-throws-column-is-of-type-jsonb-but-expression-is-of-type-bytea-with)
             Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ?")
-                .setParameter(1, event.getAttributeName())
-                .setParameter(2, event.getAttributeName())
+                .setParameter(1, event.getName())
+                .setParameter(2, event.getName())
                 .setParameter(3, "{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
-                .setParameter(4, event.getAssetId());
+                .setParameter(4, event.getId());
 
             int affectedRows = query.executeUpdate();
             boolean success = affectedRows == 1;
 
             if (success) {
                 if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Updated attribute value assetID=" + event.getAssetId() + ", attributeName=" + event.getAttributeName() + ", timestamp=" + timestamp);
+                    LOG.finest("Updated attribute value assetID=" + event.getId() + ", attributeName=" + event.getName() + ", timestamp=" + timestamp);
                 }
             } else {
                 if (LOG.isLoggable(Level.FINE)) {
-                    LOG.fine("Failed to update attribute value assetID=" + event.getAssetId() + ", attributeName=" + event.getAttributeName() + ", timestamp=" + timestamp);
+                    LOG.fine("Failed to update attribute value assetID=" + event.getId() + ", attributeName=" + event.getName() + ", timestamp=" + timestamp);
                 }
             }
 
@@ -1448,15 +1449,25 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             ))
                         .forEach(obsoleteAttribute ->
                             clientEventService.publishEvent(
-                                AttributeEvent.deletedAttribute(asset.getId(), obsoleteAttribute.getName())
+                                AttributeEvent.deleted(new AttributeRef(asset.getId(), obsoleteAttribute.getName()))
                             ));
 
                     // Get new or modified attributes
                     getAddedOrModifiedAttributes(oldAttributes.values(),
                         newAttributes.values())
-                        .forEach(newOrModifiedAttribute ->
-                            publishAttributeEvent(AttributeEvent.fromAssetAttribute(asset, newOrModifiedAttribute))
-                        );
+                        .forEach(newOrModifiedAttribute -> {
+                            // Push old attribute value into
+                            Optional<Attribute<?>> olddAttribute = oldAttributes.get(newOrModifiedAttribute.getName());
+                            publishAttributeEvent(AttributeEvent.enriched(
+                                asset,
+                                newOrModifiedAttribute,
+                                getClass().getSimpleName(),
+                                newOrModifiedAttribute.getValue().orElse(null),
+                                newOrModifiedAttribute.getTimestamp().orElse(0L),
+                                olddAttribute.flatMap(Attribute::getValue).orElse(null),
+                                olddAttribute.flatMap(Attribute::getTimestamp).orElse(0L)
+                            ));
+                        });
                 }
             }
             case DELETE -> {
@@ -1473,7 +1484,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 AttributeMap deletedAttributes = asset.getAttributes();
                 deletedAttributes.forEach(obsoleteAttribute ->
                     clientEventService.publishEvent(
-                        AttributeEvent.deletedAttribute(asset.getId(), obsoleteAttribute.getName())
+                        AttributeEvent.deleted(new AttributeRef(asset.getId(), obsoleteAttribute.getName()))
                     ));
             }
         }

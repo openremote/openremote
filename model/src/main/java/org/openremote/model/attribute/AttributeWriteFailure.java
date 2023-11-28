@@ -85,7 +85,7 @@ public enum AttributeWriteFailure {
     /**
      * Any other error, typically other runtime exceptions thrown by a processor.
      */
-    PROCESSOR_FAILURE,
+    INTERCEPTOR_FAILURE,
 
     /**
      * Writing the asset attribute state to database failed.

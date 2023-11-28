@@ -20,6 +20,8 @@
 package org.openremote.manager.asset;
 
 import org.openremote.manager.agent.AgentService;
+import org.openremote.manager.event.AttributeEventInterceptor;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.Container;
@@ -43,48 +45,13 @@ import java.util.logging.Logger;
 import static org.openremote.model.attribute.AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE;
 
 /**
- * This service processes asset updates on attributes that have one or more {@link MetaItemType#ATTRIBUTE_LINKS} meta items.
+ * This service generates new {@link AttributeEvent}s for any {@link Attribute} that contains an
+ * {@link MetaItemType#ATTRIBUTE_LINKS} meta item when the {@link Attribute} is updated.
  * <p>
- * If such an event occurs then the event is 'forwarded' to the linked attribute; an attribute can contain multiple
- * {@link MetaItemType#ATTRIBUTE_LINKS} meta items; optionally the value forwarded to the linked attribute can be modified
- * by configuring the converter property in the meta item's value:
- * <p>
- * By default the exact value of the attribute is forwarded unless a key exists in the converter JSON Object that
- * matches the value as a string (note matches are case sensitive so booleans should be lower case i.e. true or false);
- * in that case the value of the key is forwarded instead. There are several special conversions available by using
- * the value of a {@link AttributeLink.ConverterType} as the value. This allows for example a button press to toggle a boolean
- * attribute or for a particular value to be ignored.
- * <p>
- * To convert null values the converter key of "NULL" can be used.
- * <p>
- * Example {@link MetaItemType#ATTRIBUTE_LINKS} meta items:
- * <blockquote><pre>{@code
- * [
- * "name": "urn:openremote:asset:meta:attributeLink",
- * "value": {
- * "ref": ["0oI7Gf_kTh6WyRJFUTr8Lg", "light1"],
- * "converter": {
- * "PRESSED": "@TOGGLE",
- * "LONG_PRESSED": "@IGNORE",
- * "RELEASED": "@IGNORE"
- * }
- * }
- * ],
- * [
- * "name": "urn:openremote:asset:meta:attributeLink",
- * "value": {
- * "ref": ["0oI7Gf_kTh6WyRJFUTr8Lg", "light2"],
- * "converter": {
- * "0": true,
- * "1": false
- * "NULL": "@IGNORE"
- * }
- * }
- * ]
- * }</pre></blockquote>
+ * See {@link AttributeLink} for capabilities.
  */
 // TODO: Improve AttributeLinkingService so that outbound events are synchronsied with inbound
-public class AttributeLinkingService implements ContainerService, AssetUpdateProcessor {
+public class AttributeLinkingService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AttributeLinkingService.class.getName());
     protected AssetProcessingService assetProcessingService;
@@ -103,6 +70,9 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
         assetStorageService = container.getService(AssetStorageService.class);
         agentService = container.getService(AgentService.class);
         gatewayService = container.getService(GatewayService.class);
+        ClientEventService clientEventService = container.getService(ClientEventService.class);
+
+        clientEventService.addInternalSubscription(AttributeEvent.class, null, )
     }
 
     @Override
@@ -113,11 +83,8 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
     public void stop(Container container) throws Exception {
     }
 
-    @Override
-    public boolean processAssetUpdate(EntityManager em,
-                                      Asset<?> asset,
-                                      Attribute<?> attribute,
-                                      Source source) throws AssetProcessingException {
+
+    public void onAttributeEvent(AttributeEvent attributeEvent) {
         if (source == ATTRIBUTE_LINKING_SERVICE) {
             LOG.finest("Attribute update came from this service so ignoring to avoid infinite loops: " + attribute);
             return false;

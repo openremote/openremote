@@ -4,14 +4,13 @@ import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
+import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
@@ -51,7 +50,7 @@ import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
  * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
  * days.
  */
-public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements AssetUpdateProcessor, ProtocolDatapointService {
+public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements ProtocolDatapointService {
 
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
     public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
@@ -73,6 +72,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             )
         );
 
+        AssetProcessingService assetProcessingService = container.getService(AssetProcessingService.class);
         maxDatapointAgeDays = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
 
         if (maxDatapointAgeDays <= 0) {
@@ -105,20 +105,17 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         return attribute.getMetaValue(STORE_DATA_POINTS).orElse(attribute.hasMeta(MetaItemType.AGENT_LINK));
     }
 
-    @Override
-    public boolean processAssetUpdate(EntityManager em,
-                                      Asset<?> asset,
-                                      Attribute<?> attribute,
-                                      Source source) throws AssetProcessingException {
+    public void onAttributeEvent(EntityManager em,
+                             Asset<?> asset,
+                             Attribute<?> attribute) throws AssetProcessingException {
 
         if (attributeIsStoreDatapoint(attribute) && attribute.getValue().isPresent()) { // Don't store datapoints with null value
             try {
-                upsertValue(asset.getId(), attribute.getName(), attribute.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis)), ZoneId.systemDefault()));
+                upsertValueWithEM(em, asset.getId(), attribute.getName(), attribute.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis)), ZoneId.systemDefault()));
             } catch (Exception e) {
                 throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attribute, e);
             }
         }
-        return false;
     }
 
     @Override
