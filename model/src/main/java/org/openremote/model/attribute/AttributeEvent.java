@@ -100,6 +100,24 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
         this.value = value;
     }
 
+    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, Object source, Object value, long valueTimestamp, Object oldValue, long oldValueTimestamp) {
+        this(new AttributeRef(asset.getId(), attribute.getName()),value, valueTimestamp);
+
+        this.oldValue = oldValue;
+        this.oldValueTimestamp = oldValueTimestamp;
+        this.source = source;
+
+        this.valueType = attribute.getType();
+        this.meta = attribute.getMeta();
+
+        this.path = asset.getPath();
+        this.createdOn = asset.getCreatedOn();
+        this.assetName = asset.getAssetName();
+        this.assetType = asset.getAssetType();
+        this.parentId = asset.getParentId();
+        this.realm = asset.getRealm();
+    }
+
     @Override
     public AttributeState getAttributeState() {
         return new AttributeState(ref, value);
@@ -126,6 +144,20 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     @Override
     public String getRealm() {
         return realm;
+    }
+
+    public AttributeEvent setRealm(String realm) {
+        this.realm = realm;
+        return this;
+    }
+
+    public Object getSource() {
+        return source;
+    }
+
+    public AttributeEvent setSource(Object source) {
+        this.source = source;
+        return this;
     }
 
     @Override
@@ -188,6 +220,15 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
         return ref.getName();
     }
 
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public AttributeEvent setDeleted(boolean deleted) {
+        this.deleted = deleted;
+        return this;
+    }
+
     public <U> Optional<U> getMetaValue(MetaItemDescriptor<U> metaItemDescriptor) {
         return Optional.ofNullable(getMeta()).flatMap(metaMap -> metaMap.getValue(metaItemDescriptor));
     }
@@ -248,40 +289,5 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
             ", ref=" + ref +
             ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             "}";
-    }
-
-    public static AttributeEvent deleted(AttributeRef ref) {
-        AttributeEvent event = new AttributeEvent(ref, null);
-        event.deleted = true;
-        return event;
-    }
-
-    public AttributeEvent withRealm(String realm) {
-        AttributeEvent event = new AttributeEvent(getId(), getName(), getValue(), getTimestamp());
-        event.realm = realm;
-        return event;
-    }
-
-    public static AttributeEvent enriched(AssetInfo asset, Attribute<?> attribute, Object source, Object value, long valueTimestamp, Object oldValue, long oldValueTimestamp) {
-        AttributeEvent enriched = new AttributeEvent(
-            new AttributeRef(asset.getId(), attribute.getName()),
-            value,
-            valueTimestamp
-        );
-
-        enriched.oldValue = oldValue;
-        enriched.oldValueTimestamp = oldValueTimestamp;
-
-        enriched.source = source;
-        enriched.valueType = attribute.getType();
-        enriched.meta = attribute.getMeta();
-
-        enriched.path = asset.getPath();
-        enriched.createdOn = asset.getCreatedOn();
-        enriched.assetName = asset.getAssetName();
-        enriched.assetType = asset.getAssetType();
-        enriched.parentId = asset.getParentId();
-        enriched.realm = asset.getRealm();
-        return enriched;
     }
 }

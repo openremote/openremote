@@ -201,7 +201,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
             // Check if power is currently zero and set it if power forecast has an value
             if (asset.getPower().orElse(0d) == 0d && asset.getPowerForecast().orElse(0d) != 0d) {
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerSolarAsset.POWER, asset.getPowerForecast().orElse(0d)));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerSolarAsset.POWER, asset.getPowerForecast().orElse(0d)), getClass().getSimpleName());
             }
         }
     }
@@ -261,11 +261,11 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                             assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName(), -wattItem.getValue() / 1000, timestamp);
 
                             if (setActualValueForecastPower && timestamp.isAfter(now)) {
-                                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST, -wattItem.getValue() / 1000));
+                                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST, -wattItem.getValue() / 1000), getClass().getSimpleName());
                                 setActualValueForecastPower = false;
 
                                 if (setActualValuePower) {
-                                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER, -wattItem.getValue() / 1000));
+                                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER, -wattItem.getValue() / 1000), getClass().getSimpleName());
                                     setActualValuePower = false;
                                 }
                             }

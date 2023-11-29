@@ -38,6 +38,9 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.NotNull;
+import org.apache.commons.codec.binary.BinaryCodec;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
 import org.hibernate.internal.util.SerializationHelper;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 import org.openremote.model.*;
@@ -47,6 +50,7 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
@@ -1303,5 +1307,33 @@ public class ValueUtil {
             attributeDescriptors.toArray(new AttributeDescriptor<?>[0]),
             metaItemDescriptors.toArray(new MetaItemDescriptor<?>[0]),
             valueDescriptors.toArray(new ValueDescriptor<?>[0]));
+    }
+
+    public static String bytesToHexString(byte[] bytes) {
+        return Hex.encodeHexString(bytes).toUpperCase(Locale.ROOT);
+    }
+
+    public static byte[] bytesFromHexString(String hex) {
+        try {
+            return Hex.decodeHex(hex.toCharArray());
+        } catch (Exception e) {
+            Protocol.LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
+            return new byte[0];
+        }
+    }
+
+    public static String bytesToBinaryString(byte[] bytes) {
+        // Need to reverse the array to get a sensible string out
+        ArrayUtils.reverse(bytes);
+        return BinaryCodec.toAsciiString(bytes);
+    }
+
+    public static byte[] bytesFromBinaryString(String binary) {
+        try {
+            return BinaryCodec.fromAscii(binary.toCharArray());
+        } catch (Exception e) {
+            Protocol.LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
+            return new byte[0];
+        }
     }
 }

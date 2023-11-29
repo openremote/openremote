@@ -145,7 +145,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def light1toggleOn = new AttributeEvent(
                 new AttributeState(new AttributeRef(mockThing.getId(), "light1Toggle"), false)
         )
-        assetProcessingService.sendAttributeEvent(light1toggleOn)
+        assetProcessingService.sendAttributeEvent(light1toggleOn, getClass().getSimpleName())
 
         then: "the attribute event should reach the protocol and stop at the agent service, not be in the database"
         conditions.eventually {
@@ -194,7 +194,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def light2toggleOn = new AttributeEvent(
                 new AttributeState(new AttributeRef(mockThing.getId(), "light2Toggle"), true)
         )
-        assetProcessingService.sendAttributeEvent(light2toggleOn)
+        assetProcessingService.sendAttributeEvent(light2toggleOn, getClass().getSimpleName())
 
         then: "the attribute event should pass the start of the processing chain, but not reach the mock protocol or the end of the processing chain and error should be populated"
         conditions.eventually {
@@ -217,7 +217,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def plainAttributeTest = new AttributeEvent(
                 new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), "test")
         )
-        assetProcessingService.sendAttributeEvent(plainAttributeTest)
+        assetProcessingService.sendAttributeEvent(plainAttributeTest, getClass().getSimpleName())
 
         then: "the attribute event should pass the start of the processing chain and reach the end of the processing chain"
         conditions.eventually {

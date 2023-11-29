@@ -182,7 +182,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         String attributeName = attributeEvent.getName();
 
         if ((attributeName.equals(ElectricityChargerAsset.VEHICLE_CONNECTED.getName()) || attributeName.equals(ElectricVehicleAsset.CHARGER_CONNECTED.getName()))
-            && attributeEvent.<Boolean>getValue().orElse(false)) {
+            && (Boolean)attributeEvent.getValue().orElse(false)) {
             // Look for forced charge asset
             if (forceChargeAssetIds.remove(attributeEvent.getId())) {
                 LOG.fine("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getId());
@@ -200,7 +200,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
             ElectricityStorageAsset storageAsset = (ElectricityStorageAsset) asset;
 
-            if (attributeEvent.<AttributeExecuteStatus>getValue().orElse(null) == AttributeExecuteStatus.REQUEST_START) {
+            if (attributeEvent.getValue().orElse(null) == AttributeExecuteStatus.REQUEST_START) {
 
                 double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
                 double maxEnergyLevel = getElectricityStorageAssetEnergyLevelMax(storageAsset);
@@ -218,15 +218,15 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 }
 
                 forceChargeAssetIds.add(attributeEvent.getId());
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, powerImportMax));
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.RUNNING));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, powerImportMax), getClass().getSimpleName());
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.RUNNING), getClass().getSimpleName());
 
             } else if (attributeEvent.<AttributeExecuteStatus>getValue().orElse(null) == AttributeExecuteStatus.REQUEST_CANCEL) {
 
                 if (forceChargeAssetIds.remove(attributeEvent.getId())) {
                     LOG.info("Request to cancel force charge asset: " + storageAsset.getId());
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, 0d));
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.CANCELLED));
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, 0d), getClass().getSimpleName());
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.CANCELLED), getClass().getSimpleName());
                 }
             }
         }
@@ -248,7 +248,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
 
         if (attributeEvent.getName().equals(EnergyOptimisationAsset.OPTIMISATION_DISABLED.getName())) {
-            boolean disabled = attributeEvent.<Boolean>getValue().orElse(false);
+            boolean disabled = (Boolean)attributeEvent.getValue().orElse(false);
             if (!disabled && assetOptimisationInstanceMap.containsKey(optimisationInstance.optimisationAsset.getId())) {
                 // Nothing to do here
                 return;
@@ -464,9 +464,9 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                         LOG.info("Force charged asset has reached maxEnergyLevelPercentage so stopping charging: " + asset.getId());
                         forceChargeAssetIds.remove(asset.getId());
                         assetProcessingService.sendAttributeEvent(
-                            new AttributeEvent(asset.getId(), ElectricityStorageAsset.POWER_SETPOINT, 0d)
-                        );
-                        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED));
+                            new AttributeEvent(asset.getId(), ElectricityStorageAsset.POWER_SETPOINT, 0d),
+                            getClass().getSimpleName());
+                        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED), getClass().getSimpleName());
                     }
                     return false;
                 }
@@ -737,7 +737,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 assetPredictedDatapointService.updateValues(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT.getName(), valuesAndTimestamps);
             }
 
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, setpoints != null ? setpoints[0] : null));
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, setpoints != null ? setpoints[0] : null), getClass().getSimpleName());
 
             // Update unoptimised power for this asset
             obsoleteUnoptimisedAssetIds.remove(storageAsset.getId());
@@ -769,8 +769,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         optimisationInstance.optimisationAsset.setCarbonSaving(carbonSaving);
 
         // Push new values into the DB
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(optimisationAssetId, EnergyOptimisationAsset.FINANCIAL_SAVING, financialSaving));
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(optimisationAssetId, EnergyOptimisationAsset.CARBON_SAVING, carbonSaving));
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(optimisationAssetId, EnergyOptimisationAsset.FINANCIAL_SAVING, financialSaving), getClass().getSimpleName());
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(optimisationAssetId, EnergyOptimisationAsset.CARBON_SAVING, carbonSaving), getClass().getSimpleName());
     }
 
     protected boolean isElectricityGroupAsset(Asset<?> asset) {

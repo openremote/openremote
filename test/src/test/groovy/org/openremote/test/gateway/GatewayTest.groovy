@@ -352,7 +352,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "an attribute event for a gateway descendant asset (building 1 room 1) is sent to the local manager"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(mapAssetId(gateway.id, assetIds[1], false), "tempSetpoint", 20d))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(mapAssetId(gateway.id, assetIds[1], false), "tempSetpoint", 20d), getClass().getSimpleName())
 
         then: "the event should have been forwarded to the gateway"
         conditions.eventually {
@@ -522,7 +522,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "the gateway asset is marked as disabled"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.DISABLED, true))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.DISABLED, true), getClass().getSimpleName())
 
         then: "the gateway asset status should become disabled"
         conditions.eventually {
@@ -573,7 +573,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "the gateway is enabled again"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.DISABLED.getName(), false))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.DISABLED.getName(), false), getClass().getSimpleName())
 
         then: "the gateway connector should be enabled"
         conditions.eventually {
@@ -582,7 +582,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "the gateway asset client secret attribute is updated"
         def newSecret = UUID.randomUUID().toString()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.CLIENT_SECRET, newSecret))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.CLIENT_SECRET, newSecret), getClass().getSimpleName())
 
         then: "the service user secret should be updated"
         conditions.eventually {
@@ -884,7 +884,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "an attribute is updated on the gateway client"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, "test", "newValue"))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, "test", "newValue"), getClass().getSimpleName())
 
         then: "the mirrored asset attribute should also be updated"
         conditions.eventually {
@@ -897,7 +897,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "a mirrored asset attribute is updated"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(mapAssetId(gateway.id, microphone2.id, false), "test", "newerValue"))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(mapAssetId(gateway.id, microphone2.id, false), "test", "newerValue"), getClass().getSimpleName())
 
         then: "the attribute should be updated on the gateway client and the mirrored asset"
         conditions.eventually {
@@ -916,7 +916,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         })
 
         and: "an attribute with an attribute link is updated on the gateway"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true), getClass().getSimpleName())
 
         then: "only four attribute events should have been generated, one for each of light1 and light2 and one for each of their mirrored assets below the gateway asset"
         Thread.sleep(1000)

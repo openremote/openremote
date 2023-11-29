@@ -91,8 +91,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         when: "supplier tariff values are set for the next 24hrs"
         def tariffExports = [-5, -2, -8, 2, 2, 5, -2, -2]
         def tariffImports = [3, -5, 10, 1, 3, -5, 7, 8]
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name, tariffImports.get(0)))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_EXPORT.name, tariffExports.get(0)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name, tariffImports.get(0)), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_EXPORT.name, tariffExports.get(0)), getClass().getSimpleName())
 
         for (int i = 1; i < tariffExports.size(); i++) {
             assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name), tariffImports.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
@@ -102,8 +102,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         and: "consumer and producer prediction values are set for the next 24hrs"
         def consumerPower = [0, 5, 20, 0, 0, 10, 5, 0]
         def producerPower = [-5, -30, -5, 0, 0, -15, -10, -2]
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name, consumerPower.get(0)))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(0)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name, consumerPower.get(0)), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(0)), getClass().getSimpleName())
 
         for (int i = 1; i < consumerPower.size(); i++) {
             assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name), consumerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
@@ -262,8 +262,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         and: "consumer and producer prediction values are set for the next 24hrs"
         def consumerPower = [0, 0, 0, 0, 10, 10, 10, 10]
         def producerPower = [-50, -50, -50, -50, 0, 0, 0, 0]
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name, consumerPower.get(0)))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(0)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name, consumerPower.get(0)), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(0)), getClass().getSimpleName())
 
         for (int i = 1; i < consumerPower.size(); i++) {
             assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name), consumerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
@@ -273,8 +273,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         and: "supplier tariff values are set for the next 24hrs"
         def tariffExports = [-0.05, -0.05, -0.05, -0.05, -0.05, -0.05, -0.05, -0.05]
         def tariffImports = [0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08]
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name, tariffImports.get(0)))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_EXPORT.name, tariffExports.get(0)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name, tariffImports.get(0)), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_EXPORT.name, tariffExports.get(0)), getClass().getSimpleName())
 
         for (int i = 1; i < tariffExports.size(); i++) {
             assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name), tariffImports.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
@@ -361,8 +361,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         }
 
         when: "the consumer and producer power attributes are updated (as they have changed according to the predicted data)"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name, consumerPower.get(4)))
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(4)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name, consumerPower.get(4)), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(4)), getClass().getSimpleName())
 
         then: "the values should have reached the DB"
         conditions.eventually {

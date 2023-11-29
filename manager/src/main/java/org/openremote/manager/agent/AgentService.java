@@ -21,7 +21,7 @@ package org.openremote.manager.agent;
 
 import jakarta.persistence.EntityManager;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent.protocol.ProtocolAssetService;
+import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
@@ -42,15 +42,11 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.*;
-import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.protocol.ProtocolInstanceDiscovery;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.NameValuePredicate;
-import org.openremote.model.query.filter.PathPredicate;
-import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.query.filter.*;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 
@@ -69,13 +65,9 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.asset.agent.Protocol.ACTUATOR_TOPIC;
-import static org.openremote.model.asset.agent.Protocol.SENSOR_QUEUE;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
-import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
-import static org.openremote.model.attribute.AttributeEvent.Source.*;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
@@ -83,7 +75,103 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * <p>
  * Finds all {@link Agent} assets and manages their {@link Protocol} instances.
  */
-public class AgentService extends RouteBuilder implements ContainerService, AttributeEventInterceptor, ProtocolAssetService {
+public class AgentService extends RouteBuilder implements ContainerService, AttributeEventInterceptor {
+
+    protected class AgentProtocolAssetService implements ProtocolAssetService {
+        protected Agent<?,?,?> agent;
+
+        public AgentProtocolAssetService(Agent<?,?,?> agent) {
+            this.agent = agent;
+        }
+
+        @Override
+        public <T extends Asset<?>> T mergeAsset(T asset) {
+            Objects.requireNonNull(asset.getId());
+
+            if (TextUtil.isNullOrEmpty(asset.getRealm())) {
+                asset.setRealm(agent.getRealm());
+            } else if (!Objects.equals(asset.getRealm(), agent.getRealm())) {
+                String msg = "Protocol attempting to merge asset into another realm: " + agent;
+                Protocol.LOG.warning(msg);
+                throw new IllegalArgumentException(msg);
+            }
+
+            // TODO: Define access permissions for merged asset (user asset links inherit from parent agent?)
+            LOG.fine("Merging asset with protocol-provided: " + asset);
+            return assetStorageService.merge(asset, true);
+        }
+
+        @Override
+        public boolean deleteAssets(String... assetIds) {
+            for (String assetId: assetIds) {
+                Asset<?> asset = findAsset(assetId);
+                if (asset != null) {
+                    if (!Objects.equals(asset.getRealm(), agent.getRealm())) {
+                        Protocol.LOG.warning("Protocol attempting to delete asset from another realm: " + agent);
+                        throw new IllegalArgumentException("Protocol attempting to delete asset from another realm");
+                    }
+                }
+            }
+            LOG.fine("Deleting protocol-provided: " + Arrays.toString(assetIds));
+            return assetStorageService.delete(Arrays.asList(assetIds), false);
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T extends Asset<?>> T findAsset(String assetId) {
+            LOG.fine("Getting protocol-provided: " + assetId);
+            T asset = (T)assetStorageService.find(assetId);
+            if (asset != null) {
+                if (!Objects.equals(asset.getRealm(), agent.getRealm())) {
+                    Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
+                    throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
+                }
+            }
+            return asset;
+        }
+
+        @Override
+        public List<Asset<?>> findAssets(AssetQuery assetQuery) {
+            List<Asset<?>> assets = assetStorageService.findAll(assetQuery.realm(new RealmPredicate(agent.getRealm())));
+            for (Asset<?> asset : assets) {
+                if (!Objects.equals(asset.getRealm(), agent.getRealm())) {
+                    Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
+                    throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
+                }
+            }
+            return assets;
+        }
+
+        @Override
+        public void sendAttributeEvent(AttributeEvent attributeEvent) {
+            if (TextUtil.isNullOrEmpty(attributeEvent.getRealm())) {
+                attributeEvent.setRealm(agent.getRealm());
+            } else if (!Objects.equals(attributeEvent.getRealm(), agent.getRealm())) {
+                Protocol.LOG.warning("Protocol attempting to send attribute event to another realm: " + agent);
+                throw new IllegalArgumentException("Protocol attempting to send attribute event to another realm");
+            }
+        }
+
+        @Override
+        public void subscribeChildAssetChange(Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
+            if (!getAgents().containsKey(agent.getId())) {
+                LOG.fine("Attempt to subscribe to child asset changes with an invalid agent ID: " + agent.getId());
+                return;
+            }
+
+            Set<Consumer<PersistenceEvent<Asset<?>>>> consumers = childAssetSubscriptions
+                .computeIfAbsent(agent.getId(), (id) -> Collections.synchronizedSet(new HashSet<>()));
+            consumers.add(assetChangeConsumer);
+        }
+
+        @Override
+        public void unsubscribeChildAssetChange(Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
+            childAssetSubscriptions.computeIfPresent(agent.getId(), (id, consumers) -> {
+                consumers.remove(assetChangeConsumer);
+                return consumers.isEmpty() ? null : consumers;
+            });
+        }
+    }
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
     public static final int PRIORITY = MessageBrokerService.PRIORITY + 100; // Start quite late to ensure asset model etc. are initialised
@@ -174,76 +262,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Attr
                     processAssetChange(persistenceEvent);
                 }
             });
-
-        // A protocol wants to write a new sensor value
-        from(SENSOR_QUEUE)
-            .routeId("ProtocolOutbound")
-            .filter(body().isInstanceOf(AttributeEvent.class))
-            .setHeader(HEADER_SOURCE, () -> SENSOR)
-            .process(exchange -> {
-                AttributeEvent attributeEvent = exchange.getIn().getBody(AttributeEvent.class);
-                if (attributeEvent.getTimestamp() <= 0) {
-                    attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
-                }
-            })
-            .to(ATTRIBUTE_EVENT_QUEUE);
-    }
-
-    @Override
-    public <T extends Asset<?>> T mergeAsset(T asset) {
-        Objects.requireNonNull(asset.getId());
-
-        // TODO: Define access permissions for merged asset (user asset links inherit from parent agent?)
-        LOG.fine("Merging asset with protocol-provided: " + asset);
-        return assetStorageService.merge(asset, true);
-    }
-
-    @Override
-    public boolean deleteAssets(String...assetIds) {
-        LOG.fine("Deleting protocol-provided: " + Arrays.toString(assetIds));
-        return assetStorageService.delete(Arrays.asList(assetIds), false);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T extends Asset<?>> T findAsset(String assetId) {
-        LOG.fine("Getting protocol-provided: " + assetId);
-        return (T)assetStorageService.find(assetId);
-    }
-
-    @Override
-    public <T extends Asset<?>> T findAsset(String assetId, Class<T> assetType) {
-        LOG.fine("Getting protocol-provided: " + assetId);
-        return assetStorageService.find(assetId, assetType);
-    }
-
-    @Override
-    public List<Asset<?>> findAssets(String assetId, AssetQuery assetQuery) {
-        if (TextUtil.isNullOrEmpty(assetId)) {
-            return Collections.emptyList();
-        }
-
-        if (assetQuery == null) {
-            assetQuery = new AssetQuery();
-        }
-
-        // Ensure agent ID is injected into each path predicate
-        if (assetQuery.paths != null) {
-            for (PathPredicate pathPredicate : assetQuery.paths) {
-                int len = pathPredicate.path.length;
-                pathPredicate.path = Arrays.copyOf(pathPredicate.path, len+1);
-                pathPredicate.path[len] = assetId;
-            }
-        } else {
-            assetQuery.paths(new PathPredicate(assetId));
-        }
-
-        return assetStorageService.findAll(assetQuery);
-    }
-
-    @Override
-    public void sendAttributeEvent(AttributeEvent attributeEvent) {
-        assetProcessingService.sendAttributeEvent(attributeEvent);
     }
 
     protected void processAgentChange(PersistenceEvent<Agent<?, ?, ?>> persistenceEvent) {
@@ -369,11 +387,16 @@ public class AgentService extends RouteBuilder implements ContainerService, Attr
         }
     }
 
+    protected void sendAttributeEvent(String agentId, AttributeEvent event) {
+        // Use the agent ID as the source suffix
+        assetProcessingService.sendAttributeEvent(event, getClass().getSimpleName() + agentId);
+    }
+
     protected void doAgentInit(Agent<?,?,?> agent) {
         boolean isDisabled = agent.isDisabled().orElse(false);
         if (isDisabled) {
             LOG.fine("Agent is disabled so not starting: " + agent);
-            sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
+            sendAttributeEvent(agent.getId(), new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
         } else {
             executorService.execute(() -> this.startAgent(agent));
         }
@@ -384,6 +407,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Attr
 
         try {
             protocol = agent.getProtocolInstance();
+            protocol.setAssetService(new AgentProtocolAssetService(agent));
 
             LOG.fine("Starting protocol instance: " + protocol);
             protocol.start(container);
@@ -422,7 +446,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Attr
             }
             protocolInstanceMap.remove(agent.getId());
             LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
-            sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
+            sendAttributeEvent(agent.getId(), new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
         }
     }
 
@@ -543,13 +567,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Attr
 
         return attribute.getMetaValue(AGENT_LINK)
             .map(agentLink -> {
-                LOG.finest("Attribute write for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + asset.getId() + ", attribute=" + attribute.getName());
-                // TODO: Priority remove actuator topic and call protocol instance directly
-                messageBrokerService.getFluentProducerTemplate()
-                    .withBody(attributeEvent)
-                    .withHeader(Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL, getProtocolInstance(agentLink.getId()))
-                    .to(ACTUATOR_TOPIC)
-                    .asyncSend();
+                LOG.finest("Attribute event for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + asset.getId() + ", attribute=" + attribute.getName());
+                Protocol<?> protocolInstance = getProtocolInstance(agentLink.getId());
+                if (protocolInstance != null) {
+                    protocolInstance.processLinkedAttributeWrite(attributeEvent);
+                }
                 return true; // Processing complete, skip other processors
             }).orElse(false); // This is a regular attribute so allow the processing to continue
     }
@@ -629,26 +651,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Attr
 
     public Protocol<?> getProtocolInstance(String agentId) {
         return protocolInstanceMap.get(agentId);
-    }
-
-    @Override
-    public void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
-        if (!getAgents().containsKey(agentId)) {
-            LOG.fine("Attempt to subscribe to child asset changes with an invalid agent ID: " +agentId);
-            return;
-        }
-
-        Set<Consumer<PersistenceEvent<Asset<?>>>> consumers = childAssetSubscriptions
-            .computeIfAbsent(agentId, (id) -> Collections.synchronizedSet(new HashSet<>()));
-        consumers.add(assetChangeConsumer);
-    }
-
-    @Override
-    public void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
-        childAssetSubscriptions.computeIfPresent(agentId, (id, consumers) -> {
-            consumers.remove(assetChangeConsumer);
-            return consumers.isEmpty() ? null : consumers;
-        });
     }
 
     protected void notifyChildAssetChange(String agentId, PersistenceEvent<Asset<?>> assetPersistenceEvent) {

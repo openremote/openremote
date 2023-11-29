@@ -900,7 +900,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the webhook attribute is changing"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(thingId, "webhookAttribute", "test_message"))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(thingId, "webhookAttribute", "test_message"), getClass().getSimpleName())
 
         then: "the webhook attribute should have been updated"
         conditions.eventually {

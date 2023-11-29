@@ -239,7 +239,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
             // Check if power is currently zero and set it if power forecast has an value
             if (asset.getPower().orElse(0d) == 0d && asset.getPowerForecast().orElse(0d) != 0d) {
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerWindAsset.POWER, asset.getPowerForecast().orElse(0d)));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerWindAsset.POWER, asset.getPowerForecast().orElse(0d)), getClass().getSimpleName());
             }
         }
     }
@@ -285,10 +285,10 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
                 double currentPower = calculatePower(electricityProducerWindAsset, weatherForecastResponseModel.current);
 
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -currentPower));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -currentPower), getClass().getSimpleName());
 
                 if (electricityProducerWindAsset.isSetActualWindValueWithForecast().orElse(false)) {
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -currentPower));
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -currentPower), getClass().getSimpleName());
                 }
 
                 for (WeatherForecastModel weatherForecastModel : weatherForecastResponseModel.getList()) {

@@ -301,7 +301,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a target temp linked attribute value is updated it should reach the protocol"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(mockThing.id, "tempTarget1", 30d))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(mockThing.id, "tempTarget1", 30d), getClass().getSimpleName())
 
         then: "the update should reach the protocol as an attribute write request"
         conditions.eventually {

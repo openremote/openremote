@@ -146,7 +146,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         // Put a close connection runnable into the headers for the client event service
         Runnable closeRunnable = () -> {
             if (mqttBrokerService != null) {
-                LOG.fine("Calling client session closed force disconnect runnable: " + mqttBrokerService.connectionToString(connection));
+                LOG.fine("Calling client session closed force disconnect runnable: " + MQTTBrokerService.connectionToString(connection));
                 mqttBrokerService.doForceDisconnect(connection);
             }
         };

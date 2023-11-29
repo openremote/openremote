@@ -350,11 +350,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 .process(exchange -> {
                     AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                     LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: processor=" + processorCount + ", event=" + event);
-
-                    Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Source.class);
                     long startMillis = System.currentTimeMillis();
-
-                    boolean processed = processAttributeEvent(event, source);
+                    boolean processed = processAttributeEvent(event);
 
                     // Need to record time here otherwise an infinite loop generated inside one of the interceptors means the timestamp
                     // is not updated so tests can't then detect the problem.
@@ -384,11 +381,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     /**
      * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_QUEUE}.
      */
-    public void sendAttributeEvent(AttributeEvent attributeEvent) {
-        sendAttributeEvent(attributeEvent, INTERNAL);
-    }
+    public void sendAttributeEvent(AttributeEvent attributeEvent, Object source) {
+        attributeEvent.setSource(source);
 
-    public void sendAttributeEvent(AttributeEvent attributeEvent, Source source) {
         // Set event source time if not already set
         if (attributeEvent.getTimestamp() <= 0) {
             attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
@@ -404,8 +399,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * The {@link AttributeEvent} is passed to each registered {@link AttributeEventInterceptor} and if no interceptor
      * handles the event then the {@link Attribute} value is updated in the DB with the new event value and timestamp.
      */
-    protected boolean processAttributeEvent(AttributeEvent event,
-                                            Source source) throws AssetProcessingException {
+    protected boolean processAttributeEvent(AttributeEvent event) throws AssetProcessingException {
 
         // TODO: Get asset lock so it cannot be modified during event processing
         persistenceService.doTransaction(em -> {
@@ -448,17 +442,17 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 throw ex;
             }
 
-            // For executable attributes, non-sensor sources can set a writable attribute execute status
-            if (attribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
-                Optional<AttributeExecuteStatus> status = event.getValue()
-                    .flatMap(ValueUtil::getString)
-                    .flatMap(AttributeExecuteStatus::fromString);
-
-                // TODO: Make this mechanism more generic with an interface
-                if (status.isPresent() && !status.get().isWrite()) {
-                    throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
-                }
-            }
+            // TODO: Remove AttributeExecuteStatus
+//            // For executable attributes, non-sensor sources can set a writable attribute execute status
+//            if (attribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
+//                Optional<AttributeExecuteStatus> status = event.getValue()
+//                    .flatMap(ValueUtil::getString)
+//                    .flatMap(AttributeExecuteStatus::fromString);
+//
+//                if (status.isPresent() && !status.get().isWrite()) {
+//                    throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
+//                }
+//            }
 
             long eventTime = event.getTimestamp();
             boolean outdated = oldEventTime - eventTime > 0;

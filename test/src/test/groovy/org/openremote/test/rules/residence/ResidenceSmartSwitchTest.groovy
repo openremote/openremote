@@ -10,7 +10,6 @@ import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TemporaryFact
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -74,7 +73,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         when: "mode is set to ON_AT"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "ON_AT")
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "ON_AT"), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -101,7 +100,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
         when: "begin/end cycle time is set to future"
         long oneMinuteInFutureMillis = getClockTimeOf(container) + 60000
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", oneMinuteInFutureMillis)
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", oneMinuteInFutureMillis), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -197,7 +196,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         when: "mode is set to ON_AT"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "ON_AT")
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "ON_AT"), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -221,7 +220,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
         when: "begin/end cycle time is set to past"
         long fiveMinutesInPastMillis = getClockTimeOf(container) - (5 * 60 * 1000)
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", fiveMinutesInPastMillis)
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", fiveMinutesInPastMillis), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -291,7 +290,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         when: "mode is set to READY_AT"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "READY_AT")
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "READY_AT"), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -315,7 +314,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
         when: "begin/end cycle time is set to future"
         long threeHoursInFutureMillis = getClockTimeOf(container) + (3 * 60 * 60 * 1000)
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", threeHoursInFutureMillis)
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", threeHoursInFutureMillis), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -409,7 +408,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         when: "mode is set to READY_AT"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "READY_AT")
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "READY_AT"), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -433,7 +432,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
         when: "begin/end cycle time is set to past"
         long fiveMinutesInPastMillis = getClockTimeOf(container) - (5 * 60 * 1000)
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", fiveMinutesInPastMillis)
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", fiveMinutesInPastMillis), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -504,7 +503,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         when: "mode is set to READY_AT"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "READY_AT")
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchModeA", "READY_AT"), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 
@@ -528,7 +527,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
         when: "begin/end cycle time is set insufficient future time"
         long fiveMinutesInFuture = getClockTimeOf(container) + (5 * 60 * 1000)
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", fiveMinutesInFuture)
+                new AttributeEvent(managerTestSetup.apartment1KitchenId, "smartSwitchBeginEndA", fiveMinutesInFuture), getClass().getSimpleName()
         )
         noEventProcessedIn(assetProcessingService, 500)
 

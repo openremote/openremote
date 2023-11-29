@@ -152,7 +152,7 @@ public class RulesEngine<T extends Ruleset> {
 
         AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, attributeEvent -> {
             try {
-                assetProcessingService.sendAttributeEvent(attributeEvent);
+                assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName());
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Failed to dispatch attribute event");
             }

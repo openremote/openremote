@@ -335,7 +335,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "another asset's attribute is updated within the system"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment2LivingroomId, "lightSwitch", true)
+                new AttributeEvent(managerTestSetup.apartment2LivingroomId, "lightSwitch", true), getClass().getSimpleName()
         )
 
         then: "the internal consumer should have been notified"

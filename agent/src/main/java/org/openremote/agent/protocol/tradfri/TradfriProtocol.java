@@ -150,7 +150,6 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
 
             // Find all existing child assets of this agent that have a deviceId attribute
             List<Asset<?>> childAssets = assetService.findAssets(
-                agent.getId(),
                 new AssetQuery().attributeName(TradfriAsset.DEVICE_ID.getName()));
 
             List<String> obsoleteAssetIds = childAssets.stream()

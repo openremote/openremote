@@ -31,7 +31,6 @@ import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.ReadAttributeEvent
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.agent.Protocol
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -196,7 +195,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                     "targetTemperature",
                                     0.12345))
                                     .orElse(ValueUtil.NULL_LITERAL)
-                                        .replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER)
+                                        .replace("0.12345", Constants.DYNAMIC_VALUE_PLACEHOLDER)
                             )
                         .setMessageMatchFilters(
                             [
@@ -289,7 +288,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         def attributeEvent = new AttributeEvent(asset.id,
             "readWriteTargetTemp",
             19.5)
-        assetProcessingService.sendAttributeEvent(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
 
         then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {

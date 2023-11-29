@@ -25,8 +25,6 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.model.Container;
-import org.openremote.model.PersistenceEvent;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -35,16 +33,17 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.protocol.ProtocolUtil;
-import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.Pair;
-import org.openremote.model.util.TextUtil;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static org.openremote.model.protocol.ProtocolUtil.hasDynamicWriteValue;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -62,16 +61,21 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     protected ProtocolPredictedDatapointService predictedDatapointService;
     protected ProtocolDatapointService datapointService;
     protected T agent;
+    protected final Object processorLock = new Object();
 
     public AbstractProtocol(T agent) {
         this.agent = agent;
     }
 
     @Override
+    public void setAssetService(ProtocolAssetService assetService) {
+        this.assetService = assetService;
+    }
+
+    @Override
     public void start(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         executorService = container.getExecutorService();
-        assetService = proxyAssetService(container.getService(ProtocolAssetService.class));
         predictedDatapointService = container.getService(ProtocolPredictedDatapointService.class);
         datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
@@ -169,26 +173,28 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         return linkedAttributes;
     }
 
-    final protected void processLinkedAttributeWrite(Attribute<?> attribute, AttributeEvent event) {
-        LOG.log(System.Logger.Level.TRACE, () -> "Processing linked attribute write on protocol '" + this + "': " + event);
-        AgentLink<?> agentLink = agent.getAgentLink(attribute);
+    public void processLinkedAttributeWrite(Attribute<?> attribute, AttributeEvent event) {
+        synchronized (processorLock) {
+            LOG.log(System.Logger.Level.TRACE, () -> "Processing linked attribute write on protocol '" + this + "': " + event);
+            AgentLink<?> agentLink = agent.getAgentLink(attribute);
 
-        Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
-            event.getId(),
-            attribute,
-            agentLink,
-            event.getValue().orElse(null),
-            dynamicAttributes.contains(event.getAttributeRef()));
+            Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
+                event.getId(),
+                attribute,
+                agentLink,
+                event.getValue().orElse(null),
+                dynamicAttributes.contains(event.getAttributeRef()));
 
-        if (ignoreAndConverted.key) {
-            LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not write to protocol: " + event.getAttributeRef());
-            return;
-        }
+            if (ignoreAndConverted.key) {
+                LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not write to protocol: " + event.getAttributeRef());
+                return;
+            }
 
-        doLinkedAttributeWrite(attribute, agent.getAgentLink(attribute), event, ignoreAndConverted.value);
+            doLinkedAttributeWrite(attribute, agent.getAgentLink(attribute), event, ignoreAndConverted.value);
 
-        if (agent.isUpdateOnWrite().orElse(false) || agentLink.getUpdateOnWrite().orElse(false)) {
-            updateLinkedAttribute(new AttributeState(event.getAttributeRef(), ignoreAndConverted.value));
+            if (agent.isUpdateOnWrite().orElse(false) || agentLink.getUpdateOnWrite().orElse(false)) {
+                updateLinkedAttribute(new AttributeState(event.getAttributeRef(), ignoreAndConverted.value));
+            }
         }
     }
 
@@ -214,11 +220,9 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         assetService.sendAttributeEvent(event);
     }
 
-    /**
-     * Update the value of a linked attribute. Call this to publish new sensor values. This will call
-     * {@link ProtocolUtil#doInboundValueProcessing} before sending on the sensor queue.
-     */
-    final protected void updateLinkedAttribute(final AttributeState state, long timestamp) {
+
+    @Override
+    final public void updateLinkedAttribute(final AttributeState state, long timestamp) {
         Attribute<?> attribute = linkedAttributes.get(state.getRef());
 
         if (attribute == null) {
@@ -234,28 +238,13 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         }
 
         AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(state.getRef(), ignoreAndConverted.value), timestamp);
+        assetService.sendAttributeEvent(attributeEvent);
         LOG.log(System.Logger.Level.TRACE, () -> "Sending linked attribute update: " + attributeEvent);
         producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
     }
 
-    /**
-     * Update the value of one of this {@link Protocol}s linked {@link Agent}'s {@link Attribute}s.
-     */
-    final protected void updateAgentAttribute(final AttributeState state) {
-        if (!agent.getAttributes().has(state.getRef().getName()) || !agent.getId().equals(state.getRef().getId())) {
-            LOG.log(System.Logger.Level.WARNING, () -> "Attempt to update non existent agent attribute or agent ID is incorrect: " + state);
-            return;
-        }
-        AttributeEvent attributeEvent = new AttributeEvent(state, timerService.getCurrentTimeMillis());
-        LOG.log(System.Logger.Level.TRACE, () -> "Sending protocol agent attribute update: " + attributeEvent);
-        assetService.sendAttributeEvent(attributeEvent);
-    }
-
-    /**
-     * Update the value of a linked attribute, with the current system time as event time see
-     * {@link #updateLinkedAttribute(AttributeState, long)} for more details.
-     */
-    final protected void updateLinkedAttribute(AttributeState state) {
+    @Override
+    final public void updateLinkedAttribute(final AttributeState state) {
         updateLinkedAttribute(state, timerService.getCurrentTimeMillis());
     }
 
@@ -291,106 +280,4 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
      * processedValue but may also choose to use the original value for some purpose if required.
      */
     abstract protected void doLinkedAttributeWrite(Attribute<?> attribute, U agentLink, AttributeEvent event, Object processedValue);
-
-    private ProtocolAssetService proxyAssetService(ProtocolAssetService protocolAssetService) {
-        return new ProtocolAssetService() {
-
-            @Override
-            public <T extends Asset<?>> T mergeAsset(T asset) {
-                if (TextUtil.isNullOrEmpty(asset.getRealm())) {
-                    asset.setRealm(getAgent().getRealm());
-                } else if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
-                    Protocol.LOG.warning("Protocol attempting to merge asset into another realm: " + agent);
-                    throw new IllegalArgumentException("Protocol attempting to merge asset into another realm");
-                }
-                return protocolAssetService.mergeAsset(asset);
-            }
-
-            @Override
-            public boolean deleteAssets(String... assetIds) {
-                for (String assetId: assetIds) {
-                    Asset<?> asset = protocolAssetService.findAsset(assetId);
-                    if (asset != null) {
-                        if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
-                            Protocol.LOG.warning("Protocol attempting to delete asset from another realm: " + agent);
-                            throw new IllegalArgumentException("Protocol attempting to delete asset from another realm");
-                        }
-                    }
-                }
-                return protocolAssetService.deleteAssets(assetIds);
-            }
-
-            @Override
-            public <T extends Asset<?>> T findAsset(String assetId, Class<T> assetType) {
-                T asset = protocolAssetService.findAsset(assetId, assetType);
-                if (asset != null) {
-                    if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
-                        Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
-                        throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
-                    }
-                }
-                return asset;
-            }
-
-            @Override
-            public <T extends Asset<?>> T findAsset(String assetId) {
-                T asset = protocolAssetService.findAsset(assetId);
-                if (asset != null) {
-                    if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
-                        Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
-                        throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
-                    }
-                }
-                return asset;
-            }
-
-            @Override
-            public List<Asset<?>> findAssets(String assetId, AssetQuery assetQuery) {
-                List<Asset<?>> assets = protocolAssetService.findAssets(assetId, assetQuery);
-                for (Asset<?> asset : assets) {
-                    if (!Objects.equals(asset.getRealm(), getAgent().getRealm())) {
-                        Protocol.LOG.warning("Protocol attempting to find asset from another realm: " + agent);
-                        throw new IllegalArgumentException("Protocol attempting to find asset from another realm");
-                    }
-                }
-                return assets;
-            }
-
-            @Override
-            public void sendAttributeEvent(AttributeEvent attributeEvent) {
-                if (TextUtil.isNullOrEmpty(attributeEvent.getRealm())) {
-                    attributeEvent.withRealm(getAgent().getRealm());
-                } else if (!Objects.equals(attributeEvent.getRealm(), getAgent().getRealm())) {
-                    Protocol.LOG.warning("Protocol attempting to send attribute event to another realm: " + agent);
-                    throw new IllegalArgumentException("Protocol attempting to send attribute event to another realm");
-                }
-                protocolAssetService.sendAttributeEvent(attributeEvent);
-            }
-
-            @Override
-            public void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
-                protocolAssetService.subscribeChildAssetChange(agentId, assetChangeConsumer);
-            }
-
-            @Override
-            public void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer) {
-                protocolAssetService.unsubscribeChildAssetChange(agentId, assetChangeConsumer);
-            }
-
-            @Override
-            public void init(Container container) throws Exception {
-                protocolAssetService.init(container);
-            }
-
-            @Override
-            public void start(Container container) throws Exception {
-                protocolAssetService.start(container);
-            }
-
-            @Override
-            public void stop(Container container) throws Exception {
-                protocolAssetService.stop(container);
-            }
-        };
-    }
 }

@@ -63,7 +63,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
         when: "auto ventilation is turned on"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", true)
+                new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", true), getClass().getSimpleName()
         )
 
         then: "auto ventilation should be on"

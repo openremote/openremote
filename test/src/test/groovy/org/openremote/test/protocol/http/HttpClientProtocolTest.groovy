@@ -417,7 +417,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         def attributeEvent = new AttributeEvent(asset.id,
             "putRequestWithHeaders",
                 ValueUtil.parse('{"myProp1": 123,"myProp2": true}').get())
-        assetProcessingService.sendAttributeEvent(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
 
         then: "the server should have received the request"
         conditions.eventually {
@@ -428,7 +428,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         attributeEvent = new AttributeEvent(asset.id,
             "getRequestWithDynamicPath",
             true)
-        assetProcessingService.sendAttributeEvent(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
 
         then: "the server should have received the request and returned a 200"
         conditions.eventually {
@@ -439,7 +439,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         attributeEvent = new AttributeEvent(asset.id,
             "getRequestWithDynamicPath",
             false)
-        assetProcessingService.sendAttributeEvent(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
 
         then: "the server should have received the request and returned a 200"
         conditions.eventually {
@@ -537,7 +537,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         attributeEvent = new AttributeEvent(asset2.id,
             "getSuccess",
             "OK")
-        assetProcessingService.sendAttributeEvent(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
 
         then: "the server should have received the request"
         conditions.eventually {

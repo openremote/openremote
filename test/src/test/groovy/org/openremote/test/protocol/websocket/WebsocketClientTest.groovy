@@ -194,7 +194,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         when: "apartment 1 living room temp changes"
         receivedMessages.clear()
         receivedMessages2.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 5))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 5), getClass().getSimpleName())
 
         then: "the testuser3 client receives the event"
         conditions.eventually {
@@ -215,7 +215,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         when: "apartment 2 living room temp changes"
         receivedMessages.clear()
         receivedMessages2.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment2LivingroomId, "targetTemperature", 15))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment2LivingroomId, "targetTemperature", 15), getClass().getSimpleName())
 
         then: "the building client receives the event"
         conditions.eventually {
@@ -334,7 +334,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         when: "when apartment 1 living room temp changes"
         receivedMessages.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 5))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 5), getClass().getSimpleName())
 
         then: "the client receives the event"
         conditions.eventually {
@@ -349,7 +349,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         when: "when apartment 1 living room temp is set to the same value again"
         receivedMessages.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 5))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 5), getClass().getSimpleName())
 
         then: "the client should receive the event"
         conditions.eventually {
@@ -364,7 +364,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         when: "when apartment 1 living room temp is set to null"
         receivedMessages.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", null))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", null), getClass().getSimpleName())
 
         then: "the client receives the event"
         conditions.eventually {
@@ -379,7 +379,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         when: "when apartment 1 bathroom temp changes"
         receivedMessages.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, "targetTemperature", 10))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1BathroomId, "targetTemperature", 10), getClass().getSimpleName())
 
         then: "the bathroom target temp should have changed"
         conditions.eventually {

@@ -174,7 +174,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         def attributeEvent = new AttributeEvent(asset.id,
             "echoHello",
             "there")
-        assetProcessingService.sendAttributeEvent(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
 
         then: "the server should have received the request"
         conditions.eventually {
@@ -192,7 +192,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         attributeEvent = new AttributeEvent(asset.id,
                 "updateOnWrite",
                 "No response;")
-        assetProcessingService.sendAttributeEvent(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
 
         then: "the server should have received the request but not responded"
         conditions.eventually {
@@ -316,7 +316,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         attributeEvent = new AttributeEvent(asset.id,
             "startHello",
             AttributeExecuteStatus.REQUEST_START)
-        assetProcessingService.sendAttributeEvent(attributeEvent)
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
 
         then: "the bytes should be received by the server"
         conditions.eventually {
