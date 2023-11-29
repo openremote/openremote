@@ -453,7 +453,9 @@
     },
     "meta": {},
     "attribute": {},
-    "value": {}
+    "value": {
+      "unknown": "Unknown"
+    }
   },
   "metaOverrides": {
     "label": {}
@@ -606,6 +608,8 @@
     "chartConfig": "Chart Configuration",
     "markerCoordinates": "Marker Coordinates",
     "imageSettings": "Image Settings",
+    "dataManagement": "Data Options",
+    "defaultRefreshInterval": "Default refresh interval",
     "presets.wrap_to_single_column": "Wrap to single column",
     "presets.keep_layout": "Keep layout",
     "presets.block_device": "Block this device",
@@ -620,6 +624,11 @@
     "access.public": "Public",
     "access.shared": "Realm Users",
     "access.private": "Only me",
+    "interval.off": "Off",
+    "interval.one_min": "1 min",
+    "interval.five_min": "5 min",
+    "interval.quarter": "15 min",
+    "interval.one_hour": "1 hour",
     "saveSuccessful": "Saved dashboard successfully!",
     "initialName": "New Dashboard",
     "openInNewTab": "Open in new tab",

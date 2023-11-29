@@ -167,11 +167,11 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
             if (value[0] != null) {
 
                 // Do basic value conversion
-                if (!attr.getType().getType().isAssignableFrom(value[0].getClass())) {
-                    Object val = ValueUtil.convert(value[0], attr.getType().getType());
+                if (!attr.getTypeClass().isAssignableFrom(value[0].getClass())) {
+                    Object val = ValueUtil.convert(value[0], attr.getTypeClass());
 
                     if (val == null) {
-                        LOG.warning("Failed to convert value: " + value[0].getClass() + " -> " + attr.getType().getType());
+                        LOG.warning("Failed to convert value: " + value[0].getClass() + " -> " + attr.getTypeClass());
                         LOG.warning("Cannot send linked attribute update");
                         return;
                     }
@@ -234,7 +234,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                                                               AttributeLink.ConverterType converter,
                                                               AttributeRef linkedAttributeRef) throws AssetProcessingException {
         switch (converter) {
-            case TOGGLE:
+            case TOGGLE -> {
                 // Look up current value of the linked attribute within the same database session
                 try {
                     Attribute<?> currentAttribute = getAttribute(em, assetStorageService, asset.getRealm(), linkedAttributeRef).orElseThrow(
@@ -243,19 +243,19 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                             "cannot toggle value as attribute cannot be found: " + linkedAttributeRef
                         )
                     );
-                    if (!ValueUtil.isBoolean(currentAttribute.getType().getType())) {
+                    if (!ValueUtil.isBoolean(currentAttribute.getTypeClass())) {
                         throw new AssetProcessingException(
                             AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
                             "cannot toggle value as attribute is not of type BOOLEAN: " + linkedAttributeRef
                         );
                     }
-                    return new Pair<>(false, !(Boolean)currentAttribute.getValueAs(Boolean.class).orElse(false));
+                    return new Pair<>(false, !(Boolean) currentAttribute.getValue(Boolean.class).orElse(false));
                 } catch (NoSuchElementException e) {
                     LOG.fine("The attribute doesn't exist so ignoring toggle value request: " + linkedAttributeRef);
                     return new Pair<>(true, null);
                 }
-            case INCREMENT:
-            case DECREMENT:
+            }
+            case INCREMENT, DECREMENT -> {
                 // Look up current value of the linked attribute within the same database session
                 try {
                     Attribute<?> currentAttribute = getAttribute(em, assetStorageService, asset.getRealm(), linkedAttributeRef).orElseThrow(
@@ -264,7 +264,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                             "cannot toggle value as attribute cannot be found: " + linkedAttributeRef
                         )
                     );
-                    if (!ValueUtil.isNumber(currentAttribute.getType().getType())) {
+                    if (!ValueUtil.isNumber(currentAttribute.getTypeClass())) {
                         throw new AssetProcessingException(
                             AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
                             "cannot increment/decrement value as attribute is not of type NUMBER: " + linkedAttributeRef
@@ -276,11 +276,11 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                     LOG.fine("The attribute doesn't exist so ignoring increment/decrement value request: " + linkedAttributeRef);
                     return new Pair<>(true, null);
                 }
-            default:
-                throw new AssetProcessingException(
-                    AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
-                    "converter is not supported: " + converter
-                );
+            }
+            default -> throw new AssetProcessingException(
+                AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
+                "converter is not supported: " + converter
+            );
         }
     }
 

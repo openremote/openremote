@@ -124,6 +124,15 @@ create table ASSET_PREDICTED_DATAPOINT (
   primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
 );
 
+create table ASSET_ANOMALY (
+TIMESTAMP      timestamp                  not null,
+ENTITY_ID      varchar(36)                not null,
+ATTRIBUTE_NAME varchar(255)               not null,
+ANOMALY_TYPE   int4                       not null,
+DATA           jsonb                      null,
+primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
+);
+
 create table GATEWAY_CONNECTION (
     LOCAL_REALM        varchar(255)             not null,
     REALM              varchar(255)             not null,

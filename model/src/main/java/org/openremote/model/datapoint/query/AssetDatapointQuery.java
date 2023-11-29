@@ -30,7 +30,8 @@ import java.util.HashMap;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AssetDatapointAllQuery.class, name = "all"),
         @JsonSubTypes.Type(value = AssetDatapointLTTBQuery.class, name = "lttb"),
-        @JsonSubTypes.Type(value = AssetDatapointIntervalQuery.class, name = "interval")
+        @JsonSubTypes.Type(value = AssetDatapointIntervalQuery.class, name = "interval"),
+        @JsonSubTypes.Type(value = AssetDatapointAllAnomaliesQuery.class, name = "allanomalies")
 })
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,

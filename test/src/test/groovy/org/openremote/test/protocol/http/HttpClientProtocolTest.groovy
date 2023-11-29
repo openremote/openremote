@@ -19,7 +19,11 @@
  */
 package org.openremote.test.protocol.http
 
-import com.fasterxml.jackson.databind.node.ObjectNode
+
+import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.*
 import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
@@ -48,10 +52,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import jakarta.ws.rs.HttpMethod
-import jakarta.ws.rs.client.ClientRequestContext
-import jakarta.ws.rs.client.ClientRequestFilter
-import jakarta.ws.rs.core.*
 import java.util.regex.Pattern
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
@@ -167,11 +167,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        ObjectNode body = ValueUtil.parse(bodyStr).orElse(null)
-                        if (body.has("prop1")
-                            && body.get("prop1").get("myProp1").asInt() == 123
-                            && body.get("prop1").get("myProp2").asBoolean()
-                            && body.has("prop2") && body.get("prop2").asText() == "prop2Value") {
+                        Map body = (Map)ValueUtil.parse(bodyStr).orElse(null)
+                        if (body.containsKey("prop1")
+                            && ((Map)body.get("prop1")).get("myProp1") == 123
+                            && ((Map)body.get("prop1")).get("myProp2")
+                            && body.containsKey("prop2") && body.get("prop2") == "prop2Value") {
                             putRequestWithHeadersCalled = true
                             requestContext.abortWith(Response.ok().build())
                             return
@@ -294,7 +294,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             .setParent(agent)
             .addOrReplaceAttributes(
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
-                new Attribute<>("putRequestWithHeaders", JSON_OBJECT)
+                new Attribute<>("putRequestWithHeaders")
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath("put_request_with_headers")
@@ -319,7 +319,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath('value/{$value}/set')
-                            .setWriteValueConverter((ObjectNode)ValueUtil.parse("{\n" +
+                            .setWriteValueConverter((Map)ValueUtil.parse("{\n" +
                                 "    \"TRUE\": \"on\",\n" +
                                 "    \"FALSE\": \"off\"\n" +
                                 "}").get())
@@ -363,9 +363,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                                     new SubStringValueFilter(22, 24)
                                 ] as ValueFilter[]
                             )
-                            .setValueConverter(ValueUtil.JSON.createObjectNode()
-                                    .put("00", "OFF")
-                                    .put("01", "ON")
+                            .setValueConverter(Map.of(
+                                    "00", "OFF",
+                                    "01", "ON")
                             )
                         )
                     ),
@@ -381,9 +381,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                                     new SubStringValueFilter(4, 6)
                                 ] as ValueFilter[]
                             )
-                            .setValueConverter(ValueUtil.JSON.createObjectNode()
-                                    .put("00", "OFF")
-                                    .put("01", "ON")
+                            .setValueConverter(Map.of(
+                                    "00", "OFF",
+                                    "01", "ON")
                             )
                         )
                     )

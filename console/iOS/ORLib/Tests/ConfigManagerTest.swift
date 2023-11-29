@@ -134,4 +134,11 @@ class ConfigManagerTest: XCTestCase {
         XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test12.openremote.app", app: "Console 1", realm: "master1")))
     }
 
+    func test13() async throws {
+        var state = try await configManager.setDomain(domain: "test13")
+        XCTAssertEqual(state, ConfigManagerState.selectRealm("https://test13.openremote.app", "Console 1", nil))
+        state = try configManager.setRealm(realm: "master")
+        XCTAssertEqual(state, ConfigManagerState.complete(ProjectConfig(domain: "https://test13.openremote.app", app: "Console 1", realm: "master")))
+    }
+
 }

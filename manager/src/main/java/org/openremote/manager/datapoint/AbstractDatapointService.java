@@ -193,7 +193,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                     @Override
                     public ValueDatapoint<?>[] execute(Connection connection) throws SQLException {
 
-                        Class<?> attributeType = attribute.getType().getType();
+                        Class<?> attributeType = attribute.getTypeClass();
                         boolean isNumber = Number.class.isAssignableFrom(attributeType);
                         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
 
@@ -206,7 +206,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                         }
                         try (PreparedStatement st = connection.prepareStatement(query)) {
 
-                            if(parameters.size() > 0) {
+                            if(!parameters.isEmpty()) {
                                 for(Map.Entry<Integer, Object> param : parameters.entrySet()) {
                                     if(param.getValue() instanceof String) {
                                         st.setString(param.getKey(), param.getValue().toString());

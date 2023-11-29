@@ -1,7 +1,9 @@
 package org.openremote.test.console
 
-import com.fasterxml.jackson.databind.node.ObjectNode
+
 import com.google.firebase.messaging.Message
+import jakarta.ws.rs.WebApplicationException
+import net.sf.saxon.s9api.push.Push
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
@@ -12,8 +14,6 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.ConsoleAsset
@@ -28,34 +28,36 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.query.filter.RadialGeofencePredicate
 import org.openremote.model.rules.AssetRuleset
+import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.RulesResource
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.value.MetaItemType
+import org.openremote.setup.integration.KeycloakTestSetup
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import jakarta.ws.rs.WebApplicationException
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
 
-import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
-import static org.openremote.setup.integration.ManagerTestSetup.SMART_BUILDING_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.util.ValueUtil.parse
+import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
+import static org.openremote.setup.integration.ManagerTestSetup.SMART_BUILDING_LOCATION
 
 class ConsoleTest extends Specification implements ManagerContainerTrait {
 
     def "Check full console behaviour"() {
-        def notificationIds = []
-        def targetTypes = []
-        def targetIds = []
-        def messages = []
+        def notificationIds = new CopyOnWriteArrayList()
+        def targetTypes = new CopyOnWriteArrayList()
+        def targetIds = new CopyOnWriteArrayList()
+        def messages = new CopyOnWriteArrayList()
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
@@ -82,7 +84,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                     notificationIds << id
                     targetTypes << target.type
                     targetIds << target.id
-                    messages << message
+                    messages << "${message.title}_${message.data.get("action")}"
                     callRealMethod()
             }
         // Assume sent to FCM
@@ -152,7 +154,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                            (ObjectNode)parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                            (Map)parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                         ))
                     }
                 },
@@ -180,7 +182,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
 
         and: "the console should have been linked to the authenticated user"
         def userAssets = assetStorageService.findUserAssetLinks(keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id, consoleId)
@@ -219,7 +221,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
         assert consoleTestProvider != null
         assert consoleTestProvider.version == "Test 1.0"
         assert !consoleTestProvider.requiresPermission
@@ -248,7 +250,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
         assert consoleTestProvider != null
         assert consoleTestProvider.version == "Test 1.0"
         assert !consoleTestProvider.requiresPermission
@@ -289,7 +291,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
 
         when: "an invalid console registration is registered"
         def invalidRegistration = new ConsoleRegistration(null, null, "1.0", null, null, null, null)
@@ -326,7 +328,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token") == "23123213ad2313b0897efd"
 
         and: "the console should not have been linked to any users"
         assert userAssets.isEmpty()
@@ -354,7 +356,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         then: "each created consoles should have been sent notifications to refresh their geofences"
         conditions.eventually {
             assert notificationIds.size() == 3
-            assert messages.count { ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH" } == 3
+            assert messages.any {it == "${testUser3Console1.id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${testUser3Console2.id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${anonymousConsole1.id}_GEOFENCE_REFRESH"}
         }
 
         ////////////////////////////////////////////////////
@@ -546,8 +550,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         then: "a push notification should have been sent to the two remaining consoles telling them to refresh their geofences"
         conditions.eventually {
             assert notificationIds.size() == 2
-            assert ((PushNotificationMessage) messages[0]).data.get("action").asText() == "GEOFENCE_REFRESH"
-            assert ((PushNotificationMessage) messages[1]).data.get("action").asText() == "GEOFENCE_REFRESH"
+            assert messages.any {it == "${testUser3Console1.id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${anonymousConsole1.id}_GEOFENCE_REFRESH"}
         }
 
         then: "the geofences of testUser3Console1 should contain the welcome home geofence and new radial geofence (but not the rectangular and duplicate predicates)"
@@ -586,11 +590,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "a push notification should have been sent to the two remaining consoles telling them to refresh their geofences (from the realm engine and asset engine)"
         conditions.eventually {
-            assert messages.stream()
-                    .filter({ it instanceof PushNotificationMessage })
-                    .filter({
-                        ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH"
-                    }).count() == 2
+            assert messages.any {it == "${anonymousConsole1.id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${testUser3Console1.id}_GEOFENCE_REFRESH"}
         }
 
         then: "the geofences of testUser3Console1 should still contain two geofences but the location of the second should have been updated"
@@ -640,11 +641,8 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         and: "the consoles should have been notified to refresh their geofences"
         conditions.eventually {
-            assert messages.stream()
-                    .filter({ it instanceof PushNotificationMessage })
-                    .filter({
-                ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH"
-            }).count() == 2
+            assert messages.any {it == "${testUser3Console1.id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${anonymousConsole1.id}_GEOFENCE_REFRESH"}
         }
 
         when: "previous notification messages are cleared"
@@ -657,7 +655,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             testUser3Console1.id = null
             testUser3Console1.name = "Test Console $it"
             return assetStorageService.merge(testUser3Console1)
-        }).collect({ it })
+        }).collect({ it as ConsoleAsset })
         testUser3Console1.id = testUser3Console1Id
 
         then: "the extra consoles should have been added"
@@ -665,10 +663,16 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         and: "a push notifications should have been sent to each new console to refresh their geofence rules"
         conditions.eventually {
-            assert messages.stream()
-                    .filter({it instanceof PushNotificationMessage})
-                    .filter({((PushNotificationMessage)it).data.get("action").asText() == "GEOFENCE_REFRESH"})
-                    .count() == 10
+            assert messages.any {it == "${extraConsoles.get(0).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(1).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(2).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(3).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(4).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(5).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(6).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(7).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(8).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(9).id}_GEOFENCE_REFRESH"}
         }
 
         when: "previous notification messages are cleared"
@@ -681,12 +685,18 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "a push notification should have been sent to all consoles telling them to refresh their geofences"
         conditions.eventually {
-            assert messages.stream()
-                    .filter({ it instanceof PushNotificationMessage })
-                    .filter({
-                ((PushNotificationMessage) it).data.get("action").asText() == "GEOFENCE_REFRESH"
-            })
-                    .count() == 12
+            assert messages.any {it == "${testUser3Console1.id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${anonymousConsole1.id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(0).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(1).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(2).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(3).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(4).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(5).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(6).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(7).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(8).id}_GEOFENCE_REFRESH"}
+            assert messages.any {it == "${extraConsoles.get(9).id}_GEOFENCE_REFRESH"}
         }
 
         when: "the RULE_STATE meta is set to false on a console's location attribute"

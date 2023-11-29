@@ -120,7 +120,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             def livingRoom = assetStorageService.find(managerTestSetup.apartment1LivingroomId)
             assert livingRoom != null
-            assert livingRoom.getAttribute("targetTemperature", Double.class).flatMap{it.value}.orElse(0d) == 99d
+            assert livingRoom.getAttribute("targetTemperature").flatMap{it.value}.orElse(0d) == 99d
         }
 
         then: "the agent linked attribute should also have the updated value of the subscribed attribute"
@@ -138,7 +138,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
-            assert asset.getAttribute("readWriteTargetTemp", Double.class).flatMap{it.getValue()}.orElse(null) == 19.5d
+            assert asset.getAttribute("readWriteTargetTemp").flatMap{it.getValue()}.orElse(null) == 19.5d
         }
     }
 }

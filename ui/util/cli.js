@@ -51,5 +51,8 @@ if (process.argv.length >= 3 && process.argv[2] =="watch") {
         shell: true
     });
     console.log("gradlew modelWatch finished! Status = " + gradleModelWatch.status);
+    if (gradleModelWatch.stderr) {
+        console.log(gradleModelWatch.stderr.toString());
+    }
     process.exit(gradleModelWatch.status);
 }

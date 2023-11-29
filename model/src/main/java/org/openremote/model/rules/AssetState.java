@@ -20,12 +20,12 @@
 package org.openremote.model.rules;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaMap;
+import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
@@ -40,13 +40,14 @@ import java.util.Optional;
  * are equal if they have the same asset ID and attribute name (the same attribute
  * reference).
  */
+@TsIgnore
 public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder<T>, MetaHolder {
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @JsonProperty(value = "name")
     final protected String attributeName;
 
-    @JsonProperty(value = "type", access = JsonProperty.Access.WRITE_ONLY)
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
+    @JsonProperty(value = "type")
+    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
     final protected ValueDescriptor<T> attributeValueType;
 
     final protected T value;
@@ -81,7 +82,7 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         this.value = attribute.getValue().orElse(null);
         this.timestamp = attribute.getTimestamp().orElse(-1L);
         this.source = source;
-        this.oldValue = asset.getAttribute(attributeName, attribute.getType().getType()).flatMap(Attribute::getValue).orElse(null);
+        this.oldValue = asset.<T>getAttribute(attributeName).flatMap(Attribute::getValue).orElse(null);
         this.oldValueTimestamp = asset.getAttributes().get(attributeName).flatMap(Attribute::getTimestamp).orElse(-1L);
         this.id = asset.getId();
         this.assetName = asset.getName();
@@ -98,20 +99,22 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         return attributeName;
     }
 
-    @JsonProperty
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
     @Override
     public ValueDescriptor<T> getType() {
         return attributeValueType;
     }
 
-    @JsonProperty
+    @Override
+    public Class<?> getTypeClass() {
+        return getType() != null ? getType().getType() : Object.class;
+    }
+
     public Optional<T> getValue() {
         return Optional.ofNullable(value);
     }
 
     @Override
-    public <U> Optional<U> getValueAs(Class<U> valueType) {
+    public <U> Optional<U> getValue(Class<U> valueType) {
         return ValueUtil.getValueCoerced(value, valueType);
     }
 

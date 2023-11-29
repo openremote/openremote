@@ -488,7 +488,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         newClientId = "newClient"
         def username2 = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser2.username // realm and OAuth client id
         def password2 = keycloakTestSetup.serviceUser2.secret
-        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString(), ValueUtil.parse("1000").orElse(null), false))
+        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString(), "1000", false))
         newClient.connect()
 
         then: "the client should be connected"
@@ -566,7 +566,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         when: "the new client reconnects using a last will topic for an unauthorised asset/attribute"
         def asset = assetStorageService.find(managerTestSetup.apartment2LivingroomId)
         def currentCO2Level = asset.getAttribute("co2Level").flatMap{it.getValue()}.orElse(0d)
-        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/co2Level/$managerTestSetup.apartment2LivingroomId".toString(), ValueUtil.parse("1000").orElse(null), false))
+        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/co2Level/$managerTestSetup.apartment2LivingroomId".toString(), "1000", false))
         newClient.connect()
 
         then: "the client should be connected"

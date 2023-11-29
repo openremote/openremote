@@ -121,15 +121,15 @@ export class AssetModelUtil {
 
         if (!valueDescriptor && valueHolder) {
             // Try and determine the value descriptor based on the value type
-            valueDescriptor = this.resolveValueDescriptorFromValue(valueHolder.value);
+            valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.JSON);
         }
 
         return valueDescriptor;
     }
 
-    public static resolveValueTypeFromValue(value: any): string {
+    public static resolveValueTypeFromValue(value: any): string | undefined {
         if (value === null || value === undefined) {
-            return WellknownValueTypes.JSON;
+            return undefined;
         }
 
         if (typeof value === "number") {
@@ -152,6 +152,10 @@ export class AssetModelUtil {
 
             let valueType = this.resolveValueTypeFromValue(v);
 
+            if (!valueType) {
+                return;
+            }
+
             while (dimensions > 0) {
                 valueType += "[]";
                 dimensions--;
@@ -161,14 +165,7 @@ export class AssetModelUtil {
         }
         if (value instanceof Date) {
             return WellknownValueTypes.DATEANDTIME;
-        } else {
-            return WellknownValueTypes.JSONOBJECT;
         }
-    }
-
-    public static resolveValueDescriptorFromValue(value: any): ValueDescriptor | undefined {
-        const valueType = AssetModelUtil.resolveValueTypeFromValue(value);
-        return AssetModelUtil.getValueDescriptor(valueType);
     }
 
     public static getAttributeAndValueDescriptors(assetType: string | undefined, attributeNameOrDescriptor: string | AttributeDescriptor | undefined, attribute?: Attribute<any>): [AttributeDescriptor | undefined, ValueDescriptor | undefined] {
