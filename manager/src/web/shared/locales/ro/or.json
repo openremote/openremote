@@ -593,7 +593,7 @@
     "widgets": "Widget-uri",
     "widget-kpi": "KPI",
     "widget-linechart": "Diagramă cu linii",
-    "chartConfig": "Configurare diagramă",
+    "axisConfig": "Configurația axelor",
     "presets.wrap_to_single_column": "Înfașoară pe o singură coloană",
     "presets.keep_layout": "Pastrează aspectul",
     "presets.block_device": "Blochează acest dispozitiv",
