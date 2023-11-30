@@ -1300,7 +1300,7 @@ export class OrMwcInput extends LitElement {
 
                     if (valMinMax.some((v) => typeof (v) !== "string")) {
 
-                        if (this.type === InputType.JSON) {
+                        if (this.type === InputType.JSON || this.type === InputType.JSON_OBJECT) {
                             if (valMinMax[0] !== undefined) {
                                 if (typeof valMinMax[0] !== "string" || valMinMax[0] === null) {
                                     try {
