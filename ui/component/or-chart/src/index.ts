@@ -52,6 +52,7 @@ import {cache} from "lit/directives/cache.js";
 import {throttle} from "lodash";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { when } from "lit/directives/when.js";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
@@ -370,6 +371,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
+    @property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
+    public rightAxisAttributes: AttributeRef[] = [];
+
     @property()
     public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<ChartDataset<"line", ScatterDataPoint[]>[]>
 
@@ -460,7 +464,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") ||
+        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("rightAxisAttributes") ||
             changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
@@ -526,6 +530,16 @@ export class OrChart extends translate(i18next)(LitElement) {
                             },
                             grid: {
                                 color: "#cccccc"
+                            }
+                        },
+                        y1: {
+                            display: this.rightAxisAttributes.length > 0,
+                            position: 'right',
+                            ticks: {
+                                beginAtZero: true
+                            },
+                            grid: {
+                                drawOnChartArea: false
                             }
                         },
                         x: {
@@ -659,15 +673,20 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     </div>
                                 ` : undefined}
                                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
+                                    const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
-                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
-                                    const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
+                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
+                                    const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
+                                    const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = this.colors[colourIndex] || "";
                                     return html`
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
-                                                <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
+                                                <div style="display: flex; justify-content: space-between;">
+                                                    <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
+                                                    ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
+                                                </div>
                                                 <span style="font-size:12px; color:grey;">${label}</span>
                                             </div>
                                         </div>
@@ -1027,6 +1046,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                 const asset = this.assets[assetIndex];
+                const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                 const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                 const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
@@ -1035,6 +1055,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 (dataset as any).assetId = asset.id;
                 (dataset as any).attrName = attribute.name;
                 (dataset as any).unit = unit;
+                (dataset as any).yAxisID = shownOnRightAxis ? 'y1' : 'y';
                 data.push(dataset);
 
                 dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));
