@@ -281,6 +281,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Array})
     public rootAssetIds?: string[];
 
+    @property({type: Object})
+    public dataProvider?: () => Promise<Asset[]>;
+
     @property({type: Boolean})
     public readonly: boolean = false;
 
@@ -807,7 +810,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 canSelect = this.config.select.types.indexOf(node.asset!.type!) >= 0;
             }
 
-            if (!canSelect) {
+            if (!canSelect && !isParentCheckbox) {
                 return;
             }
 
@@ -833,7 +836,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                     const childNodes: UiAssetTreeNode[] = [];
                     OrAssetTree._forEachNodeRecursive(node.children, (childNode) => {
-                        childNodes.push(childNode);
+                        let canSelectChild = true;
+                        if(childNode && this.config?.select?.types) {
+                            canSelectChild = this.config.select.types.indexOf(childNode.asset!.type!) >= 0;
+                        }
+                        if(canSelectChild) {
+                            childNodes.push(childNode);
+                        }
                     });
 
                     // based on multiple-box already selected, remove or add to array of selected nodes
@@ -1600,35 +1609,43 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             this._loading = true;
 
-            const query: AssetQuery = {
-                realm: {
-                    name: manager.displayRealm
-                },
-                select: { // Just need the basic asset info
-                    attributes: []
-                }
-            };
+            if(this.dataProvider) {
+                this.dataProvider().then(assets => {
+                    this._loading = false;
+                    this._buildTreeNodes(assets, sortFunction);
+                })
 
-            if (this.assetIds) {
-                query.ids = this.assetIds;
-                query.recursive = true;
-            } else if (this.rootAssets) {
-                query.ids = this.rootAssets.map((asset) => asset.id!);
-                query.recursive = true;
-            } else if (this.rootAssetIds) {
-                query.ids = this.rootAssetIds;
-                query.recursive = true;
-            }
-            this._sendEventWithReply({
-                event: {
-                    eventType: "read-assets",
-                    assetQuery: query
+            } else {
+
+                const query: AssetQuery = {
+                    realm: {
+                        name: manager.displayRealm
+                    },
+                    select: { // Just need the basic asset info
+                        attributes: []
+                    }
+                };
+
+                if (this.assetIds) {
+                    query.ids = this.assetIds;
+                    query.recursive = true;
+                } else if (this.rootAssets) {
+                    query.ids = this.rootAssets.map((asset) => asset.id!);
+                    query.recursive = true;
+                } else if (this.rootAssetIds) {
+                    query.ids = this.rootAssetIds;
+                    query.recursive = true;
                 }
-            })
-                .then((ev) => {
+                this._sendEventWithReply({
+                    event: {
+                        eventType: "read-assets",
+                        assetQuery: query
+                    }
+                }).then((ev) => {
                     this._loading = false;
                     this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction)
                 });
+            }
         } else {
             this._loading = false;
             this._buildTreeNodes(this.assets, sortFunction);

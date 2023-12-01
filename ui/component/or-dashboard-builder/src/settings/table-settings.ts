@@ -53,7 +53,7 @@ export class TableSettings extends AssetWidgetSettings {
                     <div style="padding-bottom: 12px;">
                         <div class="customMwcInputContainer">
                             <span style="min-width: 180px">${i18next.t('dashboard.numberOfRows')}</span>
-                            <or-mwc-input type="${InputType.NUMBER}" min="0" placeholder="10" .value="${this.widgetConfig.tableSize}"
+                            <or-mwc-input type="${InputType.NUMBER}" min="0" .value="${this.widgetConfig.tableSize}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTableSizeSelect(ev)}"
                             ></or-mwc-input>
                         </div>

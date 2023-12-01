@@ -1,11 +1,11 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {AssetDescriptor, AssetModelUtil, AssetQuery, AssetTypeInfo, AttributeDescriptor} from "@openremote/model";
+import {Asset, AssetDescriptor, AssetModelUtil, AssetQuery, AssetTypeInfo} from "@openremote/model";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {i18next} from "@openremote/or-translate";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {Util} from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {when} from "lit/directives/when.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {AssetTreeConfig, OrAssetTree} from "@openremote/or-asset-tree";
@@ -88,9 +88,6 @@ export class AssettypesPanel extends LitElement {
 
     @property() // names of selected attributes; either undefined, a single entry, or multi select
     protected attributeNames: undefined | string | string[];
-
-    /* @property() // what attribute value types are allowed to be selected
-    protected allowedValueTypes: string[] = []; */
 
     /* ----------- */
 
@@ -187,6 +184,9 @@ export class AssettypesPanel extends LitElement {
         `;
     }
 
+
+    /* ----------- */
+
     protected getAssetTypeTemplate(): TemplateResult {
         if (this.assetType) {
             const descriptor: AssetDescriptor | undefined = this._loadedAssetTypes.find((at: AssetDescriptor) => at.name === this.assetType);
@@ -266,7 +266,7 @@ export class AssettypesPanel extends LitElement {
             .setHeading(i18next.t("linkedAssets"))
             .setContent(html`
                 <div style="width: 400px;">
-                    <or-asset-tree ${ref(assetTreeRef)}
+                    <or-asset-tree ${ref(assetTreeRef)} .dataProvider="${this.assetTreeDataProvider}"
                                    id="chart-asset-tree" readonly .config="${config}" .selectedIds="${assetIds}"
                                    .showSortBtn="${false}" .showFilter="${false}" .checkboxes="${multi}"
                     ></or-asset-tree>
@@ -296,6 +296,25 @@ export class AssettypesPanel extends LitElement {
             .setDismissAction({
                 actionName: "cancel",
             }));
+    }
+
+    protected assetTreeDataProvider = async (): Promise<Asset[]> => {
+        const assetQuery: AssetQuery = {
+            realm: {
+                name: manager.displayRealm
+            },
+            select: { // Just need the basic asset info
+                attributes: []
+            }
+        };
+        // At first, just fetch all accessible assets without attribute info...
+        const assets = (await manager.rest.api.AssetResource.queryAssets(assetQuery)).data;
+
+        // After fetching, narrow down the list to assets with the same assetType.
+        // Since it is a tree, we also include the parents of those assets, based on the 'asset.path' variable.
+        const pathsOfAssetType = assets.filter(a => a.type === this.assetType).map(a => a.path!);
+        const filteredAssetIds = [...new Set([].concat(...pathsOfAssetType as any[]))] as string[];
+        return assets.filter(a => filteredAssetIds.includes(a.id!));
     }
 
 }
