@@ -621,9 +621,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
         if (manager.authenticated) {
-            if(manager.isTokenExpired()) {
-                return Promise.reject("The access token inserted in the WebSocket connection is invalid. Aborted.");
-            }
+            // TODO: Include manager.isTokenExpired() check, to abort if expired. (preventing unnecessary load)
             authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
         }
 
