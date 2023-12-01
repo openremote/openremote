@@ -6,7 +6,7 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {AssetModelUtil, Auth, ManagerConfig, ConsoleAppConfig, MapType, Role, User, UsernamePassword, EventProviderType} from "@openremote/model";
+import {AssetModelUtil, Auth, ConsoleAppConfig, EventProviderType, ManagerConfig, MapType, Role, User, UsernamePassword} from "@openremote/model";
 import * as Util from "./util";
 import {createMdiIconSet, createSvgIconSet, IconSets, OrIconSet} from "@openremote/or-icon";
 
@@ -1080,6 +1080,7 @@ export class Manager implements EventProviderFactory {
 
     // TODO: Remove events logic once websocket supports anonymous connections
     protected _setAuthenticated(authenticated: boolean) {
+        console.debug(`Authenticated status changed to: ${authenticated ? 'TRUE' : 'FALSE'}`)
         this._authenticated = authenticated;
         this.reconnectEvents();
     }

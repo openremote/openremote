@@ -133,6 +133,7 @@ abstract class EventProviderImpl implements EventProvider {
                 this._connectingDeferred = null;
 
                 if (this._reconnectTimer) {
+                    console.debug("Clearing _reconnectTimer since WebSocket connected succesfully.")
                     window.clearTimeout(this._reconnectTimer);
                     this._reconnectTimer = null;
                 }
@@ -158,12 +159,14 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public disconnect(): void {
+        console.debug("disconnect() on EventProviderImpl")
         if (this._disconnectRequested) {
             return;
         }
         this._disconnectRequested = true;
 
         if (this._reconnectTimer) {
+            console.log("Clearing _reconnectTimer because of disconnect()")
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = null;
         }
@@ -537,6 +540,7 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onDisconnect() {
+        console.debug("_onDisconnect() in EventProviderImpl");
         this._onStatusChanged(EventProviderStatus.DISCONNECTED);
         if (this._pendingSubscription) {
             this._queuedSubscriptions.unshift(this._pendingSubscription);
@@ -547,11 +551,14 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _scheduleReconnect() {
+        console.debug("_scheduleReconnect() in EventProviderImpl");
         if (this._reconnectTimer) {
+            console.debug("_reconnectTimer already present...")
             return;
         }
 
         if (this._disconnectRequested) {
+            console.debug("_disconnectRequested, so cancelling.")
             return;
         }
 
@@ -605,6 +612,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     constructor(managerUrl: string) {
+        console.log("[WebSocketEventProvider] Constructor!")
         super();
 
         this._endpointUrl = (managerUrl.startsWith("https:") ? "wss" : "ws") + "://" + managerUrl.substr(managerUrl.indexOf("://") + 3) + "/websocket/events";
