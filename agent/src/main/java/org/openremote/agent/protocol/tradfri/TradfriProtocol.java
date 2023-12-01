@@ -134,7 +134,7 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
     @Override
     protected void doLinkedAttributeWrite(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-        Device device = tradfriDevices.get(event.getAttributeRef().getId());
+        Device device = tradfriDevices.get(event.getRef().getId());
 
         if (device != null) {
             tradfriConnection.controlDevice(device, event);

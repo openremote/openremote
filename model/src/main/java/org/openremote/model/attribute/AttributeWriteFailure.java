@@ -25,7 +25,7 @@ import org.openremote.model.value.ValueType;
 public enum AttributeWriteFailure {
 
     /**
-     * Missing {@link AttributeEvent.Source}.
+     * Missing a source for the event (all events must report a source).
      */
     MISSING_SOURCE,
 
@@ -93,22 +93,22 @@ public enum AttributeWriteFailure {
     STATE_STORAGE_FAILED,
 
     /**
-     * The event value is not the excepted value for the attribute
+     * The event value is not the excepted value for the attribute.
      */
     INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE,
 
     /**
-     * The event is for a gateway descendant asset but the gateway is not connected
+     * The event consumer cannot process the event as the destination may be disconnected.
      */
-    GATEWAY_DISCONNECTED,
+    CANNOT_PROCESS,
 
     /**
-     * The realm either doesn't exist or is inactive
+     * The realm either doesn't exist or is inactive.
      */
     INVALID_REALM,
 
     /**
-     * Fallback failure when no other value makes sense
+     * Fallback failure when no other value makes sense.
      */
     UNKNOWN
 }

@@ -87,7 +87,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
         protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getId() + ":" + attribute.getName());
         protocolWriteAttributeEvents.add(event);
         if (updateSensor) {
-            updateReceived(event.getAttributeState());
+            updateReceived(event.getState());
         }
     }
 

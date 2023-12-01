@@ -9,7 +9,6 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.agent.DefaultAgentLink
 import org.openremote.setup.integration.protocol.MockAgentLink
 import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.model.asset.Asset
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.*
@@ -41,40 +40,40 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         AttributeEventInterceptor firstProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
-                if (startRecording[0]) updatesPassedStartOfProcessingChain.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
+            boolean intercept(EntityManager em, AttributeEvent event) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedStartOfProcessingChain.add(new AttributeEvent(new AttributeState(event.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
         AttributeEventInterceptor afterAgentServiceProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
-                if (startRecording[0]) updatesPassedAgentService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
+            boolean intercept(EntityManager em, AttributeEvent event) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedAgentService.add(new AttributeEvent(new AttributeState(event.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
         AttributeEventInterceptor afterRulesServiceProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
-                if (startRecording[0]) updatesPassedRulesService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
+            boolean intercept(EntityManager em, AttributeEvent event) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedRulesService.add(new AttributeEvent(new AttributeState(event.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
         AttributeEventInterceptor afterDatapointServiceProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
-                if (startRecording[0]) updatesPassedDatapointService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
+            boolean intercept(EntityManager em, AttributeEvent event) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedDatapointService.add(new AttributeEvent(new AttributeState(event.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
         AttributeEventInterceptor afterAttributeLinkingServiceProcessor = new AttributeEventInterceptor() {
             @Override
-            boolean intercept(EntityManager em, Asset<?> asset, Attribute<?> attribute, boolean outdated, AttributeEvent.Source source) throws AssetProcessingException {
-                if (startRecording[0]) updatesPassedAttributeLinkingService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
+            boolean intercept(EntityManager em, AttributeEvent event) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedAttributeLinkingService.add(new AttributeEvent(new AttributeState(event.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
@@ -168,7 +167,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesPassedAgentService.clear()
         updatesPassedDatapointService.clear()
         updatesPassedAttributeLinkingService.clear()
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).updateReceived(new AttributeState(light1toggleOn.attributeRef, light1toggleOn.value.orElse(null)))
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).updateReceived(new AttributeState(light1toggleOn.ref, light1toggleOn.value.orElse(null)))
 
         then: "a new attribute event should occur and reach the end of the processing chain, be stored in database"
         conditions.eventually {

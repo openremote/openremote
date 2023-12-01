@@ -7,6 +7,6 @@ import org.openremote.model.value.NameValueHolder;
 
 public interface AttributeInfo extends AssetInfo, NameValueHolder, MetaHolder {
     long getTimestamp();
-    AttributeRef getAttributeRef();
-    AttributeState getAttributeState();
+    AttributeRef getRef();
+    AttributeState getState();
 }

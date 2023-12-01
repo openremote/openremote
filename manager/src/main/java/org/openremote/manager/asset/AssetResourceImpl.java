@@ -453,7 +453,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         return Arrays.stream(attributeStates).map(attributeState -> {
             AttributeEvent event = new AttributeEvent(attributeState);
             if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
-                return new AttributeWriteResult(event.getAttributeRef(), AttributeWriteFailure.INSUFFICIENT_ACCESS);
+                return new AttributeWriteResult(event.getRef(), AttributeWriteFailure.INSUFFICIENT_ACCESS);
             }
             return doAttributeWrite(event);
         }).toArray(AttributeWriteResult[]::new);
@@ -577,7 +577,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             failure = AttributeWriteFailure.UNKNOWN;
         }
 
-        return new AttributeWriteResult(event.getAttributeRef(), failure);
+        return new AttributeWriteResult(event.getRef(), failure);
     }
 
     @Override

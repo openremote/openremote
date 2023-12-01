@@ -45,6 +45,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.query.AssetQuery;
@@ -378,13 +379,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Attr
 
     @Override
     public boolean intercept(EntityManager em,
-                             Asset<?> asset,
-                             Attribute<?> attribute,
-                             boolean outdated, Source source) throws AssetProcessingException {
+                             AttributeEvent event) throws AssetProcessingException {
         if (!startDone) {
-            preInitAssetStates.add(new AssetState<>(asset, attribute, source));
+            preInitAssetStates.add(new AssetState<>(event, attribute, source));
         } else {
-            doProcessAssetUpdate(new AssetState<>(asset, attribute, source));
+            doProcessAssetUpdate(new AssetState<>(event, attribute, source));
         }
 
         return false;

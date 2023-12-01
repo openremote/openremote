@@ -93,7 +93,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
                             }
                             synchronized (this) {
                                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-                                Attribute<?> linkedAttribute = getLinkedAttributes().get(event.getAttributeRef());
+                                Attribute<?> linkedAttribute = getLinkedAttributes().get(event.getRef());
 
                                 if (linkedAttribute == null) {
                                     LOG.log(System.Logger.Level.INFO, () -> "Attempt to write to attribute that is not actually linked to this protocol '" + AbstractProtocol.this + "': " + event);
@@ -183,17 +183,17 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
                 attribute,
                 agentLink,
                 event.getValue().orElse(null),
-                dynamicAttributes.contains(event.getAttributeRef()));
+                dynamicAttributes.contains(event.getRef()));
 
             if (ignoreAndConverted.key) {
-                LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not write to protocol: " + event.getAttributeRef());
+                LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not write to protocol: " + event.getRef());
                 return;
             }
 
             doLinkedAttributeWrite(attribute, agent.getAgentLink(attribute), event, ignoreAndConverted.value);
 
             if (agent.isUpdateOnWrite().orElse(false) || agentLink.getUpdateOnWrite().orElse(false)) {
-                updateLinkedAttribute(new AttributeState(event.getAttributeRef(), ignoreAndConverted.value));
+                updateLinkedAttribute(new AttributeState(event.getRef(), ignoreAndConverted.value));
             }
         }
     }
@@ -213,7 +213,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
      */
     final protected void sendAttributeEvent(AttributeEvent event) {
         // Don't allow updating linked attributes with this mechanism as it could cause an infinite loop
-        if (linkedAttributes.containsKey(event.getAttributeRef())) {
+        if (linkedAttributes.containsKey(event.getRef())) {
             LOG.log(System.Logger.Level.WARNING, () -> "Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: " + event);
             return;
         }

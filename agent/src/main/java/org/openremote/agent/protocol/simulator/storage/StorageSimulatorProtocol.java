@@ -92,7 +92,7 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
             return;
         }
 
-        updateLinkedAttribute(new AttributeState(event.getAttributeRef(), processedValue));
+        updateLinkedAttribute(new AttributeState(event.getRef(), processedValue));
     }
 
     protected void updateStorageAsset(ElectricityStorageAsset storageAsset) {

@@ -67,6 +67,11 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
     }
 
     @Override
+    public Class<? extends Asset<?>> getAssetClass() {
+        return asset.getAssetClass();
+    }
+
+    @Override
     public Date getCreatedOn() {
         return asset.createdOn;
     }

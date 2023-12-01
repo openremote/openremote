@@ -22,6 +22,7 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.AttributeInfo;
 import org.openremote.model.event.shared.SharedEvent;
@@ -45,6 +46,7 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     protected Object value;
     protected long timestamp;
     protected boolean deleted;
+    protected boolean outdated;
     @JsonIgnore
     protected Object source;
     @JsonIgnore
@@ -63,6 +65,8 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     protected String assetName;
     @JsonIgnore
     protected String assetType;
+    @JsonIgnore
+    protected Class<? extends Asset<?>> assetClass;
     @JsonIgnore
     protected Date createdOn;
     @JsonIgnore
@@ -114,17 +118,18 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
         this.createdOn = asset.getCreatedOn();
         this.assetName = asset.getAssetName();
         this.assetType = asset.getAssetType();
+        this.assetClass = asset.getAssetClass();
         this.parentId = asset.getParentId();
         this.realm = asset.getRealm();
     }
 
     @Override
-    public AttributeState getAttributeState() {
+    public AttributeState getState() {
         return new AttributeState(ref, value);
     }
 
-    public Object getOldValue() {
-        return oldValue;
+    public Optional<Object> getOldValue() {
+        return Optional.ofNullable(oldValue);
     }
 
     public long getOldValueTimestamp() {
@@ -132,13 +137,13 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     }
 
     @Override
-    public AttributeRef getAttributeRef() {
+    public AttributeRef getRef() {
         return ref;
     }
 
     @Override
     public String getId() {
-        return getAttributeRef().getId();
+        return getRef().getId();
     }
 
     @Override
@@ -160,9 +165,23 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
         return this;
     }
 
+    public boolean isOutdated() {
+        return outdated;
+    }
+
+    public AttributeEvent setOutdated(boolean outdated) {
+        this.outdated = outdated;
+        return this;
+    }
+
     @Override
     public String getParentId() {
         return parentId;
+    }
+
+    public AttributeEvent setParentId(String parentId) {
+        this.parentId = parentId;
+        return this;
     }
 
     @Override
@@ -172,7 +191,7 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
 
     @Override
     public String[] getAttributeNames() {
-        return new String[]{getAttributeRef().getName()};
+        return new String[]{getRef().getName()};
     }
 
     @Override
@@ -183,6 +202,11 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     @Override
     public String getAssetType() {
         return assetType;
+    }
+
+    @Override
+    public Class<? extends Asset<?>> getAssetClass() {
+        return assetClass;
     }
 
     @Override
@@ -200,9 +224,14 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
         return getType() != null ? getType().getType() : Object.class;
     }
 
+    public AttributeEvent setValue(Object value) {
+        this.value = value;
+        return this;
+    }
+
     @Override
     public Optional<Object> getValue() {
-        return getAttributeState().getValue();
+        return Optional.ofNullable(value);
     }
 
     @Override

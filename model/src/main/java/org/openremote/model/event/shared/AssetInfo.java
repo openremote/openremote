@@ -19,6 +19,8 @@
  */
 package org.openremote.model.event.shared;
 
+import org.openremote.model.asset.Asset;
+
 import java.util.Date;
 
 public interface AssetInfo {
@@ -36,6 +38,8 @@ public interface AssetInfo {
     String getAssetName();
 
     String getAssetType();
+
+    Class<? extends Asset<?>> getAssetClass();
 
     Date getCreatedOn();
 }

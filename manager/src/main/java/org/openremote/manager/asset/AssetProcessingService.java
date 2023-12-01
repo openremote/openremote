@@ -49,7 +49,6 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AssetStateStore;
 import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueType;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -233,10 +232,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getName()).orElse(null) : null;
 
             if (asset == null || !asset.hasAttribute(attributeEvent.getName())) {
-                LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getAttributeRef());
+                LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getRef());
                 return false;
             } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
-                LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getAttributeRef());
+                LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getRef());
                 return false;
             }
 
@@ -251,14 +250,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
 
                     if (attribute == null || !attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
-                        LOG.log(System.Logger.Level.DEBUG, () -> "Asset attribute doesn't support restricted write on '" + attributeEvent.getAttributeRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                        LOG.log(System.Logger.Level.DEBUG, () -> "Asset attribute doesn't support restricted write on '" + attributeEvent.getRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
                         return false;
                     }
                 }
             } else {
                 // Check attribute has public write flag for anonymous write
                 if (attribute == null || !attribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
-                    LOG.log(System.Logger.Level.DEBUG, () -> "Asset doesn't support public write on '" + attributeEvent.getAttributeRef() + "': username=null");
+                    LOG.log(System.Logger.Level.DEBUG, () -> "Asset doesn't support public write on '" + attributeEvent.getRef() + "': username=null");
                     return false;
                 }
             }
@@ -421,7 +420,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             Object value = event.getValue().map(eventValue -> {
                 Class<?> attributeValueType = attribute.getTypeClass();
                 return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                    LOG.log(System.Logger.Level.INFO, "Event processing failed unable to coerce value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getAttributeRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
+                    LOG.log(System.Logger.Level.INFO, "Event processing failed unable to coerce value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
                     return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
                 });
             }).orElse(null);
@@ -459,7 +458,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             AssetState assetState = new AssetState<>(asset, attribute, source);
 
             if (outdated) {
-                LOG.log(System.Logger.Level.TRACE, () -> "Event is older than current attribute timestamp so marking as outdated: ref=" + event.getAttributeRef() + ", timestamp=" + eventTime);
+                LOG.log(System.Logger.Level.TRACE, () -> "Event is older than current attribute timestamp so marking as outdated: ref=" + event.getRef() + ", timestamp=" + eventTime);
 
 
             }
@@ -470,7 +469,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             for (AttributeEventInterceptor interceptor : eventInterceptors) {
                 try {
-                    intercepted = interceptor.intercept(em, asset, attribute, outdated, source);
+                    intercepted = interceptor.intercept(em, asset);
                 } catch (AssetProcessingException ex) {
                     throw ex;
                 } catch (Throwable t) {
@@ -487,7 +486,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             if (intercepted) {
-                LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + event.getAttributeRef() + ", source=" + source);
+                LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + event.getRef() + ", source=" + source);
             } else {
                 if (!assetStorageService.updateAttributeValue(em, event)) {
                     throw new AssetProcessingException(
