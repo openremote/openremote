@@ -112,6 +112,13 @@ export class OrDashboardWidgetContainer extends LitElement {
             this.orWidget.remove();
         }
         this.orWidget = manifest.getContentHtml(config);
+        this.orWidget.getDisplayName = () => this.widget.displayName;
+        this.orWidget.getWidgetLocation = () => ({
+            x: this.widget.gridItem?.x,
+            y: this.widget.gridItem?.y,
+            w: this.widget.gridItem?.w,
+            h: this.widget.gridItem?.h
+        });
     }
 
     protected render() {

@@ -44,4 +44,13 @@ export abstract class WidgetSettings extends LitElement {
     protected notifyConfigUpdate() {
         this.requestUpdate('widgetConfig');
     }
+
+
+    /* ----------------------------- */
+
+    public getDisplayName?: () => string | undefined;
+
+    public setDisplayName?: (name?: string) => void;
+
+    public getWidgetLocation?: () => { x?: number, y?: number, h?: number, w?: number }
 }

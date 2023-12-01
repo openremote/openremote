@@ -1271,7 +1271,7 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.COLOUR:
                     return html`
-                        <div id="component" style="width: 100%; height: 100%; display: inline-flex; align-items: center; padding: 8px 0;">
+                        <div id="component" style="width: 100%; display: inline-flex; align-items: center; padding: 8px 24px;">
                             <input type="color" id="elem" style="border: none; height: 31px; width: 31px; padding: 1px 3px; min-height: 22px; min-width: 30px;cursor: pointer" value="${this.value}"
                                    ?disabled="${this.disabled || this.readonly}"
                                    ?required="${this.required}"
@@ -1549,7 +1549,8 @@ export class OrMwcInput extends LitElement {
                         }
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
-                        const searchable: boolean = (this.searchProvider != undefined);
+                        const searchable: boolean = (this.searchProvider !== undefined);
+                        const multi: boolean = this.multiple;
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
                             const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
                             if (this.adapter.isElementInContainer(el)) {
@@ -1559,6 +1560,9 @@ export class OrMwcInput extends LitElement {
                                 // if searchable, we manually close the menu when clicking a list item.
                                 // However, if something else than a list item (for example the search field) is clicked, it should not close, so abort.
                                 else if (el instanceof Element && !el.className.includes('mdc-list-item')) {
+                                    return;
+                                }
+                                else if (multi) {
                                     return;
                                 }
                             }

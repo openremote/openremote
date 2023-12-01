@@ -34,6 +34,11 @@ const style = css`
         max-height: 700px;
         justify-content: space-between;
     }
+    
+    .mdc-data-table__fullheight {
+        height: 100%;
+        max-height: none !important;
+    }
 
     /* first column should be sticky*/
     .mdc-data-table.has-sticky-first-column tr th:first-of-type,
@@ -141,11 +146,13 @@ const style = css`
     }
 `;
 
-interface TableConfig {
+export interface TableConfig {
     columnFilter?: string[];
     stickyFirstColumn?: boolean;
+    fullHeight?: boolean;
     pagination?: {
-        enable?: boolean
+        enable?: boolean;
+        options?: number[];
     }
     multiSelect?: boolean;
 }
@@ -203,20 +210,21 @@ export class OrMwcTable extends LitElement {
     @property({type: Object}) // to manually control HTML (requires td and tr elements)
     protected rowsTemplate?: TemplateResult;
 
+    @property({type: Array})
+    protected config: TableConfig = {
+        columnFilter: [],
+        stickyFirstColumn: true,
+        fullHeight: false,
+        pagination: {
+            enable: false
+        }
+    };
+
     @property({type: Number})
     protected paginationIndex: number = 0;
 
     @property({type: Number})
     protected paginationSize: number = 10;
-
-    @property({type: Array})
-    protected config: TableConfig = {
-        columnFilter: [],
-        stickyFirstColumn: true,
-        pagination: {
-            enable: false
-        }
-    };
 
     @state()
     protected _dataTable?: MDCDataTable;
@@ -265,6 +273,7 @@ export class OrMwcTable extends LitElement {
         const tableClasses = {
             "mdc-data-table": true,
             "mdc-data-table__paginated": !!this.config.pagination,
+            "mdc-data-table__fullheight": !!this.config.fullHeight,
             "has-sticky-first-column": !!this.config.stickyFirstColumn
         }
         return html`
@@ -367,6 +376,7 @@ export class OrMwcTable extends LitElement {
                 </div>
                 <!-- Pagination HTML, shown on the bottom right. Same as Material Design spec -->
                 ${when(this.config.pagination, () => {
+                    const options = this.config.pagination?.options || [10, 25, 100];
                     return html`
                         <div class="mdc-data-table__pagination">
                             <div class="mdc-data-table__pagination-trailing">
@@ -375,8 +385,8 @@ export class OrMwcTable extends LitElement {
                                         ${i18next.t('rowsPerPage')}
                                     </div>
                                     <or-mwc-input class="mdc-data-table__pagination-rows-per-page-select"
-                                                  .type="${InputType.SELECT}" compact comfortable outlined
-                                                  .value="${this.paginationSize}" .options="${[10, 25, 100]}"
+                                                  .type="${InputType.SELECT}" compact comfortable outlined .readonly="${options.length === 1}"
+                                                  .value="${this.paginationSize}" .options="${options}"
                                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                                       this.paginationSize = ev.detail.value;
                                                       this.paginationIndex = 0;
