@@ -861,7 +861,7 @@ jobs:
             # Execute deploy script
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
             # Uncomment this in combination with the SSH debug step afterwards to debug deployment script
-            #sys.exit(0)
+            sys.exit(0)
             result = subprocess.run(f"bash {deployScript}", shell=True)
 
             if result.returncode != 0:
