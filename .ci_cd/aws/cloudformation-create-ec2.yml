@@ -201,8 +201,8 @@ Resources:
       AWS::CloudFormation::Init:
         configSets:
           default:
-            - cloudwatch_config
             - setupCfnHup
+            - cloudwatch_config
             - create_swapfile
             - restart_amazon-cloudwatch-agent
             - docker_setup
@@ -802,8 +802,8 @@ Resources:
           #sed -i '/download_updates/s/= .*/= yes/' /etc/yum/yum-cron-hourly.conf
           #sed -i '/download_updates/s/= .*/= no/' /etc/yum/yum-cron.conf
           
+          # Install cloudwatch agent
           rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
-          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/var/config.json
           
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
