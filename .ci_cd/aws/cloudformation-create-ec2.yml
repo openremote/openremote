@@ -83,7 +83,7 @@ Parameters:
   DiskSize:
     Description: Root EBS volume size GB
     Type: Number
-    Default: 50
+    Default: 16
   HealthChecks:
     Description: Create health checks
     Type: String
