@@ -201,9 +201,9 @@ Resources:
       AWS::CloudFormation::Init:
         configSets:
           default:
+            - cloudwatch_config
             - setupCfnHup
             - create_swapfile
-            - cloudwatch_config
             - restart_amazon-cloudwatch-agent
             - docker_setup
             - cron_setup
