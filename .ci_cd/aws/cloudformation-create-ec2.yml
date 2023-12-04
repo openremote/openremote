@@ -45,8 +45,8 @@ Parameters:
     Type: String
   ImageId:
     Description: AMI ID
-    Type: String
-    Default: "ami-0be5a2a64756744f8"
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-minimal-kernel-default-arm64'
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -768,10 +768,8 @@ Resources:
                   - /etc/cfn/hooks.d/amazon-cloudwatch-agent-auto-reloader.conf
 
     Properties:
-      InstanceType:
-        Ref: InstanceType
-      KeyName:
-        "developers"
+      InstanceType: !Ref InstanceType
+      KeyName: "developers"
       ImageId: !Ref ImageId
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
