@@ -46,7 +46,7 @@ Parameters:
   ImageId:
     Description: AMI ID
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-minimal-kernel-default-arm64'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64'
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -202,8 +202,8 @@ Resources:
         configSets:
           default:
             - setupCfnHup
-            - cloudwatch_config
             - create_swapfile
+            - cloudwatch_config
             - restart_amazon-cloudwatch-agent
             - docker_setup
             - cron_setup
