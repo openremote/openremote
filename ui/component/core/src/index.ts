@@ -582,15 +582,6 @@ export class Manager implements EventProviderFactory {
         return connected;
     }
 
-    protected reconnectEvents() {
-        if (this._events) {
-            this._events.disconnect();
-        }
-        if (!this._events) {
-            this.doEventsSubscriptionInit();
-        }
-    }
-
     // Timer that runs the reconnect logic every X milliseconds
     // It automatically clears the interval when the reconnect is successful.
     protected _runAuthReconnectTimer(timeout = 5000, timeoutMax = 30000) {
@@ -1082,7 +1073,13 @@ export class Manager implements EventProviderFactory {
     protected _setAuthenticated(authenticated: boolean) {
         console.debug(`Authenticated status changed to: ${authenticated ? 'TRUE' : 'FALSE'}`)
         this._authenticated = authenticated;
-        this.reconnectEvents();
+
+        if (this._events) {
+            this._events.disconnect();
+        }
+        if (!this._events) {
+            this.doEventsSubscriptionInit();
+        }
     }
 
     // When authentication service status changes; in most cases a failed token refresh.
@@ -1099,7 +1096,15 @@ export class Manager implements EventProviderFactory {
             } else {
                 this._authDisconnected = false;
                 if(this._eventsDisconnected) {
-                    this.reconnectEvents();
+
+                    console.debug(`WebSocket was offline, trying to reconnect NOW...`)
+                    this.events!.connect().then((value) => {
+                        console.debug(`Reconnect attempt of _setAuthDisconnected() resulted in ${value}`);
+                    }).catch((e) => {
+                        console.error(`Reconnect attempt of _setAuthDisconnected() failed;`);
+                        console.error(e);
+                    });
+
                 } else {
                     this._emitEvent(OREvent.ONLINE);
                 }
