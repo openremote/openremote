@@ -46,7 +46,7 @@ Parameters:
   ImageId:
     Description: AMI ID
     Type: String
-    Default: "ami-062cd09187a31b743"
+    Default: "ami-0be5a2a64756744f8"
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -803,7 +803,7 @@ Resources:
           #sed -i '/download_updates/s/= .*/= no/' /etc/yum/yum-cron.conf
           
           # Install cloudwatch agent
-          rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
+          yum -y install amazon-cloudwatch-agent
           
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
