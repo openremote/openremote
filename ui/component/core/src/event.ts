@@ -166,7 +166,7 @@ abstract class EventProviderImpl implements EventProvider {
         this._disconnectRequested = true;
 
         if (this._reconnectTimer) {
-            console.log("Clearing _reconnectTimer because of disconnect()")
+            console.debug("Clearing _reconnectTimer because of disconnect()")
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = null;
         }

@@ -1097,13 +1097,38 @@ export class Manager implements EventProviderFactory {
                 this._authDisconnected = false;
                 if(this._eventsDisconnected) {
 
-                    console.debug(`WebSocket was offline, trying to reconnect NOW...`)
-                    this.events!.connect().then((value) => {
-                        console.debug(`Reconnect attempt of _setAuthDisconnected() resulted in ${value}`);
-                    }).catch((e) => {
-                        console.error(`Reconnect attempt of _setAuthDisconnected() failed;`);
-                        console.error(e);
-                    });
+                    // Define method to connect events (TODO: Improve this)
+                    const connectEvents = () => {
+                        this.events!.connect().then((value) => {
+                            console.debug(`_setAuthDisconnected(): Reconnect attempt resulted in ${value}`);
+                        }).catch((e) => {
+                            console.error(`_setAuthDisconnected(): Reconnect attempt failed;`);
+                            console.error(e);
+                        });
+                    }
+
+                    // If "connecting", wait for attempt to finish, otherwise execute connectEvents() directly.
+                    if(this.events?.status === EventProviderStatus.CONNECTING) {
+
+                        // TODO: Might need to improve this.
+                        console.debug("_setAuthDisconnected(): WebSocket is still connecting, waiting for it to finish.");
+                        const callback = (status: EventProviderStatus) => {
+                            if(status === EventProviderStatus.DISCONNECTED) {
+                                console.debug("_setAuthDisconnected(): Attempt finished, now directly trying to reconnect.");
+                                this.events?.unsubscribeStatusChange(callback);
+                                connectEvents();
+                            }
+                        };
+                        this.events.subscribeStatusChange(callback);
+                        setTimeout(() => {
+                            console.debug("_setAuthDisconnected(): Timeout of 4 seconds reached; unsubscribing from status change if not done yet.");
+                            this.events?.unsubscribeStatusChange(callback)
+                        }, 4000)
+
+                    } else {
+                        console.debug("_setAuthDisconnected(): Events are disconnected, so trying to connect NOW.")
+                        connectEvents();
+                    }
 
                 } else {
                     this._emitEvent(OREvent.ONLINE);
