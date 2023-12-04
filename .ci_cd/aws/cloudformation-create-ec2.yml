@@ -720,13 +720,10 @@ Resources:
         cron_setup:
           packages:
             yum:
-              yum-cron: []
-          commands:
-            01_configure:
-              command: chkconfig yum-cron on
+              cronie: []
           services:
             systemd:
-              yum-cron:
+              crond:
                 enabled: "true"
                 ensureRunning: "true"
 
