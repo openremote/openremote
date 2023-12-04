@@ -27,7 +27,6 @@ import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.MapAccess;
 import org.openremote.manager.agent.AgentService;
@@ -42,9 +41,10 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.agent.Protocol;
-import org.openremote.model.attribute.*;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AssetStateStore;
@@ -56,47 +56,13 @@ import java.util.stream.IntStream;
 import static org.openremote.model.attribute.AttributeWriteFailure.*;
 
 /**
- * Receives {@link AttributeEvent} from {@link Source} and processes them.
- * <dl>
- * <dt>{@link Source#CLIENT}</dt>
- * <dd><p>Client events published through event bus or sent by web service. These exchanges must contain an {@link AuthContext}
- * header named {@link Constants#AUTH_CONTEXT}.</dd>
- * <dt>{@link Source#INTERNAL}</dt>
- * <dd><p>Events sent to {@link #ATTRIBUTE_EVENT_QUEUE} or through {@link #sendAttributeEvent} convenience method by processors.</dd>
- * <dt>{@link Source#SENSOR}</dt>
- * <dd><p>Protocol sensor updates sent to {@link Protocol#SENSOR_QUEUE}.</dd>
- * </dl>
- * NOTE: An attribute value can be changed during Asset<?> CRUD but this does not come through
- * this route but is handled separately, see {@link AssetResource}. Any attribute values
- * assigned during Asset<?> CRUD can be thought of as the attributes initial value.
+ * Receives {@link AttributeEvent} from various sources (clients and services) and processes them.
+ * An {@link AttributeEventInterceptor} can register to intercept the events using {@link #addEventInterceptor} at which
+ * point they can decide whether or not to allow the event to continue being processed or not.
  * <p>
- * The {@link AttributeEvent}s are first validated depending on their source, and if validation fails
- * at any point then an {@link AssetProcessingException} will be logged as a warning with an
- * {@link AttributeWriteFailure}.
+ * Any {@link AttributeEvent}s that fail to be processed will generate an {@link AssetProcessingException} which will be
+ * logged; there is currently no dead letter queue or retry processing.
  * <p>
- * Once successfully validated a chain of {@link AttributeEventInterceptor}s is handling the update message:
- * <ul>
- * <li>{@link AgentService}</li>
- * <li>{@link RulesService}</li>
- * <li>{@link AssetStorageService}</li>
- * <li>{@link AssetDatapointService}</li>
- * </ul>
- * <h2>Agent service processing logic</h2>
- * <p>
- * The agent service's role is to communicate asset attribute writes to actuators, through protocols.
- * When the update messages' source is {@link Source#SENSOR}, the agent service ignores the message.
- * The message will also be ignored if the updated attribute is not linked to an agent.
- * <p>
- * If the updated attribute has a valid agent link, an {@link AttributeEvent} is sent on the {@link Protocol#ACTUATOR_TOPIC},
- * for execution on an actual device or service 'things'. The update is then considered complete, and no further processing
- * is necessary. The update will not reach the rules engine or the database.
- * <p>
- * This means that a protocol implementation is responsible for producing a new {@link AttributeEvent} to
- * indicate to the rules and database memory that the attribute value has/has not changed. The protocol should know
- * best when to do this and it will vary from protocol to protocol; some 'things' might respond to an actuator write
- * immediately with a new sensor read, or they might send a later "sensor value changed" message or both or neither
- * (the actuator is "fire and forget"). The protocol must decide what the best course of action is based on the
- * 'things' it communicates with and the transport layer it uses etc.
  * <h2>Rules Service processing logic</h2>
  * <p>
  * Checks if attribute has {@link MetaItemType#RULE_STATE} and/or {@link MetaItemType#RULE_EVENT} {@link MetaItem}s,
@@ -140,16 +106,15 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
     protected int eventProcessingThreadCount;
 
-    protected static Processor handleAssetProcessingException() {
+    protected static Processor handleEventProcessingException() {
         return exchange -> {
             AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
             Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
 
             StringBuilder error = new StringBuilder();
 
-            Source source = exchange.getIn().getHeader(HEADER_SOURCE, CLIENT, Source.class);
-            if (source != null) {
-                error.append("Error processing from ").append(source);
+            if (event.getSource() != null) {
+                error.append("Error processing from ").append(event.getSource());
             }
 
             String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
@@ -326,18 +291,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     event.setTimestamp(timerService.getCurrentTimeMillis());
                 }
 
-                Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Source.class);
-
-                if (source == null) {
-                    throw new AssetProcessingException(MISSING_SOURCE);
-                }
-
                 exchange.getIn().setHeader(EVENT_ROUTE_COUNT_HEADER, getEventProcessingRouteNumber(event.getId()));
             })
             .toD(EVENT_ROUTE_URI_PREFIX + "${header." + EVENT_ROUTE_COUNT_HEADER + "}")
             .endDoTry()
             .doCatch(AssetProcessingException.class)
-            .process(handleAssetProcessingException());
+            .process(handleEventProcessingException());
 
         // Create the event processor routes
         IntStream.rangeClosed(1, eventProcessingThreadCount).forEach(processorCount -> {
@@ -368,7 +327,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 })
                 .endDoTry()
                 .doCatch(AssetProcessingException.class)
-                .process(handleAssetProcessingException());
+                .process(handleEventProcessingException());
         });
     }
 
@@ -388,7 +347,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
         }
         messageBrokerService.getFluentProducerTemplate()
-                .withHeader(HEADER_SOURCE, source)
                 .withBody(attributeEvent)
                 .to(ATTRIBUTE_EVENT_QUEUE)
                 .asyncSend();
@@ -413,9 +371,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             Attribute attribute = asset.getAttribute(event.getName()).orElseThrow(() ->
                 new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
 
-            long oldEventTime = attribute.getTimestamp().orElse(0L);
-            Object oldValue = attribute.getValue().orElse(null);
-
             // Type coercion
             Object value = event.getValue().map(eventValue -> {
                 Class<?> attributeValueType = attribute.getTypeClass();
@@ -425,9 +380,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 });
             }).orElse(null);
 
-            // Push value and timestamp into attribute
-            attribute.setValue(value);
-            attribute.setTimestamp(event.getTimestamp());
+            AttributeEvent enrichedEvent = new AttributeEvent(asset, attribute, event.getSource(), event.getValue().orElse(null), event.getTimestamp(), attribute.getValue().orElse(null), (long)attribute.getTimestamp().orElse(0L));
 
             // Value validation
             // TODO: Reuse AssetState and change validator over to that class
@@ -469,7 +422,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             for (AttributeEventInterceptor interceptor : eventInterceptors) {
                 try {
-                    intercepted = interceptor.intercept(em, asset);
+                    intercepted = interceptor.intercept(em, event);
                 } catch (AssetProcessingException ex) {
                     throw ex;
                 } catch (Throwable t) {

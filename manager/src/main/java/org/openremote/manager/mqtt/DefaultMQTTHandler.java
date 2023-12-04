@@ -56,8 +56,6 @@ import static org.apache.camel.support.builder.PredicateBuilder.and;
 import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
-import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -607,7 +605,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(SESSION_KEY, getConnectionIDString(connection));
         headers.put(HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
         headers.put(REALM_PARAM_NAME, requestRealm);
-        headers.put(HEADER_SOURCE, CLIENT);
         return headers;
     }
 }

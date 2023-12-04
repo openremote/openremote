@@ -39,7 +39,7 @@ public interface AssetInfo {
 
     String getAssetType();
 
-    Class<? extends Asset<?>> getAssetClass();
+    Class<? extends Asset> getAssetClass();
 
     Date getCreatedOn();
 }

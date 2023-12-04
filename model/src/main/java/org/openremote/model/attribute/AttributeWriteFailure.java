@@ -25,17 +25,6 @@ import org.openremote.model.value.ValueType;
 public enum AttributeWriteFailure {
 
     /**
-     * Missing a source for the event (all events must report a source).
-     */
-    MISSING_SOURCE,
-
-    /**
-     * The source of the event does not match the expected source (e.g. expected client message but received sensor
-     * read).
-     */
-    ILLEGAL_SOURCE,
-
-    /**
      * The asset does not exist.
      */
     ASSET_NOT_FOUND,

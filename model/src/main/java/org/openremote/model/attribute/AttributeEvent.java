@@ -66,7 +66,7 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     @JsonIgnore
     protected String assetType;
     @JsonIgnore
-    protected Class<? extends Asset<?>> assetClass;
+    protected Class<? extends Asset> assetClass;
     @JsonIgnore
     protected Date createdOn;
     @JsonIgnore
@@ -205,7 +205,7 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     }
 
     @Override
-    public Class<? extends Asset<?>> getAssetClass() {
+    public Class<? extends Asset> getAssetClass() {
         return assetClass;
     }
 

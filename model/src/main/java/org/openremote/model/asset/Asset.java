@@ -484,6 +484,21 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     }
 
     @Override
+    public String[] getAttributeNames() {
+        return getAttributes().keySet().toArray(new String[0]);
+    }
+
+    @Override
+    public String getAssetType() {
+        return type;
+    }
+
+    @Override
+    public Class<? extends Asset> getAssetClass() {
+        return getClass();
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +

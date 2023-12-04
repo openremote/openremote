@@ -49,7 +49,6 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,9 +70,17 @@ import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttribu
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
- * Handles life cycle and communication with {@link Protocol}s.
+ * This service's role is to communicate asset attribute writes to actuators, through protocol instances. It also
+ * handles redeploying {@link Protocol} instances when an {@link Attribute} of the associated {@link Agent} is modified
+ * either via Asset CRUD or just via an {@link AttributeEvent}.
  * <p>
- * Finds all {@link Agent} assets and manages their {@link Protocol} instances.
+ * Only an {@link AttributeEvent} for an {@link Attribute} containing a
+ * {@link org.openremote.model.value.MetaItemType#AGENT_LINK} {@link MetaItem} will be intercepted here and passed to
+ * the associated {@link Protocol} instance for processing; the event will not be committed to the DB and it is up to
+ * the {@link Protocol} to generate a new {@link AttributeEvent} to signal that the action has been successfully handled.
+ * <p>
+ * Any {@link AttributeEvent} that originates from an {@link Agent} {@link Protocol} will not be consumed by the source
+ * {@link Protocol} when it passes back through this service; this is to prevent infinite loops.
  */
 public class AgentService extends RouteBuilder implements ContainerService {
 
@@ -196,6 +203,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
     protected final Map<String, Set<Consumer<PersistenceEvent<Asset<?>>>>> childAssetSubscriptions = new ConcurrentHashMap<>();
     protected boolean initDone;
     protected Container container;
+    protected final Object agentLock = new Object();
 
     @Override
     public int getPriority() {
@@ -227,7 +235,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
         assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
 
-        clientEventService.addInternalSubscription(AttributeEvent.class, new AssetFilter<AttributeEvent>().setAssetClasses(Collections.singletonList((Class<? extends Asset<?>>) Agent.class)), this::onAttributeEvent);
+        clientEventService.addInternalSubscription(AttributeEvent.class, new AssetFilter<AttributeEvent>().setAssetClasses(Collections.singletonList((Class<? extends Asset<?>>) Agent.class)), this::onAgentAttributeEvent);
 
         initDone = true;
     }
@@ -248,7 +256,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
     public void stop(Container container) throws Exception {
         if (agentMap != null) {
             List<Agent<?, ?, ?>> agents = new ArrayList<>(agentMap.values());
-            agents.forEach(agent -> this.stopAgent(agent.getId()));
+            agents.forEach(agent -> this.undeployAgent(agent.getId()));
             agentMap.clear();
         }
         protocolInstanceMap.clear();
@@ -273,45 +281,34 @@ public class AgentService extends RouteBuilder implements ContainerService {
             });
     }
 
+    /**
+     * Called when an {@link Agent} is modified in the DB
+     */
     protected void processAgentChange(PersistenceEvent<Agent<?, ?, ?>> persistenceEvent) {
 
         LOG.finest("Processing agent persistence event: " + persistenceEvent.getCause());
         Agent<?, ?, ?> agent = persistenceEvent.getEntity();
 
         switch (persistenceEvent.getCause()) {
-            case CREATE -> {
-                agent = addReplaceAgent(agent);
-                doAgentInit(agent);
-            }
-            case UPDATE -> onAgentUpdated(agent);
-            case DELETE -> {
-                if (!removeAgent(agent.getId())) {
-                    return;
-                }
-                // Unlink any attributes that have an agent link to this agent
-                stopAgent(agent.getId());
-            }
+            case CREATE, UPDATE -> deployAgent(agent);
+            case DELETE -> undeployAgent(agent.getId());
         }
     }
 
     /**
-     * When an agent config attribute write occurs we stop and restart the agent to simplify agent/protocol logic
+     * Deploy the {@link Agent} by creating a protocol instance, starting it and linking all attributes
      */
-    protected void onAgentUpdated(Agent<?,?,?> agent) {
+    protected void deployAgent(Agent<?,?,?> agent) {
+        synchronized (agentLock) {
+            undeployAgent(agent.getId());
+            agent = addAgent(agent);
 
-        // Old agent can be null if an update happens straight after the creation
-        if (!removeAgent(agent.getId())) {
-            return;
+            if (agent == null) {
+                return;
+            }
+
+            doAgentInit(agent);
         }
-
-        stopAgent(agent.getId());
-        agent = addReplaceAgent(agent);
-
-        if (agent == null) {
-            return;
-        }
-
-        doAgentInit(agent);
     }
 
     /**
@@ -411,76 +408,83 @@ public class AgentService extends RouteBuilder implements ContainerService {
     }
 
     protected void startAgent(Agent<?,?,?> agent) {
-        Protocol<?> protocol = null;
 
-        try {
-            protocol = agent.getProtocolInstance();
-            protocol.setAssetService(new AgentProtocolAssetService(agent));
+        synchronized (agentLock) {
 
-            LOG.fine("Starting protocol instance: " + protocol);
-            protocol.start(container);
-            protocolInstanceMap.put(agent.getId(), protocol);
-            LOG.fine("Started protocol instance:" + protocol);
+            Protocol<?> protocol = null;
 
-            LOG.finest("Linking attributes to protocol instance: " + protocol);
+            try {
+                protocol = agent.getProtocolInstance();
+                protocol.setAssetService(new AgentProtocolAssetService(agent));
 
-            // Get all assets that have attributes with agent link meta for this agent
-            List<Asset<?>> assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .attributes(
-                        new AttributePredicate().meta(
-                            new NameValuePredicate(AGENT_LINK, new StringPredicate(agent.getId()), false, new NameValuePredicate.Path("id"))
+                LOG.fine("Starting protocol instance: " + protocol);
+                protocol.start(container);
+                protocolInstanceMap.put(agent.getId(), protocol);
+                LOG.fine("Started protocol instance:" + protocol);
+
+                LOG.finest("Linking attributes to protocol instance: " + protocol);
+
+                // Get all assets that have attributes with agent link meta for this agent
+                List<Asset<?>> assets = assetStorageService.findAll(
+                    new AssetQuery()
+                        .attributes(
+                            new AttributePredicate().meta(
+                                new NameValuePredicate(AGENT_LINK, new StringPredicate(agent.getId()), false, new NameValuePredicate.Path("id"))
+                            )
                         )
-                    )
-            );
+                );
 
-            LOG.finest("Found '" + assets.size() + "' asset(s) with attributes linked to this protocol instance: " + protocol);
+                LOG.finest("Found '" + assets.size() + "' asset(s) with attributes linked to this protocol instance: " + protocol);
 
-            assets.forEach(
-                asset ->
-                    getGroupedAgentLinkAttributes(
-                        asset.getAttributes().stream(),
-                        assetAttribute -> assetAttribute.getMetaValue(AGENT_LINK)
-                            .map(agentLink -> agentLink.getId().equals(agent.getId()))
-                            .orElse(false)
-                    ).forEach((agnt, attributes) -> linkAttributes(agnt, asset.getId(), attributes))
-            );
-        } catch (Exception e) {
-            if (protocol != null) {
-                try {
-                    protocol.stop(container);
-                } catch (Exception ignored) {
+                assets.forEach(
+                    asset ->
+                        getGroupedAgentLinkAttributes(
+                            asset.getAttributes().stream(),
+                            assetAttribute -> assetAttribute.getMetaValue(AGENT_LINK)
+                                .map(agentLink -> agentLink.getId().equals(agent.getId()))
+                                .orElse(false)
+                        ).forEach((agnt, attributes) -> linkAttributes(agnt, asset.getId(), attributes))
+                );
+            } catch (Exception e) {
+                if (protocol != null) {
+                    try {
+                        protocol.stop(container);
+                    } catch (Exception ignored) {
+                    }
                 }
+                protocolInstanceMap.remove(agent.getId());
+                LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
+                sendAttributeEvent(agent.getId(), new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
             }
-            protocolInstanceMap.remove(agent.getId());
-            LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
-            sendAttributeEvent(agent.getId(), new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
         }
     }
 
-    protected void stopAgent(String agentId) {
-        Protocol<?> protocol = protocolInstanceMap.get(agentId);
+    protected void undeployAgent(String agentId) {
+        synchronized (agentLock) {
+            removeAgent(agentId);
+            Protocol<?> protocol = protocolInstanceMap.get(agentId);
 
-        if (protocol == null) {
-            return;
+            if (protocol == null) {
+                return;
+            }
+
+            Map<String, List<Attribute<?>>> groupedAttributes = protocol.getLinkedAttributes().entrySet().stream().collect(
+                Collectors.groupingBy(entry -> entry.getKey().getId(), mapping(Map.Entry::getValue, toList()))
+            );
+
+            groupedAttributes.forEach((assetId, linkedAttributes) -> unlinkAttributes(agentId, assetId, linkedAttributes));
+
+            // Stop the protocol instance
+            try {
+                protocol.stop(container);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Protocol instance threw an exception whilst being stopped", e);
+            }
+
+            // Remove child asset subscriptions for this agent
+            childAssetSubscriptions.remove(agentId);
+            protocolInstanceMap.remove(agentId);
         }
-
-        Map<String, List<Attribute<?>>> groupedAttributes = protocol.getLinkedAttributes().entrySet().stream().collect(
-            Collectors.groupingBy(entry -> entry.getKey().getId(), mapping(Map.Entry::getValue, toList()))
-        );
-
-        groupedAttributes.forEach((assetId, linkedAttributes) -> unlinkAttributes(agentId, assetId, linkedAttributes));
-
-        // Stop the protocol instance
-        try {
-            protocol.stop(container);
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Protocol instance threw an exception whilst being stopped", e);
-        }
-
-        // Remove child asset subscriptions for this agent
-        childAssetSubscriptions.remove(agentId);
-        protocolInstanceMap.remove(agentId);
     }
 
     protected void linkAttributes(Agent<?,?,?> agent, String assetId, Collection<Attribute<?>> attributes) {
@@ -549,45 +553,73 @@ public class AgentService extends RouteBuilder implements ContainerService {
             return false;
         }
 
-        // If event is for an agent attribute then we can try and handle it here in a generic way
-        Agent<?,?,?> agent = getAgent(event.getId());
-        if (agent != null) {
-
-            if (agent.isConfigurationAttribute(event.getName())) {
-                LOG.finest(() -> "Agent attribute event occurred from a client for an agent config attribute so updating: agent=" + agent.getId() + ", event=" + event);
-                onAgentUpdated(agent);
-            }
-
-            // Update in memory agent
-            agent.getAttribute(event.getName()).ifPresent(attr -> attr.setValue(event.getValue().orElse(null), event.getTimestamp()));
-
-            // Don't consume the event as we want the agent attribute to be updated in the DB
-            return false;
-        }
-
-        AgentLink<?> agentLink = event.getMetaValue(AGENT_LINK).orElse(null);
+        Optional<AgentLink> agentLinkOptional = event.getMetaValue(AGENT_LINK);
 
         // Never intercept events with no agent link
-        if (agentLink == null) {
-            return false;
-        }
-
-        return attribute.getMetaValue(AGENT_LINK)
-            .map(agentLink -> {
-                LOG.finest("Attribute event for agent linked attribute: agent=" + agentLink.getId() + ", asset=" + event.getId() + ", attribute=" + attribute.getName());
+        return agentLinkOptional.map(agentLink -> {
+                LOG.finest("Attribute event for agent linked attribute: agent=" + agentLink.getId() + ", ref=" + event.getRef());
                 Protocol<?> protocolInstance = getProtocolInstance(agentLink.getId());
-                if (protocolInstance != null) {
-                    protocolInstance.processLinkedAttributeWrite(attributeEvent);
+                if (protocolInstance == null) {
+                    throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, "Agent protocol instance not found, agent may be disabled or has been deleted: attributeRef=" + event.getRef() + ", agentLink=" + agentLink);
+                }
+                try {
+                    protocolInstance.processLinkedAttributeWrite(event);
+                } catch (Exception e) {
+                    AttributeWriteFailure failure = AttributeWriteFailure.UNKNOWN;
+                    String msg = e.getMessage();
+                    if (e instanceof AssetProcessingException assetProcessingException) {
+                        failure = assetProcessingException.getReason();
+                    }
+                    throw new AssetProcessingException(failure, "An exception occurred whilst the protocol was trying to process the attribute write request: agentLink=" + agentLink + ", msg=" + msg);
                 }
                 return true; // Processing complete, skip other processors
             }).orElse(false); // This is a regular attribute so allow the processing to continue
     }
 
     /**
-     * Called when an {@link AttributeEvent} is broadcast on the client event bus (i.e. the attribute has been updated in the DB)
+     * Called when an {@link AttributeEvent} for an {@link Agent} is broadcast on the client event bus (i.e. the
+     * attribute has been updated in the DB).
+     * <p>
+     * We use this to try and react to agent changes in a generic way by re-initialising the agent to simplify each
+     * agent implementation.
      */
-    protected void onAttributeEvent(AttributeEvent event) {
-        asdasd
+    // TODO: Queue up agent attribute events and do a single agent replacement
+    protected void onAgentAttributeEvent(AttributeEvent event) {
+
+        synchronized (agentLock) {
+            Agent<?, ?, ?> agent = getAgent(event.getId());
+
+            if (agent == null) {
+                return;
+            }
+
+            // Check that the event has a newer timestamp than the existing agent attribute - if the attribute doesn't
+            // exist on the agent either then assume the agent has been modified and attribute removed
+            boolean eventOutdated = agent.getAttribute(event.getName()).flatMap(Attribute::getTimestamp)
+                .map(timestamp -> event.getTimestamp() > timestamp)
+                .orElse(true);
+
+            if (eventOutdated) {
+                return;
+            }
+
+            // Update in memory agent
+            agent.getAttribute(event.getName()).ifPresent(attr -> attr.setValue(event.getValue().orElse(null), event.getTimestamp()));
+
+            Protocol<?> protocolInstance = getProtocolInstance(agent.getId());
+
+            if (protocolInstance == null) {
+                // Maybe agent was disabled and now isn't - use standard mechanism
+                deployAgent(agent);
+                return;
+            }
+
+            LOG.finer("Notifying protocol instance of an event for one of its agent attributes: " + event.getRef());
+            if (protocolInstance.onAgentAttributeChanged(event)) {
+                LOG.info("Protocol has requested recreation following agent attribute event: " + event.getRef());
+                deployAgent(agent);
+            }
+        }
     }
 
     protected static AgentSourceRef getSourceRef(AttributeEvent event) {
@@ -627,7 +659,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         return getClass().getSimpleName() + "{" + "}";
     }
 
-    protected Agent<?, ?, ?> addReplaceAgent(Agent<?, ?, ?> agent) {
+    protected Agent<?, ?, ?> addAgent(Agent<?, ?, ?> agent) {
 
         // Fully load agent asset if path and parent info not loaded
         if (agent.getPath() == null || (agent.getPath().length > 1 && agent.getParentId() == null)) {
@@ -653,17 +685,18 @@ public class AgentService extends RouteBuilder implements ContainerService {
         return getAgents().get(agentId);
     }
 
-    protected synchronized Map<String, Agent<?, ?, ?>> getAgents() {
-
-        if (agentMap == null) {
-            agentMap = assetStorageService.findAll(
-                    new AssetQuery().types(Agent.class)
-                )
-                .stream()
-                .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)
-                .collect(Collectors.toConcurrentMap(Asset::getId, agent -> (Agent<?, ?, ?>) agent));
+    protected Map<String, Agent<?, ?, ?>> getAgents() {
+        synchronized (agentLock) {
+            if (agentMap == null) {
+                agentMap = assetStorageService.findAll(
+                        new AssetQuery().types(Agent.class)
+                    )
+                    .stream()
+                    .filter(asset -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), null) == null)
+                    .collect(Collectors.toConcurrentMap(Asset::getId, agent -> (Agent<?, ?, ?>) agent));
+            }
+            return agentMap;
         }
-        return agentMap;
     }
 
     public Protocol<?> getProtocolInstance(Agent<?, ?, ?> agent) {

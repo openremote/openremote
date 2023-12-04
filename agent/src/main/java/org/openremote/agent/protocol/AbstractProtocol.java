@@ -173,7 +173,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         return linkedAttributes;
     }
 
-    public void processLinkedAttributeWrite(Attribute<?> attribute, AttributeEvent event) {
+    public void processLinkedAttributeWrite(AttributeEvent event) {
         synchronized (processorLock) {
             LOG.log(System.Logger.Level.TRACE, () -> "Processing linked attribute write on protocol '" + this + "': " + event);
             AgentLink<?> agentLink = agent.getAgentLink(attribute);
@@ -246,6 +246,13 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     @Override
     final public void updateLinkedAttribute(final AttributeState state) {
         updateLinkedAttribute(state, timerService.getCurrentTimeMillis());
+    }
+
+    @Override
+    public boolean onAgentAttributeChanged(AttributeEvent event) {
+        // If event is for an agent attribute then we can try and handle it here in a generic way
+        Agent<?,?,?> agent = getAgent();
+        return agent.isConfigurationAttribute(event.getName());
     }
 
     /**

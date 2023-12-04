@@ -435,7 +435,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         if (result.getFailure() != null) {
             status = switch (result.getFailure()) {
-                case ILLEGAL_SOURCE, INSUFFICIENT_ACCESS, INVALID_REALM -> FORBIDDEN;
+                case INSUFFICIENT_ACCESS, INVALID_REALM -> FORBIDDEN;
                 case ASSET_NOT_FOUND, ATTRIBUTE_NOT_FOUND -> NOT_FOUND;
                 case INVALID_AGENT_LINK, ILLEGAL_AGENT_UPDATE, INVALID_ATTRIBUTE_EXECUTE_STATUS, INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE ->
                     NOT_ACCEPTABLE;

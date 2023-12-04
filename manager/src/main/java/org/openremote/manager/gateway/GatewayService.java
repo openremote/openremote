@@ -71,6 +71,10 @@ import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
  * Manages {@link org.openremote.model.asset.impl.GatewayAsset}s in the local instance by creating Keycloak clients
  * for them and handles the connection logic of gateways; it is the gateways responsibility to connect to this instance,
  * it is then up to this instance to authenticate the gateway and to initiate synchronisation of gateway assets.
+ * <p>
+ * Also adds an {@link AttributeEventInterceptor} to consume any {@link AttributeEvent} destined for a
+ * {@link GatewayAsset} descendant {@link Asset} and routes them to the underlying gateway for handling; the underlying
+ * gateway then notifies us if/when the action has succeeded.
  */
 public class GatewayService extends RouteBuilder implements ContainerService {
 

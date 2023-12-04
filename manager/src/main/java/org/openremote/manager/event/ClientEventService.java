@@ -206,7 +206,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 String connectionKey = exchange.getIn().getHeader(UndertowConstants.CONNECTION_KEY, String.class);
                 exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, HEADER_CONNECTION_TYPE_WEBSOCKET);
                 exchange.getIn().setHeader(SESSION_KEY, connectionKey);
-                exchange.getIn().setHeader(HEADER_SOURCE, CLIENT);
             })
             .choice()
             .when(header(UndertowConstants.EVENT_TYPE))
@@ -333,6 +332,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .when(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
                 AttributeEvent attributeEvent = exchange.getIn().getBody(AttributeEvent.class);
+                // Set timestamp as early as possible if not set
                 if (attributeEvent.getTimestamp() <= 0) {
                     attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
                 }

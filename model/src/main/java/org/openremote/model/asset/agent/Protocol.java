@@ -241,4 +241,12 @@ public interface Protocol<T extends Agent<T, ?, ?>> {
      * will be enriched with data about the relating asset and attribute.
      */
     void processLinkedAttributeWrite(AttributeEvent event);
+
+    /**
+     * Called when one of the associated {@link Agent}'s {@link Attribute}s are updated; the implementation can decide
+     * if it wants to request the protocol instance to be re-created thus simplifying handling of config changes.
+     *
+     * @return true if the agent should be redeployed (this will stop current protocol instance and create a new one).
+     */
+    boolean onAgentAttributeChanged(AttributeEvent event);
 }

@@ -67,7 +67,7 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
     }
 
     @Override
-    public Class<? extends Asset<?>> getAssetClass() {
+    public Class<? extends Asset> getAssetClass() {
         return asset.getAssetClass();
     }
 
