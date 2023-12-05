@@ -653,12 +653,14 @@ export class Manager implements EventProviderFactory {
                 authOffline = true;
                 console.error("Could not reach keycloak service! Aborting token update.");
             });
+            if(!authOffline) {
 
-            // Update token
-            await this.updateKeycloakAccessToken().catch((e) => {
-                authOffline = true;
-                console.error(e);
-            });
+                // Update token
+                await this.updateKeycloakAccessToken().catch((e) => {
+                    authOffline = true;
+                    console.error(e);
+                });
+            }
         }
 
         // Update _authDisconnected respectively
@@ -1085,13 +1087,14 @@ export class Manager implements EventProviderFactory {
     // When authentication service status changes; in most cases a failed token refresh.
     // Always go OFFLINE if 'failed', only go back ONLINE when all EventProviders are also connected.
     protected _setAuthDisconnected(disconnected: boolean, force = false) {
-        if(disconnected) {
+        /*if(disconnected) {
             this._runAuthReconnectTimer();
-        }
+        }*/
         if(this._authDisconnected !== disconnected || force) {
             console.debug(`Authentication status changed: ${disconnected ? 'DISCONNECTED' : 'CONNECTED'}`);
             if(disconnected) {
                 this._authDisconnected = true;
+                this._runAuthReconnectTimer();
                 this._emitEvent(OREvent.OFFLINE);
             } else {
                 this._authDisconnected = false;

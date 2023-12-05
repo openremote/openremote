@@ -133,7 +133,7 @@ abstract class EventProviderImpl implements EventProvider {
                 this._connectingDeferred = null;
 
                 if (this._reconnectTimer) {
-                    console.debug("Clearing _reconnectTimer since WebSocket connected succesfully.")
+                    console.debug("Clearing _reconnectTimer timeout after _doConnect() attempt.")
                     window.clearTimeout(this._reconnectTimer);
                     this._reconnectTimer = null;
                 }
