@@ -46,7 +46,7 @@ Parameters:
   ImageId:
     Description: AMI ID
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-minimal-kernel-default-arm64'
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -793,11 +793,6 @@ Resources:
           #!/bin/bash -xe
           # Install latest cfn scripts
           yum -y install aws-cfn-bootstrap
-          #sed -i '/update_cmd/s/= .*/= security/' /etc/yum/yum-cron-hourly.conf
-          #sed -i '/update_messages/s/= .*/= no/' /etc/yum/yum-cron-hourly.conf
-          #sed -i '/apply_updates/s/= .*/= yes/' /etc/yum/yum-cron-hourly.conf
-          #sed -i '/download_updates/s/= .*/= yes/' /etc/yum/yum-cron-hourly.conf
-          #sed -i '/download_updates/s/= .*/= no/' /etc/yum/yum-cron.conf
           
           # Install cloudwatch agent
           yum -y install amazon-cloudwatch-agent
@@ -805,7 +800,7 @@ Resources:
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
           
-          # All done so signal success
+          # All done so signal result
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
 
   IPAddress:
