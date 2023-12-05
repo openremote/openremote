@@ -65,6 +65,8 @@ export class TableSettings extends AssetWidgetSettings {
 
     protected onAssetTypeSelect(ev: AssetTypeSelectEvent) {
         this.widgetConfig.assetType = ev.detail;
+        this.widgetConfig.assetIds = [];
+        this.widgetConfig.attributeNames = [];
         this.notifyConfigUpdate();
     }
 

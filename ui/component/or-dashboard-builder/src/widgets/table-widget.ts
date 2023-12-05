@@ -98,26 +98,24 @@ export class TableWidget extends OrAssetWidget {
                 text = Util.getAttributeLabel(referenceAsset.attributes[attrName], attributeDescriptor, this.widgetConfig.assetType, true);
             }
             return {
-                title: text
+                title: text,
+                isSortable: true
             } as TableColumn;
         });
-        return Array.of({ title: i18next.t('assetName') }, ...attrColumns);
+        return Array.of({ title: i18next.t('assetName'), isSortable: true }, ...attrColumns);
     }
 
     protected getRows(attributeNames: string[]): TableRow[] {
-        console.log(this.loadedAssets);
-        console.log(attributeNames);
         return this.loadedAssets.map(asset => {
             const attrEntries = attributeNames.map(attrName => {
                 if(asset.attributes && asset.attributes[attrName]) {
                     const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, asset.type!);
                     return Util.getAttributeValueAsString(asset.attributes[attrName], attributeDescriptor, asset.type, false);
                 } else {
-                    return '???'
+                    return 'N.A.'
                 }
             })
             const content: string[] = Array.of(asset.name!, ...attrEntries);
-            console.log(content);
             return {
                 content: content
             };

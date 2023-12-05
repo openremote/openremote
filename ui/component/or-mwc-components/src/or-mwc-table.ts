@@ -276,9 +276,11 @@ export class OrMwcTable extends LitElement {
             "mdc-data-table__fullheight": !!this.config.fullHeight,
             "has-sticky-first-column": !!this.config.stickyFirstColumn
         }
+        // Only show pagination if enabled in config, and when "the amount of rows doesn't fit on the page".
+        const showPagination = this.config.pagination && (!!this.rowsTemplate || (this.rows && (this.rows.length > this.paginationSize)));
         return html`
             <div class="${classMap(tableClasses)}">
-                <div class="mdc-data-table__table-container">
+                <div class="mdc-data-table__table-container" style="flex: 1;">
                     <table class="mdc-data-table__table">
                         <!-- Header row that normally includes entries like 'id' and 'name'. You can use either a template or a list of columns -->
                         ${when(this.columnsTemplate, () => this.columnsTemplate, () => {
@@ -375,7 +377,7 @@ export class OrMwcTable extends LitElement {
                     </table>
                 </div>
                 <!-- Pagination HTML, shown on the bottom right. Same as Material Design spec -->
-                ${when(this.config.pagination, () => {
+                ${when(showPagination, () => {
                     const options = this.config.pagination?.options || [10, 25, 100];
                     return html`
                         <div class="mdc-data-table__pagination">

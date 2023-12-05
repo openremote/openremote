@@ -52,5 +52,7 @@ export abstract class WidgetSettings extends LitElement {
 
     public setDisplayName?: (name?: string) => void;
 
+    public getEditMode?: () => boolean;
+
     public getWidgetLocation?: () => { x?: number, y?: number, h?: number, w?: number }
 }

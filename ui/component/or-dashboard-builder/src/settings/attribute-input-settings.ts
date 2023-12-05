@@ -28,7 +28,7 @@ export class AttributeInputSettings extends AssetWidgetSettings {
             <div>
                 <!-- Attribute selection -->
                 <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" onlyDataAttrs="${false}" style="padding-bottom: 12px;"
+                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" style="padding-bottom: 12px;"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>
                 </settings-panel>

@@ -1,7 +1,7 @@
 import {css, html, PropertyValues, TemplateResult } from "lit";
 import {OrAssetWidget} from "../util/or-asset-widget";
 import {WidgetConfig} from "../util/widget-config";
-import {Attribute, AttributeRef} from "@openremote/model";
+import {Attribute, AttributeRef, WellknownMetaItems} from "@openremote/model";
 import {WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
 import { customElement, query, queryAll } from "lit/decorators.js";
@@ -10,6 +10,7 @@ import { when } from "lit/directives/when.js";
 import {i18next} from "@openremote/or-translate";
 import {OrAttributeInput, OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import {throttle} from "lodash";
+import {Util} from "@openremote/core";
 
 export interface AttributeInputWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
@@ -55,7 +56,7 @@ export class AttributeInputWidget extends OrAssetWidget {
 
     static getManifest(): WidgetManifest {
         return {
-            displayName: "Attribute Input",
+            displayName: "Attribute",
             displayIcon: "form-textbox",
             getContentHtml(config: WidgetConfig): OrAssetWidget {
                 return new AttributeInputWidget(config);
@@ -115,6 +116,7 @@ export class AttributeInputWidget extends OrAssetWidget {
     protected render(): TemplateResult {
         const config = this.widgetConfig;
         const attribute = (config.attributeRefs.length > 0 && this.loadedAssets[0]?.attributes) ? this.loadedAssets[0].attributes[config.attributeRefs[0].name!] : undefined;
+        const readOnlyMetaItem = Util.getMetaValue(WellknownMetaItems.READONLY, attribute);
         return html`
             ${when(config.attributeRefs.length > 0 && attribute && this.loadedAssets && this.loadedAssets.length > 0, () => {
                 return html`
@@ -124,7 +126,7 @@ export class AttributeInputWidget extends OrAssetWidget {
                                             .attribute="${attribute}"
                                             .assetId="${this.loadedAssets[0]?.id}"
                                             .disabled="${!this.loadedAssets}"
-                                            .readonly="${config.readonly}"
+                                            .readonly="${config.readonly || readOnlyMetaItem || this.getEditMode!()}"
                                             .hasHelperText="${config.showHelperText}"
                         ></or-attribute-input>
                     </div>

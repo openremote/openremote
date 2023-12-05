@@ -73,12 +73,13 @@ export class OrDashboardWidgetsettings extends LitElement {
         settingsElem.id = this.selectedWidget.id!;
         settingsElem.getDisplayName = () => this.selectedWidget.displayName;
         settingsElem.setDisplayName = (name?: string) => this.setDisplayName(name);
+        settingsElem.getEditMode = () => true;
         settingsElem.getWidgetLocation = () => ({
             x: this.selectedWidget.gridItem?.x,
             y: this.selectedWidget.gridItem?.y,
             w: this.selectedWidget.gridItem?.w,
             h: this.selectedWidget.gridItem?.h
-        })
+        });
         settingsElem.addEventListener(WidgetSettingsChangedEvent.NAME, (ev: any) => this.onWidgetConfigChange(ev));
         return settingsElem;
     }
