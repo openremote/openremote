@@ -1360,7 +1360,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             if (success) {
-                publishAttributeEvent(event);
+                clientEventService.publishEvent(event);
             }
 
             return success;
@@ -1369,10 +1369,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             LOG.log(Level.WARNING, "Failed to store attribute value", e);
             return false;
         }
-    }
-
-    protected void publishAttributeEvent(AttributeEvent event) {
-        clientEventService.publishEvent(event);
     }
 
     protected void publishModificationEvents(PersistenceEvent<Asset<?>> persistenceEvent) {
@@ -1444,7 +1440,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         newAttributes.values())
                         .forEach(newOrModifiedAttribute -> {
                             Optional<Attribute<?>> oldAttribute = oldAttributes.get(newOrModifiedAttribute.getName());
-                            publishAttributeEvent(new AttributeEvent(
+                            clientEventService.publishEvent(new AttributeEvent(
                                 asset,
                                 newOrModifiedAttribute,
                                 getClass().getSimpleName(),

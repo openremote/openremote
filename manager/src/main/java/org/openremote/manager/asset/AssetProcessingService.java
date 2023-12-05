@@ -21,7 +21,6 @@ package org.openremote.manager.asset;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
@@ -41,15 +40,14 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.validation.AssetStateStore;
 import org.openremote.model.value.MetaItemType;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -106,29 +104,30 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
     protected int eventProcessingThreadCount;
 
+    // TODO Better exception handling - dead letter queue?
     protected static Processor handleEventProcessingException() {
         return exchange -> {
             AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
             Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
 
-            StringBuilder error = new StringBuilder();
+            if (!LOG.isLoggable(System.Logger.Level.WARNING)) {
+                return;
+            }
+
+            StringBuilder error = new StringBuilder("Error processing from ");
 
             if (event.getSource() != null) {
-                error.append("Error processing from ").append(event.getSource());
+                error.append(event.getSource());
+            } else {
+                error.append("N/A");
             }
 
-            String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
-            if (protocolName != null) {
-                error.append(" (protocol: ").append(protocolName).append(")");
-            }
-
-            // TODO Better exception handling - dead letter queue?
             if (exception instanceof AssetProcessingException processingException) {
-                error.append(" - ").append(processingException.getMessage());
-                error.append(": ").append(event.toString());
+                error.append(" ").append(processingException.getReason()).append(" - ").append(processingException.getMessage());
+                error.append(": ").append(event);
                 LOG.log(System.Logger.Level.WARNING, error::toString);
             } else {
-                error.append(": ").append(event.toString());
+                error.append(": ").append(event);
                 LOG.log(System.Logger.Level.WARNING, error::toString, exception);
             }
 
@@ -368,30 +367,27 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
             }
 
-            Attribute attribute = asset.getAttribute(event.getName()).orElseThrow(() ->
+            Attribute<Object> attribute = asset.getAttribute(event.getName()).orElseThrow(() ->
                 new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
 
             // Type coercion
             Object value = event.getValue().map(eventValue -> {
                 Class<?> attributeValueType = attribute.getTypeClass();
                 return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                    LOG.log(System.Logger.Level.INFO, "Event processing failed unable to coerce value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
-                    return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
+                    String msg = "Event processing failed unable to coerce value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType;
+                    return new AssetProcessingException(INVALID_VALUE, msg);
                 });
             }).orElse(null);
+            event.setValue(value);
 
-            AttributeEvent enrichedEvent = new AttributeEvent(asset, attribute, event.getSource(), event.getValue().orElse(null), event.getTimestamp(), attribute.getValue().orElse(null), (long)attribute.getTimestamp().orElse(0L));
+            AttributeEvent enrichedEvent = new AttributeEvent(asset, attribute, event.getSource(), event.getValue().orElse(null), event.getTimestamp(), attribute.getValue().orElse(null), attribute.getTimestamp().orElse(0L));
 
-            // Value validation
-            // TODO: Reuse AssetState and change validator over to that class
-            // Do standard JSR-380 validation on the new value (needs attribute descriptor to do this)
-            Set<ConstraintViolation<AssetStateStore>> validationFailures = ValueUtil.validate(new AssetStateStore(asset.getType(), attribute));
+            // Do standard JSR-380 validation on the event
+            Set<ConstraintViolation<AttributeEvent>> validationFailures = ValueUtil.validate(enrichedEvent);
 
             if (!validationFailures.isEmpty()) {
-                String msg = "Event processing failed as value failed constraint validation: attribute=" + attribute;
-                ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
-                LOG.log(System.Logger.Level.WARNING, msg + ", exception=" + ex.getMessage());
-                throw ex;
+                String msg = "Event processing failed value failed constraint validation: realm=" + event.getRealm() + ", attribute=" + event.getRef() + ", event value type=" + enrichedEvent.getValue().map(v -> v.getClass().getName()).orElse("null") + ", attribute value type=" + enrichedEvent.getTypeClass();
+                throw new AssetProcessingException(INVALID_VALUE, msg);
             }
 
             // TODO: Remove AttributeExecuteStatus
@@ -406,17 +402,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 //                }
 //            }
 
-            long eventTime = event.getTimestamp();
-            boolean outdated = oldEventTime - eventTime > 0;
-            AssetState assetState = new AssetState<>(asset, attribute, source);
-
-            if (outdated) {
-                LOG.log(System.Logger.Level.TRACE, () -> "Event is older than current attribute timestamp so marking as outdated: ref=" + event.getRef() + ", timestamp=" + eventTime);
-
-
-            }
-
-
             String interceptorName = null;
             boolean intercepted = false;
 
@@ -424,11 +409,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 try {
                     intercepted = interceptor.intercept(em, event);
                 } catch (AssetProcessingException ex) {
-                    throw ex;
+                    throw new AssetProcessingException(ex.getReason(), "Interceptor '" + interceptor + "' error=" + ex.getMessage());
                 } catch (Throwable t) {
                     throw new AssetProcessingException(
                         INTERCEPTOR_FAILURE,
-                        "interceptor '" + interceptor + "' threw an exception",
+                        "Interceptor '" + interceptor + "' uncaught exception error=" + t.getMessage(),
                         t
                     );
                 }
@@ -439,9 +424,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             if (intercepted) {
-                LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + event.getRef() + ", source=" + source);
+                LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + enrichedEvent.getRef() + ", source=" + enrichedEvent.getSource());
             } else {
-                if (!assetStorageService.updateAttributeValue(em, event)) {
+                if (enrichedEvent.isOutdated()) {
+                    LOG.log(System.Logger.Level.TRACE, () -> "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
+                    // Generate an event for this so internal subscribers can act on it if needed
+                    clientEventService.publishEvent(new OutdatedAttributeEvent(enrichedEvent));
+                } else if (!assetStorageService.updateAttributeValue(em, enrichedEvent)) {
                     throw new AssetProcessingException(
                         STATE_STORAGE_FAILED, "database update failed, no rows updated"
                     );

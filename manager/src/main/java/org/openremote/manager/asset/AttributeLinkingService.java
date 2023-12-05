@@ -20,15 +20,16 @@
 package org.openremote.manager.asset;
 
 import org.openremote.manager.agent.AgentService;
-import org.openremote.manager.event.AttributeEventInterceptor;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
-import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.*;
-import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeLink;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.event.shared.AttributeInfo;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.RealmPredicate;
@@ -36,13 +37,10 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
-import jakarta.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.logging.Logger;
-
-import static org.openremote.model.attribute.AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE;
 
 /**
  * This service generates new {@link AttributeEvent}s for any {@link Attribute} that contains an
@@ -50,7 +48,6 @@ import static org.openremote.model.attribute.AttributeEvent.Source.ATTRIBUTE_LIN
  * <p>
  * See {@link AttributeLink} for capabilities.
  */
-// TODO: Improve AttributeLinkingService so that outbound events are synchronsied with inbound
 public class AttributeLinkingService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AttributeLinkingService.class.getName());
@@ -72,7 +69,7 @@ public class AttributeLinkingService implements ContainerService {
         gatewayService = container.getService(GatewayService.class);
         ClientEventService clientEventService = container.getService(ClientEventService.class);
 
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, )
+        clientEventService.addInternalSubscription(AttributeEvent.class, null, this::onAttributeEvent);
     }
 
     @Override
@@ -83,41 +80,34 @@ public class AttributeLinkingService implements ContainerService {
     public void stop(Container container) throws Exception {
     }
 
-
-    public void onAttributeEvent(AttributeEvent attributeEvent) {
-        if (source == ATTRIBUTE_LINKING_SERVICE) {
-            LOG.finest("Attribute update came from this service so ignoring to avoid infinite loops: " + attribute);
-            return false;
+    public void onAttributeEvent(AttributeEvent event) {
+        if (getClass().getName().equals(event.getSource())) {
+            LOG.finest("Attribute update came from this service so ignoring to avoid infinite loops: ref=" + event.getRef());
+            return;
         }
 
-        // If asset is a gateway descendant then don't action any links
-        attribute.getMetaValue(MetaItemType.ATTRIBUTE_LINKS)
-            .map(attributeLinks -> gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId()) != null ? null : attributeLinks)
+        event.getMetaValue(MetaItemType.ATTRIBUTE_LINKS)
             .ifPresent(attributeLinks ->
                 Arrays.stream(attributeLinks).forEach(attributeLink ->
-                    processLinkedAttributeUpdate(em, asset, attribute, attributeLink)));
-
-        return false;
+                    processLinkedAttributeUpdate(event, attributeLink)));
     }
 
     protected void sendAttributeEvent(AttributeEvent attributeEvent) {
         LOG.finest("Sending attribute event for linked attribute: " + attributeEvent);
-        assetProcessingService.sendAttributeEvent(attributeEvent, ATTRIBUTE_LINKING_SERVICE);
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getName());
     }
 
-    protected void processLinkedAttributeUpdate(EntityManager em, Asset<?> asset, Attribute<?> attribute, AttributeLink attributeLink) {
-        LOG.finest("Processing attribute state for linked attribute");
-
+    protected void processLinkedAttributeUpdate(AttributeInfo attributeInfo, AttributeLink attributeLink) {
         if (attributeLink == null) {
-            throw new AssetProcessingException(AttributeWriteFailure.INVALID_ATTRIBUTE_LINK);
+            return;
         }
+
+        LOG.finest("Processing attribute links for updated attribute ref=" + attributeInfo.getRef());
 
         // Convert the value as required
         Pair<Boolean, Object> sendConvertedValue = convertValueForLinkedAttribute(
-            em,
             assetStorageService,
-            asset,
-            attribute,
+            attributeInfo,
             attributeLink
         );
 
@@ -129,7 +119,7 @@ public class AttributeLinkingService implements ContainerService {
         final Object[] value = {sendConvertedValue.value};
 
         // Get the attribute and try and coerce the value into the correct type
-        getAttribute(em, assetStorageService, asset.getRealm(), attributeLink.getAttributeRef()).ifPresent(attr -> {
+        getAttribute(assetStorageService, attributeInfo.getRealm(), attributeLink.getAttributeRef()).ifPresent(attr -> {
 
             if (value[0] != null) {
 
@@ -150,13 +140,11 @@ public class AttributeLinkingService implements ContainerService {
         });
     }
 
-    protected Pair<Boolean, Object> convertValueForLinkedAttribute(EntityManager em,
-                                                                         AssetStorageService assetStorageService,
-                                                                         Asset<?> asset,
-                                                                         Attribute<?> attribute,
-                                                                         AttributeLink attributeLink) throws AssetProcessingException {
+    protected Pair<Boolean, Object> convertValueForLinkedAttribute(AssetStorageService assetStorageService,
+                                                                   AttributeInfo attributeInfo,
+                                                                   AttributeLink attributeLink) throws AssetProcessingException {
 
-        Object originalValue = attribute.getValue().orElse(null);
+        Object originalValue = attributeInfo.getValue().orElse(null);
 
         // Filter the value first
         if (attributeLink.getFilters() != null) {
@@ -177,9 +165,8 @@ public class AttributeLinkingService implements ContainerService {
                     // Do special value conversion
                     return getSpecialConverter(converterValue.value).map(
                         specialConverter -> doSpecialConversion(
-                            em,
                             assetStorageService,
-                            asset,
+                            attributeInfo,
                             specialConverter,
                             attributeLink.getAttributeRef()
                         )
@@ -195,26 +182,19 @@ public class AttributeLinkingService implements ContainerService {
         return Optional.empty();
     }
 
-    protected static Pair<Boolean, Object> doSpecialConversion(EntityManager em,
-                                                              AssetStorageService assetStorageService,
-                                                              Asset<?> asset,
+    protected static Pair<Boolean, Object> doSpecialConversion(AssetStorageService assetStorageService,
+                                                              AttributeInfo attributeInfo,
                                                               AttributeLink.ConverterType converter,
-                                                              AttributeRef linkedAttributeRef) throws AssetProcessingException {
+                                                              AttributeRef linkedAttributeRef) throws RuntimeException {
         switch (converter) {
             case TOGGLE -> {
                 // Look up current value of the linked attribute within the same database session
                 try {
-                    Attribute<?> currentAttribute = getAttribute(em, assetStorageService, asset.getRealm(), linkedAttributeRef).orElseThrow(
-                        () -> new AssetProcessingException(
-                            AttributeWriteFailure.ATTRIBUTE_NOT_FOUND,
-                            "cannot toggle value as attribute cannot be found: " + linkedAttributeRef
-                        )
-                    );
+                    Attribute<?> currentAttribute = getAttribute(assetStorageService, attributeInfo.getRealm(), linkedAttributeRef).orElseThrow(
+                        () -> new RuntimeException("Cannot toggle value as attribute cannot be found: " + linkedAttributeRef));
                     if (!ValueUtil.isBoolean(currentAttribute.getTypeClass())) {
-                        throw new AssetProcessingException(
-                            AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
-                            "cannot toggle value as attribute is not of type BOOLEAN: " + linkedAttributeRef
-                        );
+                        throw new RuntimeException(
+                            "Cannot toggle value as attribute is not of type BOOLEAN: " + linkedAttributeRef);
                     }
                     return new Pair<>(false, !(Boolean) currentAttribute.getValue(Boolean.class).orElse(false));
                 } catch (NoSuchElementException e) {
@@ -225,16 +205,12 @@ public class AttributeLinkingService implements ContainerService {
             case INCREMENT, DECREMENT -> {
                 // Look up current value of the linked attribute within the same database session
                 try {
-                    Attribute<?> currentAttribute = getAttribute(em, assetStorageService, asset.getRealm(), linkedAttributeRef).orElseThrow(
-                        () -> new AssetProcessingException(
-                            AttributeWriteFailure.ATTRIBUTE_NOT_FOUND,
-                            "cannot toggle value as attribute cannot be found: " + linkedAttributeRef
-                        )
-                    );
+                    Attribute<?> currentAttribute = getAttribute(assetStorageService, attributeInfo.getRealm(), linkedAttributeRef)
+                        .orElseThrow(() ->
+                            new RuntimeException("Cannot toggle value as attribute cannot be found: " + linkedAttributeRef));
                     if (!ValueUtil.isNumber(currentAttribute.getTypeClass())) {
-                        throw new AssetProcessingException(
-                            AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
-                            "cannot increment/decrement value as attribute is not of type NUMBER: " + linkedAttributeRef
+                        throw new RuntimeException(
+                            "Cannot increment/decrement value as attribute is not of type NUMBER: " + linkedAttributeRef
                         );
                     }
                     int change = converter == AttributeLink.ConverterType.INCREMENT ? +1 : -1;
@@ -244,20 +220,15 @@ public class AttributeLinkingService implements ContainerService {
                     return new Pair<>(true, null);
                 }
             }
-            default -> throw new AssetProcessingException(
-                AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
-                "converter is not supported: " + converter
-            );
+            default -> throw new RuntimeException("Converter is not supported ref=" + linkedAttributeRef + ": " + converter);
         }
     }
 
-    protected static Optional<Attribute<?>> getAttribute(EntityManager em,
-                                                 AssetStorageService assetStorageService,
-                                                 String realm,
-                                                 AttributeRef attributeRef) {
+    protected static Optional<Attribute<?>> getAttribute(AssetStorageService assetStorageService,
+                                                         String realm,
+                                                         AttributeRef attributeRef) {
         // Get the full asset as shared em
         Asset<?> asset = assetStorageService.find(
-            em,
             new AssetQuery()
                 .realm(new RealmPredicate(realm))
                 .ids(attributeRef.getId())

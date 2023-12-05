@@ -83,7 +83,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
         protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getId() + ":" + attribute.getName());
         protocolWriteAttributeEvents.add(event);
         if (updateSensor) {

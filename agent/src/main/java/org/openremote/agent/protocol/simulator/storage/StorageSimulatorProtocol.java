@@ -85,7 +85,7 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
 
     @SuppressWarnings("unchecked")
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, StorageSimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(StorageSimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         // Power attribute is updated only by this protocol not by clients
         if (attribute.getName().equals(POWER.getName())) {

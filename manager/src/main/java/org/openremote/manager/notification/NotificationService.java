@@ -84,11 +84,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 error.append("Error processing from ").append(source);
             }
 
-            String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
-            if (protocolName != null) {
-                error.append(" (protocol: ").append(protocolName).append(")");
-            }
-
             // TODO Better exception handling - dead letter queue?
             if (exception instanceof NotificationProcessingException processingException) {
                 error.append(" - ").append(processingException.getReasonPhrase());

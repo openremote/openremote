@@ -106,7 +106,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, SimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(SimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
         if (replayMap.containsKey(event.getRef())) {
             LOG.info("Attempt to write to linked attribute that is configured for value replay so ignoring: " + attribute);
             return;

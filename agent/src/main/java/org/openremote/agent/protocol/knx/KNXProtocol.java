@@ -137,7 +137,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, KNXAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(KNXAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         synchronized (attributeActionMap) {
             Datapoint datapoint = attributeActionMap.get(event.getRef());

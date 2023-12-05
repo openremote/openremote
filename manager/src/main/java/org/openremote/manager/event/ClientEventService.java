@@ -39,6 +39,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.Event;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
@@ -505,7 +506,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     /**
      * Publish an event to interested clients
      */
-    public <T extends SharedEvent> void publishEvent(T event) {
+    public <T extends Event> void publishEvent(T event) {
         // Only publish if service is not stopped
         if (stopped) {
             return;

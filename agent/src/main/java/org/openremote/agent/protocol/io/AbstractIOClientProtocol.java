@@ -161,7 +161,7 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, X agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(X agentLink, AttributeEvent event, Object processedValue) {
 
         if (client == null || attribute == null) {
             return;

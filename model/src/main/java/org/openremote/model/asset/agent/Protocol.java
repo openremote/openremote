@@ -152,8 +152,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public interface Protocol<T extends Agent<T, ?, ?>> {
 
     Logger LOG = SyslogCategory.getLogger(PROTOCOL, Protocol.class);
-    String SENSOR_QUEUE_SOURCE_PROTOCOL = "Protocol";
-
 
     /**
      * Prefixes the log message with {@link #getProtocolName} and {@link #getProtocolInstanceUri}.

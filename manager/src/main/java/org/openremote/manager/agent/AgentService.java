@@ -558,6 +558,13 @@ public class AgentService extends RouteBuilder implements ContainerService {
         // Never intercept events with no agent link
         return agentLinkOptional.map(agentLink -> {
                 LOG.finest("Attribute event for agent linked attribute: agent=" + agentLink.getId() + ", ref=" + event.getRef());
+
+                if (event.isOutdated()) {
+                    throw new AssetProcessingException(AttributeWriteFailure.OUT)
+                    // Don't process outdated events but intercept them
+                    return true;
+                }
+
                 Protocol<?> protocolInstance = getProtocolInstance(agentLink.getId());
                 if (protocolInstance == null) {
                     throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, "Agent protocol instance not found, agent may be disabled or has been deleted: attributeRef=" + event.getRef() + ", agentLink=" + agentLink);

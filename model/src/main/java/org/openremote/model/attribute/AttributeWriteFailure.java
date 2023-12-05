@@ -19,9 +19,6 @@
  */
 package org.openremote.model.attribute;
 
-import org.openremote.model.asset.agent.Agent;
-import org.openremote.model.value.ValueType;
-
 public enum AttributeWriteFailure {
 
     /**
@@ -35,44 +32,18 @@ public enum AttributeWriteFailure {
     ATTRIBUTE_NOT_FOUND,
 
     /**
-     * An actuator update must be for an attribute with a valid agent link.
-     */
-    INVALID_AGENT_LINK,
-
-    /**
-     * An attribute is linked to another attribute, but the link is invalid.
-     */
-    INVALID_ATTRIBUTE_LINK,
-
-    /**
-     * An attribute is linked to another attribute, but the linked attribute can't be written because conversion to the
-     * target attribute's value failed.
-     */
-    LINKED_ATTRIBUTE_CONVERSION_FAILURE,
-
-    /**
-     * Attributes of an {@link Agent} can not be individually updated.
-     */
-    ILLEGAL_AGENT_UPDATE,
-
-    /**
-     * Invalid {@link AttributeExecuteStatus} for {@link Attribute} of type {@link ValueType#EXECUTION_STATUS}.
-     */
-    INVALID_ATTRIBUTE_EXECUTE_STATUS,
-
-    /**
      * Realm configuration or user privileges do not allow update (e.g. realm inactive, user is missing required role,
      * attribute is read-only).
      */
     INSUFFICIENT_ACCESS,
 
     /**
-     * Applying the event violates constraints of the attribute.
+     * Value has incorrect type or has failed validation rules.
      */
-    ATTRIBUTE_VALIDATION_FAILURE,
+    INVALID_VALUE,
 
     /**
-     * Any other error, typically other runtime exceptions thrown by a processor.
+     * Any unknown error that is thrown by an interceptor.
      */
     INTERCEPTOR_FAILURE,
 
@@ -82,19 +53,9 @@ public enum AttributeWriteFailure {
     STATE_STORAGE_FAILED,
 
     /**
-     * The event value is not the excepted value for the attribute.
-     */
-    INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE,
-
-    /**
-     * The event consumer cannot process the event as the destination may be disconnected.
+     * The event interceptor/consumer cannot process the event.
      */
     CANNOT_PROCESS,
-
-    /**
-     * The realm either doesn't exist or is inactive.
-     */
-    INVALID_REALM,
 
     /**
      * Fallback failure when no other value makes sense.

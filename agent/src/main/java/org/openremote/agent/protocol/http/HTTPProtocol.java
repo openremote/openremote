@@ -425,7 +425,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, HTTPAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(HTTPAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         HttpClientRequest request = requestMap.get(event.getRef());
 

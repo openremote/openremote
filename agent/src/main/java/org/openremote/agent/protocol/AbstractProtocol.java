@@ -100,7 +100,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
                                     return;
                                 }
 
-                                processLinkedAttributeWrite(linkedAttribute, event);
+                                processLinkedAttributeWrite(event);
                             }
                         });
                 }
@@ -176,11 +176,11 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     public void processLinkedAttributeWrite(AttributeEvent event) {
         synchronized (processorLock) {
             LOG.log(System.Logger.Level.TRACE, () -> "Processing linked attribute write on protocol '" + this + "': " + event);
-            AgentLink<?> agentLink = agent.getAgentLink(attribute);
+            AgentLink<?> agentLink = agent.getAgentLink(event);
 
             Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
                 event.getId(),
-                attribute,
+                event,
                 agentLink,
                 event.getValue().orElse(null),
                 dynamicAttributes.contains(event.getRef()));
@@ -190,7 +190,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
                 return;
             }
 
-            doLinkedAttributeWrite(attribute, agent.getAgentLink(attribute), event, ignoreAndConverted.value);
+            doLinkedAttributeWrite(agent.getAgentLink(event), event, ignoreAndConverted.value);
 
             if (agent.isUpdateOnWrite().orElse(false) || agentLink.getUpdateOnWrite().orElse(false)) {
                 updateLinkedAttribute(new AttributeState(event.getRef(), ignoreAndConverted.value));
@@ -238,9 +238,8 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         }
 
         AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(state.getRef(), ignoreAndConverted.value), timestamp);
-        assetService.sendAttributeEvent(attributeEvent);
         LOG.log(System.Logger.Level.TRACE, () -> "Sending linked attribute update: " + attributeEvent);
-        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
+        assetService.sendAttributeEvent(attributeEvent);
     }
 
     @Override
@@ -286,5 +285,5 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
      * (see {@link ProtocolUtil#doOutboundValueProcessing}). Protocol implementations should generally use the
      * processedValue but may also choose to use the original value for some purpose if required.
      */
-    abstract protected void doLinkedAttributeWrite(Attribute<?> attribute, U agentLink, AttributeEvent event, Object processedValue);
+    abstract protected void doLinkedAttributeWrite(U agentLink, AttributeEvent event, Object processedValue);
 }

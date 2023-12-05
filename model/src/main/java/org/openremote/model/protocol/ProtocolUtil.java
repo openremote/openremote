@@ -24,6 +24,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.event.shared.AttributeInfo;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
@@ -59,7 +60,7 @@ public final class ProtocolUtil {
      * searched on every single write request (for performance reasons), instead this should be recorded when the
      * attribute is first linked.
      */
-    public static Pair<Boolean, Object> doOutboundValueProcessing(String assetId, Attribute<?> attribute, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder) {
+    public static Pair<Boolean, Object> doOutboundValueProcessing(String assetId, AttributeInfo attribute, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder) {
 
         String writeValue = agentLink.getWriteValue().orElse(null);
 

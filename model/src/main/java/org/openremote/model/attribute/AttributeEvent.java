@@ -21,12 +21,14 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.AttributeInfo;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.validation.AttributeInfoValid;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
@@ -40,13 +42,13 @@ import java.util.Optional;
  * Represents an {@link Attribute} value at a point in time.
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
+@AttributeInfoValid
 public class AttributeEvent extends SharedEvent implements Comparable<AttributeEvent>, AttributeInfo {
 
     protected AttributeRef ref;
     protected Object value;
     protected long timestamp;
     protected boolean deleted;
-    protected boolean outdated;
     @JsonIgnore
     protected Object source;
     @JsonIgnore
@@ -165,13 +167,9 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
         return this;
     }
 
+    @JsonProperty
     public boolean isOutdated() {
-        return outdated;
-    }
-
-    public AttributeEvent setOutdated(boolean outdated) {
-        this.outdated = outdated;
-        return this;
+        return oldValueTimestamp - timestamp > 0;
     }
 
     @Override
@@ -256,14 +254,6 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     public AttributeEvent setDeleted(boolean deleted) {
         this.deleted = deleted;
         return this;
-    }
-
-    public <U> Optional<U> getMetaValue(MetaItemDescriptor<U> metaItemDescriptor) {
-        return Optional.ofNullable(getMeta()).flatMap(metaMap -> metaMap.getValue(metaItemDescriptor));
-    }
-
-    public boolean hasMeta(MetaItemDescriptor<?> metaItemDescriptor) {
-        return Optional.ofNullable(getMeta()).map(metaMap -> metaMap.has(metaItemDescriptor)).orElse(false);
     }
 
     /**
