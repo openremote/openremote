@@ -30,6 +30,7 @@ on:
       DISK_SIZE:
         description: 'Override EC2 root EBS volume size to provision (GB)'
         type: string
+        default: '16'
         required: false
       ELASTIC_IP:
         description: 'Create elastic public IP'
