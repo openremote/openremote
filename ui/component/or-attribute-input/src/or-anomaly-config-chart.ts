@@ -46,6 +46,11 @@ export class OrAnomalyConfigChart extends OrChart {
     public timespan?: Number = undefined;
 
 
+    protected willUpdate(changedProps: Map<string, any>) {
+        console.log(changedProps);
+        return super.willUpdate(changedProps);
+    }
+
     protected async _loadData() {
         let timespan=0
         if(this._loading || !this.anomalyConfig){
@@ -122,17 +127,6 @@ export class OrAnomalyConfigChart extends OrChart {
                 const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
                 const colourIndex = index % this.colors.length;
 
-                this.datapointQuery.type = "allanomalies";
-                let anomalyDataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
-                anomalyDataset.pointStyle = "cross";
-                anomalyDataset.pointRotation = 45;
-                anomalyDataset.pointRadius = 10;
-                anomalyDataset.pointBorderWidth = 2;
-                anomalyDataset.backgroundColor = "#00000000"
-                anomalyDataset.borderColor = "#00000000"
-                anomalyDataset.pointBorderColor = "#be0000"
-                anomalyDataset.pointBackgroundColor = "#be0000"
-                data.push(anomalyDataset);
 
                 //limits anomaly data
                 let datasets = await this.getAnomalyLimits(asset,attribute,this.datapointQuery)
@@ -141,13 +135,13 @@ export class OrAnomalyConfigChart extends OrChart {
                     (dataset as any).assetId = asset.id;
                     (dataset as any).attrName = attribute.name;
                     (dataset as any).unit = unit;
-                    dataset = datasets[2]
+                    dataset = datasets[3];
                     data.push(dataset);
-
-
-                    dataset = datasets[0]
+                    dataset = datasets[2];
                     data.push(dataset);
-                    dataset = datasets[1]
+                    dataset = datasets[0];
+                    data.push(dataset);
+                    dataset = datasets[1];
                     data.push(dataset);
                 }
             });
@@ -174,6 +168,19 @@ export class OrAnomalyConfigChart extends OrChart {
             fill: false,
             data: [],
         };
+        let anomalyDataset: ChartDataset<"line", ScatterDataPoint[]> ={
+            pointStyle: "cross",
+            label: "anomalies",
+            pointRadius :10,
+            pointRotation: 45,
+            pointBorderWidth: 2,
+            backgroundColor: "#00000000",
+            borderColor: "#00000000",
+            pointBorderColor: "#be0000",
+            pointBackgroundColor: "#be0000",
+            data:[]
+        };
+
         let maxData : ChartDataset<"line", ScatterDataPoint[]> ={
             borderColor: DefaultColor4 + "80",
             backgroundColor: DefaultColor4 + "80",
@@ -199,10 +206,12 @@ export class OrAnomalyConfigChart extends OrChart {
                 minData.data = response.data[0].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
                 maxData.data = response.data[1].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
                 dataset.data = response.data[2].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
+                anomalyDataset.data = response.data[3].filter(value => value !== null) as ScatterDataPoint[];
             }
             datasets.push(minData);
             datasets.push(maxData);
             datasets.push(dataset);
+            datasets.push(anomalyDataset);
         }
         return datasets;
     }

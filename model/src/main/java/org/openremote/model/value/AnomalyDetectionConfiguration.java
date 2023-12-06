@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import org.openremote.model.alarm.Alarm;
+import org.openremote.model.alarm.AlarmConfig;
+import org.openremote.model.alarm.SentAlarm;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -44,15 +46,17 @@ public abstract class AnomalyDetectionConfiguration implements Serializable {
     public String name;
     public Boolean onOff;
     public Integer deviation;
-    public Alarm alarm;
+    public AlarmConfig alarm;
+    public Boolean alarmOnOff;
 
 
 
-    public AnomalyDetectionConfiguration(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") Alarm alarm){
+    public AnomalyDetectionConfiguration(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") AlarmConfig alarm, @JsonProperty("alarmOnOff") Boolean alarmOnOff){
         this.name = name;
         this.onOff = onOff;
         this.deviation = deviation;
         this.alarm = alarm;
+        this.alarmOnOff = alarmOnOff;
     }
 
     public boolean isValid() {
@@ -69,8 +73,8 @@ public abstract class AnomalyDetectionConfiguration implements Serializable {
         public ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan;
 
         @JsonCreator
-        public Global(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") Alarm alarm, @JsonProperty("minimumDatapoints") Integer minimumDatapoints, @JsonProperty("timespan") ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan) {
-            super(name,onOff, deviation,alarm);
+        public Global(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") AlarmConfig alarm, @JsonProperty("alarmOnOff") Boolean alarmOnOff, @JsonProperty("minimumDatapoints") Integer minimumDatapoints, @JsonProperty("timespan") ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan) {
+            super(name,onOff, deviation,alarm, alarmOnOff);
             this.minimumDatapoints = minimumDatapoints;
             this.timespan = timespan;
         }
@@ -85,8 +89,8 @@ public abstract class AnomalyDetectionConfiguration implements Serializable {
         public ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan;
 
         @JsonCreator
-        public Change(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") Alarm alarm, @JsonProperty("minimumDatapoints") Integer minimumDatapoints, @JsonProperty("timespan") ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan) {
-            super(name,onOff, deviation,alarm);
+        public Change(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") AlarmConfig alarm, @JsonProperty("alarmOnOff") Boolean alarmOnOff, @JsonProperty("minimumDatapoints") Integer minimumDatapoints, @JsonProperty("timespan") ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan) {
+            super(name,onOff, deviation,alarm, alarmOnOff);
             this.minimumDatapoints = minimumDatapoints;
             this.timespan = timespan;
         }
@@ -100,8 +104,8 @@ public abstract class AnomalyDetectionConfiguration implements Serializable {
         public ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan;
 
         @JsonCreator
-        public Timespan(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") Alarm alarm, @JsonProperty("minimumDatapoints") Integer minimumDatapoints, @JsonProperty("timespan") ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan) {
-            super(name,onOff, deviation,alarm);
+        public Timespan(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") AlarmConfig alarm, @JsonProperty("alarmOnOff") Boolean alarmOnOff, @JsonProperty("minimumDatapoints") Integer minimumDatapoints, @JsonProperty("timespan") ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration timespan) {
+            super(name,onOff, deviation,alarm, alarmOnOff);
             this.minimumDatapoints = minimumDatapoints;
             this.timespan = timespan;
         }
@@ -111,8 +115,8 @@ public abstract class AnomalyDetectionConfiguration implements Serializable {
     public static class Forecast extends AnomalyDetectionConfiguration {
 
         @JsonCreator
-        public Forecast(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") Alarm alarm) {
-            super(name,onOff, deviation,alarm);
+        public Forecast(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") AlarmConfig alarm, @JsonProperty("alarmOnOff") Boolean alarmOnOff) {
+            super(name,onOff, deviation,alarm, alarmOnOff);
         }
     }
 }
