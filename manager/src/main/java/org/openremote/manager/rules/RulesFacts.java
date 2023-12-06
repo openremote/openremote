@@ -29,6 +29,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.rules.Assets;
@@ -246,6 +247,14 @@ public class RulesFacts extends Facts implements RuleListener {
             LOG.finest("Fact change (INSERT): " + fact + " - on: " + loggingContext);
         }
         getAssetEvents().add(fact);
+        return this;
+    }
+
+    public RulesFacts removeAttributeEvents(AttributeRef attributeRef) {
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finest("Fact change (DELETE ALL): " + attributeRef + " on: " + loggingContext);
+        }
+        getAssetEvents().removeIf(fact -> fact.getFact().getRef().equals(attributeRef));
         return this;
     }
 

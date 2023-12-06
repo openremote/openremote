@@ -43,10 +43,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeInfo;
-import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.attribute.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.RulesetQuery;
 import org.openremote.model.query.filter.LocationAttributePredicate;
@@ -139,8 +136,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
     // Keep global list of asset states that have been pushed to any engines
     // The objects are already in memory inside the rule engines but keeping them
     // here means we can quickly insert facts into newly started engines
-    protected final Set<AttributeInfo> attributeInfos = new HashSet<>();
-    protected final Set<AttributeInfo> preInitAttributeInfo = new HashSet<>();
+    protected final Set<AttributeEvent> attributeEvents = new HashSet<>();
+    protected final Set<AttributeEvent> preInitAttributeEvents = new HashSet<>();
     protected long defaultEventExpiresMillis = 1000*60*60;
     protected long tempFactExpirationMillis;
     protected long quickFireMillis;
@@ -330,7 +327,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                         ruleAttribute.getTimestamp().orElse(0L),
                         ruleAttribute.getValue().orElse(null),
                         ruleAttribute.getTimestamp().orElse(0L));
-                    updateAttributeInfo(attributeInfo);
+                    updateAttributeEvent(attributeInfo);
                 });
             });
 
@@ -341,12 +338,12 @@ public class RulesService extends RouteBuilder implements ContainerService {
         realmEngines.values().forEach(RulesEngine::start);
         assetEngines.values().forEach(RulesEngine::start);
 
-        synchronized (preInitAttributeInfo) {
+        synchronized (preInitAttributeEvents) {
             startDone = true;
         }
 
-        preInitAttributeInfo.forEach(this::doProcessAssetUpdate);
-        preInitAttributeInfo.clear();
+        preInitAttributeEvents.forEach(this::doProcessAttributeUpdate);
+        preInitAttributeEvents.clear();
     }
 
     @Override
@@ -369,8 +366,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
             globalEngine = null;
         }
 
-        synchronized (attributeInfos) {
-            attributeInfos.clear();
+        synchronized (attributeEvents) {
+            attributeEvents.clear();
         }
 
         for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
@@ -391,38 +388,47 @@ public class RulesService extends RouteBuilder implements ContainerService {
      * React to events that have been committed to the DB and inject them into the appropriate {@link RulesEngine}s.
      */
     public void onAttributeEvent(AttributeEvent event) throws AssetProcessingException {
-        synchronized (preInitAttributeInfo) {
+        synchronized (preInitAttributeEvents) {
             if (!startDone) {
-                preInitAttributeInfo.add(event);
+                if (!event.isDeleted()) {
+                    preInitAttributeEvents.add(event);
+                }
             } else {
-                doProcessAssetUpdate(event);
+                doProcessAttributeUpdate(event);
             }
         }
     }
 
-    protected void doProcessAssetUpdate(AttributeInfo attributeInfo) {
+    protected void doProcessAttributeUpdate(AttributeEvent attributeEvent) {
         // We might process two facts for a single attribute update, if that is what the user wants
 
         // First as asset state
-        if (isRuleState(attributeInfo)) {
-            updateAttributeInfo(attributeInfo);
+        if (isRuleState(attributeEvent)) {
+            if (attributeEvent.isDeleted()) {
+                retractAttributeEvent(attributeEvent);
+            } else {
+                updateAttributeEvent(attributeEvent);
+            }
         }
 
         // Then as asset event (if there wasn't an error), this will also fire the rules engines
-        if (attributeInfo.getMetaValue(MetaItemType.RULE_EVENT).orElse(false)) {
+        if (attributeEvent.getMetaValue(MetaItemType.RULE_EVENT).orElse(false)) {
+            if (attributeEvent.isDeleted()) {
+                removeAttributeEvents(attributeEvent);
+            } else {
+                long expireMillis = attributeEvent.getMetaValue(MetaItemType.RULE_EVENT_EXPIRES).map(expires -> {
+                    long expMillis = defaultEventExpiresMillis;
 
-            long expireMillis = attributeInfo.getMetaValue(MetaItemType.RULE_EVENT_EXPIRES).map(expires -> {
-                long expMillis = defaultEventExpiresMillis;
+                    try {
+                        expMillis = TimeUtil.parseTimeDuration(expires);
+                    } catch (RuntimeException exception) {
+                        LOG.log(Level.WARNING, "Failed to parse '" + MetaItemType.RULE_EVENT_EXPIRES.getName() + "' value '" + expires + "' for attribute: " + attributeEvent, exception);
+                    }
+                    return expMillis;
+                }).orElse(defaultEventExpiresMillis);
 
-                try {
-                    expMillis = TimeUtil.parseTimeDuration(expires);
-                } catch (RuntimeException exception) {
-                    LOG.log(Level.WARNING, "Failed to parse '" + MetaItemType.RULE_EVENT_EXPIRES.getName() + "' value '" + expires + "' for attribute: " + attributeInfo, exception);
-                }
-                return expMillis;
-            }).orElse(defaultEventExpiresMillis);
-
-            insertAttributeEvent(attributeInfo, expireMillis);
+                insertAttributeEvent(attributeEvent, expireMillis);
+            }
         }
     }
 
@@ -520,7 +526,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     protected void processAssetChange(Asset<?> asset, PersistenceEvent<Asset<?>> persistenceEvent) {
         switch (persistenceEvent.getCause()) {
-            case CREATE: {
+            case CREATE -> {
                 // Load rule state attributes into rules engine
                 asset
                     .getAttributes()
@@ -529,11 +535,10 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     .forEach(attribute -> {
                         AttributeInfo assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
                         LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
-                        updateAttributeInfo(assetState);
+                        updateAttributeEvent(assetState);
                     });
-                break;
             }
-            case UPDATE: {
+            case UPDATE -> {
 
                 boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
                 AttributeMap oldAttributes = attributesChanged ? ((AttributeMap) persistenceEvent.getPreviousState("attributes")) : asset.getAttributes();
@@ -551,16 +556,15 @@ public class RulesService extends RouteBuilder implements ContainerService {
                 oldStateAttributes.forEach(attribute -> {
                     AttributeInfo assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
                     LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), retracting obsolete fact: " + assetState);
-                    retractAssetState(assetState);
+                    retractAttributeEvent(assetState);
                 });
 
                 // Insert new states for new or changed attributes
                 newStateAttributes.forEach(attribute -> {
                     AttributeInfo assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
                     LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
-                    updateAttributeInfo(assetState);
+                    updateAttributeEvent(assetState);
                 });
-                break;
             }
         }
     }
@@ -581,9 +585,9 @@ public class RulesService extends RouteBuilder implements ContainerService {
                 RulesEngine<GlobalRuleset> engine = deployGlobalRuleset((GlobalRuleset) ruleset);
 
                 if (isNewEngine) {
-                    synchronized (attributeInfos) {
+                    synchronized (attributeEvents) {
                         // Push all existing facts into the engine
-                        attributeInfos.forEach(assetState -> engine.updateOrInsertAttributeInfo(assetState, true));
+                        attributeEvents.forEach(assetState -> engine.updateOrInsertAttributeInfo(assetState, true));
                     }
                 }
 
@@ -596,8 +600,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
                 if (isNewEngine) {
                     // Push all existing facts into the engine
-                    synchronized (attributeInfos) {
-                        attributeInfos.forEach(assetState -> {
+                    synchronized (attributeEvents) {
+                        attributeEvents.forEach(assetState -> {
                             if (assetState.getRealm().equals(((RealmRuleset) ruleset).getRealm())) {
                                 engine.updateOrInsertAttributeInfo(assetState, true);
                             }
@@ -793,42 +797,60 @@ public class RulesService extends RouteBuilder implements ContainerService {
         }
     }
 
-    protected void updateAttributeInfo(AttributeInfo attributeInfo) {
-        LOG.finest("Updating attribute info: " + attributeInfo);
-
+    protected void removeAttributeEvents(AttributeInfo event) {
         // Get the chain of rule engines that we need to pass through
-        List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeInfo.getRealm(), attributeInfo.getPath());
+        List<RulesEngine<?>> rulesEngines = getEnginesInScope(event.getRealm(), event.getPath());
 
-        synchronized (attributeInfos) {
+        // Remove all from each engine
+        for (RulesEngine<?> rulesEngine : rulesEngines) {
+            rulesEngine.removeAttributeEvents(event.getRef());
+        }
+    }
+
+    protected void updateAttributeEvent(AttributeEvent attributeEvent) {
+        LOG.finest("Updating attribute event: " + attributeEvent);
+
+        synchronized (attributeEvents) {
+            boolean isNewer = attributeEvents.stream().filter(event -> event.getRef().equals(attributeEvent.getRef())).findFirst()
+                .map(existingEvent -> existingEvent.getTimestamp() < attributeEvent.getTimestamp()).orElse(true);
+
+            if (!isNewer) {
+                // Attribute event is older than the state already loaded
+                return;
+            }
+
+            // Get the chain of rule engines that we need to pass through
+            List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeEvent.getRealm(), attributeEvent.getPath());
+
             // Remove asset state with same attribute ref as new state, add new state
-            boolean inserted = !attributeInfos.remove(attributeInfo);
-            attributeInfos.add(attributeInfo);
+            boolean inserted = !attributeEvents.remove(attributeEvent);
+            attributeEvents.add(attributeEvent);
 
             // Pass through each rules engine
             for (RulesEngine<?> rulesEngine : rulesEngines) {
-                rulesEngine.updateOrInsertAttributeInfo(attributeInfo, inserted);
+                rulesEngine.updateOrInsertAttributeInfo(attributeEvent, inserted);
             }
         }
     }
 
-    protected void retractAssetState(AttributeInfo assetState) {
+    protected void retractAttributeEvent(AttributeEvent attributeEvent) {
         // Get the chain of rule engines that we need to pass through
-        List<RulesEngine<?>> rulesEngines = getEnginesInScope(assetState.getRealm(), assetState.getPath());
+        List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeEvent.getRealm(), attributeEvent.getPath());
 
-        synchronized (attributeInfos) {
+        synchronized (attributeEvents) {
             // Remove asset state with same attribute ref
-            attributeInfos.remove(assetState);
+            attributeEvents.remove(attributeEvent);
 
             // Pass through each rules engine
             for (RulesEngine<?> rulesEngine : rulesEngines) {
-                rulesEngine.removeAssetState(assetState);
+                rulesEngine.removeAttributeInfo(attributeEvent);
             }
         }
     }
 
     protected List<AttributeInfo> getAssetStatesInScope(String assetId) {
-        synchronized (attributeInfos) {
-            return attributeInfos
+        synchronized (attributeEvents) {
+            return attributeEvents
                 .stream()
                 .filter(assetState -> Arrays.asList(assetState.getPath()).contains(assetId))
                 .collect(Collectors.toList());

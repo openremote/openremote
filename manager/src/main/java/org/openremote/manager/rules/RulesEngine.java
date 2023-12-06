@@ -41,6 +41,7 @@ import org.openremote.manager.webhook.WebhookService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
@@ -528,21 +529,21 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void updateOrInsertAttributeInfo(AttributeInfo assetState, boolean insert) {
-        facts.putAssetState(assetState);
+    public synchronized void updateOrInsertAttributeInfo(AttributeInfo attributeInfo, boolean insert) {
+        facts.putAssetState(attributeInfo);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-        trackLocationPredicates(trackLocationPredicates || (insert && assetState.getName().equals(Asset.LOCATION.getName())));
-        notifyAssetStatesChanged(new AssetStateChangeEvent(insert ? PersistenceEvent.Cause.CREATE : PersistenceEvent.Cause.UPDATE, assetState));
+        trackLocationPredicates(trackLocationPredicates || (insert && attributeInfo.getName().equals(Asset.LOCATION.getName())));
+        notifyAssetStatesChanged(new AssetStateChangeEvent(insert ? PersistenceEvent.Cause.CREATE : PersistenceEvent.Cause.UPDATE, attributeInfo));
         if (running) {
             scheduleFire(true);
         }
     }
 
-    public synchronized void removeAssetState(AttributeInfo assetState) {
-        facts.removeAssetState(assetState);
+    public synchronized void removeAttributeInfo(AttributeInfo attributeInfo) {
+        facts.removeAssetState(attributeInfo);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-        trackLocationPredicates(trackLocationPredicates || assetState.getName().equals(Asset.LOCATION.getName()));
-        notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, assetState));
+        trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+        notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
         if (running) {
             scheduleFire(true);
         }
@@ -553,6 +554,10 @@ public class RulesEngine<T extends Ruleset> {
         if (running) {
             scheduleFire(true);
         }
+    }
+
+    public synchronized void removeAttributeEvents(AttributeRef attributeRef) {
+        facts.removeAttributeEvents(attributeRef);
     }
 
     protected void updateDeploymentInfo() {

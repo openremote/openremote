@@ -49,8 +49,6 @@ import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -628,8 +626,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Merging asset: " + asset);
         }
-
-
 
         return persistenceService.doReturningTransaction(em -> {
 
@@ -1388,17 +1384,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
                 );
-            }
 
-//                // Raise attribute event for each attribute
-//                asset.getAttributes().forEach(newAttribute ->
-//                    clientEventService.publishEvent(
-//                        new AttributeEvent(asset.getId(),
-//                            newAttribute.getName(),
-//                            newAttribute.getValue().orElse(null),
-//                            newAttribute.getTimestamp().orElse(timerService.getCurrentTimeMillis()))
-//                            .setParentId(asset.getParentId()).setRealm(asset.getRealm())
-//                    ));
+                // Raise attribute event for each created attribute
+                asset.getAttributes().forEach(newAttribute ->
+                    clientEventService.publishEvent(
+                        new AttributeEvent(
+                            asset,
+                            newAttribute,
+                            getClass().getName(),
+                            newAttribute.getValue().orElse(null),
+                            newAttribute.getTimestamp().orElse(0L),
+                            newAttribute.getValue().orElse(null),
+                            newAttribute.getTimestamp().orElse(0L))
+                    ));
+            }
             case UPDATE -> {
                 boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
 
@@ -1431,7 +1430,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             ))
                         .forEach(obsoleteAttribute ->
                             clientEventService.publishEvent(
-                                new AttributeEvent(new AttributeRef(asset.getId(), obsoleteAttribute.getName()), obsoleteAttribute.getValue().orElse(null), timerService.getCurrentTimeMillis())
+                                new AttributeEvent(asset, obsoleteAttribute, getClass().getName(), null, timerService.getCurrentTimeMillis(), null, 0L)
                                     .setDeleted(true)
                             ));
 
@@ -1466,7 +1465,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 AttributeMap deletedAttributes = asset.getAttributes();
                 deletedAttributes.forEach(obsoleteAttribute ->
                     clientEventService.publishEvent(
-                        new AttributeEvent(new AttributeRef(asset.getId(), obsoleteAttribute.getName()), obsoleteAttribute.getValue().orElse(null), timerService.getCurrentTimeMillis())
+                        new AttributeEvent(asset, obsoleteAttribute, getClass().getName(), null, timerService.getCurrentTimeMillis(), null, 0L)
                             .setDeleted(true)
                     ));
             }
