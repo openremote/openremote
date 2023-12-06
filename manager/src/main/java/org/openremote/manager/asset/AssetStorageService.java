@@ -50,7 +50,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.shared.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;

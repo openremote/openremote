@@ -7,7 +7,7 @@ import org.hibernate.validator.constraintvalidation.HibernateConstraintValidator
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorInitializationContext;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.event.shared.AttributeInfo;
+import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;

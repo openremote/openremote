@@ -24,13 +24,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.event.shared.AssetInfo;
-import org.openremote.model.event.shared.AttributeInfo;
+import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AttributeInfoValid;
 import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.time.Instant;
@@ -43,7 +41,7 @@ import java.util.Optional;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 @AttributeInfoValid
-public class AttributeEvent extends SharedEvent implements Comparable<AttributeEvent>, AttributeInfo {
+public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     protected AttributeRef ref;
     protected Object value;
@@ -274,7 +272,7 @@ public class AttributeEvent extends SharedEvent implements Comparable<AttributeE
     }
 
     @Override
-    public int compareTo(AttributeEvent that) {
+    public int compareTo(AttributeInfo that) {
         int result = getId().compareTo(that.getId());
         if (result == 0)
             result = getName().compareTo(that.getName());

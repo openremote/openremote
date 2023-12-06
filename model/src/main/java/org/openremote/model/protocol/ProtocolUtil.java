@@ -24,7 +24,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.event.shared.AttributeInfo;
+import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;

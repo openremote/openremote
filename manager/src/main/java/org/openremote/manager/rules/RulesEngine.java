@@ -40,6 +40,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.webhook.WebhookService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
@@ -58,13 +59,13 @@ import static org.openremote.model.rules.RulesetStatus.*;
 public class RulesEngine<T extends Ruleset> {
 
     /**
-     * Allows rule deployments to track changes to the {@link AssetState}s in scope
+     * Allows rule deployments to track changes to the {@link AttributeInfo}s in scope
      */
     public static final class AssetStateChangeEvent {
         public PersistenceEvent.Cause cause;
-        public AssetState<?> assetState;
+        public AttributeInfo assetState;
 
-        public AssetStateChangeEvent(PersistenceEvent.Cause cause, AssetState<?> assetState) {
+        public AssetStateChangeEvent(PersistenceEvent.Cause cause, AttributeInfo assetState) {
             this.cause = cause;
             this.assetState = assetState;
         }
@@ -210,14 +211,14 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * @return a shallow copy of the asset state facts.
      */
-    public synchronized Set<AssetState<?>> getAssetStates() {
+    public synchronized Set<AttributeInfo> getAssetStates() {
         return new HashSet<>(facts.getAssetStates());
     }
 
     /**
      * @return a shallow copy of the asset event facts.
      */
-    public synchronized List<TemporaryFact<AssetState<?>>> getAssetEvents() {
+    public synchronized List<TemporaryFact<AttributeInfo>> getAssetEvents() {
         return new ArrayList<>(facts.getAssetEvents());
     }
 
@@ -527,7 +528,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void updateOrInsertAssetState(AssetState<?> assetState, boolean insert) {
+    public synchronized void updateOrInsertAttributeInfo(AttributeInfo assetState, boolean insert) {
         facts.putAssetState(assetState);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
         trackLocationPredicates(trackLocationPredicates || (insert && assetState.getName().equals(Asset.LOCATION.getName())));
@@ -537,7 +538,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void removeAssetState(AssetState<?> assetState) {
+    public synchronized void removeAssetState(AttributeInfo assetState) {
         facts.removeAssetState(assetState);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
         trackLocationPredicates(trackLocationPredicates || assetState.getName().equals(Asset.LOCATION.getName()));
@@ -547,8 +548,8 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void insertAssetEvent(long expiresMillis, AssetState<?> assetState) {
-        facts.insertAssetEvent(expiresMillis, assetState);
+    public synchronized void insertAttributeEvent(long expiresMillis, AttributeInfo attributeInfo) {
+        facts.insertAttributeEvent(expiresMillis, attributeInfo);
         if (running) {
             scheduleFire(true);
         }
@@ -563,8 +564,8 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected synchronized void printSessionStats() {
-        Collection<AssetState<?>> assetStateFacts = facts.getAssetStates();
-        Collection<TemporaryFact<AssetState<?>>> assetEventFacts = facts.getAssetEvents();
+        Collection<AttributeInfo> assetStateFacts = facts.getAssetStates();
+        Collection<TemporaryFact<AttributeInfo>> assetEventFacts = facts.getAssetEvents();
         Map<String, Object> namedFacts = facts.getNamedFacts();
         Collection<Object> anonFacts = facts.getAnonymousFacts();
         long temporaryFactsCount = facts.getTemporaryFacts().count();

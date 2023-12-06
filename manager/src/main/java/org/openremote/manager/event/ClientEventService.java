@@ -59,8 +59,6 @@ import static java.lang.System.Logger.Level.*;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
-import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.

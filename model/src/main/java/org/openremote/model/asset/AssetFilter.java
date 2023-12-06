@@ -20,7 +20,6 @@
 package org.openremote.model.asset;
 
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;

@@ -29,7 +29,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.shared.AttributeInfo;
+import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.RealmPredicate;
