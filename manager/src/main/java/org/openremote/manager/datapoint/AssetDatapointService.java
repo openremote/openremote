@@ -6,11 +6,13 @@ import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
@@ -18,6 +20,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 
 import jakarta.persistence.EntityManager;
@@ -72,7 +75,6 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             )
         );
 
-        AssetProcessingService assetProcessingService = container.getService(AssetProcessingService.class);
         maxDatapointAgeDays = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
 
         if (maxDatapointAgeDays <= 0) {
@@ -99,21 +101,21 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                 Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
             );
         }
+
+        ClientEventService clientEventService = container.getService(ClientEventService.class);
+        clientEventService.addInternalSubscription(AttributeEvent.class, null, this::onAttributeEvent);
     }
 
-    public static boolean attributeIsStoreDatapoint(Attribute<?> attribute) {
-        return attribute.getMetaValue(STORE_DATA_POINTS).orElse(attribute.hasMeta(MetaItemType.AGENT_LINK));
+    public static boolean attributeIsStoreDatapoint(MetaHolder attributeInfo) {
+        return attributeInfo.getMetaValue(STORE_DATA_POINTS).orElse(attributeInfo.hasMeta(MetaItemType.AGENT_LINK));
     }
 
-    public void onAttributeEvent(EntityManager em,
-                             Asset<?> asset,
-                             Attribute<?> attribute) throws AssetProcessingException {
-
-        if (attributeIsStoreDatapoint(attribute) && attribute.getValue().isPresent()) { // Don't store datapoints with null value
+    public void onAttributeEvent(AttributeEvent attributeEvent) {
+        if (attributeIsStoreDatapoint(attributeEvent) && attributeEvent.getValue().isPresent()) { // Don't store datapoints with null value
             try {
-                upsertValueWithEM(em, asset.getId(), attribute.getName(), attribute.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis)), ZoneId.systemDefault()));
+                upsertValue(attributeEvent.getId(), attributeEvent.getName(), attributeEvent.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(attributeEvent.getTimestamp()), ZoneId.systemDefault()));
             } catch (Exception e) {
-                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attribute, e);
+                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attributeEvent, e);
             }
         }
     }

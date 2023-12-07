@@ -163,11 +163,11 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     @Override
     protected void doLinkedAttributeWrite(X agentLink, AttributeEvent event, Object processedValue) {
 
-        if (client == null || attribute == null) {
+        if (client == null) {
             return;
         }
 
-        V message = createWriteMessage(attribute, agent.getAgentLink(attribute), event, processedValue);
+        V message = createWriteMessage(agent.getAgentLink(event), event, processedValue);
 
         if (message == null) {
             LOG.fine("No message produced for attribute event so not sending to IO client '" + client.getClientUri() + "': " + event);
@@ -211,5 +211,5 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     /**
      * Generate the actual message to send to the {@link IOClient} for this {@link AttributeEvent}
      */
-    protected abstract V createWriteMessage(Attribute<?> attribute, X agentLink, AttributeEvent event, Object processedValue);
+    protected abstract V createWriteMessage(X agentLink, AttributeEvent event, Object processedValue);
 }

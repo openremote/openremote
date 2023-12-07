@@ -21,7 +21,6 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
@@ -31,7 +30,6 @@ import org.openremote.model.validation.AttributeInfoValid;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
-import java.time.Instant;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
@@ -45,7 +43,6 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     protected AttributeRef ref;
     protected Object value;
-    protected long timestamp;
     protected boolean deleted;
     @JsonIgnore
     protected Object source;
@@ -85,11 +82,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     public AttributeEvent(AttributeState attributeState) {
-        this(attributeState.getRef(), attributeState.getValue());
+        this(attributeState.getRef(), attributeState.getValue().orElse(null));
     }
 
     public AttributeEvent(AttributeState attributeState, long timestamp) {
-        this(attributeState.getRef(), attributeState.getValue(), timestamp);
+        this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp);
     }
 
     public AttributeEvent(AttributeRef attributeRef, Object value) {
@@ -165,9 +162,8 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return this;
     }
 
-    @JsonProperty
     public boolean isOutdated() {
-        return oldValueTimestamp - timestamp > 0;
+        return oldValueTimestamp - getTimestamp() > 0;
     }
 
     @Override
@@ -210,6 +206,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return createdOn;
     }
 
+    @JsonIgnore
     @Override
     public ValueDescriptor getType() {
         return valueType;
@@ -235,11 +232,13 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return ValueUtil.getValueCoerced(value, valueType);
     }
 
+    @JsonIgnore
     @Override
     public MetaMap getMeta() {
         return meta;
     }
 
+    @JsonIgnore
     @Override
     public String getName() {
         return ref.getName();
@@ -302,7 +301,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     public String toString() {
         String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
-            "timestamp=" + Instant.ofEpochMilli(timestamp) +
+            "timestamp=" + timestamp.toInstant() +
             ", ref=" + ref +
             ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             "}";

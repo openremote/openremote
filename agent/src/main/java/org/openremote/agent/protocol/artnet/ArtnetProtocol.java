@@ -129,7 +129,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
     }
 
     @Override
-    protected ArtnetPacket createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected ArtnetPacket createWriteMessage(DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 //        // TODO check for group later here
 //        AttributeRef attributeRef = event.getAttributeRef();
 //

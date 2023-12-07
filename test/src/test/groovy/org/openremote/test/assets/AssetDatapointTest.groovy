@@ -116,7 +116,8 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         expect: "the datapoints to be stored"
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
-            assert datapoints.size() == 5
+            // Can include initial value when container is re-used between tests
+            assert datapoints.count {it.value > 13} == 5
 
             // Note that the "No value" sensor update should not have created a datapoint, the first
             // datapoint is the last sensor update with an actual value

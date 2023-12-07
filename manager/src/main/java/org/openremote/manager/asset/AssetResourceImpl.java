@@ -54,7 +54,7 @@ import java.util.stream.IntStream;
 
 import static jakarta.ws.rs.core.Response.Status.*;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
-import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
+import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.value.MetaItemType.*;
 
@@ -558,10 +558,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 LOG.fine("Write attribute value request: " + event);
             }
 
-            // Process synchronously
+            // Process synchronously - need to directly use the ATTRIBUTE_EVENT_QUEUE as the client inbound queue
+            // has multiple consumers and so doesn't support In/Out MEP
             Object result = messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
-                .withHeader(AttributeEvent.HEADER_SOURCE, CLIENT)
                 .to(ATTRIBUTE_EVENT_QUEUE)
                 .request();
 

@@ -115,7 +115,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected String createWriteMessage(WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
         return ValueUtil.convert(processedValue, String.class);
     }
 

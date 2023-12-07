@@ -31,18 +31,18 @@ public interface MetaHolder {
     MetaMap getMeta();
 
     default <U> Optional<U> getMetaValue(MetaItemDescriptor<U> metaItemDescriptor) {
-        return getMeta().getValue(metaItemDescriptor);
+        return getMeta() != null ? getMeta().getValue(metaItemDescriptor) : Optional.empty();
     }
 
     default boolean hasMeta(MetaItemDescriptor<?> metaItemDescriptor) {
-        return getMeta().has(metaItemDescriptor);
+        return getMeta() != null && getMeta().has(metaItemDescriptor);
     }
 
     default boolean hasMeta(String metaItemName) {
-        return getMeta().has(metaItemName);
+        return getMeta() != null && getMeta().has(metaItemName);
     }
 
     default <U> Optional<MetaItem<U>> getMetaItem(MetaItemDescriptor<U> metaItemDescriptor) {
-        return getMeta().get(metaItemDescriptor);
+        return getMeta() != null ? getMeta().get(metaItemDescriptor) : Optional.empty();
     }
 }

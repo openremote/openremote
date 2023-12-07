@@ -57,18 +57,12 @@ public class AttributeLinkingService implements ContainerService {
     protected GatewayService gatewayService;
 
     @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         agentService = container.getService(AgentService.class);
         gatewayService = container.getService(GatewayService.class);
         ClientEventService clientEventService = container.getService(ClientEventService.class);
-
         clientEventService.addInternalSubscription(AttributeEvent.class, null, this::onAttributeEvent);
     }
 

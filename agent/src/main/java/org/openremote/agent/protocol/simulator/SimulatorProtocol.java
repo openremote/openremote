@@ -108,7 +108,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     @Override
     protected void doLinkedAttributeWrite(SimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
         if (replayMap.containsKey(event.getRef())) {
-            LOG.info("Attempt to write to linked attribute that is configured for value replay so ignoring: " + attribute);
+            LOG.info("Attempt to write to linked attribute that is configured for value replay so ignoring: " + event.getRef());
             return;
         }
 
@@ -132,9 +132,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
      * Call this to simulate a sensor update using the specified timestamp
      */
     public void updateSensor(AttributeRef attributeRef, Object value, long timestamp) {
-        AttributeState state = new AttributeState(attributeRef, value);
-
-        updateLinkedAttribute(state, timestamp);
+        updateLinkedAttribute(new AttributeState(attributeRef, value), timestamp);
     }
 
     public Map<AttributeRef, ScheduledFuture<?>> getReplayMap() {

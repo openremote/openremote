@@ -40,6 +40,10 @@ public interface AttributeEventInterceptor {
         return DEFAULT_PRIORITY;
     }
 
+    default String getName() {
+        return getClass().getSimpleName();
+    }
+
     /**
      * @param em    The current session and transaction on the database, processors may use this to query additional
      *              data.

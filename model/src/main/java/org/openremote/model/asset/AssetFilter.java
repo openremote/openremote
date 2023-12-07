@@ -40,7 +40,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
     protected List<String> assetIds;
     protected List<String> assetTypes;
-    protected List<Class<? extends Asset<?>>> assetClasses;
+    protected List<Class<? extends Asset>> assetClasses;
     protected String realm;
     protected List<String> parentIds;
     protected List<String> path;
@@ -88,16 +88,16 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     }
 
     @SuppressWarnings("unchecked")
-    public Class<? extends Asset<?>>[] getAssetClasses() {
+    public Class<? extends Asset>[] getAssetClasses() {
         return assetClasses != null ? assetClasses.toArray(new Class[0]) : null;
     }
 
-    public AssetFilter<T> setAssetClasses(Class<? extends Asset<?>>... assetClasses) {
+    public AssetFilter<T> setAssetClasses(Class<? extends Asset>... assetClasses) {
         this.assetClasses = Arrays.asList(assetClasses);
         return this;
     }
 
-    public AssetFilter<T> setAssetClasses(List<Class<? extends Asset<?>>> assetClasses) {
+    public AssetFilter<T> setAssetClasses(List<Class<? extends Asset>> assetClasses) {
         this.assetClasses = assetClasses;
         return this;
     }

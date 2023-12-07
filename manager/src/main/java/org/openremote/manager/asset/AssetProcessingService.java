@@ -77,7 +77,6 @@ import static org.openremote.model.attribute.AttributeWriteFailure.*;
  * is not stored in a time series DB of historical data, otherwise the value is stored. Then allows the message to
  * continue if the commit was successful.
  */
-@SuppressWarnings("unchecked")
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
@@ -386,7 +385,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             Set<ConstraintViolation<AttributeEvent>> validationFailures = ValueUtil.validate(enrichedEvent);
 
             if (!validationFailures.isEmpty()) {
-                String msg = "Event processing failed value failed constraint validation: realm=" + event.getRealm() + ", attribute=" + event.getRef() + ", event value type=" + enrichedEvent.getValue().map(v -> v.getClass().getName()).orElse("null") + ", attribute value type=" + enrichedEvent.getTypeClass();
+                String msg = "Event processing failed value failed constraint validation: realm=" + enrichedEvent.getRealm() + ", attribute=" + enrichedEvent.getRef() + ", event value type=" + enrichedEvent.getValue().map(v -> v.getClass().getName()).orElse("null") + ", attribute value type=" + enrichedEvent.getTypeClass();
                 throw new AssetProcessingException(INVALID_VALUE, msg);
             }
 
@@ -407,7 +406,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             for (AttributeEventInterceptor interceptor : eventInterceptors) {
                 try {
-                    intercepted = interceptor.intercept(em, event);
+                    intercepted = interceptor.intercept(em, enrichedEvent);
                 } catch (AssetProcessingException ex) {
                     throw new AssetProcessingException(ex.getReason(), "Interceptor '" + interceptor + "' error=" + ex.getMessage());
                 } catch (Throwable t) {
@@ -418,7 +417,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     );
                 }
                 if (intercepted) {
-                    interceptorName = interceptor.toString();
+                    interceptorName = interceptor.getName();
                     break;
                 }
             }

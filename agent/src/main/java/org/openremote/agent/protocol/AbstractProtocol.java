@@ -20,7 +20,6 @@
 package org.openremote.agent.protocol;
 
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
@@ -79,39 +78,8 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         predictedDatapointService = container.getService(ProtocolPredictedDatapointService.class);
         datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
-
-        try {
-            messageBrokerContext.addRoutes(new RouteBuilder() {
-                @Override
-                public void configure() throws Exception {
-                    from(ACTUATOR_TOPIC)
-                        .routeId("ProtocolInbound-" + getProtocolName() + getAgent().getId())
-                        .process(exchange -> {
-                            final Protocol<?> protocolInstance = exchange.getIn().getHeader(ACTUATOR_TOPIC_TARGET_PROTOCOL, Protocol.class);
-                            if (protocolInstance != AbstractProtocol.this) {
-                                return;
-                            }
-                            synchronized (this) {
-                                AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-                                Attribute<?> linkedAttribute = getLinkedAttributes().get(event.getRef());
-
-                                if (linkedAttribute == null) {
-                                    LOG.log(System.Logger.Level.INFO, () -> "Attempt to write to attribute that is not actually linked to this protocol '" + AbstractProtocol.this + "': " + event);
-                                    return;
-                                }
-
-                                processLinkedAttributeWrite(event);
-                            }
-                        });
-                }
-            });
-
-            doStart(container);
-
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
         this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
+        doStart(container);
     }
 
     @Override
@@ -173,6 +141,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         return linkedAttributes;
     }
 
+    @Override
     public void processLinkedAttributeWrite(AttributeEvent event) {
         synchronized (processorLock) {
             LOG.log(System.Logger.Level.TRACE, () -> "Processing linked attribute write on protocol '" + this + "': " + event);

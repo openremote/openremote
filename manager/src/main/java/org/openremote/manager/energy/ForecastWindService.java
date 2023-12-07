@@ -1,11 +1,11 @@
 package org.openremote.manager.energy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.ws.rs.core.Response;
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
@@ -14,13 +14,13 @@ import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -213,7 +213,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         }
 
         if (attributeEvent.getName().equals(ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.getName())) {
-            boolean enabled = attributeEvent.<Boolean>getValue().orElse(false);
+            boolean enabled = (Boolean)attributeEvent.getValue().orElse(false);
             if (enabled && calculationFutures.containsKey(attributeEvent.getId())) {
                 // Nothing to do here
                 return;

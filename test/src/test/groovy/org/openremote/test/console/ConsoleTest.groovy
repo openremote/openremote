@@ -3,7 +3,6 @@ package org.openremote.test.console
 
 import com.google.firebase.messaging.Message
 import jakarta.ws.rs.WebApplicationException
-import net.sf.saxon.s9api.push.Push
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService

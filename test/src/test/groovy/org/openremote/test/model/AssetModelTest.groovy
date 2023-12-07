@@ -8,6 +8,7 @@ import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.timer.TimerService
+import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
@@ -19,10 +20,10 @@ import org.openremote.model.asset.impl.GroupAsset
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeMap
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.geo.GeoJSONPoint
-import org.openremote.model.rules.AssetState
 import org.openremote.model.util.TimeUtil
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.*
@@ -482,6 +483,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     def "Serialize/Deserialize asset model"() {
         given: "An asset"
         def asset = new LightAsset("Test light")
+            .setId(UniqueIdentifierGenerator.generateId())
             .setRealm(MASTER_REALM)
             .setTemperature(100I)
             .setColourRGB(new ColourRGB(50, 100, 200))
@@ -548,14 +550,18 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         clonedAttribute.getValue().orElse(null) == attribute.getValue().orElse(null)
         clonedAttribute.getMeta() == attribute.getMeta()
 
-        when: "an asset state is serialized"
-        def assetState = new AssetState(asset2, attribute, null)
-        def assetStateStr = ValueUtil.asJSON(assetState).orElse(null)
+        when: "an attribute event is serialized"
+        def attributeEvent = new AttributeEvent(asset2, attribute, "Test", attribute.getValue().orElse(null), attribute.getTimestamp().orElse(0L), null, 0L).setDeleted(true)
+        def attributeEventStr = ValueUtil.asJSON(attributeEvent).orElse(null)
 
         then: "it should look as expected"
-        def assetStateObjectNode = ValueUtil.parse(assetStateStr, ObjectNode.class).get()
+        def assetStateObjectNode = ValueUtil.parse(attributeEventStr, ObjectNode.class).get()
         assetStateObjectNode.get("name").asText() == LightAsset.COLOUR_RGB.name
         assetStateObjectNode.get("value").isTextual()
         assetStateObjectNode.get("value").asText() == "#3264C8"
+        assetStateObjectNode.get("deleted").asBoolean()
+        !assetStateObjectNode.has("source")
+        !assetStateObjectNode.has("realm")
+        !assetStateObjectNode.has("meta")
     }
 }

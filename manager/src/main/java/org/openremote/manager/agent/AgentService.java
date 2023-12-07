@@ -91,6 +91,13 @@ public class AgentService extends RouteBuilder implements ContainerService {
         public AgentSourceRef(String id, String name) {
             super(id, name);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof AttributeRef that)) return false;
+            return id.equals(that.getId()) && name.equals(that.getName());
+        }
     }
 
     protected class AgentProtocolAssetService implements ProtocolAssetService {
@@ -166,7 +173,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 Protocol.LOG.warning("Protocol attempting to send attribute event to another realm: " + agent);
                 throw new IllegalArgumentException("Protocol attempting to send attribute event to another realm");
             }
-            AgentService.this.sendAttributeEvent(agent.getId(), attributeEvent);
+            AgentService.this.sendAttributeEvent(attributeEvent);
         }
 
         @Override
@@ -235,7 +242,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
         assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
 
-        clientEventService.addInternalSubscription(AttributeEvent.class, new AssetFilter<AttributeEvent>().setAssetClasses(Collections.singletonList((Class<? extends Asset<?>>) Agent.class)), this::onAgentAttributeEvent);
+        clientEventService.addInternalSubscription(AttributeEvent.class, new AssetFilter<AttributeEvent>().setAssetClasses(Collections.singletonList(Agent.class)), this::onAgentAttributeEvent);
 
         initDone = true;
     }
@@ -392,7 +399,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         }
     }
 
-    protected void sendAttributeEvent(String agentId, AttributeEvent event) {
+    protected void sendAttributeEvent(AttributeEvent event) {
         // Set the source so we can ignore the intercept when the event comes back through the chain
         assetProcessingService.sendAttributeEvent(event, new AgentSourceRef(event.getId(), event.getName()));
     }
@@ -401,7 +408,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         boolean isDisabled = agent.isDisabled().orElse(false);
         if (isDisabled) {
             LOG.fine("Agent is disabled so not starting: " + agent);
-            sendAttributeEvent(agent.getId(), new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
+            sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
         } else {
             executorService.execute(() -> this.startAgent(agent));
         }
@@ -454,7 +461,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 }
                 protocolInstanceMap.remove(agent.getId());
                 LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
-                sendAttributeEvent(agent.getId(), new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
+                sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
             }
         }
     }
@@ -560,8 +567,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 LOG.finest("Attribute event for agent linked attribute: agent=" + agentLink.getId() + ", ref=" + event.getRef());
 
                 if (event.isOutdated()) {
-                    throw new AssetProcessingException(AttributeWriteFailure.OUT)
-                    // Don't process outdated events but intercept them
+                    // Don't process outdated events but still intercept them
                     return true;
                 }
 

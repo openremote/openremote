@@ -263,19 +263,14 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         });
 
         // Create internal producer for producing messages
-        try (ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0")) {
-            ClientSessionFactory factory = serverLocator.createSessionFactory();
-            String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
-            internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
-            internalSession.setSendAcknowledgementHandler(message -> {
-                // Don't need to do anything here but it should improve performance
-                // https://activemq.apache.org/components/artemis/documentation/latest/core.html#clientsession
-            });
-            internalSession.addMetaData(ClientSession.JMS_SESSION_IDENTIFIER_PROPERTY, "Internal session");
-            ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
-            serverSession.disableSecurity();
-            internalSession.start();
-        }
+        ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0");
+        ClientSessionFactory factory = serverLocator.createSessionFactory();
+        String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
+        internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
+        internalSession.addMetaData(ClientSession.JMS_SESSION_IDENTIFIER_PROPERTY, "Internal session");
+        ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
+        serverSession.disableSecurity();
+        internalSession.start();
 
         // Create producer
         producer = internalSession.createProducer();

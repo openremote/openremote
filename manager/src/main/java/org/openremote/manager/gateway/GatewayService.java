@@ -51,6 +51,7 @@ import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.MetaItemType;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -332,7 +333,10 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
 
         // If the event came from a gateway then we don't want to process it here
-        if (getGatewaySource().equals(event.getSource())) {
+        if (getClass().getName().equals(event.getSource())) {
+
+            // Clear out agentlink meta so agent interceptor doesn't try intercepting the event
+            event.getMeta().remove(MetaItemType.AGENT_LINK);
             return false;
         }
 
@@ -420,10 +424,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
         // Don't consume event for non gateway descendant assets
         return false;
-    }
-
-    protected String getGatewaySource() {
-        return getClass().getName();
     }
 
     public <T extends Asset<?>> T mergeGatewayAsset(String gatewayId, T asset) {
