@@ -562,7 +562,7 @@ export class OrDashboardPreview extends LitElement {
                                                              this.onGridItemClick(widget.gridItem);
                                                          }}">
                                                         <div class="grid-stack-item-content" style="display: flex;">
-                                                            <or-dashboard-widget-container .widget="${widget}" style="width: 100%; height: auto; border-radius: 4px;"></or-dashboard-widget-container>
+                                                            <or-dashboard-widget-container .widget="${widget}" .editMode="${this.editMode}" style="width: 100%; height: auto; border-radius: 4px;"></or-dashboard-widget-container>
                                                         </div>
                                                     </div>
                                                 `

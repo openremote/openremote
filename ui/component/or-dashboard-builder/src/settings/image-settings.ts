@@ -79,7 +79,7 @@ export class ImageSettings extends AssetWidgetSettings {
     }
 
     protected onAttributesSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.attributeRefs = ev.detail as AttributeRef[];
+        this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
         this.notifyConfigUpdate();
     }
 

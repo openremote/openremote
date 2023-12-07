@@ -19,15 +19,16 @@ export interface AttributeAction {
     disabled: boolean
 }
 
-export class AttributeActionEvent extends CustomEvent<{ attributeRef: AttributeRef, action: AttributeAction }> {
+export class AttributeActionEvent extends CustomEvent<{ asset: Asset, attributeRef: AttributeRef, action: AttributeAction }> {
 
     public static readonly NAME = "attribute-action"
 
-    constructor(attributeRef: AttributeRef, action: AttributeAction) {
+    constructor(asset: Asset, attributeRef: AttributeRef, action: AttributeAction) {
         super(AttributeActionEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: {
+                asset: asset,
                 attributeRef: attributeRef,
                 action: action
             }
@@ -35,15 +36,18 @@ export class AttributeActionEvent extends CustomEvent<{ attributeRef: AttributeR
     }
 }
 
-export class AttributesSelectEvent extends CustomEvent<AttributeRef[]> {
+export class AttributesSelectEvent extends CustomEvent<{ assets: Asset[], attributeRefs: AttributeRef[] }> {
 
     public static readonly NAME = "attribute-select";
 
-    constructor(attributeRefs: AttributeRef[]) {
+    constructor(assets: Asset[], attributeRefs: AttributeRef[]) {
         super(AttributesSelectEvent.NAME, {
             bubbles: true,
             composed: true,
-            detail: attributeRefs
+            detail: {
+                assets: assets,
+                attributeRefs: attributeRefs
+            }
         });
     }
 }
@@ -166,13 +170,14 @@ export class AttributesPanel extends LitElement {
             this.attributeRefs = [];
         }
         if (changedProps.has("attributeRefs") && this.attributeRefs) {
-            if(this.attributeRefs.filter(ar => !this.getLoadedAsset(ar)).length > 0) {
-                this.loadAssets(this.attributeRefs);
-            }
-            // Only dispatch event when it CHANGED, so not from 'undefined' to [];
-            if(changedProps.get("attributeRefs")) {
-                this.dispatchEvent(new AttributesSelectEvent(this.attributeRefs))
-            }
+            this.loadAssets().then((assets) => {
+
+                // Only dispatch event when it CHANGED, so not from 'undefined' to [];
+                if(changedProps.get("attributeRefs")) {
+                    this.dispatchEvent(new AttributesSelectEvent(assets, this.attributeRefs))
+                }
+
+            })
         }
     }
 
@@ -186,10 +191,14 @@ export class AttributesPanel extends LitElement {
         }
     }
 
-    protected loadAssets(attributeRefs: AttributeRef[]) {
-        this.fetchAssets(attributeRefs).then(assets => {
+    protected async loadAssets(): Promise<Asset[]> {
+        if(this.attributeRefs.filter(ar => !this.getLoadedAsset(ar)).length > 0) {
+            const assets = await this.fetchAssets(this.attributeRefs);
             this.loadedAssets = assets;
-        })
+            return assets;
+        } else {
+            return this.loadedAssets;
+        }
     }
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required.
@@ -211,8 +220,8 @@ export class AttributesPanel extends LitElement {
         return assets;
     }
 
-    protected onAttributeActionClick(attributeRef: AttributeRef, action: AttributeAction) {
-        this.dispatchEvent(new AttributeActionEvent(attributeRef, action));
+    protected onAttributeActionClick(asset: Asset, attributeRef: AttributeRef, action: AttributeAction) {
+        this.dispatchEvent(new AttributeActionEvent(asset, attributeRef, action));
     }
 
     protected openAttributeSelector(attributeRefs: AttributeRef[], multi: boolean, onlyDataAttrs = true, attributeFilter?: (attribute: Attribute<any>) => boolean) {
@@ -259,7 +268,7 @@ export class AttributesPanel extends LitElement {
                                                 <!-- Custom actions defined by callback -->
                                                 ${when(!!this.attributeActionCallback, () => {
                                                     return this.attributeActionCallback!(attributeRef).map((action) => html`
-                                                        <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(attributeRef, action)}">
+                                                        <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
                                                             <or-icon icon="${action.icon}"></or-icon>
                                                         </button>
                                                     `);
