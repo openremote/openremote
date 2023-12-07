@@ -654,15 +654,17 @@ export class OrChart extends translate(i18next)(LitElement) {
                                                 html`<or-mwc-input .type="${InputType.BUTTON}" .label="${this.timeframe ? i18next.t('Custom') : i18next.t(this.timePresetKey)}"></or-mwc-input>`,
                                                 Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                 this.timePresetKey,
-                                                (value: string | string[]) => { this.timeframe = undefined; this.timePresetKey = value.toString(); },
+                                                (value: string | string[]) => {
+                                                    this.timeframe = undefined; // remove any custom start & end times
+                                                    this.timePresetKey = value.toString();
+                                                },
                                                 undefined,
                                                 undefined,
                                                 undefined,
                                                 true
                                         )}
-                                        <div>
-                                            <or-mwc-input .type="${InputType.BUTTON}" icon="calendar-clock" @or-mwc-input-changed="${() => this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-mwc-input>
-                                        </div>
+                                        <!-- Button that opens custom time selection -->
+                                        <or-mwc-input .type="${InputType.BUTTON}" icon="calendar-clock" @or-mwc-input-changed="${() => this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-mwc-input>
                                     ` : html`
                                         <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}" disabled="true"></or-mwc-input>
                                     `}
@@ -673,13 +675,13 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     <table style="width: 100%;">
                                         <thead>
                                         <tr>
-                                            <th style="font-weight: normal; text-align: left;">${i18next.t('from')}: </th>
+                                            <th style="font-weight: normal; text-align: left;">${i18next.t('from')}:</th>
                                             <th style="font-weight: normal; text-align: left;">${moment(this.timeframe[0]).format("L HH:mm")}</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         <tr>
-                                            <td>${i18next.t('to')}: </td>
+                                            <td>${i18next.t('to')}:</td>
                                             <td>${moment(this.timeframe[1]).format("L HH:mm")}</td>
                                         </tr>
                                         </tbody>

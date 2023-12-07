@@ -61,7 +61,9 @@ export class TableWidget extends OrAssetWidget {
         return [...super.styles, styling];
     }
 
+    // TODO: Improve this to be more efficient
     refreshContent(force: boolean): void {
+        this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as TableWidgetConfig;
     }
 
     // Lit Lifecycle

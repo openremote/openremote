@@ -355,12 +355,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         [key: string]: UiAssetTreeNode[]
     } = {};
 
-    // TODO: Remove this after use for testing
-    protected willUpdate(changedProps: PropertyValues) {
-        console.log(changedProps);
-        return super.willUpdate(changedProps);
-    }
-
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
     }
@@ -810,6 +804,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 canSelect = this.config.select.types.indexOf(node.asset!.type!) >= 0;
             }
 
+            // If node cannot be selected, and it is not the 'select all of this parent'-checkbox, cancel it.
             if (!canSelect && !isParentCheckbox) {
                 return;
             }
@@ -837,6 +832,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     const childNodes: UiAssetTreeNode[] = [];
                     OrAssetTree._forEachNodeRecursive(node.children, (childNode) => {
                         let canSelectChild = true;
+                        // If not of required asset type, cancel selection of the child
                         if(childNode && this.config?.select?.types) {
                             canSelectChild = this.config.select.types.indexOf(childNode.asset!.type!) >= 0;
                         }

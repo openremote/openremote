@@ -161,21 +161,12 @@ export class AssettypesPanel extends LitElement {
                     };
                     return html`
                         <div>
-                            ${when(typeof this.attributeNames === 'string', () => html`
-                                <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("filter.attributeLabel")}" .disabled="${!this.assetType}" style="width: 100%;"
-                                              .options="${options}" .searchProvider="${searchProvider}" .value="${this.attributeNames as string}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                                  this.attributeNames = ev.detail.value;
-                                              }}"
-                                ></or-mwc-input>
-                            `, () => html`
-                                <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("filter.attributeLabel")}" .disabled="${!this.assetType}" style="width: 100%;"
-                                              .options="${options}" .searchProvider="${searchProvider}" multiple .value="${this.attributeNames}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                                  this.attributeNames = ev.detail.value;
-                                              }}"
-                                ></or-mwc-input>
-                            `)}
+                            <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("filter.attributeLabel")}" .disabled="${!this.assetType}" style="width: 100%;"
+                                          .options="${options}" .searchProvider="${searchProvider}" .multiple="${this.config.attributes?.multi}" .value="${this.attributeNames as string}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                              this.attributeNames = ev.detail.value;
+                                          }}"
+                            ></or-mwc-input>
                         </div>
                     `
 
@@ -254,7 +245,7 @@ export class AssettypesPanel extends LitElement {
         }
     }
 
-    protected _openAssetSelector(assetType: string, assetIds?: string[], multi = true) {
+    protected _openAssetSelector(assetType: string, assetIds?: string[], multi = false) {
         const assetTreeRef: Ref<OrAssetTree> = createRef();
         const config = {
             select: {

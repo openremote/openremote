@@ -110,7 +110,7 @@ export class OrDashboardWidgetContainer extends LitElement {
     }
 
     protected initializeWidgetElem(manifest: WidgetManifest, config: WidgetConfig) {
-        console.log(`Initialising ${manifest.displayName} widget..`);
+        console.debug(`Initialising ${manifest.displayName} widget..`);
         if (this.orWidget) {
             this.orWidget.remove();
         }

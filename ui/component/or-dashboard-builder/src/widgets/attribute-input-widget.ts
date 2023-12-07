@@ -73,8 +73,7 @@ export class AttributeInputWidget extends OrAssetWidget {
 
     // TODO: Improve this to be more efficient
     refreshContent(force: boolean): void {
-        console.log("refreshContent!");
-        /* this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as AttributeInputWidgetConfig; */
+        this.widgetConfig = JSON.parse(JSON.stringify(this.widgetConfig)) as AttributeInputWidgetConfig;
     }
 
     static get styles() {
@@ -97,6 +96,10 @@ export class AttributeInputWidget extends OrAssetWidget {
             }
         }
 
+        // Workaround for an issue with scalability of or-attribute-input when using 'display: flex'.
+        // The percentage slider doesn't scale properly, causing the dragging knob to glitch.
+        // Why? Because the Material Design element listens to a window resize, not a container resize.
+        // So we manually trigger this event when the attribute-input-widget changes in size.
         if(!this.resizeObserver && this.widgetWrapperElem) {
             this.resizeObserver = new ResizeObserver(throttle(() => {
                 window.dispatchEvent(new Event('resize'));
