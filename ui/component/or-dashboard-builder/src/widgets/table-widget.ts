@@ -93,13 +93,16 @@ export class TableWidget extends OrAssetWidget {
         const referenceAsset: Asset | undefined = this.loadedAssets[0];
         const attrColumns = attributeNames.map(attrName => {
             let text = attrName;
+            let numeric = false;
             if(this.widgetConfig.assetType && referenceAsset && referenceAsset.attributes && referenceAsset.attributes[attrName]) {
                 const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, this.widgetConfig.assetType);
                 text = Util.getAttributeLabel(referenceAsset.attributes[attrName], attributeDescriptor, this.widgetConfig.assetType, true);
+                numeric = attributeDescriptor?.format?.asNumber || attributeDescriptor?.format?.asSlider || false;
             }
             return {
                 title: text,
-                isSortable: true
+                isSortable: true,
+                isNumeric: numeric
             } as TableColumn;
         });
         return Array.of({ title: i18next.t('assetName'), isSortable: true }, ...attrColumns);

@@ -8,6 +8,7 @@ import {when} from 'lit/directives/when.js';
 import {DefaultColor3, DefaultColor2, DefaultColor1, manager} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "./or-mwc-input";
+import { styleMap } from "lit/directives/style-map.js";
 
 
 const dataTableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -94,6 +95,15 @@ const style = css`
     }
     
     .sort-button {
+        padding-right: 0;
+        border: none;
+        background-color: ${unsafeCSS(DefaultColor1)};
+        color: ${unsafeCSS(DefaultColor3)};
+        cursor: pointer;
+    }
+
+    .sort-button-reverse {
+        padding-left: 0;
         border: none;
         background-color: ${unsafeCSS(DefaultColor1)};
         color: ${unsafeCSS(DefaultColor3)};
@@ -101,6 +111,12 @@ const style = css`
     }
     
     .sortable {
+        flex-direction: row;
+        cursor: pointer;
+    }
+    
+    .sortable-reverse {
+        flex-direction: row-reverse;
         cursor: pointer;
     }
     
@@ -278,6 +294,7 @@ export class OrMwcTable extends LitElement {
         }
         // Only show pagination if enabled in config, and when "the amount of rows doesn't fit on the page".
         const showPagination = this.config.pagination && (!!this.rowsTemplate || (this.rows && (this.rows.length > this.paginationSize)));
+        const tableWidth = this.shadowRoot?.firstElementChild?.clientWidth;
         return html`
             <div class="${classMap(tableClasses)}">
                 <div class="mdc-data-table__table-container" style="flex: 1;">
@@ -288,6 +305,9 @@ export class OrMwcTable extends LitElement {
                                 <thead>
                                 <tr class="mdc-data-table__header-row">
                                     ${this.columns.map((column: TableColumn | string, index: number) => {
+                                        const styles = {
+                                            maxWidth: tableWidth ? `${tableWidth / (this.columns!.length / 2)}px` : undefined
+                                        } as any;
                                         if(index == 0 && this.config.multiSelect){
                                             return html` 
                                             <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
@@ -313,9 +333,10 @@ export class OrMwcTable extends LitElement {
                                                 'hide-mobile': !!column.hideMobile,
                                                 'mdc-data-table__header-cell--with-sort': !!column.isSortable,
                                             })}"
+                                                style="${styleMap(styles)}"
                                                 role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
                                                 @click="${(ev: MouseEvent) => !!column.isSortable ? this.sortRows(ev, index, this.sortDirection!) : ''}">
-                                                ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))}
+                                                ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!, !!column.isNumeric), html`${i18next.t('loading')}`))}
                                             </th>
                                         `
                                     })}
@@ -342,6 +363,9 @@ export class OrMwcTable extends LitElement {
                                             .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
                                             .map((item: TableRow | string[]) => {
                                                 const content: (string | number | TemplateResult)[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
+                                                const styles = {
+                                                    maxWidth: tableWidth ? `${tableWidth / (this.columns!.length / 2)}px` : undefined
+                                                } as any;
                                                 return html`
                                                     <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.onRowClick(ev, item)}">
                                                         ${content?.map((cell: string | number | TemplateResult, index: number) => {
@@ -363,7 +387,7 @@ export class OrMwcTable extends LitElement {
                                                                     </td> `
                                                             }
                                                             return html`
-                                                                <td class="${classMap(classes)}" title="${cell}">
+                                                                <td class="${classMap(classes)}" title="${cell}" style="${styleMap(styles)}">
                                                                     <span>${cell}</span>
                                                                 </td>
                                                             `
@@ -415,14 +439,14 @@ export class OrMwcTable extends LitElement {
     }
 
 
-    async getSortHeader(index: number, title: string, sortDirection: 'ASC' | 'DESC'): Promise<TemplateResult> {
-        this.sortIndex == -1 ? this.sortIndex = index : '';
+    async getSortHeader(index: number, title: string, sortDirection: 'ASC' | 'DESC', arrowOnLeft = false): Promise<TemplateResult> {
+        this.sortIndex === -1 ? this.sortIndex = index : '';
         return html`
-            <div class="mdc-data-table__header-cell-wrapper sortable" >
+            <div class="mdc-data-table__header-cell-wrapper ${arrowOnLeft ? 'sortable-reverse' : 'sortable'}">
                 <div class="mdc-data-table__header-cell-label">
                     ${title}
                 </div>
-                <button class="mdc-icon-button material-icons sort-button ${this.sortIndex === index ? '' : 'hidden'}"
+                <button class="mdc-icon-button material-icons ${arrowOnLeft ? 'sort-button-reverse' : 'sort-button'} ${this.sortIndex === index ? '' : 'hidden'}"
                         aria-label="Sort by ${title}" aria-describedby="${title}-status-label" aria-hidden="${!(this.sortIndex === index)}">
                     <or-icon icon="${ sortDirection == 'ASC' ? "arrow-up" : "arrow-down"}"></or-icon>
                 </button>
