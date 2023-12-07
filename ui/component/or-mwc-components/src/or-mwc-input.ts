@@ -49,6 +49,7 @@ import {
 } from "@openremote/model";
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
+import { styleMap } from "lit/directives/style-map.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -192,6 +193,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     let required: boolean | undefined;
     let selectOptions: [string, string][] | undefined;
     let valueConverter: (v: any) => any | undefined;
+    const styles = {} as any;
 
     const assetType = typeof assetDescriptor === "string" ? assetDescriptor : assetDescriptor.name;
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
@@ -387,6 +389,10 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         step = format.resolution;
     }
 
+    if (inputType === InputType.COLOUR) {
+        styles.marginLeft = "24px"
+    }
+
     const supportsHelperText = inputTypeSupportsHelperText(inputType);
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
@@ -401,7 +407,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
 
-        return html`<or-mwc-input ${ref(inputRef)} id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
+        return html`<or-mwc-input ${ref(inputRef)} id="input" style="${styleMap(styles)}" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
@@ -1271,7 +1277,7 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.COLOUR:
                     return html`
-                        <div id="component" style="width: 100%; display: inline-flex; align-items: center; padding: 8px 24px;">
+                        <div id="component" style="width: 100%; display: inline-flex; align-items: center; padding: 8px 0;">
                             <input type="color" id="elem" style="border: none; height: 31px; width: 31px; padding: 1px 3px; min-height: 22px; min-width: 30px;cursor: pointer" value="${this.value}"
                                    ?disabled="${this.disabled || this.readonly}"
                                    ?required="${this.required}"

@@ -266,7 +266,7 @@ export class AssettypesPanel extends LitElement {
             .setHeading(i18next.t("linkedAssets"))
             .setContent(html`
                 <div style="width: 400px;">
-                    <or-asset-tree ${ref(assetTreeRef)} .dataProvider="${this.assetTreeDataProvider}"
+                    <or-asset-tree ${ref(assetTreeRef)} .dataProvider="${this.assetTreeDataProvider}" expandAllNodes
                                    id="chart-asset-tree" readonly .config="${config}" .selectedIds="${assetIds}"
                                    .showSortBtn="${false}" .showFilter="${false}" .checkboxes="${multi}"
                     ></or-asset-tree>
