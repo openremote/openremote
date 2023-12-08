@@ -722,5 +722,26 @@
   "withInterval": "Met interval",
   "AVG": "Gemiddelde",
   "MIN": "Minimum",
-  "MAX": "Maximum"
+  "MAX": "Maximum",
+  "alarm": {
+    "": "Alarm",
+    "alarm_plural": "Alarmen",
+    "title": "Titel",
+    "content": "Inhoud",
+    "severity": "Ernstigheid",
+    "status": "Status",
+    "assignee": " Aangestelde gebruiker"
+  },
+  "anomalyDetection": {
+    "configuration": "Anomalie detectie configuratie",
+    "notEnoughDatapointsSaved": "Nog niet genoeg datapunten opgeslagen",
+    "noDatapointsSaved": "Nog geen datapunten opgeslagen",
+    "invalidConfiguration": "Ongeldig configuratie item",
+    "detectionMethod": "Detectie methode",
+    "noMethodsCreated": "Geen bestaande methodes",
+    "addMethod": "Voeg methode toe",
+    "deviation": "Afwijking",
+    "minimumDatapoints": "Minimum aantal datapunten",
+    "minimumTimespan": "Minimum tijdsduur"
+  }
 }

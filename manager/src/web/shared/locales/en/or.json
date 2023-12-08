@@ -752,5 +752,17 @@
     "assignee": "Assignee",
     "assignedToMe": "Assigned to me",
     "noData": "No alarms found."
+  },
+  "anomalyDetection": {
+    "configuration": "Anomaly detection configuration",
+    "notEnoughDatapointsSaved": "Not enough datapoints saved",
+    "noDatapointsSaved": "No datapoints saved",
+    "invalidConfiguration": "Invalid configuration",
+    "detectionMethod": "Detection method",
+    "noMethodsCreated": "No methods created",
+    "addMethod": "Add method",
+    "deviation": "Deviation",
+    "minimumDatapoints": "Minimum amount of datapoints",
+    "minimumTimespan": "Minimum timespan"
   }
 }

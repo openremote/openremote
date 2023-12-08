@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.asset;
 
+import com.google.api.gax.rpc.InvalidArgumentException;
+import jakarta.ws.rs.WebApplicationException;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
@@ -65,10 +67,6 @@ import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttribu
 import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 import static org.openremote.model.value.MetaItemType.*;
 
-/**
- * Calculates forecast values for asset attributes with an attached {@link MetaItemType#FORECAST}
- * configuration like {@link ForecastConfigurationWeightedExponentialAverage}.
- */
 public class AnomalyDetectionService extends RouteBuilder implements ContainerService, EventListener{
 
     private static final Logger LOG = Logger.getLogger(AnomalyDetectionService.class.getName());
@@ -196,10 +194,16 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         );
     }
 
+    /**
+     * Gets a list of datapoints over a timespan 5 times longer as the timespan in the anomalyDetectionConfiguration, calculates the limits for these points
+     * and returns these values in a list and makes a last list with the original values which fall outside these limits.<p><p/>
+     * Returns null if anomalyDetectionConfiguration is invalid<p>
+     * Returns empty list if no datapoints are saved yet<p>
+     * Returns just original datapoints if not enough datapoints are available to calculate limits<p>
+     */
     public ValueDatapoint<?>[][] getAnomalyDatapointLimits( String assetId, String attributeName, AnomalyDetectionConfiguration anomalyDetectionConfiguration) {
         ValueDatapoint<?>[][] vdaa = new ValueDatapoint<?>[0][0];
         DetectionMethod detectionMethod;
-        AnomalyDetectionConfiguration config;
         long timespan = 0;
         int minimumDatapoints = 0;
         if(anomalyDetectionConfiguration != null) {
@@ -215,11 +219,11 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     minimumDatapoints = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
                 }
                 default -> {
-                    return vdaa;
+                    return null;
                 }
             }
         }else{
-            return vdaa;
+            return null;
         }
             DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
             if(period.getLatest() == null)return vdaa;
@@ -233,7 +237,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     point.setValue(dp.getValue());
                     assetAnomalyDatapoints.add(point);
                 }
-                if(datapoints.length < minimumDatapoints) return vdaa;
+                if(datapoints.length < minimumDatapoints * 5) return new ValueDatapoint<?>[1][datapoints.length];
                 ValueDatapoint<?>[][] valueDatapoints = new ValueDatapoint[4][datapoints.length - minimumDatapoints+1];
                 List<ValueDatapoint<?>> anomalyDatapoints = new ArrayList<>();
 
@@ -259,7 +263,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                 valueDatapoints[2] = datapoints;
                 return valueDatapoints;
             }
-        return vdaa;
+        return new ValueDatapoint<?>[1][0];
     }
 
     protected void onAttributeChange(AttributeEvent event) {
@@ -338,8 +342,9 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                             anomalyType = method.anomalyType;
                             if(method.config.alarmOnOff && method.config.alarm.getSeverity() != null){
                                 String message = method.config.alarm.getContent();
-                                message = message.replace("%AssetId%",attributeRef.getId());
-                                message = message.replace("%AttributeName%",attributeRef.getName());
+
+                                message = message.replace("%ASSET_ID%",attributeRef.getId());
+                                message = message.replace("%ATTRIBUTE_NAME%",attributeRef.getName());
                                 Alarm alarm = new Alarm(method.config.name, message, method.config.alarm.getSeverity());
                                 SentAlarm sentAlarm = alarmService.sendAlarm(alarm);
                                 alarmService.assignUser(sentAlarm.getId(),method.config.alarm.getAssigneeId());

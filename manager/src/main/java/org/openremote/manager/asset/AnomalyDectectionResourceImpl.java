@@ -115,6 +115,8 @@ public class AnomalyDectectionResourceImpl extends ManagerWebResource implements
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
+        } catch (IllegalArgumentException ex) {
+            throw new WebApplicationException(ex.getMessage() ,ex, Response.Status.BAD_REQUEST);
         }
 
     }
