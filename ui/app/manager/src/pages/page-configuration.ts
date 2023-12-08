@@ -228,20 +228,20 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             ${when(this.loading, () => html`
                 <or-loading-indicator></or-loading-indicator>
             `, () => {
-            const realmHeading = html`
+                const realmHeading = html`
                     <div id="heading" style="justify-content: space-between;">
                         <span style="margin: 0;">${i18next.t("configuration.realmStyling").toUpperCase()}</span>
-                            <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
-                                          @saveLocalManagerConfig="${(ev: CustomEvent) => {
-                this.managerConfiguration = ev.detail.value as ManagerAppConfig;
-                this.managerConfigurationChanged = true;
-            }}"
-                            ></or-conf-json>
+                        <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
+                                      @saveLocalManagerConfig="${(ev: CustomEvent) => {
+                                          this.managerConfiguration = ev.detail.value as ManagerAppConfig;
+                                          this.managerConfigurationChanged = true;
+                                      }}"
+                        ></or-conf-json>
                     </div>
                 `;
-            const realmOptions = this.realms?.map((r) => ({ name: r.name, displayName: r.displayName, canDelete: true }));
-            realmOptions.push({name: 'default', displayName: 'Default', canDelete: false});
-            return html`
+                const realmOptions = this.realms?.map((r) => ({name: r.name, displayName: r.displayName, canDelete: true}));
+                realmOptions.push({name: 'default', displayName: 'Default', canDelete: false});
+                return html`
                     <div id="wrapper">
                         <div id="header-wrapper">
                             <div id="header-title">
@@ -280,15 +280,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                     <span>${i18next.t('configuration.mapSettingsNotFound')}</span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="${i18next.t('configuration.tryAgain')}"
                                                   @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
-                this.mapConfig = val;
-            }).catch(e => console.error(e))}"
+                                                      this.mapConfig = val;
+                                                  }).catch(e => console.error(e))}"
                                     ></or-mwc-input>
                                 </div>
                             `)}
                         </or-panel>
                     </div>
                 `
-        })}
+            })}
         `;
     }
 

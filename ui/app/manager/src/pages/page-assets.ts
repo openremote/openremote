@@ -218,7 +218,9 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     stateChanged(state: AppStateKeyed) {
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
-        this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
+        if(!this._assetIds || this._assetIds.length === 0) {
+            this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
+        }
     }
 
     protected _onAssetSelectionRequested(event: OrAssetTreeRequestSelectionEvent) {
