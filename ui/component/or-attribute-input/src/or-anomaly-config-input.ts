@@ -20,9 +20,12 @@ import {
     ValueDatapoint
 } from "@openremote/model";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
+import "@openremote/or-json-forms";
+import {showJsonEditor} from "../../or-json-forms/lib/util.js";
 import {i18next, translate} from "@openremote/or-translate";
 import "@openremote/or-components/or-collapsible-panel"
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
+
 
 
 
@@ -74,58 +77,65 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
         if(this.selectedIndex == -1){
             this.selectedIndex = this.anomalyDetectionConfigObject!.methods!.length > 0 ? 0:-1;
         }
-        schemaChangeGlobal = JSON.parse("{\n" +
-            "  \"type\": \"object\",\n" +
-            "  \"title\": \"Global\",\n" +
-            "  \"properties\": {\n" +
-            "    \"onOff\": {\n" +
-            "      \"type\": \"boolean\"\n" +
-            "    },\n" +
-            "    \"type\": {\n" +
-            "      \"type\": \"string\",\n" +
-            "      \"enum\": [\n" +
-            "        \"global\",\n" +
-            "        \"change\",\n" +
-            "        \"forecast\"\n" +
-            "      ]\n" +
-            "    },\n" +
-            "    \"deviation\": {\n" +
-            "      \"type\": \"integer\"\n" +
-            "    },\n" +
-            "    \"minimumDatapoints\": {\n" +
-            "      \"type\": \"integer\"\n" +
-            "    },\n" +
-            "    \"timespan\": {\n" +
-            "      \"type\": \"string\"\n" +
-            "    }\n" +
-            "  }\n" +
-            "}");
-        schemaForecast = JSON.parse("{\n" +
-            "  \"type\": \"object\",\n" +
-            "  \"title\": \"Forecast\",\n" +
-            "  \"properties\": {\n" +
-            "    \"onOff\": {\n" +
-            "      \"type\": \"boolean\"\n" +
-            "    },\n" +
-            "    \"type\": {\n" +
-            "      \"type\": \"string\",\n" +
-            "      \"enum\": [\n" +
-            "        \"global\",\n" +
-            "        \"change\",\n" +
-            "        \"forecast\"\n" +
-            "      ],\n" +
-            "      \"default\":\"forecast\"\n" +
-            "    },\n" +
-            "    \"deviation\": {\n" +
-            "      \"type\": \"integer\"\n" +
-            "    }\n" +
-            "  }\n" +
-            "}")
+        schemaChangeGlobal = {
+            type: "object",
+            title: "Global",
+            properties: {
+                onOff: {
+                    type: "boolean"
+                },
+                type: {
+                    title:`${i18next.t("type")}`,
+                    type: "string",
+                    enum: [
+                        "global",
+                        "change",
+                        "forecast"
+                    ]
+                },
+                deviation: {
+                    title:`${i18next.t("anomalyDetection.deviation")}`,
+                    type: "integer"
+                },
+                minimumDatapoints: {
+                    title:`${i18next.t("anomalyDetection.minimumDatapoints")}`,
+                    type: "integer"
+                },
+                timespan: {
+                    title:`${i18next.t("anomalyDetection.minimumTimespan")}`,
+                    type: "string"
+                }
+            }
+        };
+        schemaForecast = {
+            type: "object",
+            title: "Forecast",
+            properties: {
+                onOff: {
+                    type: "boolean"
+                },
+                type: {
+                    type: "string",
+                    enum: [
+                        "global",
+                        "change",
+                        "forecast"
+                    ],
+                    default: "forecast"
+                },
+                deviation: {
+                    type: "integer"
+                }
+            }
+        };
 
         if(!this.anomalyDetectionConfigObject || !this.attributeRef || !this.anomalyDetectionConfigObject.methods)return html``;
         const attributeRef = this.attributeRef;
         const showJson = (ev: Event) => {
             ev.stopPropagation();
+            showJsonEditor(`${i18next.t("anomalyDetection.configuration")}`, this.anomalyDetectionConfigObject, ((newValue: any) => {
+                this.updateConfigObject(newValue as AnomalyDetectionConfigObject);
+            }));
         };
 
         const onChanged = (dataAndErrors: { errors: ErrorObject[] | undefined, data: any }) => {
@@ -177,15 +187,15 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
                                 </div>
                             `
         })}
-                                <or-mwc-input type="button" label="add method" icon="plus" @or-mwc-input-changed="${() =>{this.addMethod();}}" ></or-mwc-input>
+                                <or-mwc-input type="button" label="${i18next.t("anomalyDetection.addMethod")}" icon="plus" @or-mwc-input-changed="${() =>{this.addMethod();}}" ></or-mwc-input>
                             </div >
                             ${this.selectedIndex == -1? html`
-                                <p style="padding-left:16pt ">No methods Created</p>
+                                <p style="padding-left:16pt ">${i18next.t("anomalyDetection.noMethodsCreated")}</p>
                             `: html`
                                 <div style="margin: 16pt; padding: 16pt; margin-top: -1px; border-style: solid; border-color: lightgray; border-width: thin; border-radius: 4pt;">
                                 <div style="display: flex;  justify-content: space-between; width: 100%">
                                     <div class="item" style="justify-content: left">
-                                    <or-mwc-input .label="${"Name"}" type="text" .value="${this.anomalyDetectionConfigObject!.methods![this.selectedIndex].name!}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"name")}"></or-mwc-input>
+                                    <or-mwc-input .label="${i18next.t("name")}" type="text" .value="${this.anomalyDetectionConfigObject!.methods![this.selectedIndex].name!}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"name")}"></or-mwc-input>
                                     </div>
                                    
                                     <div class="item" style="justify-content: right">
@@ -195,16 +205,16 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
                                 <div .style="visibility: ${this.selectedIndex == -1? 'hidden':'visible'};" class="test" slot="content" >
                                     <div style="display: flex; justify-content: space-between; flex-direction: row;">
                                         <div style="width: 45%">
-                                            <p>Detection Method</p>
+                                            <p>${i18next.t("anomalyDetection.detectionMethod")}</p>
                                         <or-json-forms  .renderers="${StandardRenderers}" ${ref(jsonFormsInput)}
                                         .disabled="${false}" .readonly="${false}" .label="Config"
                                         .schema="${this.anomalyDetectionConfigObject.methods![this.selectedIndex].type === "forecast"? schemaForecast : schemaChangeGlobal}" label="Anomaly Detection Json forms" .uischema="${uiSchema}"
                                         .onChange="${onChanged}" .props="test" .minimal="${true}"></or-json-forms>
                                     </div>
                                     <div style="width: 45%;  display: flex; flex-direction: column;">
-                                        <p>Alarm</p>
+                                        <p>${i18next.t("alarm.")}</p>
                                         <or-mwc-input type="checkbox" label="Active" .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarmOnOff}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarmOnOff")}"></or-mwc-input>
-                                        <or-mwc-input style="padding-top: 10px;" .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.severity?this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.severity:""}" type="select" .options="${["LOW","MEDIUM","HIGH"]}" label="Severity" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.severity")}"></or-mwc-input>
+                                        <or-mwc-input style="padding-top: 10px;" .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.severity?this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.severity:""}" type="select" .options="${["LOW","MEDIUM","HIGH"]}" label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.severity")}"></or-mwc-input>
                                         <or-mwc-input style="padding-top: 10px;" .label="${i18next.t("alarm.assignee")}" placeholder=" " type="select"
                               .options="${options.map((obj) => obj.label)}"
                               .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm!.assigneeId ? options.filter((obj) => obj.value === this.anomalyDetectionConfigObject!.methods![this.selectedIndex].alarm!.assigneeId).map((obj) => obj.label)[0] : ""}"
@@ -212,7 +222,7 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
                                   e.detail.value = options.filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0]
                                 this.updateProperty(e,"alarm.assigneeId");
                             }}"></or-mwc-input>
-                                        <or-mwc-input style="padding-top: 10px;" .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.content?this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.content:"%AssetId%\n%AttributeName%"}" type="textarea"  label="Content" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.content")}"></or-mwc-input>
+                                        <or-mwc-input style="padding-top: 10px;" .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.content?this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.content:"%AssetId%\n%AttributeName%"}" type="textarea"  label="${i18next.t("alarm.content")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.content")}"></or-mwc-input>
                                     </div>
                                     </div>
                                     <or-anomaly-config-chart style="display: flex; width: auto;"
@@ -232,7 +242,7 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
 
             const i = this.anomalyDetectionConfigObject.methods ? this.anomalyDetectionConfigObject.methods.length: 0
             let con : AnomalyDetectionConfigurationGlobal;
-            con = {name:"Method "+ (this.anomalyDetectionConfigObject.methods!.length +1 ),type:"global", onOff:false, deviation:10, minimumDatapoints:19, timespan:"PT20M", alarm:{content:"%AssetId%\n%AttributeName%"},alarmOnOff:false  }
+            con = {name:"Method "+ (this.anomalyDetectionConfigObject.methods!.length +1 ),type:"global", onOff:false, deviation:10, minimumDatapoints:19, timespan:"PT20M", alarm:{content:"%ASSET_ID%\n%ATTRIBUTE_NAME%"},alarmOnOff:false  }
             this.anomalyDetectionConfigObject.methods![i] = con;
             this.selectedIndex = i;
             this.draw();
@@ -291,6 +301,28 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
                     this.onChange({data: this.anomalyDetectionConfigObject, errors: []},true);
                 }
             }
+            if(valid) this.draw();
+            if(update) this.updateBool = !this.updateBool;
+        }
+    }
+    protected updateConfigObject(newConfig:AnomalyDetectionConfigObject){
+        let valid = true;
+        let update = false;
+        if(newConfig && newConfig.methods && newConfig.methods[0]){
+            newConfig.methods.forEach(method =>{
+                if ( !method.type || !method.deviation || method.onOff == undefined) valid = false;
+                if(method.type === "global"){
+                    if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationGlobal).timespan as string))valid = false
+                }else if(method.type === "change"){
+                    if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationChange).timespan as string))valid = false
+                }
+                if (!Util.objectsEqual(method, this.anomalyDetectionConfigObject!.methods![this.selectedIndex]) && valid) {
+                    this.anomalyDetectionConfigObject!.methods![this.selectedIndex] = method;
+                    if (this.onChange && valid) {
+                        this.onChange({data: this.anomalyDetectionConfigObject, errors: []},true);
+                    }
+                }
+            })
             if(valid) this.draw();
             if(update) this.updateBool = !this.updateBool;
         }
