@@ -182,6 +182,9 @@ repositories {
     maven {
         url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"
     }
+    maven {
+        url "https://s01.oss.sonatype.org/content/repositories/snapshots"
+    }
 }
 
 // Eclipse needs help
@@ -208,6 +211,10 @@ idea {
 // repo is checked out as a git submodule and therefore a subproject
 def isCustomProject() {
     findProject(":openremote") != null
+}
+
+def resolveDependency(String path) {
+    "0.0.0".equals(version) ? project(resolvePath(path)) : "io.openremote:openremote-${path.substring(1)}:${version}"
 }
 
 def resolvePath(String path) {
@@ -256,6 +263,7 @@ def getDeploymentJars(Project project = project) {
 }
 
 ext {
+    resolveDependency = this.&resolveDependency
     resolvePath = this.&resolvePath
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
