@@ -11,7 +11,7 @@ import i18next from "i18next";
 import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {OrMwcSnackbar, showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, setOffline, updatePage, updateRealm} from "./app";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
@@ -299,7 +299,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if (this._mainElem) {
 
                 const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
-                const showOfflineFallback = (this._offline && !pageProvider?.allowOffline);
+                const showOfflineFallback =/*  (this._offline && !pageProvider?.allowOffline); */ false;
                 const offlinePage = this._mainElem.querySelector('#offline-page');
 
                 // If page has changed, replace the previous content with the new page.
@@ -419,10 +419,12 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _onEvent(event: OREvent) {
         if(event === OREvent.OFFLINE) {
             if(!this._offline) {
+                showSnackbar(undefined, "You are offline!")
                 this._store.dispatch((setOffline(true)))
             }
         } else if(event === OREvent.ONLINE) {
             if(this._offline) {
+                showSnackbar(undefined, "Back online!");
                 this._store.dispatch((setOffline(false)))
             }
         }
