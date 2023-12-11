@@ -495,7 +495,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
                             .setPagingMode(true))
                     )
             )
-
+        asset.getAttributes().values().forEach {it.setTimestamp(1234)}
         asset.getAttribute(LightAsset.COLOUR_RGB).ifPresent({
             it.addOrReplaceMeta(
                 new MetaItem<>(MetaItemType.AGENT_LINK, new DefaultAgentLink("agent_id")
@@ -518,7 +518,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "the string should be valid JSON"
         def assetObjectNode = ValueUtil.parse(assetStr, ObjectNode.class).get()
         assetObjectNode.get("name").asText() == "Test light"
-        assetObjectNode.get("attributes").get("colourRGB").get("timestamp") == null
+        assetObjectNode.get("attributes").get("colourRGB").get("timestamp").asLong() == 1234
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).isObject()
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).get("id").asText() == "agent_id"
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).get("type").asText() == DefaultAgentLink.class.getSimpleName()
@@ -555,13 +555,15 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def attributeEventStr = ValueUtil.asJSON(attributeEvent).orElse(null)
 
         then: "it should look as expected"
-        def assetStateObjectNode = ValueUtil.parse(attributeEventStr, ObjectNode.class).get()
-        assetStateObjectNode.get("name").asText() == LightAsset.COLOUR_RGB.name
-        assetStateObjectNode.get("value").isTextual()
-        assetStateObjectNode.get("value").asText() == "#3264C8"
-        assetStateObjectNode.get("deleted").asBoolean()
-        !assetStateObjectNode.has("source")
-        !assetStateObjectNode.has("realm")
-        !assetStateObjectNode.has("meta")
+        def attributeEventObjectNode = ValueUtil.parse(attributeEventStr, ObjectNode.class).get()
+        attributeEventObjectNode.get("ref").get("id").asText() == asset2.id
+        attributeEventObjectNode.get("ref").get("name").asText() == LightAsset.COLOUR_RGB.name
+        attributeEventObjectNode.get("timestamp").asLong() == 1234
+        attributeEventObjectNode.get("value").isTextual()
+        attributeEventObjectNode.get("value").asText() == "#3264C8"
+        attributeEventObjectNode.get("deleted").asBoolean()
+        !attributeEventObjectNode.has("source")
+        !attributeEventObjectNode.has("realm")
+        !attributeEventObjectNode.has("meta")
     }
 }

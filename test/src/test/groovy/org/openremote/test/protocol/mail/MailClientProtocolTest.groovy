@@ -163,12 +163,12 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
         then: "the agent should become connected"
         conditions.eventually {
-            assert attributeEvents.any {it.id == agent.id && it.attributeName == Agent.STATUS.name && it.value.orElse(null) == ConnectionStatus.CONNECTED}
+            assert attributeEvents.any {it.id == agent.id && it.name == Agent.STATUS.name && it.value.orElse(null) == ConnectionStatus.CONNECTED}
         }
 
         then: "the agent should have finished message checking"
         conditions.eventually {
-            assert attributeEvents.any {it.id == agent.id && it.attributeName == Agent.STATUS.name && it.value.orElse(null) == ConnectionStatus.WAITING}
+            assert attributeEvents.any {it.id == agent.id && it.name == Agent.STATUS.name && it.value.orElse(null) == ConnectionStatus.WAITING}
         }
 
         then: "the linked attributes should not have been updated with mailbox messages (as creation time of agent is after message timestamps)"
@@ -185,12 +185,12 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
         then: "the matching linked attributes should have been updated with the new mailbox messages"
         conditions.eventually {
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Test body")} == 2
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "fromMatchUseSubject" && (it.value.orElse(null) as String).startsWith("Test Message")} == 2
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "fromMatchUseSubject" && it.value.orElse(null) == "Not A Test"} == 1
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "subjectMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 2
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "subjectAndFromMatchUseBody" && it.value.orElse(null) == "Not a test body 2"} == 1
+            assert attributeEvents.count {it.id == asset.id && it.name == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Test body")} == 2
+            assert attributeEvents.count {it.id == asset.id && it.name == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
+            assert attributeEvents.count {it.id == asset.id && it.name == "fromMatchUseSubject" && (it.value.orElse(null) as String).startsWith("Test Message")} == 2
+            assert attributeEvents.count {it.id == asset.id && it.name == "fromMatchUseSubject" && it.value.orElse(null) == "Not A Test"} == 1
+            assert attributeEvents.count {it.id == asset.id && it.name == "subjectMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 2
+            assert attributeEvents.count {it.id == asset.id && it.name == "subjectAndFromMatchUseBody" && it.value.orElse(null) == "Not a test body 2"} == 1
         }
 
         when: "more messages are received in the mailbox"
@@ -199,12 +199,12 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
         then: "the matching linked attributes should have been updated with the new mailbox messages"
         conditions.eventually {
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Test body")} == 2
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "fromMatchUseSubject" && (it.value.orElse(null) as String).startsWith("Test Message")} == 2
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "fromMatchUseSubject" && it.value.orElse(null) == "Not A Test"} == 1
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "subjectMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 3
-            assert attributeEvents.count {it.id == asset.id && it.attributeName == "subjectAndFromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
+            assert attributeEvents.count {it.id == asset.id && it.name == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Test body")} == 2
+            assert attributeEvents.count {it.id == asset.id && it.name == "fromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
+            assert attributeEvents.count {it.id == asset.id && it.name == "fromMatchUseSubject" && (it.value.orElse(null) as String).startsWith("Test Message")} == 2
+            assert attributeEvents.count {it.id == asset.id && it.name == "fromMatchUseSubject" && it.value.orElse(null) == "Not A Test"} == 1
+            assert attributeEvents.count {it.id == asset.id && it.name == "subjectMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 3
+            assert attributeEvents.count {it.id == asset.id && it.name == "subjectAndFromMatchUseBody" && (it.value.orElse(null) as String).startsWith("Not a test body")} == 1
         }
 
         cleanup: "the event subscription is removed"

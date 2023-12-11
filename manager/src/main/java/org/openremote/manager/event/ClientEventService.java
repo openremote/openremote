@@ -137,7 +137,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected EventSubscriptions eventSubscriptions;
     protected GatewayService gatewayService;
     protected Set<EventSubscription<?>> pendingInternalSubscriptions;
-    protected boolean stopped;
+    protected boolean started;
 
     public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(SESSION_KEY, String.class);
@@ -439,12 +439,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
     @Override
     public void start(Container container) {
-        stopped = false;
+        started = true;
     }
 
     @Override
     public void stop(Container container) {
-        stopped = true;
+        started = false;
     }
 
     public void addExchangeInterceptor(Consumer<Exchange> exchangeInterceptor) throws RuntimeException {
@@ -505,8 +505,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
      * Publish an event to interested clients
      */
     public <T extends Event> void publishEvent(T event) {
-        // Only publish if service is not stopped
-        if (stopped) {
+        // Only publish if service is started
+        if (!started) {
             return;
         }
 

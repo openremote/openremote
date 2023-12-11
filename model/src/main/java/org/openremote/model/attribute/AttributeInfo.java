@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface AttributeInfo extends AssetInfo, NameValueHolder<Object>, MetaHolder, Comparable<AttributeInfo> {
     long getTimestamp();
     AttributeRef getRef();
+    String getId();
+    String getName();
     AttributeState getState();
 
     Optional<Object> getOldValue();

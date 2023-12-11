@@ -460,7 +460,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                     }
                 }
                 protocolInstanceMap.remove(agent.getId());
-                LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
+                LOG.log(Level.SEVERE, "Failed to start protocol: " + protocol, e);
                 sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
             }
         }
@@ -609,7 +609,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
             // Check that the event has a newer timestamp than the existing agent attribute - if the attribute doesn't
             // exist on the agent either then assume the agent has been modified and attribute removed
             boolean eventOutdated = agent.getAttribute(event.getName()).flatMap(Attribute::getTimestamp)
-                .map(timestamp -> event.getTimestamp() > timestamp)
+                .map(timestamp -> event.getTimestamp() <= timestamp)
                 .orElse(true);
 
             if (eventOutdated) {

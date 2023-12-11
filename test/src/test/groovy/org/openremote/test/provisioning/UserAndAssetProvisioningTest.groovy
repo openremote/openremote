@@ -318,7 +318,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         conditions.eventually {
             assert attributeEvents.size() == 1
             assert attributeEvents.get(0).id == asset.id
-            assert attributeEvents.get(0).attributeName == "customAttribute"
+            assert attributeEvents.get(0).name == "customAttribute"
             assert attributeEvents.get(0).value.orElse(0d) == 99d
         }
 
@@ -340,7 +340,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the internal consumer should have been notified"
         conditions.eventually {
-            assert internalAttributeEvents.find{it.id == managerTestSetup.apartment2LivingroomId && it.attributeName == "lightSwitch" && it.value.orElse(false)} != null
+            assert internalAttributeEvents.find{it.id == managerTestSetup.apartment2LivingroomId && it.name == "lightSwitch" && it.value.orElse(false)} != null
         }
 
         and: "the client should not have been notified"

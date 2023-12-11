@@ -34,7 +34,7 @@ rules.add()
                             new AssetQuery()
                                     .types(WeatherAsset)
                                     .attributeNames(WeatherAsset.TEMPERATURE.name, WeatherAsset.RAINFALL.name)
-                    ).collect(Collectors.groupingBy{AssetState<?> state -> state.id})
+                    ).collect(Collectors.groupingBy{state -> state.id})
                     .forEach{id, states ->
                         // See if either attribute has changed for this asset
                         if (states.any {state -> !Objects.equals(state.value.orElse(null), state.oldValue.orElse(null))}) {
