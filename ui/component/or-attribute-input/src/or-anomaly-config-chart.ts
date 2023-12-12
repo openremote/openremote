@@ -46,6 +46,8 @@ export class OrAnomalyConfigChart extends OrChart {
     public timespan?: Number = undefined;
     @property({type: String})
     private errorMessage = ""
+    @property({type: Boolean})
+    private canRefresh = false
 
 
     protected willUpdate(changedProps: Map<string, any>) {
@@ -54,7 +56,7 @@ export class OrAnomalyConfigChart extends OrChart {
 
     protected async _loadData() {
         let timespan=0
-        if(this._loading || !this.anomalyConfig){
+        if(this._loading || !this.anomalyConfig || !this.canRefresh){
             return
         }
         if(this.anomalyConfig.onOff == undefined || !this.anomalyConfig.type || !this.anomalyConfig.deviation){
@@ -131,45 +133,37 @@ export class OrAnomalyConfigChart extends OrChart {
 
                 //limits anomaly data
                 let datasets = await this.getAnomalyLimits(asset,attribute,this.datapointQuery)
-                if(typeof datasets === "string"){
-                    switch (datasets){
-                        case "A1": {
-                            this.errorMessage = i18next.t("Not enough data")
-                        }
-                    }
-
-                }else {
                     datasets = datasets as ChartDataset<"line",ScatterDataPoint[]>[];
                     if(datasets.length !== 0){
                         let dataset = datasets[2];
                         (dataset as any).assetId = asset.id;
                         (dataset as any).attrName = attribute.name;
                         (dataset as any).unit = unit;
-                        dataset = datasets[3];
-                        data.push(dataset);
-                        dataset = datasets[2];
-                        data.push(dataset);
                         dataset = datasets[0];
                         data.push(dataset);
                         dataset = datasets[1];
                         data.push(dataset);
+                        for (let i = 2; i < datasets.length; i=i+2){
+                            dataset = datasets[i];
+                            data.push(dataset);
+                            dataset = datasets[i+1];
+                            data.push(dataset);
+                        }
                     }
-                }
-
             });
         }
 
         if(promises) {
             await Promise.all(promises);
         }
-        if(data[1] && data[1].data.length !== 0){
+        if(data[0] && data[0].data.length !== 0){
             this._data = data;
         }
         this._loading = false;
 
     }
 
-    protected async getAnomalyLimits(asset: Asset, attribute:Attribute<any>,query:AssetDatapointQueryUnion): Promise<string |ChartDataset<"line", ScatterDataPoint[]>[]>{
+    protected async getAnomalyLimits(asset: Asset, attribute:Attribute<any>,query:AssetDatapointQueryUnion): Promise<ChartDataset<"line", ScatterDataPoint[]>[]>{
         let datasets : ChartDataset<"line", ScatterDataPoint[]>[] = [];
         let response: GenericAxiosResponse<ValueDatapoint<any>[][]>;
         let minData : ChartDataset<"line", ScatterDataPoint[]> ={
@@ -219,17 +213,31 @@ export class OrAnomalyConfigChart extends OrChart {
                     this.errorMessage = i18next.t("anomalyDetection.notEnoughDatapointsSaved");
                     return datasets;
                 }
-                minData.data = response.data[0].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
-                maxData.data = response.data[1].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
-                dataset.data = response.data[2].filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
+                dataset.data = response.data[2].filter(value => value !== null && value !== undefined) as ScatterDataPoint[];
                 anomalyDataset.data = response.data[3].filter(value => value !== null) as ScatterDataPoint[];
+                datasets.push(dataset);
+                datasets.push(anomalyDataset);
+                while(response.data[0].length > 1){
+                    let minimindata = response.data[0].slice(response.data[0].findIndex(d => d !== null),response.data[0].length);
+                    let index = minimindata.findIndex(d => d === null);
+                    minimindata = minimindata.slice(0,index=== -1? minimindata.length:index);
+                    minData.data = minimindata.filter(value => value !== null && value !== undefined) as ScatterDataPoint[];
+                    datasets.push(JSON.parse(JSON.stringify(minData)));
+                    response.data[0] = response.data[0].splice(response.data[0].findIndex(d => d !== null) + minimindata.length, response.data[0].length);
+
+                    let minimaxdata = response.data[1].slice(response.data[1].findIndex(d => d !== null),response.data[1].length);
+                    index = minimaxdata.findIndex(d => d === null);
+                    minimaxdata = minimaxdata.slice(0,index=== -1? minimaxdata.length:index);
+                    maxData.data = minimaxdata.filter(value => value !== null && value !== undefined) as ScatterDataPoint[];
+                    datasets.push(JSON.parse(JSON.stringify(maxData)));
+                    response.data[1] =  response.data[1].splice(response.data[1].findIndex(d => d !== null) + minimaxdata.length, response.data[1].length);
+                }
+
             }else if(response.status === 204){
                 this.errorMessage = i18next.t("anomalyDetection.invalidConfiguration");
             }
-            datasets.push(minData);
-            datasets.push(maxData);
-            datasets.push(dataset);
-            datasets.push(anomalyDataset);
+
+
         }
         return datasets;
     }

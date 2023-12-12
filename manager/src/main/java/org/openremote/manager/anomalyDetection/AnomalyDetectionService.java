@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.asset;
+package org.openremote.manager.anomalyDetection;
 
-import com.google.api.gax.rpc.InvalidArgumentException;
-import jakarta.ws.rs.WebApplicationException;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.alarm.AlarmService;
-import org.openremote.manager.datapoint.AssetAnomalyDatapointResourceImpl;
+import org.openremote.manager.anomalyDetection.DetectionMethods.*;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetAnomalyDatapointService;
 import org.openremote.manager.datapoint.AssetDatapointService;
+import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -40,18 +40,14 @@ import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.datapoint.*;
-import org.openremote.model.datapoint.query.AssetDatapointAllAnomaliesQuery;
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery;
-import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.value.AnomalyDetectionConfigObject;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
-import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
-import org.openremote.model.value.MetaItemType;
 import  org.openremote.model.attribute.AttributeAnomaly.AnomalyType;
+
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -79,6 +75,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
     protected AssetStorageService assetStorageService;
     protected ClientEventService clientEventService;
     protected AssetDatapointService assetDatapointService;
+    protected AssetPredictedDatapointService assetPredictedDatapointService;
     protected ScheduledExecutorService executorService;
     protected AlarmService alarmService;
     protected AssetAnomalyDatapointService assetAnomalyDatapointService;
@@ -92,6 +89,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         assetStorageService = container.getService(AssetStorageService.class);
         clientEventService = container.getService(ClientEventService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
+        assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         alarmService = container.getService(AlarmService.class);
         assetAnomalyDatapointService = container.getService(AssetAnomalyDatapointService.class);
         executorService = container.getExecutorService();
@@ -237,7 +235,8 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     point.setValue(dp.getValue());
                     assetAnomalyDatapoints.add(point);
                 }
-                if(datapoints.length < minimumDatapoints * 5) return new ValueDatapoint<?>[1][datapoints.length];
+                //check if there are enough datapoints to draw at least 2 limits
+                if(datapoints.length < minimumDatapoints+ 2) return new ValueDatapoint<?>[1][datapoints.length];
                 ValueDatapoint<?>[][] valueDatapoints = new ValueDatapoint[4][datapoints.length - minimumDatapoints+1];
                 List<ValueDatapoint<?>> anomalyDatapoints = new ArrayList<>();
 
@@ -245,20 +244,27 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                 long finalTimespan = timespan;
                 for(int i = datapoints.length - minimumDatapoints; i >= 0; i--){
                     ValueDatapoint<?> dp = datapoints[i];
-                    if(!detectionMethod.checkRecentDataSaved(dp.getTimestamp())){
-                        detectionMethod.UpdateData(assetAnomalyDatapoints.stream().filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList());
+                    if(detectionMethod.checkRecentDataSaved(dp.getTimestamp())){
+                        double[] values = detectionMethod.GetLimits(datapoints[i]);
+                        valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
+                        valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
+                        if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
+                            anomalyDatapoints.add(datapoints[i]);
+                        }
+                    }else if( detectionMethod.UpdateData(assetAnomalyDatapoints.stream().filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList())){
+                        double[] values = detectionMethod.GetLimits(datapoints[i]);
+                        valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
+                        valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
+                        if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
+                            anomalyDatapoints.add(datapoints[i]);
+                        }
                     }
-                    double[] values = detectionMethod.GetLimits(datapoints[i]);
-                    valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
-                    valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
                     index++;
-                    if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
-                        anomalyDatapoints.add(datapoints[i]);
-                    }
+
                 }
-                valueDatapoints[3] = new ValueDatapoint[anomalyDatapoints.size()-1];
+                valueDatapoints[3] = new ValueDatapoint[anomalyDatapoints.size()];
                 for(int i = 0; i < valueDatapoints[3].length; i++){
-                    valueDatapoints[3][i] = anomalyDatapoints.get(i+1);
+                    valueDatapoints[3][i] = anomalyDatapoints.get(i);
                 }
                 valueDatapoints[2] = datapoints;
                 return valueDatapoints;
@@ -296,6 +302,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                         case "Global" -> detectionMethods.add(new DetectionMethodGlobal(con));
                         case "Change" -> detectionMethods.add(new DetectionMethodChange(con));
                         case "Timespan" -> detectionMethods.add(new DetectionMethodTimespan(con));
+                        case "Forecast" -> detectionMethods.add(new DetectionMethodForecast(con));
                     }
                 }
             }
@@ -362,8 +369,13 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             DatapointPeriod period = assetDatapointService.getDatapointPeriod(attributeRef.getId(), attributeRef.getName());
             List<AssetAnomalyDatapoint> datapoints = new ArrayList<>();
             if(period.getLatest() == null) return datapoints;
-            long maxTimespan = 0;
-            int maxMinimumDatapoints = 0;
+
+
+            AttributeAnomaly[] anomalies = new AttributeAnomaly[0];
+            ValueDatapoint<?>[] valueDatapoints = new ValueDatapoint[0];
+            if(detectionMethod.config.getClass().getSimpleName().equals("Global")||detectionMethod.config.getClass().getSimpleName().equals("Change")){
+                long maxTimespan = 0;
+                int maxMinimumDatapoints = 0;
                 if(detectionMethod.config.getClass().getSimpleName().equals("Global")){
                     if( ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis() > maxTimespan) maxTimespan =  ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();
                     if( ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints > maxMinimumDatapoints) maxMinimumDatapoints =  ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints;
@@ -371,11 +383,15 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     if( ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis() > maxTimespan) maxTimespan =  ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
                     if( ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints > maxMinimumDatapoints) maxMinimumDatapoints =  ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
                 }
+                if(period.getLatest() - period.getOldest() < maxTimespan)return datapoints;
+                anomalies = assetAnomalyDatapointService.getAnommalies(attributeRef.getId(), attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest()- maxTimespan, period.getLatest()));
+                valueDatapoints = assetDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest()- maxTimespan, period.getLatest()));
 
-            //test if there are enough datapoints for all detection methods
-            if(period.getLatest() - period.getOldest() < maxTimespan)return datapoints;
-            AttributeAnomaly[] anomalies = assetAnomalyDatapointService.getAnommalies(attributeRef.getId(), attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest()- maxTimespan, period.getLatest()));
-            for (ValueDatapoint<?> datapoint: assetDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest()- maxTimespan, period.getLatest() ))) {
+            }else if(detectionMethod.config.getClass().getSimpleName().equals("Forecast")){
+                DatapointPeriod predictedPeriod = assetPredictedDatapointService.getDatapointPeriod(attributeRef.getId(), attributeRef.getName());
+                valueDatapoints = assetPredictedDatapointService.queryDatapoints(attributeRef.getId(),attributeRef.getName(), new AssetDatapointAllQuery(predictedPeriod.getOldest(), period.getLatest()));
+            }
+            for (ValueDatapoint<?> datapoint: valueDatapoints) {
                 Optional<AttributeAnomaly> anomaly = Arrays.stream(anomalies).filter(a -> a.getTimestamp().getTime() == datapoint.getTimestamp()).findFirst();
                 if(anomaly.isPresent()){
                     datapoints.add(new AssetAnomalyDatapoint(attributeRef,datapoint.getValue(),datapoint.getTimestamp(),anomaly.get().getAnomalyType()));
@@ -383,282 +399,10 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     datapoints.add(new AssetAnomalyDatapoint(attributeRef,datapoint.getValue(),datapoint.getTimestamp(),AnomalyType.Unchecked));
                 }
             }
-            if(datapoints.size() < maxMinimumDatapoints) return new ArrayList<>();
             return datapoints;
         }
         public void UpdateAnomalyDatapoint(String assetId, String attributeName, AnomalyType type, LocalDateTime timestamp){
             assetAnomalyDatapointService.updateValue(assetId, attributeName, type, timestamp, null);
-        }
-    }
-
-    private abstract class DetectionMethod implements IDetectionMethod{
-        public AnomalyDetectionConfiguration config;
-        public AnomalyType anomalyType;
-        public  DetectionMethod(AnomalyDetectionConfiguration config){
-            this.config = config;
-        }
-        public String message;
-    }
-    private interface IDetectionMethod{
-        /**Check if value is valid according to the methods rules. */
-        boolean validateDatapoint(Object value, long timestamp);
-        /**Update needsNewData based on needs method */
-        boolean checkRecentDataSaved(long latestTimestamp);
-        /**Update saved values used to calculate Limits */
-        boolean UpdateData(List<AssetAnomalyDatapoint> datapoints);
-        double[] GetLimits(ValueDatapoint<?> datapoint);
-    }
-
-
-    private class DetectionMethodGlobal extends DetectionMethod{
-        private double minValue;
-        private long minValueTimestamp;
-        private double maxValue;
-        private long maxValueTimestamp;
-
-
-        public DetectionMethodGlobal(AnomalyDetectionConfiguration config){
-            super(config);
-            anomalyType = AnomalyType.GlobalOutlier;
-        }
-
-
-        public boolean validateDatapoint(Object value, long timestamp) {
-            double differance = maxValue - minValue + 0.001;
-            double deviation = differance * ((double)config.deviation /100);
-
-            double val = (double)value;
-            boolean valid = true;
-            if(val < minValue - deviation){
-                valid = false;
-            }
-            if(val > maxValue + deviation){
-                valid = false;
-            }
-            if(valid){
-                if(val >= maxValue){
-                    maxValue = val;
-                    maxValueTimestamp = timestamp;
-                }
-                if(val <= minValue){
-                    minValue = val;
-                    minValueTimestamp =timestamp;
-                }
-            }
-            return valid;
-        }
-
-
-        public boolean checkRecentDataSaved(long latestTimestamp) {
-            boolean needsNewData = false;
-            long timeMillis = ((AnomalyDetectionConfiguration.Global)config).timespan.toMillis();
-            if(minValueTimestamp < latestTimestamp - timeMillis
-            || maxValueTimestamp < latestTimestamp - timeMillis){
-                needsNewData = true;
-            }
-            return !needsNewData;
-        }
-
-        public boolean UpdateData(List<AssetAnomalyDatapoint> datapoints) {
-            if(datapoints.isEmpty() || datapoints.size() < ((AnomalyDetectionConfiguration.Global)config).minimumDatapoints) return false;
-            minValue = Double.MAX_VALUE;
-            maxValue = (double)datapoints.get(0).getValue();
-            for (AssetAnomalyDatapoint dtapoint : datapoints) {
-                if(dtapoint.anomalyType == AnomalyType.Unchecked || dtapoint.anomalyType == AnomalyType.Valid){
-                    if((double)dtapoint.getValue() <= minValue){
-                        minValue = (double)dtapoint.getValue();
-                        minValueTimestamp = dtapoint.getTimestamp();
-                    }
-                    if((double)dtapoint.getValue() >= maxValue){
-                        maxValue = (double)dtapoint.getValue();
-                        maxValueTimestamp = dtapoint.getTimestamp();
-                    }
-                }
-            }
-            return true;
-        }
-
-        @Override
-        public double[] GetLimits(ValueDatapoint<?> datapoint) {
-            double differance = maxValue - minValue + 0.001;
-            double deviation = differance * ((double)config.deviation /100);
-            double[] limits = new double[]{minValue - deviation, maxValue + deviation};
-            double value = (double)datapoint.getValue();
-            if(minValue > value) minValue = value;
-            if(maxValue < value) maxValue = value;
-            return limits;
-        }
-    }
-    private class DetectionMethodChange extends DetectionMethod{
-
-        double biggestIncrease;
-        long biggestIncreaseTimestamp;
-        double smallestIncrease;
-        long smallestIncreaseTimestamp;
-        double previousValue;
-        long previousValueTimestamp;
-
-        public DetectionMethodChange(AnomalyDetectionConfiguration config){
-            super(config);
-            anomalyType = AnomalyType.ContextualOutlier;
-        }
-
-        public boolean validateDatapoint(Object value, long timestamp) {
-            double increase = ((double)value - previousValue);
-
-            boolean valid = true;
-            double diff = biggestIncrease - smallestIncrease;
-
-            double offset =  diff * ((double)config.deviation/100);
-            if(increase > biggestIncrease + offset){
-                valid = false;
-            }
-            if(increase < smallestIncrease - offset){
-                valid = false;
-            }
-            message = "Value is " + increase + " while limits are " + (biggestIncrease + offset) + " and " + (smallestIncrease- offset);
-            if(valid){
-                if(increase <= smallestIncrease){
-                    smallestIncrease = increase;
-                    smallestIncreaseTimestamp = timestamp;
-                }
-                if(increase>= biggestIncrease){
-                    biggestIncrease = increase;
-                    biggestIncreaseTimestamp = timestamp;
-                }
-            }
-            previousValue = (double)value;
-            previousValueTimestamp = timestamp;
-            return valid;
-        }
-
-        public boolean checkRecentDataSaved(long latestTimestamp) {
-            boolean needsNewData = false;
-            if(smallestIncreaseTimestamp < latestTimestamp - ((AnomalyDetectionConfiguration.Change)config).timespan.toMillis()
-                    || biggestIncreaseTimestamp < latestTimestamp - ((AnomalyDetectionConfiguration.Change)config).timespan.toMillis()){
-                needsNewData = true;
-            }
-            return !needsNewData;
-        }
-
-        @Override
-        public boolean UpdateData(List<AssetAnomalyDatapoint> datapoints) {
-            if(datapoints.size() < ((AnomalyDetectionConfiguration.Change)config).minimumDatapoints) return false;
-            smallestIncrease = Double.MAX_VALUE;
-            biggestIncrease = -100000000;
-            for(int i = 1; i < datapoints.size(); i++){
-                if(datapoints.get(i).anomalyType == AnomalyType.Unchecked || datapoints.get(i).anomalyType == AnomalyType.Valid) {
-
-                }
-               double increase = (double)datapoints.get(i-1).getValue() - (double)datapoints.get(i).getValue();
-               long timestamp = datapoints.get(i).getTimestamp();
-
-                if(increase <= smallestIncrease){
-                    smallestIncrease = increase;
-                    smallestIncreaseTimestamp = timestamp;
-                }
-                if(increase>= biggestIncrease){
-                    biggestIncrease = increase;
-                    biggestIncreaseTimestamp = timestamp;
-                }
-            }
-            previousValue = (double)datapoints.get(0).getValue();
-            previousValueTimestamp = datapoints.get(0).getTimestamp();
-            return true;
-        }
-
-        @Override
-        public double[] GetLimits(ValueDatapoint<?> datapoint) {
-            double increase = ((double)datapoint.getValue() - previousValue);
-            double diff = biggestIncrease - smallestIncrease;
-            double offset =  diff * ((double)config.deviation/100);
-            double[] limits = new double[]{previousValue + smallestIncrease - offset, previousValue + biggestIncrease +offset};
-
-            previousValue = (double)datapoint.getValue();
-            if(increase <= smallestIncrease){
-                smallestIncrease = increase;
-                smallestIncreaseTimestamp = datapoint.getTimestamp();
-            }
-            if(increase>= biggestIncrease){
-                biggestIncrease = increase;
-                biggestIncreaseTimestamp = datapoint.getTimestamp();
-            }
-            return limits;
-        }
-    }
-
-    private class DetectionMethodTimespan extends DetectionMethod{
-        long longestTimespan;
-        long longestTimespanTimestamp;
-        long shortestTimespan;
-        long shortestTimespanTimestamp;
-        long previousValueTimestamp;
-
-        public DetectionMethodTimespan(AnomalyDetectionConfiguration config){
-            super(config);
-            anomalyType = AnomalyType.IrregularInterval;
-        }
-
-        @Override
-        public boolean validateDatapoint(Object value, long timestamp) {
-            long timespan = timestamp - previousValueTimestamp;
-            boolean valid = true;
-            long offset = 0;
-            offset = (long)((longestTimespan - shortestTimespan+1)* ((double)config.deviation/100));
-            if(offset < 0) offset *= -1;
-            if(timespan > longestTimespan + offset){
-                valid = false;
-            }
-            if(valid){
-                if(timespan <= shortestTimespan){
-                    shortestTimespan = timespan;
-                    shortestTimespanTimestamp = timestamp;
-                }
-                if(timespan >= longestTimespan){
-                    longestTimespan = timespan;
-                    longestTimespanTimestamp = timestamp;
-                }
-            }
-            previousValueTimestamp = timestamp;
-            return valid;
-        }
-
-        @Override
-        public boolean checkRecentDataSaved(long latestTimestamp) {
-            boolean needsNewData = false;
-            if(longestTimespanTimestamp < latestTimestamp - ((AnomalyDetectionConfiguration.Timespan)config).timespan.toMillis()
-                    || shortestTimespanTimestamp < latestTimestamp - ((AnomalyDetectionConfiguration.Timespan)config).timespan.toMillis()){
-                needsNewData = true;
-            }
-            return !needsNewData;
-        }
-
-        @Override
-        public boolean UpdateData(List<AssetAnomalyDatapoint> datapoints) {
-
-            if(datapoints.size() <((AnomalyDetectionConfiguration.Timespan)config).minimumDatapoints) return false;
-            shortestTimespan = datapoints.get(0).getTimestamp();
-            longestTimespan = 0;
-            for(int i = 1; i < datapoints.size(); i++){
-                long timespan = datapoints.get(i-1).getTimestamp() - datapoints.get(i).getTimestamp();
-                long timestamp = datapoints.get(i).getTimestamp();
-
-                if(timespan <= shortestTimespan){
-                    shortestTimespan = timespan;
-                    shortestTimespanTimestamp = timestamp;
-                }
-                if(timespan >= longestTimespan){
-                    longestTimespan = timespan;
-                    longestTimespanTimestamp = timestamp;
-                }
-            }
-            previousValueTimestamp = datapoints.get(0).getTimestamp();
-            return true;
-        }
-
-        @Override
-        public double[] GetLimits(ValueDatapoint<?> datapoint) {
-            return new double[0];
         }
     }
 }

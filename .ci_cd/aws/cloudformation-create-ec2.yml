@@ -45,8 +45,8 @@ Parameters:
     Type: String
   ImageId:
     Description: AMI ID
-    Type: String
-    Default: "ami-062cd09187a31b743"
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64'
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -83,7 +83,7 @@ Parameters:
   DiskSize:
     Description: Root EBS volume size GB
     Type: Number
-    Default: 50
+    Default: 16
   HealthChecks:
     Description: Create health checks
     Type: String
@@ -720,13 +720,10 @@ Resources:
         cron_setup:
           packages:
             yum:
-              yum-cron: []
-          commands:
-            01_configure:
-              command: chkconfig yum-cron on
+              cronie: []
           services:
             systemd:
-              yum-cron:
+              crond:
                 enabled: "true"
                 ensureRunning: "true"
 
@@ -771,10 +768,8 @@ Resources:
                   - /etc/cfn/hooks.d/amazon-cloudwatch-agent-auto-reloader.conf
 
     Properties:
-      InstanceType:
-        Ref: InstanceType
-      KeyName:
-        "developers"
+      InstanceType: !Ref InstanceType
+      KeyName: "developers"
       ImageId: !Ref ImageId
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
@@ -802,8 +797,8 @@ Resources:
           #sed -i '/download_updates/s/= .*/= yes/' /etc/yum/yum-cron-hourly.conf
           #sed -i '/download_updates/s/= .*/= no/' /etc/yum/yum-cron.conf
           
-          rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
-          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/var/config.json
+          # Install cloudwatch agent
+          yum -y install amazon-cloudwatch-agent
           
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}

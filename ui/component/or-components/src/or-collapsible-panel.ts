@@ -19,7 +19,7 @@
  */
 import { css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
-import { DefaultColor5 } from "@openremote/core";
+import {DefaultColor5, Util} from "@openremote/core";
 
 // language=CSS
 const style = css`
@@ -122,6 +122,8 @@ export class OrCollapsiblePanel extends LitElement {
     expandable: boolean = true;
     @query("#header")
     protected headerElem!: HTMLDivElement;
+    @property({type: String, attribute: false})
+    public onChange?: (expanded:boolean) => void;
 
     protected _onHeaderClicked(ev: MouseEvent) {
         if (!this.expandable) {
@@ -129,6 +131,9 @@ export class OrCollapsiblePanel extends LitElement {
         }
         ev.preventDefault();
         this.expanded = !this.expanded;
+        if (this.onChange) {
+            this.onChange(this.expanded);
+        }
     }
 
     render() {

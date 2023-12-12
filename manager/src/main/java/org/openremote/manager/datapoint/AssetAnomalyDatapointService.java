@@ -19,13 +19,11 @@
  */
 package org.openremote.manager.datapoint;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
-import org.openremote.agent.protocol.ProtocolPredictedDatapointService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AnomalyDetectionService;
+import org.openremote.manager.anomalyDetection.AnomalyDetectionService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -35,21 +33,15 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeAnomaly;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.AssetDatapoint;
-import org.openremote.model.datapoint.AssetPredictedDatapoint;
-import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
-import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
-import org.w3c.dom.Attr;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -60,8 +52,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static java.time.temporal.ChronoUnit.HOURS;
 
 public class AssetAnomalyDatapointService implements ContainerService {
     public static final int PRIORITY = AssetStorageService.PRIORITY + 100;

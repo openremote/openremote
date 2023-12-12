@@ -17,26 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.asset;
+package org.openremote.manager.anomalyDetection;
 
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.datapoint.AssetAnomalyDatapointService;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AnomalyDetectionResource;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeAnomaly;
-import org.openremote.model.datapoint.AssetAnomalyDatapointResource;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.ClientRole;
-import org.openremote.model.value.AnomalyDetectionConfigObject;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
 import org.openremote.model.value.MetaItemType;
 

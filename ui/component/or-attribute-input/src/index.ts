@@ -46,6 +46,7 @@ import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-f
 import {agentIdRendererRegistryEntry, loadAgents} from "./agent-link-json-forms-renderer";
 import "./or-anomaly-config-chart"
 import "./or-anomaly-config-input"
+import {updateAsset} from "@openremote/core/lib/util";
 
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
@@ -280,16 +281,29 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
         };
     }else if (valueDescriptor.name === WellknownValueTypes.ANOMALYDETECTIONCONFIGURATION) {
         const onChangedA = (dataAndErrors: { errors: ErrorObject[] | undefined, data: any },update :boolean) => {
-            const newConfig: AnomalyDetectionConfigObject = dataAndErrors.data
-            if (update) {
-                valueChangeNotifier({
-                    value: newConfig
-                });
-            }
+            const newConfig: AnomalyDetectionConfigObject = dataAndErrors.data;
+            valueChangeNotifier({
+                value: newConfig
+            });
+        }
+        const validate = async (valid:boolean) => {
+
         }
         const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
             if(!value){
-                value ={methods:[]}
+                value ={methods:[
+                    {
+                        type: null,
+                        name: "Method 1",
+                        onOff: false,
+                        deviation: null,
+                        alarm: {
+                            content: "%ASSET_ID%\n%ATTRIBUTE_NAME%"
+                        },
+                        alarmOnOff: false,
+                        minimumDatapoints: null,
+                        timespan: null
+                    }]}
             }
             return html`
                 <style>

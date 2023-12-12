@@ -35,5 +35,5 @@ org.openremote.manager.security.AuthorisationService
 org.openremote.manager.app.ConfigurationService
 org.openremote.manager.asset.ForecastService
 org.openremote.manager.alarm.AlarmService
-org.openremote.manager.asset.AnomalyDetectionService
+org.openremote.manager.anomalyDetection.AnomalyDetectionService
 org.openremote.manager.datapoint.AssetAnomalyDatapointService

@@ -1,5 +1,5 @@
 import {OrWidget} from "./or-widget";
-import {Asset, Attribute, AttributeRef} from "@openremote/model";
+import {Asset, AssetQuery, Attribute, AttributeRef} from "@openremote/model";
 import { state } from "lit/decorators.js";
 import manager from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
@@ -29,11 +29,19 @@ export abstract class OrAssetWidget extends OrWidget {
 
     // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required.
     protected async fetchAssets(attributeRefs: AttributeRef[] = []) {
-        return fetchAssets(attributeRefs);
+        return fetchAssetsByAttributeRef(attributeRefs);
+    }
+
+    protected async queryAssets(assetQuery: AssetQuery) {
+        return fetchAssets(assetQuery);
+    }
+
+    protected isAssetLoaded(assetId: string) {
+        return isAssetIdLoaded(this.loadedAssets, assetId);
     }
 
     protected isAttributeRefLoaded(attributeRef: AttributeRef) {
-        return isAttributeRefLoaded(this.loadedAssets, attributeRef);
+        return isAssetIdLoaded(this.loadedAssets, attributeRef.id!);
     }
 
 }
@@ -51,11 +59,19 @@ export abstract class AssetWidgetSettings extends WidgetSettings {
     protected loadedAssets: Asset[] = [];
 
     protected async fetchAssets(attributeRefs: AttributeRef[] = []) {
-        return fetchAssets(attributeRefs);
+        return fetchAssetsByAttributeRef(attributeRefs);
+    }
+
+    protected async queryAssets(assetQuery: AssetQuery) {
+        return fetchAssets(assetQuery);
+    }
+
+    protected isAssetLoaded(assetId: string) {
+        return isAssetIdLoaded(this.loadedAssets, assetId)
     }
 
     protected isAttributeRefLoaded(attributeRef: AttributeRef) {
-        return isAttributeRefLoaded(this.loadedAssets, attributeRef);
+        return isAssetIdLoaded(this.loadedAssets, attributeRef.id!);
     }
 
 }
@@ -67,15 +83,21 @@ export abstract class AssetWidgetSettings extends WidgetSettings {
 // GENERIC FUNCTIONS
 
 // Simple async function for fetching assets by attributeRefs
-async function fetchAssets(attributeRefs: AttributeRef[] = []) {
-    let assets: Asset[] = [];
-    await manager.rest.api.AssetResource.queryAssets({
+async function fetchAssetsByAttributeRef(attributeRefs: AttributeRef[] = []) {
+    const assetIds = attributeRefs.map(ar => ar.id!);
+    const attributeNames = attributeRefs.map(ar => ar.name!);
+    return fetchAssets({
         ids: attributeRefs?.map((x: AttributeRef) => x.id) as string[],
-        realm: { name: manager.displayRealm },
         select: {
             attributes: attributeRefs?.map((x: AttributeRef) => x.name) as string[]
         }
-    }).then(response => {
+    });
+}
+
+async function fetchAssets(assetQuery: AssetQuery) {
+    let assets: Asset[] = [];
+    assetQuery.realm = { name: manager.displayRealm };
+    await manager.rest.api.AssetResource.queryAssets(assetQuery).then(response => {
         assets = response.data;
     }).catch((reason) => {
         console.error(reason);
@@ -84,6 +106,6 @@ async function fetchAssets(attributeRefs: AttributeRef[] = []) {
     return assets;
 }
 
-function isAttributeRefLoaded(loadedAssets: Asset[] | undefined, attrRef: AttributeRef) {
-    return loadedAssets?.find((asset) => asset.id === attrRef.id) !== undefined;
+function isAssetIdLoaded(loadedAssets: Asset[] | undefined, assetId: string) {
+    return loadedAssets?.find(asset => asset.id === assetId) !== undefined;
 }

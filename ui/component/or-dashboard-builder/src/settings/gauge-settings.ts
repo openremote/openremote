@@ -58,8 +58,15 @@ export class GaugeSettings extends WidgetSettings {
         `;
     }
 
+    // When new attributes get selected
+    // Update the displayName to the new asset and attribute name.
     protected onAttributesSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.attributeRefs = ev.detail as AttributeRef[];
+        this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
+        if(ev.detail.attributeRefs.length === 1) {
+            const attributeRef = ev.detail.attributeRefs[0];
+            const asset = ev.detail.assets.find((asset) => asset.id === attributeRef.id);
+            this.setDisplayName!(asset ? `${asset.name} - ${attributeRef.name}` : `${attributeRef.name}`);
+        }
         this.notifyConfigUpdate();
     }
 
