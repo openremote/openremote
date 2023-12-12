@@ -756,6 +756,7 @@
     "creatingAlarm": "Creating a new alarm",
     "createAlarmFailed": "Create alarm failed",
     "alarmAlreadyExists": "Error occurred! This alarm already exists.",
+    "deleteAlarm": "Delete alarm",
     "deleteAlarmConfirm": "Are you sure you want to delete this alarm?",
     "assignUser": "Assign user",
     "hideControls": "Hide controls",

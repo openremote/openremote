@@ -24,29 +24,16 @@ public interface AlarmResource {
     @Produces(APPLICATION_JSON)
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
-    // /**
-    // *
-    // * @param requestParams
-    // * @param id
-    // * @param severity
-    // */
-    // @DELETE
-    // @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    // void removeAlerts(@BeanParam RequestParams requestParams,
-    // @QueryParam("id") Long id,
-    // @QueryParam("severity") String severity,
-    // @QueryParam("status") String status);
-    //
-    // /**
-    // *
-    // * @param requestParams
-    // * @param alertId
-    // */
-    // @DELETE
-    // @Path("{alertId}")
-    // @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    // void removeAlert(@BeanParam RequestParams requestParams,
-    // @PathParam("alertId") Long alertId);
+     /**
+     *
+     * @param requestParams
+     * @param alarmId
+     */
+     @DELETE
+     @Path("{alarmId}/delete")
+     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
+     void removeAlarm(@BeanParam RequestParams requestParams,
+     @PathParam("alarmId") Long alarmId);
 
     /**
      * @param requestParams
@@ -54,6 +41,7 @@ public interface AlarmResource {
      */
     @POST
     @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void createAlarm(@BeanParam RequestParams requestParams,
             Alarm alarm);
 
@@ -84,12 +72,6 @@ public interface AlarmResource {
                     String userId,
                     String realm);
 
-//    @Path("{alarmId}/assetLink")
-//    @PUT
-//    void setAssetLink(@BeanParam RequestParams requestParams,
-//                      @PathParam("alarmId") String alarmId,
-//                      String assetId,
-//                      String realm);
 
     @Path("{alarmId}/assetLinks/get")
     @GET
@@ -104,4 +86,16 @@ public interface AlarmResource {
     List<AlarmUserLink> getUserLinks(@BeanParam RequestParams requestParams,
             @PathParam("alarmId") Long alarmId,
             String realm);
+
+    @Path("{assetId}/alarmLinks/get")
+    @GET
+    @Produces(APPLICATION_JSON)
+    List<SentAlarm> getAlarmsByAssetId(@BeanParam RequestParams requestParams,
+                                       @PathParam("assetId") String assetId);
+
+    @Path("/alarms/open/get")
+    @GET
+    @Produces(APPLICATION_JSON)
+    List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
+
 }

@@ -514,7 +514,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 title: "%RULESET_NAME%",
                 content: "%TRIGGER_ASSETS%",
                 severity: AlarmSeverity.LOW,
-                status: AlarmStatus.ACTIVE
+                status: AlarmStatus.OPEN
             };
             action.assigneeId = undefined;
         } else if (value == ActionType.WEBHOOK) {
