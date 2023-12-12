@@ -94,6 +94,7 @@ open class ORViewcontroller : UIViewController {
         } else {
             sbHeight = UIApplication.shared.statusBarFrame.height
         }
+        webCfg.websiteDataStore = WKWebsiteDataStore.default()
         webCfg.allowsInlineMediaPlayback = true
         let webFrame = CGRect(x: 0, y: sbHeight, width: view.frame.size.width, height: view.frame.size.height - sbHeight)
         myWebView = WKWebView(frame: webFrame, configuration: webCfg)
