@@ -458,6 +458,56 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             }
     }
 
+    public List<SentAlarm> getAlarmsByAssetId(String assetId) throws IllegalArgumentException {
+        if (LOG.isLoggable(FINE)) {
+            LOG.fine("Getting alarms by assetId");
+        }
+
+        try {
+            return persistenceService.doReturningTransaction(entityManager -> {
+                StringBuilder sb = new StringBuilder();
+                sb.append("SELECT sa FROM SentAlarm sa ");
+                sb.append("JOIN AlarmAssetLink aal ON sa.id = aal.id.alarmId ");
+                sb.append("WHERE aal.id.assetId = :assetId ");
+                sb.append("ORDER BY sa.createdOn DESC");
+
+                TypedQuery<SentAlarm> query = entityManager.createQuery(sb.toString(), SentAlarm.class);
+                query.setParameter("assetId", assetId);
+
+                return query.getResultList();
+            });
+
+        } catch (Exception e) {
+            String msg = "Failed to get alarms by assetId";
+            LOG.log(Level.WARNING, msg, e);
+            throw new IllegalStateException(msg, e);
+        }
+    }
+
+    public List<SentAlarm> getOpenAlarms() throws IllegalArgumentException {
+        if (LOG.isLoggable(FINE)) {
+            LOG.fine("Getting Open alarms");
+        }
+
+        try {
+            return persistenceService.doReturningTransaction(entityManager -> {
+                StringBuilder sb = new StringBuilder();
+                sb.append("SELECT sa FROM SentAlarm sa ");
+                sb.append("WHERE sa.status = 'OPEN' ");
+                sb.append("ORDER BY sa.createdOn DESC");
+
+                TypedQuery<SentAlarm> query = entityManager.createQuery(sb.toString(), SentAlarm.class);
+
+                return query.getResultList();
+            });
+
+        } catch (Exception e) {
+            String msg = "Failed to get open alarms";
+            LOG.log(Level.WARNING, msg, e);
+            throw new IllegalStateException(msg, e);
+        }
+    }
+
     public SentAlarm getSentAlarm(String alarmId) {
         return persistenceService.doReturningTransaction(em -> em.find(SentAlarm.class, alarmId));
     }

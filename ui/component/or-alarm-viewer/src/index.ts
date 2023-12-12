@@ -71,29 +71,29 @@ const style = css`
         display: flex;    
     }
 
-    #status-select, #severity-select, #sort-select {
-        width: 180px;
-        padding: 0 10px;
-    }
-    
-    #controls {
-        flex: 0;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        margin: var(--internal-or-log-viewer-controls-margin);
-        padding: 0 10px 10px 10px;
-    }
-
-    #controls-left {
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-    }
-    
-    #controls > * {
-        margin-top: 0px;
-    }
+            #status-select, #severity-select, #sort-select {
+                width: 180px;
+                padding: 0 10px;
+            }
+            
+            #controls {
+                flex: 0;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                margin: var(--internal-or-log-viewer-controls-margin);
+                padding: 0 10px 10px 10px;
+            }
+        
+            #controls-left {
+                display: flex;
+                justify-content: flex-start;
+                align-items: center;
+            }
+            
+            #controls > * {
+                margin-top: 0px;
+            }
     
     .hidden {
         display: none !important;
@@ -124,10 +124,10 @@ const style = css`
         text-weight: var(--mdc-typography-body2-font-weight, 700);
     }
 
-    td.mdc-data-table__cell:nth-child(3)[data-severity="LOW"] {
-        color: green; /* change color to green for "low" severity */
-        font-weight: 700;
-      }
+    #table td.mdc-data-table__cell.mdc-data-table__cell--clickable:nth-child(3) {
+        color: green !important;
+        font-weight: 700 !important;
+    }
       
       td.mdc-data-table__cell:nth-child(3)[data-severity="MEDIUM"] {
         color: orange; /* change color to orange for "medium" severity */
@@ -222,6 +222,21 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         this._cleanup();
     }
 
+    renderedCallback(): void {
+        // Find all table cells with a specific class or data attribute.
+        const cells = document.querySelectorAll('.mdc-data-table__cell');
+
+        // Loop through the cells and replace text with icons based on conditions.
+        cells.forEach(cell => {
+            const text = cell.textContent?.trim();
+            if (text === 'LOW') {
+                cell.innerHTML = '<i class="material-icons">check_circle</i>';
+            } else if (text === 'MEDIUM') {
+                cell.innerHTML = '<i class="material-icons">cancel</i>';
+            }
+        });
+    }
+
     shouldUpdate(_changedProperties: PropertyValues): boolean {
 
         if (_changedProperties.has("severity")
@@ -246,14 +261,6 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         
         return html`
             <div id="container">
-                <div id="controls">
-                    <div id="controls-left" class="${this.hide ? "hidden" : ""}">
-                        <or-mwc-input .type="${InputType.SELECT}" id="severity-select" ?disabled="${disabled}" .label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSeverityChanged(evt.detail.value)}" .value="${this.severity}" .options="${this._getSeverityOptions()}"></or-mwc-input>
-                        <or-mwc-input .type="${InputType.SELECT}" id="status-select" ?disabled="${disabled}" .label="${i18next.t("alarm.status")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}" .value="${this.status}" .options="${this._getStatusOptions()}"></or-mwc-input>
-                        <or-mwc-input .type="${InputType.CHECKBOX}" id="assign-check" ?disabled="${disabled}" .label="${i18next.t("alarm.assignedToMe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onAssignCheckChanged(evt.detail.value)}" .value="${this.assign}"></or-mwc-input>
-                    </div>
-                    <or-mwc-input .type="${InputType.CHECKBOX}" id="hide-check" ?disabled="${disabled}" .label="${i18next.t("alarm.hideControls")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onHideChanged(evt.detail.value)}" .value="${this.hide}"></or-mwc-input>
-                </div>
                 ${disabled ? html`<div id="msg">${i18next.t("loading")}</div>` :
                     html`<div id="table-container">
                         ${this._data ? this.getAlarmsTable() : ``}
@@ -262,89 +269,32 @@ export class OrAlarmViewer extends translate(i18next)(LitElement) {
         `;
     }
 
-    protected _getStatusOptions() {
-        return  [AlarmStatus.ACTIVE, AlarmStatus.ACKNOWLEDGED, AlarmStatus.INACTIVE, AlarmStatus.RESOLVED];
-    }
-
-    protected _getSeverityOptions() {
-        return [AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH];
-    }
-
-    protected _onSeverityChanged(severity: AlarmSeverity) {
-        this.severity = severity;
-
-        if (!this.severity) {
-            return;
+    protected getSeverityIcon(severity: AlarmSeverity){
+        switch (severity) {
+            case AlarmSeverity.LOW:
+                return '<or-icon class="icon-low" icon="numeric-1-box"></or-icon>'
+            case AlarmSeverity.MEDIUM:
+                return '<or-icon class="icon-medium" icon="numeric-2-box"></or-icon>'
+            case AlarmSeverity.HIGH:
+                return '<or-icon class="icon-high" icon="numeric-3-box"></or-icon>'
+            default:
+                return;
         }
-        this._data = this._data!.filter((e) => e.severity === this.severity);
-    }
-
-    protected async _onAssignCheckChanged(assign: boolean) {
-        this.assign = assign;
-
-        if (this.assign === undefined) {
-            return;
-        }
-        const response = await manager.rest.api.UserResource.getCurrent();
-        if(response.status === 200 && this.assign) {
-            this._data = this._data!.filter((e) => e.assigneeId === response.data.id);
-        }
-        else if (!this.assign) {
-            this._loadData();
-        }
-    }
-
-    protected _onHideChanged(hide: boolean) {
-        this.hide = hide;
-        this.severity = undefined;
-        this.status = undefined;
-        this.assign = false;
-    }
-
-    protected _onStatusChanged(status: AlarmStatus) {
-        this.status = status;
-
-        if (!this.status) {
-            return;
-        }
-        this._data = this._data!.filter((e) => e.status === this.status);
-    }
-
-    protected _onCheckChanged(checked: boolean, type: any) {
-        if (type === "all") {
-            if(checked) {
-                this.selected = this._data!;
-            }
-            else {
-                this.selected = [];
-            }
-        }
-        else {
-            if(checked) {
-                this.selected?.push(type);
-            }
-            else {
-                this.selected = this.selected?.filter((e) => e !== type);
-            }
-        }
-        this.requestUpdate();
     }
 
     protected getAlarmsTable()  {
         // Content of Alarm Table
         const columns: TableColumn[] = [
-            {title: i18next.t('createdOn'), isSortable: true},
             {title: i18next.t('alarm.severity')},
             {title: i18next.t('alarm.status')},
             {title: i18next.t('alarm.assignee')},
             {title: i18next.t('alarm.title')},
-            {title: i18next.t('alarm.content')},
             {title: i18next.t('alarm.lastModified'), isSortable: true}
         ];
 
         const rows: TableRow[] = this._data!.map((alarm) => {
             return {
-                content: [new Date(alarm.createdOn!).toLocaleString(), alarm.severity, alarm.status, alarm.assigneeUsername, alarm.title, alarm.content, new Date(alarm.lastModified!).toLocaleString()],
+                content: [this.getSeverityIcon(alarm.severity!), alarm.status!.charAt(0) + alarm.status!.slice(1).toLowerCase(), alarm.assigneeUsername, alarm.title, new Date(alarm.lastModified!).toLocaleString()],
                 clickable: true
             } as TableRow
         });
