@@ -191,7 +191,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-                    assetPredicate = AssetQueryPredicate.asAssetStateMatcher(timerService::getCurrentTimeMillis, attributePredicates);
+                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;

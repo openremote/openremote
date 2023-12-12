@@ -312,6 +312,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         if (header(SESSION_OPEN).matches(exchange)) {
+            // We need to delay processing here so that ClientEventService has fully initialised the session
             String sessionKey = ClientEventService.getSessionKey(exchange);
             processGatewayConnected(clientId, sessionKey);
             return;
@@ -358,6 +359,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                         throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, msg);
                     }
                     LOG.fine("Gateway client disabled attribute updated so updating gateway service user enabled flag: (gatewayId=" + event.getId() + ")");
+                    // Push value into asset for service user method
+                    gatewayAsset.setDisabled(disabled);
                     createUpdateGatewayServiceUser(gatewayAsset);
                     if (disabled) {
                         connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));

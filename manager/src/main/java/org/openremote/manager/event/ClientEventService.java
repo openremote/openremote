@@ -326,7 +326,16 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         from(CLIENT_INBOUND_QUEUE)
             .routeId("ClientInbound-EventProcessor")
-            .process(this::passToInterceptors)
+            .process(exchange -> {
+                // Process session open before passing to any interceptors
+                Boolean isSessionOpen = exchange.getIn().getHeader(SESSION_OPEN, Boolean.class);
+                if (isSessionOpen != null) {
+                    String sessionKey = getSessionKey(exchange);
+                    LOG.log(TRACE, "Adding session: " + sessionKey);
+                    sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
+                }
+                passToInterceptors(exchange);
+            })
             .choice()
             .when(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
@@ -337,14 +346,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 }
             })
             .to(ATTRIBUTE_EVENT_QUEUE)
-            .stop()
-            .endChoice()
-            .when(header(SESSION_OPEN))
-            .process(exchange -> {
-                String sessionKey = getSessionKey(exchange);
-                LOG.log(TRACE, "Adding session: " + sessionKey);
-                sessionKeyInfoMap.put(sessionKey, createSessionInfo(sessionKey, exchange));
-            })
             .stop()
             .when(or(
                 header(SESSION_CLOSE),

@@ -131,7 +131,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected RulesEngine<GlobalRuleset> globalEngine;
     protected Realm[] realms;
     protected AssetLocationPredicateProcessor locationPredicateRulesConsumer;
-    protected final ConcurrentMap<RulesEngine<?>, List<RulesEngine.AssetStateLocationPredicates>> engineAssetLocationPredicateMap = new ConcurrentHashMap<>();
+    protected final ConcurrentMap<RulesEngine<?>, List<RulesEngine.AssetLocationPredicates>> engineAssetLocationPredicateMap = new ConcurrentHashMap<>();
     protected final Set<String> assetsWithModifiedLocationPredicates = new HashSet<>();
     // Keep global list of asset states that have been pushed to any engines
     // The objects are already in memory inside the rule engines but keeping them
@@ -867,7 +867,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
      * LocationAttributePredicate} in the rules. The job here is to identify the asset's (via {@link AttributeInfo}) that
      * have modified {@link LocationAttributePredicate}s and to notify the {@link GeofenceAssetAdapter}s.
      */
-    protected void onEngineLocationRulesChanged(RulesEngine<?> rulesEngine, List<RulesEngine.AssetStateLocationPredicates> newEngineAssetStateLocationPredicates) {
+    protected void onEngineLocationRulesChanged(RulesEngine<?> rulesEngine, List<RulesEngine.AssetLocationPredicates> newEngineAssetStateLocationPredicates) {
 
         synchronized (assetsWithModifiedLocationPredicates) {
 
@@ -879,7 +879,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                         // All location predicates have been removed so record each asset state as modified
                         assetsWithModifiedLocationPredicates.addAll(
                             existingAssetStateLocationPredicates.stream().map(
-                                RulesEngine.AssetStateLocationPredicates::getAssetId).toList());
+                                RulesEngine.AssetLocationPredicates::getAssetId).toList());
                         // Remove this engine from the map
                         return null;
                     });
@@ -892,13 +892,13 @@ public class RulesService extends RouteBuilder implements ContainerService {
                             // All asset states are new so record them all as modified
                             assetsWithModifiedLocationPredicates.addAll(
                                 newEngineAssetStateLocationPredicates.stream().map(
-                                    RulesEngine.AssetStateLocationPredicates::getAssetId).toList());
+                                    RulesEngine.AssetLocationPredicates::getAssetId).toList());
                         } else {
                             // Find obsolete and modified asset states
                             existingEngineAssetStateLocationPredicates.forEach(
                                 existingAssetStateLocationPredicates -> {
                                     // Check if there are no longer any location predicates for this asset
-                                    Optional<RulesEngine.AssetStateLocationPredicates> newAssetStateLocationPredicates = newEngineAssetStateLocationPredicates.stream()
+                                    Optional<RulesEngine.AssetLocationPredicates> newAssetStateLocationPredicates = newEngineAssetStateLocationPredicates.stream()
                                         .filter(assetStateLocationPredicates ->
                                             assetStateLocationPredicates.getAssetId().equals(
                                                 existingAssetStateLocationPredicates.getAssetId()))
@@ -950,12 +950,12 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
             try {
                 // Find all location predicates associated with modified assets and pass through to the geofence adapters
-                List<RulesEngine.AssetStateLocationPredicates> assetLocationPredicates = new ArrayList<>(
+                List<RulesEngine.AssetLocationPredicates> assetLocationPredicates = new ArrayList<>(
                     assetsWithModifiedLocationPredicates.size());
 
                 assetsWithModifiedLocationPredicates.forEach(assetId -> {
 
-                    RulesEngine.AssetStateLocationPredicates locationPredicates = new RulesEngine.AssetStateLocationPredicates(
+                    RulesEngine.AssetLocationPredicates locationPredicates = new RulesEngine.AssetLocationPredicates(
                         assetId,
                         new HashSet<>());
 

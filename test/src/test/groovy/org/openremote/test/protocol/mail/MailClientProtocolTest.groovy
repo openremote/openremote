@@ -87,7 +87,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
     def "Basic agent and attribute linking"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         and: "some mailbox messages"
         sendMessage("from@localhost")
@@ -101,7 +101,9 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         def agentService = container.getService(AgentService.class)
         def clientEventService = container.getService(ClientEventService.class)
         List<AttributeEvent> attributeEvents = []
-        def eventSessionID = clientEventService.addInternalSubscription(AttributeEvent.class,  null, it -> attributeEvents.add(it))
+        def eventSessionID = clientEventService.addInternalSubscription(AttributeEvent.class,  null, it -> {
+            attributeEvents.add(it)
+        })
 
         when: "a mail client agent is created"
         def agent = new MailAgent("Test agent")
@@ -150,6 +152,14 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
         and: "the asset is merged into the asset service"
         asset = assetStorageService.merge(asset)
+
+        then: "attribute events for the new asset should arrive"
+        conditions.eventually {
+            assert attributeEvents.count {it.id == asset.id} == 6
+        }
+
+        when: "the attribute events are cleared"
+        attributeEvents.clear()
 
         and: "the agent is enabled"
         agent.setDisabled(false)

@@ -124,7 +124,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             if (exception instanceof AssetProcessingException processingException) {
                 error.append(" ").append(processingException.getReason()).append(" - ").append(processingException.getMessage());
                 error.append(": ").append(event);
-                LOG.log(System.Logger.Level.WARNING, error::toString);
+                if (processingException.getReason() == ASSET_NOT_FOUND) {
+                    LOG.log(System.Logger.Level.DEBUG, error::toString);
+                } else {
+                    LOG.log(System.Logger.Level.WARNING, error::toString);
+                }
             } else {
                 error.append(": ").append(event);
                 LOG.log(System.Logger.Level.WARNING, error::toString, exception);

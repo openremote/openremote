@@ -1514,7 +1514,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     _onEvent(event: SharedEvent) {
         const assetId = this.ids && this.ids.length > 0 ? this.ids[0] : undefined;
-        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).attributeState!.ref!.id == assetId);
+        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).ref!.id == assetId);
 
         if (!processEvent) {
             return;
@@ -1580,7 +1580,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             // Inject the attribute as we don't subscribe to events from individual attribute inputs
             const attributeEvent = event as AttributeEvent;
-            const attrName = attributeEvent.attributeState!.ref!.name!;
+            const attrName = attributeEvent.ref!.name!;
 
             if (asset && asset.attributes && asset.attributes[attrName]) {
 
@@ -1589,7 +1589,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
                 // Update attribute within the asset
                 const attr = {...asset.attributes[attrName]};
-                attr.value = attributeEvent.attributeState!.value;
+                attr.value = attributeEvent.value;
                 attr.timestamp = attributeEvent.timestamp;
                 asset.attributes[attrName] = attr;
 

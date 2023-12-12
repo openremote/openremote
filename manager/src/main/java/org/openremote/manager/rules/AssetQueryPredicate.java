@@ -104,7 +104,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
         if (query.attributes != null) {
             // TODO: LogicGroup AND doesn't make much sense when applying to a single asset state
-            Set<AttributeInfo> matches = asAssetStateMatcher(timerService::getCurrentTimeMillis, query.attributes).apply(Collections.singleton(assetState));
+            Set<AttributeInfo> matches = asAttributeMatcher(timerService::getCurrentTimeMillis, query.attributes).apply(Collections.singleton(assetState));
             if (matches == null) {
                 return false;
             }
@@ -185,7 +185,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
      * @return The matched asset states or null if there is no match
      */
     @SuppressWarnings("unchecked")
-    public static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAssetStateMatcher(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
+    public static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
         if (groupIsEmpty(condition)) {
             return as -> Collections.EMPTY_SET;
         }
@@ -258,7 +258,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
         if (condition.groups != null && condition.groups.size() > 0) {
             assetStateMatchers.addAll(
                 condition.groups.stream()
-                    .map(c -> asAssetStateMatcher(currentMillisProducer, c)).toList()
+                    .map(c -> asAttributeMatcher(currentMillisProducer, c)).toList()
             );
         }
 

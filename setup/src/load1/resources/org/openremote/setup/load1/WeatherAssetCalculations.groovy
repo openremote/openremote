@@ -4,7 +4,6 @@ import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.impl.WeatherAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.rules.AssetState
 import org.openremote.model.rules.Assets
 import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users

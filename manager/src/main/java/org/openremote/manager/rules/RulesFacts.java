@@ -92,14 +92,14 @@ public class RulesFacts extends Facts implements RuleListener {
         trackLocationRules = true;
     }
 
-    protected List<RulesEngine.AssetStateLocationPredicates> stopTrackingLocationRules() {
+    protected List<RulesEngine.AssetLocationPredicates> stopTrackingLocationRules() {
         LOG.finest("Tracking location predicate rules: stopping");
         trackLocationRules = false;
         Map<String, Set<GeofencePredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
         this.assetStateLocationPredicateMap = null;
         return assetStateLocationPredicateMap == null ? null : assetStateLocationPredicateMap.entrySet().stream()
                 .map(assetStateSetEntry ->
-                        new RulesEngine.AssetStateLocationPredicates(
+                        new RulesEngine.AssetLocationPredicates(
                                 assetStateSetEntry.getKey(),
                                 assetStateSetEntry.getValue())).collect(Collectors.toList());
     }

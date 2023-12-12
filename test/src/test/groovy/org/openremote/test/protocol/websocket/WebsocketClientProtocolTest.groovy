@@ -200,7 +200,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         .setMessageMatchFilters(
                             [
                                 new RegexValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX + "(.*)", true, false).setMatchGroup(1),
-                                new JsonPathFilter("\$..attributeState.ref.name", true, false)
+                                new JsonPathFilter("\$..ref.name", true, false)
                             ] as ValueFilter[]
                         )
                         .setMessageMatchPredicate(
@@ -209,7 +209,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         .setValueFilters(
                             [
                                 new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.ref.name == \"targetTemperature\")].attributeState.value", true, false)
+                                new JsonPathFilter("\$..events[?(@.ref.name == \"targetTemperature\")].value", true, false)
                             ] as ValueFilter[]
                         )
                         .setWebsocketSubscriptions(
@@ -230,7 +230,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             .setMessageMatchFilters(
                                 [
                                     new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                    new JsonPathFilter("\$..attributeState.ref.name", true, false)
+                                    new JsonPathFilter("\$..ref.name", true, false)
                                 ] as ValueFilter[]
                             )
                             .setMessageMatchPredicate(
@@ -239,7 +239,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             .setValueFilters(
                                 [
                                     new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                    new JsonPathFilter("\$..events[?(@.attributeState.ref.name == \"co2Level\")].attributeState.value", true, false),
+                                    new JsonPathFilter("\$..events[?(@.ref.name == \"co2Level\")].value", true, false),
                                 ] as ValueFilter[]
                             )
                             .setWebsocketSubscriptions(

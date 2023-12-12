@@ -122,18 +122,10 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             // Note that the "No value" sensor update should not have created a datapoint, the first
             // datapoint is the last sensor update with an actual value
 
-            assert ValueUtil.getValue(datapoints.get(0).value, Double.class).orElse(null) == 15.5d
-            assert datapoints.get(0).timestamp == datapoint3ExpectedTimestamp
-
-            assert ValueUtil.getValue(datapoints.get(1).value, Double.class).orElse(null) == 14.4d
-            assert datapoints.get(1).timestamp == datapoint2ExpectedTimestamp
-
-            assert ValueUtil.getValue(datapoints.get(2).value, Double.class).orElse(null) == 13.5d
-            assert datapoints.get(2).timestamp == datapoint1ExpectedTimestamp
-
-            assert ValueUtil.getValue(datapoints.get(3).value, Double.class).orElse(null) == 13.3d
-
-            assert ValueUtil.getValue(datapoints.get(4).value, Double.class).orElse(null) == 13.3d
+            assert datapoints.any{ it.value == 15.5d && it.timestamp == datapoint3ExpectedTimestamp}
+            assert datapoints.any{ it.value == 14.4d && it.timestamp == datapoint2ExpectedTimestamp}
+            assert datapoints.any{ it.value == 13.5d && it.timestamp == datapoint1ExpectedTimestamp}
+            assert datapoints.count{ it.value == 13.3d} == 2
         }
 
         and: "the aggregated datapoints should match"

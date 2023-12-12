@@ -75,12 +75,12 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * Identifies a set of {@link LocationAttributePredicate}s associated with a particular {@link Asset}
      */
-    public static final class AssetStateLocationPredicates {
+    public static final class AssetLocationPredicates {
 
         final String assetId;
         final Set<GeofencePredicate> locationPredicates;
 
-        public AssetStateLocationPredicates(String assetId, Set<GeofencePredicate> locationPredicates) {
+        public AssetLocationPredicates(String assetId, Set<GeofencePredicate> locationPredicates) {
             this.assetId = assetId;
             this.locationPredicates = locationPredicates;
         }
@@ -589,7 +589,7 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * This is called with all the asset's that have a location attribute currently loaded into this engine.
      */
-    protected void processLocationRules(List<AssetStateLocationPredicates> assetStateLocationPredicates) {
+    protected void processLocationRules(List<AssetLocationPredicates> assetStateLocationPredicates) {
         if (assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, assetStateLocationPredicates);
         }

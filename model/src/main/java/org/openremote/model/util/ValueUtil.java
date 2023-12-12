@@ -955,7 +955,7 @@ public class ValueUtil {
      * each found constraint is then evaluated against the value supplied to the function.
      * <p>
      * Unfortunately JSR-380 can't be used (even Hibernate validator's programmatic API) because validators are type
-     * centric but here the type (e.g. {@link Attribute} or {@link org.openremote.model.rules.AssetState}) is fixed
+     * centric but here the type (e.g. {@link Attribute} or {@link org.openremote.model.attribute.AttributeInfo}) is fixed
      * but the constraints to be applied are dynamic, would be nice if there was a solution to this problem but this
      * works for now.
      */

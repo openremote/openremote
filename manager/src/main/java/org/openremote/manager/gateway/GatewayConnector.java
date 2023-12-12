@@ -200,7 +200,9 @@ public class GatewayConnector {
         // Wait a short while to disconnect to allow disconnect message to be delivered
         LOG.fine("Gateway connector disconnected: Gateway ID=" + gatewayId);
         executorService.schedule(disconnectRunnable, 1, TimeUnit.SECONDS);
-        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
+        if (!isDisabled()) {
+            sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
+        }
     }
 
     public boolean isConnected() {
