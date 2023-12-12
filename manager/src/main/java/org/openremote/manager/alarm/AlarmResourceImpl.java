@@ -14,6 +14,7 @@ import org.openremote.model.http.RequestParams;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AlarmResourceImpl extends WebResource implements AlarmResource {
@@ -57,18 +58,17 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 //        }
 //    }
 //
-//    @Override
-//    public  void removeAlert(RequestParams requestParams, Long alertId) {
-//        if (alertId == null) {
-//            throw new WebApplicationException("Missing alert ID", BAD_REQUEST);
-//        }
-//        alertService.removeAlert(alertId);
-//    }
+    @Override
+    public  void removeAlarm(RequestParams requestParams, Long alarmId) {
+        if (alarmId == null) {
+            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
+        }
+        alarmService.removeAlarm(alarmId);
+    }
 
     @Override
     public void createAlarm(RequestParams requestParams, Alarm alarm) {
-        SentAlarm success = alarmService.sendAlarm(alarm);
-
+        SentAlarm success = alarmService.sendAlarm(alarm, Alarm.Source.INTERNAL, "");
         if (success.getId() == null) {
             throw new WebApplicationException(Status.BAD_REQUEST);
         }
@@ -122,6 +122,23 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         }
         List<AlarmUserLink> result = alarmService.getUserLinks(alarmId, realm);
         return result;
+    }
+
+    @Override
+    public List<SentAlarm> getAlarmsByAssetId(RequestParams requestParams, String assetId) {
+        if (assetId == null) {
+            throw new WebApplicationException("Missing asset ID", Status.BAD_REQUEST);
+        }
+        return alarmService.getAlarmsByAssetId(assetId);
+    }
+
+    @Override
+    public List<SentAlarm> getOpenAlarms(RequestParams requestParams) {
+        try{
+            return alarmService.getOpenAlarms();
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Invalid criteria set", Status.BAD_REQUEST);
+        }
     }
 
     @Override

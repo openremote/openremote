@@ -12,9 +12,10 @@ public class Alarm {
         ASSET_RULESET
     }
     public enum Status {
-        ACTIVE,
+        OPEN,
         ACKNOWLEDGED,
-        INACTIVE,
+        IN_PROGRESS,
+        CLOSED,
         RESOLVED
     }
     public enum Severity {
@@ -30,15 +31,23 @@ public class Alarm {
     protected String content;
     protected Severity severity;
     protected Status status;
+    protected String assigneeId;
+    protected String realm;
 
     @JsonCreator
     public Alarm(@JsonProperty("title") String title,
                  @JsonProperty("content") String content,
-                 @JsonProperty("severity") Severity severity) {
+                 @JsonProperty("severity") Severity severity,
+                 @JsonProperty("assignee") String assignee,
+                 @JsonProperty("realm") String realm){
         this.title = title;
         this.content = content;
         this.severity = severity;
-        this.status = Status.ACTIVE;
+        this.status = Status.OPEN;
+        if(assignee != null){
+            this.assigneeId = assignee;
+        }
+        this.realm = realm;
     }
 
     public Alarm() {
@@ -70,6 +79,20 @@ public class Alarm {
 
     public Alarm setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public String getAssignee() { return this.assigneeId; }
+
+    public  Alarm setAssignee(String assignee) {
+        this.assigneeId = assignee;
+        return this;
+    }
+
+    public String getRealm() { return this.realm; }
+
+    public  Alarm setRealm(String realm) {
+        this.realm = realm;
         return this;
     }
 
