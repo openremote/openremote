@@ -94,7 +94,7 @@ open class ORViewcontroller : UIViewController {
         } else {
             sbHeight = UIApplication.shared.statusBarFrame.height
         }
-        webCfg.websiteDataStore = WKWebsiteDataStore.default()
+        
         webCfg.allowsInlineMediaPlayback = true
         let webFrame = CGRect(x: 0, y: sbHeight, width: view.frame.size.width, height: view.frame.size.height - sbHeight)
         myWebView = WKWebView(frame: webFrame, configuration: webCfg)
@@ -372,7 +372,13 @@ extension ORViewcontroller: WKNavigationDelegate {
                     decisionHandler(.cancel)
                 }
             } else {
-                decisionHandler(.allow)
+                if let baseUrl = self.baseUrl {
+                    webView.loadCookiesFromStorage(for: baseUrl) {
+                        decisionHandler(.allow)
+                    }
+                } else {
+                    decisionHandler(.allow)
+                }
             }
         }
     }
@@ -386,7 +392,13 @@ extension ORViewcontroller: WKNavigationDelegate {
                 return
             }
         }
-        decisionHandler(.allow)
+        if let baseUrl = self.baseUrl {
+            webView.writeCookiesToStorage(for: baseUrl){
+                decisionHandler(.allow)
+            }
+        } else {
+            decisionHandler(.allow)
+        }
     }
     
     public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
